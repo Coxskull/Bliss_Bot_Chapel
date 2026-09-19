@@ -1,0 +1,16 @@
+[
+  {
+    "id": "44444444-4444-4444-4444-444444444444",
+    "advertiserId": "33333333-3333-3333-3333-333333333333",
+    "name": "Sunrise Affiliate Program",
+    "externalProgramId": "PRG-TEST-001",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "44444444-4444-4444-4444-444444444445",
+    "advertiserId": "33333333-3333-3333-3333-333333333333",
+    "name": "Sunrise Brand Partnerships",
+    "externalProgramId": "PRG-TEST-002",
+    "status": "ACTIVE"
+  }
+]

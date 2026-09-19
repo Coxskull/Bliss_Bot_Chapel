@@ -1,0 +1,16 @@
+[
+  {
+    "id": "11111111-1111-1111-1111-111111111111",
+    "name": "Test Creator",
+    "countryCode": "PH",
+    "primaryLanguage": "English / Tagalog",
+    "audienceSize": 100000,
+    "femalePercentage": 70.0,
+    "malePercentage": 30.0
+  },
+  {
+    "id": "11111111-1111-1111-1111-111111111112",
+    "name": "Unknown Demographics Creator",
+    "countryCode": "PH"
+  }
+]

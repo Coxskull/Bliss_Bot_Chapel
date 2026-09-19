@@ -42,3 +42,5 @@ Swagger (Development): `/swagger`
 ## Documentation
 
 See `docs/bliss/` for Phase 1 architecture, requirements, and migration review.
+
+Phase 1 final acceptance evidence: `docs/bliss/PHASE-1-FINAL-ACCEPTANCE.md`.
