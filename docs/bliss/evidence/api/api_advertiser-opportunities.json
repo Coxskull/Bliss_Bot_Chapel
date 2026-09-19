@@ -1,0 +1,26 @@
+[
+  {
+    "id": "55555555-5555-5555-5555-555555555551",
+    "advertiserProgramId": "44444444-4444-4444-4444-444444444444",
+    "name": "Opportunity A - Morning Tonic",
+    "productName": "Morning Tonic",
+    "category": "Wellness",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "55555555-5555-5555-5555-555555555552",
+    "advertiserProgramId": "44444444-4444-4444-4444-444444444444",
+    "name": "Opportunity B - Sleep Tea",
+    "productName": "Sleep Tea",
+    "category": "Wellness",
+    "status": "ACTIVE"
+  },
+  {
+    "id": "55555555-5555-5555-5555-555555555553",
+    "advertiserProgramId": "44444444-4444-4444-4444-444444444444",
+    "name": "Opportunity C - Studio Mic Bundle",
+    "productName": "Studio Mic Bundle",
+    "category": "Creator Tools",
+    "status": "ACTIVE"
+  }
+]
