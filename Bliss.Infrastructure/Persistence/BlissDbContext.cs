@@ -1,0 +1,43 @@
+using Bliss.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace Bliss.Infrastructure.Persistence;
+
+public class BlissDbContext : DbContext
+{
+    public BlissDbContext(DbContextOptions<BlissDbContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<Creator> Creators => Set<Creator>();
+    public DbSet<CreatorPlatform> CreatorPlatforms => Set<CreatorPlatform>();
+    public DbSet<ContentItem> ContentItems => Set<ContentItem>();
+    public DbSet<AdInventorySlot> AdInventorySlots => Set<AdInventorySlot>();
+
+    public DbSet<Advertiser> Advertisers => Set<Advertiser>();
+    public DbSet<AdvertiserProgram> AdvertiserPrograms => Set<AdvertiserProgram>();
+    public DbSet<AdvertiserOpportunity> AdvertiserOpportunities => Set<AdvertiserOpportunity>();
+
+    public DbSet<AffiliateNetwork> AffiliateNetworks => Set<AffiliateNetwork>();
+    public DbSet<NetworkAccess> NetworkAccesses => Set<NetworkAccess>();
+    public DbSet<ProgramAccess> ProgramAccesses => Set<ProgramAccess>();
+
+    public DbSet<BlissMatch> BlissMatches => Set<BlissMatch>();
+    public DbSet<MatchScoreComponent> MatchScoreComponents => Set<MatchScoreComponent>();
+    public DbSet<EligibilityCheck> EligibilityChecks => Set<EligibilityCheck>();
+    public DbSet<RuleVersion> RuleVersions => Set<RuleVersion>();
+
+    public DbSet<DataProvenance> DataProvenances => Set<DataProvenance>();
+
+    public DbSet<Campaign> Campaigns => Set<Campaign>();
+    public DbSet<CampaignPlacement> CampaignPlacements => Set<CampaignPlacement>();
+
+    public DbSet<MatchEvaluationRun> MatchEvaluationRuns => Set<MatchEvaluationRun>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(BlissDbContext).Assembly);
+        base.OnModelCreating(modelBuilder);
+    }
+}
