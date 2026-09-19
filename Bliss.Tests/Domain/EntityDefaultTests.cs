@@ -1,0 +1,43 @@
+using Bliss.Domain.Entities;
+
+namespace Bliss.Tests.Domain;
+
+public sealed class EntityDefaultTests
+{
+    [Fact]
+    public void Advertiser_program_defaults_to_active()
+    {
+        Assert.Equal("ACTIVE", new AdvertiserProgram().Status);
+    }
+
+    [Fact]
+    public void Advertiser_opportunity_defaults_to_active()
+    {
+        Assert.Equal("ACTIVE", new AdvertiserOpportunity().Status);
+    }
+
+    [Fact]
+    public void Bliss_match_defaults_to_created()
+    {
+        Assert.Equal("CREATED", new BlissMatch().Status);
+    }
+
+    [Fact]
+    public void Network_and_program_access_default_to_unknown_independently()
+    {
+        Assert.Equal("UNKNOWN", new NetworkAccess().Status);
+        Assert.Equal("UNKNOWN", new ProgramAccess().Status);
+    }
+
+    [Fact]
+    public void Ad_inventory_slot_defaults_to_available()
+    {
+        Assert.True(new AdInventorySlot().IsAvailable);
+    }
+
+    [Fact]
+    public void Data_provenance_confidence_defaults_to_unknown()
+    {
+        Assert.Equal("UNKNOWN", new DataProvenance().ConfidenceLevel);
+    }
+}

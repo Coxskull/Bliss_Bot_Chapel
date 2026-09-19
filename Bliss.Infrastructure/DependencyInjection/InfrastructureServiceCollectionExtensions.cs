@@ -1,0 +1,24 @@
+using Bliss.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Bliss.Infrastructure.DependencyInjection;
+
+public static class InfrastructureServiceCollectionExtensions
+{
+    public static IServiceCollection AddBlissInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddScoped<Phase1DataSeeder>();
+        return services;
+    }
+
+    public static DbContextOptionsBuilder UseBlissPostgres(
+        this DbContextOptionsBuilder options,
+        string? connectionString)
+    {
+        return options.UseNpgsql(connectionString);
+    }
+}

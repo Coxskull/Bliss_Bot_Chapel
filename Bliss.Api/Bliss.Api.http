@@ -1,0 +1,6 @@
+@Bliss.Api_HostAddress = http://localhost:5001
+
+GET {{Bliss.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
