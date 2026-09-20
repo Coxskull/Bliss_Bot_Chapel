@@ -53,6 +53,17 @@ Migrations present: Phase1Foundation, Phase2RuleDocument, Phase3EvaluationAudit,
 
 Provenance on the live creator: `Name`, `CountryCode`, `PrimaryLanguage` with `SourceType=PROVIDER_OBSERVATION`, `SourceName=SUPABASE_LIVE_TEST`, `ConfidenceLevel=HIGH`.
 
+## Recorded dashboard run
+
+A second, recorded pass drove the dashboard against the same hosted database:
+
+1. Observation for `YOUTUBE::CRT-DEMO-1225` (PH / English / 8,800 followers) → toast `CREATED · YOUTUBE::CRT-DEMO-1225`.
+2. Second observation for the **same** external profile ID with different values (SG / Filipino / 12,500 followers) → toast `UPDATED · YOUTUBE::CRT-DEMO-1225`.
+3. Run drawer showed the canonical identity and the immutable input snapshot of the second observation.
+4. Creator directory contained exactly one `Supabase Demo Creator`; overview creator profiles went 7 → 8, ingest runs 5 → 7.
+
+Database after the recorded run: 8 creators, 7 platforms, 7 ingestion runs, **2** runs on `YOUTUBE::CRT-DEMO-1225` (`CREATED` then `UPDATED`), **1** creator named `Supabase Demo Creator`, **0** duplicate identity keys.
+
 ## Notes
 
 - xUnit still uses EF Core InMemory. This pass is a hosted PostgreSQL/API check, not a substitute for `dotnet test`.
