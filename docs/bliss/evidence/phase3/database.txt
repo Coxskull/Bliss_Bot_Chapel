@@ -1,0 +1,75 @@
+PHASE 3 SNAPSHOT 2026-09-20T07:34:20Z
+
+=== migrations ===
+             MigrationId              | ProductVersion 
+--------------------------------------+----------------
+ 20260919013044_Phase1Foundation      | 8.0.11
+ 20260920063520_Phase2RuleDocument    | 8.0.11
+ 20260920073126_Phase3EvaluationAudit | 8.0.11
+(3 rows)
+
+=== counts ===
+          t           | c  
+----------------------+----
+ AdInventorySlots     |  8
+ Advertisers          |  2
+ BlissMatches         |  8
+ Creators             |  3
+ EligibilityChecks    | 21
+ MatchEvaluationRuns  |  5
+ MatchScoreComponents | 13
+ Opportunities        |  5
+ RuleVersions         |  2
+(9 rows)
+
+=== phase1 match A intact ===
+                  Id                  |       AdvertiserOpportunityId        |            RuleVersionId             | Status  
+--------------------------------------+--------------------------------------+--------------------------------------+---------
+ 77777777-7777-7777-7777-777777777771 | 55555555-5555-5555-5555-555555555551 | 66666666-6666-6666-6666-666666666661 | CREATED
+(1 row)
+
+=== evaluation runs ===
+                  Id                  |             BlissMatchId             |   MatchStatus   | OverallScore |  Status   |     AlgorithmVersion      
+--------------------------------------+--------------------------------------+-----------------+--------------+-----------+---------------------------
+ eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1 | 77777777-7777-7777-7777-777777777775 | INELIGIBLE      |       0.3000 | COMPLETED | deterministic-rules/2.0.0
+ eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2 | 77777777-7777-7777-7777-777777777776 | APPROVED        |       1.0000 | COMPLETED | deterministic-rules/2.0.0
+ eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee3 | 77777777-7777-7777-7777-777777777777 | REVIEW_REQUIRED |       0.7000 | COMPLETED | deterministic-rules/2.0.0
+ eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee4 | 77777777-7777-7777-7777-777777777778 | APPROVED        |       1.0000 | COMPLETED | deterministic-rules/2.0.0
+ eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee5 | 77777777-7777-7777-7777-777777777776 | APPROVED        |       1.0000 | COMPLETED | deterministic-rules/2.0.0
+(5 rows)
+
+=== brazil run count ===
+ count 
+-------
+     2
+(1 row)
+
+=== MatchEvaluationRuns FKs ===
+                  constraint_name                  |  column_name  | foreign_table | delete_rule 
+---------------------------------------------------+---------------+---------------+-------------
+ FK_MatchEvaluationRuns_Creators_CreatorId         | CreatorId     | Creators      | RESTRICT
+ FK_MatchEvaluationRuns_RuleVersions_RuleVersionId | RuleVersionId | RuleVersions  | RESTRICT
+ FK_MatchEvaluationRuns_BlissMatches_BlissMatchId  | BlissMatchId  | BlissMatches  | RESTRICT
+(3 rows)
+
+=== unique indexes on MatchEvaluationRuns.BlissMatchId ===
+              indexname               |                                                     indexdef                                                      
+--------------------------------------+-------------------------------------------------------------------------------------------------------------------
+ PK_MatchEvaluationRuns               | CREATE UNIQUE INDEX "PK_MatchEvaluationRuns" ON public."MatchEvaluationRuns" USING btree ("Id")
+ IX_MatchEvaluationRuns_CreatorId     | CREATE INDEX "IX_MatchEvaluationRuns_CreatorId" ON public."MatchEvaluationRuns" USING btree ("CreatorId")
+ IX_MatchEvaluationRuns_RuleVersionId | CREATE INDEX "IX_MatchEvaluationRuns_RuleVersionId" ON public."MatchEvaluationRuns" USING btree ("RuleVersionId")
+ IX_MatchEvaluationRuns_BlissMatchId  | CREATE INDEX "IX_MatchEvaluationRuns_BlissMatchId" ON public."MatchEvaluationRuns" USING btree ("BlissMatchId")
+(4 rows)
+
+
+=== after extra POST evaluate geo-fail ===
+ geo_runs 
+----------
+        2
+(1 row)
+
+ brazil_runs 
+-------------
+           2
+(1 row)
+

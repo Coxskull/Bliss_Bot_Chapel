@@ -1,0 +1,15 @@
+{
+  "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2",
+  "blissMatchId": "77777777-7777-7777-7777-777777777776",
+  "creatorId": "11111111-1111-1111-1111-111111111113",
+  "ruleVersionId": "66666666-6666-6666-6666-666666666662",
+  "algorithmVersion": "deterministic-rules/2.0.0",
+  "status": "COMPLETED",
+  "matchStatus": "APPROVED",
+  "overallScore": 1.0,
+  "confidenceScore": 0.85,
+  "startedAt": "2026-09-20T07:33:24.028314Z",
+  "completedAt": "2026-09-20T07:33:24.032658Z",
+  "inputSnapshot": "{\"blissMatchId\":\"77777777-7777-7777-7777-777777777776\",\"creatorId\":\"11111111-1111-1111-1111-111111111113\",\"creatorName\":\"Test Creator Brazil\",\"creatorCountryCode\":\"BR\",\"creatorPrimaryLanguage\":\"Portuguese\",\"audienceSize\":80000,\"femalePercentage\":55.00,\"malePercentage\":45.00,\"advertiserOpportunityId\":\"55555555-5555-5555-5555-555555555554\",\"opportunityName\":\"Opportunity BR - Studio Kit\",\"opportunityCategory\":\"Creator Tools\",\"opportunityStatus\":\"ACTIVE\",\"marketCountryCode\":\"BR\",\"opportunityLanguage\":\"Portuguese\",\"ruleVersionId\":\"66666666-6666-6666-6666-666666666662\",\"ruleVersion\":\"2.0.0\",\"documentJson\":\"{\\r\\n  \\u0022minAudienceSize\\u0022: 10000,\\r\\n  \\u0022requireOpportunityMarketCountry\\u0022: true,\\r\\n  \\u0022requireLanguageOverlap\\u0022: true,\\r\\n  \\u0022prohibitedCategories\\u0022: [ \\u0022Alcohol\\u0022 ],\\r\\n  \\u0022weights\\u0022: {\\r\\n    \\u0022geography\\u0022: 0.4,\\r\\n    \\u0022audienceSize\\u0022: 0.3,\\r\\n    \\u0022language\\u0022: 0.3\\r\\n  }\\r\\n}\"}",
+  "outputSnapshot": "{\"matchStatus\":\"APPROVED\",\"overallScore\":1.00,\"confidenceScore\":0.85,\"checks\":[{\"checkType\":\"OPPORTUNITY_STATUS\",\"result\":\"APPROVED\",\"explanation\":\"Opportunity is ACTIVE.\"},{\"checkType\":\"CATEGORY\",\"result\":\"APPROVED\",\"explanation\":\"Category is allowed.\"},{\"checkType\":\"GEOGRAPHY\",\"result\":\"APPROVED\",\"explanation\":\"Creator country matches opportunity market.\"},{\"checkType\":\"AUDIENCE_SIZE\",\"result\":\"APPROVED\",\"explanation\":\"Audience meets the configured minimum.\"},{\"checkType\":\"LANGUAGE\",\"result\":\"APPROVED\",\"explanation\":\"Language tokens overlap.\"}],\"scores\":[{\"componentName\":\"GEOGRAPHY\",\"score\":1.0,\"weight\":0.4,\"explanation\":\"Deterministic geography fit from RuleVersion document.\"},{\"componentName\":\"AUDIENCE_SIZE\",\"score\":1.0,\"weight\":0.3,\"explanation\":\"Deterministic audience fit. UNKNOWN audience is not scored as zero.\"},{\"componentName\":\"LANGUAGE\",\"score\":1.0,\"weight\":0.3,\"explanation\":\"Deterministic language overlap from RuleVersion document.\"}]}"
+}
