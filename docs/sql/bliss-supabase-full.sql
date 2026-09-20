@@ -1,7 +1,7 @@
 -- =============================================================================
 -- Bliss Bot Chapel — full SQL for a dedicated Supabase PostgreSQL database
 -- =============================================================================
--- Scope: Phase 1 foundation through Phase 5 controlled match formation
+-- Scope: Phase 1 foundation through Phase 6 human review
 -- How to run: Supabase Dashboard → SQL Editor → New query → paste this file → Run
 -- Safe to re-run:
 --   schema uses __EFMigrationsHistory checks
@@ -871,6 +871,75 @@ BEGIN
     IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920123653_Phase5MatchFormation') THEN
     INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
     VALUES ('20260920123653_Phase5MatchFormation', '8.0.11');
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920130043_Phase6HumanReview') THEN
+    CREATE TABLE "MatchReviewDecisions" (
+        "Id" uuid NOT NULL,
+        "BlissMatchId" uuid NOT NULL,
+        "CreatorId" uuid NOT NULL,
+        "MatchEvaluationRunId" uuid,
+        "SourceSystem" character varying(64) NOT NULL,
+        "IdempotencyKey" character varying(128) NOT NULL,
+        "ReviewerLabel" character varying(128) NOT NULL,
+        "Decision" character varying(32) NOT NULL,
+        "ResultingMatchStatus" character varying(64) NOT NULL,
+        "Rationale" character varying(2000) NOT NULL,
+        "Status" character varying(64) NOT NULL,
+        "StartedAt" timestamp with time zone NOT NULL,
+        "CompletedAt" timestamp with time zone NOT NULL,
+        "InputSnapshot" text NOT NULL,
+        CONSTRAINT "PK_MatchReviewDecisions" PRIMARY KEY ("Id"),
+        CONSTRAINT "FK_MatchReviewDecisions_BlissMatches_BlissMatchId" FOREIGN KEY ("BlissMatchId") REFERENCES "BlissMatches" ("Id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_MatchReviewDecisions_Creators_CreatorId" FOREIGN KEY ("CreatorId") REFERENCES "Creators" ("Id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_MatchReviewDecisions_MatchEvaluationRuns_MatchEvaluationRun~" FOREIGN KEY ("MatchEvaluationRunId") REFERENCES "MatchEvaluationRuns" ("Id") ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920130043_Phase6HumanReview') THEN
+    CREATE INDEX "IX_MatchReviewDecisions_BlissMatchId" ON "MatchReviewDecisions" ("BlissMatchId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920130043_Phase6HumanReview') THEN
+    CREATE INDEX "IX_MatchReviewDecisions_CompletedAt" ON "MatchReviewDecisions" ("CompletedAt");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920130043_Phase6HumanReview') THEN
+    CREATE INDEX "IX_MatchReviewDecisions_CreatorId" ON "MatchReviewDecisions" ("CreatorId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920130043_Phase6HumanReview') THEN
+    CREATE INDEX "IX_MatchReviewDecisions_MatchEvaluationRunId" ON "MatchReviewDecisions" ("MatchEvaluationRunId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920130043_Phase6HumanReview') THEN
+    CREATE UNIQUE INDEX "IX_MatchReviewDecisions_SourceSystem_IdempotencyKey" ON "MatchReviewDecisions" ("SourceSystem", "IdempotencyKey");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920130043_Phase6HumanReview') THEN
+    INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+    VALUES ('20260920130043_Phase6HumanReview', '8.0.11');
     END IF;
 END $EF$;
 

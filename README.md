@@ -81,3 +81,4 @@ Phase 4 evidence: `docs/bliss/PHASE-4-EVIDENCE.md`.
 Phase 5 engineering contract: `docs/bliss/PHASE-5-ENGINEERING-CONTRACT.md`.
 Phase 5 evidence: `docs/bliss/PHASE-5-EVIDENCE.md`.
 Phase 6 engineering contract: `docs/bliss/PHASE-6-ENGINEERING-CONTRACT.md`.
+Phase 6 evidence: `docs/bliss/PHASE-6-EVIDENCE.md`.

@@ -1,0 +1,28 @@
+              MigrationId              
+---------------------------------------
+ 20260919013044_Phase1Foundation
+ 20260920063520_Phase2RuleDocument
+ 20260920073126_Phase3EvaluationAudit
+ 20260920102946_Phase4CreatorIngestion
+ 20260920123653_Phase5MatchFormation
+ 20260920130043_Phase6HumanReview
+(6 rows)
+
+            t            | count 
+-------------------------+-------
+ MatchReviewDecisions    |     2
+ REVIEW_REQUIRED matches |     0
+ APPROVED matches        |     4
+(3 rows)
+
+                  Id                  | Decision | ResultingMatchStatus | ReviewerLabel |             Name             
+--------------------------------------+----------+----------------------+---------------+------------------------------
+ 54ea46a8-b05d-4f71-ae34-d66acce0728b | APPROVE  | APPROVED             | TEST_OPERATOR | Supabase Live Test Creator
+ 0d85e30f-4df0-457a-a922-f6ab7f5510a8 | APPROVE  | APPROVED             | TEST_OPERATOR | Unknown Demographics Creator
+(2 rows)
+
+                  Id                  | Status  
+--------------------------------------+---------
+ 77777777-7777-7777-7777-777777777771 | CREATED
+(1 row)
+
