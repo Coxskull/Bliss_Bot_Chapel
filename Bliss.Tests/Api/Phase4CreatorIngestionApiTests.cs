@@ -33,6 +33,12 @@ public sealed class Phase4CreatorIngestionApiTests : IClassFixture<BlissApiFacto
         Assert.Equal(first.RunId, replay.RunId);
         Assert.Equal(first.CreatorId, replay.CreatorId);
 
+        var creator = await client.GetAsync($"/api/creators/{first.CreatorId}");
+        var creatorBody = await creator.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.OK, creator.StatusCode);
+        Assert.Contains("\"countryCode\":\"CA\"", creatorBody);
+        Assert.Contains("\"primaryLanguage\":\"English\"", creatorBody);
+
         var detail = await client.GetAsync($"/api/creator-ingestions/{first.RunId}");
         Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
         Assert.Contains("inputSnapshot", await detail.Content.ReadAsStringAsync());

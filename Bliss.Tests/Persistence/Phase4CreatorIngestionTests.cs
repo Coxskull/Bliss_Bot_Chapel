@@ -24,6 +24,7 @@ public sealed class Phase4CreatorIngestionTests
         var creator = await db.Creators.SingleAsync();
         Assert.Equal("Controlled Test Creator", creator.Name);
         Assert.Equal("ES", creator.CountryCode);
+        Assert.Equal("Spanish", creator.PrimaryLanguage);
         Assert.Null(creator.FemalePercentage);
         Assert.Null(creator.MalePercentage);
 
