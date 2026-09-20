@@ -51,6 +51,8 @@ dotnet ef database update \
 
 Use `ASPNETCORE_ENVIRONMENT=Development` for the fictional Phase 1–3 seed data. Never point that seed process at production data.
 
+Hosted PostgreSQL live check: `docs/bliss/SUPABASE-LIVE-TEST.md`.
+
 ## Local commands
 
 ```bash
