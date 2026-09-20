@@ -51,6 +51,8 @@ dotnet ef database update \
 
 Use `ASPNETCORE_ENVIRONMENT=Development` for the fictional Phase 1–3 seed data. Never point that seed process at production data.
 
+To apply schema and fictional TEST seed from the Supabase SQL Editor instead of `dotnet ef`, run `docs/sql/bliss-supabase-full.sql` (idempotent). Schema-only: `docs/sql/bliss-supabase-schema.sql`. Seed-only: `docs/sql/bliss-supabase-seed.sql`. Do not run these scripts against Alpha Auto.
+
 ## Local commands
 
 ```bash
