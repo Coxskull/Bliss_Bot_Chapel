@@ -1,10 +1,10 @@
 -- Bliss Bot Chapel fictional TEST seed. Run after schema. Idempotent.
 
+BEGIN;
 
 -- =============================================================================
 -- Fictional TEST seed
 -- =============================================================================
-START TRANSACTION;
 
 -- Advertisers (2 rows)
 INSERT INTO public."Advertisers" ("Id", "Name", "Website", "CountryCode", "Description", "CreatedAt") VALUES ('33333333-3333-3333-3333-333333333333', 'Sunrise Wellness Co.', 'https://example.test/sunrise', 'PH', 'Fictional wellness advertiser for Phase 1 tests.', '2026-09-16 12:00:00+00')

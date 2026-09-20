@@ -10,18 +10,17 @@
 -- Do NOT put database passwords in this file.
 -- =============================================================================
 
+BEGIN;
+
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET search_path = public, pg_catalog;
 
-﻿CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
     "MigrationId" character varying(150) NOT NULL,
     "ProductVersion" character varying(32) NOT NULL,
     CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
 );
-
-START TRANSACTION;
-
 
 DO $EF$
 BEGIN
@@ -637,10 +636,6 @@ BEGIN
     VALUES ('20260919013044_Phase1Foundation', '8.0.11');
     END IF;
 END $EF$;
-COMMIT;
-
-START TRANSACTION;
-
 
 DO $EF$
 BEGIN
@@ -656,10 +651,6 @@ BEGIN
     VALUES ('20260920063520_Phase2RuleDocument', '8.0.11');
     END IF;
 END $EF$;
-COMMIT;
-
-START TRANSACTION;
-
 
 DO $EF$
 BEGIN
@@ -717,10 +708,6 @@ BEGIN
     VALUES ('20260920073126_Phase3EvaluationAudit', '8.0.11');
     END IF;
 END $EF$;
-COMMIT;
-
-START TRANSACTION;
-
 
 DO $EF$
 BEGIN
@@ -810,14 +797,10 @@ BEGIN
     VALUES ('20260920102946_Phase4CreatorIngestion', '8.0.11');
     END IF;
 END $EF$;
-COMMIT;
-
-
 
 -- =============================================================================
 -- Fictional TEST seed
 -- =============================================================================
-START TRANSACTION;
 
 -- Advertisers (2 rows)
 INSERT INTO public."Advertisers" ("Id", "Name", "Website", "CountryCode", "Description", "CreatedAt") VALUES ('33333333-3333-3333-3333-333333333333', 'Sunrise Wellness Co.', 'https://example.test/sunrise', 'PH', 'Fictional wellness advertiser for Phase 1 tests.', '2026-09-16 12:00:00+00')
