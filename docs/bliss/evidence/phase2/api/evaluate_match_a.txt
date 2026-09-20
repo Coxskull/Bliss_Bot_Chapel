@@ -1,0 +1,3 @@
+=== POST evaluate-rules Match A (expect 400) ===
+{"error":"RuleVersion has no DocumentJson."}
+HTTP 400

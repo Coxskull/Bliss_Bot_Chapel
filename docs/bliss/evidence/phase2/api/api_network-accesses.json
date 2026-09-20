@@ -1,0 +1,16 @@
+[
+    {
+        "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2",
+        "advertiserId": "33333333-3333-3333-3333-333333333333",
+        "affiliateNetworkId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1",
+        "status": "APPROVED",
+        "externalAccountId": "NET-ACC-001",
+        "approvedAt": "2026-09-16T12:00:00Z"
+    },
+    {
+        "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa5",
+        "advertiserId": "33333333-3333-3333-3333-333333333334",
+        "affiliateNetworkId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa4",
+        "status": "UNKNOWN"
+    }
+]

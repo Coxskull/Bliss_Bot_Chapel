@@ -133,7 +133,8 @@ public sealed record RuleVersionDto(
     string Name,
     string? Description,
     bool IsActive,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? DocumentJson = null);
 
 public sealed record MatchScoreComponentDto(
     Guid Id,
@@ -148,3 +149,58 @@ public sealed record EligibilityCheckDto(
     string Result,
     string? ReasonCode,
     string? Explanation);
+
+public sealed record AffiliateNetworkDto(
+    Guid Id,
+    string Name,
+    string? Website,
+    string Status);
+
+public sealed record NetworkAccessDto(
+    Guid Id,
+    Guid AdvertiserId,
+    Guid AffiliateNetworkId,
+    string Status,
+    string? ExternalAccountId,
+    DateTime? ApprovedAt);
+
+public sealed record ProgramAccessDto(
+    Guid Id,
+    Guid AdvertiserProgramId,
+    string Status,
+    DateTime? ApprovedAt);
+
+public sealed record DataProvenanceDto(
+    Guid Id,
+    string EntityType,
+    Guid EntityId,
+    string FieldName,
+    string SourceType,
+    string? SourceName,
+    string? SourceUrl,
+    string ConfidenceLevel,
+    DateTime CollectedAt,
+    string? Notes);
+
+public sealed record CampaignListDto(
+    Guid Id,
+    string Name,
+    string Status,
+    DateTime CreatedAt);
+
+public sealed record CampaignPlacementDto(
+    Guid Id,
+    Guid CampaignId,
+    Guid ContentItemId,
+    Guid AdInventorySlotId,
+    string Status,
+    DateTime? StartAt,
+    DateTime? EndAt);
+
+public sealed record CampaignDetailDto(
+    Guid Id,
+    string Name,
+    string Status,
+    DateTime CreatedAt,
+    IReadOnlyList<CampaignPlacementDto> Placements);
+

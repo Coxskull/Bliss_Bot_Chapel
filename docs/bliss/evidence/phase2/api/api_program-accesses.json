@@ -1,0 +1,13 @@
+[
+    {
+        "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3",
+        "advertiserProgramId": "44444444-4444-4444-4444-444444444444",
+        "status": "UNKNOWN"
+    },
+    {
+        "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa6",
+        "advertiserProgramId": "44444444-4444-4444-4444-444444444446",
+        "status": "APPROVED",
+        "approvedAt": "2026-09-20T12:00:00Z"
+    }
+]

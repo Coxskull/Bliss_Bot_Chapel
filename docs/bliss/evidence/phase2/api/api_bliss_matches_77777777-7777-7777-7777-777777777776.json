@@ -1,0 +1,97 @@
+{
+    "id": "77777777-7777-7777-7777-777777777776",
+    "status": "APPROVED",
+    "overallScore": 1.0,
+    "confidenceScore": 0.85,
+    "createdAt": "2026-09-20T12:00:00Z",
+    "creator": {
+        "id": "11111111-1111-1111-1111-111111111113",
+        "name": "Test Creator Brazil",
+        "countryCode": "BR",
+        "primaryLanguage": "Portuguese",
+        "audienceSize": 80000,
+        "femalePercentage": 55.0,
+        "malePercentage": 45.0
+    },
+    "advertiserOpportunity": {
+        "id": "55555555-5555-5555-5555-555555555554",
+        "name": "Opportunity BR - Studio Kit",
+        "productName": "Studio Kit",
+        "category": "Creator Tools",
+        "status": "ACTIVE",
+        "advertiserProgram": {
+            "id": "44444444-4444-4444-4444-444444444446",
+            "name": "Harbor Creator Studio",
+            "status": "ACTIVE",
+            "advertiser": {
+                "id": "33333333-3333-3333-3333-333333333334",
+                "name": "Harbor Audio Labs",
+                "website": "https://example.test/harbor",
+                "countryCode": "BR"
+            }
+        }
+    },
+    "ruleVersion": {
+        "id": "66666666-6666-6666-6666-666666666662",
+        "version": "2.0.0",
+        "name": "Phase 2 Explicit Rules",
+        "description": "Deterministic document used only by Phase 2 matches.",
+        "isActive": true,
+        "createdAt": "2026-09-20T12:00:00Z"
+    },
+    "scoreComponents": [
+        {
+            "id": "8d5fda18-9f70-4d60-88e1-137b6720ba0b",
+            "componentName": "GEOGRAPHY",
+            "score": 1.0,
+            "weight": 0.4,
+            "explanation": "Deterministic geography fit from RuleVersion document."
+        },
+        {
+            "id": "9350739f-8c4d-4e5c-b249-aa5083a7d459",
+            "componentName": "LANGUAGE",
+            "score": 1.0,
+            "weight": 0.3,
+            "explanation": "Deterministic language overlap from RuleVersion document."
+        },
+        {
+            "id": "de951a85-38be-484c-a990-a684a5e2c075",
+            "componentName": "AUDIENCE_SIZE",
+            "score": 1.0,
+            "weight": 0.3,
+            "explanation": "Deterministic audience fit. UNKNOWN audience is not scored as zero."
+        }
+    ],
+    "eligibilityChecks": [
+        {
+            "id": "3997b222-e503-424f-b4ac-1cc1977ad77a",
+            "checkType": "AUDIENCE_SIZE",
+            "result": "APPROVED",
+            "explanation": "Audience meets the configured minimum."
+        },
+        {
+            "id": "642b536b-ac85-49fa-8782-368c3e6a5acd",
+            "checkType": "LANGUAGE",
+            "result": "APPROVED",
+            "explanation": "Language tokens overlap."
+        },
+        {
+            "id": "d1574dbd-8d8b-4d29-9c63-97c8f42735d4",
+            "checkType": "OPPORTUNITY_STATUS",
+            "result": "APPROVED",
+            "explanation": "Opportunity is ACTIVE."
+        },
+        {
+            "id": "d4717feb-185b-47b3-b4b5-8ba9fa4eb661",
+            "checkType": "GEOGRAPHY",
+            "result": "APPROVED",
+            "explanation": "Creator country matches opportunity market."
+        },
+        {
+            "id": "dbf377b7-8455-49e9-8855-bb1c4f2b852d",
+            "checkType": "CATEGORY",
+            "result": "APPROVED",
+            "explanation": "Category is allowed."
+        }
+    ]
+}

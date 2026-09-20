@@ -1,0 +1,14 @@
+[
+    {
+        "id": "33333333-3333-3333-3333-333333333334",
+        "name": "Harbor Audio Labs",
+        "website": "https://example.test/harbor",
+        "countryCode": "BR"
+    },
+    {
+        "id": "33333333-3333-3333-3333-333333333333",
+        "name": "Sunrise Wellness Co.",
+        "website": "https://example.test/sunrise",
+        "countryCode": "PH"
+    }
+]

@@ -1,6 +1,6 @@
 # Bliss Bot Chapel
 
-Standalone Phase 1 foundation for Creator Intelligence, advertiser programs, matches, and campaign placement architecture.
+Standalone Phase 1 foundation plus Phase 2 controlled test data and deterministic rule evaluation.
 
 This repository is **not** connected to Alpha Auto.
 
@@ -13,7 +13,7 @@ This repository is **not** connected to Alpha Auto.
 
 ## Solution
 
-- `Bliss.Api` — read-only REST API + Swagger
+- `Bliss.Api` — REST API + Swagger (GET visibility; POST evaluate-rules)
 - `Bliss.Domain` — entities and constants
 - `Bliss.Infrastructure` — EF Core, configurations, migrations, seed data
 - `Bliss.Tests` — architecture and persistence proofs
@@ -45,4 +45,5 @@ See `docs/bliss/` for Phase 1 architecture, requirements, and migration review.
 
 Phase 1 final acceptance evidence: `docs/bliss/PHASE-1-FINAL-ACCEPTANCE.md`.
 
-Alpha AI Development Fleet Mission 001 (inventory, gaps, crane plan): `docs/ai-development-fleet/`.
+Phase 2 engineering contract: `docs/bliss/PHASE-2-ENGINEERING-CONTRACT.md`.
+Phase 2 evidence: `docs/bliss/PHASE-2-EVIDENCE.md`.

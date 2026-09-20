@@ -1,0 +1,232 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="711409fc-2cc9-4557-924d-30c5fa9389d7" name="@cursor 2026-09-20 06:36:43" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-09-20T06:36:43.1309254+00:00" queuing="2026-09-20T06:36:43.1309255+00:00" start="2026-09-20T06:36:41.8345117+00:00" finish="2026-09-20T06:36:43.5514701+00:00" />
+  <TestSettings name="default" id="86e987b7-146c-4dee-b9e0-82d5ed97d339">
+    <Deployment runDeploymentRoot="_cursor_2026-09-20_06_36_43" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="740cdbd9-c185-4e06-8eb6-c39be1293d59" testId="d1605941-48e0-fbcc-1be8-0ec6b9950d4d" testName="Bliss.Tests.Domain.DeterministicRuleEvaluatorTests.Matching_country_and_language_is_approved" computerName="cursor" duration="00:00:00.0644005" startTime="2026-09-20T06:36:42.4876528+00:00" endTime="2026-09-20T06:36:42.4876529+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="740cdbd9-c185-4e06-8eb6-c39be1293d59" />
+    <UnitTestResult executionId="29f7fccb-af04-4a42-bb74-1e134de2adcf" testId="3925efb9-9c12-2bed-b115-f0693ba87cc8" testName="Bliss.Tests.Domain.DeterministicRuleEvaluatorTests.Country_mismatch_is_geo_not_eligible_and_does_not_use_ai" computerName="cursor" duration="00:00:00.0020954" startTime="2026-09-20T06:36:42.4938197+00:00" endTime="2026-09-20T06:36:42.4938198+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="29f7fccb-af04-4a42-bb74-1e134de2adcf" />
+    <UnitTestResult executionId="887590da-2d19-4b60-8d2e-c546ac655c69" testId="c3dfbe6a-a06d-dc4f-838a-2f4f4892eecc" testName="Bliss.Tests.Persistence.InventoryArchitectureTests.Content_item_supports_multiple_ad_inventory_slots" computerName="cursor" duration="00:00:00.5617838" startTime="2026-09-20T06:36:43.0586320+00:00" endTime="2026-09-20T06:36:43.0586321+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="887590da-2d19-4b60-8d2e-c546ac655c69" />
+    <UnitTestResult executionId="a555a692-d010-4521-bc3e-78ac5c4dc45c" testId="c72ca6e0-1d99-7efb-a420-53958ad1e17d" testName="Bliss.Tests.Architecture.EfModelConstraintTests.Campaign_placement_content_item_id_is_not_unique" computerName="cursor" duration="00:00:00.0019216" startTime="2026-09-20T06:36:43.1777114+00:00" endTime="2026-09-20T06:36:43.1777115+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a555a692-d010-4521-bc3e-78ac5c4dc45c" />
+    <UnitTestResult executionId="9171dc81-c125-467c-851e-f7a4fe731ece" testId="66d27266-de8f-413f-0500-3db785fae6c5" testName="Bliss.Tests.Architecture.ApiSurfaceTests.Phase1_read_endpoints_are_present" computerName="cursor" duration="00:00:00.0151643" startTime="2026-09-20T06:36:42.4468338+00:00" endTime="2026-09-20T06:36:42.4468514+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9171dc81-c125-467c-851e-f7a4fe731ece" />
+    <UnitTestResult executionId="6bd63288-2afa-428e-ba81-3d3b7c256aa0" testId="b0f13de1-5c6f-a12b-8761-124ba685f069" testName="Bliss.Tests.Api.Phase2ApiTests.Evaluate_rules_returns_bad_request_for_phase1_rule_without_document" computerName="cursor" duration="00:00:00.0926602" startTime="2026-09-20T06:36:43.4951955+00:00" endTime="2026-09-20T06:36:43.4951956+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6bd63288-2afa-428e-ba81-3d3b7c256aa0" />
+    <UnitTestResult executionId="e053bf06-54b1-4c9e-a95d-a27d3f233f77" testId="cc70eb97-9fa2-4393-16f1-399dcb17deac" testName="Bliss.Tests.Architecture.EfModelConstraintTests.Required_foreign_key_indexes_exist" computerName="cursor" duration="00:00:00.0053240" startTime="2026-09-20T06:36:43.1753614+00:00" endTime="2026-09-20T06:36:43.1753615+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e053bf06-54b1-4c9e-a95d-a27d3f233f77" />
+    <UnitTestResult executionId="5d898911-9b7f-49bf-b3e4-ccd512191761" testId="35e70851-9287-56c9-f6ff-18f25b74fc27" testName="Bliss.Tests.Domain.EntityDefaultTests.Advertiser_program_defaults_to_active" computerName="cursor" duration="00:00:00.0000466" startTime="2026-09-20T06:36:43.1086456+00:00" endTime="2026-09-20T06:36:43.1086457+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5d898911-9b7f-49bf-b3e4-ccd512191761" />
+    <UnitTestResult executionId="d097c725-f4df-4196-b791-3448b0b533c1" testId="297cb8c0-1754-5d2e-e0f1-2a366f018a95" testName="Bliss.Tests.Persistence.BlissMatchArchitectureTests.Creator_supports_multiple_simultaneous_bliss_matches_without_uniqueness_violation" computerName="cursor" duration="00:00:00.1140085" startTime="2026-09-20T06:36:43.1827614+00:00" endTime="2026-09-20T06:36:43.1827615+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d097c725-f4df-4196-b791-3448b0b533c1" />
+    <UnitTestResult executionId="d24e7e42-e7ec-4ef5-a2fa-c39cff1d4f4a" testId="0ddc4816-05ae-a087-452a-3c8559632bcd" testName="Bliss.Tests.Architecture.EfModelConstraintTests.Major_relationships_use_restrict_delete_behavior" computerName="cursor" duration="00:00:00.0010246" startTime="2026-09-20T06:36:43.1827222+00:00" endTime="2026-09-20T06:36:43.1827223+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d24e7e42-e7ec-4ef5-a2fa-c39cff1d4f4a" />
+    <UnitTestResult executionId="03500e80-4275-4503-8ba1-02e87afc64f1" testId="aabaad12-1068-7e2d-7c3a-ba50f49c64cc" testName="Bliss.Tests.Persistence.HistoricalRuleVersionTests.Historical_bliss_match_preserves_original_rule_version" computerName="cursor" duration="00:00:00.0050062" startTime="2026-09-20T06:36:43.2033421+00:00" endTime="2026-09-20T06:36:43.2033422+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="03500e80-4275-4503-8ba1-02e87afc64f1" />
+    <UnitTestResult executionId="87144f2e-0c57-43fa-97ee-af0128b5ce6f" testId="f267c8f9-ce40-660b-da9c-8d5c48b9994c" testName="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests.Re_evaluating_one_match_does_not_change_another_match" computerName="cursor" duration="00:00:00.0905864" startTime="2026-09-20T06:36:43.3753384+00:00" endTime="2026-09-20T06:36:43.3753385+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="87144f2e-0c57-43fa-97ee-af0128b5ce6f" />
+    <UnitTestResult executionId="1ec9b247-2047-4b6e-912b-209f9a8183c5" testId="f2e8717f-58b0-9e3e-284a-43413cb50837" testName="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests.Unknown_demographics_creator_review_does_not_use_zero_audience" computerName="cursor" duration="00:00:00.0192642" startTime="2026-09-20T06:36:43.2835855+00:00" endTime="2026-09-20T06:36:43.2835856+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1ec9b247-2047-4b6e-912b-209f9a8183c5" />
+    <UnitTestResult executionId="5d66bc4b-c046-44bb-a585-9316bb22ab8d" testId="6251f72e-3558-9793-ecd3-f26416e2f718" testName="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests.Second_seed_is_idempotent" computerName="cursor" duration="00:00:00.0128928" startTime="2026-09-20T06:36:43.3873548+00:00" endTime="2026-09-20T06:36:43.3873549+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5d66bc4b-c046-44bb-a585-9316bb22ab8d" />
+    <UnitTestResult executionId="0ca07fab-a01a-4be5-8316-e27981b97da9" testId="100dc352-f3cc-3a7d-1cfc-82d5e7a3fd66" testName="Bliss.Tests.Persistence.CampaignPlacementArchitectureTests.Multiple_campaign_placements_can_reference_the_same_content_item" computerName="cursor" duration="00:00:00.6353084" startTime="2026-09-20T06:36:43.1083400+00:00" endTime="2026-09-20T06:36:43.1083401+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0ca07fab-a01a-4be5-8316-e27981b97da9" />
+    <UnitTestResult executionId="2c352775-e89f-443d-927d-87cec2170d16" testId="a7d83d3f-3fef-87b8-c59e-edd358ba4e8d" testName="Bliss.Tests.Architecture.EfModelConstraintTests.Bliss_match_creator_id_is_not_unique" computerName="cursor" duration="00:00:00.0005104" startTime="2026-09-20T06:36:43.1797996+00:00" endTime="2026-09-20T06:36:43.1797997+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2c352775-e89f-443d-927d-87cec2170d16" />
+    <UnitTestResult executionId="89f25b17-c5ef-4f6e-87bf-6ded2eaa7111" testId="e5bd266c-e764-9035-1e4b-67759a572b90" testName="Bliss.Tests.Api.Phase2ApiTests.Campaigns_and_networks_return_phase2_records" computerName="cursor" duration="00:00:00.9764755" startTime="2026-09-20T06:36:43.4016820+00:00" endTime="2026-09-20T06:36:43.4016820+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="89f25b17-c5ef-4f6e-87bf-6ded2eaa7111" />
+    <UnitTestResult executionId="d5c37e91-14b4-42ef-bfc3-ac8b194c0ea9" testId="e1fd9b8c-ba82-6cde-3208-9a5bda7c35fd" testName="Bliss.Tests.Persistence.SeedDataTests.Phase1_seed_creates_required_graph" computerName="cursor" duration="00:00:00.1434781" startTime="2026-09-20T06:36:43.2225213+00:00" endTime="2026-09-20T06:36:43.2225214+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d5c37e91-14b4-42ef-bfc3-ac8b194c0ea9" />
+    <UnitTestResult executionId="d153a181-bdba-4fb9-a408-b78573dee8b1" testId="67520dfc-ef04-5805-d900-05bbc76473c5" testName="Bliss.Tests.Architecture.EfModelConstraintTests.There_is_no_direct_creator_to_advertiser_foreign_key" computerName="cursor" duration="00:00:00.0006543" startTime="2026-09-20T06:36:43.1785541+00:00" endTime="2026-09-20T06:36:43.1785542+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d153a181-bdba-4fb9-a408-b78573dee8b1" />
+    <UnitTestResult executionId="201ebe2b-a76e-4a63-9fa7-1c48576a9105" testId="b2d61875-979d-58c0-3d13-2449d06a1c37" testName="Bliss.Tests.Persistence.DataProvenanceTests.Data_provenance_retains_source_confidence_and_collected_at" computerName="cursor" duration="00:00:00.6124468" startTime="2026-09-20T06:36:43.0586505+00:00" endTime="2026-09-20T06:36:43.0586506+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="201ebe2b-a76e-4a63-9fa7-1c48576a9105" />
+    <UnitTestResult executionId="cd144193-d23f-4be2-8795-d135a0bec752" testId="e3417458-c3ae-d69e-37a7-12994d5c3174" testName="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests.Phase2_seed_is_additive_and_does_not_overwrite_phase1_matches" computerName="cursor" duration="00:00:00.0647197" startTime="2026-09-20T06:36:43.2477630+00:00" endTime="2026-09-20T06:36:43.2477631+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cd144193-d23f-4be2-8795-d135a0bec752" />
+    <UnitTestResult executionId="34aa813e-ac0c-4c3d-8fd8-1ecb8b99e933" testId="bcd89933-fbb2-940a-fc52-89e4773d39c2" testName="Bliss.Tests.Domain.EntityDefaultTests.Advertiser_opportunity_defaults_to_active" computerName="cursor" duration="00:00:00.0000346" startTime="2026-09-20T06:36:43.1136651+00:00" endTime="2026-09-20T06:36:43.1136652+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="34aa813e-ac0c-4c3d-8fd8-1ecb8b99e933" />
+    <UnitTestResult executionId="b10170d4-a64e-4654-9285-70c26d725003" testId="e3a4d65d-d083-473d-a7fb-e6f709c83a60" testName="Bliss.Tests.Domain.DeterministicRuleEvaluatorTests.Unknown_audience_is_review_required_not_zero" computerName="cursor" duration="00:00:00.0027828" startTime="2026-09-20T06:36:42.4926940+00:00" endTime="2026-09-20T06:36:42.4926941+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b10170d4-a64e-4654-9285-70c26d725003" />
+    <UnitTestResult executionId="1c929e9f-8178-4441-97be-67928e254117" testId="05974633-af6a-a2fd-c070-060a3061f9e7" testName="Bliss.Tests.Persistence.AccessIndependenceTests.Network_access_and_program_access_are_independent" computerName="cursor" duration="00:00:00.1113198" startTime="2026-09-20T06:36:43.1705125+00:00" endTime="2026-09-20T06:36:43.1705126+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1c929e9f-8178-4441-97be-67928e254117" />
+    <UnitTestResult executionId="4ed3bf3a-339f-435a-ade6-c778c042c4de" testId="640281c2-d2c6-614b-9d1b-15b361eeede1" testName="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests.Phase2_brazil_match_is_approved_and_ph_to_br_is_ineligible" computerName="cursor" duration="00:00:00.0183232" startTime="2026-09-20T06:36:43.2642147+00:00" endTime="2026-09-20T06:36:43.2642148+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4ed3bf3a-339f-435a-ade6-c778c042c4de" />
+    <UnitTestResult executionId="e7d110a7-3c38-48c5-beb2-ea66f5dd2e9a" testId="a83975d8-4228-cc55-20bb-868b6cced19d" testName="Bliss.Tests.Persistence.CreatorContentArchitectureTests.Creator_supports_multiple_content_items" computerName="cursor" duration="00:00:00.0094594" startTime="2026-09-20T06:36:43.1085169+00:00" endTime="2026-09-20T06:36:43.1085170+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e7d110a7-3c38-48c5-beb2-ea66f5dd2e9a" />
+    <UnitTestResult executionId="bf418697-1e8f-4ca0-a00e-af0d146db0b2" testId="99fda879-3bb6-899b-c11a-6afa25c9c800" testName="Bliss.Tests.Domain.EntityDefaultTests.Data_provenance_confidence_defaults_to_unknown" computerName="cursor" duration="00:00:00.0001224" startTime="2026-09-20T06:36:43.1085845+00:00" endTime="2026-09-20T06:36:43.1085846+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bf418697-1e8f-4ca0-a00e-af0d146db0b2" />
+    <UnitTestResult executionId="3c409a8e-cf83-4b6f-b810-02fc044887f8" testId="c50db96f-878d-d17e-e727-c48cc8150eff" testName="Bliss.Tests.Architecture.EfModelConstraintTests.Female_percentage_is_nullable" computerName="cursor" duration="00:00:00.0004165" startTime="2026-09-20T06:36:43.1791342+00:00" endTime="2026-09-20T06:36:43.1791343+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3c409a8e-cf83-4b6f-b810-02fc044887f8" />
+    <UnitTestResult executionId="c777cba4-2fb9-4ca5-9bf2-f9714097f707" testId="d5e41786-afb1-c9e9-5845-afc657d47df4" testName="Bliss.Tests.Persistence.UnknownDemographicTests.Unknown_female_percentage_remains_null_and_is_not_converted_to_zero" computerName="cursor" duration="00:00:00.0201877" startTime="2026-09-20T06:36:43.1085559+00:00" endTime="2026-09-20T06:36:43.1085559+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c777cba4-2fb9-4ca5-9bf2-f9714097f707" />
+    <UnitTestResult executionId="0d6f51fc-c935-49b5-8bd2-1a4c4575ae23" testId="01c6cd37-6e0a-ac59-fef9-9b774a637864" testName="Bliss.Tests.Domain.EntityDefaultTests.Bliss_match_defaults_to_created" computerName="cursor" duration="00:00:00.0000664" startTime="2026-09-20T06:36:43.1086036+00:00" endTime="2026-09-20T06:36:43.1086037+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0d6f51fc-c935-49b5-8bd2-1a4c4575ae23" />
+    <UnitTestResult executionId="232a49b3-13f4-45e8-8357-069b0d257a76" testId="41d2316c-b8be-4ba6-9a2f-833219ceeec8" testName="Bliss.Tests.Persistence.BlissMatchArchitectureTests.New_bliss_match_does_not_overwrite_another_valid_match" computerName="cursor" duration="00:00:00.0164787" startTime="2026-09-20T06:36:43.1981793+00:00" endTime="2026-09-20T06:36:43.1981794+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="232a49b3-13f4-45e8-8357-069b0d257a76" />
+    <UnitTestResult executionId="51530566-7ee7-4246-89b4-5bdd4cf9ad6f" testId="d360cdc0-0524-f6d1-17d3-50ff5c12a6ef" testName="Bliss.Tests.Domain.DeterministicRuleEvaluatorTests.Missing_document_throws" computerName="cursor" duration="00:00:00.0013002" startTime="2026-09-20T06:36:42.4892914+00:00" endTime="2026-09-20T06:36:42.4892915+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="51530566-7ee7-4246-89b4-5bdd4cf9ad6f" />
+    <UnitTestResult executionId="0b71a216-1305-4bd8-8ab8-1b22b8a544ec" testId="2bfc8ccb-c6d1-42ea-66ae-0830cce47682" testName="Bliss.Tests.Domain.EntityDefaultTests.Ad_inventory_slot_defaults_to_available" computerName="cursor" duration="00:00:00.0001268" startTime="2026-09-20T06:36:43.1137802+00:00" endTime="2026-09-20T06:36:43.1137803+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0b71a216-1305-4bd8-8ab8-1b22b8a544ec" />
+    <UnitTestResult executionId="88cef9d4-3a68-483e-9e21-b14109f18291" testId="ea538728-2dcf-0820-96b8-cf44ab65d900" testName="Bliss.Tests.Domain.EntityDefaultTests.Network_and_program_access_default_to_unknown_independently" computerName="cursor" duration="00:00:00.0000704" startTime="2026-09-20T06:36:43.1086654+00:00" endTime="2026-09-20T06:36:43.1086654+00:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="88cef9d4-3a68-483e-9e21-b14109f18291" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="Bliss.Tests.Domain.EntityDefaultTests.Advertiser_program_defaults_to_active" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="35e70851-9287-56c9-f6ff-18f25b74fc27">
+      <Execution id="5d898911-9b7f-49bf-b3e4-ccd512191761" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Domain.EntityDefaultTests" name="Advertiser_program_defaults_to_active" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.AccessIndependenceTests.Network_access_and_program_access_are_independent" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="05974633-af6a-a2fd-c070-060a3061f9e7">
+      <Execution id="1c929e9f-8178-4441-97be-67928e254117" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.AccessIndependenceTests" name="Network_access_and_program_access_are_independent" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Api.Phase2ApiTests.Campaigns_and_networks_return_phase2_records" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="e5bd266c-e764-9035-1e4b-67759a572b90">
+      <Execution id="89f25b17-c5ef-4f6e-87bf-6ded2eaa7111" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Api.Phase2ApiTests" name="Campaigns_and_networks_return_phase2_records" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Domain.EntityDefaultTests.Ad_inventory_slot_defaults_to_available" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="2bfc8ccb-c6d1-42ea-66ae-0830cce47682">
+      <Execution id="0b71a216-1305-4bd8-8ab8-1b22b8a544ec" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Domain.EntityDefaultTests" name="Ad_inventory_slot_defaults_to_available" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests.Re_evaluating_one_match_does_not_change_another_match" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="f267c8f9-ce40-660b-da9c-8d5c48b9994c">
+      <Execution id="87144f2e-0c57-43fa-97ee-af0128b5ce6f" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests" name="Re_evaluating_one_match_does_not_change_another_match" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.BlissMatchArchitectureTests.Creator_supports_multiple_simultaneous_bliss_matches_without_uniqueness_violation" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="297cb8c0-1754-5d2e-e0f1-2a366f018a95">
+      <Execution id="d097c725-f4df-4196-b791-3448b0b533c1" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.BlissMatchArchitectureTests" name="Creator_supports_multiple_simultaneous_bliss_matches_without_uniqueness_violation" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests.Second_seed_is_idempotent" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="6251f72e-3558-9793-ecd3-f26416e2f718">
+      <Execution id="5d66bc4b-c046-44bb-a585-9316bb22ab8d" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests" name="Second_seed_is_idempotent" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.CreatorContentArchitectureTests.Creator_supports_multiple_content_items" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="a83975d8-4228-cc55-20bb-868b6cced19d">
+      <Execution id="e7d110a7-3c38-48c5-beb2-ea66f5dd2e9a" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.CreatorContentArchitectureTests" name="Creator_supports_multiple_content_items" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.SeedDataTests.Phase1_seed_creates_required_graph" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="e1fd9b8c-ba82-6cde-3208-9a5bda7c35fd">
+      <Execution id="d5c37e91-14b4-42ef-bfc3-ac8b194c0ea9" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.SeedDataTests" name="Phase1_seed_creates_required_graph" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Domain.EntityDefaultTests.Advertiser_opportunity_defaults_to_active" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="bcd89933-fbb2-940a-fc52-89e4773d39c2">
+      <Execution id="34aa813e-ac0c-4c3d-8fd8-1ecb8b99e933" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Domain.EntityDefaultTests" name="Advertiser_opportunity_defaults_to_active" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Domain.DeterministicRuleEvaluatorTests.Country_mismatch_is_geo_not_eligible_and_does_not_use_ai" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="3925efb9-9c12-2bed-b115-f0693ba87cc8">
+      <Execution id="29f7fccb-af04-4a42-bb74-1e134de2adcf" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Domain.DeterministicRuleEvaluatorTests" name="Country_mismatch_is_geo_not_eligible_and_does_not_use_ai" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests.Phase2_seed_is_additive_and_does_not_overwrite_phase1_matches" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="e3417458-c3ae-d69e-37a7-12994d5c3174">
+      <Execution id="cd144193-d23f-4be2-8795-d135a0bec752" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests" name="Phase2_seed_is_additive_and_does_not_overwrite_phase1_matches" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Domain.EntityDefaultTests.Network_and_program_access_default_to_unknown_independently" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="ea538728-2dcf-0820-96b8-cf44ab65d900">
+      <Execution id="88cef9d4-3a68-483e-9e21-b14109f18291" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Domain.EntityDefaultTests" name="Network_and_program_access_default_to_unknown_independently" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Architecture.EfModelConstraintTests.Required_foreign_key_indexes_exist" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="cc70eb97-9fa2-4393-16f1-399dcb17deac">
+      <Execution id="e053bf06-54b1-4c9e-a95d-a27d3f233f77" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Architecture.EfModelConstraintTests" name="Required_foreign_key_indexes_exist" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Domain.EntityDefaultTests.Data_provenance_confidence_defaults_to_unknown" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="99fda879-3bb6-899b-c11a-6afa25c9c800">
+      <Execution id="bf418697-1e8f-4ca0-a00e-af0d146db0b2" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Domain.EntityDefaultTests" name="Data_provenance_confidence_defaults_to_unknown" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Domain.EntityDefaultTests.Bliss_match_defaults_to_created" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="01c6cd37-6e0a-ac59-fef9-9b774a637864">
+      <Execution id="0d6f51fc-c935-49b5-8bd2-1a4c4575ae23" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Domain.EntityDefaultTests" name="Bliss_match_defaults_to_created" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests.Unknown_demographics_creator_review_does_not_use_zero_audience" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="f2e8717f-58b0-9e3e-284a-43413cb50837">
+      <Execution id="1ec9b247-2047-4b6e-912b-209f9a8183c5" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests" name="Unknown_demographics_creator_review_does_not_use_zero_audience" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.InventoryArchitectureTests.Content_item_supports_multiple_ad_inventory_slots" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="c3dfbe6a-a06d-dc4f-838a-2f4f4892eecc">
+      <Execution id="887590da-2d19-4b60-8d2e-c546ac655c69" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.InventoryArchitectureTests" name="Content_item_supports_multiple_ad_inventory_slots" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.CampaignPlacementArchitectureTests.Multiple_campaign_placements_can_reference_the_same_content_item" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="100dc352-f3cc-3a7d-1cfc-82d5e7a3fd66">
+      <Execution id="0ca07fab-a01a-4be5-8316-e27981b97da9" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.CampaignPlacementArchitectureTests" name="Multiple_campaign_placements_can_reference_the_same_content_item" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Domain.DeterministicRuleEvaluatorTests.Missing_document_throws" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="d360cdc0-0524-f6d1-17d3-50ff5c12a6ef">
+      <Execution id="51530566-7ee7-4246-89b4-5bdd4cf9ad6f" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Domain.DeterministicRuleEvaluatorTests" name="Missing_document_throws" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Architecture.ApiSurfaceTests.Phase1_read_endpoints_are_present" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="66d27266-de8f-413f-0500-3db785fae6c5">
+      <Execution id="9171dc81-c125-467c-851e-f7a4fe731ece" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Architecture.ApiSurfaceTests" name="Phase1_read_endpoints_are_present" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Architecture.EfModelConstraintTests.Campaign_placement_content_item_id_is_not_unique" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="c72ca6e0-1d99-7efb-a420-53958ad1e17d">
+      <Execution id="a555a692-d010-4521-bc3e-78ac5c4dc45c" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Architecture.EfModelConstraintTests" name="Campaign_placement_content_item_id_is_not_unique" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Architecture.EfModelConstraintTests.There_is_no_direct_creator_to_advertiser_foreign_key" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="67520dfc-ef04-5805-d900-05bbc76473c5">
+      <Execution id="d153a181-bdba-4fb9-a408-b78573dee8b1" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Architecture.EfModelConstraintTests" name="There_is_no_direct_creator_to_advertiser_foreign_key" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.UnknownDemographicTests.Unknown_female_percentage_remains_null_and_is_not_converted_to_zero" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="d5e41786-afb1-c9e9-5845-afc657d47df4">
+      <Execution id="c777cba4-2fb9-4ca5-9bf2-f9714097f707" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.UnknownDemographicTests" name="Unknown_female_percentage_remains_null_and_is_not_converted_to_zero" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Domain.DeterministicRuleEvaluatorTests.Unknown_audience_is_review_required_not_zero" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="e3a4d65d-d083-473d-a7fb-e6f709c83a60">
+      <Execution id="b10170d4-a64e-4654-9285-70c26d725003" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Domain.DeterministicRuleEvaluatorTests" name="Unknown_audience_is_review_required_not_zero" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests.Phase2_brazil_match_is_approved_and_ph_to_br_is_ineligible" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="640281c2-d2c6-614b-9d1b-15b361eeede1">
+      <Execution id="4ed3bf3a-339f-435a-ade6-c778c042c4de" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.Phase2SeedAndEvaluationTests" name="Phase2_brazil_match_is_approved_and_ph_to_br_is_ineligible" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.BlissMatchArchitectureTests.New_bliss_match_does_not_overwrite_another_valid_match" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="41d2316c-b8be-4ba6-9a2f-833219ceeec8">
+      <Execution id="232a49b3-13f4-45e8-8357-069b0d257a76" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.BlissMatchArchitectureTests" name="New_bliss_match_does_not_overwrite_another_valid_match" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Domain.DeterministicRuleEvaluatorTests.Matching_country_and_language_is_approved" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="d1605941-48e0-fbcc-1be8-0ec6b9950d4d">
+      <Execution id="740cdbd9-c185-4e06-8eb6-c39be1293d59" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Domain.DeterministicRuleEvaluatorTests" name="Matching_country_and_language_is_approved" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.DataProvenanceTests.Data_provenance_retains_source_confidence_and_collected_at" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="b2d61875-979d-58c0-3d13-2449d06a1c37">
+      <Execution id="201ebe2b-a76e-4a63-9fa7-1c48576a9105" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.DataProvenanceTests" name="Data_provenance_retains_source_confidence_and_collected_at" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Persistence.HistoricalRuleVersionTests.Historical_bliss_match_preserves_original_rule_version" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="aabaad12-1068-7e2d-7c3a-ba50f49c64cc">
+      <Execution id="03500e80-4275-4503-8ba1-02e87afc64f1" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Persistence.HistoricalRuleVersionTests" name="Historical_bliss_match_preserves_original_rule_version" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Architecture.EfModelConstraintTests.Bliss_match_creator_id_is_not_unique" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="a7d83d3f-3fef-87b8-c59e-edd358ba4e8d">
+      <Execution id="2c352775-e89f-443d-927d-87cec2170d16" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Architecture.EfModelConstraintTests" name="Bliss_match_creator_id_is_not_unique" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Api.Phase2ApiTests.Evaluate_rules_returns_bad_request_for_phase1_rule_without_document" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="b0f13de1-5c6f-a12b-8761-124ba685f069">
+      <Execution id="6bd63288-2afa-428e-ba81-3d3b7c256aa0" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Api.Phase2ApiTests" name="Evaluate_rules_returns_bad_request_for_phase1_rule_without_document" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Architecture.EfModelConstraintTests.Major_relationships_use_restrict_delete_behavior" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="0ddc4816-05ae-a087-452a-3c8559632bcd">
+      <Execution id="d24e7e42-e7ec-4ef5-a2fa-c39cff1d4f4a" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Architecture.EfModelConstraintTests" name="Major_relationships_use_restrict_delete_behavior" />
+    </UnitTest>
+    <UnitTest name="Bliss.Tests.Architecture.EfModelConstraintTests.Female_percentage_is_nullable" storage="/workspace/bliss.tests/bin/debug/net8.0/bliss.tests.dll" id="c50db96f-878d-d17e-e727-c48cc8150eff">
+      <Execution id="3c409a8e-cf83-4b6f-b810-02fc044887f8" />
+      <TestMethod codeBase="/workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="Bliss.Tests.Architecture.EfModelConstraintTests" name="Female_percentage_is_nullable" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="d1605941-48e0-fbcc-1be8-0ec6b9950d4d" executionId="740cdbd9-c185-4e06-8eb6-c39be1293d59" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3925efb9-9c12-2bed-b115-f0693ba87cc8" executionId="29f7fccb-af04-4a42-bb74-1e134de2adcf" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c3dfbe6a-a06d-dc4f-838a-2f4f4892eecc" executionId="887590da-2d19-4b60-8d2e-c546ac655c69" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c72ca6e0-1d99-7efb-a420-53958ad1e17d" executionId="a555a692-d010-4521-bc3e-78ac5c4dc45c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="66d27266-de8f-413f-0500-3db785fae6c5" executionId="9171dc81-c125-467c-851e-f7a4fe731ece" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b0f13de1-5c6f-a12b-8761-124ba685f069" executionId="6bd63288-2afa-428e-ba81-3d3b7c256aa0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cc70eb97-9fa2-4393-16f1-399dcb17deac" executionId="e053bf06-54b1-4c9e-a95d-a27d3f233f77" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="35e70851-9287-56c9-f6ff-18f25b74fc27" executionId="5d898911-9b7f-49bf-b3e4-ccd512191761" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="297cb8c0-1754-5d2e-e0f1-2a366f018a95" executionId="d097c725-f4df-4196-b791-3448b0b533c1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0ddc4816-05ae-a087-452a-3c8559632bcd" executionId="d24e7e42-e7ec-4ef5-a2fa-c39cff1d4f4a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="aabaad12-1068-7e2d-7c3a-ba50f49c64cc" executionId="03500e80-4275-4503-8ba1-02e87afc64f1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f267c8f9-ce40-660b-da9c-8d5c48b9994c" executionId="87144f2e-0c57-43fa-97ee-af0128b5ce6f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f2e8717f-58b0-9e3e-284a-43413cb50837" executionId="1ec9b247-2047-4b6e-912b-209f9a8183c5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6251f72e-3558-9793-ecd3-f26416e2f718" executionId="5d66bc4b-c046-44bb-a585-9316bb22ab8d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="100dc352-f3cc-3a7d-1cfc-82d5e7a3fd66" executionId="0ca07fab-a01a-4be5-8316-e27981b97da9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a7d83d3f-3fef-87b8-c59e-edd358ba4e8d" executionId="2c352775-e89f-443d-927d-87cec2170d16" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e5bd266c-e764-9035-1e4b-67759a572b90" executionId="89f25b17-c5ef-4f6e-87bf-6ded2eaa7111" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e1fd9b8c-ba82-6cde-3208-9a5bda7c35fd" executionId="d5c37e91-14b4-42ef-bfc3-ac8b194c0ea9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="67520dfc-ef04-5805-d900-05bbc76473c5" executionId="d153a181-bdba-4fb9-a408-b78573dee8b1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b2d61875-979d-58c0-3d13-2449d06a1c37" executionId="201ebe2b-a76e-4a63-9fa7-1c48576a9105" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e3417458-c3ae-d69e-37a7-12994d5c3174" executionId="cd144193-d23f-4be2-8795-d135a0bec752" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bcd89933-fbb2-940a-fc52-89e4773d39c2" executionId="34aa813e-ac0c-4c3d-8fd8-1ecb8b99e933" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e3a4d65d-d083-473d-a7fb-e6f709c83a60" executionId="b10170d4-a64e-4654-9285-70c26d725003" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="05974633-af6a-a2fd-c070-060a3061f9e7" executionId="1c929e9f-8178-4441-97be-67928e254117" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="640281c2-d2c6-614b-9d1b-15b361eeede1" executionId="4ed3bf3a-339f-435a-ade6-c778c042c4de" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a83975d8-4228-cc55-20bb-868b6cced19d" executionId="e7d110a7-3c38-48c5-beb2-ea66f5dd2e9a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="99fda879-3bb6-899b-c11a-6afa25c9c800" executionId="bf418697-1e8f-4ca0-a00e-af0d146db0b2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c50db96f-878d-d17e-e727-c48cc8150eff" executionId="3c409a8e-cf83-4b6f-b810-02fc044887f8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d5e41786-afb1-c9e9-5845-afc657d47df4" executionId="c777cba4-2fb9-4ca5-9bf2-f9714097f707" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="01c6cd37-6e0a-ac59-fef9-9b774a637864" executionId="0d6f51fc-c935-49b5-8bd2-1a4c4575ae23" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="41d2316c-b8be-4ba6-9a2f-833219ceeec8" executionId="232a49b3-13f4-45e8-8357-069b0d257a76" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d360cdc0-0524-f6d1-17d3-50ff5c12a6ef" executionId="51530566-7ee7-4246-89b4-5bdd4cf9ad6f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2bfc8ccb-c6d1-42ea-66ae-0830cce47682" executionId="0b71a216-1305-4bd8-8ab8-1b22b8a544ec" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ea538728-2dcf-0820-96b8-cf44ab65d900" executionId="88cef9d4-3a68-483e-9e21-b14109f18291" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="34" executed="34" passed="34" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.5.3.1+6b60a9e56a (64-bit .NET 8.0.31)
+[xUnit.net 00:00:00.08]   Discovering: Bliss.Tests
+[xUnit.net 00:00:00.11]   Discovered:  Bliss.Tests
+[xUnit.net 00:00:00.11]   Starting:    Bliss.Tests
+[xUnit.net 00:00:01.22]   Finished:    Bliss.Tests
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

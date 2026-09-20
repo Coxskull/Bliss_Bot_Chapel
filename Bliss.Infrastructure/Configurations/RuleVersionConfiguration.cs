@@ -14,6 +14,7 @@ public sealed class RuleVersionConfiguration : IEntityTypeConfiguration<RuleVers
         builder.Property(x => x.Version).IsRequired().HasMaxLength(64);
         builder.Property(x => x.Name).IsRequired().HasMaxLength(256);
         builder.Property(x => x.Description).HasMaxLength(4000);
+        builder.Property(x => x.DocumentJson).HasColumnType("text");
 
         builder.HasIndex(x => x.Version);
         builder.HasIndex(x => x.IsActive);
