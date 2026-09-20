@@ -27,6 +27,10 @@
           <span class="nav-icon">◇</span><span>Matches</span>
           <span class="nav-count" id="nav-match-count">—</span>
         </button>
+        <button class="nav-item" data-view="formation">
+          <span class="nav-icon">＋</span><span>Form match</span>
+          <span class="nav-count" id="nav-formation-count">—</span>
+        </button>
         <button class="nav-item" data-view="creators">
           <span class="nav-icon">◉</span><span>Creators</span>
         </button>
@@ -157,6 +161,36 @@
             <div><p class="eyebrow">CREATOR DIRECTORY</p><h2>Global creator profiles</h2><p>Audience data remains nullable—unknown is never treated as zero.</p></div>
           </div>
           <div class="entity-grid" id="creator-grid"></div>
+        </section>
+
+        <section class="view" id="view-formation">
+          <div class="section-intro">
+            <div><p class="eyebrow">CONTROLLED CERTIFICATES</p><h2>Form a Bliss match</h2><p>Link explicit records and optionally run the existing deterministic evaluator. No discovery or AI occurs here.</p></div>
+          </div>
+          <div class="ingest-layout">
+            <form class="panel ingest-form" id="formation-form">
+              <div class="panel-header">
+                <div><p class="eyebrow">NEW CERTIFICATE</p><h3>Controlled match formation</h3></div>
+                <span class="phase-tag">PHASE 5</span>
+              </div>
+              <div class="safety-note"><strong>Explicit input only.</strong> This form does not select candidates, call providers, or use Alpha Auto data.</div>
+              <div class="form-grid">
+                <label><span>Source system *</span><input name="sourceSystem" value="DASHBOARD_MANUAL" maxlength="64" required></label>
+                <label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="formation-idempotency" readonly required><button type="button" id="regenerate-formation-key" title="Generate a new key">↻</button></div></label>
+                <label class="span-two"><span>Creator *</span><select name="creatorId" id="formation-creator" required></select></label>
+                <label class="span-two"><span>Advertiser opportunity *</span><select name="advertiserOpportunityId" id="formation-opportunity" required></select></label>
+                <label class="span-two"><span>Rule version *</span><select name="ruleVersionId" id="formation-rule" required></select></label>
+                <label class="span-two checkbox-label"><input name="evaluateOnCreate" type="checkbox" checked><span>Evaluate immediately with deterministic rules</span></label>
+              </div>
+              <div class="form-actions"><small>Replay uses the same source and idempotency key.</small><button class="primary-button" type="submit" id="formation-submit">Form match <span>→</span></button></div>
+            </form>
+            <section class="panel ingestion-history">
+              <div class="panel-header">
+                <div><p class="eyebrow">FORMATION LEDGER</p><h3>Recent certificates</h3></div>
+              </div>
+              <div id="formation-list" class="activity-list"></div>
+            </section>
+          </div>
         </section>
 
         <section class="view" id="view-ingest">

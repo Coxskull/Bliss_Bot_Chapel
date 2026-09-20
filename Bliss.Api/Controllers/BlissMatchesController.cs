@@ -11,11 +11,16 @@ public sealed class BlissMatchesController : ControllerBase
 {
     private readonly BlissDbContext _db;
     private readonly MatchRuleEvaluationService _evaluator;
+    private readonly MatchFormationService _formation;
 
-    public BlissMatchesController(BlissDbContext db, MatchRuleEvaluationService evaluator)
+    public BlissMatchesController(
+        BlissDbContext db,
+        MatchRuleEvaluationService evaluator,
+        MatchFormationService formation)
     {
         _db = db;
         _evaluator = evaluator;
+        _formation = formation;
     }
 
     [HttpGet]
@@ -36,6 +41,49 @@ public sealed class BlissMatchesController : ControllerBase
             .ToListAsync(cancellationToken);
 
         return Ok(items);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<MatchFormationResultDto>> Create(
+        MatchFormationRequest request,
+        CancellationToken cancellationToken)
+    {
+        MatchFormationResult result;
+        try
+        {
+            result = await _formation.FormAsync(
+                new MatchFormationCommand(
+                    request.SourceSystem,
+                    request.IdempotencyKey,
+                    request.CreatorId,
+                    request.AdvertiserOpportunityId,
+                    request.RuleVersionId,
+                    request.EvaluateOnCreate),
+                cancellationToken);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+
+        var dto = new MatchFormationResultDto(
+            result.RunId,
+            result.BlissMatchId,
+            result.CreatorId,
+            result.AdvertiserOpportunityId,
+            result.RuleVersionId,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.Status,
+            result.Outcome,
+            result.MatchStatus,
+            result.EvaluateOnCreate,
+            result.CompletedAt,
+            result.IsReplay);
+
+        return result.IsReplay
+            ? Ok(dto)
+            : CreatedAtAction(nameof(GetById), new { id = result.BlissMatchId }, dto);
     }
 
     [HttpGet("{id:guid}")]

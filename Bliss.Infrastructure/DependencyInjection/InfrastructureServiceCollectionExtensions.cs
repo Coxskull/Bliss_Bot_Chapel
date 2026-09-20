@@ -16,6 +16,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<Phase3DataSeeder>();
         services.AddScoped<MatchRuleEvaluationService>();
         services.AddScoped<CreatorIngestionService>();
+        services.AddScoped<MatchFormationService>();
         return services;
     }
 

@@ -55,6 +55,10 @@ public sealed class EfModelConstraintTests
         Assert.Contains("MatchEvaluationRun.RuleVersionId", restrictKeys);
         Assert.Contains("CreatorIngestionRun.CreatorId", restrictKeys);
         Assert.Contains("CreatorIngestionRun.CreatorPlatformId", restrictKeys);
+        Assert.Contains("MatchFormationRun.BlissMatchId", restrictKeys);
+        Assert.Contains("MatchFormationRun.CreatorId", restrictKeys);
+        Assert.Contains("MatchFormationRun.AdvertiserOpportunityId", restrictKeys);
+        Assert.Contains("MatchFormationRun.RuleVersionId", restrictKeys);
     }
 
     [Fact]
@@ -99,6 +103,26 @@ public sealed class EfModelConstraintTests
             }));
 
         Assert.True(idempotencyIndex.IsUnique);
+    }
+
+    [Fact]
+    public void Match_formation_source_and_idempotency_key_are_unique_together()
+    {
+        using var db = TestDb.CreateContext();
+        var entity = db.Model.FindEntityType(typeof(MatchFormationRun));
+        Assert.NotNull(entity);
+
+        var idempotencyIndex = entity!.GetIndexes().Single(i =>
+            i.Properties.Select(p => p.Name).SequenceEqual(new[]
+            {
+                nameof(MatchFormationRun.SourceSystem),
+                nameof(MatchFormationRun.IdempotencyKey)
+            }));
+
+        Assert.True(idempotencyIndex.IsUnique);
+        Assert.DoesNotContain(entity.GetIndexes(), i =>
+            i.IsUnique && i.Properties.Count == 1
+            && i.Properties[0].Name == nameof(MatchFormationRun.CreatorId));
     }
 
     [Fact]
@@ -153,6 +177,10 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(CreatorIngestionRun), nameof(CreatorIngestionRun.CreatorId));
         AssertIndex(db, typeof(CreatorIngestionRun), nameof(CreatorIngestionRun.CreatorPlatformId));
         AssertIndex(db, typeof(CreatorIngestionRun), nameof(CreatorIngestionRun.IdentityKey));
+        AssertIndex(db, typeof(MatchFormationRun), nameof(MatchFormationRun.BlissMatchId));
+        AssertIndex(db, typeof(MatchFormationRun), nameof(MatchFormationRun.CreatorId));
+        AssertIndex(db, typeof(MatchFormationRun), nameof(MatchFormationRun.AdvertiserOpportunityId));
+        AssertIndex(db, typeof(MatchFormationRun), nameof(MatchFormationRun.RuleVersionId));
     }
 
     private static void AssertIndex(BlissDbContext db, Type type, string propertyName)

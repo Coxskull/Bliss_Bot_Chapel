@@ -23,6 +23,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
         Assert.Contains("Bliss Chapel", body);
         Assert.Contains("Evaluation audit", body);
+        Assert.Contains("Form match", body);
         Assert.Contains("app.js", body);
     }
 
