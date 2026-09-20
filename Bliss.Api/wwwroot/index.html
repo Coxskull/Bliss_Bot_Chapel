@@ -3,349 +3,213 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0c1714">
-  <title>Bliss Chapel · Match Operations</title>
-  <meta name="description" content="Test dashboard for Bliss Bot Chapel matching and evaluation audit.">
+  <meta name="theme-color" content="#102c24">
+  <title>Bliss Chapel · Operations</title>
+  <meta name="description" content="Creator partnership operations, deterministic matching, human review, and campaign planning.">
   <link rel="stylesheet" href="/app.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <div class="mobile-backdrop" id="mobile-backdrop"></div>
   <div class="app-shell">
-    <aside class="sidebar" aria-label="Primary navigation">
-      <a class="brand" href="#overview" aria-label="Bliss Chapel home">
+    <aside class="sidebar" id="primary-sidebar" aria-label="Primary navigation">
+      <a class="brand" href="#/overview" aria-label="Bliss Chapel operations home">
         <span class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 40 40"><path d="M20 3 35 11v18L20 37 5 29V11L20 3Z"/><path d="m12 21 5 5 11-12"/></svg>
         </span>
         <span><strong>Bliss</strong><small>CHAPEL</small></span>
       </a>
-
       <nav class="nav-list">
-        <button class="nav-item active" data-view="overview">
-          <span class="nav-icon">⌂</span><span>Overview</span>
-        </button>
-        <button class="nav-item" data-view="matches">
-          <span class="nav-icon">◇</span><span>Matches</span>
-          <span class="nav-count" id="nav-match-count">—</span>
-        </button>
-        <button class="nav-item" data-view="formation">
-          <span class="nav-icon">＋</span><span>Form match</span>
-          <span class="nav-count" id="nav-formation-count">—</span>
-        </button>
-        <button class="nav-item" data-view="review">
-          <span class="nav-icon">☑</span><span>Review queue</span>
-          <span class="nav-count" id="nav-review-count">—</span>
-        </button>
-        <button class="nav-item" data-view="placement">
-          <span class="nav-icon">▣</span><span>Plan placement</span>
-          <span class="nav-count" id="nav-placement-count">—</span>
-        </button>
-        <button class="nav-item" data-view="creators">
-          <span class="nav-icon">◉</span><span>Creators</span>
-        </button>
-        <button class="nav-item" data-view="ingest">
-          <span class="nav-icon">↓</span><span>Creator ingest</span>
-          <span class="nav-count" id="nav-ingest-count">—</span>
-        </button>
-        <button class="nav-item" data-view="advertisers">
-          <span class="nav-icon">△</span><span>Advertisers</span>
-        </button>
-        <button class="nav-item" data-view="inventory">
-          <span class="nav-icon">▦</span><span>Inventory</span>
-        </button>
-        <button class="nav-item" data-view="audit">
-          <span class="nav-icon">≡</span><span>Evaluation audit</span>
-        </button>
+        <p class="nav-heading">Workspace</p>
+        <a class="nav-item active" href="#/overview" data-view="overview"><span class="nav-icon" aria-hidden="true">⌂</span><span>Overview</span></a>
+        <a class="nav-item" href="#/creators" data-view="creators"><span class="nav-icon" aria-hidden="true">◉</span><span>Creators</span></a>
+        <a class="nav-item" href="#/matches" data-view="matches"><span class="nav-icon" aria-hidden="true">◇</span><span>Matches</span><span class="nav-count" id="nav-match-count">—</span></a>
+        <p class="nav-heading">Work queues</p>
+        <a class="nav-item" href="#/review" data-view="review"><span class="nav-icon" aria-hidden="true">☑</span><span>Review</span><span class="nav-count attention" id="nav-review-count">—</span></a>
+        <a class="nav-item" href="#/placement" data-view="placement"><span class="nav-icon" aria-hidden="true">▣</span><span>Placement</span><span class="nav-count" id="nav-placement-count">—</span></a>
+        <p class="nav-heading">Directory</p>
+        <a class="nav-item" href="#/partners" data-view="partners"><span class="nav-icon" aria-hidden="true">△</span><span>Partners</span></a>
+        <a class="nav-item" href="#/inventory" data-view="inventory"><span class="nav-icon" aria-hidden="true">▦</span><span>Inventory</span></a>
+        <a class="nav-item" href="#/audit" data-view="audit"><span class="nav-icon" aria-hidden="true">≡</span><span>Audit</span></a>
       </nav>
-
       <div class="sidebar-bottom">
         <div class="connection-card">
           <span class="pulse-dot" id="connection-dot"></span>
           <div><strong id="connection-label">Connecting</strong><small id="connection-detail">API status</small></div>
         </div>
-        <button class="nav-item settings-trigger" id="settings-button">
-          <span class="nav-icon">⚙</span><span>Connection</span>
-        </button>
+        <button class="nav-item settings-trigger" id="settings-button"><span class="nav-icon" aria-hidden="true">⚙</span><span>Workspace settings</span></button>
       </div>
     </aside>
 
-    <main class="main">
+    <main class="main" id="main-content">
       <header class="topbar">
-        <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation">☰</button>
-        <div>
-          <p class="eyebrow">MATCH OPERATIONS</p>
-          <h1 id="page-title">Good morning</h1>
-        </div>
+        <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation" aria-expanded="false" aria-controls="primary-sidebar">☰</button>
+        <div class="page-heading"><p class="eyebrow">OPERATIONS</p><h1 id="page-title">Overview</h1></div>
         <div class="top-actions">
-          <span class="environment-pill"><span></span> TEST ENVIRONMENT</span>
+          <span class="connection-pill"><span></span><span id="workspace-label">Same-origin workspace</span></span>
           <button class="icon-button" id="refresh-button" title="Refresh data" aria-label="Refresh data">↻</button>
-          <div class="avatar" title="Local operator">OP</div>
+          <button class="operator-chip" id="operator-button" title="Configure operator label"><span class="avatar" id="operator-avatar">?</span><span id="operator-name">Set operator</span></button>
         </div>
       </header>
 
       <div class="content">
-        <section class="view active" id="view-overview">
-          <div class="hero">
-            <div>
-              <span class="kicker">DETERMINISTIC MATCHING</span>
-              <h2>Every match.<br><em>Clearly ordained.</em></h2>
-              <p>Review eligibility, inspect component scores, and replay rules with a complete immutable audit trail.</p>
-              <button class="primary-button" data-go="matches">Review matches <span>→</span></button>
-            </div>
-            <div class="hero-orbit" aria-hidden="true">
-              <div class="orbit orbit-one"></div>
-              <div class="orbit orbit-two"></div>
-              <div class="orbit-core">
-                <span id="hero-score">—</span>
-                <small>APPROVAL RATE</small>
-              </div>
-              <span class="orbit-node node-one">✓</span>
-              <span class="orbit-node node-two">◇</span>
-              <span class="orbit-node node-three">◎</span>
-            </div>
+        <section class="view active" id="view-overview" aria-labelledby="overview-title">
+          <div class="welcome-row">
+            <div><p class="eyebrow">WORKSPACE OVERVIEW</p><h2 id="overview-title">Partnership operations, clearly controlled.</h2><p>Move creator opportunities from explicit intake to deterministic evaluation, human review, and planned inventory.</p></div>
+            <div class="quick-actions"><button class="secondary-button" data-workflow="ingest">Ingest creator</button><button class="primary-button" data-workflow="formation">Form match <span>→</span></button></div>
           </div>
-
           <div class="stat-grid">
-            <article class="stat-card">
-              <div class="stat-heading"><span class="stat-icon mint">◇</span><span class="trend">LIVE</span></div>
-              <strong id="stat-matches">—</strong><span>Match certificates</span>
-              <small>Across all rule versions</small>
-            </article>
-            <article class="stat-card">
-              <div class="stat-heading"><span class="stat-icon gold">✓</span><span class="trend positive" id="approval-trend">—</span></div>
-              <strong id="stat-approved">—</strong><span>Approved matches</span>
-              <small>Ready for human review</small>
-            </article>
-            <article class="stat-card">
-              <div class="stat-heading"><span class="stat-icon blue">◉</span><span class="trend">GLOBAL</span></div>
-              <strong id="stat-creators">—</strong><span>Creator profiles</span>
-              <small id="stat-countries">Across — markets</small>
-            </article>
-            <article class="stat-card">
-              <div class="stat-heading"><span class="stat-icon violet">≡</span><span class="trend">APPEND-ONLY</span></div>
-              <strong id="stat-runs">—</strong><span>Evaluation runs</span>
-              <small>Historical decisions preserved</small>
-            </article>
+            <button class="stat-card" data-go="matches"><span class="stat-top"><span class="stat-icon mint">◇</span><span class="trend">CERTIFICATES</span></span><strong id="stat-matches">—</strong><span>Total matches</span><small id="stat-unevaluated">— awaiting evaluation</small></button>
+            <button class="stat-card" data-go="review"><span class="stat-top"><span class="stat-icon gold">☑</span><span class="trend">ACTION NEEDED</span></span><strong id="stat-review">—</strong><span>Human reviews</span><small>Deterministic score already recorded</small></button>
+            <button class="stat-card" data-go="placement"><span class="stat-top"><span class="stat-icon blue">▣</span><span class="trend">READY</span></span><strong id="stat-placement">—</strong><span>Placement candidates</span><small>Approved and not yet bound</small></button>
+            <button class="stat-card" data-go="creators"><span class="stat-top"><span class="stat-icon sage">◉</span><span class="trend">DIRECTORY</span></span><strong id="stat-creators">—</strong><span>Creator profiles</span><small id="stat-countries">Across — markets</small></button>
           </div>
-
           <div class="dashboard-grid">
             <section class="panel">
-              <div class="panel-header">
-                <div><p class="eyebrow">CURRENT STATE</p><h3>Match portfolio</h3></div>
-                <button class="text-button" data-go="matches">View all →</button>
-              </div>
-              <div class="status-chart" id="status-chart">
-                <div class="loading-line"></div><div class="loading-line short"></div>
-              </div>
+              <div class="panel-header"><div><p class="eyebrow">PIPELINE</p><h3>Match portfolio</h3></div><a class="text-button" href="#/matches">Open matches →</a></div>
+              <div class="status-chart" id="status-chart"><div class="loading-line"></div><div class="loading-line short"></div></div>
             </section>
             <section class="panel">
-              <div class="panel-header">
-                <div><p class="eyebrow">LATEST ACTIVITY</p><h3>Evaluation ledger</h3></div>
-                <button class="text-button" data-go="audit">Full audit →</button>
-              </div>
-              <div class="activity-list" id="recent-runs">
-                <div class="activity-skeleton"></div><div class="activity-skeleton"></div><div class="activity-skeleton"></div>
-              </div>
+              <div class="panel-header"><div><p class="eyebrow">RECENT ACTIVITY</p><h3>Operations ledger</h3></div><a class="text-button" href="#/audit">Open audit →</a></div>
+              <div class="activity-list" id="recent-activity"><div class="activity-skeleton"></div><div class="activity-skeleton"></div></div>
             </section>
           </div>
+          <section class="panel action-board">
+            <div class="panel-header"><div><p class="eyebrow">NEXT ACTIONS</p><h3>Work queues</h3></div></div>
+            <div class="queue-summary" id="queue-summary"></div>
+          </section>
         </section>
 
-        <section class="view" id="view-matches">
+        <section class="view" id="view-creators" aria-labelledby="creators-title">
           <div class="section-intro">
-            <div><p class="eyebrow">MATCH CERTIFICATES</p><h2>Deterministic decisions</h2><p>Filter, inspect, and replay versioned rule evaluations.</p></div>
-            <div class="search-wrap"><span>⌕</span><input id="match-search" type="search" placeholder="Search matches or creators"></div>
-          </div>
-          <div class="filter-row" id="match-filters">
-            <button class="filter-chip active" data-status="ALL">All</button>
-            <button class="filter-chip" data-status="APPROVED">Approved</button>
-            <button class="filter-chip" data-status="REVIEW_REQUIRED">Review required</button>
-            <button class="filter-chip" data-status="INELIGIBLE">Ineligible</button>
-            <button class="filter-chip" data-status="CREATED">Not evaluated</button>
-          </div>
-          <div class="match-list" id="match-list"></div>
-        </section>
-
-        <section class="view" id="view-creators">
-          <div class="section-intro">
-            <div><p class="eyebrow">CREATOR DIRECTORY</p><h2>Global creator profiles</h2><p>Audience data remains nullable—unknown is never treated as zero.</p></div>
+            <div><p class="eyebrow">CREATOR OPERATIONS</p><h2 id="creators-title">Creator directory</h2><p>Canonical profiles, platform identities, content, matches, and field provenance.</p></div>
+            <div class="section-actions"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="creator-search" type="search" placeholder="Search creators" aria-label="Search creators"></div><button class="primary-button" data-workflow="ingest">Ingest creator <span>＋</span></button></div>
           </div>
           <div class="entity-grid" id="creator-grid"></div>
         </section>
 
-        <section class="view" id="view-formation">
+        <section class="view" id="view-matches" aria-labelledby="matches-title">
           <div class="section-intro">
-            <div><p class="eyebrow">CONTROLLED CERTIFICATES</p><h2>Form a Bliss match</h2><p>Link explicit records and optionally run the existing deterministic evaluator. No discovery or AI occurs here.</p></div>
+            <div><p class="eyebrow">DETERMINISTIC MATCHING</p><h2 id="matches-title">Match certificates</h2><p>Inspect evidence, replay versioned rules, and follow each certificate through review and placement.</p></div>
+            <div class="section-actions"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="match-search" type="search" placeholder="Search matches or creators" aria-label="Search matches"></div><button class="primary-button" data-workflow="formation">Form match <span>＋</span></button></div>
           </div>
-          <div class="ingest-layout">
-            <form class="panel ingest-form" id="formation-form">
-              <div class="panel-header">
-                <div><p class="eyebrow">NEW CERTIFICATE</p><h3>Controlled match formation</h3></div>
-                <span class="phase-tag">PHASE 5</span>
-              </div>
-              <div class="safety-note"><strong>Explicit input only.</strong> This form does not select candidates, call providers, or use Alpha Auto data.</div>
-              <div class="form-grid">
-                <label><span>Source system *</span><input name="sourceSystem" value="DASHBOARD_MANUAL" maxlength="64" required></label>
-                <label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="formation-idempotency" readonly required><button type="button" id="regenerate-formation-key" title="Generate a new key">↻</button></div></label>
-                <label class="span-two"><span>Creator *</span><select name="creatorId" id="formation-creator" required></select></label>
-                <label class="span-two"><span>Advertiser opportunity *</span><select name="advertiserOpportunityId" id="formation-opportunity" required></select></label>
-                <label class="span-two"><span>Rule version *</span><select name="ruleVersionId" id="formation-rule" required></select></label>
-                <label class="span-two checkbox-label"><input name="evaluateOnCreate" type="checkbox" checked><span>Evaluate immediately with deterministic rules</span></label>
-              </div>
-              <div class="form-actions"><small>Replay uses the same source and idempotency key.</small><button class="primary-button" type="submit" id="formation-submit">Form match <span>→</span></button></div>
-            </form>
-            <section class="panel ingestion-history">
-              <div class="panel-header">
-                <div><p class="eyebrow">FORMATION LEDGER</p><h3>Recent certificates</h3></div>
-              </div>
-              <div id="formation-list" class="activity-list"></div>
-            </section>
+          <div class="filter-row" id="match-filters" aria-label="Match status filters">
+            <button class="filter-chip active" data-status="ALL" aria-pressed="true">All</button>
+            <button class="filter-chip" data-status="APPROVED" aria-pressed="false">Approved</button>
+            <button class="filter-chip" data-status="REVIEW_REQUIRED" aria-pressed="false">Review required</button>
+            <button class="filter-chip" data-status="INELIGIBLE" aria-pressed="false">Ineligible</button>
+            <button class="filter-chip" data-status="CREATED" aria-pressed="false">Not evaluated</button>
           </div>
+          <div class="match-list" id="match-list"></div>
         </section>
 
-        <section class="view" id="view-review">
-          <div class="section-intro">
-            <div><p class="eyebrow">HUMAN CONTROL</p><h2>Review queue</h2><p>Decide REVIEW_REQUIRED certificates. The evaluator remains the scoring authority; this queue only records a labelled operator decision.</p></div>
-          </div>
-          <div class="ingest-layout">
-            <form class="panel ingest-form" id="review-form">
-              <div class="panel-header">
-                <div><p class="eyebrow">NEW DECISION</p><h3>Operator review</h3></div>
-                <span class="phase-tag">PHASE 6</span>
-              </div>
-              <div class="safety-note"><strong>No AI reviewer.</strong> Approve, reject, or hold an explicit match. This does not run campaigns or call Alpha Auto.</div>
-              <div class="form-grid">
-                <label><span>Source system *</span><input name="sourceSystem" value="DASHBOARD_MANUAL" maxlength="64" required></label>
-                <label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="review-idempotency" readonly required><button type="button" id="regenerate-review-key" title="Generate a new key">↻</button></div></label>
-                <label class="span-two"><span>Queue item *</span><select name="blissMatchId" id="review-match" required></select></label>
-                <label><span>Reviewer label *</span><input name="reviewerLabel" value="TEST_OPERATOR" maxlength="128" required></label>
-                <label><span>Decision *</span><select name="decision" required><option value="APPROVE">Approve</option><option value="REJECT">Reject</option><option value="HOLD">Hold</option></select></label>
-                <label class="span-two"><span>Rationale *</span><input name="rationale" placeholder="Why this decision is being recorded" maxlength="2000" required></label>
-              </div>
-              <div class="form-actions"><small>Replay uses the same source and idempotency key.</small><button class="primary-button" type="submit" id="review-submit">Record decision <span>→</span></button></div>
-            </form>
-            <section class="panel ingestion-history">
-              <div class="panel-header">
-                <div><p class="eyebrow">DECISION LEDGER</p><h3>Recent reviews</h3></div>
-              </div>
-              <div id="review-list" class="activity-list"></div>
-            </section>
-          </div>
-        </section>
-
-        <section class="view" id="view-placement">
-          <div class="section-intro">
-            <div><p class="eyebrow">CAMPAIGN PLANNING</p><h2>Bind approved inventory</h2><p>Record placement intent for an approved certificate. This does not reserve, schedule, deliver, track, measure, or pay.</p></div>
-          </div>
-          <div class="ingest-layout">
-            <form class="panel ingest-form" id="placement-form">
-              <div class="panel-header">
-                <div><p class="eyebrow">NEW PLACEMENT</p><h3>Controlled inventory binding</h3></div>
-                <span class="phase-tag">PHASE 7</span>
-              </div>
-              <div class="safety-note"><strong>Planning only.</strong> Explicit IDs are bound without changing slot availability or executing a campaign.</div>
-              <div class="form-grid">
-                <label><span>Source system *</span><input name="sourceSystem" value="DASHBOARD_MANUAL" maxlength="64" required></label>
-                <label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="placement-idempotency" readonly required><button type="button" id="regenerate-placement-key" title="Generate a new key">↻</button></div></label>
-                <label class="span-two"><span>Approved match *</span><select name="blissMatchId" id="placement-match" required></select></label>
-                <label class="span-two"><span>Draft campaign *</span><select name="campaignId" id="placement-campaign" required></select></label>
-                <label class="span-two"><span>Creator-owned content *</span><select name="contentItemId" id="placement-content" required></select></label>
-                <label class="span-two"><span>Inventory slot *</span><select name="adInventorySlotId" id="placement-slot" required></select></label>
-                <label class="span-two"><span>Operator label *</span><input name="operatorLabel" value="TEST_OPERATOR" maxlength="128" required></label>
-              </div>
-              <div class="form-actions"><small>Placement remains PLANNED. The slot remains available.</small><button class="primary-button" type="submit" id="placement-submit">Plan placement <span>→</span></button></div>
-            </form>
-            <section class="panel ingestion-history">
-              <div class="panel-header">
-                <div><p class="eyebrow">PLACEMENT LEDGER</p><h3>Recent bindings</h3></div>
-              </div>
-              <div id="placement-list" class="activity-list"></div>
-            </section>
-          </div>
-        </section>
-
-        <section class="view" id="view-ingest">
-          <div class="section-intro">
-            <div><p class="eyebrow">CONTROLLED OBSERVATIONS</p><h2>Creator ingest</h2><p>Resolve a provider identity, preserve unknown fields, and record provenance without calling external services.</p></div>
-          </div>
-          <div class="ingest-layout">
-            <form class="panel ingest-form" id="ingest-form">
-              <div class="panel-header">
-                <div><p class="eyebrow">NEW OBSERVATION</p><h3>Provider-neutral profile</h3></div>
-                <span class="phase-tag">PHASE 4</span>
-              </div>
-              <div class="safety-note"><strong>Controlled input only.</strong> This form does not crawl, call a provider, or use Alpha Auto data.</div>
-              <div class="form-grid">
-                <label><span>Source system *</span><input name="sourceSystem" value="DASHBOARD_MANUAL" maxlength="64" required></label>
-                <label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="ingest-idempotency" readonly required><button type="button" id="regenerate-key" title="Generate a new key">↻</button></div></label>
-                <label><span>Platform *</span><select name="platform" required><option>YouTube</option><option>Podcast</option><option>TikTok</option><option>Instagram</option><option>Twitch</option><option>Other</option></select></label>
-                <label><span>External profile ID *</span><input name="externalProfileId" placeholder="provider-owned-id" maxlength="256" required></label>
-                <label class="span-two"><span>Creator display name *</span><input name="creatorName" placeholder="Creator name" maxlength="256" required></label>
-                <label><span>Country code</span><input name="countryCode" placeholder="e.g. ES" maxlength="8"></label>
-                <label><span>Primary language</span><input name="primaryLanguage" placeholder="e.g. Spanish" maxlength="128"></label>
-                <label><span>Audience size</span><input name="audienceSize" type="number" min="0" placeholder="Unknown"></label>
-                <label><span>Platform followers</span><input name="followers" type="number" min="0" placeholder="Unknown"></label>
-                <label class="span-two"><span>Profile URL</span><input name="profileUrl" type="url" placeholder="https://example.test/profile"></label>
-                <label class="span-two"><span>Observation source URL</span><input name="sourceUrl" type="url" placeholder="https://example.test/observation"></label>
-                <label><span>Confidence</span><select name="confidenceLevel"><option>UNKNOWN</option><option>LOW</option><option>MEDIUM</option><option>HIGH</option></select></label>
-              </div>
-              <div class="form-actions"><small>Blank metrics remain UNKNOWN, never zero.</small><button class="primary-button" type="submit" id="ingest-submit">Ingest observation <span>→</span></button></div>
-            </form>
-            <section class="panel ingestion-history">
-              <div class="panel-header">
-                <div><p class="eyebrow">INGESTION LEDGER</p><h3>Recent observations</h3></div>
-              </div>
-              <div id="ingestion-list" class="activity-list"></div>
-            </section>
-          </div>
-        </section>
-
-        <section class="view" id="view-advertisers">
-          <div class="section-intro">
-            <div><p class="eyebrow">PARTNER DIRECTORY</p><h2>Advertisers & programs</h2><p>Independent programs and opportunities across markets.</p></div>
-          </div>
-          <div class="entity-grid" id="advertiser-grid"></div>
-        </section>
-
-        <section class="view" id="view-inventory">
-          <div class="section-intro">
-            <div><p class="eyebrow">CONTENT INVENTORY</p><h2>Reusable placements</h2><p>Content stays creator-owned and supports multiple independent ad slots.</p></div>
-          </div>
-          <div class="inventory-list" id="inventory-list"></div>
-        </section>
-
-        <section class="view" id="view-audit">
-          <div class="section-intro">
-            <div><p class="eyebrow">IMMUTABLE HISTORY</p><h2>Evaluation audit</h2><p>Each replay appends a run with its exact input and output snapshots.</p></div>
-          </div>
-          <div class="panel table-panel">
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>Run</th><th>Match</th><th>Decision</th><th>Score</th><th>Algorithm</th><th>Completed</th><th></th></tr></thead>
-                <tbody id="audit-table"></tbody>
-              </table>
+        <section class="view" id="view-review" aria-labelledby="review-title">
+          <div class="section-intro"><div><p class="eyebrow">HUMAN CONTROL</p><h2 id="review-title">Review work queue</h2><p>Use deterministic evidence to approve, reject, or hold certificates that require a human decision.</p></div></div>
+          <div class="workflow-layout">
+            <section><div class="queue-list" id="review-queue-list"></div></section>
+            <div>
+              <form class="panel workflow-form" id="review-form">
+                <div class="panel-header"><div><p class="eyebrow">DECISION</p><h3>Record review</h3></div><span class="record-tag">AUDITED</span></div>
+                <div class="safety-note"><strong>Human decision only.</strong> The deterministic evaluator remains the scoring authority.</div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Selected certificate *</span><select name="blissMatchId" id="review-match" required></select></label>
+                  <label><span>Reviewer label *</span><input name="reviewerLabel" class="operator-field" placeholder="Your name or operator ID" maxlength="128" required></label>
+                  <label><span>Decision *</span><select name="decision" required><option value="APPROVE">Approve</option><option value="REJECT">Reject</option><option value="HOLD">Hold for later</option></select></label>
+                  <label class="span-two"><span>Rationale *</span><textarea name="rationale" placeholder="Explain the evidence behind this decision" maxlength="2000" required></textarea></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="review-idempotency" readonly required><button type="button" id="regenerate-review-key" aria-label="Generate a new review idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>A hold keeps the certificate in this queue.</small><button class="primary-button" type="submit" id="review-submit">Record decision <span>→</span></button></div>
+              </form>
+              <section class="panel ledger-panel"><div class="panel-header"><div><p class="eyebrow">RECENT</p><h3>Decision ledger</h3></div></div><div id="review-list" class="activity-list"></div></section>
             </div>
           </div>
+        </section>
+
+        <section class="view" id="view-placement" aria-labelledby="placement-title">
+          <div class="section-intro"><div><p class="eyebrow">CAMPAIGN PLANNING</p><h2 id="placement-title">Placement work queue</h2><p>Bind approved certificates to compatible draft campaigns and creator-owned inventory.</p></div></div>
+          <div class="workflow-layout">
+            <section><div class="queue-list" id="placement-queue-list"></div></section>
+            <div>
+              <form class="panel workflow-form" id="placement-form">
+                <div class="panel-header"><div><p class="eyebrow">PLANNING INTENT</p><h3>Plan placement</h3></div><span class="record-tag">NO RESERVATION</span></div>
+                <div class="safety-note"><strong>Planning only.</strong> This does not reserve inventory, schedule, deliver, measure, or pay.</div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Approved certificate *</span><select name="blissMatchId" id="placement-match" required></select></label>
+                  <label class="span-two"><span>Compatible draft campaign *</span><select name="campaignId" id="placement-campaign" required></select></label>
+                  <label class="span-two"><span>Creator-owned content *</span><select name="contentItemId" id="placement-content" required></select></label>
+                  <label class="span-two"><span>Inventory slot *</span><select name="adInventorySlotId" id="placement-slot" required></select></label>
+                  <label class="span-two"><span>Operator label *</span><input name="operatorLabel" class="operator-field" placeholder="Your name or operator ID" maxlength="128" required></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="placement-idempotency" readonly required><button type="button" id="regenerate-placement-key" aria-label="Generate a new placement idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>The selected slot remains available after planning.</small><button class="primary-button" type="submit" id="placement-submit">Plan placement <span>→</span></button></div>
+              </form>
+              <section class="panel ledger-panel"><div class="panel-header"><div><p class="eyebrow">RECENT</p><h3>Placement ledger</h3></div></div><div id="placement-list" class="activity-list"></div></section>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-partners" aria-labelledby="partners-title">
+          <div class="section-intro"><div><p class="eyebrow">PARTNER DIRECTORY</p><h2 id="partners-title">Advertisers and opportunities</h2><p>Browse advertiser programs, active opportunities, and controlled affiliate access.</p></div></div>
+          <div class="tab-row" id="partner-tabs" role="tablist">
+            <button class="tab-button active" data-partner-tab="advertisers" role="tab" aria-selected="true">Advertisers</button>
+            <button class="tab-button" data-partner-tab="opportunities" role="tab" aria-selected="false">Opportunities</button>
+            <button class="tab-button" data-partner-tab="access" role="tab" aria-selected="false">Network access</button>
+          </div>
+          <div id="partner-content"></div>
+        </section>
+
+        <section class="view" id="view-inventory" aria-labelledby="inventory-title">
+          <div class="section-intro"><div><p class="eyebrow">INVENTORY & CAMPAIGNS</p><h2 id="inventory-title">Planning inventory</h2><p>Inspect creator-owned content, reusable slots, draft campaigns, and planned bindings.</p></div></div>
+          <div class="tab-row" id="inventory-tabs" role="tablist">
+            <button class="tab-button active" data-inventory-tab="content" role="tab" aria-selected="true">Content inventory</button>
+            <button class="tab-button" data-inventory-tab="campaigns" role="tab" aria-selected="false">Campaigns</button>
+          </div>
+          <div id="inventory-content"></div>
+        </section>
+
+        <section class="view" id="view-audit" aria-labelledby="audit-title">
+          <div class="section-intro">
+            <div><p class="eyebrow">IMMUTABLE HISTORY</p><h2 id="audit-title">Operations audit</h2><p>Trace every controlled write and deterministic decision through its immutable record.</p></div>
+            <div class="search-wrap"><span aria-hidden="true">⌕</span><input id="audit-search" type="search" placeholder="Search the selected ledger" aria-label="Search audit ledger"></div>
+          </div>
+          <div class="tab-row" id="audit-tabs" role="tablist">
+            <button class="tab-button active" data-audit-tab="evaluations" role="tab" aria-selected="true">Evaluations</button>
+            <button class="tab-button" data-audit-tab="formations" role="tab" aria-selected="false">Formations</button>
+            <button class="tab-button" data-audit-tab="reviews" role="tab" aria-selected="false">Reviews</button>
+            <button class="tab-button" data-audit-tab="placements" role="tab" aria-selected="false">Placements</button>
+            <button class="tab-button" data-audit-tab="ingestions" role="tab" aria-selected="false">Ingestions</button>
+            <button class="tab-button" data-audit-tab="provenance" role="tab" aria-selected="false">Provenance</button>
+          </div>
+          <div class="panel table-panel"><div class="table-wrap" id="audit-content"></div></div>
         </section>
       </div>
     </main>
   </div>
 
+  <dialog id="workflow-dialog">
+    <form class="dialog-card workflow-dialog-card" id="workflow-form">
+      <div class="dialog-head"><div><p class="eyebrow" id="workflow-eyebrow">CONTROLLED INPUT</p><h2 id="workflow-title">New record</h2></div><button class="icon-button" type="button" data-close-dialog aria-label="Close">×</button></div>
+      <div id="workflow-body"></div>
+    </form>
+  </dialog>
+
   <div class="drawer-backdrop" id="drawer-backdrop"></div>
-  <aside class="drawer" id="detail-drawer" aria-label="Match details" aria-hidden="true">
-    <div class="drawer-header">
-      <div><p class="eyebrow">MATCH CERTIFICATE</p><h2 id="drawer-title">Match detail</h2></div>
-      <button class="icon-button" id="drawer-close" aria-label="Close details">×</button>
-    </div>
+  <aside class="drawer" id="detail-drawer" aria-label="Detail panel" aria-hidden="true" tabindex="-1">
+    <div class="drawer-header"><div><p class="eyebrow" id="drawer-eyebrow">DETAIL</p><h2 id="drawer-title">Record detail</h2></div><button class="icon-button" id="drawer-close" aria-label="Close details">×</button></div>
     <div class="drawer-body" id="drawer-body"></div>
   </aside>
 
   <dialog id="settings-dialog">
     <form method="dialog" class="dialog-card">
-      <div class="dialog-head"><div><p class="eyebrow">CONNECTION</p><h2>API endpoint</h2></div><button class="icon-button" value="cancel">×</button></div>
-      <p>The dashboard defaults to the API that serves it. Set a different base URL only when hosting the frontend separately.</p>
-      <label for="api-url">API base URL</label>
+      <div class="dialog-head"><div><p class="eyebrow">WORKSPACE</p><h2>Operator settings</h2></div><button class="icon-button" value="cancel" aria-label="Close settings">×</button></div>
+      <p>Bliss uses the API that serves this frontend by default. Operator labels are stored only in this browser and are not authentication.</p>
+      <label for="operator-label">Default operator label</label>
+      <input id="operator-label" maxlength="128" placeholder="Your name or operator ID">
+      <label for="api-url">API base URL <span class="optional">optional</span></label>
       <input id="api-url" type="url" placeholder="Same origin">
-      <small>Example: https://your-bliss-api.example.com</small>
-      <div class="dialog-actions"><button class="secondary-button" value="cancel">Cancel</button><button class="primary-button" id="save-settings" value="default">Save & reconnect</button></div>
+      <small>Set a base URL only when the frontend is intentionally hosted separately.</small>
+      <div class="dialog-actions"><button class="secondary-button" value="cancel">Cancel</button><button class="primary-button" id="save-settings" value="default">Save settings</button></div>
     </form>
   </dialog>
 

@@ -12,7 +12,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
     }
 
     [Fact]
-    public async Task Root_serves_the_match_operations_dashboard()
+    public async Task Root_serves_the_operations_frontend()
     {
         var client = _factory.CreateClient();
 
@@ -22,11 +22,14 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
         Assert.Contains("Bliss Chapel", body);
-        Assert.Contains("Evaluation audit", body);
+        Assert.Contains("Operations audit", body);
+        Assert.Contains("Creator directory", body);
         Assert.Contains("Form match", body);
-        Assert.Contains("Review queue", body);
-        Assert.Contains("Plan placement", body);
+        Assert.Contains("Review work queue", body);
+        Assert.Contains("Placement work queue", body);
         Assert.Contains("app.js", body);
+        Assert.DoesNotContain("TEST ENVIRONMENT", body);
+        Assert.DoesNotContain("TEST_OPERATOR", body);
     }
 
     [Theory]
