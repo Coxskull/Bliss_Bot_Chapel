@@ -1,6 +1,6 @@
 # Bliss Bot Chapel
 
-Standalone Phase 1 foundation, Phase 2 controlled test data and deterministic rule evaluation, and Phase 3 historical evaluation audit.
+Standalone Phase 1 foundation, Phase 2 controlled test data and deterministic rule evaluation, Phase 3 historical evaluation audit, and a browser-based test dashboard.
 
 This repository is **not** connected to Alpha Auto.
 
@@ -13,7 +13,7 @@ This repository is **not** connected to Alpha Auto.
 
 ## Solution
 
-- `Bliss.Api` — REST API + Swagger (GET visibility; POST evaluate-rules; GET evaluation runs)
+- `Bliss.Api` — REST API + Swagger + same-origin operations dashboard
 - `Bliss.Domain` — entities and constants
 - `Bliss.Infrastructure` — EF Core, configurations, migrations, seed data
 - `Bliss.Tests` — architecture and persistence proofs
@@ -28,6 +28,29 @@ export ConnectionStrings__DefaultConnection="Host=...;Port=5432;Database=...;Use
 
 `appsettings.json` keeps `ConnectionStrings:DefaultConnection` empty on purpose.
 
+### Supabase PostgreSQL
+
+The dashboard talks to `Bliss.Api`; it does **not** connect directly to PostgreSQL. A Supabase publishable key is intended for browser REST/Auth requests and cannot authenticate the EF Core/Npgsql backend. Do not put the database password or a service-role key in browser code.
+
+For the supplied project host, set the database password only in your shell or deployment secret store:
+
+```bash
+export ConnectionStrings__DefaultConnection="Host=db.bkutbglzivfdnoerigyb.supabase.co;Port=5432;Database=postgres;Username=postgres;Password=<SUPABASE_DATABASE_PASSWORD>;SSL Mode=Require;Trust Server Certificate=true"
+```
+
+If your network has no IPv6 route to the direct database host, copy the **Session pooler** connection string from Supabase Dashboard → Connect and set the same environment variable.
+
+Apply migrations to a dedicated test project/database before starting the app:
+
+```bash
+dotnet ef database update \
+  --project Bliss.Infrastructure \
+  --startup-project Bliss.Api \
+  --connection "$ConnectionStrings__DefaultConnection"
+```
+
+Use `ASPNETCORE_ENVIRONMENT=Development` for the fictional Phase 1–3 seed data. Never point that seed process at production data.
+
 ## Local commands
 
 ```bash
@@ -36,6 +59,8 @@ dotnet test
 dotnet ef migrations script --project Bliss.Infrastructure --startup-project Bliss.Api -o phase1.sql
 dotnet run --project Bliss.Api
 ```
+
+Dashboard: `/`
 
 Swagger (Development): `/swagger`
 

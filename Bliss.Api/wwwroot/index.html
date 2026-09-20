@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0c1714">
+  <title>Bliss Chapel · Match Operations</title>
+  <meta name="description" content="Test dashboard for Bliss Bot Chapel matching and evaluation audit.">
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <a class="brand" href="#overview" aria-label="Bliss Chapel home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40"><path d="M20 3 35 11v18L20 37 5 29V11L20 3Z"/><path d="m12 21 5 5 11-12"/></svg>
+        </span>
+        <span><strong>Bliss</strong><small>CHAPEL</small></span>
+      </a>
+
+      <nav class="nav-list">
+        <button class="nav-item active" data-view="overview">
+          <span class="nav-icon">⌂</span><span>Overview</span>
+        </button>
+        <button class="nav-item" data-view="matches">
+          <span class="nav-icon">◇</span><span>Matches</span>
+          <span class="nav-count" id="nav-match-count">—</span>
+        </button>
+        <button class="nav-item" data-view="creators">
+          <span class="nav-icon">◉</span><span>Creators</span>
+        </button>
+        <button class="nav-item" data-view="advertisers">
+          <span class="nav-icon">△</span><span>Advertisers</span>
+        </button>
+        <button class="nav-item" data-view="inventory">
+          <span class="nav-icon">▦</span><span>Inventory</span>
+        </button>
+        <button class="nav-item" data-view="audit">
+          <span class="nav-icon">≡</span><span>Evaluation audit</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="connection-card">
+          <span class="pulse-dot" id="connection-dot"></span>
+          <div><strong id="connection-label">Connecting</strong><small id="connection-detail">API status</small></div>
+        </div>
+        <button class="nav-item settings-trigger" id="settings-button">
+          <span class="nav-icon">⚙</span><span>Connection</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobile-menu" aria-label="Open navigation">☰</button>
+        <div>
+          <p class="eyebrow">MATCH OPERATIONS</p>
+          <h1 id="page-title">Good morning</h1>
+        </div>
+        <div class="top-actions">
+          <span class="environment-pill"><span></span> TEST ENVIRONMENT</span>
+          <button class="icon-button" id="refresh-button" title="Refresh data" aria-label="Refresh data">↻</button>
+          <div class="avatar" title="Local operator">OP</div>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="view active" id="view-overview">
+          <div class="hero">
+            <div>
+              <span class="kicker">DETERMINISTIC MATCHING</span>
+              <h2>Every match.<br><em>Clearly ordained.</em></h2>
+              <p>Review eligibility, inspect component scores, and replay rules with a complete immutable audit trail.</p>
+              <button class="primary-button" data-go="matches">Review matches <span>→</span></button>
+            </div>
+            <div class="hero-orbit" aria-hidden="true">
+              <div class="orbit orbit-one"></div>
+              <div class="orbit orbit-two"></div>
+              <div class="orbit-core">
+                <span id="hero-score">—</span>
+                <small>APPROVAL RATE</small>
+              </div>
+              <span class="orbit-node node-one">✓</span>
+              <span class="orbit-node node-two">◇</span>
+              <span class="orbit-node node-three">◎</span>
+            </div>
+          </div>
+
+          <div class="stat-grid">
+            <article class="stat-card">
+              <div class="stat-heading"><span class="stat-icon mint">◇</span><span class="trend">LIVE</span></div>
+              <strong id="stat-matches">—</strong><span>Match certificates</span>
+              <small>Across all rule versions</small>
+            </article>
+            <article class="stat-card">
+              <div class="stat-heading"><span class="stat-icon gold">✓</span><span class="trend positive" id="approval-trend">—</span></div>
+              <strong id="stat-approved">—</strong><span>Approved matches</span>
+              <small>Ready for human review</small>
+            </article>
+            <article class="stat-card">
+              <div class="stat-heading"><span class="stat-icon blue">◉</span><span class="trend">GLOBAL</span></div>
+              <strong id="stat-creators">—</strong><span>Creator profiles</span>
+              <small id="stat-countries">Across — markets</small>
+            </article>
+            <article class="stat-card">
+              <div class="stat-heading"><span class="stat-icon violet">≡</span><span class="trend">APPEND-ONLY</span></div>
+              <strong id="stat-runs">—</strong><span>Evaluation runs</span>
+              <small>Historical decisions preserved</small>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel">
+              <div class="panel-header">
+                <div><p class="eyebrow">CURRENT STATE</p><h3>Match portfolio</h3></div>
+                <button class="text-button" data-go="matches">View all →</button>
+              </div>
+              <div class="status-chart" id="status-chart">
+                <div class="loading-line"></div><div class="loading-line short"></div>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-header">
+                <div><p class="eyebrow">LATEST ACTIVITY</p><h3>Evaluation ledger</h3></div>
+                <button class="text-button" data-go="audit">Full audit →</button>
+              </div>
+              <div class="activity-list" id="recent-runs">
+                <div class="activity-skeleton"></div><div class="activity-skeleton"></div><div class="activity-skeleton"></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-matches">
+          <div class="section-intro">
+            <div><p class="eyebrow">MATCH CERTIFICATES</p><h2>Deterministic decisions</h2><p>Filter, inspect, and replay versioned rule evaluations.</p></div>
+            <div class="search-wrap"><span>⌕</span><input id="match-search" type="search" placeholder="Search matches or creators"></div>
+          </div>
+          <div class="filter-row" id="match-filters">
+            <button class="filter-chip active" data-status="ALL">All</button>
+            <button class="filter-chip" data-status="APPROVED">Approved</button>
+            <button class="filter-chip" data-status="REVIEW_REQUIRED">Review required</button>
+            <button class="filter-chip" data-status="INELIGIBLE">Ineligible</button>
+            <button class="filter-chip" data-status="CREATED">Not evaluated</button>
+          </div>
+          <div class="match-list" id="match-list"></div>
+        </section>
+
+        <section class="view" id="view-creators">
+          <div class="section-intro">
+            <div><p class="eyebrow">CREATOR DIRECTORY</p><h2>Global creator profiles</h2><p>Audience data remains nullable—unknown is never treated as zero.</p></div>
+          </div>
+          <div class="entity-grid" id="creator-grid"></div>
+        </section>
+
+        <section class="view" id="view-advertisers">
+          <div class="section-intro">
+            <div><p class="eyebrow">PARTNER DIRECTORY</p><h2>Advertisers & programs</h2><p>Independent programs and opportunities across markets.</p></div>
+          </div>
+          <div class="entity-grid" id="advertiser-grid"></div>
+        </section>
+
+        <section class="view" id="view-inventory">
+          <div class="section-intro">
+            <div><p class="eyebrow">CONTENT INVENTORY</p><h2>Reusable placements</h2><p>Content stays creator-owned and supports multiple independent ad slots.</p></div>
+          </div>
+          <div class="inventory-list" id="inventory-list"></div>
+        </section>
+
+        <section class="view" id="view-audit">
+          <div class="section-intro">
+            <div><p class="eyebrow">IMMUTABLE HISTORY</p><h2>Evaluation audit</h2><p>Each replay appends a run with its exact input and output snapshots.</p></div>
+          </div>
+          <div class="panel table-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Run</th><th>Match</th><th>Decision</th><th>Score</th><th>Algorithm</th><th>Completed</th><th></th></tr></thead>
+                <tbody id="audit-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+  <aside class="drawer" id="detail-drawer" aria-label="Match details" aria-hidden="true">
+    <div class="drawer-header">
+      <div><p class="eyebrow">MATCH CERTIFICATE</p><h2 id="drawer-title">Match detail</h2></div>
+      <button class="icon-button" id="drawer-close" aria-label="Close details">×</button>
+    </div>
+    <div class="drawer-body" id="drawer-body"></div>
+  </aside>
+
+  <dialog id="settings-dialog">
+    <form method="dialog" class="dialog-card">
+      <div class="dialog-head"><div><p class="eyebrow">CONNECTION</p><h2>API endpoint</h2></div><button class="icon-button" value="cancel">×</button></div>
+      <p>The dashboard defaults to the API that serves it. Set a different base URL only when hosting the frontend separately.</p>
+      <label for="api-url">API base URL</label>
+      <input id="api-url" type="url" placeholder="Same origin">
+      <small>Example: https://your-bliss-api.example.com</small>
+      <div class="dialog-actions"><button class="secondary-button" value="cancel">Cancel</button><button class="primary-button" id="save-settings" value="default">Save & reconnect</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
