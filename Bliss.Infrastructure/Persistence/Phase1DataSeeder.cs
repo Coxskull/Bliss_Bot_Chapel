@@ -60,6 +60,7 @@ public sealed class Phase1DataSeeder
             CreatorId = CreatorId,
             Platform = "Podcast",
             ExternalProfileId = "CRT-TEST-001",
+            IdentityKey = CreatorIngestionService.BuildIdentityKey("Podcast", "CRT-TEST-001"),
             ProfileUrl = "https://example.test/creators/crt-test-001",
             Followers = 100000,
             LastCollectedAt = now

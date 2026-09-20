@@ -6,6 +6,7 @@ const state = {
   opportunities: [],
   content: [],
   runs: [],
+  ingestions: [],
   matchFilter: "ALL",
   matchSearch: ""
 };
@@ -16,6 +17,7 @@ const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 document.addEventListener("DOMContentLoaded", () => {
   bindNavigation();
   bindActions();
+  generateIdempotencyKey();
   loadDashboard();
 });
 
@@ -38,15 +40,16 @@ async function loadDashboard() {
   setConnection("loading");
   $("#refresh-button").classList.add("spinning");
   try {
-    const [matches, creators, advertisers, opportunities, content, runs] = await Promise.all([
+    const [matches, creators, advertisers, opportunities, content, runs, ingestions] = await Promise.all([
       api("/api/bliss/matches"),
       api("/api/creators"),
       api("/api/advertisers"),
       api("/api/advertiser-opportunities"),
       api("/api/content-items"),
-      api("/api/match-evaluation-runs")
+      api("/api/match-evaluation-runs"),
+      api("/api/creator-ingestions")
     ]);
-    Object.assign(state, { matches, creators, advertisers, opportunities, content, runs });
+    Object.assign(state, { matches, creators, advertisers, opportunities, content, runs, ingestions });
     renderAll();
     setConnection("online");
   } catch (error) {
@@ -65,7 +68,9 @@ function renderAll() {
   renderAdvertisers();
   renderInventory();
   renderAudit();
+  renderIngestions();
   $("#nav-match-count").textContent = state.matches.length;
+  $("#nav-ingest-count").textContent = state.ingestions.length;
 }
 
 function renderOverview() {
@@ -209,6 +214,87 @@ function renderAudit() {
     </tr>`).join("") : `<tr><td colspan="7">${emptyState("No evaluation history found.")}</td></tr>`;
 }
 
+function renderIngestions() {
+  const runs = [...state.ingestions]
+    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+    .slice(0, 8);
+
+  $("#ingestion-list").innerHTML = runs.length ? runs.map(run => {
+    const creator = creatorById(run.creatorId);
+    return `<button class="activity-item ingest-run" data-ingest-run-id="${run.id}">
+      <span class="activity-icon">↓</span>
+      <span><strong>${escapeHtml(creator?.name || run.identityKey)}</strong><small>${escapeHtml(run.sourceSystem)} · ${friendlyStatus(run.outcome)}</small></span>
+      <span class="activity-time">${relativeTime(run.completedAt)}</span>
+    </button>`;
+  }).join("") : emptyState("No creator observations ingested yet.");
+}
+
+async function submitIngestion(form) {
+  const submit = $("#ingest-submit");
+  const formData = new FormData(form);
+  const value = name => String(formData.get(name) || "").trim();
+  const nullableNumber = name => value(name) === "" ? null : Number(value(name));
+  const payload = {
+    sourceSystem: value("sourceSystem"),
+    idempotencyKey: value("idempotencyKey"),
+    platform: value("platform"),
+    externalProfileId: value("externalProfileId"),
+    creatorName: value("creatorName"),
+    profileUrl: value("profileUrl") || null,
+    countryCode: value("countryCode") || null,
+    primaryLanguage: value("primaryLanguage") || null,
+    audienceSize: nullableNumber("audienceSize"),
+    followers: nullableNumber("followers"),
+    femalePercentage: null,
+    malePercentage: null,
+    primaryAgeRange: null,
+    primaryGeography: null,
+    engagementLevel: null,
+    sourceUrl: value("sourceUrl") || null,
+    confidenceLevel: value("confidenceLevel") || "UNKNOWN",
+    collectedAt: new Date().toISOString()
+  };
+
+  submit.disabled = true;
+  submit.innerHTML = "Ingesting…";
+  try {
+    const result = await api("/api/creator-ingestions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    toast(`${result.outcome} · ${result.identityKey}${result.isReplay ? " (idempotent replay)" : ""}`);
+    form.reset();
+    form.elements.sourceSystem.value = "DASHBOARD_MANUAL";
+    generateIdempotencyKey();
+    await loadDashboard();
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    submit.disabled = false;
+    submit.innerHTML = `Ingest observation <span>→</span>`;
+  }
+}
+
+async function openIngestionRun(runId) {
+  openDrawer("Creator ingestion", `<div class="activity-skeleton"></div><div class="activity-skeleton"></div>`);
+  try {
+    const run = await api(`/api/creator-ingestions/${runId}`);
+    const creator = creatorById(run.creatorId);
+    $("#drawer-title").textContent = creator?.name || shortId(run.creatorId);
+    $("#drawer-body").innerHTML = `
+      <div class="detail-hero">
+        <div class="detail-hero-top"><span class="status-badge status-completed">${friendlyStatus(run.outcome)}</span><span class="detail-score">↓</span></div>
+        <h3>${escapeHtml(run.identityKey)}</h3>
+        <p>${escapeHtml(run.sourceSystem)} · ${formatDate(run.completedAt)}</p>
+      </div>
+      <section class="detail-section"><h4>Canonical identity</h4><div class="check-item"><div><strong>${escapeHtml(run.identityKey)}</strong><small>Provider platform + external profile ID</small></div><span class="status-badge status-approved">Resolved</span></div></section>
+      <section class="detail-section"><h4>Input snapshot</h4><pre class="json-block">${prettyJson(run.inputSnapshot)}</pre></section>`;
+  } catch (error) {
+    $("#drawer-body").innerHTML = emptyState(error.message);
+  }
+}
+
 async function openMatch(matchId) {
   openDrawer("Loading match…", `<div class="activity-skeleton"></div><div class="activity-skeleton"></div>`);
   try {
@@ -288,7 +374,7 @@ function bindNavigation() {
 function switchView(view) {
   $$(".view").forEach(element => element.classList.toggle("active", element.id === `view-${view}`));
   $$(".nav-item[data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
-  const titles = { overview: greeting(), matches: "Match certificates", creators: "Creator directory", advertisers: "Partner directory", inventory: "Content inventory", audit: "Evaluation ledger" };
+  const titles = { overview: greeting(), matches: "Match certificates", creators: "Creator directory", ingest: "Creator ingestion", advertisers: "Partner directory", inventory: "Content inventory", audit: "Evaluation ledger" };
   $("#page-title").textContent = titles[view] || "Bliss Chapel";
   $(".sidebar").classList.remove("open");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -296,6 +382,11 @@ function switchView(view) {
 
 function bindActions() {
   $("#refresh-button").addEventListener("click", loadDashboard);
+  $("#ingest-form").addEventListener("submit", event => {
+    event.preventDefault();
+    submitIngestion(event.currentTarget);
+  });
+  $("#regenerate-key").addEventListener("click", generateIdempotencyKey);
   $("#drawer-close").addEventListener("click", closeDrawer);
   $("#drawer-backdrop").addEventListener("click", closeDrawer);
   $("#settings-button").addEventListener("click", () => {
@@ -323,9 +414,11 @@ function bindActions() {
   document.addEventListener("click", event => {
     const matchButton = event.target.closest("[data-match-id]");
     const runButton = event.target.closest("[data-run-id]");
+    const ingestRunButton = event.target.closest("[data-ingest-run-id]");
     const evaluateButton = event.target.closest("[data-evaluate]");
     if (matchButton) openMatch(matchButton.dataset.matchId);
     if (runButton) openRun(runButton.dataset.runId);
+    if (ingestRunButton) openIngestionRun(ingestRunButton.dataset.ingestRunId);
     if (evaluateButton) evaluateMatch(evaluateButton.dataset.evaluate, evaluateButton);
   });
   document.addEventListener("keydown", event => {
@@ -353,7 +446,7 @@ function setConnection(status, detail) {
 }
 function renderUnavailable(message) {
   const content = emptyState(`Could not load backend data: ${message}`);
-  ["match-list", "creator-grid", "advertiser-grid", "inventory-list", "recent-runs", "status-chart"].forEach(id => $(`#${id}`).innerHTML = content);
+  ["match-list", "creator-grid", "advertiser-grid", "inventory-list", "recent-runs", "status-chart", "ingestion-list"].forEach(id => $(`#${id}`).innerHTML = content);
   $("#audit-table").innerHTML = `<tr><td colspan="7">${content}</td></tr>`;
 }
 function toast(message, isError = false) {
@@ -387,6 +480,10 @@ function contentSymbol(type) { return type === "VIDEO" ? "▶" : type === "PODCA
 function greeting() {
   const hour = new Date().getHours();
   return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+}
+function generateIdempotencyKey() {
+  const field = $("#ingest-idempotency");
+  if (field) field.value = `manual-${crypto.randomUUID()}`;
 }
 function prettyJson(value) {
   try { return escapeHtml(JSON.stringify(JSON.parse(value), null, 2)); }

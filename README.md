@@ -1,8 +1,8 @@
 # Bliss Bot Chapel
 
-Standalone Phase 1 foundation, Phase 2 controlled test data and deterministic rule evaluation, Phase 3 historical evaluation audit, and a browser-based test dashboard.
+Standalone Bliss Bot Chapel: foundation, deterministic rule evaluation, historical audit, provider-neutral creator ingestion, and a browser-based test dashboard.
 
-This repository is **not** connected to Alpha Auto.
+This repository and database are **not** connected to Alpha Auto. They are separate products and bounded contexts.
 
 ## Stack
 
@@ -13,7 +13,7 @@ This repository is **not** connected to Alpha Auto.
 
 ## Solution
 
-- `Bliss.Api` — REST API + Swagger + same-origin operations dashboard
+- `Bliss.Api` — REST API + Swagger + same-origin operations and creator-ingestion dashboard
 - `Bliss.Domain` — entities and constants
 - `Bliss.Infrastructure` — EF Core, configurations, migrations, seed data
 - `Bliss.Tests` — architecture and persistence proofs
@@ -74,3 +74,5 @@ Phase 2 engineering contract: `docs/bliss/PHASE-2-ENGINEERING-CONTRACT.md`.
 Phase 2 evidence: `docs/bliss/PHASE-2-EVIDENCE.md`.
 Phase 3 engineering contract: `docs/bliss/PHASE-3-ENGINEERING-CONTRACT.md`.
 Phase 3 evidence: `docs/bliss/PHASE-3-EVIDENCE.md`.
+Phase 4 engineering contract: `docs/bliss/PHASE-4-ENGINEERING-CONTRACT.md`.
+Phase 4 evidence: `docs/bliss/PHASE-4-EVIDENCE.md`.

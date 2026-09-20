@@ -130,6 +130,7 @@ public sealed class Phase2DataSeeder
             CreatorId = BrazilCreatorId,
             Platform = "YouTube",
             ExternalProfileId = "CRT-TEST-BR-001",
+            IdentityKey = CreatorIngestionService.BuildIdentityKey("YouTube", "CRT-TEST-BR-001"),
             ProfileUrl = "https://example.test/creators/crt-test-br-001",
             Followers = 80000,
             LastCollectedAt = now

@@ -178,6 +178,62 @@ public sealed record MatchEvaluationRunDetailDto(
     string? InputSnapshot,
     string? OutputSnapshot);
 
+public sealed record CreatorIngestionRequest(
+    string SourceSystem,
+    string IdempotencyKey,
+    string Platform,
+    string ExternalProfileId,
+    string CreatorName,
+    string? ProfileUrl,
+    string? CountryCode,
+    string? PrimaryLanguage,
+    int? AudienceSize,
+    int? Followers,
+    decimal? FemalePercentage,
+    decimal? MalePercentage,
+    string? PrimaryAgeRange,
+    string? PrimaryGeography,
+    string? EngagementLevel,
+    string? SourceUrl,
+    string? ConfidenceLevel,
+    DateTime? CollectedAt);
+
+public sealed record CreatorIngestionResultDto(
+    Guid RunId,
+    Guid CreatorId,
+    Guid CreatorPlatformId,
+    string IdentityKey,
+    string SourceSystem,
+    string IdempotencyKey,
+    string Status,
+    string Outcome,
+    DateTime CompletedAt,
+    bool IsReplay);
+
+public sealed record CreatorIngestionRunSummaryDto(
+    Guid Id,
+    Guid CreatorId,
+    Guid CreatorPlatformId,
+    string SourceSystem,
+    string IdempotencyKey,
+    string IdentityKey,
+    string Status,
+    string Outcome,
+    DateTime CompletedAt);
+
+public sealed record CreatorIngestionRunDetailDto(
+    Guid Id,
+    Guid CreatorId,
+    Guid CreatorPlatformId,
+    string SourceSystem,
+    string IdempotencyKey,
+    string IdentityKey,
+    string Status,
+    string Outcome,
+    DateTime StartedAt,
+    DateTime CompletedAt,
+    string InputSnapshot);
+
 public sealed record AffiliateNetworkDto(
     Guid Id,
     string Name,

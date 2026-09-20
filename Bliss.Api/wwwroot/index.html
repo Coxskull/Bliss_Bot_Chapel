@@ -30,6 +30,10 @@
         <button class="nav-item" data-view="creators">
           <span class="nav-icon">◉</span><span>Creators</span>
         </button>
+        <button class="nav-item" data-view="ingest">
+          <span class="nav-icon">↓</span><span>Creator ingest</span>
+          <span class="nav-count" id="nav-ingest-count">—</span>
+        </button>
         <button class="nav-item" data-view="advertisers">
           <span class="nav-icon">△</span><span>Advertisers</span>
         </button>
@@ -153,6 +157,42 @@
             <div><p class="eyebrow">CREATOR DIRECTORY</p><h2>Global creator profiles</h2><p>Audience data remains nullable—unknown is never treated as zero.</p></div>
           </div>
           <div class="entity-grid" id="creator-grid"></div>
+        </section>
+
+        <section class="view" id="view-ingest">
+          <div class="section-intro">
+            <div><p class="eyebrow">CONTROLLED OBSERVATIONS</p><h2>Creator ingest</h2><p>Resolve a provider identity, preserve unknown fields, and record provenance without calling external services.</p></div>
+          </div>
+          <div class="ingest-layout">
+            <form class="panel ingest-form" id="ingest-form">
+              <div class="panel-header">
+                <div><p class="eyebrow">NEW OBSERVATION</p><h3>Provider-neutral profile</h3></div>
+                <span class="phase-tag">PHASE 4</span>
+              </div>
+              <div class="safety-note"><strong>Controlled input only.</strong> This form does not crawl, call a provider, or use Alpha Auto data.</div>
+              <div class="form-grid">
+                <label><span>Source system *</span><input name="sourceSystem" value="DASHBOARD_MANUAL" maxlength="64" required></label>
+                <label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="ingest-idempotency" readonly required><button type="button" id="regenerate-key" title="Generate a new key">↻</button></div></label>
+                <label><span>Platform *</span><select name="platform" required><option>YouTube</option><option>Podcast</option><option>TikTok</option><option>Instagram</option><option>Twitch</option><option>Other</option></select></label>
+                <label><span>External profile ID *</span><input name="externalProfileId" placeholder="provider-owned-id" maxlength="256" required></label>
+                <label class="span-two"><span>Creator display name *</span><input name="creatorName" placeholder="Creator name" maxlength="256" required></label>
+                <label><span>Country code</span><input name="countryCode" placeholder="ES" maxlength="8"></label>
+                <label><span>Primary language</span><input name="primaryLanguage" placeholder="Spanish" maxlength="128"></label>
+                <label><span>Audience size</span><input name="audienceSize" type="number" min="0" placeholder="Unknown"></label>
+                <label><span>Platform followers</span><input name="followers" type="number" min="0" placeholder="Unknown"></label>
+                <label class="span-two"><span>Profile URL</span><input name="profileUrl" type="url" placeholder="https://example.test/profile"></label>
+                <label class="span-two"><span>Observation source URL</span><input name="sourceUrl" type="url" placeholder="https://example.test/observation"></label>
+                <label><span>Confidence</span><select name="confidenceLevel"><option>UNKNOWN</option><option>LOW</option><option>MEDIUM</option><option>HIGH</option></select></label>
+              </div>
+              <div class="form-actions"><small>Blank metrics remain UNKNOWN, never zero.</small><button class="primary-button" type="submit" id="ingest-submit">Ingest observation <span>→</span></button></div>
+            </form>
+            <section class="panel ingestion-history">
+              <div class="panel-header">
+                <div><p class="eyebrow">INGESTION LEDGER</p><h3>Recent observations</h3></div>
+              </div>
+              <div id="ingestion-list" class="activity-list"></div>
+            </section>
+          </div>
         </section>
 
         <section class="view" id="view-advertisers">

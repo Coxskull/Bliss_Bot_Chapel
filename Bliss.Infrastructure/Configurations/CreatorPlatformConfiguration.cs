@@ -13,10 +13,14 @@ public sealed class CreatorPlatformConfiguration : IEntityTypeConfiguration<Crea
 
         builder.Property(x => x.Platform).IsRequired().HasMaxLength(64);
         builder.Property(x => x.ExternalProfileId).HasMaxLength(256);
+        builder.Property(x => x.IdentityKey).HasMaxLength(384);
         builder.Property(x => x.ProfileUrl).HasMaxLength(1024);
 
         builder.HasIndex(x => x.CreatorId);
         builder.HasIndex(x => x.ExternalProfileId);
         builder.HasIndex(x => x.Platform);
+        builder.HasIndex(x => x.IdentityKey)
+            .IsUnique()
+            .HasFilter("\"IdentityKey\" IS NOT NULL");
     }
 }
