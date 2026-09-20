@@ -5,12 +5,16 @@ const state = {
   advertisers: [],
   opportunities: [],
   content: [],
+  contentDetails: [],
   runs: [],
   ingestions: [],
   formations: [],
   ruleVersions: [],
   reviews: [],
   reviewQueue: [],
+  campaigns: [],
+  placements: [],
+  placementQueue: [],
   matchFilter: "ALL",
   matchSearch: ""
 };
@@ -24,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   generateIdempotencyKey();
   generateFormationIdempotencyKey();
   generateReviewIdempotencyKey();
+  generatePlacementIdempotencyKey();
   loadDashboard();
 });
 
@@ -46,7 +51,7 @@ async function loadDashboard() {
   setConnection("loading");
   $("#refresh-button").classList.add("spinning");
   try {
-    const [matches, creators, advertisers, opportunities, content, runs, ingestions, formations, ruleVersions, reviews, reviewQueue] = await Promise.all([
+    const [matches, creators, advertisers, opportunities, content, runs, ingestions, formations, ruleVersions, reviews, reviewQueue, campaigns, placements, placementQueue] = await Promise.all([
       api("/api/bliss/matches"),
       api("/api/creators"),
       api("/api/advertisers"),
@@ -57,12 +62,22 @@ async function loadDashboard() {
       api("/api/match-formation-runs"),
       api("/api/rule-versions"),
       api("/api/match-review-decisions"),
-      api("/api/match-reviews/queue")
+      api("/api/match-reviews/queue"),
+      api("/api/campaigns"),
+      api("/api/campaign-placement-runs"),
+      api("/api/campaign-bindings/queue")
     ]);
     const ruleDetails = await Promise.all(ruleVersions.map(rule =>
       api(`/api/rule-versions/${rule.id}`).catch(() => rule)
     ));
-    Object.assign(state, { matches, creators, advertisers, opportunities, content, runs, ingestions, formations, ruleVersions: ruleDetails, reviews, reviewQueue });
+    const contentDetails = await Promise.all(content.map(item =>
+      api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] }))
+    ));
+    Object.assign(state, {
+      matches, creators, advertisers, opportunities, content, contentDetails,
+      runs, ingestions, formations, ruleVersions: ruleDetails, reviews,
+      reviewQueue, campaigns, placements, placementQueue
+    });
     renderAll();
     setConnection("online");
   } catch (error) {
@@ -84,10 +99,12 @@ function renderAll() {
   renderIngestions();
   renderFormations();
   renderReviews();
+  renderPlacements();
   $("#nav-match-count").textContent = state.matches.length;
   $("#nav-ingest-count").textContent = state.ingestions.length;
   $("#nav-formation-count").textContent = state.formations.length;
   $("#nav-review-count").textContent = state.reviewQueue.length;
+  $("#nav-placement-count").textContent = state.placementQueue.length;
 }
 
 function renderOverview() {
@@ -200,9 +217,7 @@ function renderAdvertisers() {
 }
 
 async function renderInventory() {
-  const details = await Promise.all(state.content.map(item =>
-    api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] }))
-  ));
+  const details = state.contentDetails;
   $("#inventory-list").innerHTML = details.length ? details.map(item => {
     const creator = creatorById(item.creatorId);
     return `<article class="inventory-card">
@@ -395,6 +410,109 @@ async function openReviewDecision(id) {
   }
 }
 
+function renderPlacements() {
+  $("#placement-match").innerHTML = state.placementQueue.length
+    ? state.placementQueue.map(item =>
+        `<option value="${item.blissMatchId}">${escapeHtml(item.creatorName)} · ${escapeHtml(item.opportunityName)} · ${formatScore(item.overallScore)}</option>`)
+      .join("")
+    : `<option value="">No approved unbound matches</option>`;
+  updatePlacementOptions();
+
+  const runs = [...state.placements]
+    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+    .slice(0, 8);
+  $("#placement-list").innerHTML = runs.length ? runs.map(run => {
+    const creator = creatorById(run.creatorId);
+    const campaign = campaignById(run.campaignId);
+    return `<button class="activity-item ingest-run" data-placement-run-id="${run.id}">
+      <span class="activity-icon">▣</span>
+      <span><strong>${escapeHtml(creator?.name || shortId(run.creatorId))}</strong><small>${escapeHtml(campaign?.name || shortId(run.campaignId))} · Planned</small></span>
+      <span class="activity-time">${relativeTime(run.completedAt)}</span>
+    </button>`;
+  }).join("") : emptyState("No controlled campaign placements yet.");
+}
+
+function updatePlacementOptions() {
+  const queueItem = state.placementQueue.find(item => item.blissMatchId === $("#placement-match").value)
+    || state.placementQueue[0];
+  const campaigns = state.campaigns.filter(campaign =>
+    campaign.status === "DRAFT"
+      && (!campaign.advertiserOpportunityId
+        || campaign.advertiserOpportunityId === queueItem?.advertiserOpportunityId)
+  );
+  $("#placement-campaign").innerHTML = campaigns.length
+    ? campaigns.map(campaign => `<option value="${campaign.id}">${escapeHtml(campaign.name)}</option>`).join("")
+    : `<option value="">No compatible draft campaigns</option>`;
+
+  const content = state.contentDetails.filter(item => item.creatorId === queueItem?.creatorId);
+  $("#placement-content").innerHTML = content.length
+    ? content.map(item => `<option value="${item.id}">${escapeHtml(item.title)} · ${escapeHtml(item.contentType)}</option>`).join("")
+    : `<option value="">No creator-owned content</option>`;
+  updatePlacementSlots();
+}
+
+function updatePlacementSlots() {
+  const content = state.contentDetails.find(item => item.id === $("#placement-content").value);
+  const slots = content?.adInventorySlots || [];
+  $("#placement-slot").innerHTML = slots.length
+    ? slots.map(slot => `<option value="${slot.id}">${friendlyStatus(slot.slotType)} · ${slot.isAvailable ? "Available" : "Unavailable"} (not reserved)</option>`).join("")
+    : `<option value="">No inventory slots</option>`;
+}
+
+async function submitPlacement(form) {
+  const submit = $("#placement-submit");
+  const formData = new FormData(form);
+  const payload = {
+    sourceSystem: String(formData.get("sourceSystem") || "").trim(),
+    idempotencyKey: String(formData.get("idempotencyKey") || "").trim(),
+    operatorLabel: String(formData.get("operatorLabel") || "").trim(),
+    blissMatchId: String(formData.get("blissMatchId") || ""),
+    campaignId: String(formData.get("campaignId") || ""),
+    contentItemId: String(formData.get("contentItemId") || ""),
+    adInventorySlotId: String(formData.get("adInventorySlotId") || "")
+  };
+
+  submit.disabled = true;
+  submit.innerHTML = "Planning…";
+  try {
+    const result = await api("/api/campaign-placements", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    toast(`Planned · campaign inventory${result.isReplay ? " (replay)" : ""}`);
+    generatePlacementIdempotencyKey();
+    await loadDashboard();
+    openPlacementRun(result.runId);
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    submit.disabled = false;
+    submit.innerHTML = `Plan placement <span>→</span>`;
+  }
+}
+
+async function openPlacementRun(id) {
+  openDrawer("Campaign placement", `<div class="activity-skeleton"></div><div class="activity-skeleton"></div>`);
+  try {
+    const run = await api(`/api/campaign-placement-runs/${id}`);
+    const creator = creatorById(run.creatorId);
+    const campaign = campaignById(run.campaignId);
+    const content = state.contentDetails.find(item => item.id === run.contentItemId);
+    $("#drawer-title").textContent = creator?.name || shortId(run.creatorId);
+    $("#drawer-body").innerHTML = `
+      <div class="detail-hero">
+        <div class="detail-hero-top"><span class="status-badge status-created">Planned</span><span class="detail-score">▣</span></div>
+        <h3>${escapeHtml(campaign?.name || shortId(run.campaignId))}</h3>
+        <p>${escapeHtml(run.operatorLabel)} · ${formatDate(run.completedAt)}</p>
+      </div>
+      <section class="detail-section"><h4>Inventory intent</h4><div class="check-item"><div><strong>${escapeHtml(content?.title || shortId(run.contentItemId))}</strong><small>Slot ${shortId(run.adInventorySlotId)} · no reservation or delivery</small></div><span class="status-badge status-created">Planned</span></div></section>
+      <section class="detail-section"><h4>Input snapshot</h4><pre class="json-block">${prettyJson(run.inputSnapshot)}</pre></section>`;
+  } catch (error) {
+    $("#drawer-body").innerHTML = emptyState(error.message);
+  }
+}
+
 async function submitIngestion(form) {
   const submit = $("#ingest-submit");
   const formData = new FormData(form);
@@ -540,7 +658,7 @@ function bindNavigation() {
 function switchView(view) {
   $$(".view").forEach(element => element.classList.toggle("active", element.id === `view-${view}`));
   $$(".nav-item[data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
-  const titles = { overview: greeting(), matches: "Match certificates", formation: "Controlled match formation", review: "Human review queue", creators: "Creator directory", ingest: "Creator ingestion", advertisers: "Partner directory", inventory: "Content inventory", audit: "Evaluation ledger" };
+  const titles = { overview: greeting(), matches: "Match certificates", formation: "Controlled match formation", review: "Human review queue", placement: "Campaign placement planning", creators: "Creator directory", ingest: "Creator ingestion", advertisers: "Partner directory", inventory: "Content inventory", audit: "Evaluation ledger" };
   $("#page-title").textContent = titles[view] || "Bliss Chapel";
   $(".sidebar").classList.remove("open");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -560,9 +678,16 @@ function bindActions() {
     event.preventDefault();
     submitReview(event.currentTarget);
   });
+  $("#placement-form").addEventListener("submit", event => {
+    event.preventDefault();
+    submitPlacement(event.currentTarget);
+  });
   $("#regenerate-key").addEventListener("click", generateIdempotencyKey);
   $("#regenerate-formation-key").addEventListener("click", generateFormationIdempotencyKey);
   $("#regenerate-review-key").addEventListener("click", generateReviewIdempotencyKey);
+  $("#regenerate-placement-key").addEventListener("click", generatePlacementIdempotencyKey);
+  $("#placement-match").addEventListener("change", updatePlacementOptions);
+  $("#placement-content").addEventListener("change", updatePlacementSlots);
   $("#drawer-close").addEventListener("click", closeDrawer);
   $("#drawer-backdrop").addEventListener("click", closeDrawer);
   $("#settings-button").addEventListener("click", () => {
@@ -593,12 +718,14 @@ function bindActions() {
     const ingestRunButton = event.target.closest("[data-ingest-run-id]");
     const formationRunButton = event.target.closest("[data-formation-run-id]");
     const reviewButton = event.target.closest("[data-review-id]");
+    const placementRunButton = event.target.closest("[data-placement-run-id]");
     const evaluateButton = event.target.closest("[data-evaluate]");
     if (matchButton) openMatch(matchButton.dataset.matchId);
     if (runButton) openRun(runButton.dataset.runId);
     if (ingestRunButton) openIngestionRun(ingestRunButton.dataset.ingestRunId);
     if (formationRunButton) openFormationRun(formationRunButton.dataset.formationRunId);
     if (reviewButton) openReviewDecision(reviewButton.dataset.reviewId);
+    if (placementRunButton) openPlacementRun(placementRunButton.dataset.placementRunId);
     if (evaluateButton) evaluateMatch(evaluateButton.dataset.evaluate, evaluateButton);
   });
   document.addEventListener("keydown", event => {
@@ -626,7 +753,7 @@ function setConnection(status, detail) {
 }
 function renderUnavailable(message) {
   const content = emptyState(`Could not load backend data: ${message}`);
-  ["match-list", "creator-grid", "advertiser-grid", "inventory-list", "recent-runs", "status-chart", "ingestion-list", "formation-list", "review-list"].forEach(id => $(`#${id}`).innerHTML = content);
+  ["match-list", "creator-grid", "advertiser-grid", "inventory-list", "recent-runs", "status-chart", "ingestion-list", "formation-list", "review-list", "placement-list"].forEach(id => $(`#${id}`).innerHTML = content);
   $("#audit-table").innerHTML = `<tr><td colspan="7">${content}</td></tr>`;
 }
 function toast(message, isError = false) {
@@ -639,6 +766,7 @@ function toast(message, isError = false) {
 
 function creatorById(id) { return state.creators.find(item => item.id === id); }
 function opportunityById(id) { return state.opportunities.find(item => item.id === id); }
+function campaignById(id) { return state.campaigns.find(item => item.id === id); }
 function statusClass(status = "CREATED") { return `status-${status.toLowerCase()}`; }
 function statusSymbol(status) { return status === "APPROVED" ? "✓" : status === "INELIGIBLE" ? "×" : status === "REVIEW_REQUIRED" ? "!" : "◇"; }
 function friendlyStatus(value = "UNKNOWN") { return value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, char => char.toUpperCase()); }
@@ -671,6 +799,10 @@ function generateFormationIdempotencyKey() {
 }
 function generateReviewIdempotencyKey() {
   const field = $("#review-idempotency");
+  if (field) field.value = `manual-${crypto.randomUUID()}`;
+}
+function generatePlacementIdempotencyKey() {
+  const field = $("#placement-idempotency");
   if (field) field.value = `manual-${crypto.randomUUID()}`;
 }
 function prettyJson(value) {

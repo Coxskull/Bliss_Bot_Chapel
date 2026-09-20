@@ -35,6 +35,10 @@
           <span class="nav-icon">☑</span><span>Review queue</span>
           <span class="nav-count" id="nav-review-count">—</span>
         </button>
+        <button class="nav-item" data-view="placement">
+          <span class="nav-icon">▣</span><span>Plan placement</span>
+          <span class="nav-count" id="nav-placement-count">—</span>
+        </button>
         <button class="nav-item" data-view="creators">
           <span class="nav-icon">◉</span><span>Creators</span>
         </button>
@@ -223,6 +227,37 @@
                 <div><p class="eyebrow">DECISION LEDGER</p><h3>Recent reviews</h3></div>
               </div>
               <div id="review-list" class="activity-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-placement">
+          <div class="section-intro">
+            <div><p class="eyebrow">CAMPAIGN PLANNING</p><h2>Bind approved inventory</h2><p>Record placement intent for an approved certificate. This does not reserve, schedule, deliver, track, measure, or pay.</p></div>
+          </div>
+          <div class="ingest-layout">
+            <form class="panel ingest-form" id="placement-form">
+              <div class="panel-header">
+                <div><p class="eyebrow">NEW PLACEMENT</p><h3>Controlled inventory binding</h3></div>
+                <span class="phase-tag">PHASE 7</span>
+              </div>
+              <div class="safety-note"><strong>Planning only.</strong> Explicit IDs are bound without changing slot availability or executing a campaign.</div>
+              <div class="form-grid">
+                <label><span>Source system *</span><input name="sourceSystem" value="DASHBOARD_MANUAL" maxlength="64" required></label>
+                <label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="placement-idempotency" readonly required><button type="button" id="regenerate-placement-key" title="Generate a new key">↻</button></div></label>
+                <label class="span-two"><span>Approved match *</span><select name="blissMatchId" id="placement-match" required></select></label>
+                <label class="span-two"><span>Draft campaign *</span><select name="campaignId" id="placement-campaign" required></select></label>
+                <label class="span-two"><span>Creator-owned content *</span><select name="contentItemId" id="placement-content" required></select></label>
+                <label class="span-two"><span>Inventory slot *</span><select name="adInventorySlotId" id="placement-slot" required></select></label>
+                <label class="span-two"><span>Operator label *</span><input name="operatorLabel" value="TEST_OPERATOR" maxlength="128" required></label>
+              </div>
+              <div class="form-actions"><small>Placement remains PLANNED. The slot remains available.</small><button class="primary-button" type="submit" id="placement-submit">Plan placement <span>→</span></button></div>
+            </form>
+            <section class="panel ingestion-history">
+              <div class="panel-header">
+                <div><p class="eyebrow">PLACEMENT LEDGER</p><h3>Recent bindings</h3></div>
+              </div>
+              <div id="placement-list" class="activity-list"></div>
             </section>
           </div>
         </section>

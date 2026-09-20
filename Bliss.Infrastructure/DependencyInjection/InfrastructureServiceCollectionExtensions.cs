@@ -18,6 +18,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<CreatorIngestionService>();
         services.AddScoped<MatchFormationService>();
         services.AddScoped<MatchReviewService>();
+        services.AddScoped<CampaignPlacementService>();
         return services;
     }
 

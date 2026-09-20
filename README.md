@@ -1,6 +1,6 @@
 # Bliss Bot Chapel
 
-Standalone Bliss Bot Chapel: foundation, deterministic rule evaluation, historical audit, provider-neutral creator ingestion, controlled match formation, human review, and a browser-based test dashboard.
+Standalone Bliss Bot Chapel: foundation, deterministic rule evaluation, historical audit, provider-neutral creator ingestion, controlled match formation, human review, campaign placement planning, and a browser-based test dashboard.
 
 This repository and database are **not** connected to Alpha Auto. They are separate products and bounded contexts.
 
@@ -82,3 +82,4 @@ Phase 5 engineering contract: `docs/bliss/PHASE-5-ENGINEERING-CONTRACT.md`.
 Phase 5 evidence: `docs/bliss/PHASE-5-EVIDENCE.md`.
 Phase 6 engineering contract: `docs/bliss/PHASE-6-ENGINEERING-CONTRACT.md`.
 Phase 6 evidence: `docs/bliss/PHASE-6-EVIDENCE.md`.
+Phase 7 engineering contract: `docs/bliss/PHASE-7-ENGINEERING-CONTRACT.md`.

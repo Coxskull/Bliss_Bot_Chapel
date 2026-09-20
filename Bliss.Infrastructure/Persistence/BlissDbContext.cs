@@ -35,6 +35,7 @@ public class BlissDbContext : DbContext
 
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<CampaignPlacement> CampaignPlacements => Set<CampaignPlacement>();
+    public DbSet<CampaignPlacementRun> CampaignPlacementRuns => Set<CampaignPlacementRun>();
 
     public DbSet<MatchEvaluationRun> MatchEvaluationRuns => Set<MatchEvaluationRun>();
 

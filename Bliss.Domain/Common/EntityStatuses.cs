@@ -14,6 +14,7 @@ public static class EntityStatuses
     public const string ReviewRequired = "REVIEW_REQUIRED";
     public const string Ineligible = "INELIGIBLE";
     public const string Evaluated = "EVALUATED";
+    public const string Planned = "PLANNED";
 }
 
 public static class EligibilityReasonCodes

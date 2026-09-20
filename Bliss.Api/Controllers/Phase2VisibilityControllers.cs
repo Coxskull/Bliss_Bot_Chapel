@@ -98,7 +98,8 @@ public sealed class CampaignsController : ControllerBase
         var items = await _db.Campaigns
             .AsNoTracking()
             .OrderBy(x => x.Name)
-            .Select(x => new CampaignListDto(x.Id, x.Name, x.Status, x.CreatedAt))
+            .Select(x => new CampaignListDto(
+                x.Id, x.AdvertiserOpportunityId, x.Name, x.Status, x.CreatedAt))
             .ToListAsync(cancellationToken);
         return Ok(items);
     }
@@ -117,10 +118,12 @@ public sealed class CampaignsController : ControllerBase
 
         return Ok(new CampaignDetailDto(
             campaign.Id,
+            campaign.AdvertiserOpportunityId,
             campaign.Name,
             campaign.Status,
             campaign.CreatedAt,
             campaign.Placements.Select(p => new CampaignPlacementDto(
-                p.Id, p.CampaignId, p.ContentItemId, p.AdInventorySlotId, p.Status, p.StartAt, p.EndAt)).ToList()));
+                p.Id, p.CampaignId, p.ContentItemId, p.AdInventorySlotId,
+                p.BlissMatchId, p.Status, p.StartAt, p.EndAt)).ToList()));
     }
 }
