@@ -234,6 +234,57 @@ public sealed record CreatorIngestionRunDetailDto(
     DateTime CompletedAt,
     string InputSnapshot);
 
+public sealed record MatchFormationRequest(
+    string SourceSystem,
+    string IdempotencyKey,
+    Guid CreatorId,
+    Guid AdvertiserOpportunityId,
+    Guid RuleVersionId,
+    bool EvaluateOnCreate);
+
+public sealed record MatchFormationResultDto(
+    Guid RunId,
+    Guid BlissMatchId,
+    Guid CreatorId,
+    Guid AdvertiserOpportunityId,
+    Guid RuleVersionId,
+    string SourceSystem,
+    string IdempotencyKey,
+    string Status,
+    string Outcome,
+    string MatchStatus,
+    bool EvaluateOnCreate,
+    DateTime CompletedAt,
+    bool IsReplay);
+
+public sealed record MatchFormationRunSummaryDto(
+    Guid Id,
+    Guid BlissMatchId,
+    Guid CreatorId,
+    Guid AdvertiserOpportunityId,
+    Guid RuleVersionId,
+    string SourceSystem,
+    string IdempotencyKey,
+    string Status,
+    string Outcome,
+    bool EvaluateOnCreate,
+    DateTime CompletedAt);
+
+public sealed record MatchFormationRunDetailDto(
+    Guid Id,
+    Guid BlissMatchId,
+    Guid CreatorId,
+    Guid AdvertiserOpportunityId,
+    Guid RuleVersionId,
+    string SourceSystem,
+    string IdempotencyKey,
+    string Status,
+    string Outcome,
+    bool EvaluateOnCreate,
+    DateTime StartedAt,
+    DateTime CompletedAt,
+    string InputSnapshot);
+
 public sealed record AffiliateNetworkDto(
     Guid Id,
     string Name,

@@ -1,0 +1,35 @@
+              MigrationId              
+---------------------------------------
+ 20260919013044_Phase1Foundation
+ 20260920063520_Phase2RuleDocument
+ 20260920073126_Phase3EvaluationAudit
+ 20260920102946_Phase4CreatorIngestion
+ 20260920123653_Phase5MatchFormation
+(5 rows)
+
+          t           | count 
+----------------------+-------
+ Creators             |     8
+ BlissMatches         |    10
+ MatchFormationRuns   |     2
+ MatchEvaluationRuns  |     9
+ EligibilityChecks    |    51
+ MatchScoreComponents |    31
+(6 rows)
+
+                  Id                  |             BlissMatchId             |   SourceSystem   | Outcome | EvaluateOnCreate |     Status      | OverallScore | ConfidenceScore |            Name            |           opportunity            
+--------------------------------------+--------------------------------------+------------------+---------+------------------+-----------------+--------------+-----------------+----------------------------+----------------------------------
+ 332e36a9-8e5b-4310-9800-8fbc5565d3d1 | 85a9afc5-290f-4226-8f39-8994238feb49 | PHASE5_LIVE_TEST | CREATED | t                | REVIEW_REQUIRED |       0.8500 |          0.4000 | Supabase Live Test Creator | Opportunity PH window - Clip Mic
+ bb53f60c-087f-4079-8596-759c20ccfff4 | 2b733ffa-ecfd-4891-ae4f-977933644549 | DASHBOARD_MANUAL | CREATED | t                | INELIGIBLE      |       0.3000 |          0.9000 | Phase 4 Creator Spain      | Opportunity A - Morning Tonic
+(2 rows)
+
+                  Id                  | Status  |            RuleVersionId             |       AdvertiserOpportunityId        
+--------------------------------------+---------+--------------------------------------+--------------------------------------
+ 77777777-7777-7777-7777-777777777771 | CREATED | 66666666-6666-6666-6666-666666666661 | 55555555-5555-5555-5555-555555555551
+(1 row)
+
+              CreatorId               | match_count 
+--------------------------------------+-------------
+ 11111111-1111-1111-1111-111111111111 |           6
+(1 row)
+

@@ -7,6 +7,8 @@ const state = {
   content: [],
   runs: [],
   ingestions: [],
+  formations: [],
+  ruleVersions: [],
   matchFilter: "ALL",
   matchSearch: ""
 };
@@ -18,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindNavigation();
   bindActions();
   generateIdempotencyKey();
+  generateFormationIdempotencyKey();
   loadDashboard();
 });
 
@@ -40,16 +43,21 @@ async function loadDashboard() {
   setConnection("loading");
   $("#refresh-button").classList.add("spinning");
   try {
-    const [matches, creators, advertisers, opportunities, content, runs, ingestions] = await Promise.all([
+    const [matches, creators, advertisers, opportunities, content, runs, ingestions, formations, ruleVersions] = await Promise.all([
       api("/api/bliss/matches"),
       api("/api/creators"),
       api("/api/advertisers"),
       api("/api/advertiser-opportunities"),
       api("/api/content-items"),
       api("/api/match-evaluation-runs"),
-      api("/api/creator-ingestions")
+      api("/api/creator-ingestions"),
+      api("/api/match-formation-runs"),
+      api("/api/rule-versions")
     ]);
-    Object.assign(state, { matches, creators, advertisers, opportunities, content, runs, ingestions });
+    const ruleDetails = await Promise.all(ruleVersions.map(rule =>
+      api(`/api/rule-versions/${rule.id}`).catch(() => rule)
+    ));
+    Object.assign(state, { matches, creators, advertisers, opportunities, content, runs, ingestions, formations, ruleVersions: ruleDetails });
     renderAll();
     setConnection("online");
   } catch (error) {
@@ -69,8 +77,10 @@ function renderAll() {
   renderInventory();
   renderAudit();
   renderIngestions();
+  renderFormations();
   $("#nav-match-count").textContent = state.matches.length;
   $("#nav-ingest-count").textContent = state.ingestions.length;
+  $("#nav-formation-count").textContent = state.formations.length;
 }
 
 function renderOverview() {
@@ -128,7 +138,7 @@ function renderMatches() {
     const creator = creatorById(match.creatorId);
     const opportunity = opportunityById(match.advertiserOpportunityId);
     const initials = getInitials(creator?.name || "Unknown");
-    const canEvaluate = match.ruleVersionId === "66666666-6666-6666-6666-666666666662";
+    const canEvaluate = state.ruleVersions.some(rule => rule.id === match.ruleVersionId && rule.documentJson);
     return `<article class="match-row">
       <div class="entity-name">
         <span class="mini-avatar">${initials}</span>
@@ -227,6 +237,85 @@ function renderIngestions() {
       <span class="activity-time">${relativeTime(run.completedAt)}</span>
     </button>`;
   }).join("") : emptyState("No creator observations ingested yet.");
+}
+
+function renderFormations() {
+  $("#formation-creator").innerHTML = state.creators
+    .map(creator => `<option value="${creator.id}">${escapeHtml(creator.name)} · ${escapeHtml(creator.countryCode || "Unknown market")}</option>`)
+    .join("");
+  $("#formation-opportunity").innerHTML = state.opportunities
+    .filter(opportunity => opportunity.status === "ACTIVE")
+    .map(opportunity => `<option value="${opportunity.id}">${escapeHtml(opportunity.name)} · ${escapeHtml(opportunity.category || "Uncategorized")}</option>`)
+    .join("");
+  $("#formation-rule").innerHTML = state.ruleVersions
+    .filter(rule => rule.isActive)
+    .map(rule => `<option value="${rule.id}" ${rule.documentJson ? "" : "disabled"}>${escapeHtml(rule.version)} · ${escapeHtml(rule.name)}${rule.documentJson ? "" : " (no evaluator document)"}</option>`)
+    .join("");
+
+  const runs = [...state.formations]
+    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+    .slice(0, 8);
+  $("#formation-list").innerHTML = runs.length ? runs.map(run => {
+    const creator = creatorById(run.creatorId);
+    const opportunity = opportunityById(run.advertiserOpportunityId);
+    return `<button class="activity-item ingest-run" data-formation-run-id="${run.id}">
+      <span class="activity-icon">＋</span>
+      <span><strong>${escapeHtml(creator?.name || shortId(run.creatorId))}</strong><small>${escapeHtml(opportunity?.name || shortId(run.advertiserOpportunityId))} · ${run.evaluateOnCreate ? "Evaluated" : "Created"}</small></span>
+      <span class="activity-time">${relativeTime(run.completedAt)}</span>
+    </button>`;
+  }).join("") : emptyState("No controlled match formations yet.");
+}
+
+async function submitFormation(form) {
+  const submit = $("#formation-submit");
+  const formData = new FormData(form);
+  const payload = {
+    sourceSystem: String(formData.get("sourceSystem") || "").trim(),
+    idempotencyKey: String(formData.get("idempotencyKey") || "").trim(),
+    creatorId: String(formData.get("creatorId") || ""),
+    advertiserOpportunityId: String(formData.get("advertiserOpportunityId") || ""),
+    ruleVersionId: String(formData.get("ruleVersionId") || ""),
+    evaluateOnCreate: formData.get("evaluateOnCreate") === "on"
+  };
+
+  submit.disabled = true;
+  submit.innerHTML = "Forming…";
+  try {
+    const result = await api("/api/bliss/matches", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    toast(`${friendlyStatus(result.matchStatus)} · match ${result.isReplay ? "replayed" : "formed"}`);
+    generateFormationIdempotencyKey();
+    await loadDashboard();
+    openMatch(result.blissMatchId);
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    submit.disabled = false;
+    submit.innerHTML = `Form match <span>→</span>`;
+  }
+}
+
+async function openFormationRun(runId) {
+  openDrawer("Match formation", `<div class="activity-skeleton"></div><div class="activity-skeleton"></div>`);
+  try {
+    const run = await api(`/api/match-formation-runs/${runId}`);
+    const creator = creatorById(run.creatorId);
+    const opportunity = opportunityById(run.advertiserOpportunityId);
+    $("#drawer-title").textContent = creator?.name || shortId(run.creatorId);
+    $("#drawer-body").innerHTML = `
+      <div class="detail-hero">
+        <div class="detail-hero-top"><span class="status-badge status-completed">${run.evaluateOnCreate ? "Evaluated" : "Created"}</span><span class="detail-score">＋</span></div>
+        <h3>${escapeHtml(opportunity?.name || shortId(run.advertiserOpportunityId))}</h3>
+        <p>${escapeHtml(run.sourceSystem)} · ${formatDate(run.completedAt)}</p>
+      </div>
+      <section class="detail-section"><h4>Match certificate</h4><div class="check-item"><div><strong>${shortId(run.blissMatchId)}</strong><small>Explicit creator + opportunity + rule version</small></div><button class="small-button" data-match-id="${run.blissMatchId}">Inspect</button></div></section>
+      <section class="detail-section"><h4>Input snapshot</h4><pre class="json-block">${prettyJson(run.inputSnapshot)}</pre></section>`;
+  } catch (error) {
+    $("#drawer-body").innerHTML = emptyState(error.message);
+  }
 }
 
 async function submitIngestion(form) {
@@ -374,7 +463,7 @@ function bindNavigation() {
 function switchView(view) {
   $$(".view").forEach(element => element.classList.toggle("active", element.id === `view-${view}`));
   $$(".nav-item[data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
-  const titles = { overview: greeting(), matches: "Match certificates", creators: "Creator directory", ingest: "Creator ingestion", advertisers: "Partner directory", inventory: "Content inventory", audit: "Evaluation ledger" };
+  const titles = { overview: greeting(), matches: "Match certificates", formation: "Controlled match formation", creators: "Creator directory", ingest: "Creator ingestion", advertisers: "Partner directory", inventory: "Content inventory", audit: "Evaluation ledger" };
   $("#page-title").textContent = titles[view] || "Bliss Chapel";
   $(".sidebar").classList.remove("open");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -386,7 +475,12 @@ function bindActions() {
     event.preventDefault();
     submitIngestion(event.currentTarget);
   });
+  $("#formation-form").addEventListener("submit", event => {
+    event.preventDefault();
+    submitFormation(event.currentTarget);
+  });
   $("#regenerate-key").addEventListener("click", generateIdempotencyKey);
+  $("#regenerate-formation-key").addEventListener("click", generateFormationIdempotencyKey);
   $("#drawer-close").addEventListener("click", closeDrawer);
   $("#drawer-backdrop").addEventListener("click", closeDrawer);
   $("#settings-button").addEventListener("click", () => {
@@ -415,10 +509,12 @@ function bindActions() {
     const matchButton = event.target.closest("[data-match-id]");
     const runButton = event.target.closest("[data-run-id]");
     const ingestRunButton = event.target.closest("[data-ingest-run-id]");
+    const formationRunButton = event.target.closest("[data-formation-run-id]");
     const evaluateButton = event.target.closest("[data-evaluate]");
     if (matchButton) openMatch(matchButton.dataset.matchId);
     if (runButton) openRun(runButton.dataset.runId);
     if (ingestRunButton) openIngestionRun(ingestRunButton.dataset.ingestRunId);
+    if (formationRunButton) openFormationRun(formationRunButton.dataset.formationRunId);
     if (evaluateButton) evaluateMatch(evaluateButton.dataset.evaluate, evaluateButton);
   });
   document.addEventListener("keydown", event => {
@@ -446,7 +542,7 @@ function setConnection(status, detail) {
 }
 function renderUnavailable(message) {
   const content = emptyState(`Could not load backend data: ${message}`);
-  ["match-list", "creator-grid", "advertiser-grid", "inventory-list", "recent-runs", "status-chart", "ingestion-list"].forEach(id => $(`#${id}`).innerHTML = content);
+  ["match-list", "creator-grid", "advertiser-grid", "inventory-list", "recent-runs", "status-chart", "ingestion-list", "formation-list"].forEach(id => $(`#${id}`).innerHTML = content);
   $("#audit-table").innerHTML = `<tr><td colspan="7">${content}</td></tr>`;
 }
 function toast(message, isError = false) {
@@ -483,6 +579,10 @@ function greeting() {
 }
 function generateIdempotencyKey() {
   const field = $("#ingest-idempotency");
+  if (field) field.value = `manual-${crypto.randomUUID()}`;
+}
+function generateFormationIdempotencyKey() {
+  const field = $("#formation-idempotency");
   if (field) field.value = `manual-${crypto.randomUUID()}`;
 }
 function prettyJson(value) {

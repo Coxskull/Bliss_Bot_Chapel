@@ -308,6 +308,9 @@ td code { color: #4f675e; font-size: 9px; }
 .form-grid input:focus, .form-grid select:focus { border-color: #72a58f; box-shadow: 0 0 0 3px rgba(87,201,149,.1); }
 .form-grid input[readonly] { color: #6d7b76; background: #eeece5; }
 .form-grid .span-two { grid-column: span 2; }
+.form-grid .checkbox-label { display: flex; align-items: center; gap: 9px; color: #40534c; font-size: 10px; }
+.form-grid .checkbox-label input { width: 16px; height: 16px; margin: 0; accent-color: var(--mint-strong); }
+.form-grid .checkbox-label > span { display: inline; margin: 0; color: inherit; font-size: inherit; letter-spacing: 0; text-transform: none; }
 .input-action { display: flex; }
 .input-action input { border-radius: 7px 0 0 7px; }
 .input-action button { width: 40px; flex: 0 0 auto; border: 1px solid var(--line); border-left: 0; border-radius: 0 7px 7px 0; color: #38594c; background: #f4f2eb; }

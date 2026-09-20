@@ -3,6 +3,7 @@ using System;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Bliss.Infrastructure.Migrations
 {
     [DbContext(typeof(BlissDbContext))]
-    partial class BlissDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260920123653_Phase5MatchFormation")]
+    partial class Phase5MatchFormation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
