@@ -1,0 +1,57 @@
+{
+  "id": "77777777-7777-7777-7777-777777777771",
+  "status": "CREATED",
+  "createdAt": "2026-09-16T12:00:00Z",
+  "creator": {
+    "id": "11111111-1111-1111-1111-111111111111",
+    "name": "Test Creator",
+    "countryCode": "PH",
+    "primaryLanguage": "English / Tagalog",
+    "audienceSize": 100000,
+    "femalePercentage": 70.0,
+    "malePercentage": 30.0
+  },
+  "advertiserOpportunity": {
+    "id": "55555555-5555-5555-5555-555555555551",
+    "name": "Opportunity A - Morning Tonic",
+    "productName": "Morning Tonic",
+    "category": "Wellness",
+    "description": "Fictional product opportunity A.",
+    "status": "ACTIVE",
+    "advertiserProgram": {
+      "id": "44444444-4444-4444-4444-444444444444",
+      "name": "Sunrise Affiliate Program",
+      "status": "ACTIVE",
+      "advertiser": {
+        "id": "33333333-3333-3333-3333-333333333333",
+        "name": "Sunrise Wellness Co.",
+        "website": "https://example.test/sunrise",
+        "countryCode": "PH"
+      }
+    }
+  },
+  "ruleVersion": {
+    "id": "66666666-6666-6666-6666-666666666661",
+    "version": "1.0.0",
+    "name": "Phase 1 Baseline Rules",
+    "description": "Historical rule snapshot used by seeded matches.",
+    "isActive": true,
+    "createdAt": "2026-09-16T12:00:00Z"
+  },
+  "scoreComponents": [
+    {
+      "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1",
+      "componentName": "PLACEHOLDER_AUDIENCE_FIT",
+      "explanation": "Persisted for future scoring; Phase 1 does not calculate scores."
+    }
+  ],
+  "eligibilityChecks": [
+    {
+      "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2",
+      "checkType": "PLACEHOLDER_NETWORK_ACCESS",
+      "result": "UNKNOWN",
+      "reasonCode": "NOT_EVALUATED",
+      "explanation": "Persisted for future Chaperone checks; Phase 1 does not evaluate eligibility."
+    }
+  ]
+}

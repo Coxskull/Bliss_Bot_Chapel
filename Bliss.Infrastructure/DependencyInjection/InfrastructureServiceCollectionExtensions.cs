@@ -13,6 +13,7 @@ public static class InfrastructureServiceCollectionExtensions
     {
         services.AddScoped<Phase1DataSeeder>();
         services.AddScoped<Phase2DataSeeder>();
+        services.AddScoped<Phase3DataSeeder>();
         services.AddScoped<MatchRuleEvaluationService>();
         return services;
     }

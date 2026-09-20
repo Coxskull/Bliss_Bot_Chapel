@@ -11,7 +11,7 @@
 | TD-B3 | `dotnet ef` design-time factory ignores env unless `--connection` | 🧱 |
 | TD-B4 | No GET for networks, access, provenance, campaigns | 🧱 (scope, not a bug) |
 | TD-B5 | JSON omits nulls so unknown demographics disappear from API | 🧱 |
-| TD-B6 | `MatchEvaluationRun` unused | 🧱 |
+| TD-B6 | `MatchEvaluationRun` unused | ✅ addressed in Phase 3 (`cursor/phase3-evaluation-audit-cc83`) |
 | TD-B7 | Controllers depend on DbContext (no application layer) | 🧱 acceptable for Phase 1 |
 | TD-B8 | `Campaign` has no BlissMatch/Advertiser FKs | expected gap |
 

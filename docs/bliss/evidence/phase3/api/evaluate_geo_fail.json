@@ -1,0 +1,99 @@
+{
+  "id": "77777777-7777-7777-7777-777777777775",
+  "status": "INELIGIBLE",
+  "overallScore": 0.3,
+  "confidenceScore": 0.9,
+  "createdAt": "2026-09-20T12:00:00Z",
+  "creator": {
+    "id": "11111111-1111-1111-1111-111111111111",
+    "name": "Test Creator",
+    "countryCode": "PH",
+    "primaryLanguage": "English / Tagalog",
+    "audienceSize": 100000,
+    "femalePercentage": 70.0,
+    "malePercentage": 30.0
+  },
+  "advertiserOpportunity": {
+    "id": "55555555-5555-5555-5555-555555555554",
+    "name": "Opportunity BR - Studio Kit",
+    "productName": "Studio Kit",
+    "category": "Creator Tools",
+    "status": "ACTIVE",
+    "advertiserProgram": {
+      "id": "44444444-4444-4444-4444-444444444446",
+      "name": "Harbor Creator Studio",
+      "status": "ACTIVE",
+      "advertiser": {
+        "id": "33333333-3333-3333-3333-333333333334",
+        "name": "Harbor Audio Labs",
+        "website": "https://example.test/harbor",
+        "countryCode": "BR"
+      }
+    }
+  },
+  "ruleVersion": {
+    "id": "66666666-6666-6666-6666-666666666662",
+    "version": "2.0.0",
+    "name": "Phase 2 Explicit Rules",
+    "description": "Deterministic document used only by Phase 2 matches.",
+    "isActive": true,
+    "createdAt": "2026-09-20T12:00:00Z"
+  },
+  "scoreComponents": [
+    {
+      "id": "54c82e49-aafe-4516-bdb6-880b621771f8",
+      "componentName": "LANGUAGE",
+      "score": 0.0,
+      "weight": 0.3,
+      "explanation": "Deterministic language overlap from RuleVersion document."
+    },
+    {
+      "id": "d47bd480-92eb-4e3e-9243-37015b780400",
+      "componentName": "GEOGRAPHY",
+      "score": 0.0,
+      "weight": 0.4,
+      "explanation": "Deterministic geography fit from RuleVersion document."
+    },
+    {
+      "id": "e4913545-3d65-480c-b056-5b3abf96c988",
+      "componentName": "AUDIENCE_SIZE",
+      "score": 1.0,
+      "weight": 0.3,
+      "explanation": "Deterministic audience fit. UNKNOWN audience is not scored as zero."
+    }
+  ],
+  "eligibilityChecks": [
+    {
+      "id": "0d2a8cdc-481b-4a31-91cd-15a70703548b",
+      "checkType": "GEOGRAPHY",
+      "result": "INELIGIBLE",
+      "reasonCode": "GEO_NOT_ELIGIBLE",
+      "explanation": "Creator country PH is not BR."
+    },
+    {
+      "id": "4c5eee06-c695-4592-915b-eb40140164a8",
+      "checkType": "AUDIENCE_SIZE",
+      "result": "APPROVED",
+      "explanation": "Audience meets the configured minimum."
+    },
+    {
+      "id": "6f9da33e-2923-416d-a2c3-f7f52d80e1a7",
+      "checkType": "CATEGORY",
+      "result": "APPROVED",
+      "explanation": "Category is allowed."
+    },
+    {
+      "id": "89b47432-21ce-4af4-862a-810f71a91272",
+      "checkType": "LANGUAGE",
+      "result": "INELIGIBLE",
+      "reasonCode": "LANGUAGE_NOT_ELIGIBLE",
+      "explanation": "Creator language tokens do not overlap the opportunity language."
+    },
+    {
+      "id": "a9e25211-b482-4160-8aeb-1ded87e8bc9c",
+      "checkType": "OPPORTUNITY_STATUS",
+      "result": "APPROVED",
+      "explanation": "Opportunity is ACTIVE."
+    }
+  ]
+}

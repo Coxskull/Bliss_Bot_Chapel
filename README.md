@@ -1,6 +1,6 @@
 # Bliss Bot Chapel
 
-Standalone Phase 1 foundation plus Phase 2 controlled test data and deterministic rule evaluation.
+Standalone Phase 1 foundation, Phase 2 controlled test data and deterministic rule evaluation, and Phase 3 historical evaluation audit.
 
 This repository is **not** connected to Alpha Auto.
 
@@ -13,7 +13,7 @@ This repository is **not** connected to Alpha Auto.
 
 ## Solution
 
-- `Bliss.Api` — REST API + Swagger (GET visibility; POST evaluate-rules)
+- `Bliss.Api` — REST API + Swagger (GET visibility; POST evaluate-rules; GET evaluation runs)
 - `Bliss.Domain` — entities and constants
 - `Bliss.Infrastructure` — EF Core, configurations, migrations, seed data
 - `Bliss.Tests` — architecture and persistence proofs
@@ -47,3 +47,5 @@ Phase 1 final acceptance evidence: `docs/bliss/PHASE-1-FINAL-ACCEPTANCE.md`.
 
 Phase 2 engineering contract: `docs/bliss/PHASE-2-ENGINEERING-CONTRACT.md`.
 Phase 2 evidence: `docs/bliss/PHASE-2-EVIDENCE.md`.
+Phase 3 engineering contract: `docs/bliss/PHASE-3-ENGINEERING-CONTRACT.md`.
+Phase 3 evidence: `docs/bliss/PHASE-3-EVIDENCE.md`.

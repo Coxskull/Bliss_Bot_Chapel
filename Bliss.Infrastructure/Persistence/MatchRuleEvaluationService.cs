@@ -1,3 +1,4 @@
+using Bliss.Domain.Common;
 using Bliss.Domain.Entities;
 using Bliss.Domain.Rules;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,10 @@ public sealed class MatchRuleEvaluationService
         _db = db;
     }
 
-    public async Task<BlissMatch?> EvaluateAsync(Guid matchId, CancellationToken cancellationToken = default)
+    public async Task<BlissMatch?> EvaluateAsync(
+        Guid matchId,
+        Guid? evaluationRunId = null,
+        CancellationToken cancellationToken = default)
     {
         var match = await _db.BlissMatches
             .Include(x => x.Creator)
@@ -26,9 +30,12 @@ public sealed class MatchRuleEvaluationService
             return null;
         }
 
+        var startedAt = DateTime.UtcNow;
         var document = DeterministicRuleEvaluator.ParseDocument(match.RuleVersion.DocumentJson);
         var result = DeterministicRuleEvaluator.Evaluate(match.Creator, match.AdvertiserOpportunity, document);
         var ruleVersionId = match.RuleVersionId;
+        var inputSnapshot = MatchEvaluationSnapshots.BuildInput(match, match.Creator, match.AdvertiserOpportunity);
+        var outputSnapshot = MatchEvaluationSnapshots.BuildOutput(result);
 
         var existingChecks = await _db.EligibilityChecks
             .Where(x => x.BlissMatchId == matchId)
@@ -46,6 +53,22 @@ public sealed class MatchRuleEvaluationService
         match.RuleVersionId = ruleVersionId;
         _db.EligibilityChecks.AddRange(Phase2DataSeeder.BuildEligibility(match.Id, result));
         _db.MatchScoreComponents.AddRange(Phase2DataSeeder.BuildScores(match.Id, result));
+        _db.MatchEvaluationRuns.Add(new MatchEvaluationRun
+        {
+            Id = evaluationRunId ?? Guid.NewGuid(),
+            BlissMatchId = match.Id,
+            CreatorId = match.CreatorId,
+            RuleVersionId = ruleVersionId,
+            AlgorithmVersion = MatchEvaluationSnapshots.AlgorithmVersion,
+            StartedAt = startedAt,
+            CompletedAt = DateTime.UtcNow,
+            InputSnapshot = inputSnapshot,
+            OutputSnapshot = outputSnapshot,
+            MatchStatus = result.MatchStatus,
+            OverallScore = result.OverallScore,
+            ConfidenceScore = result.ConfidenceScore,
+            Status = EntityStatuses.Completed
+        });
         await _db.SaveChangesAsync(cancellationToken);
         return match;
     }

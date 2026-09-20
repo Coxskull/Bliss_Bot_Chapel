@@ -26,7 +26,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "Bliss Bot Chapel API",
         Version = "v1",
-        Description = "Phase 2 controlled test data and deterministic rule evaluation."
+        Description = "Phase 3 historical evaluation audit plus Phase 2 deterministic rules."
     });
 });
 
@@ -50,6 +50,8 @@ if (app.Environment.IsDevelopment())
                 await phase1.SeedAsync();
                 var phase2 = scope.ServiceProvider.GetRequiredService<Phase2DataSeeder>();
                 await phase2.SeedAsync();
+                var phase3 = scope.ServiceProvider.GetRequiredService<Phase3DataSeeder>();
+                await phase3.SeedAsync();
             }
         }
         catch (Exception ex)

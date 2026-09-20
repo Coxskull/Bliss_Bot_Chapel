@@ -150,6 +150,34 @@ public sealed record EligibilityCheckDto(
     string? ReasonCode,
     string? Explanation);
 
+public sealed record MatchEvaluationRunSummaryDto(
+    Guid Id,
+    Guid BlissMatchId,
+    Guid CreatorId,
+    Guid RuleVersionId,
+    string AlgorithmVersion,
+    string Status,
+    string? MatchStatus,
+    decimal? OverallScore,
+    decimal? ConfidenceScore,
+    DateTime StartedAt,
+    DateTime? CompletedAt);
+
+public sealed record MatchEvaluationRunDetailDto(
+    Guid Id,
+    Guid BlissMatchId,
+    Guid CreatorId,
+    Guid RuleVersionId,
+    string AlgorithmVersion,
+    string Status,
+    string? MatchStatus,
+    decimal? OverallScore,
+    decimal? ConfidenceScore,
+    DateTime StartedAt,
+    DateTime? CompletedAt,
+    string? InputSnapshot,
+    string? OutputSnapshot);
+
 public sealed record AffiliateNetworkDto(
     Guid Id,
     string Name,
