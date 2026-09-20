@@ -784,4 +784,81 @@ BEGIN
     END IF;
 END $EF$;
 
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920123653_Phase5MatchFormation') THEN
+    CREATE TABLE "MatchFormationRuns" (
+        "Id" uuid NOT NULL,
+        "BlissMatchId" uuid NOT NULL,
+        "CreatorId" uuid NOT NULL,
+        "AdvertiserOpportunityId" uuid NOT NULL,
+        "RuleVersionId" uuid NOT NULL,
+        "SourceSystem" character varying(64) NOT NULL,
+        "IdempotencyKey" character varying(128) NOT NULL,
+        "Status" character varying(64) NOT NULL,
+        "Outcome" character varying(64) NOT NULL,
+        "EvaluateOnCreate" boolean NOT NULL,
+        "StartedAt" timestamp with time zone NOT NULL,
+        "CompletedAt" timestamp with time zone NOT NULL,
+        "InputSnapshot" text NOT NULL,
+        CONSTRAINT "PK_MatchFormationRuns" PRIMARY KEY ("Id"),
+        CONSTRAINT "FK_MatchFormationRuns_AdvertiserOpportunities_AdvertiserOpport~" FOREIGN KEY ("AdvertiserOpportunityId") REFERENCES "AdvertiserOpportunities" ("Id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_MatchFormationRuns_BlissMatches_BlissMatchId" FOREIGN KEY ("BlissMatchId") REFERENCES "BlissMatches" ("Id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_MatchFormationRuns_Creators_CreatorId" FOREIGN KEY ("CreatorId") REFERENCES "Creators" ("Id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_MatchFormationRuns_RuleVersions_RuleVersionId" FOREIGN KEY ("RuleVersionId") REFERENCES "RuleVersions" ("Id") ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920123653_Phase5MatchFormation') THEN
+    CREATE INDEX "IX_MatchFormationRuns_AdvertiserOpportunityId" ON "MatchFormationRuns" ("AdvertiserOpportunityId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920123653_Phase5MatchFormation') THEN
+    CREATE INDEX "IX_MatchFormationRuns_BlissMatchId" ON "MatchFormationRuns" ("BlissMatchId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920123653_Phase5MatchFormation') THEN
+    CREATE INDEX "IX_MatchFormationRuns_CompletedAt" ON "MatchFormationRuns" ("CompletedAt");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920123653_Phase5MatchFormation') THEN
+    CREATE INDEX "IX_MatchFormationRuns_CreatorId" ON "MatchFormationRuns" ("CreatorId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920123653_Phase5MatchFormation') THEN
+    CREATE INDEX "IX_MatchFormationRuns_RuleVersionId" ON "MatchFormationRuns" ("RuleVersionId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920123653_Phase5MatchFormation') THEN
+    CREATE UNIQUE INDEX "IX_MatchFormationRuns_SourceSystem_IdempotencyKey" ON "MatchFormationRuns" ("SourceSystem", "IdempotencyKey");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920123653_Phase5MatchFormation') THEN
+    INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+    VALUES ('20260920123653_Phase5MatchFormation', '8.0.11');
+    END IF;
+END $EF$;
+
 COMMIT;
