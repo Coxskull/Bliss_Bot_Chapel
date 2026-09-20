@@ -32,13 +32,13 @@ export ConnectionStrings__DefaultConnection="Host=...;Port=5432;Database=...;Use
 
 The dashboard talks to `Bliss.Api`; it does **not** connect directly to PostgreSQL. A Supabase publishable key is intended for browser REST/Auth requests and cannot authenticate the EF Core/Npgsql backend. Do not put the database password or a service-role key in browser code.
 
-For the supplied project host, set the database password only in your shell or deployment secret store:
+For the supplied project host, set the database password only in your shell or deployment secret store. Do not commit it.
+
+The direct host `db.bkutbglzivfdnoerigyb.supabase.co` is IPv6-only. From IPv4-only networks, use the **Session pooler** (port 5432):
 
 ```bash
-export ConnectionStrings__DefaultConnection="Host=db.bkutbglzivfdnoerigyb.supabase.co;Port=5432;Database=postgres;Username=postgres;Password=<SUPABASE_DATABASE_PASSWORD>;SSL Mode=Require;Trust Server Certificate=true"
+export ConnectionStrings__DefaultConnection="Host=aws-0-ap-southeast-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.bkutbglzivfdnoerigyb;Password=<SUPABASE_DATABASE_PASSWORD>;SSL Mode=Require;Trust Server Certificate=true"
 ```
-
-If your network has no IPv6 route to the direct database host, copy the **Session pooler** connection string from Supabase Dashboard → Connect and set the same environment variable.
 
 Apply migrations to a dedicated test project/database before starting the app:
 
