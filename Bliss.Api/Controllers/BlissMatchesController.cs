@@ -10,10 +10,12 @@ namespace Bliss.Api.Controllers;
 public sealed class BlissMatchesController : ControllerBase
 {
     private readonly BlissDbContext _db;
+    private readonly MatchRuleEvaluationService _evaluator;
 
-    public BlissMatchesController(BlissDbContext db)
+    public BlissMatchesController(BlissDbContext db, MatchRuleEvaluationService evaluator)
     {
         _db = db;
+        _evaluator = evaluator;
     }
 
     [HttpGet]
@@ -104,5 +106,24 @@ public sealed class BlissMatchesController : ControllerBase
                 e.Result,
                 e.ReasonCode,
                 e.Explanation)).ToList()));
+    }
+
+    [HttpPost("{id:guid}/evaluate-rules")]
+    public async Task<ActionResult<BlissMatchDetailDto>> EvaluateRules(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var evaluated = await _evaluator.EvaluateAsync(id, cancellationToken);
+            if (evaluated is null)
+            {
+                return NotFound();
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+
+        return await GetById(id, cancellationToken);
     }
 }

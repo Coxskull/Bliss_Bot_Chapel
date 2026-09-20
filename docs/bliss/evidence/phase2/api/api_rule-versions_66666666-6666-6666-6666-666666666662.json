@@ -1,0 +1,9 @@
+{
+    "id": "66666666-6666-6666-6666-666666666662",
+    "version": "2.0.0",
+    "name": "Phase 2 Explicit Rules",
+    "description": "Deterministic document used only by Phase 2 matches.",
+    "isActive": true,
+    "createdAt": "2026-09-20T12:00:00Z",
+    "documentJson": "{\r\n  \"minAudienceSize\": 10000,\r\n  \"requireOpportunityMarketCountry\": true,\r\n  \"requireLanguageOverlap\": true,\r\n  \"prohibitedCategories\": [ \"Alcohol\" ],\r\n  \"weights\": {\r\n    \"geography\": 0.4,\r\n    \"audienceSize\": 0.3,\r\n    \"language\": 0.3\r\n  }\r\n}"
+}

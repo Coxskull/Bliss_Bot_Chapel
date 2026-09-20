@@ -28,9 +28,29 @@ public sealed class RuleVersionsController : ControllerBase
                 x.Name,
                 x.Description,
                 x.IsActive,
-                x.CreatedAt))
+                x.CreatedAt,
+                null))
             .ToListAsync(cancellationToken);
 
         return Ok(items);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<RuleVersionDto>> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var item = await _db.RuleVersions.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        if (item is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(new RuleVersionDto(
+            item.Id,
+            item.Version,
+            item.Name,
+            item.Description,
+            item.IsActive,
+            item.CreatedAt,
+            item.DocumentJson));
     }
 }

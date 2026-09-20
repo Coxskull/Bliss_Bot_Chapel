@@ -1,0 +1,26 @@
+[
+    {
+        "id": "cccccccc-cccc-cccc-cccc-ccccccccccc1",
+        "entityType": "Creator",
+        "entityId": "11111111-1111-1111-1111-111111111111",
+        "fieldName": "FemalePercentage",
+        "sourceType": "PLATFORM",
+        "sourceName": "Podcast",
+        "sourceUrl": "https://example.test/creators/crt-test-001",
+        "confidenceLevel": "HIGH",
+        "collectedAt": "2026-09-16T12:00:00Z",
+        "notes": "CRT-TEST-001 fictional demographic capture."
+    },
+    {
+        "id": "cccccccc-cccc-cccc-cccc-ccccccccccc2",
+        "entityType": "Creator",
+        "entityId": "11111111-1111-1111-1111-111111111113",
+        "fieldName": "AudienceSize",
+        "sourceType": "PLATFORM",
+        "sourceName": "YouTube",
+        "sourceUrl": "https://example.test/creators/crt-test-br-001",
+        "confidenceLevel": "HIGH",
+        "collectedAt": "2026-09-20T12:00:00Z",
+        "notes": "CRT-TEST-BR-001 fictional audience capture."
+    }
+]

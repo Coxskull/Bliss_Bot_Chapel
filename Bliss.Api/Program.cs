@@ -26,7 +26,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "Bliss Bot Chapel API",
         Version = "v1",
-        Description = "Phase 1 foundation read-only visibility endpoints."
+        Description = "Phase 2 controlled test data and deterministic rule evaluation."
     });
 });
 
@@ -46,8 +46,10 @@ if (app.Environment.IsDevelopment())
         {
             if (db.Database.CanConnect())
             {
-                var seeder = scope.ServiceProvider.GetRequiredService<Phase1DataSeeder>();
-                await seeder.SeedAsync();
+                var phase1 = scope.ServiceProvider.GetRequiredService<Phase1DataSeeder>();
+                await phase1.SeedAsync();
+                var phase2 = scope.ServiceProvider.GetRequiredService<Phase2DataSeeder>();
+                await phase2.SeedAsync();
             }
         }
         catch (Exception ex)
