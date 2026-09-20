@@ -1,0 +1,51 @@
+PostgreSQL TEST snapshot bliss_phase1_test 2026-09-20T05:04:06Z
+NOTE: local verification DB only; not production.
+      datname      
+-------------------
+ bliss_phase1_test
+(1 row)
+
+           MigrationId           | ProductVersion 
+---------------------------------+----------------
+ 20260919013044_Phase1Foundation | 8.0.11
+(1 row)
+
+       table_name        
+-------------------------
+ AdInventorySlots
+ AdvertiserOpportunities
+ AdvertiserPrograms
+ Advertisers
+ AffiliateNetworks
+ BlissMatches
+ CampaignPlacements
+ Campaigns
+ ContentItems
+ CreatorPlatforms
+ Creators
+ DataProvenances
+ EligibilityChecks
+ MatchEvaluationRuns
+ MatchScoreComponents
+ NetworkAccesses
+ ProgramAccesses
+ RuleVersions
+ __EFMigrationsHistory
+ alpha_legacy_records
+(20 rows)
+
+--- row counts ---
+            t            | count 
+-------------------------+-------
+ Creators                |     2
+ ContentItems            |     2
+ AdInventorySlots        |     4
+ Advertisers             |     1
+ AdvertiserPrograms      |     2
+ AdvertiserOpportunities |     3
+ BlissMatches            |     4
+ Campaigns               |     1
+ CampaignPlacements      |     2
+ DataProvenances         |     1
+(10 rows)
+
