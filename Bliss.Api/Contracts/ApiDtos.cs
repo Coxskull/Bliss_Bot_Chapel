@@ -285,6 +285,69 @@ public sealed record MatchFormationRunDetailDto(
     DateTime CompletedAt,
     string InputSnapshot);
 
+public sealed record MatchReviewRequest(
+    string SourceSystem,
+    string IdempotencyKey,
+    Guid BlissMatchId,
+    string ReviewerLabel,
+    string Decision,
+    string Rationale);
+
+public sealed record MatchReviewResultDto(
+    Guid DecisionId,
+    Guid BlissMatchId,
+    Guid CreatorId,
+    Guid? MatchEvaluationRunId,
+    string SourceSystem,
+    string IdempotencyKey,
+    string ReviewerLabel,
+    string Decision,
+    string ResultingMatchStatus,
+    string Status,
+    DateTime CompletedAt,
+    bool IsReplay);
+
+public sealed record MatchReviewDecisionSummaryDto(
+    Guid Id,
+    Guid BlissMatchId,
+    Guid CreatorId,
+    Guid? MatchEvaluationRunId,
+    string SourceSystem,
+    string IdempotencyKey,
+    string ReviewerLabel,
+    string Decision,
+    string ResultingMatchStatus,
+    DateTime CompletedAt);
+
+public sealed record MatchReviewDecisionDetailDto(
+    Guid Id,
+    Guid BlissMatchId,
+    Guid CreatorId,
+    Guid? MatchEvaluationRunId,
+    string SourceSystem,
+    string IdempotencyKey,
+    string ReviewerLabel,
+    string Decision,
+    string ResultingMatchStatus,
+    string Rationale,
+    string Status,
+    DateTime StartedAt,
+    DateTime CompletedAt,
+    string InputSnapshot);
+
+public sealed record MatchReviewQueueItemDto(
+    Guid BlissMatchId,
+    Guid CreatorId,
+    string CreatorName,
+    Guid AdvertiserOpportunityId,
+    string OpportunityName,
+    Guid RuleVersionId,
+    string Status,
+    decimal? OverallScore,
+    decimal? ConfidenceScore,
+    DateTime CreatedAt,
+    int EvaluationRunCount);
+
 public sealed record AffiliateNetworkDto(
     Guid Id,
     string Name,

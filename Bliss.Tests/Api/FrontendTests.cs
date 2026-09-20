@@ -24,6 +24,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Bliss Chapel", body);
         Assert.Contains("Evaluation audit", body);
         Assert.Contains("Form match", body);
+        Assert.Contains("Review queue", body);
         Assert.Contains("app.js", body);
     }
 

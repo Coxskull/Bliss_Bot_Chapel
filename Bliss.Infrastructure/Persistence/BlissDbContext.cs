@@ -31,6 +31,7 @@ public class BlissDbContext : DbContext
     public DbSet<DataProvenance> DataProvenances => Set<DataProvenance>();
     public DbSet<CreatorIngestionRun> CreatorIngestionRuns => Set<CreatorIngestionRun>();
     public DbSet<MatchFormationRun> MatchFormationRuns => Set<MatchFormationRun>();
+    public DbSet<MatchReviewDecision> MatchReviewDecisions => Set<MatchReviewDecision>();
 
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<CampaignPlacement> CampaignPlacements => Set<CampaignPlacement>();

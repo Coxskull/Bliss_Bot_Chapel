@@ -17,6 +17,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<MatchRuleEvaluationService>();
         services.AddScoped<CreatorIngestionService>();
         services.AddScoped<MatchFormationService>();
+        services.AddScoped<MatchReviewService>();
         return services;
     }
 

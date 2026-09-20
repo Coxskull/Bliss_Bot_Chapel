@@ -9,6 +9,8 @@ const state = {
   ingestions: [],
   formations: [],
   ruleVersions: [],
+  reviews: [],
+  reviewQueue: [],
   matchFilter: "ALL",
   matchSearch: ""
 };
@@ -21,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindActions();
   generateIdempotencyKey();
   generateFormationIdempotencyKey();
+  generateReviewIdempotencyKey();
   loadDashboard();
 });
 
@@ -43,7 +46,7 @@ async function loadDashboard() {
   setConnection("loading");
   $("#refresh-button").classList.add("spinning");
   try {
-    const [matches, creators, advertisers, opportunities, content, runs, ingestions, formations, ruleVersions] = await Promise.all([
+    const [matches, creators, advertisers, opportunities, content, runs, ingestions, formations, ruleVersions, reviews, reviewQueue] = await Promise.all([
       api("/api/bliss/matches"),
       api("/api/creators"),
       api("/api/advertisers"),
@@ -52,12 +55,14 @@ async function loadDashboard() {
       api("/api/match-evaluation-runs"),
       api("/api/creator-ingestions"),
       api("/api/match-formation-runs"),
-      api("/api/rule-versions")
+      api("/api/rule-versions"),
+      api("/api/match-review-decisions"),
+      api("/api/match-reviews/queue")
     ]);
     const ruleDetails = await Promise.all(ruleVersions.map(rule =>
       api(`/api/rule-versions/${rule.id}`).catch(() => rule)
     ));
-    Object.assign(state, { matches, creators, advertisers, opportunities, content, runs, ingestions, formations, ruleVersions: ruleDetails });
+    Object.assign(state, { matches, creators, advertisers, opportunities, content, runs, ingestions, formations, ruleVersions: ruleDetails, reviews, reviewQueue });
     renderAll();
     setConnection("online");
   } catch (error) {
@@ -78,9 +83,11 @@ function renderAll() {
   renderAudit();
   renderIngestions();
   renderFormations();
+  renderReviews();
   $("#nav-match-count").textContent = state.matches.length;
   $("#nav-ingest-count").textContent = state.ingestions.length;
   $("#nav-formation-count").textContent = state.formations.length;
+  $("#nav-review-count").textContent = state.reviewQueue.length;
 }
 
 function renderOverview() {
@@ -318,6 +325,76 @@ async function openFormationRun(runId) {
   }
 }
 
+function renderReviews() {
+  $("#review-match").innerHTML = (state.reviewQueue || []).map(item =>
+    `<option value="${item.blissMatchId}">${escapeHtml(item.creatorName)} · ${escapeHtml(item.opportunityName)} · ${formatScore(item.overallScore)}</option>`
+  ).join("") || `<option value="">No REVIEW_REQUIRED matches</option>`;
+
+  const decisions = [...(state.reviews || [])]
+    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+    .slice(0, 8);
+  $("#review-list").innerHTML = decisions.length ? decisions.map(decision => {
+    const creator = creatorById(decision.creatorId);
+    return `<button class="activity-item ingest-run" data-review-id="${decision.id}">
+      <span class="activity-icon">☑</span>
+      <span><strong>${escapeHtml(creator?.name || shortId(decision.creatorId))}</strong><small>${escapeHtml(decision.reviewerLabel)} · ${friendlyStatus(decision.decision)}</small></span>
+      <span class="activity-time">${relativeTime(decision.completedAt)}</span>
+    </button>`;
+  }).join("") : emptyState("No human review decisions yet.");
+}
+
+async function submitReview(form) {
+  const submit = $("#review-submit");
+  const formData = new FormData(form);
+  const payload = {
+    sourceSystem: String(formData.get("sourceSystem") || "").trim(),
+    idempotencyKey: String(formData.get("idempotencyKey") || "").trim(),
+    blissMatchId: String(formData.get("blissMatchId") || ""),
+    reviewerLabel: String(formData.get("reviewerLabel") || "").trim(),
+    decision: String(formData.get("decision") || "").trim(),
+    rationale: String(formData.get("rationale") || "").trim()
+  };
+
+  submit.disabled = true;
+  submit.innerHTML = "Recording…";
+  try {
+    const result = await api("/api/match-review-decisions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    toast(`${friendlyStatus(result.decision)} · ${friendlyStatus(result.resultingMatchStatus)}${result.isReplay ? " (replay)" : ""}`);
+    generateReviewIdempotencyKey();
+    form.elements.rationale.value = "";
+    await loadDashboard();
+    openMatch(result.blissMatchId);
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    submit.disabled = false;
+    submit.innerHTML = `Record decision <span>→</span>`;
+  }
+}
+
+async function openReviewDecision(id) {
+  openDrawer("Review decision", `<div class="activity-skeleton"></div><div class="activity-skeleton"></div>`);
+  try {
+    const decision = await api(`/api/match-review-decisions/${id}`);
+    const creator = creatorById(decision.creatorId);
+    $("#drawer-title").textContent = creator?.name || shortId(decision.creatorId);
+    $("#drawer-body").innerHTML = `
+      <div class="detail-hero">
+        <div class="detail-hero-top"><span class="status-badge ${statusClass(decision.resultingMatchStatus)}">${friendlyStatus(decision.decision)}</span><span class="detail-score">☑</span></div>
+        <h3>${escapeHtml(decision.reviewerLabel)}</h3>
+        <p>${escapeHtml(decision.sourceSystem)} · ${formatDate(decision.completedAt)}</p>
+      </div>
+      <section class="detail-section"><h4>Resulting status</h4><div class="check-item"><div><strong>${friendlyStatus(decision.resultingMatchStatus)}</strong><small>${escapeHtml(decision.rationale)}</small></div><button class="small-button" data-match-id="${decision.blissMatchId}">Inspect match</button></div></section>
+      <section class="detail-section"><h4>Input snapshot</h4><pre class="json-block">${prettyJson(decision.inputSnapshot)}</pre></section>`;
+  } catch (error) {
+    $("#drawer-body").innerHTML = emptyState(error.message);
+  }
+}
+
 async function submitIngestion(form) {
   const submit = $("#ingest-submit");
   const formData = new FormData(form);
@@ -463,7 +540,7 @@ function bindNavigation() {
 function switchView(view) {
   $$(".view").forEach(element => element.classList.toggle("active", element.id === `view-${view}`));
   $$(".nav-item[data-view]").forEach(button => button.classList.toggle("active", button.dataset.view === view));
-  const titles = { overview: greeting(), matches: "Match certificates", formation: "Controlled match formation", creators: "Creator directory", ingest: "Creator ingestion", advertisers: "Partner directory", inventory: "Content inventory", audit: "Evaluation ledger" };
+  const titles = { overview: greeting(), matches: "Match certificates", formation: "Controlled match formation", review: "Human review queue", creators: "Creator directory", ingest: "Creator ingestion", advertisers: "Partner directory", inventory: "Content inventory", audit: "Evaluation ledger" };
   $("#page-title").textContent = titles[view] || "Bliss Chapel";
   $(".sidebar").classList.remove("open");
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -479,8 +556,13 @@ function bindActions() {
     event.preventDefault();
     submitFormation(event.currentTarget);
   });
+  $("#review-form").addEventListener("submit", event => {
+    event.preventDefault();
+    submitReview(event.currentTarget);
+  });
   $("#regenerate-key").addEventListener("click", generateIdempotencyKey);
   $("#regenerate-formation-key").addEventListener("click", generateFormationIdempotencyKey);
+  $("#regenerate-review-key").addEventListener("click", generateReviewIdempotencyKey);
   $("#drawer-close").addEventListener("click", closeDrawer);
   $("#drawer-backdrop").addEventListener("click", closeDrawer);
   $("#settings-button").addEventListener("click", () => {
@@ -510,11 +592,13 @@ function bindActions() {
     const runButton = event.target.closest("[data-run-id]");
     const ingestRunButton = event.target.closest("[data-ingest-run-id]");
     const formationRunButton = event.target.closest("[data-formation-run-id]");
+    const reviewButton = event.target.closest("[data-review-id]");
     const evaluateButton = event.target.closest("[data-evaluate]");
     if (matchButton) openMatch(matchButton.dataset.matchId);
     if (runButton) openRun(runButton.dataset.runId);
     if (ingestRunButton) openIngestionRun(ingestRunButton.dataset.ingestRunId);
     if (formationRunButton) openFormationRun(formationRunButton.dataset.formationRunId);
+    if (reviewButton) openReviewDecision(reviewButton.dataset.reviewId);
     if (evaluateButton) evaluateMatch(evaluateButton.dataset.evaluate, evaluateButton);
   });
   document.addEventListener("keydown", event => {
@@ -542,7 +626,7 @@ function setConnection(status, detail) {
 }
 function renderUnavailable(message) {
   const content = emptyState(`Could not load backend data: ${message}`);
-  ["match-list", "creator-grid", "advertiser-grid", "inventory-list", "recent-runs", "status-chart", "ingestion-list", "formation-list"].forEach(id => $(`#${id}`).innerHTML = content);
+  ["match-list", "creator-grid", "advertiser-grid", "inventory-list", "recent-runs", "status-chart", "ingestion-list", "formation-list", "review-list"].forEach(id => $(`#${id}`).innerHTML = content);
   $("#audit-table").innerHTML = `<tr><td colspan="7">${content}</td></tr>`;
 }
 function toast(message, isError = false) {
@@ -583,6 +667,10 @@ function generateIdempotencyKey() {
 }
 function generateFormationIdempotencyKey() {
   const field = $("#formation-idempotency");
+  if (field) field.value = `manual-${crypto.randomUUID()}`;
+}
+function generateReviewIdempotencyKey() {
+  const field = $("#review-idempotency");
   if (field) field.value = `manual-${crypto.randomUUID()}`;
 }
 function prettyJson(value) {
