@@ -113,7 +113,7 @@ public sealed class BlissMatchesController : ControllerBase
     {
         try
         {
-            var evaluated = await _evaluator.EvaluateAsync(id, cancellationToken);
+            var evaluated = await _evaluator.EvaluateAsync(id, evaluationRunId: null, cancellationToken);
             if (evaluated is null)
             {
                 return NotFound();
@@ -125,5 +125,38 @@ public sealed class BlissMatchesController : ControllerBase
         }
 
         return await GetById(id, cancellationToken);
+    }
+
+    [HttpGet("{id:guid}/evaluation-runs")]
+    public async Task<ActionResult<IReadOnlyList<MatchEvaluationRunSummaryDto>>> GetEvaluationRuns(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var exists = await _db.BlissMatches.AsNoTracking().AnyAsync(x => x.Id == id, cancellationToken);
+        if (!exists)
+        {
+            return NotFound();
+        }
+
+        var items = await _db.MatchEvaluationRuns
+            .AsNoTracking()
+            .Where(x => x.BlissMatchId == id)
+            .OrderBy(x => x.StartedAt)
+            .ThenBy(x => x.Id)
+            .Select(x => new MatchEvaluationRunSummaryDto(
+                x.Id,
+                x.BlissMatchId,
+                x.CreatorId,
+                x.RuleVersionId,
+                x.AlgorithmVersion,
+                x.Status,
+                x.MatchStatus,
+                x.OverallScore,
+                x.ConfidenceScore,
+                x.StartedAt,
+                x.CompletedAt))
+            .ToListAsync(cancellationToken);
+
+        return Ok(items);
     }
 }

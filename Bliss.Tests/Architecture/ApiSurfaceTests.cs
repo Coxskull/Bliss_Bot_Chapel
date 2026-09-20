@@ -31,5 +31,6 @@ public sealed class ApiSurfaceTests
         Assert.Contains("api/program-accesses", prefixes);
         Assert.Contains("api/data-provenances", prefixes);
         Assert.Contains("api/campaigns", prefixes);
+        Assert.Contains("api/match-evaluation-runs", prefixes);
     }
 }

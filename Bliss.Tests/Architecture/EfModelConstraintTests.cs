@@ -50,6 +50,22 @@ public sealed class EfModelConstraintTests
         Assert.Contains("CampaignPlacement.CampaignId", restrictKeys);
         Assert.Contains("NetworkAccess.AdvertiserId", restrictKeys);
         Assert.Contains("ProgramAccess.AdvertiserProgramId", restrictKeys);
+        Assert.Contains("MatchEvaluationRun.BlissMatchId", restrictKeys);
+        Assert.Contains("MatchEvaluationRun.CreatorId", restrictKeys);
+        Assert.Contains("MatchEvaluationRun.RuleVersionId", restrictKeys);
+    }
+
+    [Fact]
+    public void Match_evaluation_run_bliss_match_id_is_not_unique()
+    {
+        using var db = TestDb.CreateContext();
+        var entity = db.Model.FindEntityType(typeof(MatchEvaluationRun));
+        Assert.NotNull(entity);
+
+        var uniqueMatchIndexes = entity!.GetIndexes()
+            .Where(i => i.IsUnique && i.Properties.Count == 1 && i.Properties[0].Name == nameof(MatchEvaluationRun.BlissMatchId));
+
+        Assert.Empty(uniqueMatchIndexes);
     }
 
     [Fact]
@@ -98,6 +114,9 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(CampaignPlacement), nameof(CampaignPlacement.CampaignId));
         AssertIndex(db, typeof(CampaignPlacement), nameof(CampaignPlacement.ContentItemId));
         AssertIndex(db, typeof(CampaignPlacement), nameof(CampaignPlacement.AdInventorySlotId));
+        AssertIndex(db, typeof(MatchEvaluationRun), nameof(MatchEvaluationRun.BlissMatchId));
+        AssertIndex(db, typeof(MatchEvaluationRun), nameof(MatchEvaluationRun.CreatorId));
+        AssertIndex(db, typeof(MatchEvaluationRun), nameof(MatchEvaluationRun.RuleVersionId));
     }
 
     private static void AssertIndex(BlissDbContext db, Type type, string propertyName)
