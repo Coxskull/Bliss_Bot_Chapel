@@ -44,3 +44,5 @@ Swagger (Development): `/swagger`
 See `docs/bliss/` for Phase 1 architecture, requirements, and migration review.
 
 Phase 1 final acceptance evidence: `docs/bliss/PHASE-1-FINAL-ACCEPTANCE.md`.
+
+Alpha AI Development Fleet Mission 001 (inventory, gaps, crane plan): `docs/ai-development-fleet/`.
