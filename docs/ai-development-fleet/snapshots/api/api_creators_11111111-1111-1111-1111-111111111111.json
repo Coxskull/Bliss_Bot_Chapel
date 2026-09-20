@@ -1,0 +1,111 @@
+{
+    "id": "11111111-1111-1111-1111-111111111111",
+    "name": "Test Creator",
+    "countryCode": "PH",
+    "primaryLanguage": "English / Tagalog",
+    "audienceSize": 100000,
+    "femalePercentage": 70.0,
+    "malePercentage": 30.0,
+    "primaryAgeRange": "18-34",
+    "primaryGeography": "Metro Manila",
+    "engagementLevel": "STRONG",
+    "createdAt": "2026-09-16T12:00:00Z",
+    "updatedAt": "2026-09-16T12:00:00Z",
+    "platforms": [
+        {
+            "id": "88888888-8888-8888-8888-888888888881",
+            "platform": "Podcast",
+            "externalProfileId": "CRT-TEST-001",
+            "profileUrl": "https://example.test/creators/crt-test-001",
+            "followers": 100000,
+            "lastCollectedAt": "2026-09-16T12:00:00Z"
+        }
+    ],
+    "contentItems": [
+        {
+            "id": "22222222-2222-2222-2222-222222222221",
+            "creatorId": "11111111-1111-1111-1111-111111111111",
+            "contentType": "PODCAST_EPISODE",
+            "title": "Chapel Conversations Episode 1",
+            "externalContentId": "CNT-TEST-001",
+            "url": "https://example.test/content/cnt-test-001",
+            "publishedAt": "2026-09-16T12:00:00Z",
+            "createdAt": "2026-09-16T12:00:00Z",
+            "adInventorySlots": [
+                {
+                    "id": "99999999-9999-9999-9999-999999999991",
+                    "slotType": "PRE_ROLL",
+                    "startSecond": 0,
+                    "durationSeconds": 30,
+                    "isAvailable": true
+                },
+                {
+                    "id": "99999999-9999-9999-9999-999999999992",
+                    "slotType": "MID_ROLL",
+                    "startSecond": 600,
+                    "durationSeconds": 30,
+                    "isAvailable": true
+                },
+                {
+                    "id": "99999999-9999-9999-9999-999999999993",
+                    "slotType": "LOWER_THIRD",
+                    "startSecond": 120,
+                    "durationSeconds": 10,
+                    "isAvailable": true
+                },
+                {
+                    "id": "99999999-9999-9999-9999-999999999994",
+                    "slotType": "POST_ROLL",
+                    "startSecond": 1800,
+                    "durationSeconds": 15,
+                    "isAvailable": true
+                }
+            ]
+        },
+        {
+            "id": "22222222-2222-2222-2222-222222222222",
+            "creatorId": "11111111-1111-1111-1111-111111111111",
+            "contentType": "PODCAST_EPISODE",
+            "title": "Chapel Conversations Episode 2",
+            "externalContentId": "CNT-TEST-002",
+            "url": "https://example.test/content/cnt-test-002",
+            "publishedAt": "2026-09-16T12:00:00Z",
+            "createdAt": "2026-09-16T12:00:00Z",
+            "adInventorySlots": []
+        }
+    ],
+    "blissMatches": [
+        {
+            "id": "77777777-7777-7777-7777-777777777774",
+            "creatorId": "11111111-1111-1111-1111-111111111111",
+            "advertiserOpportunityId": "55555555-5555-5555-5555-555555555551",
+            "ruleVersionId": "66666666-6666-6666-6666-666666666661",
+            "status": "CREATED",
+            "createdAt": "2026-09-19T09:42:23.081632Z"
+        },
+        {
+            "id": "77777777-7777-7777-7777-777777777771",
+            "creatorId": "11111111-1111-1111-1111-111111111111",
+            "advertiserOpportunityId": "55555555-5555-5555-5555-555555555551",
+            "ruleVersionId": "66666666-6666-6666-6666-666666666661",
+            "status": "CREATED",
+            "createdAt": "2026-09-16T12:00:00Z"
+        },
+        {
+            "id": "77777777-7777-7777-7777-777777777772",
+            "creatorId": "11111111-1111-1111-1111-111111111111",
+            "advertiserOpportunityId": "55555555-5555-5555-5555-555555555552",
+            "ruleVersionId": "66666666-6666-6666-6666-666666666661",
+            "status": "CREATED",
+            "createdAt": "2026-09-16T12:00:00Z"
+        },
+        {
+            "id": "77777777-7777-7777-7777-777777777773",
+            "creatorId": "11111111-1111-1111-1111-111111111111",
+            "advertiserOpportunityId": "55555555-5555-5555-5555-555555555553",
+            "ruleVersionId": "66666666-6666-6666-6666-666666666661",
+            "status": "CREATED",
+            "createdAt": "2026-09-16T12:00:00Z"
+        }
+    ]
+}

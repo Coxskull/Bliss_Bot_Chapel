@@ -1,0 +1,48 @@
+=== ENTITIES ===
+AdInventorySlot.cs
+Advertiser.cs
+AdvertiserOpportunity.cs
+AdvertiserProgram.cs
+AffiliateNetwork.cs
+BlissMatch.cs
+Campaign.cs
+CampaignPlacement.cs
+ContentItem.cs
+Creator.cs
+CreatorPlatform.cs
+DataProvenance.cs
+EligibilityCheck.cs
+MatchEvaluationRun.cs
+MatchScoreComponent.cs
+NetworkAccess.cs
+ProgramAccess.cs
+RuleVersion.cs
+
+=== CONTROLLERS ===
+AdvertiserOpportunitiesController.cs
+AdvertiserProgramsController.cs
+AdvertisersController.cs
+BlissMatchesController.cs
+ContentItemsController.cs
+CreatorsController.cs
+RuleVersionsController.cs
+
+=== HTTP MAP ===
+/workspace/Bliss.Api/Controllers/ContentItemsController.cs:9:[Route("api/content-items")]
+/workspace/Bliss.Api/Controllers/ContentItemsController.cs:19:    [HttpGet]
+/workspace/Bliss.Api/Controllers/ContentItemsController.cs:37:    [HttpGet("{id:guid}")]
+/workspace/Bliss.Api/Controllers/BlissMatchesController.cs:9:[Route("api/bliss/matches")]
+/workspace/Bliss.Api/Controllers/BlissMatchesController.cs:19:    [HttpGet]
+/workspace/Bliss.Api/Controllers/BlissMatchesController.cs:39:    [HttpGet("{id:guid}")]
+/workspace/Bliss.Api/Controllers/CreatorsController.cs:9:[Route("api/creators")]
+/workspace/Bliss.Api/Controllers/CreatorsController.cs:19:    [HttpGet]
+/workspace/Bliss.Api/Controllers/CreatorsController.cs:38:    [HttpGet("{id:guid}")]
+/workspace/Bliss.Api/Controllers/RuleVersionsController.cs:9:[Route("api/rule-versions")]
+/workspace/Bliss.Api/Controllers/RuleVersionsController.cs:19:    [HttpGet]
+/workspace/Bliss.Api/Controllers/AdvertisersController.cs:9:[Route("api/advertisers")]
+/workspace/Bliss.Api/Controllers/AdvertisersController.cs:19:    [HttpGet]
+/workspace/Bliss.Api/Controllers/AdvertisersController.cs:31:    [HttpGet("{id:guid}")]
+/workspace/Bliss.Api/Controllers/AdvertiserOpportunitiesController.cs:9:[Route("api/advertiser-opportunities")]
+/workspace/Bliss.Api/Controllers/AdvertiserOpportunitiesController.cs:19:    [HttpGet]
+/workspace/Bliss.Api/Controllers/AdvertiserProgramsController.cs:9:[Route("api/advertiser-programs")]
+/workspace/Bliss.Api/Controllers/AdvertiserProgramsController.cs:19:    [HttpGet]

@@ -36,6 +36,7 @@ Production-style credentials were found **committed** in Alpha Auto repositories
 | 19 | Safe parallel workstreams | `crane-plan.md` § Parallel |
 | 20 | Recommended Mission 002 | `mission-002-proposal.md` |
 | — | Target architecture | `target-architecture.md` |
+| — | Point-in-time snapshots (git, tests, DB, API, screenshots) | `snapshots/` |
 
 ## Scope of this Cloud Agent workspace
 

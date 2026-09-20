@@ -1,0 +1,6 @@
+Counts 2026-09-20T05:04:06Z
+cs files: 59
+entities: 18
+controllers: 7
+ef configs: 18
+migrations: 3

@@ -1,0 +1,10 @@
+[
+    {
+        "id": "66666666-6666-6666-6666-666666666661",
+        "version": "1.0.0",
+        "name": "Phase 1 Baseline Rules",
+        "description": "Historical rule snapshot used by seeded matches.",
+        "isActive": true,
+        "createdAt": "2026-09-16T12:00:00Z"
+    }
+]
