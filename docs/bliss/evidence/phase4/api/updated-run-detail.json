@@ -1,0 +1,13 @@
+{
+  "id": "acbad6f6-a83f-4751-8f3e-d256a3ca5270",
+  "creatorId": "8cdb49f0-83d5-4697-977d-fe9846e30b23",
+  "creatorPlatformId": "be4c2107-5bc0-4977-b02b-9261e7288caf",
+  "sourceSystem": "DASHBOARD_MANUAL",
+  "idempotencyKey": "manual-61f3e290-a139-4676-a4b1-c9a4059110fd",
+  "identityKey": "YOUTUBE::CRT-P4-ES-001",
+  "status": "COMPLETED",
+  "outcome": "UPDATED",
+  "startedAt": "2026-09-20T10:51:05.735209Z",
+  "completedAt": "2026-09-20T10:51:05.820836Z",
+  "inputSnapshot": "{\"sourceSystem\":\"DASHBOARD_MANUAL\",\"idempotencyKey\":\"manual-61f3e290-a139-4676-a4b1-c9a4059110fd\",\"platform\":\"YOUTUBE\",\"externalProfileId\":\"CRT-P4-ES-001\",\"creatorName\":\"Phase 4 Creator Spain\",\"profileUrl\":\"https://example.test/creators/crt-p4-es-001\",\"countryCode\":\"ES\",\"primaryLanguage\":\"Spanish\",\"audienceSize\":125000,\"followers\":130000,\"sourceUrl\":\"https://example.test/observations/crt-p4-es-001\",\"confidenceLevel\":\"HIGH\",\"collectedAt\":\"2026-09-20T10:51:05.694Z\"}"
+}

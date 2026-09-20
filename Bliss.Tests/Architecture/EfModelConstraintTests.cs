@@ -53,6 +53,8 @@ public sealed class EfModelConstraintTests
         Assert.Contains("MatchEvaluationRun.BlissMatchId", restrictKeys);
         Assert.Contains("MatchEvaluationRun.CreatorId", restrictKeys);
         Assert.Contains("MatchEvaluationRun.RuleVersionId", restrictKeys);
+        Assert.Contains("CreatorIngestionRun.CreatorId", restrictKeys);
+        Assert.Contains("CreatorIngestionRun.CreatorPlatformId", restrictKeys);
     }
 
     [Fact]
@@ -66,6 +68,37 @@ public sealed class EfModelConstraintTests
             .Where(i => i.IsUnique && i.Properties.Count == 1 && i.Properties[0].Name == nameof(MatchEvaluationRun.BlissMatchId));
 
         Assert.Empty(uniqueMatchIndexes);
+    }
+
+    [Fact]
+    public void Creator_platform_identity_key_is_unique_when_present()
+    {
+        using var db = TestDb.CreateContext();
+        var entity = db.Model.FindEntityType(typeof(CreatorPlatform));
+        Assert.NotNull(entity);
+
+        var identityIndex = entity!.GetIndexes()
+            .Single(i => i.Properties.Count == 1 && i.Properties[0].Name == nameof(CreatorPlatform.IdentityKey));
+
+        Assert.True(identityIndex.IsUnique);
+        Assert.Equal("\"IdentityKey\" IS NOT NULL", identityIndex.GetFilter());
+    }
+
+    [Fact]
+    public void Creator_ingestion_source_and_idempotency_key_are_unique_together()
+    {
+        using var db = TestDb.CreateContext();
+        var entity = db.Model.FindEntityType(typeof(CreatorIngestionRun));
+        Assert.NotNull(entity);
+
+        var idempotencyIndex = entity!.GetIndexes().Single(i =>
+            i.Properties.Select(p => p.Name).SequenceEqual(new[]
+            {
+                nameof(CreatorIngestionRun.SourceSystem),
+                nameof(CreatorIngestionRun.IdempotencyKey)
+            }));
+
+        Assert.True(idempotencyIndex.IsUnique);
     }
 
     [Fact]
@@ -117,6 +150,9 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(MatchEvaluationRun), nameof(MatchEvaluationRun.BlissMatchId));
         AssertIndex(db, typeof(MatchEvaluationRun), nameof(MatchEvaluationRun.CreatorId));
         AssertIndex(db, typeof(MatchEvaluationRun), nameof(MatchEvaluationRun.RuleVersionId));
+        AssertIndex(db, typeof(CreatorIngestionRun), nameof(CreatorIngestionRun.CreatorId));
+        AssertIndex(db, typeof(CreatorIngestionRun), nameof(CreatorIngestionRun.CreatorPlatformId));
+        AssertIndex(db, typeof(CreatorIngestionRun), nameof(CreatorIngestionRun.IdentityKey));
     }
 
     private static void AssertIndex(BlissDbContext db, Type type, string propertyName)

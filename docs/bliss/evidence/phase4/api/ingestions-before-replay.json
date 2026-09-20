@@ -1,0 +1,24 @@
+[
+  {
+    "id": "acbad6f6-a83f-4751-8f3e-d256a3ca5270",
+    "creatorId": "8cdb49f0-83d5-4697-977d-fe9846e30b23",
+    "creatorPlatformId": "be4c2107-5bc0-4977-b02b-9261e7288caf",
+    "sourceSystem": "DASHBOARD_MANUAL",
+    "idempotencyKey": "manual-61f3e290-a139-4676-a4b1-c9a4059110fd",
+    "identityKey": "YOUTUBE::CRT-P4-ES-001",
+    "status": "COMPLETED",
+    "outcome": "UPDATED",
+    "completedAt": "2026-09-20T10:51:05.820836Z"
+  },
+  {
+    "id": "a5439b0f-d82a-4553-9c33-50cb893e2f40",
+    "creatorId": "8cdb49f0-83d5-4697-977d-fe9846e30b23",
+    "creatorPlatformId": "be4c2107-5bc0-4977-b02b-9261e7288caf",
+    "sourceSystem": "DASHBOARD_MANUAL",
+    "idempotencyKey": "manual-3c48a47f-5d68-41ee-949a-f0556ada47d5",
+    "identityKey": "YOUTUBE::CRT-P4-ES-001",
+    "status": "COMPLETED",
+    "outcome": "CREATED",
+    "completedAt": "2026-09-20T10:36:10.047522Z"
+  }
+]

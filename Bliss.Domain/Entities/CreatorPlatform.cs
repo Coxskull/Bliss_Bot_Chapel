@@ -6,6 +6,7 @@ public class CreatorPlatform
     public Guid CreatorId { get; set; }
     public string Platform { get; set; } = string.Empty;
     public string? ExternalProfileId { get; set; }
+    public string? IdentityKey { get; set; }
     public string? ProfileUrl { get; set; }
     public int? Followers { get; set; }
     public DateTime? LastCollectedAt { get; set; }

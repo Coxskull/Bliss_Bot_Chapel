@@ -1,0 +1,16 @@
+{
+  "httpStatus": 200,
+  "result": {
+    "runId": "b1974050-23ed-4741-883b-529e99868ceb",
+    "creatorId": "3e3960a0-004f-444b-b187-f9384fefffcf",
+    "creatorPlatformId": "a4b609c0-7dca-424e-af9d-f123582248b5",
+    "identityKey": "PODCAST::CRT-P4-ES-001",
+    "sourceSystem": "EVIDENCE_FIXTURE",
+    "idempotencyKey": "phase4-evidence-podcast-001",
+    "status": "COMPLETED",
+    "outcome": "CREATED",
+    "completedAt": "2026-09-20T11:00:27.177776Z",
+    "isReplay": true
+  },
+  "sameRun": true
+}
