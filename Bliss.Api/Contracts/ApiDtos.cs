@@ -382,6 +382,7 @@ public sealed record DataProvenanceDto(
 
 public sealed record CampaignListDto(
     Guid Id,
+    Guid? AdvertiserOpportunityId,
     string Name,
     string Status,
     DateTime CreatedAt);
@@ -391,14 +392,85 @@ public sealed record CampaignPlacementDto(
     Guid CampaignId,
     Guid ContentItemId,
     Guid AdInventorySlotId,
+    Guid? BlissMatchId,
     string Status,
     DateTime? StartAt,
     DateTime? EndAt);
 
 public sealed record CampaignDetailDto(
     Guid Id,
+    Guid? AdvertiserOpportunityId,
     string Name,
     string Status,
     DateTime CreatedAt,
     IReadOnlyList<CampaignPlacementDto> Placements);
+
+public sealed record CampaignPlacementRequest(
+    string SourceSystem,
+    string IdempotencyKey,
+    string OperatorLabel,
+    Guid BlissMatchId,
+    Guid CampaignId,
+    Guid ContentItemId,
+    Guid AdInventorySlotId);
+
+public sealed record CampaignPlacementResultDto(
+    Guid RunId,
+    Guid CampaignPlacementId,
+    Guid BlissMatchId,
+    Guid CampaignId,
+    Guid ContentItemId,
+    Guid AdInventorySlotId,
+    string SourceSystem,
+    string IdempotencyKey,
+    string OperatorLabel,
+    string Status,
+    string Outcome,
+    DateTime CompletedAt,
+    bool IsReplay);
+
+public sealed record CampaignPlacementRunSummaryDto(
+    Guid Id,
+    Guid CampaignPlacementId,
+    Guid BlissMatchId,
+    Guid CampaignId,
+    Guid CreatorId,
+    Guid AdvertiserOpportunityId,
+    Guid ContentItemId,
+    Guid AdInventorySlotId,
+    string SourceSystem,
+    string IdempotencyKey,
+    string OperatorLabel,
+    string Status,
+    string Outcome,
+    DateTime CompletedAt);
+
+public sealed record CampaignPlacementRunDetailDto(
+    Guid Id,
+    Guid CampaignPlacementId,
+    Guid BlissMatchId,
+    Guid CampaignId,
+    Guid CreatorId,
+    Guid AdvertiserOpportunityId,
+    Guid ContentItemId,
+    Guid AdInventorySlotId,
+    string SourceSystem,
+    string IdempotencyKey,
+    string OperatorLabel,
+    string Status,
+    string Outcome,
+    DateTime StartedAt,
+    DateTime CompletedAt,
+    string InputSnapshot);
+
+public sealed record CampaignBindingQueueItemDto(
+    Guid BlissMatchId,
+    Guid CreatorId,
+    string CreatorName,
+    Guid AdvertiserOpportunityId,
+    string OpportunityName,
+    decimal? OverallScore,
+    decimal? ConfidenceScore,
+    int ContentItemCount,
+    DateTime CreatedAt);
 

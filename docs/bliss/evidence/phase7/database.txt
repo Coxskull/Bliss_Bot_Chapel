@@ -1,0 +1,30 @@
+                  MigrationId                  
+-----------------------------------------------
+ 20260919013044_Phase1Foundation
+ 20260920063520_Phase2RuleDocument
+ 20260920073126_Phase3EvaluationAudit
+ 20260920102946_Phase4CreatorIngestion
+ 20260920123653_Phase5MatchFormation
+ 20260920130043_Phase6HumanReview
+ 20260920133028_Phase7CampaignPlacementBinding
+(7 rows)
+
+              t              | count 
+-----------------------------+-------
+ CampaignPlacements          |     6
+ CampaignPlacementRuns       |     2
+ PLANNED placements          |     2
+ Legacy placement null match |     2
+(4 rows)
+
+                  Id                  | Status  | StartAt | EndAt | IsAvailable | match_status | campaign_status |       AdvertiserOpportunityId        
+--------------------------------------+---------+---------+-------+-------------+--------------+-----------------+--------------------------------------
+ e1586a02-9cc6-4dc5-a699-32ccdd92ffee | PLANNED |         |       | t           | APPROVED     | DRAFT           | 55555555-5555-5555-5555-555555555554
+ a61acf13-3f7d-4014-8818-77e00179f0b9 | PLANNED |         |       | t           | APPROVED     | DRAFT           | 55555555-5555-5555-5555-555555555555
+(2 rows)
+
+                  Id                  | Status  
+--------------------------------------+---------
+ 77777777-7777-7777-7777-777777777771 | CREATED
+(1 row)
+

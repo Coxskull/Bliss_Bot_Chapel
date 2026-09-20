@@ -17,6 +17,12 @@ public sealed class CampaignPlacementConfiguration : IEntityTypeConfiguration<Ca
         builder.HasIndex(x => x.CampaignId);
         builder.HasIndex(x => x.ContentItemId);
         builder.HasIndex(x => x.AdInventorySlotId);
+        builder.HasIndex(x => x.BlissMatchId);
         builder.HasIndex(x => x.Status);
+
+        builder.HasOne(x => x.BlissMatch)
+            .WithMany()
+            .HasForeignKey(x => x.BlissMatchId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

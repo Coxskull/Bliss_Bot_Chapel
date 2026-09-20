@@ -4,7 +4,7 @@ Use these scripts only on a dedicated Bliss PostgreSQL database. Do not run them
 
 | File | Purpose |
 | --- | --- |
-| `bliss-supabase-full.sql` | Phases 1–6 schema + fictional TEST seed. Paste into Supabase SQL Editor. |
+| `bliss-supabase-full.sql` | Phases 1–7 schema + fictional TEST seed. Paste into Supabase SQL Editor. |
 | `bliss-supabase-schema.sql` | Schema only (idempotent EF migrations). |
 | `bliss-supabase-seed.sql` | Fictional TEST rows only. Run after schema. |
 

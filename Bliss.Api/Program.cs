@@ -26,7 +26,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "Bliss Bot Chapel API",
         Version = "v1",
-        Description = "Standalone Bliss API: controlled ingestion, match formation, deterministic evaluation, historical audit, and human review."
+        Description = "Standalone Bliss API: controlled ingestion, matching, human review, and campaign placement planning."
     });
 });
 

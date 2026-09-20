@@ -36,5 +36,8 @@ public sealed class ApiSurfaceTests
         Assert.Contains("api/match-formation-runs", prefixes);
         Assert.Contains("api/match-review-decisions", prefixes);
         Assert.Contains("api/match-reviews", prefixes);
+        Assert.Contains("api/campaign-placements", prefixes);
+        Assert.Contains("api/campaign-placement-runs", prefixes);
+        Assert.Contains("api/campaign-bindings", prefixes);
     }
 }

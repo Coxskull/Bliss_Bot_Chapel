@@ -62,6 +62,15 @@ public sealed class EfModelConstraintTests
         Assert.Contains("MatchReviewDecision.BlissMatchId", restrictKeys);
         Assert.Contains("MatchReviewDecision.CreatorId", restrictKeys);
         Assert.Contains("MatchReviewDecision.MatchEvaluationRunId", restrictKeys);
+        Assert.Contains("Campaign.AdvertiserOpportunityId", restrictKeys);
+        Assert.Contains("CampaignPlacement.BlissMatchId", restrictKeys);
+        Assert.Contains("CampaignPlacementRun.CampaignPlacementId", restrictKeys);
+        Assert.Contains("CampaignPlacementRun.BlissMatchId", restrictKeys);
+        Assert.Contains("CampaignPlacementRun.CampaignId", restrictKeys);
+        Assert.Contains("CampaignPlacementRun.CreatorId", restrictKeys);
+        Assert.Contains("CampaignPlacementRun.AdvertiserOpportunityId", restrictKeys);
+        Assert.Contains("CampaignPlacementRun.ContentItemId", restrictKeys);
+        Assert.Contains("CampaignPlacementRun.AdInventorySlotId", restrictKeys);
     }
 
     [Fact]
@@ -146,6 +155,29 @@ public sealed class EfModelConstraintTests
     }
 
     [Fact]
+    public void Campaign_placement_run_idempotency_is_unique_but_business_keys_are_not()
+    {
+        using var db = TestDb.CreateContext();
+        var run = db.Model.FindEntityType(typeof(CampaignPlacementRun));
+        Assert.NotNull(run);
+
+        var idempotencyIndex = run!.GetIndexes().Single(i =>
+            i.Properties.Select(p => p.Name).SequenceEqual(new[]
+            {
+                nameof(CampaignPlacementRun.SourceSystem),
+                nameof(CampaignPlacementRun.IdempotencyKey)
+            }));
+        Assert.True(idempotencyIndex.IsUnique);
+
+        var placement = db.Model.FindEntityType(typeof(CampaignPlacement))!;
+        Assert.DoesNotContain(placement.GetIndexes(), i =>
+            i.IsUnique && i.Properties.Any(p =>
+                p.Name is nameof(CampaignPlacement.ContentItemId)
+                    or nameof(CampaignPlacement.AdInventorySlotId)
+                    or nameof(CampaignPlacement.BlissMatchId)));
+    }
+
+    [Fact]
     public void Female_percentage_is_nullable()
     {
         using var db = TestDb.CreateContext();
@@ -203,6 +235,15 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(MatchFormationRun), nameof(MatchFormationRun.RuleVersionId));
         AssertIndex(db, typeof(MatchReviewDecision), nameof(MatchReviewDecision.BlissMatchId));
         AssertIndex(db, typeof(MatchReviewDecision), nameof(MatchReviewDecision.CreatorId));
+        AssertIndex(db, typeof(Campaign), nameof(Campaign.AdvertiserOpportunityId));
+        AssertIndex(db, typeof(CampaignPlacement), nameof(CampaignPlacement.BlissMatchId));
+        AssertIndex(db, typeof(CampaignPlacementRun), nameof(CampaignPlacementRun.CampaignPlacementId));
+        AssertIndex(db, typeof(CampaignPlacementRun), nameof(CampaignPlacementRun.BlissMatchId));
+        AssertIndex(db, typeof(CampaignPlacementRun), nameof(CampaignPlacementRun.CampaignId));
+        AssertIndex(db, typeof(CampaignPlacementRun), nameof(CampaignPlacementRun.CreatorId));
+        AssertIndex(db, typeof(CampaignPlacementRun), nameof(CampaignPlacementRun.AdvertiserOpportunityId));
+        AssertIndex(db, typeof(CampaignPlacementRun), nameof(CampaignPlacementRun.ContentItemId));
+        AssertIndex(db, typeof(CampaignPlacementRun), nameof(CampaignPlacementRun.AdInventorySlotId));
     }
 
     private static void AssertIndex(BlissDbContext db, Type type, string propertyName)
