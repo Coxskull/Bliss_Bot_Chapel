@@ -55,6 +55,6 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         var body = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("MATCH CERTIFICATES", body);
+        Assert.Contains("Match certificates", body);
     }
 }
