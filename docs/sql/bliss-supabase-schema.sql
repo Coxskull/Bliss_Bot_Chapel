@@ -931,4 +931,150 @@ BEGIN
     END IF;
 END $EF$;
 
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    ALTER TABLE "Campaigns" ADD "AdvertiserOpportunityId" uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    ALTER TABLE "CampaignPlacements" ADD "BlissMatchId" uuid;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    CREATE TABLE "CampaignPlacementRuns" (
+        "Id" uuid NOT NULL,
+        "CampaignPlacementId" uuid NOT NULL,
+        "BlissMatchId" uuid NOT NULL,
+        "CampaignId" uuid NOT NULL,
+        "CreatorId" uuid NOT NULL,
+        "AdvertiserOpportunityId" uuid NOT NULL,
+        "ContentItemId" uuid NOT NULL,
+        "AdInventorySlotId" uuid NOT NULL,
+        "SourceSystem" character varying(64) NOT NULL,
+        "IdempotencyKey" character varying(128) NOT NULL,
+        "OperatorLabel" character varying(128) NOT NULL,
+        "Status" character varying(64) NOT NULL,
+        "Outcome" character varying(64) NOT NULL,
+        "StartedAt" timestamp with time zone NOT NULL,
+        "CompletedAt" timestamp with time zone NOT NULL,
+        "InputSnapshot" text NOT NULL,
+        CONSTRAINT "PK_CampaignPlacementRuns" PRIMARY KEY ("Id"),
+        CONSTRAINT "FK_CampaignPlacementRuns_AdInventorySlots_AdInventorySlotId" FOREIGN KEY ("AdInventorySlotId") REFERENCES "AdInventorySlots" ("Id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_CampaignPlacementRuns_AdvertiserOpportunities_AdvertiserOpp~" FOREIGN KEY ("AdvertiserOpportunityId") REFERENCES "AdvertiserOpportunities" ("Id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_CampaignPlacementRuns_BlissMatches_BlissMatchId" FOREIGN KEY ("BlissMatchId") REFERENCES "BlissMatches" ("Id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_CampaignPlacementRuns_CampaignPlacements_CampaignPlacementId" FOREIGN KEY ("CampaignPlacementId") REFERENCES "CampaignPlacements" ("Id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_CampaignPlacementRuns_Campaigns_CampaignId" FOREIGN KEY ("CampaignId") REFERENCES "Campaigns" ("Id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_CampaignPlacementRuns_ContentItems_ContentItemId" FOREIGN KEY ("ContentItemId") REFERENCES "ContentItems" ("Id") ON DELETE RESTRICT,
+        CONSTRAINT "FK_CampaignPlacementRuns_Creators_CreatorId" FOREIGN KEY ("CreatorId") REFERENCES "Creators" ("Id") ON DELETE RESTRICT
+    );
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    CREATE INDEX "IX_Campaigns_AdvertiserOpportunityId" ON "Campaigns" ("AdvertiserOpportunityId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    CREATE INDEX "IX_CampaignPlacements_BlissMatchId" ON "CampaignPlacements" ("BlissMatchId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    CREATE INDEX "IX_CampaignPlacementRuns_AdInventorySlotId" ON "CampaignPlacementRuns" ("AdInventorySlotId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    CREATE INDEX "IX_CampaignPlacementRuns_AdvertiserOpportunityId" ON "CampaignPlacementRuns" ("AdvertiserOpportunityId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    CREATE INDEX "IX_CampaignPlacementRuns_BlissMatchId" ON "CampaignPlacementRuns" ("BlissMatchId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    CREATE INDEX "IX_CampaignPlacementRuns_CampaignId" ON "CampaignPlacementRuns" ("CampaignId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    CREATE INDEX "IX_CampaignPlacementRuns_CampaignPlacementId" ON "CampaignPlacementRuns" ("CampaignPlacementId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    CREATE INDEX "IX_CampaignPlacementRuns_CompletedAt" ON "CampaignPlacementRuns" ("CompletedAt");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    CREATE INDEX "IX_CampaignPlacementRuns_ContentItemId" ON "CampaignPlacementRuns" ("ContentItemId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    CREATE INDEX "IX_CampaignPlacementRuns_CreatorId" ON "CampaignPlacementRuns" ("CreatorId");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    CREATE UNIQUE INDEX "IX_CampaignPlacementRuns_SourceSystem_IdempotencyKey" ON "CampaignPlacementRuns" ("SourceSystem", "IdempotencyKey");
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    ALTER TABLE "CampaignPlacements" ADD CONSTRAINT "FK_CampaignPlacements_BlissMatches_BlissMatchId" FOREIGN KEY ("BlissMatchId") REFERENCES "BlissMatches" ("Id") ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    ALTER TABLE "Campaigns" ADD CONSTRAINT "FK_Campaigns_AdvertiserOpportunities_AdvertiserOpportunityId" FOREIGN KEY ("AdvertiserOpportunityId") REFERENCES "AdvertiserOpportunities" ("Id") ON DELETE RESTRICT;
+    END IF;
+END $EF$;
+
+DO $EF$
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM "__EFMigrationsHistory" WHERE "MigrationId" = '20260920133028_Phase7CampaignPlacementBinding') THEN
+    INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+    VALUES ('20260920133028_Phase7CampaignPlacementBinding', '8.0.11');
+    END IF;
+END $EF$;
+
 COMMIT;

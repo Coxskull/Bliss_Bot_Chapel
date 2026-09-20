@@ -1,0 +1,126 @@
+  Bliss.Domain -> /workspace/Bliss.Domain/bin/Debug/net8.0/Bliss.Domain.dll
+  Bliss.Infrastructure -> /workspace/Bliss.Infrastructure/bin/Debug/net8.0/Bliss.Infrastructure.dll
+  Bliss.Api -> /workspace/Bliss.Api/bin/Debug/net8.0/Bliss.Api.dll
+  Bliss.Tests -> /workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll
+Test run for /workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll (.NETCoreApp,Version=v8.0)
+Microsoft (R) Test Execution Command Line Tool Version 17.8.0 (x64)
+Copyright (c) Microsoft Corporation.  All rights reserved.
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://127.0.0.1:5080
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 27 entities to in-memory store.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://127.0.0.1:5080
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 23 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 36 entities to in-memory store.
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 8 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 9 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 8 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 9 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 8 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 9 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 8 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 9 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 8 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 9 entities to in-memory store.
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://127.0.0.1:5080
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://127.0.0.1:5080
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 27 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 23 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 36 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 11 entities to in-memory store.
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://127.0.0.1:5080
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 27 entities to in-memory store.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://127.0.0.1:5080
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 23 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 36 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 27 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 23 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 36 entities to in-memory store.
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 8 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 9 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 8 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 9 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 8 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 9 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 8 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 9 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 8 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 9 entities to in-memory store.
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 10 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 1 entities to in-memory store.
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://127.0.0.1:5080
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 27 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 23 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 36 entities to in-memory store.
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 8 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 9 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 2 entities to in-memory store.
+info: Microsoft.EntityFrameworkCore.Update[30100]
+      Saved 3 entities to in-memory store.
+
+Passed!  - Failed:     0, Passed:    77, Skipped:     0, Total:    77, Duration: 893 ms - Bliss.Tests.dll (net8.0)
