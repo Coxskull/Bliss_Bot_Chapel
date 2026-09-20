@@ -31,6 +31,10 @@
           <span class="nav-icon">＋</span><span>Form match</span>
           <span class="nav-count" id="nav-formation-count">—</span>
         </button>
+        <button class="nav-item" data-view="review">
+          <span class="nav-icon">☑</span><span>Review queue</span>
+          <span class="nav-count" id="nav-review-count">—</span>
+        </button>
         <button class="nav-item" data-view="creators">
           <span class="nav-icon">◉</span><span>Creators</span>
         </button>
@@ -189,6 +193,36 @@
                 <div><p class="eyebrow">FORMATION LEDGER</p><h3>Recent certificates</h3></div>
               </div>
               <div id="formation-list" class="activity-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="view-review">
+          <div class="section-intro">
+            <div><p class="eyebrow">HUMAN CONTROL</p><h2>Review queue</h2><p>Decide REVIEW_REQUIRED certificates. The evaluator remains the scoring authority; this queue only records a labelled operator decision.</p></div>
+          </div>
+          <div class="ingest-layout">
+            <form class="panel ingest-form" id="review-form">
+              <div class="panel-header">
+                <div><p class="eyebrow">NEW DECISION</p><h3>Operator review</h3></div>
+                <span class="phase-tag">PHASE 6</span>
+              </div>
+              <div class="safety-note"><strong>No AI reviewer.</strong> Approve, reject, or hold an explicit match. This does not run campaigns or call Alpha Auto.</div>
+              <div class="form-grid">
+                <label><span>Source system *</span><input name="sourceSystem" value="DASHBOARD_MANUAL" maxlength="64" required></label>
+                <label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="review-idempotency" readonly required><button type="button" id="regenerate-review-key" title="Generate a new key">↻</button></div></label>
+                <label class="span-two"><span>Queue item *</span><select name="blissMatchId" id="review-match" required></select></label>
+                <label><span>Reviewer label *</span><input name="reviewerLabel" value="TEST_OPERATOR" maxlength="128" required></label>
+                <label><span>Decision *</span><select name="decision" required><option value="APPROVE">Approve</option><option value="REJECT">Reject</option><option value="HOLD">Hold</option></select></label>
+                <label class="span-two"><span>Rationale *</span><input name="rationale" placeholder="Why this decision is being recorded" maxlength="2000" required></label>
+              </div>
+              <div class="form-actions"><small>Replay uses the same source and idempotency key.</small><button class="primary-button" type="submit" id="review-submit">Record decision <span>→</span></button></div>
+            </form>
+            <section class="panel ingestion-history">
+              <div class="panel-header">
+                <div><p class="eyebrow">DECISION LEDGER</p><h3>Recent reviews</h3></div>
+              </div>
+              <div id="review-list" class="activity-list"></div>
             </section>
           </div>
         </section>

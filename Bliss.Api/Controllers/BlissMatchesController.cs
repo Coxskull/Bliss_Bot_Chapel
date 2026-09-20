@@ -207,4 +207,36 @@ public sealed class BlissMatchesController : ControllerBase
 
         return Ok(items);
     }
+
+    [HttpGet("{id:guid}/review-decisions")]
+    public async Task<ActionResult<IReadOnlyList<MatchReviewDecisionSummaryDto>>> GetReviewDecisions(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var exists = await _db.BlissMatches.AsNoTracking().AnyAsync(x => x.Id == id, cancellationToken);
+        if (!exists)
+        {
+            return NotFound();
+        }
+
+        var items = await _db.MatchReviewDecisions
+            .AsNoTracking()
+            .Where(x => x.BlissMatchId == id)
+            .OrderBy(x => x.CompletedAt)
+            .ThenBy(x => x.Id)
+            .Select(x => new MatchReviewDecisionSummaryDto(
+                x.Id,
+                x.BlissMatchId,
+                x.CreatorId,
+                x.MatchEvaluationRunId,
+                x.SourceSystem,
+                x.IdempotencyKey,
+                x.ReviewerLabel,
+                x.Decision,
+                x.ResultingMatchStatus,
+                x.CompletedAt))
+            .ToListAsync(cancellationToken);
+
+        return Ok(items);
+    }
 }

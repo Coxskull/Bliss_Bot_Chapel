@@ -59,6 +59,9 @@ public sealed class EfModelConstraintTests
         Assert.Contains("MatchFormationRun.CreatorId", restrictKeys);
         Assert.Contains("MatchFormationRun.AdvertiserOpportunityId", restrictKeys);
         Assert.Contains("MatchFormationRun.RuleVersionId", restrictKeys);
+        Assert.Contains("MatchReviewDecision.BlissMatchId", restrictKeys);
+        Assert.Contains("MatchReviewDecision.CreatorId", restrictKeys);
+        Assert.Contains("MatchReviewDecision.MatchEvaluationRunId", restrictKeys);
     }
 
     [Fact]
@@ -126,6 +129,23 @@ public sealed class EfModelConstraintTests
     }
 
     [Fact]
+    public void Match_review_source_and_idempotency_key_are_unique_together()
+    {
+        using var db = TestDb.CreateContext();
+        var entity = db.Model.FindEntityType(typeof(MatchReviewDecision));
+        Assert.NotNull(entity);
+
+        var idempotencyIndex = entity!.GetIndexes().Single(i =>
+            i.Properties.Select(p => p.Name).SequenceEqual(new[]
+            {
+                nameof(MatchReviewDecision.SourceSystem),
+                nameof(MatchReviewDecision.IdempotencyKey)
+            }));
+
+        Assert.True(idempotencyIndex.IsUnique);
+    }
+
+    [Fact]
     public void Female_percentage_is_nullable()
     {
         using var db = TestDb.CreateContext();
@@ -181,6 +201,8 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(MatchFormationRun), nameof(MatchFormationRun.CreatorId));
         AssertIndex(db, typeof(MatchFormationRun), nameof(MatchFormationRun.AdvertiserOpportunityId));
         AssertIndex(db, typeof(MatchFormationRun), nameof(MatchFormationRun.RuleVersionId));
+        AssertIndex(db, typeof(MatchReviewDecision), nameof(MatchReviewDecision.BlissMatchId));
+        AssertIndex(db, typeof(MatchReviewDecision), nameof(MatchReviewDecision.CreatorId));
     }
 
     private static void AssertIndex(BlissDbContext db, Type type, string propertyName)
