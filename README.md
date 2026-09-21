@@ -120,3 +120,4 @@ Phase 10 operator observability contract: `docs/bliss/PHASE-10-ENGINEERING-CONTR
 Phase 10 operator observability evidence: `docs/bliss/PHASE-10-EVIDENCE.md`.
 Phase 11 operator audit export contract: `docs/bliss/PHASE-11-ENGINEERING-CONTRACT.md`.
 Phase 11 operator audit export evidence: `docs/bliss/PHASE-11-EVIDENCE.md`.
+Phase 12 match case file export contract: `docs/bliss/PHASE-12-ENGINEERING-CONTRACT.md`.
