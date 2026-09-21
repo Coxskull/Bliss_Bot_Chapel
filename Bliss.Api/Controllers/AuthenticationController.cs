@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Bliss.Api.Runtime;
 using Bliss.Api.Security;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
@@ -6,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Bliss.Api.Controllers;
 
@@ -46,6 +48,7 @@ public sealed class AuthenticationController(
     }
 
     [AllowAnonymous]
+    [EnableRateLimiting(BlissRateLimitPolicies.Authentication)]
     [HttpGet("login")]
     public IActionResult Login([FromQuery] string? returnUrl = null)
     {
@@ -61,6 +64,7 @@ public sealed class AuthenticationController(
     }
 
     [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [HttpPost("logout")]
     public IActionResult Logout()
     {

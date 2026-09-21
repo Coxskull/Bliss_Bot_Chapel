@@ -1,9 +1,11 @@
 using Bliss.Api.Contracts;
+using Bliss.Api.Runtime;
 using Bliss.Api.Security;
 using Bliss.Domain.Common;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bliss.Api.Controllers;
@@ -82,6 +84,7 @@ public sealed class MatchReviewDecisionsController : ControllerBase
     }
 
     [Authorize(Policy = BlissAuthorization.ReviewPolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [HttpPost]
     public async Task<ActionResult<MatchReviewResultDto>> Create(
         MatchReviewRequest request,

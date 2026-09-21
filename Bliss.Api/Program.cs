@@ -1,4 +1,7 @@
+using System.Net;
+using System.Threading.RateLimiting;
 using System.Text.Json.Serialization;
+using Bliss.Api.Runtime;
 using Bliss.Api.Security;
 using Bliss.Infrastructure.DependencyInjection;
 using Bliss.Infrastructure.Persistence;
@@ -6,14 +9,22 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 var authentication = builder.Configuration
     .GetSection(BlissAuthenticationOptions.SectionName)
     .Get<BlissAuthenticationOptions>() ?? new BlissAuthenticationOptions();
+var runtime = builder.Configuration
+    .GetSection(BlissRuntimeOptions.SectionName)
+    .Get<BlissRuntimeOptions>() ?? new BlissRuntimeOptions();
 
 if (!authentication.Enabled && !builder.Environment.IsDevelopment())
 {
@@ -28,6 +39,20 @@ if (authentication.Enabled
 {
     throw new InvalidOperationException(
         "Authentication:Authority and Authentication:ClientId are required when OIDC is enabled.");
+}
+
+if (!builder.Environment.IsDevelopment()
+    && string.IsNullOrWhiteSpace(runtime.DataProtectionKeysPath))
+{
+    throw new InvalidOperationException(
+        "Runtime:DataProtectionKeysPath is required outside Development so OIDC sessions survive restarts and replicas.");
+}
+
+if (runtime.WriteRateLimitPermitLimit <= 0
+    || runtime.AuthenticationRateLimitPermitLimit <= 0
+    || runtime.RateLimitWindowSeconds <= 0)
+{
+    throw new InvalidOperationException("Runtime rate-limit values must be positive.");
 }
 
 builder.Services.AddControllers()
@@ -45,7 +70,75 @@ builder.Services.AddDbContext<BlissDbContext>(options =>
 
 builder.Services.AddBlissInfrastructure(builder.Configuration);
 builder.Services.AddSingleton(authentication);
+builder.Services.AddSingleton(runtime);
 builder.Services.AddScoped<OperatorIdentity>();
+builder.Services.AddProblemDetails();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 1;
+    foreach (var value in runtime.KnownProxies)
+    {
+        if (!IPAddress.TryParse(value, out var address))
+        {
+            throw new InvalidOperationException($"Runtime:KnownProxies contains invalid IP address '{value}'.");
+        }
+
+        if (!options.KnownProxies.Contains(address))
+        {
+            options.KnownProxies.Add(address);
+        }
+    }
+});
+var dataProtection = builder.Services
+    .AddDataProtection()
+    .SetApplicationName("BlissBotChapel");
+if (!string.IsNullOrWhiteSpace(runtime.DataProtectionKeysPath))
+{
+    var keyDirectory = Directory.CreateDirectory(runtime.DataProtectionKeysPath);
+    dataProtection.PersistKeysToFileSystem(keyDirectory);
+}
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<DatabaseReadinessHealthCheck>(
+        "database",
+        tags: ["ready"]);
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.Headers.RetryAfter = runtime.RateLimitWindowSeconds.ToString();
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { error = "Rate limit exceeded. Retry later." },
+            cancellationToken);
+    };
+    options.AddPolicy(
+        BlissRateLimitPolicies.Authentication,
+        context => RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = runtime.AuthenticationRateLimitPermitLimit,
+                Window = TimeSpan.FromSeconds(runtime.RateLimitWindowSeconds),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+    options.AddPolicy(
+        BlissRateLimitPolicies.Writes,
+        context => RateLimitPartition.GetFixedWindowLimiter(
+            context.User.FindFirst("sub")?.Value
+                ?? context.User.Identity?.Name
+                ?? context.Connection.RemoteIpAddress?.ToString()
+                ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = runtime.WriteRateLimitPermitLimit,
+                Window = TimeSpan.FromSeconds(runtime.RateLimitWindowSeconds),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+});
 builder.Services.AddAntiforgery(options =>
 {
     options.Cookie.Name = "__Host-Bliss-Csrf";
@@ -148,8 +241,11 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+
 if (!app.Environment.IsDevelopment())
 {
+    app.UseExceptionHandler();
     app.UseHsts();
 }
 
@@ -203,6 +299,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.Use(async (context, next) =>
 {
@@ -235,6 +332,24 @@ app.Use(async (context, next) =>
     await next();
 });
 app.MapControllers();
+app.MapHealthChecks(
+        "/health/live",
+        new HealthCheckOptions
+        {
+            Predicate = _ => false,
+            ResponseWriter = HealthCheckResponseWriter.WriteAsync
+        })
+    .AllowAnonymous()
+    .DisableRateLimiting();
+app.MapHealthChecks(
+        "/health/ready",
+        new HealthCheckOptions
+        {
+            Predicate = registration => registration.Tags.Contains("ready"),
+            ResponseWriter = HealthCheckResponseWriter.WriteAsync
+        })
+    .AllowAnonymous()
+    .DisableRateLimiting();
 app.MapFallbackToFile("index.html").AllowAnonymous();
 app.Run();
 

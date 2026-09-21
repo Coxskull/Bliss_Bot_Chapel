@@ -1,8 +1,10 @@
 using Bliss.Api.Contracts;
+using Bliss.Api.Runtime;
 using Bliss.Api.Security;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bliss.Api.Controllers;
@@ -46,6 +48,7 @@ public sealed class BlissMatchesController : ControllerBase
     }
 
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [HttpPost]
     public async Task<ActionResult<MatchFormationResultDto>> Create(
         MatchFormationRequest request,
@@ -160,6 +163,7 @@ public sealed class BlissMatchesController : ControllerBase
     }
 
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [HttpPost("{id:guid}/evaluate-rules")]
     public async Task<ActionResult<BlissMatchDetailDto>> EvaluateRules(Guid id, CancellationToken cancellationToken)
     {

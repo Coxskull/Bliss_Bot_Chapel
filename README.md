@@ -37,12 +37,18 @@ export Authentication__Enabled=true
 export Authentication__Authority="https://identity.example.com"
 export Authentication__ClientId="bliss-chapel"
 export Authentication__ClientSecret="<OIDC_CLIENT_SECRET>"
+export Runtime__DataProtectionKeysPath="/var/lib/bliss/data-protection"
 ```
 
 Configure identity-provider role claims for `bliss.viewer`, `bliss.operator`,
 `bliss.reviewer`, or `bliss.admin`. The client secret belongs in a deployment
 secret store, never in `appsettings.json` or browser code. Development mode keeps
 authentication explicitly disabled by default for local tests.
+
+The Data Protection path must be a persistent, access-controlled volume shared
+by every API replica. Configure deployment-owned reverse-proxy addresses through
+`Runtime__KnownProxies__0`, `Runtime__KnownProxies__1`, and so on. Runtime health
+probes are available at `/health/live` and `/health/ready`.
 
 ### Supabase PostgreSQL
 
@@ -108,3 +114,4 @@ Phase 7 evidence: `docs/bliss/PHASE-7-EVIDENCE.md`.
 Full frontend acceptance evidence: `docs/bliss/FULL-FRONTEND-EVIDENCE.md`.
 Phase 8 OIDC security contract: `docs/bliss/PHASE-8-ENGINEERING-CONTRACT.md`.
 Phase 8 OIDC security evidence: `docs/bliss/PHASE-8-EVIDENCE.md`.
+Phase 9 runtime hardening contract: `docs/bliss/PHASE-9-ENGINEERING-CONTRACT.md`.

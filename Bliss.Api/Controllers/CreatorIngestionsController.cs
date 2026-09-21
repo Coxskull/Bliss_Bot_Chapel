@@ -1,8 +1,10 @@
 using Bliss.Api.Contracts;
+using Bliss.Api.Runtime;
 using Bliss.Api.Security;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bliss.Api.Controllers;
@@ -72,6 +74,7 @@ public sealed class CreatorIngestionsController : ControllerBase
     }
 
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [HttpPost]
     public async Task<ActionResult<CreatorIngestionResultDto>> Create(
         CreatorIngestionRequest request,
