@@ -464,6 +464,10 @@ async function exportCreatorCase(id, button) {
   await downloadAuditPack(`/api/audit/export/creators/${id}`, "Exported creator case file", button);
 }
 
+async function exportCampaignCase(id, button) {
+  await downloadAuditPack(`/api/audit/export/campaigns/${id}`, "Exported campaign case file", button);
+}
+
 function showWorkflow(type, prefill = {}) {
   if (!state.session.canWrite) {
     toast("Your account does not have operator permission.", true);
@@ -648,7 +652,7 @@ async function openCampaign(id) {
   try {
     const campaign=await api(`/api/campaigns/${id}`),opportunity=opportunityById(campaign.advertiserOpportunityId);
     $("#drawer-title").textContent=campaign.name;
-    $("#drawer-body").innerHTML=`<div class="detail-hero"><div class="detail-hero-top">${badge(campaign.status)}<span class="detail-score">▣</span></div><h3>${escapeHtml(campaign.name)}</h3><p>${escapeHtml(opportunity?.name||"No opportunity bound")} · created ${formatDate(campaign.createdAt)}</p></div>
+    $("#drawer-body").innerHTML=`<div class="detail-hero"><div class="detail-hero-top">${badge(campaign.status)}<span class="detail-score">▣</span></div><h3>${escapeHtml(campaign.name)}</h3><p>${escapeHtml(opportunity?.name||"No opportunity bound")} · created ${formatDate(campaign.createdAt)}</p><div class="detail-actions"><button class="small-button" data-export-campaign="${campaign.id}">Export case file</button></div></div>
       <section class="detail-section"><h4>Planned placements · ${campaign.placements.length}</h4>${campaign.placements.length?campaign.placements.map(x=>`<div class="check-item"><div><strong>${escapeHtml(state.contentDetails.find(c=>c.id===x.contentItemId)?.title||shortId(x.contentItemId))}</strong><small>${x.blissMatchId?`Certificate ${shortId(x.blissMatchId)}`:"Legacy placement"} · slot ${shortId(x.adInventorySlotId)}</small></div>${badge(x.status)}</div>`).join(""):emptyState("No placements are planned for this campaign.")}</section>`;
   } catch(error){drawerError(error);}
 }
@@ -780,6 +784,7 @@ function handleDocumentClick(event) {
   else if(target.matches("[data-ingest-run-id]"))openIngestionRun(target.dataset.ingestRunId);
   else if(target.matches("[data-export-match]"))exportMatchCase(target.dataset.exportMatch,target);
   else if(target.matches("[data-export-creator]"))exportCreatorCase(target.dataset.exportCreator,target);
+  else if(target.matches("[data-export-campaign]"))exportCampaignCase(target.dataset.exportCampaign,target);
   else if(target.matches("[data-evaluate]"))evaluateMatch(target.dataset.evaluate,target);
   else if(target.matches("[data-select-review]")){state.selectedReview=target.dataset.selectReview;renderReviews();$("#review-form").scrollIntoView({behavior:"smooth",block:"start"});}
   else if(target.matches("[data-select-placement]")){state.selectedPlacement=target.dataset.selectPlacement;renderPlacements();$("#placement-form").scrollIntoView({behavior:"smooth",block:"start"});}

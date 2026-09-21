@@ -190,6 +190,72 @@ public sealed class AuditExportController(
         return Pack(payload, $"bliss-creator-{id:N}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt);
     }
 
+    [HttpGet("export/campaigns/{id:guid}")]
+    public async Task<IActionResult> ExportCampaignCase(Guid id, CancellationToken cancellationToken)
+    {
+        var campaign = await db.Campaigns.AsNoTracking()
+            .Where(x => x.Id == id)
+            .Select(x => new CampaignListDto(x.Id, x.AdvertiserOpportunityId, x.Name, x.Status, x.CreatedAt))
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (campaign is null)
+        {
+            return NotFound();
+        }
+
+        var placements = await db.CampaignPlacements.AsNoTracking()
+            .Where(x => x.CampaignId == id)
+            .OrderBy(x => x.Id)
+            .Take(RecordLimit)
+            .Select(x => new CampaignPlacementDto(
+                x.Id, x.CampaignId, x.ContentItemId, x.AdInventorySlotId,
+                x.BlissMatchId, x.Status, x.StartAt, x.EndAt))
+            .ToListAsync(cancellationToken);
+
+        var matchIds = placements
+            .Where(x => x.BlissMatchId.HasValue)
+            .Select(x => x.BlissMatchId!.Value)
+            .Distinct()
+            .ToList();
+
+        var matches = matchIds.Count == 0
+            ? new List<BlissMatchSummaryDto>()
+            : await db.BlissMatches.AsNoTracking()
+                .Where(x => matchIds.Contains(x.Id))
+                .OrderByDescending(x => x.CreatedAt)
+                .Take(RecordLimit)
+                .Select(x => new BlissMatchSummaryDto(
+                    x.Id, x.CreatorId, x.AdvertiserOpportunityId, x.RuleVersionId,
+                    x.Status, x.OverallScore, x.ConfidenceScore, x.CreatedAt))
+                .ToListAsync(cancellationToken);
+
+        var placementRuns = await db.CampaignPlacementRuns.AsNoTracking()
+            .Where(x => x.CampaignId == id)
+            .OrderByDescending(x => x.CompletedAt)
+            .ThenBy(x => x.Id)
+            .Take(RecordLimit)
+            .Select(x => new CampaignPlacementRunSummaryDto(
+                x.Id, x.CampaignPlacementId, x.BlissMatchId, x.CampaignId, x.CreatorId,
+                x.AdvertiserOpportunityId, x.ContentItemId, x.AdInventorySlotId, x.SourceSystem,
+                x.IdempotencyKey, x.OperatorLabel, x.Status, x.Outcome, x.CompletedAt))
+            .ToListAsync(cancellationToken);
+
+        var requestId = RequestCorrelation.Resolve(HttpContext);
+        var exportedAt = DateTime.UtcNow;
+        var payload = new CampaignCaseExportDto(
+            exportedAt,
+            environment.EnvironmentName,
+            "campaign-case",
+            requestId,
+            id,
+            campaign,
+            placements,
+            placementRuns,
+            matches);
+
+        return Pack(payload, $"bliss-campaign-{id:N}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt);
+    }
+
     [HttpGet("export/{ledger}")]
     public async Task<IActionResult> Export(string ledger, CancellationToken cancellationToken)
     {
@@ -338,3 +404,14 @@ public sealed record CreatorCaseExportDto(
     IReadOnlyList<BlissMatchSummaryDto> Matches,
     IReadOnlyList<CreatorIngestionRunSummaryDto> Ingestions,
     IReadOnlyList<DataProvenanceDto> Provenances);
+
+public sealed record CampaignCaseExportDto(
+    DateTime ExportedAt,
+    string Environment,
+    string Kind,
+    string RequestId,
+    Guid CampaignId,
+    CampaignListDto Campaign,
+    IReadOnlyList<CampaignPlacementDto> Placements,
+    IReadOnlyList<CampaignPlacementRunSummaryDto> PlacementRuns,
+    IReadOnlyList<BlissMatchSummaryDto> Matches);
