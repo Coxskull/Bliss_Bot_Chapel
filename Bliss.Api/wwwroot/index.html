@@ -50,11 +50,22 @@
         <div class="top-actions">
           <span class="connection-pill"><span></span><span id="workspace-label">Same-origin workspace</span></span>
           <button class="icon-button" id="refresh-button" title="Refresh data" aria-label="Refresh data">↻</button>
-          <button class="operator-chip" id="operator-button" title="Configure operator label"><span class="avatar" id="operator-avatar">?</span><span id="operator-name">Set operator</span></button>
+          <button class="operator-chip" id="operator-button" title="Open operator session"><span class="avatar" id="operator-avatar">?</span><span id="operator-name">Sign in</span></button>
         </div>
       </header>
 
       <div class="content">
+        <section class="auth-gate" id="auth-gate" hidden>
+          <div class="auth-gate-card">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 40 40"><path d="M20 3 35 11v18L20 37 5 29V11L20 3Z"/><path d="m12 21 5 5 11-12"/></svg>
+            </span>
+            <p class="eyebrow">SECURE WORKSPACE</p>
+            <h2>Sign in to Bliss Chapel</h2>
+            <p>Your organization manages access through its identity provider. Bliss never receives your password.</p>
+            <button class="primary-button" id="auth-login-button">Continue with SSO <span>→</span></button>
+          </div>
+        </section>
         <section class="view active" id="view-overview" aria-labelledby="overview-title">
           <div class="welcome-row">
             <div><p class="eyebrow">WORKSPACE OVERVIEW</p><h2 id="overview-title">Partnership operations, clearly controlled.</h2><p>Move creator opportunities from explicit intake to deterministic evaluation, human review, and planned inventory.</p></div>
@@ -204,13 +215,15 @@
   <dialog id="settings-dialog">
     <form method="dialog" class="dialog-card">
       <div class="dialog-head"><div><p class="eyebrow">WORKSPACE</p><h2>Operator settings</h2></div><button class="icon-button" value="cancel" aria-label="Close settings">×</button></div>
-      <p>Bliss uses the API that serves this frontend by default. Operator labels are stored only in this browser and are not authentication.</p>
-      <label for="operator-label">Default operator label</label>
-      <input id="operator-label" maxlength="128" placeholder="Your name or operator ID">
+      <p id="settings-session-copy">Your identity and permissions are managed by your organization's identity provider.</p>
+      <div id="local-operator-settings">
+        <label for="operator-label">Development operator label</label>
+        <input id="operator-label" maxlength="128" placeholder="Your name or operator ID">
+      </div>
       <label for="api-url">API base URL <span class="optional">optional</span></label>
       <input id="api-url" type="url" placeholder="Same origin">
       <small>Set a base URL only when the frontend is intentionally hosted separately.</small>
-      <div class="dialog-actions"><button class="secondary-button" value="cancel">Cancel</button><button class="primary-button" id="save-settings" value="default">Save settings</button></div>
+      <div class="dialog-actions"><button class="secondary-button" type="button" id="auth-logout-button" hidden>Sign out</button><button class="secondary-button" value="cancel">Cancel</button><button class="primary-button" id="save-settings" value="default">Save settings</button></div>
     </form>
   </dialog>
 

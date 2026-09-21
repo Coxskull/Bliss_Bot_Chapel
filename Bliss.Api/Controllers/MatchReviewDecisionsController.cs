@@ -1,6 +1,8 @@
 using Bliss.Api.Contracts;
+using Bliss.Api.Security;
 using Bliss.Domain.Common;
 using Bliss.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,11 +14,16 @@ public sealed class MatchReviewDecisionsController : ControllerBase
 {
     private readonly BlissDbContext _db;
     private readonly MatchReviewService _review;
+    private readonly OperatorIdentity _operatorIdentity;
 
-    public MatchReviewDecisionsController(BlissDbContext db, MatchReviewService review)
+    public MatchReviewDecisionsController(
+        BlissDbContext db,
+        MatchReviewService review,
+        OperatorIdentity operatorIdentity)
     {
         _db = db;
         _review = review;
+        _operatorIdentity = operatorIdentity;
     }
 
     [HttpGet]
@@ -74,6 +81,7 @@ public sealed class MatchReviewDecisionsController : ControllerBase
             item.InputSnapshot));
     }
 
+    [Authorize(Policy = BlissAuthorization.ReviewPolicy)]
     [HttpPost]
     public async Task<ActionResult<MatchReviewResultDto>> Create(
         MatchReviewRequest request,
@@ -87,7 +95,7 @@ public sealed class MatchReviewDecisionsController : ControllerBase
                     request.SourceSystem,
                     request.IdempotencyKey,
                     request.BlissMatchId,
-                    request.ReviewerLabel,
+                    _operatorIdentity.ResolveLabel(User, request.ReviewerLabel),
                     request.Decision,
                     request.Rationale),
                 cancellationToken);

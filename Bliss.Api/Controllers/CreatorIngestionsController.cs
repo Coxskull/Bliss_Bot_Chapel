@@ -1,5 +1,7 @@
 using Bliss.Api.Contracts;
+using Bliss.Api.Security;
 using Bliss.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -69,6 +71,7 @@ public sealed class CreatorIngestionsController : ControllerBase
             run.InputSnapshot));
     }
 
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [HttpPost]
     public async Task<ActionResult<CreatorIngestionResultDto>> Create(
         CreatorIngestionRequest request,
