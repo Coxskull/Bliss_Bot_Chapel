@@ -16,12 +16,6 @@ public sealed class AuditExportController(
 {
     public const int RecordLimit = 250;
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = true
-    };
-
     [HttpGet("export/matches/{id:guid}")]
     public async Task<IActionResult> ExportMatchCase(Guid id, CancellationToken cancellationToken)
     {
@@ -92,11 +86,22 @@ public sealed class AuditExportController(
 
         var requestId = RequestCorrelation.Resolve(HttpContext);
         var exportedAt = DateTime.UtcNow;
+        var contentSha256 = ExportIntegrity.Sha256Hex(new Dictionary<string, object?>
+        {
+            ["match"] = match,
+            ["scoreComponents"] = scoreComponents,
+            ["eligibilityChecks"] = eligibility,
+            ["evaluations"] = evaluations,
+            ["formations"] = formations,
+            ["reviews"] = reviews,
+            ["placements"] = placements
+        });
         var payload = new MatchCaseExportDto(
             exportedAt,
             environment.EnvironmentName,
             "match-case",
             requestId,
+            contentSha256,
             id,
             match,
             scoreComponents,
@@ -106,7 +111,7 @@ public sealed class AuditExportController(
             reviews,
             placements);
 
-        return Pack(payload, $"bliss-match-{id:N}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt);
+        return Pack(payload, $"bliss-match-{id:N}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt, contentSha256);
     }
 
     [HttpGet("export/creators/{id:guid}")]
@@ -174,11 +179,21 @@ public sealed class AuditExportController(
 
         var requestId = RequestCorrelation.Resolve(HttpContext);
         var exportedAt = DateTime.UtcNow;
+        var contentSha256 = ExportIntegrity.Sha256Hex(new Dictionary<string, object?>
+        {
+            ["creator"] = creator,
+            ["platforms"] = platforms,
+            ["content"] = content,
+            ["matches"] = matches,
+            ["ingestions"] = ingestions,
+            ["provenances"] = provenances
+        });
         var payload = new CreatorCaseExportDto(
             exportedAt,
             environment.EnvironmentName,
             "creator-case",
             requestId,
+            contentSha256,
             id,
             creator,
             platforms,
@@ -187,7 +202,7 @@ public sealed class AuditExportController(
             ingestions,
             provenances);
 
-        return Pack(payload, $"bliss-creator-{id:N}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt);
+        return Pack(payload, $"bliss-creator-{id:N}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt, contentSha256);
     }
 
     [HttpGet("export/campaigns/{id:guid}")]
@@ -242,18 +257,26 @@ public sealed class AuditExportController(
 
         var requestId = RequestCorrelation.Resolve(HttpContext);
         var exportedAt = DateTime.UtcNow;
+        var contentSha256 = ExportIntegrity.Sha256Hex(new Dictionary<string, object?>
+        {
+            ["campaign"] = campaign,
+            ["placements"] = placements,
+            ["placementRuns"] = placementRuns,
+            ["matches"] = matches
+        });
         var payload = new CampaignCaseExportDto(
             exportedAt,
             environment.EnvironmentName,
             "campaign-case",
             requestId,
+            contentSha256,
             id,
             campaign,
             placements,
             placementRuns,
             matches);
 
-        return Pack(payload, $"bliss-campaign-{id:N}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt);
+        return Pack(payload, $"bliss-campaign-{id:N}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt, contentSha256);
     }
 
     [HttpGet("export/{ledger}")]
@@ -341,20 +364,22 @@ public sealed class AuditExportController(
 
         var requestId = RequestCorrelation.Resolve(HttpContext);
         var exportedAt = DateTime.UtcNow;
+        var contentSha256 = ExportIntegrity.Sha256Hex(records);
         var payload = new AuditExportDto(
             exportedAt,
             environment.EnvironmentName,
             kind,
             requestId,
+            contentSha256,
             list.Count,
             RecordLimit,
             total > RecordLimit,
             records);
 
-        return Pack(payload, $"bliss-{kind}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt);
+        return Pack(payload, $"bliss-{kind}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt, contentSha256);
     }
 
-    private FileContentResult Pack(object payload, string fileName, string requestId, DateTime exportedAt)
+    private FileContentResult Pack(object payload, string fileName, string requestId, DateTime exportedAt, string contentSha256)
     {
         events.Record(new OperationalEvent(
             exportedAt,
@@ -363,7 +388,8 @@ public sealed class AuditExportController(
             RequestCorrelation.SafePath(HttpContext),
             StatusCodes.Status200OK,
             requestId));
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(payload, JsonOptions);
+        Response.Headers[ExportIntegrity.HeaderName] = contentSha256;
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(payload, ExportIntegrity.JsonOptions);
         return File(bytes, "application/json", fileName);
     }
 }
@@ -373,6 +399,7 @@ public sealed record AuditExportDto(
     string Environment,
     string Ledger,
     string RequestId,
+    string ContentSha256,
     int RecordCount,
     int Limit,
     bool Truncated,
@@ -383,6 +410,7 @@ public sealed record MatchCaseExportDto(
     string Environment,
     string Kind,
     string RequestId,
+    string ContentSha256,
     Guid MatchId,
     BlissMatchSummaryDto Match,
     IReadOnlyList<MatchScoreComponentDto> ScoreComponents,
@@ -397,6 +425,7 @@ public sealed record CreatorCaseExportDto(
     string Environment,
     string Kind,
     string RequestId,
+    string ContentSha256,
     Guid CreatorId,
     CreatorListDto Creator,
     IReadOnlyList<CreatorPlatformDto> Platforms,
@@ -410,6 +439,7 @@ public sealed record CampaignCaseExportDto(
     string Environment,
     string Kind,
     string RequestId,
+    string ContentSha256,
     Guid CampaignId,
     CampaignListDto Campaign,
     IReadOnlyList<CampaignPlacementDto> Placements,

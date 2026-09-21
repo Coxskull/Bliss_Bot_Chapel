@@ -434,6 +434,7 @@ async function downloadAuditPack(path, successMessage, button) {
     const blob = await response.blob();
     const header = /filename\*?=(?:UTF-8'')?"?([^\";]+)"?/i.exec(response.headers.get("Content-Disposition") || "");
     const fileName = header ? decodeURIComponent(header[1]) : "bliss-export.json";
+    const digest = (response.headers.get("X-Content-SHA256") || "").toLowerCase();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -442,7 +443,9 @@ async function downloadAuditPack(path, successMessage, button) {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    toast(`${successMessage}${requestId ? ` [${requestId.slice(0, 8)}…]` : ""}.`);
+    const requestSuffix = requestId ? ` [${requestId.slice(0, 8)}…]` : "";
+    const digestSuffix = digest ? ` sha256:${digest.slice(0, 12)}…` : "";
+    toast(`${successMessage}${requestSuffix}${digestSuffix}.`);
     refreshRuntimeStatus();
   } catch (error) {
     toast(error.message, true);
