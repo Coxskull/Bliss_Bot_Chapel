@@ -416,16 +416,13 @@ async function verifyWriteThrottle() {
   }
 }
 
-async function exportAuditLedger() {
-  const ledger = state.auditTab === "provenance" ? "provenance" : state.auditTab;
-  const button = $("#export-audit-ledger");
-  button.disabled = true;
+async function downloadAuditPack(path, successMessage, button) {
+  if (button) button.disabled = true;
   try {
     const base = state.apiBase.replace(/\/$/, "");
-    const headers = { Accept: "application/json" };
-    const response = await fetch(`${base}/api/audit/export/${encodeURIComponent(ledger)}`, {
+    const response = await fetch(`${base}${path}`, {
       credentials: "same-origin",
-      headers
+      headers: { Accept: "application/json" }
     });
     const requestId = response.headers.get("X-Request-Id");
     if (requestId) state.lastRequestId = requestId;
@@ -435,8 +432,8 @@ async function exportAuditLedger() {
       throw new Error((body?.error || `Request failed with HTTP ${response.status}`) + suffix);
     }
     const blob = await response.blob();
-    const match = /filename\*?=(?:UTF-8'')?"?([^\";]+)"?/i.exec(response.headers.get("Content-Disposition") || "");
-    const fileName = match ? decodeURIComponent(match[1]) : `bliss-${ledger}.json`;
+    const header = /filename\*?=(?:UTF-8'')?"?([^\";]+)"?/i.exec(response.headers.get("Content-Disposition") || "");
+    const fileName = header ? decodeURIComponent(header[1]) : "bliss-export.json";
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -445,13 +442,22 @@ async function exportAuditLedger() {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    toast(`Exported ${ledger} ledger${requestId ? ` [${requestId.slice(0, 8)}…]` : ""}.`);
+    toast(`${successMessage}${requestId ? ` [${requestId.slice(0, 8)}…]` : ""}.`);
     refreshRuntimeStatus();
   } catch (error) {
     toast(error.message, true);
   } finally {
-    button.disabled = false;
+    if (button) button.disabled = false;
   }
+}
+
+async function exportAuditLedger() {
+  const ledger = state.auditTab === "provenance" ? "provenance" : state.auditTab;
+  await downloadAuditPack(`/api/audit/export/${encodeURIComponent(ledger)}`, `Exported ${ledger} ledger`, $("#export-audit-ledger"));
+}
+
+async function exportMatchCase(id, button) {
+  await downloadAuditPack(`/api/audit/export/matches/${id}`, "Exported match case file", button);
 }
 
 function showWorkflow(type, prefill = {}) {
@@ -650,7 +656,7 @@ async function openMatch(id) {
     const formation=state.formations.find(x=>x.blissMatchId===id);
     const placement=state.placements.find(x=>x.blissMatchId===id);
     $("#drawer-title").textContent=match.creator.name;
-    $("#drawer-body").innerHTML=`<div class="detail-hero"><div class="detail-hero-top">${badge(match.status)}<span class="detail-score">${formatScore(match.overallScore)}</span></div><h3>${escapeHtml(match.advertiserOpportunity.name)}</h3><p>${escapeHtml(match.advertiserOpportunity.advertiserProgram.advertiser.name)} · Rule ${escapeHtml(match.ruleVersion.version)} · ${formatPercent(match.confidenceScore)} confidence</p><div class="detail-actions">${ruleById(match.ruleVersion.id)?.documentJson?`<button class="small-button" data-evaluate="${match.id}">Replay evaluation</button>`:""}${match.status==="REVIEW_REQUIRED"?`<button class="small-button" data-open-review="${match.id}">Review match</button>`:""}${match.status==="APPROVED"&&!placement?`<button class="small-button" data-open-placement="${match.id}">Plan placement</button>`:""}</div></div>
+    $("#drawer-body").innerHTML=`<div class="detail-hero"><div class="detail-hero-top">${badge(match.status)}<span class="detail-score">${formatScore(match.overallScore)}</span></div><h3>${escapeHtml(match.advertiserOpportunity.name)}</h3><p>${escapeHtml(match.advertiserOpportunity.advertiserProgram.advertiser.name)} · Rule ${escapeHtml(match.ruleVersion.version)} · ${formatPercent(match.confidenceScore)} confidence</p><div class="detail-actions"><button class="small-button" data-export-match="${match.id}">Export case file</button>${ruleById(match.ruleVersion.id)?.documentJson?`<button class="small-button" data-evaluate="${match.id}">Replay evaluation</button>`:""}${match.status==="REVIEW_REQUIRED"?`<button class="small-button" data-open-review="${match.id}">Review match</button>`:""}${match.status==="APPROVED"&&!placement?`<button class="small-button" data-open-placement="${match.id}">Plan placement</button>`:""}</div></div>
       <section class="detail-section"><h4>Certificate timeline</h4><div class="check-list">${formation?`<button class="history-item" data-formation-run-id="${formation.id}"><span><strong>Certificate formed</strong><small>${formatDate(formation.completedAt)} · ${escapeHtml(formation.sourceSystem)}</small></span><span>→</span></button>`:""}${runs.map(x=>`<button class="history-item" data-run-id="${x.id}"><span><strong>Deterministic evaluation</strong><small>${formatDate(x.completedAt||x.startedAt)} · ${escapeHtml(x.algorithmVersion)}</small></span>${badge(x.matchStatus)}</button>`).join("")}${reviews.map(x=>`<button class="history-item" data-review-id="${x.id}"><span><strong>Human review · ${escapeHtml(x.reviewerLabel)}</strong><small>${formatDate(x.completedAt)}</small></span>${badge(x.decision)}</button>`).join("")}${placement?`<button class="history-item" data-placement-run-id="${placement.id}"><span><strong>Placement planned</strong><small>${formatDate(placement.completedAt)} · ${escapeHtml(campaignById(placement.campaignId)?.name||shortId(placement.campaignId))}</small></span>${badge("PLANNED")}</button>`:""}</div></section>
       <section class="detail-section"><h4>Eligibility evidence</h4><div class="check-list">${match.eligibilityChecks.length?match.eligibilityChecks.map(x=>`<div class="check-item"><div><strong>${escapeHtml(friendlyStatus(x.checkType))}</strong><small>${escapeHtml(x.explanation||x.reasonCode||"No explanation")}</small></div>${badge(x.result)}</div>`).join(""):emptyState("This certificate has not been evaluated.")}</div></section>
       <section class="detail-section"><h4>Score components</h4><div class="check-list">${match.scoreComponents.length?match.scoreComponents.map(x=>`<div class="check-item"><div><strong>${escapeHtml(friendlyStatus(x.componentName))}</strong><small>${escapeHtml(x.explanation||"No explanation")}</small></div><strong>${formatScore(x.score)} × ${formatScore(x.weight)}</strong></div>`).join(""):emptyState("No score components recorded.")}</div></section>
@@ -768,6 +774,7 @@ function handleDocumentClick(event) {
   else if(target.matches("[data-review-id]"))openReviewDecision(target.dataset.reviewId);
   else if(target.matches("[data-placement-run-id]"))openPlacementRun(target.dataset.placementRunId);
   else if(target.matches("[data-ingest-run-id]"))openIngestionRun(target.dataset.ingestRunId);
+  else if(target.matches("[data-export-match]"))exportMatchCase(target.dataset.exportMatch,target);
   else if(target.matches("[data-evaluate]"))evaluateMatch(target.dataset.evaluate,target);
   else if(target.matches("[data-select-review]")){state.selectedReview=target.dataset.selectReview;renderReviews();$("#review-form").scrollIntoView({behavior:"smooth",block:"start"});}
   else if(target.matches("[data-select-placement]")){state.selectedPlacement=target.dataset.selectPlacement;renderPlacements();$("#placement-form").scrollIntoView({behavior:"smooth",block:"start"});}

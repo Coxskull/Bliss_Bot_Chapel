@@ -22,6 +22,93 @@ public sealed class AuditExportController(
         WriteIndented = true
     };
 
+    [HttpGet("export/matches/{id:guid}")]
+    public async Task<IActionResult> ExportMatchCase(Guid id, CancellationToken cancellationToken)
+    {
+        var match = await db.BlissMatches.AsNoTracking()
+            .Where(x => x.Id == id)
+            .Select(x => new BlissMatchSummaryDto(
+                x.Id, x.CreatorId, x.AdvertiserOpportunityId, x.RuleVersionId,
+                x.Status, x.OverallScore, x.ConfidenceScore, x.CreatedAt))
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (match is null)
+        {
+            return NotFound();
+        }
+
+        var scoreComponents = await db.MatchScoreComponents.AsNoTracking()
+            .Where(x => x.BlissMatchId == id)
+            .OrderBy(x => x.ComponentName)
+            .Select(x => new MatchScoreComponentDto(x.Id, x.ComponentName, x.Score, x.Weight, x.Explanation))
+            .ToListAsync(cancellationToken);
+
+        var eligibility = await db.EligibilityChecks.AsNoTracking()
+            .Where(x => x.BlissMatchId == id)
+            .OrderBy(x => x.CheckType)
+            .Select(x => new EligibilityCheckDto(x.Id, x.CheckType, x.Result, x.ReasonCode, x.Explanation))
+            .ToListAsync(cancellationToken);
+
+        var evaluations = await db.MatchEvaluationRuns.AsNoTracking()
+            .Where(x => x.BlissMatchId == id)
+            .OrderByDescending(x => x.CompletedAt ?? x.StartedAt)
+            .ThenBy(x => x.Id)
+            .Take(RecordLimit)
+            .Select(x => new MatchEvaluationRunSummaryDto(
+                x.Id, x.BlissMatchId, x.CreatorId, x.RuleVersionId, x.AlgorithmVersion,
+                x.Status, x.MatchStatus, x.OverallScore, x.ConfidenceScore, x.StartedAt, x.CompletedAt))
+            .ToListAsync(cancellationToken);
+
+        var formations = await db.MatchFormationRuns.AsNoTracking()
+            .Where(x => x.BlissMatchId == id)
+            .OrderByDescending(x => x.CompletedAt)
+            .ThenBy(x => x.Id)
+            .Take(RecordLimit)
+            .Select(x => new MatchFormationRunSummaryDto(
+                x.Id, x.BlissMatchId, x.CreatorId, x.AdvertiserOpportunityId, x.RuleVersionId,
+                x.SourceSystem, x.IdempotencyKey, x.Status, x.Outcome, x.EvaluateOnCreate, x.CompletedAt))
+            .ToListAsync(cancellationToken);
+
+        var reviews = await db.MatchReviewDecisions.AsNoTracking()
+            .Where(x => x.BlissMatchId == id)
+            .OrderByDescending(x => x.CompletedAt)
+            .ThenBy(x => x.Id)
+            .Take(RecordLimit)
+            .Select(x => new MatchReviewDecisionSummaryDto(
+                x.Id, x.BlissMatchId, x.CreatorId, x.MatchEvaluationRunId, x.SourceSystem,
+                x.IdempotencyKey, x.ReviewerLabel, x.Decision, x.ResultingMatchStatus, x.CompletedAt))
+            .ToListAsync(cancellationToken);
+
+        var placements = await db.CampaignPlacementRuns.AsNoTracking()
+            .Where(x => x.BlissMatchId == id)
+            .OrderByDescending(x => x.CompletedAt)
+            .ThenBy(x => x.Id)
+            .Take(RecordLimit)
+            .Select(x => new CampaignPlacementRunSummaryDto(
+                x.Id, x.CampaignPlacementId, x.BlissMatchId, x.CampaignId, x.CreatorId,
+                x.AdvertiserOpportunityId, x.ContentItemId, x.AdInventorySlotId, x.SourceSystem,
+                x.IdempotencyKey, x.OperatorLabel, x.Status, x.Outcome, x.CompletedAt))
+            .ToListAsync(cancellationToken);
+
+        var requestId = RequestCorrelation.Resolve(HttpContext);
+        var exportedAt = DateTime.UtcNow;
+        var payload = new MatchCaseExportDto(
+            exportedAt,
+            environment.EnvironmentName,
+            "match-case",
+            requestId,
+            id,
+            match,
+            scoreComponents,
+            eligibility,
+            evaluations,
+            formations,
+            reviews,
+            placements);
+
+        return Pack(payload, $"bliss-match-{id:N}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt);
+    }
+
     [HttpGet("export/{ledger}")]
     public async Task<IActionResult> Export(string ledger, CancellationToken cancellationToken)
     {
@@ -117,6 +204,11 @@ public sealed class AuditExportController(
             total > RecordLimit,
             records);
 
+        return Pack(payload, $"bliss-{kind}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt);
+    }
+
+    private FileContentResult Pack(object payload, string fileName, string requestId, DateTime exportedAt)
+    {
         events.Record(new OperationalEvent(
             exportedAt,
             "AuditExported",
@@ -124,9 +216,7 @@ public sealed class AuditExportController(
             RequestCorrelation.SafePath(HttpContext),
             StatusCodes.Status200OK,
             requestId));
-
         var bytes = JsonSerializer.SerializeToUtf8Bytes(payload, JsonOptions);
-        var fileName = $"bliss-{kind}-{exportedAt:yyyyMMddHHmmss}Z.json";
         return File(bytes, "application/json", fileName);
     }
 }
@@ -140,3 +230,17 @@ public sealed record AuditExportDto(
     int Limit,
     bool Truncated,
     object Records);
+
+public sealed record MatchCaseExportDto(
+    DateTime ExportedAt,
+    string Environment,
+    string Kind,
+    string RequestId,
+    Guid MatchId,
+    BlissMatchSummaryDto Match,
+    IReadOnlyList<MatchScoreComponentDto> ScoreComponents,
+    IReadOnlyList<EligibilityCheckDto> EligibilityChecks,
+    IReadOnlyList<MatchEvaluationRunSummaryDto> Evaluations,
+    IReadOnlyList<MatchFormationRunSummaryDto> Formations,
+    IReadOnlyList<MatchReviewDecisionSummaryDto> Reviews,
+    IReadOnlyList<CampaignPlacementRunSummaryDto> Placements);
