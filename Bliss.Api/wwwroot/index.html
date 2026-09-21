@@ -183,8 +183,8 @@
 
         <section class="view" id="view-audit" aria-labelledby="audit-title">
           <div class="section-intro">
-            <div><p class="eyebrow">IMMUTABLE HISTORY</p><h2 id="audit-title">Operations audit</h2><p>Trace every controlled write and deterministic decision through its immutable record.</p></div>
-            <div class="search-wrap"><span aria-hidden="true">⌕</span><input id="audit-search" type="search" placeholder="Search the selected ledger" aria-label="Search audit ledger"></div>
+            <div><p class="eyebrow">IMMUTABLE HISTORY</p><h2 id="audit-title">Operations audit</h2><p>Trace every controlled write and deterministic decision through its immutable record. Export a bounded JSON evidence pack of the selected ledger. Snapshots and secrets are omitted.</p></div>
+            <div class="section-actions"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="audit-search" type="search" placeholder="Search the selected ledger" aria-label="Search audit ledger"></div><button class="secondary-button" id="export-audit-ledger" type="button">Export ledger</button></div>
           </div>
           <div class="tab-row" id="audit-tabs" role="tablist">
             <button class="tab-button active" data-audit-tab="evaluations" role="tab" aria-selected="true">Evaluations</button>
