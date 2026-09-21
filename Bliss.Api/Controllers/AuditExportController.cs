@@ -406,14 +406,17 @@ public sealed class AuditExportController(
             }
 
             var requestId = RequestCorrelation.Resolve(HttpContext);
+            var verifiedAt = DateTime.UtcNow;
+            var receipt = result with { RequestId = requestId, VerifiedAt = verifiedAt };
             events.Record(new OperationalEvent(
-                DateTime.UtcNow,
+                verifiedAt,
                 "AuditVerified",
                 HttpContext.Request.Method,
                 RequestCorrelation.SafePath(HttpContext),
                 StatusCodes.Status200OK,
-                requestId));
-            return Ok(result);
+                requestId,
+                ExportIntegrity.ReceiptDetail(receipt)));
+            return Ok(receipt);
         }
     }
 

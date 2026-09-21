@@ -42,7 +42,8 @@ public sealed class RuntimeStatusController(
                 entry.Method,
                 entry.Path,
                 entry.StatusCode,
-                entry.RequestId)).ToList()));
+                entry.RequestId,
+                entry.Detail)).ToList()));
     }
 
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
@@ -70,4 +71,5 @@ public sealed record RuntimeEventDto(
     string Method,
     string Path,
     int StatusCode,
-    string RequestId);
+    string RequestId,
+    string? Detail = null);
