@@ -1,5 +1,7 @@
 using Bliss.Api.Contracts;
+using Bliss.Api.Security;
 using Bliss.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -43,6 +45,7 @@ public sealed class BlissMatchesController : ControllerBase
         return Ok(items);
     }
 
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [HttpPost]
     public async Task<ActionResult<MatchFormationResultDto>> Create(
         MatchFormationRequest request,
@@ -156,6 +159,7 @@ public sealed class BlissMatchesController : ControllerBase
                 e.Explanation)).ToList()));
     }
 
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [HttpPost("{id:guid}/evaluate-rules")]
     public async Task<ActionResult<BlissMatchDetailDto>> EvaluateRules(Guid id, CancellationToken cancellationToken)
     {

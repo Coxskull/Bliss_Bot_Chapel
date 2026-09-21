@@ -70,6 +70,14 @@ a { color: inherit; }
 .content { max-width: 1580px; margin: 0 auto; padding: 31px 38px 64px; }
 .view { display: none; animation: enter .25s ease; }
 .view.active { display: block; }
+.content.auth-required .view { display: none; }
+.auth-gate { min-height: calc(100vh - 150px); display: grid; place-items: center; }
+.auth-gate[hidden] { display: none; }
+.auth-gate-card { width: min(470px, 100%); padding: 45px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: var(--shadow); text-align: center; }
+.auth-gate-card .brand-mark { margin: 0 auto 22px; }
+.auth-gate-card .brand-mark svg { stroke: var(--forest); }
+.auth-gate-card h2 { margin: 7px 0 12px; font: 500 34px/1.1 var(--serif); }
+.auth-gate-card > p:not(.eyebrow) { margin: 0 auto 24px; color: var(--muted); line-height: 1.65; }
 
 .welcome-row { min-height: 155px; display: flex; align-items: center; justify-content: space-between; gap: 30px; padding: 28px 34px; border-radius: 14px; color: #eef8f3; background: radial-gradient(circle at 85% 40%, rgba(92,199,149,.22), transparent 30%), linear-gradient(120deg,#153b2f,#0d241d 72%); box-shadow: var(--shadow); }
 .welcome-row h2 { max-width: 620px; margin: 7px 0 9px; font: 400 clamp(29px,3vw,42px)/1.08 var(--serif); }
@@ -308,6 +316,7 @@ dialog::backdrop { background:rgba(7,16,13,.56);backdrop-filter:blur(3px); }
   .inventory-card { grid-template-columns:78px 1fr; }
   .drawer { width:100vw;padding:20px; }
   .detail-grid { grid-template-columns:1fr; }
+  .auth-gate-card { padding: 32px 24px; }
 }
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important; }

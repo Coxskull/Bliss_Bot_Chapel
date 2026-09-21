@@ -1,6 +1,16 @@
 const state = {
   apiBase: localStorage.getItem("bliss-api-base") || "",
   operator: localStorage.getItem("bliss-operator-label") || "",
+  session: {
+    authenticationEnabled: false,
+    accessAllowed: true,
+    isAuthenticated: false,
+    displayName: null,
+    roles: [],
+    canWrite: true,
+    canReview: true,
+    csrfToken: null
+  },
   loaded: false,
   matches: [], creators: [], advertisers: [], programs: [], opportunities: [],
   content: [], contentDetails: [], campaigns: [], ruleVersions: [],
@@ -16,25 +26,62 @@ const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 let drawerReturnFocus = null;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   bindNavigation();
   bindActions();
-  syncOperatorUi();
   generateReviewIdempotencyKey();
   generatePlacementIdempotencyKey();
   route();
-  loadDashboard();
+  await loadSession();
+  syncOperatorUi();
+  if (state.session.accessAllowed) {
+    loadDashboard();
+  } else {
+    showAuthenticationGate();
+  }
 });
 
 async function api(path, options = {}) {
   const base = state.apiBase.replace(/\/$/, "");
+  const method = String(options.method || "GET").toUpperCase();
+  const headers = { Accept: "application/json", ...(options.headers || {}) };
+  if (!["GET", "HEAD", "OPTIONS", "TRACE"].includes(method) && state.session.csrfToken) {
+    headers["X-CSRF-TOKEN"] = state.session.csrfToken;
+  }
   const response = await fetch(`${base}${path}`, {
     ...options,
-    headers: { Accept: "application/json", ...(options.headers || {}) }
+    headers,
+    credentials: "same-origin"
   });
   const body = response.status === 204 ? null : await response.json().catch(() => null);
-  if (!response.ok) throw new Error(body?.error || `Request failed with HTTP ${response.status}`);
+  if (!response.ok) {
+    const error = new Error(body?.error || `Request failed with HTTP ${response.status}`);
+    error.status = response.status;
+    throw error;
+  }
   return body;
+}
+
+async function loadSession() {
+  try {
+    state.session = await api("/api/auth/session");
+    if (state.session.authenticationEnabled) {
+      state.apiBase = "";
+      localStorage.removeItem("bliss-api-base");
+    }
+  } catch (error) {
+    state.session = {
+      authenticationEnabled: true,
+      accessAllowed: false,
+      isAuthenticated: false,
+      displayName: null,
+      roles: [],
+      canWrite: false,
+      canReview: false,
+      csrfToken: null
+    };
+    setConnection("offline", error.message);
+  }
 }
 
 async function loadDashboard() {
@@ -75,6 +122,13 @@ async function loadDashboard() {
     route();
     setConnection("online");
   } catch (error) {
+    if (error.status === 401 && state.session.authenticationEnabled) {
+      state.session.accessAllowed = false;
+      state.session.isAuthenticated = false;
+      syncOperatorUi();
+      showAuthenticationGate();
+      return;
+    }
     setConnection("offline", error.message);
     renderUnavailable(error.message);
     toast(error.message, true);
@@ -95,6 +149,7 @@ function renderAll() {
   $("#nav-match-count").textContent = state.matches.length;
   $("#nav-review-count").textContent = state.reviewQueue.length;
   $("#nav-placement-count").textContent = state.placementQueue.length;
+  applyPermissions();
 }
 
 function renderOverview() {
@@ -179,7 +234,7 @@ function renderReviews() {
   $("#review-match").innerHTML = state.reviewQueue.length
     ? state.reviewQueue.map(x => `<option value="${x.blissMatchId}" ${x.blissMatchId === state.selectedReview ? "selected" : ""}>${escapeHtml(x.creatorName)} · ${escapeHtml(x.opportunityName)} · ${formatScore(x.overallScore)}</option>`).join("")
     : `<option value="">No certificates require review</option>`;
-  $("#review-submit").disabled = !state.reviewQueue.length;
+  $("#review-submit").disabled = !state.reviewQueue.length || !state.session.canReview;
   $("#review-queue-list").innerHTML = state.reviewQueue.length ? state.reviewQueue.map(item => `
     <article class="queue-card ${item.blissMatchId === state.selectedReview ? "selected" : ""}">
       <div class="queue-card-head"><div><h3>${escapeHtml(item.creatorName)}</h3><p>${escapeHtml(item.opportunityName)}</p></div><span class="status-badge status-review_required">Review required</span></div>
@@ -195,7 +250,7 @@ function renderPlacements() {
   $("#placement-match").innerHTML = state.placementQueue.length
     ? state.placementQueue.map(x => `<option value="${x.blissMatchId}" ${x.blissMatchId === state.selectedPlacement ? "selected" : ""}>${escapeHtml(x.creatorName)} · ${escapeHtml(x.opportunityName)} · ${formatScore(x.overallScore)}</option>`).join("")
     : `<option value="">No approved unbound matches</option>`;
-  $("#placement-submit").disabled = !state.placementQueue.length;
+  $("#placement-submit").disabled = !state.placementQueue.length || !state.session.canWrite;
   $("#placement-queue-list").innerHTML = state.placementQueue.length ? state.placementQueue.map(item => `
     <article class="queue-card ${item.blissMatchId === state.selectedPlacement ? "selected" : ""}">
       <div class="queue-card-head"><div><h3>${escapeHtml(item.creatorName)}</h3><p>${escapeHtml(item.opportunityName)}</p></div><span class="status-badge status-approved">Approved</span></div>
@@ -282,6 +337,11 @@ function renderAudit() {
 }
 
 function showWorkflow(type, prefill = {}) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+
   const dialog = $("#workflow-dialog");
   const body = $("#workflow-body");
   $("#workflow-form").dataset.workflow = type;
@@ -358,6 +418,11 @@ async function submitWorkflow(form) {
 }
 
 async function submitReview(form) {
+  if (!state.session.canReview) {
+    toast("Your account does not have reviewer permission.", true);
+    return;
+  }
+
   const submit = $("#review-submit");
   const data = new FormData(form);
   const value = name => String(data.get(name)||"").trim();
@@ -393,6 +458,11 @@ function updatePlacementSlots() {
   $("#placement-slot").innerHTML=slots.length?slots.map(x=>`<option value="${x.id}" ${x.isAvailable?"":"disabled"}>${friendlyStatus(x.slotType)} · ${slotTiming(x)} · ${x.isAvailable?"Available":"Unavailable"}</option>`).join(""):`<option value="">No inventory slots</option>`;
 }
 async function submitPlacement(form) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+
   const submit=$("#placement-submit"),data=new FormData(form),value=name=>String(data.get(name)||"").trim();
   submit.disabled=true;submit.textContent="Planning…";
   try {
@@ -480,6 +550,11 @@ async function openPlacementRun(id) { openDrawer("PLACEMENT RUN",shortId(id),ske
 async function openIngestionRun(id) { openDrawer("INGESTION RUN",shortId(id),skeleton());try{const x=await api(`/api/creator-ingestions/${id}`);$("#drawer-title").textContent=creatorById(x.creatorId)?.name||shortId(x.creatorId);$("#drawer-body").innerHTML=runDetailHero("↓",x.outcome,x.identityKey,`${x.sourceSystem} · ${formatDate(x.completedAt)}`)+`<section class="detail-section"><h4>Canonical identity</h4><div class="check-item"><div><strong>${escapeHtml(x.identityKey)}</strong><small>Provider platform + external profile ID</small></div><button class="small-button" data-creator-id="${x.creatorId}">Open creator</button></div></section><section class="detail-section"><h4>Input snapshot</h4><pre class="json-block">${prettyJson(x.inputSnapshot)}</pre></section>`;}catch(error){drawerError(error);}}
 
 async function evaluateMatch(id,button) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+
   const original=button.textContent;button.disabled=true;button.textContent="Running…";
   try{const result=await api(`/api/bliss/matches/${id}/evaluate-rules`,{method:"POST"});toast(`${friendlyStatus(result.status)} · evaluation appended`);await loadDashboard();openMatch(id);}
   catch(error){toast(error.message,true);}finally{button.disabled=false;button.textContent=original;}
@@ -509,9 +584,32 @@ function route() {
 
 function bindActions() {
   $("#refresh-button").addEventListener("click",loadDashboard);
-  $("#operator-button").addEventListener("click",openSettings);
+  $("#operator-button").addEventListener("click",() => {
+    if (state.session.authenticationEnabled && !state.session.isAuthenticated) beginLogin();
+    else openSettings();
+  });
   $("#settings-button").addEventListener("click",openSettings);
-  $("#save-settings").addEventListener("click",event=>{event.preventDefault();state.apiBase=$("#api-url").value.trim().replace(/\/$/,"");state.operator=$("#operator-label").value.trim();localStorage.setItem("bliss-api-base",state.apiBase);localStorage.setItem("bliss-operator-label",state.operator);$("#settings-dialog").close();syncOperatorUi();loadDashboard();});
+  $("#auth-login-button").addEventListener("click",beginLogin);
+  $("#auth-logout-button").addEventListener("click",async()=>{
+    try {
+      await api("/api/auth/logout",{method:"POST"});
+      location.assign("/");
+    } catch(error) {
+      toast(error.message,true);
+    }
+  });
+  $("#save-settings").addEventListener("click",event=>{
+    event.preventDefault();
+    if (!state.session.authenticationEnabled) {
+      state.apiBase=$("#api-url").value.trim().replace(/\/$/,"");
+      state.operator=$("#operator-label").value.trim();
+      localStorage.setItem("bliss-api-base",state.apiBase);
+      localStorage.setItem("bliss-operator-label",state.operator);
+    }
+    $("#settings-dialog").close();
+    syncOperatorUi();
+    if (!state.session.authenticationEnabled) loadDashboard();
+  });
   $("#workflow-form").addEventListener("submit",event=>{event.preventDefault();submitWorkflow(event.currentTarget);});
   $("#review-form").addEventListener("submit",event=>{event.preventDefault();submitReview(event.currentTarget);});
   $("#placement-form").addEventListener("submit",event=>{event.preventDefault();submitPlacement(event.currentTarget);});
@@ -585,9 +683,53 @@ function closeDrawer(restoreHash=true) {
   if(wasOpen&&drawerReturnFocus?.focus)drawerReturnFocus.focus();
 }
 function drawerError(error){$("#drawer-body").innerHTML=emptyState(error.message);}
-function openSettings(){$("#api-url").value=state.apiBase;$("#operator-label").value=state.operator;$("#settings-dialog").showModal();}
+function beginLogin() {
+  const returnUrl = `${location.pathname}${location.search}${location.hash}`;
+  location.assign(`/api/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`);
+}
+function showAuthenticationGate() {
+  $(".content").classList.add("auth-required");
+  $("#auth-gate").hidden = false;
+  $("#refresh-button").disabled = true;
+  setConnection("offline", "Sign in required");
+}
+function openSettings(){
+  $("#api-url").value=state.apiBase;
+  $("#operator-label").value=state.operator;
+  $("#settings-dialog").showModal();
+}
 function toggleMobileNav(force){const open=force??!$(".sidebar").classList.contains("open");$(".sidebar").classList.toggle("open",open);$("#mobile-backdrop").classList.toggle("open",open);$("#mobile-menu").setAttribute("aria-expanded",String(open));}
-function syncOperatorUi(){const label=state.operator||"Set operator";$("#operator-name").textContent=label;$("#operator-avatar").textContent=state.operator?getInitials(state.operator):"?";$$(".operator-field").forEach(x=>x.value=state.operator);$("#workspace-label").textContent=state.apiBase?hostname(state.apiBase):"Same-origin workspace";}
+function syncOperatorUi(){
+  const secured = state.session.authenticationEnabled;
+  const label = secured
+    ? (state.session.displayName || "Sign in")
+    : (state.operator || "Set operator");
+  $("#operator-name").textContent=label;
+  $("#operator-avatar").textContent=label==="Sign in"||label==="Set operator"?"?":getInitials(label);
+  $$(".operator-field").forEach(field=>{
+    field.value=label==="Sign in"||label==="Set operator"?"":label;
+    field.readOnly=secured;
+  });
+  $("#local-operator-settings").hidden=secured;
+  $("#api-url").disabled=secured;
+  $("#auth-logout-button").hidden=!(secured&&state.session.isAuthenticated);
+  $("#settings-session-copy").textContent=secured
+    ? `Signed in as ${label}. Permissions come from your identity provider roles.`
+    : "Authentication is disabled for this development workspace. The local operator label is audit metadata only.";
+  $("#workspace-label").textContent=secured?"SSO protected":state.apiBase?hostname(state.apiBase):"Development workspace";
+}
+function applyPermissions(){
+  $$("[data-workflow], [data-evaluate], [data-select-placement]").forEach(button=>{
+    button.disabled=!state.session.canWrite;
+    if(button.disabled)button.title="Operator role required";
+  });
+  $$("[data-select-review]").forEach(button=>{
+    button.disabled=!state.session.canReview;
+    if(button.disabled)button.title="Reviewer role required";
+  });
+  $("#review-submit").disabled=!state.reviewQueue.length||!state.session.canReview;
+  $("#placement-submit").disabled=!state.placementQueue.length||!state.session.canWrite;
+}
 function setConnection(status,detail){const dot=$("#connection-dot");dot.className=`pulse-dot ${status==="loading"?"":status}`;$("#connection-label").textContent=status==="online"?"API connected":status==="offline"?"API unavailable":"Connecting";$("#connection-detail").textContent=detail||(state.apiBase?hostname(state.apiBase):"Same-origin backend");}
 function renderUnavailable(message){const content=emptyState(`Could not load backend data: ${message}`);["match-list","creator-grid","review-queue-list","placement-queue-list","recent-activity","status-chart","partner-content","inventory-content","audit-content"].forEach(id=>{const element=$(`#${id}`);if(element)element.innerHTML=content;});}
 function toast(message,isError=false){const element=$("#toast");element.textContent=message;element.className=`toast show${isError?" error":""}`;clearTimeout(toast.timer);toast.timer=setTimeout(()=>element.classList.remove("show"),3600);}
