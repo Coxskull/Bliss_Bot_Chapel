@@ -71,6 +71,7 @@ builder.Services.AddDbContext<BlissDbContext>(options =>
 builder.Services.AddBlissInfrastructure(builder.Configuration);
 builder.Services.AddSingleton(authentication);
 builder.Services.AddSingleton(runtime);
+builder.Services.AddSingleton<OperationalEventStore>();
 builder.Services.AddScoped<OperatorIdentity>();
 builder.Services.AddProblemDetails();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -108,8 +109,17 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (context, cancellationToken) =>
     {
-        context.HttpContext.Response.Headers.RetryAfter = runtime.RateLimitWindowSeconds.ToString();
-        await context.HttpContext.Response.WriteAsJsonAsync(
+        var http = context.HttpContext;
+        http.Response.Headers.RetryAfter = runtime.RateLimitWindowSeconds.ToString();
+        http.RequestServices.GetRequiredService<OperationalEventStore>().Record(
+            new OperationalEvent(
+                DateTime.UtcNow,
+                "RateLimited",
+                http.Request.Method,
+                RequestCorrelation.SafePath(http),
+                StatusCodes.Status429TooManyRequests,
+                RequestCorrelation.Resolve(http)));
+        await http.Response.WriteAsJsonAsync(
             new { error = "Rate limit exceeded. Retry later." },
             cancellationToken);
     };
@@ -242,6 +252,17 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+app.Use(async (context, next) =>
+{
+    var requestId = RequestCorrelation.Resolve(context);
+    context.RequestServices.GetRequiredService<OperationalEventStore>().RememberRequest(requestId);
+    context.Response.OnStarting(() =>
+    {
+        context.Response.Headers[RequestCorrelation.HeaderName] = requestId;
+        return Task.CompletedTask;
+    });
+    await next();
+});
 
 if (!app.Environment.IsDevelopment())
 {
@@ -299,6 +320,22 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
+app.Use(async (context, next) =>
+{
+    await next();
+    var status = context.Response.StatusCode;
+    if (status is StatusCodes.Status401Unauthorized or StatusCodes.Status403Forbidden)
+    {
+        context.RequestServices.GetRequiredService<OperationalEventStore>().Record(
+            new OperationalEvent(
+                DateTime.UtcNow,
+                status == StatusCodes.Status401Unauthorized ? "Unauthorized" : "Forbidden",
+                context.Request.Method,
+                RequestCorrelation.SafePath(context),
+                status,
+                RequestCorrelation.Resolve(context)));
+    }
+});
 app.UseRateLimiter();
 app.UseAuthorization();
 app.Use(async (context, next) =>
