@@ -115,3 +115,4 @@ Full frontend acceptance evidence: `docs/bliss/FULL-FRONTEND-EVIDENCE.md`.
 Phase 8 OIDC security contract: `docs/bliss/PHASE-8-ENGINEERING-CONTRACT.md`.
 Phase 8 OIDC security evidence: `docs/bliss/PHASE-8-EVIDENCE.md`.
 Phase 9 runtime hardening contract: `docs/bliss/PHASE-9-ENGINEERING-CONTRACT.md`.
+Phase 9 runtime hardening evidence: `docs/bliss/PHASE-9-EVIDENCE.md`.
