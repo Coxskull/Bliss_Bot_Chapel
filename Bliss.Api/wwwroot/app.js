@@ -691,7 +691,7 @@ function showAuthenticationGate() {
   $(".content").classList.add("auth-required");
   $("#auth-gate").hidden = false;
   $("#refresh-button").disabled = true;
-  setConnection("offline", "Sign in required");
+  setConnection("auth", "OIDC session required");
 }
 function openSettings(){
   $("#api-url").value=state.apiBase;
@@ -730,7 +730,7 @@ function applyPermissions(){
   $("#review-submit").disabled=!state.reviewQueue.length||!state.session.canReview;
   $("#placement-submit").disabled=!state.placementQueue.length||!state.session.canWrite;
 }
-function setConnection(status,detail){const dot=$("#connection-dot");dot.className=`pulse-dot ${status==="loading"?"":status}`;$("#connection-label").textContent=status==="online"?"API connected":status==="offline"?"API unavailable":"Connecting";$("#connection-detail").textContent=detail||(state.apiBase?hostname(state.apiBase):"Same-origin backend");}
+function setConnection(status,detail){const dot=$("#connection-dot");dot.className=`pulse-dot ${status==="loading"||status==="auth"?"":status}`;$("#connection-label").textContent=status==="online"?"API connected":status==="offline"?"API unavailable":status==="auth"?"Sign in required":"Connecting";$("#connection-detail").textContent=detail||(state.apiBase?hostname(state.apiBase):"Same-origin backend");}
 function renderUnavailable(message){const content=emptyState(`Could not load backend data: ${message}`);["match-list","creator-grid","review-queue-list","placement-queue-list","recent-activity","status-chart","partner-content","inventory-content","audit-content"].forEach(id=>{const element=$(`#${id}`);if(element)element.innerHTML=content;});}
 function toast(message,isError=false){const element=$("#toast");element.textContent=message;element.className=`toast show${isError?" error":""}`;clearTimeout(toast.timer);toast.timer=setTimeout(()=>element.classList.remove("show"),3600);}
 
