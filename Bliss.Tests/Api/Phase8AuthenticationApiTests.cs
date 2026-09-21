@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -112,15 +111,9 @@ public sealed class OidcSecurityApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
-        builder.ConfigureAppConfiguration((_, configuration) =>
-        {
-            configuration.AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Authentication:Enabled"] = "true",
-                ["Authentication:Authority"] = "https://identity.example.test",
-                ["Authentication:ClientId"] = "bliss-tests"
-            });
-        });
+        builder.UseSetting("Authentication:Enabled", "true");
+        builder.UseSetting("Authentication:Authority", "https://identity.example.test");
+        builder.UseSetting("Authentication:ClientId", "bliss-tests");
         builder.ConfigureServices(services =>
         {
             var toRemove = services.Where(descriptor =>
@@ -136,12 +129,12 @@ public sealed class OidcSecurityApiFactory : WebApplicationFactory<Program>
                 options => options.UseInMemoryDatabase($"oidc-{Guid.NewGuid()}"));
             services.AddAuthentication(options =>
                 {
-                    options.DefaultAuthenticateScheme = TestAuthenticationHandler.Scheme;
-                    options.DefaultChallengeScheme = TestAuthenticationHandler.Scheme;
-                    options.DefaultForbidScheme = TestAuthenticationHandler.Scheme;
+                    options.DefaultAuthenticateScheme = TestAuthenticationHandler.SchemeName;
+                    options.DefaultChallengeScheme = TestAuthenticationHandler.SchemeName;
+                    options.DefaultForbidScheme = TestAuthenticationHandler.SchemeName;
                 })
                 .AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>(
-                    TestAuthenticationHandler.Scheme,
+                    TestAuthenticationHandler.SchemeName,
                     _ => { });
         });
     }
@@ -160,7 +153,7 @@ public sealed class TestAuthenticationHandler(
     UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
-    public const string Scheme = "Phase8Test";
+    public const string SchemeName = "Phase8Test";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
@@ -181,8 +174,8 @@ public sealed class TestAuthenticationHandler(
                 .Select(role => new Claim(ClaimTypes.Role, role)));
         }
 
-        var identity = new ClaimsIdentity(claims, Scheme, "name", ClaimTypes.Role);
-        var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme);
+        var identity = new ClaimsIdentity(claims, SchemeName, "name", ClaimTypes.Role);
+        var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName);
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 }
