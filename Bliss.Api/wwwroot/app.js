@@ -1,6 +1,16 @@
 const state = {
   apiBase: localStorage.getItem("bliss-api-base") || "",
   operator: localStorage.getItem("bliss-operator-label") || "",
+  session: {
+    authenticationEnabled: false,
+    accessAllowed: true,
+    isAuthenticated: false,
+    displayName: null,
+    roles: [],
+    canWrite: true,
+    canReview: true,
+    csrfToken: null
+  },
   loaded: false,
   matches: [], creators: [], advertisers: [], programs: [], opportunities: [],
   content: [], contentDetails: [], campaigns: [], ruleVersions: [],
@@ -9,32 +19,76 @@ const state = {
   affiliateNetworks: [], networkAccesses: [], programAccesses: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations",
-  selectedReview: null, selectedPlacement: null
+  selectedReview: null, selectedPlacement: null,
+  runtime: null,
+  lastRequestId: null
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 let drawerReturnFocus = null;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   bindNavigation();
   bindActions();
-  syncOperatorUi();
   generateReviewIdempotencyKey();
   generatePlacementIdempotencyKey();
   route();
-  loadDashboard();
+  await loadSession();
+  syncOperatorUi();
+  if (state.session.accessAllowed) {
+    loadDashboard();
+  } else {
+    showAuthenticationGate();
+  }
 });
 
 async function api(path, options = {}) {
   const base = state.apiBase.replace(/\/$/, "");
+  const method = String(options.method || "GET").toUpperCase();
+  const headers = { Accept: "application/json", ...(options.headers || {}) };
+  if (!["GET", "HEAD", "OPTIONS", "TRACE"].includes(method) && state.session.csrfToken) {
+    headers["X-CSRF-TOKEN"] = state.session.csrfToken;
+  }
   const response = await fetch(`${base}${path}`, {
     ...options,
-    headers: { Accept: "application/json", ...(options.headers || {}) }
+    headers,
+    credentials: "same-origin"
   });
+  const requestId = response.headers.get("X-Request-Id");
+  if (requestId) state.lastRequestId = requestId;
   const body = response.status === 204 ? null : await response.json().catch(() => null);
-  if (!response.ok) throw new Error(body?.error || `Request failed with HTTP ${response.status}`);
+  if (!response.ok) {
+    const retryAfter = response.headers.get("Retry-After");
+    const suffix = requestId ? ` [${requestId.slice(0, 8)}…]` : "";
+    const retry = response.status === 429 && retryAfter ? ` Retry after ${retryAfter}s.` : "";
+    const error = new Error((body?.error || `Request failed with HTTP ${response.status}`) + retry + suffix);
+    error.status = response.status;
+    throw error;
+  }
   return body;
+}
+
+async function loadSession() {
+  try {
+    state.session = await api("/api/auth/session");
+    if (state.session.authenticationEnabled) {
+      state.apiBase = "";
+      localStorage.removeItem("bliss-api-base");
+    }
+  } catch (error) {
+    state.session = {
+      authenticationEnabled: true,
+      accessAllowed: false,
+      isAuthenticated: false,
+      displayName: null,
+      roles: [],
+      canWrite: false,
+      canReview: false,
+      csrfToken: null
+    };
+    setConnection("offline", error.message);
+  }
 }
 
 async function loadDashboard() {
@@ -50,12 +104,13 @@ async function loadDashboard() {
       api("/api/campaign-placement-runs"), api("/api/match-reviews/queue"),
       api("/api/campaign-bindings/queue"), api("/api/data-provenances"),
       api("/api/affiliate-networks"), api("/api/network-accesses"),
-      api("/api/program-accesses")
+      api("/api/program-accesses"), api("/api/runtime/status").catch(() => null)
     ]);
     const [
       matches, creators, advertisers, programs, opportunities, content, campaigns,
       ruleVersions, runs, ingestions, formations, reviews, placements, reviewQueue,
-      placementQueue, provenances, affiliateNetworks, networkAccesses, programAccesses
+      placementQueue, provenances, affiliateNetworks, networkAccesses, programAccesses,
+      runtime
     ] = values;
     const [contentDetails, ruleDetails] = await Promise.all([
       Promise.all(content.map(item => api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] })))),
@@ -65,7 +120,7 @@ async function loadDashboard() {
       matches, creators, advertisers, programs, opportunities, content, contentDetails,
       campaigns, ruleVersions: ruleDetails, runs, ingestions, formations, reviews,
       placements, reviewQueue, placementQueue, provenances, affiliateNetworks,
-      networkAccesses, programAccesses, loaded: true
+      networkAccesses, programAccesses, runtime, loaded: true
     });
     state.selectedReview = reviewQueue.some(x => x.blissMatchId === state.selectedReview)
       ? state.selectedReview : reviewQueue[0]?.blissMatchId || null;
@@ -75,8 +130,21 @@ async function loadDashboard() {
     route();
     setConnection("online");
   } catch (error) {
+    if (error.status === 401 && state.session.authenticationEnabled) {
+      state.session.accessAllowed = false;
+      state.session.isAuthenticated = false;
+      syncOperatorUi();
+      showAuthenticationGate();
+      return;
+    }
+    try {
+      state.runtime = await api("/api/runtime/status");
+    } catch {
+      /* Status remains empty when the runtime document is also unavailable. */
+    }
     setConnection("offline", error.message);
     renderUnavailable(error.message);
+    renderRuntimeStatus();
     toast(error.message, true);
   } finally {
     $("#refresh-button").classList.remove("spinning");
@@ -92,9 +160,11 @@ function renderAll() {
   renderPartners();
   renderInventory();
   renderAudit();
+  renderRuntimeStatus();
   $("#nav-match-count").textContent = state.matches.length;
   $("#nav-review-count").textContent = state.reviewQueue.length;
   $("#nav-placement-count").textContent = state.placementQueue.length;
+  applyPermissions();
 }
 
 function renderOverview() {
@@ -179,7 +249,7 @@ function renderReviews() {
   $("#review-match").innerHTML = state.reviewQueue.length
     ? state.reviewQueue.map(x => `<option value="${x.blissMatchId}" ${x.blissMatchId === state.selectedReview ? "selected" : ""}>${escapeHtml(x.creatorName)} · ${escapeHtml(x.opportunityName)} · ${formatScore(x.overallScore)}</option>`).join("")
     : `<option value="">No certificates require review</option>`;
-  $("#review-submit").disabled = !state.reviewQueue.length;
+  $("#review-submit").disabled = !state.reviewQueue.length || !state.session.canReview;
   $("#review-queue-list").innerHTML = state.reviewQueue.length ? state.reviewQueue.map(item => `
     <article class="queue-card ${item.blissMatchId === state.selectedReview ? "selected" : ""}">
       <div class="queue-card-head"><div><h3>${escapeHtml(item.creatorName)}</h3><p>${escapeHtml(item.opportunityName)}</p></div><span class="status-badge status-review_required">Review required</span></div>
@@ -195,7 +265,7 @@ function renderPlacements() {
   $("#placement-match").innerHTML = state.placementQueue.length
     ? state.placementQueue.map(x => `<option value="${x.blissMatchId}" ${x.blissMatchId === state.selectedPlacement ? "selected" : ""}>${escapeHtml(x.creatorName)} · ${escapeHtml(x.opportunityName)} · ${formatScore(x.overallScore)}</option>`).join("")
     : `<option value="">No approved unbound matches</option>`;
-  $("#placement-submit").disabled = !state.placementQueue.length;
+  $("#placement-submit").disabled = !state.placementQueue.length || !state.session.canWrite;
   $("#placement-queue-list").innerHTML = state.placementQueue.length ? state.placementQueue.map(item => `
     <article class="queue-card ${item.blissMatchId === state.selectedPlacement ? "selected" : ""}">
       <div class="queue-card-head"><div><h3>${escapeHtml(item.creatorName)}</h3><p>${escapeHtml(item.opportunityName)}</p></div><span class="status-badge status-approved">Approved</span></div>
@@ -281,7 +351,129 @@ function renderAudit() {
   $("#audit-content").innerHTML = rows.length ? `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>` : emptyState(`No ${state.auditTab} records found.`);
 }
 
+function healthClass(status) {
+  const value = String(status || "").toLowerCase();
+  if (value === "healthy") return "health-healthy";
+  if (value === "degraded") return "health-degraded";
+  return "health-unhealthy";
+}
+
+function renderRuntimeStatus() {
+  const runtime = state.runtime;
+  if (!runtime) {
+    $("#runtime-health-cards").innerHTML = emptyState("Runtime status is unavailable.");
+    $("#runtime-correlation").innerHTML = emptyState("No request identifier yet.");
+    $("#runtime-limits").innerHTML = emptyState("Throttle policy is unavailable.");
+    $("#runtime-events").innerHTML = emptyState("No operational events recorded.");
+    return;
+  }
+  $("#runtime-health-cards").innerHTML = [
+    ["Process", runtime.processStatus, "Liveness"],
+    ["Database", runtime.databaseStatus, runtime.databaseDescription || "Readiness"],
+    ["Authentication", runtime.authenticationEnabled ? "Enabled" : "Development open", runtime.environment],
+    ["Key ring", runtime.persistentKeysConfigured ? "Configured" : "Ephemeral", "Data Protection"]
+  ].map(([label, status, detail]) => `<article class="stat-card"><span class="stat-top"><span class="health-pill ${healthClass(status)}">${escapeHtml(friendlyStatus(status))}</span><span class="trend">${escapeHtml(label.toUpperCase())}</span></span><strong>${escapeHtml(friendlyStatus(status))}</strong><span>${escapeHtml(label)}</span><small>${escapeHtml(detail)}</small></article>`).join("");
+  $("#runtime-correlation").innerHTML = `<p><strong>Last request</strong><span class="request-id">${escapeHtml(runtime.lastRequestId || state.lastRequestId || "None yet")}</span></p><p>Every API response includes <code>X-Request-Id</code>. Incoming identifiers are accepted only when they are valid GUIDs.</p>`;
+  $("#runtime-limits").innerHTML = `<p><strong>${runtime.writeRateLimitPermitLimit} writes / ${runtime.rateLimitWindowSeconds}s</strong>Controlled POST endpoints share this quota.</p><p><strong>${runtime.authenticationRateLimitPermitLimit} login starts / ${runtime.rateLimitWindowSeconds}s</strong>OIDC challenge initiation is separately limited.</p>`;
+  const events = runtime.recentEvents || [];
+  $("#runtime-events").innerHTML = events.length ? `<table><thead><tr><th>When</th><th>Kind</th><th>Request</th><th>Status</th><th>Correlation</th></tr></thead><tbody>${events.map(event => `<tr><td>${formatDate(event.occurredAt)}</td><td>${badge(event.kind)}</td><td><code>${escapeHtml(event.method)} ${escapeHtml(event.path)}</code></td><td>${event.statusCode}</td><td><code>${escapeHtml(event.requestId)}</code></td></tr>`).join("")}</tbody></table>` : emptyState("No security or throttle events have been recorded in this process.");
+}
+
+async function refreshRuntimeStatus() {
+  try {
+    state.runtime = await api("/api/runtime/status");
+    renderRuntimeStatus();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function verifyWriteThrottle() {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+  const button = $("#verify-write-throttle");
+  button.disabled = true;
+  let limited = false;
+  try {
+    const attempts = (state.runtime?.writeRateLimitPermitLimit || 2) + 1;
+    for (let index = 0; index < attempts; index += 1) {
+      try {
+        await api("/api/runtime/throttle-check", { method: "POST" });
+      } catch (error) {
+        toast(error.message, error.status === 429);
+        if (error.status === 429) {
+          limited = true;
+          break;
+        }
+      }
+    }
+    await refreshRuntimeStatus();
+    if (limited) toast("Write quota recorded in the operational event log.");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function downloadAuditPack(path, successMessage, button) {
+  if (button) button.disabled = true;
+  try {
+    const base = state.apiBase.replace(/\/$/, "");
+    const response = await fetch(`${base}${path}`, {
+      credentials: "same-origin",
+      headers: { Accept: "application/json" }
+    });
+    const requestId = response.headers.get("X-Request-Id");
+    if (requestId) state.lastRequestId = requestId;
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      const suffix = requestId ? ` [${requestId.slice(0, 8)}…]` : "";
+      throw new Error((body?.error || `Request failed with HTTP ${response.status}`) + suffix);
+    }
+    const blob = await response.blob();
+    const header = /filename\*?=(?:UTF-8'')?"?([^\";]+)"?/i.exec(response.headers.get("Content-Disposition") || "");
+    const fileName = header ? decodeURIComponent(header[1]) : "bliss-export.json";
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    toast(`${successMessage}${requestId ? ` [${requestId.slice(0, 8)}…]` : ""}.`);
+    refreshRuntimeStatus();
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+async function exportAuditLedger() {
+  const ledger = state.auditTab === "provenance" ? "provenance" : state.auditTab;
+  await downloadAuditPack(`/api/audit/export/${encodeURIComponent(ledger)}`, `Exported ${ledger} ledger`, $("#export-audit-ledger"));
+}
+
+async function exportMatchCase(id, button) {
+  await downloadAuditPack(`/api/audit/export/matches/${id}`, "Exported match case file", button);
+}
+
+async function exportCreatorCase(id, button) {
+  await downloadAuditPack(`/api/audit/export/creators/${id}`, "Exported creator case file", button);
+}
+
+async function exportCampaignCase(id, button) {
+  await downloadAuditPack(`/api/audit/export/campaigns/${id}`, "Exported campaign case file", button);
+}
+
 function showWorkflow(type, prefill = {}) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+
   const dialog = $("#workflow-dialog");
   const body = $("#workflow-body");
   $("#workflow-form").dataset.workflow = type;
@@ -358,6 +550,11 @@ async function submitWorkflow(form) {
 }
 
 async function submitReview(form) {
+  if (!state.session.canReview) {
+    toast("Your account does not have reviewer permission.", true);
+    return;
+  }
+
   const submit = $("#review-submit");
   const data = new FormData(form);
   const value = name => String(data.get(name)||"").trim();
@@ -393,6 +590,11 @@ function updatePlacementSlots() {
   $("#placement-slot").innerHTML=slots.length?slots.map(x=>`<option value="${x.id}" ${x.isAvailable?"":"disabled"}>${friendlyStatus(x.slotType)} · ${slotTiming(x)} · ${x.isAvailable?"Available":"Unavailable"}</option>`).join(""):`<option value="">No inventory slots</option>`;
 }
 async function submitPlacement(form) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+
   const submit=$("#placement-submit"),data=new FormData(form),value=name=>String(data.get(name)||"").trim();
   submit.disabled=true;submit.textContent="Planning…";
   try {
@@ -412,7 +614,7 @@ async function openCreator(id) {
     const provenanceIds=new Set([creator.id,...creator.platforms.map(x=>x.id)]);
     const provenance=state.provenances.filter(x=>provenanceIds.has(x.entityId));
     $("#drawer-title").textContent=creator.name;
-    $("#drawer-body").innerHTML=`<div class="detail-hero"><div class="detail-hero-top"><span class="status-badge status-active">Canonical profile</span><span class="detail-score">${getInitials(creator.name)}</span></div><h3>${escapeHtml(creator.name)}</h3><p>${escapeHtml(creator.countryCode||"Unknown market")} · ${escapeHtml(creator.primaryLanguage||"Language unknown")} · updated ${formatDate(creator.updatedAt)}</p><div class="detail-actions"><button class="small-button" data-form-match-creator="${creator.id}">Form match</button></div></div>
+    $("#drawer-body").innerHTML=`<div class="detail-hero"><div class="detail-hero-top"><span class="status-badge status-active">Canonical profile</span><span class="detail-score">${getInitials(creator.name)}</span></div><h3>${escapeHtml(creator.name)}</h3><p>${escapeHtml(creator.countryCode||"Unknown market")} · ${escapeHtml(creator.primaryLanguage||"Language unknown")} · updated ${formatDate(creator.updatedAt)}</p><div class="detail-actions"><button class="small-button" data-export-creator="${creator.id}">Export case file</button><button class="small-button" data-form-match-creator="${creator.id}">Form match</button></div></div>
       <section class="detail-section"><h4>Audience profile</h4><div class="detail-grid">${metric("Audience",formatNumber(creator.audienceSize))}${metric("Female",formatNullablePercent(creator.femalePercentage))}${metric("Male",formatNullablePercent(creator.malePercentage))}${metric("Age range",creator.primaryAgeRange||"Unknown")}${metric("Geography",creator.primaryGeography||"Unknown")}${metric("Engagement",creator.engagementLevel||"Unknown")}</div></section>
       <section class="detail-section"><h4>Platform identities · ${creator.platforms.length}</h4><div class="check-list">${creator.platforms.length?creator.platforms.map(x=>`<div class="check-item"><div><strong>${escapeHtml(x.platform)} · ${escapeHtml(x.externalProfileId||"No external ID")}</strong><small>${escapeHtml(x.profileUrl||"No profile URL")} · ${formatNumber(x.followers)} followers</small></div><span class="status-badge status-active">Linked</span></div>`).join(""):emptyState("No platform identities.")}</div></section>
       <section class="detail-section"><h4>Content · ${creator.contentItems.length}</h4><div class="check-list">${creator.contentItems.length?creator.contentItems.map(x=>`<button class="history-item" data-content-id="${x.id}"><span><strong>${escapeHtml(x.title)}</strong><small>${escapeHtml(x.contentType)} · ${x.adInventorySlots.length} slots</small></span><span>→</span></button>`).join(""):emptyState("No creator content.")}</div></section>
@@ -450,7 +652,7 @@ async function openCampaign(id) {
   try {
     const campaign=await api(`/api/campaigns/${id}`),opportunity=opportunityById(campaign.advertiserOpportunityId);
     $("#drawer-title").textContent=campaign.name;
-    $("#drawer-body").innerHTML=`<div class="detail-hero"><div class="detail-hero-top">${badge(campaign.status)}<span class="detail-score">▣</span></div><h3>${escapeHtml(campaign.name)}</h3><p>${escapeHtml(opportunity?.name||"No opportunity bound")} · created ${formatDate(campaign.createdAt)}</p></div>
+    $("#drawer-body").innerHTML=`<div class="detail-hero"><div class="detail-hero-top">${badge(campaign.status)}<span class="detail-score">▣</span></div><h3>${escapeHtml(campaign.name)}</h3><p>${escapeHtml(opportunity?.name||"No opportunity bound")} · created ${formatDate(campaign.createdAt)}</p><div class="detail-actions"><button class="small-button" data-export-campaign="${campaign.id}">Export case file</button></div></div>
       <section class="detail-section"><h4>Planned placements · ${campaign.placements.length}</h4>${campaign.placements.length?campaign.placements.map(x=>`<div class="check-item"><div><strong>${escapeHtml(state.contentDetails.find(c=>c.id===x.contentItemId)?.title||shortId(x.contentItemId))}</strong><small>${x.blissMatchId?`Certificate ${shortId(x.blissMatchId)}`:"Legacy placement"} · slot ${shortId(x.adInventorySlotId)}</small></div>${badge(x.status)}</div>`).join(""):emptyState("No placements are planned for this campaign.")}</section>`;
   } catch(error){drawerError(error);}
 }
@@ -462,7 +664,7 @@ async function openMatch(id) {
     const formation=state.formations.find(x=>x.blissMatchId===id);
     const placement=state.placements.find(x=>x.blissMatchId===id);
     $("#drawer-title").textContent=match.creator.name;
-    $("#drawer-body").innerHTML=`<div class="detail-hero"><div class="detail-hero-top">${badge(match.status)}<span class="detail-score">${formatScore(match.overallScore)}</span></div><h3>${escapeHtml(match.advertiserOpportunity.name)}</h3><p>${escapeHtml(match.advertiserOpportunity.advertiserProgram.advertiser.name)} · Rule ${escapeHtml(match.ruleVersion.version)} · ${formatPercent(match.confidenceScore)} confidence</p><div class="detail-actions">${ruleById(match.ruleVersion.id)?.documentJson?`<button class="small-button" data-evaluate="${match.id}">Replay evaluation</button>`:""}${match.status==="REVIEW_REQUIRED"?`<button class="small-button" data-open-review="${match.id}">Review match</button>`:""}${match.status==="APPROVED"&&!placement?`<button class="small-button" data-open-placement="${match.id}">Plan placement</button>`:""}</div></div>
+    $("#drawer-body").innerHTML=`<div class="detail-hero"><div class="detail-hero-top">${badge(match.status)}<span class="detail-score">${formatScore(match.overallScore)}</span></div><h3>${escapeHtml(match.advertiserOpportunity.name)}</h3><p>${escapeHtml(match.advertiserOpportunity.advertiserProgram.advertiser.name)} · Rule ${escapeHtml(match.ruleVersion.version)} · ${formatPercent(match.confidenceScore)} confidence</p><div class="detail-actions"><button class="small-button" data-export-match="${match.id}">Export case file</button>${ruleById(match.ruleVersion.id)?.documentJson?`<button class="small-button" data-evaluate="${match.id}">Replay evaluation</button>`:""}${match.status==="REVIEW_REQUIRED"?`<button class="small-button" data-open-review="${match.id}">Review match</button>`:""}${match.status==="APPROVED"&&!placement?`<button class="small-button" data-open-placement="${match.id}">Plan placement</button>`:""}</div></div>
       <section class="detail-section"><h4>Certificate timeline</h4><div class="check-list">${formation?`<button class="history-item" data-formation-run-id="${formation.id}"><span><strong>Certificate formed</strong><small>${formatDate(formation.completedAt)} · ${escapeHtml(formation.sourceSystem)}</small></span><span>→</span></button>`:""}${runs.map(x=>`<button class="history-item" data-run-id="${x.id}"><span><strong>Deterministic evaluation</strong><small>${formatDate(x.completedAt||x.startedAt)} · ${escapeHtml(x.algorithmVersion)}</small></span>${badge(x.matchStatus)}</button>`).join("")}${reviews.map(x=>`<button class="history-item" data-review-id="${x.id}"><span><strong>Human review · ${escapeHtml(x.reviewerLabel)}</strong><small>${formatDate(x.completedAt)}</small></span>${badge(x.decision)}</button>`).join("")}${placement?`<button class="history-item" data-placement-run-id="${placement.id}"><span><strong>Placement planned</strong><small>${formatDate(placement.completedAt)} · ${escapeHtml(campaignById(placement.campaignId)?.name||shortId(placement.campaignId))}</small></span>${badge("PLANNED")}</button>`:""}</div></section>
       <section class="detail-section"><h4>Eligibility evidence</h4><div class="check-list">${match.eligibilityChecks.length?match.eligibilityChecks.map(x=>`<div class="check-item"><div><strong>${escapeHtml(friendlyStatus(x.checkType))}</strong><small>${escapeHtml(x.explanation||x.reasonCode||"No explanation")}</small></div>${badge(x.result)}</div>`).join(""):emptyState("This certificate has not been evaluated.")}</div></section>
       <section class="detail-section"><h4>Score components</h4><div class="check-list">${match.scoreComponents.length?match.scoreComponents.map(x=>`<div class="check-item"><div><strong>${escapeHtml(friendlyStatus(x.componentName))}</strong><small>${escapeHtml(x.explanation||"No explanation")}</small></div><strong>${formatScore(x.score)} × ${formatScore(x.weight)}</strong></div>`).join(""):emptyState("No score components recorded.")}</div></section>
@@ -480,6 +682,11 @@ async function openPlacementRun(id) { openDrawer("PLACEMENT RUN",shortId(id),ske
 async function openIngestionRun(id) { openDrawer("INGESTION RUN",shortId(id),skeleton());try{const x=await api(`/api/creator-ingestions/${id}`);$("#drawer-title").textContent=creatorById(x.creatorId)?.name||shortId(x.creatorId);$("#drawer-body").innerHTML=runDetailHero("↓",x.outcome,x.identityKey,`${x.sourceSystem} · ${formatDate(x.completedAt)}`)+`<section class="detail-section"><h4>Canonical identity</h4><div class="check-item"><div><strong>${escapeHtml(x.identityKey)}</strong><small>Provider platform + external profile ID</small></div><button class="small-button" data-creator-id="${x.creatorId}">Open creator</button></div></section><section class="detail-section"><h4>Input snapshot</h4><pre class="json-block">${prettyJson(x.inputSnapshot)}</pre></section>`;}catch(error){drawerError(error);}}
 
 async function evaluateMatch(id,button) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+
   const original=button.textContent;button.disabled=true;button.textContent="Running…";
   try{const result=await api(`/api/bliss/matches/${id}/evaluate-rules`,{method:"POST"});toast(`${friendlyStatus(result.status)} · evaluation appended`);await loadDashboard();openMatch(id);}
   catch(error){toast(error.message,true);}finally{button.disabled=false;button.textContent=original;}
@@ -492,11 +699,11 @@ function bindNavigation() {
 }
 function route() {
   const parts=(location.hash.replace(/^#\/?/,"")||"overview").split("/").filter(Boolean);
-  const valid=["overview","creators","matches","review","placement","partners","inventory","audit"];
+  const valid=["overview","creators","matches","review","placement","partners","inventory","audit","status"];
   const view=valid.includes(parts[0])?parts[0]:"overview";
   $$(".view").forEach(x=>x.classList.toggle("active",x.id===`view-${view}`));
   $$(".nav-item[data-view]").forEach(x=>{const active=x.dataset.view===view;x.classList.toggle("active",active);if(active)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});
-  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit"};
+  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
   $("#page-title").textContent=titles[view];
   toggleMobileNav(false);
   if(!state.loaded)return;
@@ -509,9 +716,35 @@ function route() {
 
 function bindActions() {
   $("#refresh-button").addEventListener("click",loadDashboard);
-  $("#operator-button").addEventListener("click",openSettings);
+  $("#refresh-runtime-status").addEventListener("click",refreshRuntimeStatus);
+  $("#verify-write-throttle").addEventListener("click",verifyWriteThrottle);
+  $("#export-audit-ledger").addEventListener("click",exportAuditLedger);
+  $("#operator-button").addEventListener("click",() => {
+    if (state.session.authenticationEnabled && !state.session.isAuthenticated) beginLogin();
+    else openSettings();
+  });
   $("#settings-button").addEventListener("click",openSettings);
-  $("#save-settings").addEventListener("click",event=>{event.preventDefault();state.apiBase=$("#api-url").value.trim().replace(/\/$/,"");state.operator=$("#operator-label").value.trim();localStorage.setItem("bliss-api-base",state.apiBase);localStorage.setItem("bliss-operator-label",state.operator);$("#settings-dialog").close();syncOperatorUi();loadDashboard();});
+  $("#auth-login-button").addEventListener("click",beginLogin);
+  $("#auth-logout-button").addEventListener("click",async()=>{
+    try {
+      await api("/api/auth/logout",{method:"POST"});
+      location.assign("/");
+    } catch(error) {
+      toast(error.message,true);
+    }
+  });
+  $("#save-settings").addEventListener("click",event=>{
+    event.preventDefault();
+    if (!state.session.authenticationEnabled) {
+      state.apiBase=$("#api-url").value.trim().replace(/\/$/,"");
+      state.operator=$("#operator-label").value.trim();
+      localStorage.setItem("bliss-api-base",state.apiBase);
+      localStorage.setItem("bliss-operator-label",state.operator);
+    }
+    $("#settings-dialog").close();
+    syncOperatorUi();
+    if (!state.session.authenticationEnabled) loadDashboard();
+  });
   $("#workflow-form").addEventListener("submit",event=>{event.preventDefault();submitWorkflow(event.currentTarget);});
   $("#review-form").addEventListener("submit",event=>{event.preventDefault();submitReview(event.currentTarget);});
   $("#placement-form").addEventListener("submit",event=>{event.preventDefault();submitPlacement(event.currentTarget);});
@@ -549,6 +782,9 @@ function handleDocumentClick(event) {
   else if(target.matches("[data-review-id]"))openReviewDecision(target.dataset.reviewId);
   else if(target.matches("[data-placement-run-id]"))openPlacementRun(target.dataset.placementRunId);
   else if(target.matches("[data-ingest-run-id]"))openIngestionRun(target.dataset.ingestRunId);
+  else if(target.matches("[data-export-match]"))exportMatchCase(target.dataset.exportMatch,target);
+  else if(target.matches("[data-export-creator]"))exportCreatorCase(target.dataset.exportCreator,target);
+  else if(target.matches("[data-export-campaign]"))exportCampaignCase(target.dataset.exportCampaign,target);
   else if(target.matches("[data-evaluate]"))evaluateMatch(target.dataset.evaluate,target);
   else if(target.matches("[data-select-review]")){state.selectedReview=target.dataset.selectReview;renderReviews();$("#review-form").scrollIntoView({behavior:"smooth",block:"start"});}
   else if(target.matches("[data-select-placement]")){state.selectedPlacement=target.dataset.selectPlacement;renderPlacements();$("#placement-form").scrollIntoView({behavior:"smooth",block:"start"});}
@@ -585,10 +821,54 @@ function closeDrawer(restoreHash=true) {
   if(wasOpen&&drawerReturnFocus?.focus)drawerReturnFocus.focus();
 }
 function drawerError(error){$("#drawer-body").innerHTML=emptyState(error.message);}
-function openSettings(){$("#api-url").value=state.apiBase;$("#operator-label").value=state.operator;$("#settings-dialog").showModal();}
+function beginLogin() {
+  const returnUrl = `${location.pathname}${location.search}${location.hash}`;
+  location.assign(`/api/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`);
+}
+function showAuthenticationGate() {
+  $(".content").classList.add("auth-required");
+  $("#auth-gate").hidden = false;
+  $("#refresh-button").disabled = true;
+  setConnection("auth", "OIDC session required");
+}
+function openSettings(){
+  $("#api-url").value=state.apiBase;
+  $("#operator-label").value=state.operator;
+  $("#settings-dialog").showModal();
+}
 function toggleMobileNav(force){const open=force??!$(".sidebar").classList.contains("open");$(".sidebar").classList.toggle("open",open);$("#mobile-backdrop").classList.toggle("open",open);$("#mobile-menu").setAttribute("aria-expanded",String(open));}
-function syncOperatorUi(){const label=state.operator||"Set operator";$("#operator-name").textContent=label;$("#operator-avatar").textContent=state.operator?getInitials(state.operator):"?";$$(".operator-field").forEach(x=>x.value=state.operator);$("#workspace-label").textContent=state.apiBase?hostname(state.apiBase):"Same-origin workspace";}
-function setConnection(status,detail){const dot=$("#connection-dot");dot.className=`pulse-dot ${status==="loading"?"":status}`;$("#connection-label").textContent=status==="online"?"API connected":status==="offline"?"API unavailable":"Connecting";$("#connection-detail").textContent=detail||(state.apiBase?hostname(state.apiBase):"Same-origin backend");}
+function syncOperatorUi(){
+  const secured = state.session.authenticationEnabled;
+  const label = secured
+    ? (state.session.displayName || "Sign in")
+    : (state.operator || "Set operator");
+  $("#operator-name").textContent=label;
+  $("#operator-avatar").textContent=label==="Sign in"||label==="Set operator"?"?":getInitials(label);
+  $$(".operator-field").forEach(field=>{
+    field.value=label==="Sign in"||label==="Set operator"?"":label;
+    field.readOnly=secured;
+  });
+  $("#local-operator-settings").hidden=secured;
+  $("#api-url").disabled=secured;
+  $("#auth-logout-button").hidden=!(secured&&state.session.isAuthenticated);
+  $("#settings-session-copy").textContent=secured
+    ? `Signed in as ${label}. Permissions come from your identity provider roles.`
+    : "Authentication is disabled for this development workspace. The local operator label is audit metadata only.";
+  $("#workspace-label").textContent=secured?"SSO protected":state.apiBase?hostname(state.apiBase):"Development workspace";
+}
+function applyPermissions(){
+  $$("[data-workflow], [data-evaluate], [data-select-placement]").forEach(button=>{
+    button.disabled=!state.session.canWrite;
+    if(button.disabled)button.title="Operator role required";
+  });
+  $$("[data-select-review]").forEach(button=>{
+    button.disabled=!state.session.canReview;
+    if(button.disabled)button.title="Reviewer role required";
+  });
+  $("#review-submit").disabled=!state.reviewQueue.length||!state.session.canReview;
+  $("#placement-submit").disabled=!state.placementQueue.length||!state.session.canWrite;
+}
+function setConnection(status,detail){const dot=$("#connection-dot");dot.className=`pulse-dot ${status==="loading"||status==="auth"?"":status}`;$("#connection-label").textContent=status==="online"?"API connected":status==="offline"?"API unavailable":status==="auth"?"Sign in required":"Connecting";$("#connection-detail").textContent=detail||(state.apiBase?hostname(state.apiBase):"Same-origin backend");}
 function renderUnavailable(message){const content=emptyState(`Could not load backend data: ${message}`);["match-list","creator-grid","review-queue-list","placement-queue-list","recent-activity","status-chart","partner-content","inventory-content","audit-content"].forEach(id=>{const element=$(`#${id}`);if(element)element.innerHTML=content;});}
 function toast(message,isError=false){const element=$("#toast");element.textContent=message;element.className=`toast show${isError?" error":""}`;clearTimeout(toast.timer);toast.timer=setTimeout(()=>element.classList.remove("show"),3600);}
 

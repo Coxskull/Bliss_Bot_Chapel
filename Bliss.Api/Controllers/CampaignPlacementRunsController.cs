@@ -1,7 +1,11 @@
 using Bliss.Api.Contracts;
+using Bliss.Api.Runtime;
+using Bliss.Api.Security;
 using Bliss.Domain.Common;
 using Bliss.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bliss.Api.Controllers;
@@ -11,12 +15,18 @@ namespace Bliss.Api.Controllers;
 public sealed class CampaignPlacementsController : ControllerBase
 {
     private readonly CampaignPlacementService _service;
+    private readonly OperatorIdentity _operatorIdentity;
 
-    public CampaignPlacementsController(CampaignPlacementService service)
+    public CampaignPlacementsController(
+        CampaignPlacementService service,
+        OperatorIdentity operatorIdentity)
     {
         _service = service;
+        _operatorIdentity = operatorIdentity;
     }
 
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [HttpPost]
     public async Task<ActionResult<CampaignPlacementResultDto>> Create(
         CampaignPlacementRequest request,
@@ -29,7 +39,7 @@ public sealed class CampaignPlacementsController : ControllerBase
                 new CampaignPlacementCommand(
                     request.SourceSystem,
                     request.IdempotencyKey,
-                    request.OperatorLabel,
+                    _operatorIdentity.ResolveLabel(User, request.OperatorLabel),
                     request.BlissMatchId,
                     request.CampaignId,
                     request.ContentItemId,

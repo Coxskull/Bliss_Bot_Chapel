@@ -1,0 +1,8 @@
+HTTP/1.1 204 No Content
+Date: Mon, 21 Sep 2026 16:58:03 GMT
+X-Content-Type-Options: nosniff
+Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+X-Request-Id: 76fbf709-6d0e-498e-8a99-d18b4170fd9e
+

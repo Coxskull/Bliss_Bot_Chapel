@@ -33,6 +33,7 @@
         <a class="nav-item" href="#/partners" data-view="partners"><span class="nav-icon" aria-hidden="true">△</span><span>Partners</span></a>
         <a class="nav-item" href="#/inventory" data-view="inventory"><span class="nav-icon" aria-hidden="true">▦</span><span>Inventory</span></a>
         <a class="nav-item" href="#/audit" data-view="audit"><span class="nav-icon" aria-hidden="true">≡</span><span>Audit</span></a>
+        <a class="nav-item" href="#/status" data-view="status"><span class="nav-icon" aria-hidden="true">◎</span><span>Status</span></a>
       </nav>
       <div class="sidebar-bottom">
         <div class="connection-card">
@@ -50,11 +51,22 @@
         <div class="top-actions">
           <span class="connection-pill"><span></span><span id="workspace-label">Same-origin workspace</span></span>
           <button class="icon-button" id="refresh-button" title="Refresh data" aria-label="Refresh data">↻</button>
-          <button class="operator-chip" id="operator-button" title="Configure operator label"><span class="avatar" id="operator-avatar">?</span><span id="operator-name">Set operator</span></button>
+          <button class="operator-chip" id="operator-button" title="Open operator session"><span class="avatar" id="operator-avatar">?</span><span id="operator-name">Sign in</span></button>
         </div>
       </header>
 
       <div class="content">
+        <section class="auth-gate" id="auth-gate" hidden>
+          <div class="auth-gate-card">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 40 40"><path d="M20 3 35 11v18L20 37 5 29V11L20 3Z"/><path d="m12 21 5 5 11-12"/></svg>
+            </span>
+            <p class="eyebrow">SECURE WORKSPACE</p>
+            <h2>Sign in to Bliss Chapel</h2>
+            <p>Your organization manages access through its identity provider. Bliss never receives your password.</p>
+            <button class="primary-button" id="auth-login-button">Continue with SSO <span>→</span></button>
+          </div>
+        </section>
         <section class="view active" id="view-overview" aria-labelledby="overview-title">
           <div class="welcome-row">
             <div><p class="eyebrow">WORKSPACE OVERVIEW</p><h2 id="overview-title">Partnership operations, clearly controlled.</h2><p>Move creator opportunities from explicit intake to deterministic evaluation, human review, and planned inventory.</p></div>
@@ -171,8 +183,8 @@
 
         <section class="view" id="view-audit" aria-labelledby="audit-title">
           <div class="section-intro">
-            <div><p class="eyebrow">IMMUTABLE HISTORY</p><h2 id="audit-title">Operations audit</h2><p>Trace every controlled write and deterministic decision through its immutable record.</p></div>
-            <div class="search-wrap"><span aria-hidden="true">⌕</span><input id="audit-search" type="search" placeholder="Search the selected ledger" aria-label="Search audit ledger"></div>
+            <div><p class="eyebrow">IMMUTABLE HISTORY</p><h2 id="audit-title">Operations audit</h2><p>Trace every controlled write and deterministic decision through its immutable record. Export a bounded JSON evidence pack of the selected ledger. Snapshots and secrets are omitted.</p></div>
+            <div class="section-actions"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="audit-search" type="search" placeholder="Search the selected ledger" aria-label="Search audit ledger"></div><button class="secondary-button" id="export-audit-ledger" type="button">Export ledger</button></div>
           </div>
           <div class="tab-row" id="audit-tabs" role="tablist">
             <button class="tab-button active" data-audit-tab="evaluations" role="tab" aria-selected="true">Evaluations</button>
@@ -183,6 +195,29 @@
             <button class="tab-button" data-audit-tab="provenance" role="tab" aria-selected="false">Provenance</button>
           </div>
           <div class="panel table-panel"><div class="table-wrap" id="audit-content"></div></div>
+        </section>
+
+        <section class="view" id="view-status" aria-labelledby="status-title">
+          <div class="section-intro">
+            <div><p class="eyebrow">RUNTIME OBSERVABILITY</p><h2 id="status-title">Workspace status</h2><p>Inspect process and database readiness, request correlation, and recent security or throttle events. This view never shows secrets or identity-provider credentials.</p></div>
+            <button class="secondary-button" id="refresh-runtime-status" type="button">Refresh status</button>
+          </div>
+          <div class="stat-grid" id="runtime-health-cards"></div>
+          <div class="dashboard-grid">
+            <section class="panel">
+              <div class="panel-header"><div><p class="eyebrow">CORRELATION</p><h3>Request identity</h3></div></div>
+              <div class="runtime-meta" id="runtime-correlation"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-header"><div><p class="eyebrow">PROTECTION</p><h3>Write throttle</h3></div></div>
+              <div class="runtime-meta" id="runtime-limits"></div>
+              <div class="form-actions"><small>Invalid or empty bodies are not persisted. This only exercises the quota.</small><button class="secondary-button" type="button" id="verify-write-throttle">Verify write quota</button></div>
+            </section>
+          </div>
+          <section class="panel table-panel">
+            <div class="panel-header"><div><p class="eyebrow">RECENT</p><h3>Operational events</h3></div></div>
+            <div class="table-wrap" id="runtime-events"></div>
+          </section>
         </section>
       </div>
     </main>
@@ -204,13 +239,15 @@
   <dialog id="settings-dialog">
     <form method="dialog" class="dialog-card">
       <div class="dialog-head"><div><p class="eyebrow">WORKSPACE</p><h2>Operator settings</h2></div><button class="icon-button" value="cancel" aria-label="Close settings">×</button></div>
-      <p>Bliss uses the API that serves this frontend by default. Operator labels are stored only in this browser and are not authentication.</p>
-      <label for="operator-label">Default operator label</label>
-      <input id="operator-label" maxlength="128" placeholder="Your name or operator ID">
+      <p id="settings-session-copy">Your identity and permissions are managed by your organization's identity provider.</p>
+      <div id="local-operator-settings">
+        <label for="operator-label">Development operator label</label>
+        <input id="operator-label" maxlength="128" placeholder="Your name or operator ID">
+      </div>
       <label for="api-url">API base URL <span class="optional">optional</span></label>
       <input id="api-url" type="url" placeholder="Same origin">
       <small>Set a base URL only when the frontend is intentionally hosted separately.</small>
-      <div class="dialog-actions"><button class="secondary-button" value="cancel">Cancel</button><button class="primary-button" id="save-settings" value="default">Save settings</button></div>
+      <div class="dialog-actions"><button class="secondary-button" type="button" id="auth-logout-button" hidden>Sign out</button><button class="secondary-button" value="cancel">Cancel</button><button class="primary-button" id="save-settings" value="default">Save settings</button></div>
     </form>
   </dialog>
 

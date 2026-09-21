@@ -1,0 +1,38 @@
+{
+  "exportedAt": "2026-09-21T17:46:29.4447783Z",
+  "environment": "Development",
+  "kind": "campaign-case",
+  "requestId": "41120e7c-3595-410c-aef5-906e437cbfdc",
+  "campaignId": "dddddddd-dddd-dddd-dddd-ddddddddddd4",
+  "campaign": {
+    "id": "dddddddd-dddd-dddd-dddd-ddddddddddd4",
+    "advertiserOpportunityId": null,
+    "name": "Phase 2 Overlay Inventory Campaign",
+    "status": "DRAFT",
+    "createdAt": "2026-09-20T12:00:00Z"
+  },
+  "placements": [
+    {
+      "id": "dddddddd-dddd-dddd-dddd-ddddddddddd5",
+      "campaignId": "dddddddd-dddd-dddd-dddd-ddddddddddd4",
+      "contentItemId": "22222222-2222-2222-2222-222222222223",
+      "adInventorySlotId": "99999999-9999-9999-9999-999999999995",
+      "blissMatchId": null,
+      "status": "CREATED",
+      "startAt": null,
+      "endAt": null
+    },
+    {
+      "id": "dddddddd-dddd-dddd-dddd-ddddddddddd6",
+      "campaignId": "dddddddd-dddd-dddd-dddd-ddddddddddd4",
+      "contentItemId": "22222222-2222-2222-2222-222222222223",
+      "adInventorySlotId": "99999999-9999-9999-9999-999999999996",
+      "blissMatchId": null,
+      "status": "CREATED",
+      "startAt": null,
+      "endAt": null
+    }
+  ],
+  "placementRuns": [],
+  "matches": []
+}
