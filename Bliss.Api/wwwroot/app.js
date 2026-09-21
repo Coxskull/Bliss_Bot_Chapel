@@ -137,6 +137,12 @@ async function loadDashboard() {
       showAuthenticationGate();
       return;
     }
+    try {
+      state.runtime = await api("/api/runtime/status");
+      renderRuntimeStatus();
+    } catch {
+      /* Status remains empty when the runtime document is also unavailable. */
+    }
     setConnection("offline", error.message);
     renderUnavailable(error.message);
     toast(error.message, true);
