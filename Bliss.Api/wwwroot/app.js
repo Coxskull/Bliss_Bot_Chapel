@@ -487,7 +487,11 @@ async function verifySelectedAuditPack(event) {
   try {
     if (file.size > 512000) throw new Error("Pack exceeds the 512 KB verification limit.");
     const text = await file.text();
-    JSON.parse(text);
+    try {
+      JSON.parse(text);
+    } catch {
+      throw new Error("Pack must be valid JSON.");
+    }
     const result = await api("/api/audit/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
