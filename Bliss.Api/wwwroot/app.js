@@ -416,6 +416,44 @@ async function verifyWriteThrottle() {
   }
 }
 
+async function exportAuditLedger() {
+  const ledger = state.auditTab === "provenance" ? "provenance" : state.auditTab;
+  const button = $("#export-audit-ledger");
+  button.disabled = true;
+  try {
+    const base = state.apiBase.replace(/\/$/, "");
+    const headers = { Accept: "application/json" };
+    const response = await fetch(`${base}/api/audit/export/${encodeURIComponent(ledger)}`, {
+      credentials: "same-origin",
+      headers
+    });
+    const requestId = response.headers.get("X-Request-Id");
+    if (requestId) state.lastRequestId = requestId;
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      const suffix = requestId ? ` [${requestId.slice(0, 8)}…]` : "";
+      throw new Error((body?.error || `Request failed with HTTP ${response.status}`) + suffix);
+    }
+    const blob = await response.blob();
+    const match = /filename\*?=(?:UTF-8'')?"?([^\";]+)"?/i.exec(response.headers.get("Content-Disposition") || "");
+    const fileName = match ? decodeURIComponent(match[1]) : `bliss-${ledger}.json`;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    toast(`Exported ${ledger} ledger${requestId ? ` [${requestId.slice(0, 8)}…]` : ""}.`);
+    refreshRuntimeStatus();
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function showWorkflow(type, prefill = {}) {
   if (!state.session.canWrite) {
     toast("Your account does not have operator permission.", true);
@@ -666,6 +704,7 @@ function bindActions() {
   $("#refresh-button").addEventListener("click",loadDashboard);
   $("#refresh-runtime-status").addEventListener("click",refreshRuntimeStatus);
   $("#verify-write-throttle").addEventListener("click",verifyWriteThrottle);
+  $("#export-audit-ledger").addEventListener("click",exportAuditLedger);
   $("#operator-button").addEventListener("click",() => {
     if (state.session.authenticationEnabled && !state.session.isAuthenticated) beginLogin();
     else openSettings();
