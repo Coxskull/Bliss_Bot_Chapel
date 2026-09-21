@@ -226,6 +226,9 @@ button.inventory-card:hover { border-color:#aec0b6;transform:translateY(-1px); }
 .access-row { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line);font-size:10px; }
 
 .table-panel { overflow:hidden; }
+.verify-result { margin: -6px 0 14px; color: var(--muted); font-size: 12px; }
+.verify-result.ok { color: var(--forest); }
+.verify-result.bad { color: var(--danger); }
 .table-wrap { overflow-x:auto; }
 table { width:100%;border-collapse:collapse;min-width:800px; }
 th { padding:14px 17px;color:#74817c;background:#e9ede9;font-size:9px;text-align:left;text-transform:uppercase;letter-spacing:.08em; }

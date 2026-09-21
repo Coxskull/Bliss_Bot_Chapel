@@ -379,6 +379,44 @@ public sealed class AuditExportController(
         return Pack(payload, $"bliss-{kind}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt, contentSha256);
     }
 
+    [HttpPost("verify")]
+    [RequestSizeLimit(ExportIntegrity.VerifyLimitBytes)]
+    public async Task<IActionResult> Verify(CancellationToken cancellationToken)
+    {
+        if (Request.ContentLength is > ExportIntegrity.VerifyLimitBytes)
+        {
+            return BadRequest(new { error = "Pack exceeds the 512 KB verification limit." });
+        }
+
+        JsonDocument document;
+        try
+        {
+            document = await JsonDocument.ParseAsync(Request.Body, cancellationToken: cancellationToken);
+        }
+        catch (JsonException)
+        {
+            return BadRequest(new { error = "Pack must be valid JSON." });
+        }
+
+        using (document)
+        {
+            if (!ExportIntegrity.TryVerify(document.RootElement, out var result, out var error))
+            {
+                return BadRequest(new { error });
+            }
+
+            var requestId = RequestCorrelation.Resolve(HttpContext);
+            events.Record(new OperationalEvent(
+                DateTime.UtcNow,
+                "AuditVerified",
+                HttpContext.Request.Method,
+                RequestCorrelation.SafePath(HttpContext),
+                StatusCodes.Status200OK,
+                requestId));
+            return Ok(result);
+        }
+    }
+
     private FileContentResult Pack(object payload, string fileName, string requestId, DateTime exportedAt, string contentSha256)
     {
         events.Record(new OperationalEvent(

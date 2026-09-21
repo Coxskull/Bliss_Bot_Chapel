@@ -1,0 +1,122 @@
+{
+  "exportedAt": "2026-09-21T18:10:36.1310271Z",
+  "environment": "Development",
+  "kind": "match-case",
+  "requestId": "cdf2197d-30a7-4770-b71d-bea281be8ca9",
+  "contentSha256": "abc6f31c07233622e9ff8fc3afb819b490f02a02f175861ab2ebf244200cd228",
+  "matchId": "77777777-7777-7777-7777-777777777776",
+  "match": {
+    "id": "77777777-7777-7777-7777-777777777776",
+    "creatorId": "11111111-1111-1111-1111-111111111113",
+    "advertiserOpportunityId": "55555555-5555-5555-5555-555555555554",
+    "ruleVersionId": "66666666-6666-6666-6666-666666666662",
+    "status": "APPROVED",
+    "overallScore": 1.0000,
+    "confidenceScore": 0.8500,
+    "createdAt": "2026-09-20T12:00:00Z"
+  },
+  "scoreComponents": [
+    {
+      "id": "01015667-9fac-4bee-89fa-788001747469",
+      "componentName": "AUDIENCE_SIZE",
+      "score": 1.0000,
+      "weight": 0.3000,
+      "explanation": "Deterministic audience fit. UNKNOWN audience is not scored as zero."
+    },
+    {
+      "id": "5420fa8a-a910-4bed-b558-118d95e5951c",
+      "componentName": "GEOGRAPHY",
+      "score": 1.0000,
+      "weight": 0.4000,
+      "explanation": "Deterministic geography fit from RuleVersion document."
+    },
+    {
+      "id": "c95d2c72-e947-4a61-bdf8-575f596622a2",
+      "componentName": "LANGUAGE",
+      "score": 1.0000,
+      "weight": 0.3000,
+      "explanation": "Deterministic language overlap from RuleVersion document."
+    }
+  ],
+  "eligibilityChecks": [
+    {
+      "id": "b590a09b-461e-4a1b-953e-37afb996f028",
+      "checkType": "AUDIENCE_SIZE",
+      "result": "APPROVED",
+      "reasonCode": null,
+      "explanation": "Audience meets the configured minimum."
+    },
+    {
+      "id": "4d0e1358-47a6-4133-9789-19263ff1bad9",
+      "checkType": "CATEGORY",
+      "result": "APPROVED",
+      "reasonCode": null,
+      "explanation": "Category is allowed."
+    },
+    {
+      "id": "40351bfa-2f6b-4d07-9e70-51aa69b76ba7",
+      "checkType": "GEOGRAPHY",
+      "result": "APPROVED",
+      "reasonCode": null,
+      "explanation": "Creator country matches opportunity market."
+    },
+    {
+      "id": "1baba1e0-f35a-42ca-bd55-224a7ba8d277",
+      "checkType": "LANGUAGE",
+      "result": "APPROVED",
+      "reasonCode": null,
+      "explanation": "Language tokens overlap."
+    },
+    {
+      "id": "62611f8c-455e-447b-a609-9f9940e3ccd8",
+      "checkType": "OPPORTUNITY_STATUS",
+      "result": "APPROVED",
+      "reasonCode": null,
+      "explanation": "Opportunity is ACTIVE."
+    }
+  ],
+  "evaluations": [
+    {
+      "id": "620a59a4-5dbb-42cd-9819-dc7a4f42d09c",
+      "blissMatchId": "77777777-7777-7777-7777-777777777776",
+      "creatorId": "11111111-1111-1111-1111-111111111113",
+      "ruleVersionId": "66666666-6666-6666-6666-666666666662",
+      "algorithmVersion": "deterministic-rules/2.0.0",
+      "status": "COMPLETED",
+      "matchStatus": "APPROVED",
+      "overallScore": 1.0000,
+      "confidenceScore": 0.8500,
+      "startedAt": "2026-09-20T08:07:30.029709Z",
+      "completedAt": "2026-09-20T08:07:30.172687Z"
+    },
+    {
+      "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee5",
+      "blissMatchId": "77777777-7777-7777-7777-777777777776",
+      "creatorId": "11111111-1111-1111-1111-111111111113",
+      "ruleVersionId": "66666666-6666-6666-6666-666666666662",
+      "algorithmVersion": "deterministic-rules/2.0.0",
+      "status": "COMPLETED",
+      "matchStatus": "APPROVED",
+      "overallScore": 1.0000,
+      "confidenceScore": 0.8500,
+      "startedAt": "2026-09-20T07:33:24.053964Z",
+      "completedAt": "2026-09-20T07:33:24.057972Z"
+    },
+    {
+      "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2",
+      "blissMatchId": "77777777-7777-7777-7777-777777777776",
+      "creatorId": "11111111-1111-1111-1111-111111111113",
+      "ruleVersionId": "66666666-6666-6666-6666-666666666662",
+      "algorithmVersion": "deterministic-rules/2.0.0",
+      "status": "COMPLETED",
+      "matchStatus": "APPROVED",
+      "overallScore": 1.0000,
+      "confidenceScore": 0.8500,
+      "startedAt": "2026-09-20T07:33:24.028314Z",
+      "completedAt": "2026-09-20T07:33:24.032658Z"
+    }
+  ],
+  "formations": [],
+  "reviews": [],
+  "placements": []
+}
