@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+Content-Length: 4048
+Content-Type: application/json
+Date: Mon, 21 Sep 2026 17:56:33 GMT
+X-Content-SHA256: c79d5e91a60336e1610c64120cd29fcdefa31064c8aab051583cc2140dc02832
+Content-Disposition: attachment; filename=bliss-evaluations-20260921175633Z.json; filename*=UTF-8''bliss-evaluations-20260921175633Z.json
+X-Content-Type-Options: nosniff
+Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+X-Request-Id: 45125242-7f66-4c2f-9dd4-fc7b4df25462
+

@@ -1,0 +1,10 @@
+HTTP/1.1 404 Not Found
+Content-Type: application/problem+json; charset=utf-8
+Date: Mon, 21 Sep 2026 17:56:33 GMT
+Transfer-Encoding: chunked
+X-Content-Type-Options: nosniff
+Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+X-Request-Id: 9b24f158-21f8-49eb-a758-9804c138adb5
+
