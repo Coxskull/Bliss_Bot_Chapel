@@ -1,6 +1,6 @@
 # Bliss Bot Chapel
 
-Standalone Bliss Bot Chapel: foundation, deterministic rule evaluation, historical audit, provider-neutral creator ingestion, controlled match formation, human review, campaign placement planning, and a browser-based test dashboard.
+Standalone Bliss Bot Chapel: provider-neutral creator operations, deterministic matching, human review, campaign placement planning, immutable audit, and a complete browser-based operations frontend.
 
 This repository and database are **not** connected to Alpha Auto. They are separate products and bounded contexts.
 
@@ -13,7 +13,7 @@ This repository and database are **not** connected to Alpha Auto. They are separ
 
 ## Solution
 
-- `Bliss.Api` — REST API + Swagger + same-origin operations and creator-ingestion dashboard
+- `Bliss.Api` — REST API + Swagger + same-origin responsive operations frontend
 - `Bliss.Domain` — entities and constants
 - `Bliss.Infrastructure` — EF Core, configurations, migrations, seed data
 - `Bliss.Tests` — architecture and persistence proofs
@@ -66,6 +66,11 @@ Dashboard: `/`
 
 Swagger (Development): `/swagger`
 
+The frontend covers creator intake and profiles, match formation and evaluation,
+human review, placement planning, partner and inventory directories, campaign
+placements, and all operational ledgers. Operator labels stored in the browser
+are audit labels only; they are not authentication.
+
 ## Documentation
 
 See `docs/bliss/` for Phase 1 architecture, requirements, and migration review.
@@ -84,3 +89,4 @@ Phase 6 engineering contract: `docs/bliss/PHASE-6-ENGINEERING-CONTRACT.md`.
 Phase 6 evidence: `docs/bliss/PHASE-6-EVIDENCE.md`.
 Phase 7 engineering contract: `docs/bliss/PHASE-7-ENGINEERING-CONTRACT.md`.
 Phase 7 evidence: `docs/bliss/PHASE-7-EVIDENCE.md`.
+Full frontend acceptance evidence: `docs/bliss/FULL-FRONTEND-EVIDENCE.md`.
