@@ -139,12 +139,12 @@ async function loadDashboard() {
     }
     try {
       state.runtime = await api("/api/runtime/status");
-      renderRuntimeStatus();
     } catch {
       /* Status remains empty when the runtime document is also unavailable. */
     }
     setConnection("offline", error.message);
     renderUnavailable(error.message);
+    renderRuntimeStatus();
     toast(error.message, true);
   } finally {
     $("#refresh-button").classList.remove("spinning");
@@ -813,7 +813,7 @@ function applyPermissions(){
   $("#placement-submit").disabled=!state.placementQueue.length||!state.session.canWrite;
 }
 function setConnection(status,detail){const dot=$("#connection-dot");dot.className=`pulse-dot ${status==="loading"||status==="auth"?"":status}`;$("#connection-label").textContent=status==="online"?"API connected":status==="offline"?"API unavailable":status==="auth"?"Sign in required":"Connecting";$("#connection-detail").textContent=detail||(state.apiBase?hostname(state.apiBase):"Same-origin backend");}
-function renderUnavailable(message){const content=emptyState(`Could not load backend data: ${message}`);["match-list","creator-grid","review-queue-list","placement-queue-list","recent-activity","status-chart","partner-content","inventory-content","audit-content","runtime-health-cards","runtime-correlation","runtime-limits","runtime-events"].forEach(id=>{const element=$(`#${id}`);if(element)element.innerHTML=content;});}
+function renderUnavailable(message){const content=emptyState(`Could not load backend data: ${message}`);["match-list","creator-grid","review-queue-list","placement-queue-list","recent-activity","status-chart","partner-content","inventory-content","audit-content"].forEach(id=>{const element=$(`#${id}`);if(element)element.innerHTML=content;});}
 function toast(message,isError=false){const element=$("#toast");element.textContent=message;element.className=`toast show${isError?" error":""}`;clearTimeout(toast.timer);toast.timer=setTimeout(()=>element.classList.remove("show"),3600);}
 
 function creatorById(id){return state.creators.find(x=>x.id===id);}
