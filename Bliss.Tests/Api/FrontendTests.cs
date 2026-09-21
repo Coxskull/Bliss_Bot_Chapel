@@ -35,6 +35,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Export case file", script);
         Assert.Contains("/api/audit/export/matches/", script);
         Assert.Contains("/api/audit/export/creators/", script);
+        Assert.Contains("/api/audit/export/campaigns/", script);
         Assert.DoesNotContain("TEST ENVIRONMENT", body);
         Assert.DoesNotContain("TEST_OPERATOR", body);
     }

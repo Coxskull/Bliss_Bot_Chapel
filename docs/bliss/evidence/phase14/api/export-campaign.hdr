@@ -1,0 +1,11 @@
+HTTP/1.1 200 OK
+Content-Length: 1209
+Content-Type: application/json
+Date: Mon, 21 Sep 2026 17:46:28 GMT
+Content-Disposition: attachment; filename=bliss-campaign-ddddddddddddddddddddddddddddddd4-20260921174629Z.json; filename*=UTF-8''bliss-campaign-ddddddddddddddddddddddddddddddd4-20260921174629Z.json
+X-Content-Type-Options: nosniff
+Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+X-Request-Id: 41120e7c-3595-410c-aef5-906e437cbfdc
+
