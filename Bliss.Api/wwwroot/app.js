@@ -460,6 +460,10 @@ async function exportMatchCase(id, button) {
   await downloadAuditPack(`/api/audit/export/matches/${id}`, "Exported match case file", button);
 }
 
+async function exportCreatorCase(id, button) {
+  await downloadAuditPack(`/api/audit/export/creators/${id}`, "Exported creator case file", button);
+}
+
 function showWorkflow(type, prefill = {}) {
   if (!state.session.canWrite) {
     toast("Your account does not have operator permission.", true);
@@ -606,7 +610,7 @@ async function openCreator(id) {
     const provenanceIds=new Set([creator.id,...creator.platforms.map(x=>x.id)]);
     const provenance=state.provenances.filter(x=>provenanceIds.has(x.entityId));
     $("#drawer-title").textContent=creator.name;
-    $("#drawer-body").innerHTML=`<div class="detail-hero"><div class="detail-hero-top"><span class="status-badge status-active">Canonical profile</span><span class="detail-score">${getInitials(creator.name)}</span></div><h3>${escapeHtml(creator.name)}</h3><p>${escapeHtml(creator.countryCode||"Unknown market")} · ${escapeHtml(creator.primaryLanguage||"Language unknown")} · updated ${formatDate(creator.updatedAt)}</p><div class="detail-actions"><button class="small-button" data-form-match-creator="${creator.id}">Form match</button></div></div>
+    $("#drawer-body").innerHTML=`<div class="detail-hero"><div class="detail-hero-top"><span class="status-badge status-active">Canonical profile</span><span class="detail-score">${getInitials(creator.name)}</span></div><h3>${escapeHtml(creator.name)}</h3><p>${escapeHtml(creator.countryCode||"Unknown market")} · ${escapeHtml(creator.primaryLanguage||"Language unknown")} · updated ${formatDate(creator.updatedAt)}</p><div class="detail-actions"><button class="small-button" data-export-creator="${creator.id}">Export case file</button><button class="small-button" data-form-match-creator="${creator.id}">Form match</button></div></div>
       <section class="detail-section"><h4>Audience profile</h4><div class="detail-grid">${metric("Audience",formatNumber(creator.audienceSize))}${metric("Female",formatNullablePercent(creator.femalePercentage))}${metric("Male",formatNullablePercent(creator.malePercentage))}${metric("Age range",creator.primaryAgeRange||"Unknown")}${metric("Geography",creator.primaryGeography||"Unknown")}${metric("Engagement",creator.engagementLevel||"Unknown")}</div></section>
       <section class="detail-section"><h4>Platform identities · ${creator.platforms.length}</h4><div class="check-list">${creator.platforms.length?creator.platforms.map(x=>`<div class="check-item"><div><strong>${escapeHtml(x.platform)} · ${escapeHtml(x.externalProfileId||"No external ID")}</strong><small>${escapeHtml(x.profileUrl||"No profile URL")} · ${formatNumber(x.followers)} followers</small></div><span class="status-badge status-active">Linked</span></div>`).join(""):emptyState("No platform identities.")}</div></section>
       <section class="detail-section"><h4>Content · ${creator.contentItems.length}</h4><div class="check-list">${creator.contentItems.length?creator.contentItems.map(x=>`<button class="history-item" data-content-id="${x.id}"><span><strong>${escapeHtml(x.title)}</strong><small>${escapeHtml(x.contentType)} · ${x.adInventorySlots.length} slots</small></span><span>→</span></button>`).join(""):emptyState("No creator content.")}</div></section>
@@ -775,6 +779,7 @@ function handleDocumentClick(event) {
   else if(target.matches("[data-placement-run-id]"))openPlacementRun(target.dataset.placementRunId);
   else if(target.matches("[data-ingest-run-id]"))openIngestionRun(target.dataset.ingestRunId);
   else if(target.matches("[data-export-match]"))exportMatchCase(target.dataset.exportMatch,target);
+  else if(target.matches("[data-export-creator]"))exportCreatorCase(target.dataset.exportCreator,target);
   else if(target.matches("[data-evaluate]"))evaluateMatch(target.dataset.evaluate,target);
   else if(target.matches("[data-select-review]")){state.selectedReview=target.dataset.selectReview;renderReviews();$("#review-form").scrollIntoView({behavior:"smooth",block:"start"});}
   else if(target.matches("[data-select-placement]")){state.selectedPlacement=target.dataset.selectPlacement;renderPlacements();$("#placement-form").scrollIntoView({behavior:"smooth",block:"start"});}

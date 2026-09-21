@@ -109,6 +109,87 @@ public sealed class AuditExportController(
         return Pack(payload, $"bliss-match-{id:N}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt);
     }
 
+    [HttpGet("export/creators/{id:guid}")]
+    public async Task<IActionResult> ExportCreatorCase(Guid id, CancellationToken cancellationToken)
+    {
+        var creator = await db.Creators.AsNoTracking()
+            .Where(x => x.Id == id)
+            .Select(x => new CreatorListDto(
+                x.Id, x.Name, x.CountryCode, x.PrimaryLanguage,
+                x.AudienceSize, x.FemalePercentage, x.MalePercentage))
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (creator is null)
+        {
+            return NotFound();
+        }
+
+        var platforms = await db.CreatorPlatforms.AsNoTracking()
+            .Where(x => x.CreatorId == id)
+            .OrderBy(x => x.Platform)
+            .Take(RecordLimit)
+            .Select(x => new CreatorPlatformDto(
+                x.Id, x.Platform, x.ExternalProfileId, x.ProfileUrl, x.Followers, x.LastCollectedAt))
+            .ToListAsync(cancellationToken);
+
+        var relatedIds = platforms.Select(x => x.Id).Append(id).ToList();
+
+        var content = await db.ContentItems.AsNoTracking()
+            .Where(x => x.CreatorId == id)
+            .OrderBy(x => x.Title)
+            .Take(RecordLimit)
+            .Select(x => new ContentItemListDto(
+                x.Id, x.CreatorId, x.ContentType, x.Title, x.ExternalContentId, x.Url))
+            .ToListAsync(cancellationToken);
+
+        var matches = await db.BlissMatches.AsNoTracking()
+            .Where(x => x.CreatorId == id)
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenBy(x => x.Id)
+            .Take(RecordLimit)
+            .Select(x => new BlissMatchSummaryDto(
+                x.Id, x.CreatorId, x.AdvertiserOpportunityId, x.RuleVersionId,
+                x.Status, x.OverallScore, x.ConfidenceScore, x.CreatedAt))
+            .ToListAsync(cancellationToken);
+
+        var ingestions = await db.CreatorIngestionRuns.AsNoTracking()
+            .Where(x => x.CreatorId == id)
+            .OrderByDescending(x => x.CompletedAt)
+            .ThenBy(x => x.Id)
+            .Take(RecordLimit)
+            .Select(x => new CreatorIngestionRunSummaryDto(
+                x.Id, x.CreatorId, x.CreatorPlatformId, x.SourceSystem, x.IdempotencyKey,
+                x.IdentityKey, x.Status, x.Outcome, x.CompletedAt))
+            .ToListAsync(cancellationToken);
+
+        var provenances = await db.DataProvenances.AsNoTracking()
+            .Where(x => relatedIds.Contains(x.EntityId))
+            .OrderByDescending(x => x.CollectedAt)
+            .ThenBy(x => x.Id)
+            .Take(RecordLimit)
+            .Select(x => new DataProvenanceDto(
+                x.Id, x.EntityType, x.EntityId, x.FieldName, x.SourceType, x.SourceName,
+                x.SourceUrl, x.ConfidenceLevel, x.CollectedAt, x.Notes))
+            .ToListAsync(cancellationToken);
+
+        var requestId = RequestCorrelation.Resolve(HttpContext);
+        var exportedAt = DateTime.UtcNow;
+        var payload = new CreatorCaseExportDto(
+            exportedAt,
+            environment.EnvironmentName,
+            "creator-case",
+            requestId,
+            id,
+            creator,
+            platforms,
+            content,
+            matches,
+            ingestions,
+            provenances);
+
+        return Pack(payload, $"bliss-creator-{id:N}-{exportedAt:yyyyMMddHHmmss}Z.json", requestId, exportedAt);
+    }
+
     [HttpGet("export/{ledger}")]
     public async Task<IActionResult> Export(string ledger, CancellationToken cancellationToken)
     {
@@ -244,3 +325,16 @@ public sealed record MatchCaseExportDto(
     IReadOnlyList<MatchFormationRunSummaryDto> Formations,
     IReadOnlyList<MatchReviewDecisionSummaryDto> Reviews,
     IReadOnlyList<CampaignPlacementRunSummaryDto> Placements);
+
+public sealed record CreatorCaseExportDto(
+    DateTime ExportedAt,
+    string Environment,
+    string Kind,
+    string RequestId,
+    Guid CreatorId,
+    CreatorListDto Creator,
+    IReadOnlyList<CreatorPlatformDto> Platforms,
+    IReadOnlyList<ContentItemListDto> Content,
+    IReadOnlyList<BlissMatchSummaryDto> Matches,
+    IReadOnlyList<CreatorIngestionRunSummaryDto> Ingestions,
+    IReadOnlyList<DataProvenanceDto> Provenances);

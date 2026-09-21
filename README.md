@@ -122,3 +122,5 @@ Phase 11 operator audit export contract: `docs/bliss/PHASE-11-ENGINEERING-CONTRA
 Phase 11 operator audit export evidence: `docs/bliss/PHASE-11-EVIDENCE.md`.
 Phase 12 match case file export contract: `docs/bliss/PHASE-12-ENGINEERING-CONTRACT.md`.
 Phase 12 match case file export evidence: `docs/bliss/PHASE-12-EVIDENCE.md`.
+Phase 13 creator case file export contract: `docs/bliss/PHASE-13-ENGINEERING-CONTRACT.md`.
+Phase 13 creator case file export evidence: `docs/bliss/PHASE-13-EVIDENCE.md`.
