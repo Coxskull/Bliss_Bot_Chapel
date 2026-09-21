@@ -30,6 +30,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Continue with SSO", body);
         Assert.Contains("Workspace status", body);
         Assert.Contains("Export ledger", body);
+        Assert.Contains("Verify pack", body);
         Assert.Contains("app.js", body);
         var script = await (await client.GetAsync("/app.js")).Content.ReadAsStringAsync();
         Assert.Contains("Export case file", script);
@@ -38,6 +39,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("/api/audit/export/campaigns/", script);
         Assert.Contains("X-Content-SHA256", script);
         Assert.Contains("sha256:", script);
+        Assert.Contains("/api/audit/verify", script);
         Assert.DoesNotContain("TEST ENVIRONMENT", body);
         Assert.DoesNotContain("TEST_OPERATOR", body);
     }

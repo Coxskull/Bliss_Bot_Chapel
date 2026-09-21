@@ -471,6 +471,57 @@ async function exportCampaignCase(id, button) {
   await downloadAuditPack(`/api/audit/export/campaigns/${id}`, "Exported campaign case file", button);
 }
 
+function chooseAuditPackToVerify() {
+  $("#verify-audit-file").value = "";
+  $("#verify-audit-file").click();
+}
+
+async function verifySelectedAuditPack(event) {
+  const input = event.currentTarget;
+  const file = input.files && input.files[0];
+  input.value = "";
+  if (!file) return;
+  const button = $("#verify-audit-pack");
+  button.disabled = true;
+  const resultEl = $("#verify-audit-result");
+  try {
+    if (file.size > 512000) throw new Error("Pack exceeds the 512 KB verification limit.");
+    const text = await file.text();
+    let pack;
+    try {
+      pack = JSON.parse(text);
+    } catch {
+      throw new Error("Pack must be valid JSON.");
+    }
+    const result = await api("/api/audit/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pack)
+    });
+    const prefix = (result.computedSha256 || "").slice(0, 12);
+    const kind = result.packKind || "pack";
+    if (result.matched) {
+      resultEl.hidden = false;
+      resultEl.className = "verify-result ok";
+      resultEl.textContent = `Verified ${kind} sha256:${prefix}…`;
+      toast(`Verified ${kind} sha256:${prefix}…`);
+    } else {
+      resultEl.hidden = false;
+      resultEl.className = "verify-result bad";
+      resultEl.textContent = `Digest mismatch for ${kind} sha256:${prefix}…`;
+      toast(`Digest mismatch for ${kind} sha256:${prefix}…`, true);
+    }
+    refreshRuntimeStatus();
+  } catch (error) {
+    resultEl.hidden = false;
+    resultEl.className = "verify-result bad";
+    resultEl.textContent = error.message;
+    toast(error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function showWorkflow(type, prefill = {}) {
   if (!state.session.canWrite) {
     toast("Your account does not have operator permission.", true);
@@ -722,6 +773,8 @@ function bindActions() {
   $("#refresh-runtime-status").addEventListener("click",refreshRuntimeStatus);
   $("#verify-write-throttle").addEventListener("click",verifyWriteThrottle);
   $("#export-audit-ledger").addEventListener("click",exportAuditLedger);
+  $("#verify-audit-pack").addEventListener("click",chooseAuditPackToVerify);
+  $("#verify-audit-file").addEventListener("change",verifySelectedAuditPack);
   $("#operator-button").addEventListener("click",() => {
     if (state.session.authenticationEnabled && !state.session.isAuthenticated) beginLogin();
     else openSettings();
