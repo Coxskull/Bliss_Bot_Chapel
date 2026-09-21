@@ -107,3 +107,4 @@ Phase 7 engineering contract: `docs/bliss/PHASE-7-ENGINEERING-CONTRACT.md`.
 Phase 7 evidence: `docs/bliss/PHASE-7-EVIDENCE.md`.
 Full frontend acceptance evidence: `docs/bliss/FULL-FRONTEND-EVIDENCE.md`.
 Phase 8 OIDC security contract: `docs/bliss/PHASE-8-ENGINEERING-CONTRACT.md`.
+Phase 8 OIDC security evidence: `docs/bliss/PHASE-8-EVIDENCE.md`.
