@@ -1,0 +1,3 @@
+dotnet test Bliss.Tests/Bliss.Tests.csproj --verbosity minimal
+
+Passed!  - Failed:     0, Passed:    89, Skipped:     0, Total:    89 - Bliss.Tests.dll (net8.0)
