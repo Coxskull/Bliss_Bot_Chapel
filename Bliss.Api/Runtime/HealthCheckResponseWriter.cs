@@ -7,6 +7,18 @@ public static class HealthCheckResponseWriter
 {
     public static Task WriteAsync(HttpContext context, HealthReport report)
     {
+        if (report.Status != HealthStatus.Healthy)
+        {
+            context.RequestServices.GetRequiredService<OperationalEventStore>().Record(
+                new OperationalEvent(
+                    DateTime.UtcNow,
+                    "HealthUnhealthy",
+                    context.Request.Method,
+                    RequestCorrelation.SafePath(context),
+                    context.Response.StatusCode == 0 ? StatusCodes.Status503ServiceUnavailable : context.Response.StatusCode,
+                    RequestCorrelation.Resolve(context)));
+        }
+
         context.Response.ContentType = "application/json";
         return context.Response.WriteAsync(JsonSerializer.Serialize(new
         {

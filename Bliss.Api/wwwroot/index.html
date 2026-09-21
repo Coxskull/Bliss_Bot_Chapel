@@ -33,6 +33,7 @@
         <a class="nav-item" href="#/partners" data-view="partners"><span class="nav-icon" aria-hidden="true">△</span><span>Partners</span></a>
         <a class="nav-item" href="#/inventory" data-view="inventory"><span class="nav-icon" aria-hidden="true">▦</span><span>Inventory</span></a>
         <a class="nav-item" href="#/audit" data-view="audit"><span class="nav-icon" aria-hidden="true">≡</span><span>Audit</span></a>
+        <a class="nav-item" href="#/status" data-view="status"><span class="nav-icon" aria-hidden="true">◎</span><span>Status</span></a>
       </nav>
       <div class="sidebar-bottom">
         <div class="connection-card">
@@ -194,6 +195,29 @@
             <button class="tab-button" data-audit-tab="provenance" role="tab" aria-selected="false">Provenance</button>
           </div>
           <div class="panel table-panel"><div class="table-wrap" id="audit-content"></div></div>
+        </section>
+
+        <section class="view" id="view-status" aria-labelledby="status-title">
+          <div class="section-intro">
+            <div><p class="eyebrow">RUNTIME OBSERVABILITY</p><h2 id="status-title">Workspace status</h2><p>Inspect process and database readiness, request correlation, and recent security or throttle events. This view never shows secrets or identity-provider credentials.</p></div>
+            <button class="secondary-button" id="refresh-runtime-status" type="button">Refresh status</button>
+          </div>
+          <div class="stat-grid" id="runtime-health-cards"></div>
+          <div class="dashboard-grid">
+            <section class="panel">
+              <div class="panel-header"><div><p class="eyebrow">CORRELATION</p><h3>Request identity</h3></div></div>
+              <div class="runtime-meta" id="runtime-correlation"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-header"><div><p class="eyebrow">PROTECTION</p><h3>Write throttle</h3></div></div>
+              <div class="runtime-meta" id="runtime-limits"></div>
+              <div class="form-actions"><small>Invalid or empty bodies are not persisted. This only exercises the quota.</small><button class="secondary-button" type="button" id="verify-write-throttle">Verify write quota</button></div>
+            </section>
+          </div>
+          <section class="panel table-panel">
+            <div class="panel-header"><div><p class="eyebrow">RECENT</p><h3>Operational events</h3></div></div>
+            <div class="table-wrap" id="runtime-events"></div>
+          </section>
         </section>
       </div>
     </main>

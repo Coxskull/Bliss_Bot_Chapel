@@ -40,5 +40,6 @@ public sealed class ApiSurfaceTests
         Assert.Contains("api/campaign-placement-runs", prefixes);
         Assert.Contains("api/campaign-bindings", prefixes);
         Assert.Contains("api/auth", prefixes);
+        Assert.Contains("api/runtime", prefixes);
     }
 }

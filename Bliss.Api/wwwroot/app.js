@@ -19,7 +19,9 @@ const state = {
   affiliateNetworks: [], networkAccesses: [], programAccesses: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations",
-  selectedReview: null, selectedPlacement: null
+  selectedReview: null, selectedPlacement: null,
+  runtime: null,
+  lastRequestId: null
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -53,9 +55,14 @@ async function api(path, options = {}) {
     headers,
     credentials: "same-origin"
   });
+  const requestId = response.headers.get("X-Request-Id");
+  if (requestId) state.lastRequestId = requestId;
   const body = response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
-    const error = new Error(body?.error || `Request failed with HTTP ${response.status}`);
+    const retryAfter = response.headers.get("Retry-After");
+    const suffix = requestId ? ` [${requestId.slice(0, 8)}…]` : "";
+    const retry = response.status === 429 && retryAfter ? ` Retry after ${retryAfter}s.` : "";
+    const error = new Error((body?.error || `Request failed with HTTP ${response.status}`) + retry + suffix);
     error.status = response.status;
     throw error;
   }
@@ -97,12 +104,13 @@ async function loadDashboard() {
       api("/api/campaign-placement-runs"), api("/api/match-reviews/queue"),
       api("/api/campaign-bindings/queue"), api("/api/data-provenances"),
       api("/api/affiliate-networks"), api("/api/network-accesses"),
-      api("/api/program-accesses")
+      api("/api/program-accesses"), api("/api/runtime/status").catch(() => null)
     ]);
     const [
       matches, creators, advertisers, programs, opportunities, content, campaigns,
       ruleVersions, runs, ingestions, formations, reviews, placements, reviewQueue,
-      placementQueue, provenances, affiliateNetworks, networkAccesses, programAccesses
+      placementQueue, provenances, affiliateNetworks, networkAccesses, programAccesses,
+      runtime
     ] = values;
     const [contentDetails, ruleDetails] = await Promise.all([
       Promise.all(content.map(item => api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] })))),
@@ -112,7 +120,7 @@ async function loadDashboard() {
       matches, creators, advertisers, programs, opportunities, content, contentDetails,
       campaigns, ruleVersions: ruleDetails, runs, ingestions, formations, reviews,
       placements, reviewQueue, placementQueue, provenances, affiliateNetworks,
-      networkAccesses, programAccesses, loaded: true
+      networkAccesses, programAccesses, runtime, loaded: true
     });
     state.selectedReview = reviewQueue.some(x => x.blissMatchId === state.selectedReview)
       ? state.selectedReview : reviewQueue[0]?.blissMatchId || null;
@@ -146,6 +154,7 @@ function renderAll() {
   renderPartners();
   renderInventory();
   renderAudit();
+  renderRuntimeStatus();
   $("#nav-match-count").textContent = state.matches.length;
   $("#nav-review-count").textContent = state.reviewQueue.length;
   $("#nav-placement-count").textContent = state.placementQueue.length;
@@ -334,6 +343,71 @@ function renderAudit() {
     rows = state.provenances.filter(x => auditHaystack(x).includes(term)).sort((a,b)=>new Date(b.collectedAt)-new Date(a.collectedAt)).map(x => [`${escapeHtml(friendlyStatus(x.entityType))}<br>${code(shortId(x.entityId))}`, escapeHtml(friendlyStatus(x.fieldName)), escapeHtml(x.sourceName || x.sourceType), badge(x.confidenceLevel), formatDate(x.collectedAt), escapeHtml(x.notes || "—")]);
   }
   $("#audit-content").innerHTML = rows.length ? `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>` : emptyState(`No ${state.auditTab} records found.`);
+}
+
+function healthClass(status) {
+  const value = String(status || "").toLowerCase();
+  if (value === "healthy") return "health-healthy";
+  if (value === "degraded") return "health-degraded";
+  return "health-unhealthy";
+}
+
+function renderRuntimeStatus() {
+  const runtime = state.runtime;
+  if (!runtime) {
+    $("#runtime-health-cards").innerHTML = emptyState("Runtime status is unavailable.");
+    $("#runtime-correlation").innerHTML = emptyState("No request identifier yet.");
+    $("#runtime-limits").innerHTML = emptyState("Throttle policy is unavailable.");
+    $("#runtime-events").innerHTML = emptyState("No operational events recorded.");
+    return;
+  }
+  $("#runtime-health-cards").innerHTML = [
+    ["Process", runtime.processStatus, "Liveness"],
+    ["Database", runtime.databaseStatus, runtime.databaseDescription || "Readiness"],
+    ["Authentication", runtime.authenticationEnabled ? "Enabled" : "Development open", runtime.environment],
+    ["Key ring", runtime.persistentKeysConfigured ? "Configured" : "Ephemeral", "Data Protection"]
+  ].map(([label, status, detail]) => `<article class="stat-card"><span class="stat-top"><span class="health-pill ${healthClass(status)}">${escapeHtml(friendlyStatus(status))}</span><span class="trend">${escapeHtml(label.toUpperCase())}</span></span><strong>${escapeHtml(friendlyStatus(status))}</strong><span>${escapeHtml(label)}</span><small>${escapeHtml(detail)}</small></article>`).join("");
+  $("#runtime-correlation").innerHTML = `<p><strong>Last request</strong><span class="request-id">${escapeHtml(runtime.lastRequestId || state.lastRequestId || "None yet")}</span></p><p>Every API response includes <code>X-Request-Id</code>. Incoming identifiers are accepted only when they are valid GUIDs.</p>`;
+  $("#runtime-limits").innerHTML = `<p><strong>${runtime.writeRateLimitPermitLimit} writes / ${runtime.rateLimitWindowSeconds}s</strong>Controlled POST endpoints share this quota.</p><p><strong>${runtime.authenticationRateLimitPermitLimit} login starts / ${runtime.rateLimitWindowSeconds}s</strong>OIDC challenge initiation is separately limited.</p>`;
+  const events = runtime.recentEvents || [];
+  $("#runtime-events").innerHTML = events.length ? `<table><thead><tr><th>When</th><th>Kind</th><th>Request</th><th>Status</th><th>Correlation</th></tr></thead><tbody>${events.map(event => `<tr><td>${formatDate(event.occurredAt)}</td><td>${badge(event.kind)}</td><td><code>${escapeHtml(event.method)} ${escapeHtml(event.path)}</code></td><td>${event.statusCode}</td><td><code>${escapeHtml(event.requestId)}</code></td></tr>`).join("")}</tbody></table>` : emptyState("No security or throttle events have been recorded in this process.");
+}
+
+async function refreshRuntimeStatus() {
+  try {
+    state.runtime = await api("/api/runtime/status");
+    renderRuntimeStatus();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function verifyWriteThrottle() {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+  const button = $("#verify-write-throttle");
+  button.disabled = true;
+  let limited = false;
+  try {
+    const attempts = (state.runtime?.writeRateLimitPermitLimit || 2) + 1;
+    for (let index = 0; index < attempts; index += 1) {
+      try {
+        await api("/api/runtime/throttle-check", { method: "POST" });
+      } catch (error) {
+        toast(error.message, error.status === 429);
+        if (error.status === 429) {
+          limited = true;
+          break;
+        }
+      }
+    }
+    await refreshRuntimeStatus();
+    if (limited) toast("Write quota recorded in the operational event log.");
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function showWorkflow(type, prefill = {}) {
@@ -567,11 +641,11 @@ function bindNavigation() {
 }
 function route() {
   const parts=(location.hash.replace(/^#\/?/,"")||"overview").split("/").filter(Boolean);
-  const valid=["overview","creators","matches","review","placement","partners","inventory","audit"];
+  const valid=["overview","creators","matches","review","placement","partners","inventory","audit","status"];
   const view=valid.includes(parts[0])?parts[0]:"overview";
   $$(".view").forEach(x=>x.classList.toggle("active",x.id===`view-${view}`));
   $$(".nav-item[data-view]").forEach(x=>{const active=x.dataset.view===view;x.classList.toggle("active",active);if(active)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});
-  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit"};
+  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
   $("#page-title").textContent=titles[view];
   toggleMobileNav(false);
   if(!state.loaded)return;
@@ -584,6 +658,8 @@ function route() {
 
 function bindActions() {
   $("#refresh-button").addEventListener("click",loadDashboard);
+  $("#refresh-runtime-status").addEventListener("click",refreshRuntimeStatus);
+  $("#verify-write-throttle").addEventListener("click",verifyWriteThrottle);
   $("#operator-button").addEventListener("click",() => {
     if (state.session.authenticationEnabled && !state.session.isAuthenticated) beginLogin();
     else openSettings();
@@ -731,7 +807,7 @@ function applyPermissions(){
   $("#placement-submit").disabled=!state.placementQueue.length||!state.session.canWrite;
 }
 function setConnection(status,detail){const dot=$("#connection-dot");dot.className=`pulse-dot ${status==="loading"||status==="auth"?"":status}`;$("#connection-label").textContent=status==="online"?"API connected":status==="offline"?"API unavailable":status==="auth"?"Sign in required":"Connecting";$("#connection-detail").textContent=detail||(state.apiBase?hostname(state.apiBase):"Same-origin backend");}
-function renderUnavailable(message){const content=emptyState(`Could not load backend data: ${message}`);["match-list","creator-grid","review-queue-list","placement-queue-list","recent-activity","status-chart","partner-content","inventory-content","audit-content"].forEach(id=>{const element=$(`#${id}`);if(element)element.innerHTML=content;});}
+function renderUnavailable(message){const content=emptyState(`Could not load backend data: ${message}`);["match-list","creator-grid","review-queue-list","placement-queue-list","recent-activity","status-chart","partner-content","inventory-content","audit-content","runtime-health-cards","runtime-correlation","runtime-limits","runtime-events"].forEach(id=>{const element=$(`#${id}`);if(element)element.innerHTML=content;});}
 function toast(message,isError=false){const element=$("#toast");element.textContent=message;element.className=`toast show${isError?" error":""}`;clearTimeout(toast.timer);toast.timer=setTimeout(()=>element.classList.remove("show"),3600);}
 
 function creatorById(id){return state.creators.find(x=>x.id===id);}
