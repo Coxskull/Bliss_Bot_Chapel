@@ -22,7 +22,7 @@ Inspected from `origin/main` after Phase 19 verification-history merge.
 | Data | EF Core + Npgsql, PostgreSQL/Supabase-compatible, restrict deletes, unique source+idempotency | Same `BlissDbContext`, new tables, restrict FKs, unique primary workspace per advertiser. |
 | API | `/api/...` controllers, write rate limits, CSRF when auth enabled, `X-Request-Id` | `/api/wedding-planner/...` with the same write/CSRF/correlation pattern. |
 | Audit | Immutable run/decision tables plus in-process operational events | Durable `WeddingPlannerAuditEvents` for workspace/session/message writes. |
-| Frontend | Same-origin operations shell | Resume ledger only. Not a creative dashboard and not a chatbot. |
+| Frontend | Existing same-origin operations shell | Keep operator controls at `/operations`. Root `/` is the public advertiser/creator Bliss Chapel experience matching the supplied visual direction. Phase 1 presents a disabled conversation preview; it does not impersonate an AI worker. |
 | Tests | xUnit, in-memory EF, `BlissApiFactory`, `OidcSecurityApiFactory` | Phase 1 proofs plus cross-tenant negatives on the OIDC factory. |
 | Matching | `DeterministicRuleEvaluator` is scoring authority | Unchanged. Wedding Planner code must not call it. |
 | Alpha Auto | Explicitly separate product | No references, no shared identity, no shared writes. |
@@ -80,6 +80,19 @@ Starting allocation: 0 AI agents. No proposed change.
 - `POST /api/wedding-planner/sessions/{id}/messages`
 - `GET /api/wedding-planner/messages/{id}`
 - `GET /api/wedding-planner/workspaces/{id}/audit`
+
+## Public experience boundary
+
+The public root is for advertisers and creators. It presents:
+
+- Alpha Bliss Chapel positioning and advertiser/creator entry points
+- the Wedding Planner as the future primary customer-facing personality
+- a visual conversation preview matching the approved design direction
+- an explicit Phase 1 foundation notice and disabled composer
+
+The internal operator console remains available at `/operations`. Backend
+ownership, tenant isolation, and audit remain authoritative. Phase 1 does
+not fabricate AI responses or imply that a provider is active.
 
 ## Explicit exclusions
 

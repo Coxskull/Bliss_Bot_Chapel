@@ -10,4 +10,4 @@ VSTest version 17.11.1 (x64)
 Starting test execution, please wait...
 A total of 1 test files matched the specified pattern.
 
-Passed!  - Failed:     0, Passed:   114, Skipped:     0, Total:   114, Duration: 2 s - Bliss.Tests.dll (net8.0)
+Passed!  - Failed:     0, Passed:   117, Skipped:     0, Total:   117, Duration: 3 s - Bliss.Tests.dll (net8.0)

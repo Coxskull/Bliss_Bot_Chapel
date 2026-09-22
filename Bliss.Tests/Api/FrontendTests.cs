@@ -12,7 +12,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
     }
 
     [Fact]
-    public async Task Root_serves_the_operations_frontend()
+    public async Task Root_serves_the_public_bliss_chapel_experience()
     {
         var client = _factory.CreateClient();
 
@@ -21,7 +21,30 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
-        Assert.Contains("Bliss Chapel", body);
+        Assert.Contains("BLISS CHAPEL", body);
+        Assert.Contains("For Advertisers", body);
+        Assert.Contains("For Creators", body);
+        Assert.Contains("Welcome to Bliss Chapel", body);
+        Assert.Contains("The Wedding Planner", body);
+        Assert.Contains("Nothing Goes Live Without Your Approval", body);
+        Assert.Contains("FOUNDATION READY", body);
+        Assert.Contains("AI conversation begins only after the next approved engineering contract", body);
+        Assert.Contains("wedding-planner.css", body);
+        Assert.Contains("wedding-planner.js", body);
+        Assert.DoesNotContain("Operations audit", body);
+        Assert.DoesNotContain("Advertiser workspace and session ledger", body);
+    }
+
+    [Fact]
+    public async Task Operations_route_preserves_the_internal_console()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/operations");
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
         Assert.Contains("Operations audit", body);
         Assert.Contains("Creator directory", body);
         Assert.Contains("Form match", body);
@@ -58,6 +81,8 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
     [Theory]
     [InlineData("/app.css", "text/css")]
     [InlineData("/app.js", "text/javascript")]
+    [InlineData("/wedding-planner.css", "text/css")]
+    [InlineData("/wedding-planner.js", "text/javascript")]
     public async Task Frontend_assets_are_served(string path, string mediaType)
     {
         var client = _factory.CreateClient();
@@ -66,7 +91,8 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(mediaType, response.Content.Headers.ContentType?.MediaType);
-        Assert.True(response.Content.Headers.ContentLength > 1_000);
+        var minimumLength = path.EndsWith(".js", StringComparison.Ordinal) ? 100 : 1_000;
+        Assert.True(response.Content.Headers.ContentLength > minimumLength);
     }
 
     [Fact]

@@ -3,7 +3,7 @@
 ## Result
 
 Phase 1 foundation is implemented as a bounded module on the accepted
-Bliss main line (Phases 1–19). Automated tests: **114 passed, 0 failed**.
+Bliss main line (Phases 1–19). Automated tests: **117 passed, 0 failed**.
 
 AI agents: **0**. Color Intelligence, Curator, creative generation,
 Bliss handshake, and Alpha Auto were not added.
@@ -31,11 +31,11 @@ EF Core migration `WeddingPlannerPhase1Foundation`
 dotnet test Bliss.Tests/Bliss.Tests.csproj --verbosity minimal
 ```
 
-Result: **114 passed, 0 failed, 0 skipped**.
+Result: **117 passed, 0 failed, 0 skipped**.
 
 Prior Bliss suite was 107 on the earlier reconciliation note and 105 on
 Phase 18 evidence; current main plus Phase 19 plus Phase 1 Wedding
-Planner proofs total 114.
+Planner proofs total 117.
 
 New proofs:
 
@@ -47,7 +47,9 @@ New proofs:
 - advertiser A cannot read or write advertiser B
 - viewer cannot write
 - unique primary workspace persistence
-- frontend includes the foundation ledger, not a chatbot
+- root serves the public advertiser/creator experience
+- `/operations` preserves the internal console
+- conversation preview is disabled and labeled as future work
 - Wedding Planner source does not call scoring, n8n, or Alpha Auto
 
 Log: `docs/wedding-planner/evidence/phase1/tests/dotnet-test.txt`
@@ -63,20 +65,23 @@ Bliss tests. The browser is not the owner.
 
 ## UI
 
-Operations shell gained a **Wedding Planner** resume ledger:
+The root route is now the public advertiser/creator **Alpha Bliss Chapel**
+experience and follows the supplied visual direction:
 
-- open/resume primary workspace
-- create/resume planning session
-- append human/system messages
+- immersive chapel hero
+- advertiser and creator entry points
+- the Wedding Planner introduction and service list
+- conversation preview with disabled composer
+- explicit notice that AI conversation awaits a later accepted contract
 
-It is not the marketing chapel dashboard and does not call an LLM.
+The internal operator console remains available at `/operations`, including
+the Phase 1 workspace/session/message resume ledger.
 
-Browser check against a Development process (no PostgreSQL in this
-environment, so directory APIs return 500 and the shell shows API
-unavailable): the `#/wedding-planner` view still renders the foundation
-ledger, the “no chatbot” notice, and the three human forms.
+Neither public surface calls an LLM. The public conversation is visibly
+identified as a Phase 1 preview rather than a functioning bot.
 
-Screenshot: `docs/wedding-planner/evidence/phase1/browser/wedding-planner-foundation.png`
+Screenshot:
+`docs/wedding-planner/evidence/phase1/browser/public-bliss-chapel.png`
 
 ## Explicitly out of scope (not done)
 

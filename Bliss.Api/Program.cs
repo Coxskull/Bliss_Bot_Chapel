@@ -287,7 +287,6 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseDefaultFiles();
 app.UseStaticFiles();
 
 if (app.Environment.IsDevelopment())
@@ -390,6 +389,18 @@ app.MapHealthChecks(
         })
     .AllowAnonymous()
     .DisableRateLimiting();
+app.MapGet(
+        "/",
+        () => Results.File(
+            Path.Combine(app.Environment.WebRootPath, "wedding-planner.html"),
+            "text/html"))
+    .AllowAnonymous();
+app.MapGet(
+        "/operations",
+        () => Results.File(
+            Path.Combine(app.Environment.WebRootPath, "index.html"),
+            "text/html"))
+    .AllowAnonymous();
 app.MapFallbackToFile("index.html").AllowAnonymous();
 app.Run();
 
