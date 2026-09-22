@@ -376,7 +376,7 @@ function renderRuntimeStatus() {
   $("#runtime-correlation").innerHTML = `<p><strong>Last request</strong><span class="request-id">${escapeHtml(runtime.lastRequestId || state.lastRequestId || "None yet")}</span></p><p>Every API response includes <code>X-Request-Id</code>. Incoming identifiers are accepted only when they are valid GUIDs.</p>`;
   $("#runtime-limits").innerHTML = `<p><strong>${runtime.writeRateLimitPermitLimit} writes / ${runtime.rateLimitWindowSeconds}s</strong>Controlled POST endpoints share this quota.</p><p><strong>${runtime.authenticationRateLimitPermitLimit} login starts / ${runtime.rateLimitWindowSeconds}s</strong>OIDC challenge initiation is separately limited.</p>`;
   const events = runtime.recentEvents || [];
-  $("#runtime-events").innerHTML = events.length ? `<table><thead><tr><th>When</th><th>Kind</th><th>Request</th><th>Status</th><th>Correlation</th></tr></thead><tbody>${events.map(event => `<tr><td>${formatDate(event.occurredAt)}</td><td>${badge(event.kind)}</td><td><code>${escapeHtml(event.method)} ${escapeHtml(event.path)}</code></td><td>${event.statusCode}</td><td><code>${escapeHtml(event.requestId)}</code></td></tr>`).join("")}</tbody></table>` : emptyState("No security or throttle events have been recorded in this process.");
+  $("#runtime-events").innerHTML = events.length ? `<table><thead><tr><th>When</th><th>Kind</th><th>Request</th><th>Status</th><th>Correlation</th><th>Detail</th></tr></thead><tbody>${events.map(event => `<tr><td>${formatDate(event.occurredAt)}</td><td>${badge(event.kind)}</td><td><code>${escapeHtml(event.method)} ${escapeHtml(event.path)}</code></td><td>${event.statusCode}</td><td><code>${escapeHtml(event.requestId)}</code></td><td>${event.detail ? `<code>${escapeHtml(event.detail)}</code>` : "—"}</td></tr>`).join("")}</tbody></table>` : emptyState("No security or throttle events have been recorded in this process.");
 }
 
 async function refreshRuntimeStatus() {
@@ -434,6 +434,7 @@ async function downloadAuditPack(path, successMessage, button) {
     const blob = await response.blob();
     const header = /filename\*?=(?:UTF-8'')?"?([^\";]+)"?/i.exec(response.headers.get("Content-Disposition") || "");
     const fileName = header ? decodeURIComponent(header[1]) : "bliss-export.json";
+    const digest = (response.headers.get("X-Content-SHA256") || "").toLowerCase();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -442,7 +443,9 @@ async function downloadAuditPack(path, successMessage, button) {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    toast(`${successMessage}${requestId ? ` [${requestId.slice(0, 8)}…]` : ""}.`);
+    const requestSuffix = requestId ? ` [${requestId.slice(0, 8)}…]` : "";
+    const digestSuffix = digest ? ` sha256:${digest.slice(0, 12)}…` : "";
+    toast(`${successMessage}${requestSuffix}${digestSuffix}.`);
     refreshRuntimeStatus();
   } catch (error) {
     toast(error.message, true);
@@ -466,6 +469,71 @@ async function exportCreatorCase(id, button) {
 
 async function exportCampaignCase(id, button) {
   await downloadAuditPack(`/api/audit/export/campaigns/${id}`, "Exported campaign case file", button);
+}
+
+function chooseAuditPackToVerify() {
+  $("#verify-audit-file").value = "";
+  $("#verify-audit-file").click();
+}
+
+async function verifySelectedAuditPack(event) {
+  const input = event.currentTarget;
+  const file = input.files && input.files[0];
+  input.value = "";
+  if (!file) return;
+  const button = $("#verify-audit-pack");
+  button.disabled = true;
+  const resultEl = $("#verify-audit-result");
+  try {
+    if (file.size > 512000) throw new Error("Pack exceeds the 512 KB verification limit.");
+    const text = await file.text();
+    try {
+      JSON.parse(text);
+    } catch {
+      throw new Error("Pack must be valid JSON.");
+    }
+    const result = await api("/api/audit/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: text
+    });
+    const prefix = (result.computedSha256 || "").slice(0, 12);
+    const kind = result.packKind || "pack";
+    if (result.matched) {
+      resultEl.hidden = false;
+      resultEl.className = "verify-result ok";
+      resultEl.textContent = `Verified ${kind} sha256:${prefix}…`;
+      toast(`Verified ${kind} sha256:${prefix}…`);
+    } else {
+      resultEl.hidden = false;
+      resultEl.className = "verify-result bad";
+      resultEl.textContent = `Digest mismatch for ${kind} sha256:${prefix}…`;
+      toast(`Digest mismatch for ${kind} sha256:${prefix}…`, true);
+    }
+    downloadVerificationReceipt(result);
+    refreshRuntimeStatus();
+  } catch (error) {
+    resultEl.hidden = false;
+    resultEl.className = "verify-result bad";
+    resultEl.textContent = error.message;
+    toast(error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function downloadVerificationReceipt(result) {
+  const verifiedAt = result.verifiedAt || new Date().toISOString();
+  const stamp = String(verifiedAt).replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z").replace("T", "");
+  const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `bliss-verify-${stamp || "receipt"}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 function showWorkflow(type, prefill = {}) {
@@ -719,6 +787,8 @@ function bindActions() {
   $("#refresh-runtime-status").addEventListener("click",refreshRuntimeStatus);
   $("#verify-write-throttle").addEventListener("click",verifyWriteThrottle);
   $("#export-audit-ledger").addEventListener("click",exportAuditLedger);
+  $("#verify-audit-pack").addEventListener("click",chooseAuditPackToVerify);
+  $("#verify-audit-file").addEventListener("change",verifySelectedAuditPack);
   $("#operator-button").addEventListener("click",() => {
     if (state.session.authenticationEnabled && !state.session.isAuthenticated) beginLogin();
     else openSettings();

@@ -1,0 +1,103 @@
+{
+  "exportedAt": "2026-09-21T18:46:46.3478747Z",
+  "environment": "Development",
+  "ledger": "evaluations",
+  "requestId": "b7e36581-2db9-40ef-99d7-af935c04de61",
+  "contentSha256": "c79d5e91a60336e1610c64120cd29fcdefa31064c8aab051583cc2140dc02832",
+  "recordCount": 7,
+  "limit": 250,
+  "truncated": false,
+  "records": [
+    {
+      "id": "620a59a4-5dbb-42cd-9819-dc7a4f42d09c",
+      "blissMatchId": "77777777-7777-7777-7777-777777777776",
+      "creatorId": "11111111-1111-1111-1111-111111111113",
+      "ruleVersionId": "66666666-6666-6666-6666-666666666662",
+      "algorithmVersion": "deterministic-rules/2.0.0",
+      "status": "COMPLETED",
+      "matchStatus": "APPROVED",
+      "overallScore": 1.0000,
+      "confidenceScore": 0.8500,
+      "startedAt": "2026-09-20T08:07:30.029709Z",
+      "completedAt": "2026-09-20T08:07:30.172687Z"
+    },
+    {
+      "id": "6c9c1ae5-7af3-4c9d-a3d0-f86af459de66",
+      "blissMatchId": "77777777-7777-7777-7777-777777777775",
+      "creatorId": "11111111-1111-1111-1111-111111111111",
+      "ruleVersionId": "66666666-6666-6666-6666-666666666662",
+      "algorithmVersion": "deterministic-rules/2.0.0",
+      "status": "COMPLETED",
+      "matchStatus": "INELIGIBLE",
+      "overallScore": 0.3000,
+      "confidenceScore": 0.9000,
+      "startedAt": "2026-09-20T07:34:20.549488Z",
+      "completedAt": "2026-09-20T07:34:20.554858Z"
+    },
+    {
+      "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee5",
+      "blissMatchId": "77777777-7777-7777-7777-777777777776",
+      "creatorId": "11111111-1111-1111-1111-111111111113",
+      "ruleVersionId": "66666666-6666-6666-6666-666666666662",
+      "algorithmVersion": "deterministic-rules/2.0.0",
+      "status": "COMPLETED",
+      "matchStatus": "APPROVED",
+      "overallScore": 1.0000,
+      "confidenceScore": 0.8500,
+      "startedAt": "2026-09-20T07:33:24.053964Z",
+      "completedAt": "2026-09-20T07:33:24.057972Z"
+    },
+    {
+      "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee4",
+      "blissMatchId": "77777777-7777-7777-7777-777777777778",
+      "creatorId": "11111111-1111-1111-1111-111111111111",
+      "ruleVersionId": "66666666-6666-6666-6666-666666666662",
+      "algorithmVersion": "deterministic-rules/2.0.0",
+      "status": "COMPLETED",
+      "matchStatus": "APPROVED",
+      "overallScore": 1.0000,
+      "confidenceScore": 0.8500,
+      "startedAt": "2026-09-20T07:33:24.046361Z",
+      "completedAt": "2026-09-20T07:33:24.050102Z"
+    },
+    {
+      "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee3",
+      "blissMatchId": "77777777-7777-7777-7777-777777777777",
+      "creatorId": "11111111-1111-1111-1111-111111111112",
+      "ruleVersionId": "66666666-6666-6666-6666-666666666662",
+      "algorithmVersion": "deterministic-rules/2.0.0",
+      "status": "COMPLETED",
+      "matchStatus": "REVIEW_REQUIRED",
+      "overallScore": 0.7000,
+      "confidenceScore": 0.4000,
+      "startedAt": "2026-09-20T07:33:24.037685Z",
+      "completedAt": "2026-09-20T07:33:24.041991Z"
+    },
+    {
+      "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee2",
+      "blissMatchId": "77777777-7777-7777-7777-777777777776",
+      "creatorId": "11111111-1111-1111-1111-111111111113",
+      "ruleVersionId": "66666666-6666-6666-6666-666666666662",
+      "algorithmVersion": "deterministic-rules/2.0.0",
+      "status": "COMPLETED",
+      "matchStatus": "APPROVED",
+      "overallScore": 1.0000,
+      "confidenceScore": 0.8500,
+      "startedAt": "2026-09-20T07:33:24.028314Z",
+      "completedAt": "2026-09-20T07:33:24.032658Z"
+    },
+    {
+      "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeee1",
+      "blissMatchId": "77777777-7777-7777-7777-777777777775",
+      "creatorId": "11111111-1111-1111-1111-111111111111",
+      "ruleVersionId": "66666666-6666-6666-6666-666666666662",
+      "algorithmVersion": "deterministic-rules/2.0.0",
+      "status": "COMPLETED",
+      "matchStatus": "INELIGIBLE",
+      "overallScore": 0.3000,
+      "confidenceScore": 0.9000,
+      "startedAt": "2026-09-20T07:33:23.806256Z",
+      "completedAt": "2026-09-20T07:33:23.982996Z"
+    }
+  ]
+}

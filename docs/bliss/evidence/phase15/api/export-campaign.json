@@ -1,0 +1,39 @@
+{
+  "exportedAt": "2026-09-21T17:56:34.1027743Z",
+  "environment": "Development",
+  "kind": "campaign-case",
+  "requestId": "e8a8f7ab-d458-46ae-b3ab-83859d2216d3",
+  "contentSha256": "91e08b17f0ae0097bc57140c75963d4dda52a9909885f196127bc83c6713c7ca",
+  "campaignId": "dddddddd-dddd-dddd-dddd-ddddddddddd4",
+  "campaign": {
+    "id": "dddddddd-dddd-dddd-dddd-ddddddddddd4",
+    "advertiserOpportunityId": null,
+    "name": "Phase 2 Overlay Inventory Campaign",
+    "status": "DRAFT",
+    "createdAt": "2026-09-20T12:00:00Z"
+  },
+  "placements": [
+    {
+      "id": "dddddddd-dddd-dddd-dddd-ddddddddddd5",
+      "campaignId": "dddddddd-dddd-dddd-dddd-ddddddddddd4",
+      "contentItemId": "22222222-2222-2222-2222-222222222223",
+      "adInventorySlotId": "99999999-9999-9999-9999-999999999995",
+      "blissMatchId": null,
+      "status": "CREATED",
+      "startAt": null,
+      "endAt": null
+    },
+    {
+      "id": "dddddddd-dddd-dddd-dddd-ddddddddddd6",
+      "campaignId": "dddddddd-dddd-dddd-dddd-ddddddddddd4",
+      "contentItemId": "22222222-2222-2222-2222-222222222223",
+      "adInventorySlotId": "99999999-9999-9999-9999-999999999996",
+      "blissMatchId": null,
+      "status": "CREATED",
+      "startAt": null,
+      "endAt": null
+    }
+  ],
+  "placementRuns": [],
+  "matches": []
+}
