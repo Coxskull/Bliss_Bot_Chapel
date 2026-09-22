@@ -20,10 +20,16 @@ const state = {
   weddingPlannerAgentRuns: [], weddingPlannerBrandDna: null, weddingPlannerColorProfiles: null,
   weddingPlannerResearchJobs: [], weddingPlannerResearchReports: null,
   weddingPlannerResearchAgentRuns: [],
+  weddingPlannerWorkshopJobs: [], weddingPlannerConceptPackages: null,
+  weddingPlannerWorkshopContributions: [], weddingPlannerWorkshopAgentRuns: [],
+  weddingPlannerWorkshopPinnedColorDocument: null,
+  weddingPlannerSelectedConceptId: null,
   selectedWeddingPlannerWorkspace: null, selectedWeddingPlannerSession: null,
   selectedWeddingPlannerColorProfileId: null,
   selectedWeddingPlannerResearchJobId: null,
   selectedWeddingPlannerResearchReportId: null,
+  selectedWeddingPlannerWorkshopJobId: null,
+  selectedWeddingPlannerConceptPackageId: null,
   affiliateNetworks: [], networkAccesses: [], programAccesses: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations",
@@ -792,7 +798,7 @@ function route() {
   const view=valid.includes(parts[0])?parts[0]:"overview";
   $$(".view").forEach(x=>x.classList.toggle("active",x.id===`view-${view}`));
   $$(".nav-item[data-view]").forEach(x=>{const active=x.dataset.view===view;x.classList.toggle("active",active);if(active)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});
-  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 4",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
+  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 5",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
   $("#page-title").textContent=titles[view];
   toggleMobileNav(false);
   if(!state.loaded)return;
@@ -848,6 +854,8 @@ function bindActions() {
   $("#wedding-planner-color-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerColorDecision(event.currentTarget);});
   $("#wedding-planner-research-job-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerResearchJob(event.currentTarget);});
   $("#wedding-planner-research-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerResearchDecision(event.currentTarget);});
+  $("#wedding-planner-workshop-job-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerWorkshopJob(event.currentTarget);});
+  $("#wedding-planner-workshop-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerWorkshopDecision(event.currentTarget);});
   $("#wedding-planner-color-version")?.addEventListener("change",event=>{
     state.selectedWeddingPlannerColorProfileId = event.currentTarget.value || null;
     renderWeddingPlannerColorInspect();
@@ -855,6 +863,17 @@ function bindActions() {
   $("#wedding-planner-research-report-version")?.addEventListener("change",event=>{
     state.selectedWeddingPlannerResearchReportId = event.currentTarget.value || null;
     loadWeddingPlannerResearchAgentRuns().then(() => renderWeddingPlannerResearchInspect());
+  });
+  $("#wedding-planner-workshop-package-version")?.addEventListener("change",event=>{
+    state.selectedWeddingPlannerConceptPackageId = event.currentTarget.value || null;
+    state.weddingPlannerSelectedConceptId = null;
+    loadWeddingPlannerWorkshopDetails().then(() => renderWeddingPlannerWorkshopInspect());
+  });
+  $("#wedding-planner-workshop-decision")?.addEventListener("change",event=>{
+    const decision = event.currentTarget.value;
+    if (decision === "REJECT") {
+      $$('input[name="selectedConceptId"]').forEach(input => { input.checked = false; });
+    }
   });
   $("#regenerate-review-key").addEventListener("click",generateReviewIdempotencyKey);
   $("#regenerate-placement-key").addEventListener("click",generatePlacementIdempotencyKey);
@@ -867,6 +886,8 @@ function bindActions() {
   $("#regenerate-wedding-planner-color-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-color-decision-key"));
   $("#regenerate-wedding-planner-research-job-key")?.addEventListener("click",()=>fillKey("#wedding-planner-research-job-key"));
   $("#regenerate-wedding-planner-research-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-research-decision-key"));
+  $("#regenerate-wedding-planner-workshop-job-key")?.addEventListener("click",()=>fillKey("#wedding-planner-workshop-job-key"));
+  $("#regenerate-wedding-planner-workshop-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-workshop-decision-key"));
   $("#placement-match").addEventListener("change",event=>{state.selectedPlacement=event.target.value;renderPlacements();});
   $("#placement-content").addEventListener("change",updatePlacementSlots);
   $("#review-match").addEventListener("change",event=>{state.selectedReview=event.target.value;renderReviews();});
@@ -906,6 +927,19 @@ function handleDocumentClick(event) {
     const select=$("#wedding-planner-research-report-version");
     if(select)select.value=state.selectedWeddingPlannerResearchReportId;
     loadWeddingPlannerResearchAgentRuns().then(() => {
+      renderWeddingPlanner();
+    });
+  }
+  else if(target.matches("[data-wedding-workshop-job]")){
+    state.selectedWeddingPlannerWorkshopJobId=target.dataset.weddingWorkshopJob;
+    renderWeddingPlanner();
+  }
+  else if(target.matches("[data-wedding-concept-package]")){
+    state.selectedWeddingPlannerConceptPackageId=target.dataset.weddingConceptPackage;
+    state.weddingPlannerSelectedConceptId=null;
+    const select=$("#wedding-planner-workshop-package-version");
+    if(select)select.value=state.selectedWeddingPlannerConceptPackageId;
+    loadWeddingPlannerWorkshopDetails().then(() => {
       renderWeddingPlanner();
     });
   }
@@ -1049,6 +1083,8 @@ function generateWeddingPlannerKeys(){
   fillKey("#wedding-planner-color-decision-key");
   fillKey("#wedding-planner-research-job-key");
   fillKey("#wedding-planner-research-decision-key");
+  fillKey("#wedding-planner-workshop-job-key");
+  fillKey("#wedding-planner-workshop-decision-key");
 }
 
 function renderWeddingPlanner() {
@@ -1058,9 +1094,11 @@ function renderWeddingPlanner() {
   const interpretWorkspace = $("#wedding-planner-interpret-workspace");
   const colorWorkspace = $("#wedding-planner-color-workspace");
   const researchWorkspace = $("#wedding-planner-research-workspace");
+  const workshopWorkspace = $("#wedding-planner-workshop-workspace");
   const dnaVersionSelect = $("#wedding-planner-dna-version");
   const colorVersionSelect = $("#wedding-planner-color-version");
   const researchReportSelect = $("#wedding-planner-research-report-version");
+  const workshopPackageSelect = $("#wedding-planner-workshop-package-version");
   if (!advertiserSelect) return;
   advertiserSelect.innerHTML = state.advertisers.map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join("");
   const workspaceOptions = state.weddingPlannerWorkspaces.map(x => `<option value="${x.workspaceId}">${escapeHtml(x.advertiserName)}</option>`).join("");
@@ -1068,11 +1106,13 @@ function renderWeddingPlanner() {
   if (interpretWorkspace) interpretWorkspace.innerHTML = workspaceOptions;
   if (colorWorkspace) colorWorkspace.innerHTML = workspaceOptions;
   if (researchWorkspace) researchWorkspace.innerHTML = workspaceOptions;
+  if (workshopWorkspace) workshopWorkspace.innerHTML = workspaceOptions;
   if (state.selectedWeddingPlannerWorkspace) {
     workspaceSelect.value = state.selectedWeddingPlannerWorkspace;
     if (interpretWorkspace) interpretWorkspace.value = state.selectedWeddingPlannerWorkspace;
     if (colorWorkspace) colorWorkspace.value = state.selectedWeddingPlannerWorkspace;
     if (researchWorkspace) researchWorkspace.value = state.selectedWeddingPlannerWorkspace;
+    if (workshopWorkspace) workshopWorkspace.value = state.selectedWeddingPlannerWorkspace;
   }
   sessionSelect.innerHTML = state.weddingPlannerSessions.map(x => `<option value="${x.sessionId}">${x.sessionId.slice(0, 8)} · ${x.messageCount} messages</option>`).join("");
   if (state.selectedWeddingPlannerSession) sessionSelect.value = state.selectedWeddingPlannerSession;
@@ -1184,6 +1224,55 @@ function renderWeddingPlanner() {
       : emptyState("Select or create a workspace to list research reports.");
   }
   renderWeddingPlannerResearchInspect();
+
+  const workshopJobs = state.weddingPlannerWorkshopJobs || [];
+  const workshopJobCount = $("#wedding-planner-workshop-job-count");
+  if (workshopJobCount) workshopJobCount.textContent = `${workshopJobs.length} job${workshopJobs.length === 1 ? "" : "s"}`;
+  if (!state.selectedWeddingPlannerWorkshopJobId && workshopJobs.length) {
+    state.selectedWeddingPlannerWorkshopJobId = workshopJobs[0].workshopJobId;
+  }
+  const workshopJobList = $("#wedding-planner-workshop-job-list");
+  if (workshopJobList) {
+    workshopJobList.innerHTML = workshopJobs.length
+      ? workshopJobs.map(job => {
+          const selected = job.workshopJobId === state.selectedWeddingPlannerWorkshopJobId;
+          const replayNote = job.isReplay && job.status === "FAILED"
+            ? " · FAILED replay (not a retry)"
+            : job.isReplay ? " · replay" : "";
+          return `<button class="activity-item${selected ? " selected" : ""}" data-wedding-workshop-job="${job.workshopJobId}" type="button"><span class="activity-icon">◇</span><span><strong>${escapeHtml(job.status || "UNKNOWN")}${escapeHtml(replayNote)}</strong><small>${escapeHtml(job.channelFormat || "")} · SHA ${escapeHtml(job.inputSha256 || "")} · Brand DNA ${escapeHtml(shortId(job.approvedBrandDnaVersionId || ""))} v${escapeHtml(String(job.approvedBrandDnaVersionNumber ?? "—"))} · Color ${escapeHtml(shortId(job.approvedColorProfileVersionId || ""))} v${escapeHtml(String(job.approvedColorProfileVersionNumber ?? "—"))} · Research ${escapeHtml(shortId(job.approvedResearchReportVersionId || ""))} v${escapeHtml(String(job.approvedResearchReportVersionNumber ?? "—"))}${job.errorMessage ? ` · error: ${escapeHtml(job.errorMessage)}` : ""}</small></span><span class="activity-time">${relativeTime(job.completedAt || job.startedAt)}</span></button>`;
+        }).join("")
+      : emptyState("Select or create a workspace to list Concept Workshop jobs.");
+  }
+
+  const workshopVersions = state.weddingPlannerConceptPackages?.versions || [];
+  const workshopCurrentId = state.weddingPlannerConceptPackages?.currentApprovedConceptPackageVersionId || null;
+  const workshopCurrentLabel = $("#wedding-planner-workshop-current");
+  if (workshopCurrentLabel) workshopCurrentLabel.textContent = workshopCurrentId ? `Current: ${shortId(workshopCurrentId)}` : "Current: none";
+  if (!state.selectedWeddingPlannerConceptPackageId && workshopVersions.length) {
+    state.selectedWeddingPlannerConceptPackageId =
+      workshopVersions.find(x => x.status === "PROPOSED")?.conceptPackageVersionId ||
+      workshopCurrentId ||
+      workshopVersions[0].conceptPackageVersionId;
+  }
+  if (workshopPackageSelect) {
+    workshopPackageSelect.innerHTML = workshopVersions.length
+      ? workshopVersions.map(x => {
+          const markers = [x.status];
+          if (x.conceptPackageVersionId === workshopCurrentId || x.isCurrentApproved) markers.push("CURRENT");
+          return `<option value="${x.conceptPackageVersionId}"${x.conceptPackageVersionId === state.selectedWeddingPlannerConceptPackageId ? " selected" : ""}>v${x.versionNumber} · ${escapeHtml(markers.join(" · "))}</option>`;
+        }).join("")
+      : `<option value="">No concept packages</option>`;
+  }
+  const packageList = $("#wedding-planner-workshop-package-list");
+  if (packageList) {
+    packageList.innerHTML = workshopVersions.length
+      ? workshopVersions.map(x => {
+          const isCurrent = x.conceptPackageVersionId === workshopCurrentId || x.isCurrentApproved;
+          return `<button class="activity-item" data-wedding-concept-package="${x.conceptPackageVersionId}" type="button"><span class="activity-icon">${x.versionNumber}</span><span><strong>${escapeHtml(x.status)}${isCurrent ? " · CURRENT APPROVED" : ""}</strong><small>${escapeHtml(x.summary || "No summary")} · ${escapeHtml(x.schemaVersion)} · ${escapeHtml(x.channelFormat || "")} · cost $${escapeHtml(formatUsd(x.estimatedTotalCostUsd))} · Brand DNA ${escapeHtml(shortId(x.approvedBrandDnaVersionId || ""))} · Color ${escapeHtml(shortId(x.approvedColorProfileVersionId || ""))} · Research ${escapeHtml(shortId(x.approvedResearchReportVersionId || ""))}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></button>`;
+        }).join("")
+      : emptyState("Select or create a workspace to list concept packages.");
+  }
+  renderWeddingPlannerWorkshopInspect();
 }
 
 function parseWeddingPlannerColorDocument(documentJson) {
@@ -1271,6 +1360,16 @@ const CURATOR_LOGICAL_ROLES = [
   "RESEARCH_SYNTHESIZER"
 ];
 const EIGHT_TO_THREE_EXPLANATION = "Eight logical roles map to 3 workers/runs, not 8 subscriptions";
+const FOUR_TO_THREE_EXPLANATION = "Four logical roles map to 3 workers/runs, not 4 subscriptions";
+const SYNTHETIC_DEVELOPMENT_PROTOTYPE = "SYNTHETIC DEVELOPMENT PROTOTYPE";
+const CONCEPT_PACKAGE_DISCLAIMER =
+  "Approval of this package is concept-direction approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, asset, QA, or production-artwork approval. Marketing copy is CREATIVE_NON_FACTUAL unless a factual claim cites source IDs from the pinned approved research report. Brand DNA and Color Profile are creative constraints, not factual evidence. Prototypes are structured low-fi specs only; no images are generated.";
+const WORKSHOP_LOGICAL_ROLES = ["BRAND_STRATEGIST", "ART_DIRECTOR", "COPYWRITER", "PRODUCTION_ARTIST"];
+const WORKSHOP_WORKER_PROFILES = ["CONCEPT_STRATEGY_V1", "CONCEPT_CREATIVE_V1", "PROTOTYPE_PRODUCTION_V1"];
+const ALLOWED_TEXT_REFS = ["copy.headline", "copy.body", "copy.cta"];
+const ALLOWED_PROTOTYPE_TEMPLATES = ["LOFI_STACK_V1", "LOFI_SPLIT_V1", "LOFI_BANNER_V1"];
+const ALLOWED_REGION_TYPES = ["HERO", "HEADER", "BODY", "HEADLINE", "SUBHEAD", "CTA", "FOOTER", "LOGO_SLOT"];
+const ALLOWED_PLACEHOLDER_KINDS = ["HERO_IMAGE", "LOGO", "PRODUCT", "DECORATIVE"];
 
 function parseWeddingPlannerResearchDocument(documentJson) {
   if (!documentJson) return null;
@@ -1442,9 +1541,19 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
       state.weddingPlannerResearchReports?.currentApprovedResearchReportVersionId ||
       state.weddingPlannerResearchReports?.versions?.[0]?.researchReportVersionId ||
       null;
+    state.weddingPlannerWorkshopJobs = await api(`/api/wedding-planner/workspaces/${workspaceId}/workshop-jobs`);
+    state.weddingPlannerConceptPackages = await api(`/api/wedding-planner/workspaces/${workspaceId}/concept-packages`);
+    state.selectedWeddingPlannerWorkshopJobId = state.weddingPlannerWorkshopJobs?.[0]?.workshopJobId || null;
+    state.selectedWeddingPlannerConceptPackageId =
+      state.weddingPlannerConceptPackages?.versions?.find(x => x.status === "PROPOSED")?.conceptPackageVersionId ||
+      state.weddingPlannerConceptPackages?.currentApprovedConceptPackageVersionId ||
+      state.weddingPlannerConceptPackages?.versions?.[0]?.conceptPackageVersionId ||
+      null;
+    state.weddingPlannerSelectedConceptId = null;
     await mergeWeddingPlannerInterpreterRuns();
     await mergeWeddingPlannerWorkspaceRuns(workspaceId);
     await loadWeddingPlannerResearchAgentRuns();
+    await loadWeddingPlannerWorkshopDetails();
   } catch (error) {
     toast(error.message, true);
     state.weddingPlannerSessions = [];
@@ -1458,6 +1567,14 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
     state.selectedWeddingPlannerResearchJobId = null;
     state.selectedWeddingPlannerResearchReportId = null;
     state.weddingPlannerResearchAgentRuns = [];
+    state.weddingPlannerWorkshopJobs = [];
+    state.weddingPlannerConceptPackages = null;
+    state.selectedWeddingPlannerWorkshopJobId = null;
+    state.selectedWeddingPlannerConceptPackageId = null;
+    state.weddingPlannerWorkshopContributions = [];
+    state.weddingPlannerWorkshopAgentRuns = [];
+    state.weddingPlannerWorkshopPinnedColorDocument = null;
+    state.weddingPlannerSelectedConceptId = null;
   }
   renderWeddingPlanner();
 }
@@ -1498,6 +1615,330 @@ async function loadWeddingPlannerResearchAgentRuns() {
     state.weddingPlannerResearchAgentRuns = Array.isArray(runs) ? runs : [];
   } catch {
     state.weddingPlannerResearchAgentRuns = [];
+  }
+}
+
+async function loadWeddingPlannerWorkshopDetails() {
+  const packageId = state.selectedWeddingPlannerConceptPackageId;
+  if (!packageId) {
+    state.weddingPlannerWorkshopContributions = [];
+    state.weddingPlannerWorkshopAgentRuns = [];
+    state.weddingPlannerWorkshopPinnedColorDocument = null;
+    return;
+  }
+  try {
+    const [contributions, runs, packageDto] = await Promise.all([
+      api(`/api/wedding-planner/concept-packages/${packageId}/contributions`),
+      api(`/api/wedding-planner/concept-packages/${packageId}/agent-runs`),
+      api(`/api/wedding-planner/concept-packages/${packageId}`)
+    ]);
+    state.weddingPlannerWorkshopContributions = Array.isArray(contributions) ? contributions : [];
+    state.weddingPlannerWorkshopAgentRuns = Array.isArray(runs) ? runs : [];
+    const versions = state.weddingPlannerConceptPackages?.versions || [];
+    const idx = versions.findIndex(x => x.conceptPackageVersionId === packageId);
+    if (idx >= 0 && packageDto) versions[idx] = packageDto;
+    if (packageDto?.approvedColorProfileVersionId) {
+      try {
+        const colorVersion = await api(`/api/wedding-planner/color-profiles/${packageDto.approvedColorProfileVersionId}`);
+        state.weddingPlannerWorkshopPinnedColorDocument = parseWeddingPlannerColorDocument(colorVersion?.documentJson);
+      } catch {
+        state.weddingPlannerWorkshopPinnedColorDocument = null;
+      }
+    } else {
+      state.weddingPlannerWorkshopPinnedColorDocument = null;
+    }
+  } catch {
+    state.weddingPlannerWorkshopContributions = [];
+    state.weddingPlannerWorkshopAgentRuns = [];
+    state.weddingPlannerWorkshopPinnedColorDocument = null;
+  }
+}
+
+function parseWeddingPlannerConceptPackageDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+function sanitizeWorkshopBounds(bounds, canvasW, canvasH) {
+  if (!bounds || typeof bounds !== "object") return null;
+  const x = Number(bounds.x);
+  const y = Number(bounds.y);
+  const w = Number(bounds.w);
+  const h = Number(bounds.h);
+  if (![x, y, w, h].every(Number.isFinite)) return null;
+  if (x < 0 || y < 0 || w <= 0 || h <= 0) return null;
+  if (x + w > canvasW + 0.0001 || y + h > canvasH + 0.0001) return null;
+  return { x, y, w, h };
+}
+
+function resolveWorkshopPaletteHex(palette, roleRef) {
+  if (!roleRef) return null;
+  const entry = palette?.[String(roleRef)];
+  const hex = entry?.hex || (typeof entry === "string" ? entry : null);
+  if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(String(hex))) return null;
+  return String(hex).toUpperCase();
+}
+
+function renderOpsSafePrototypePreview(concept, colorDocument) {
+  const prototype = concept?.prototype;
+  if (!prototype || typeof prototype !== "object") {
+    return emptyState("No prototype-spec.v1 in server documentJson for this concept.");
+  }
+  const template = String(prototype.template || "");
+  if (!ALLOWED_PROTOTYPE_TEMPLATES.includes(template)) {
+    return emptyState("Unsupported or missing prototype template. Safe renderer fails closed.");
+  }
+  const canvas = prototype.canvas || {};
+  const canvasW = Number(canvas.width);
+  const canvasH = Number(canvas.height);
+  if (!Number.isFinite(canvasW) || !Number.isFinite(canvasH) || canvasW <= 0 || canvasH <= 0) {
+    return emptyState("Invalid canvas bounds in prototype-spec. Fail closed.");
+  }
+  const regions = Array.isArray(prototype.regions) ? prototype.regions : [];
+  if (regions.length < 2 || regions.length > 12) {
+    return emptyState("Prototype regions must be 2–12 items from server JSON. Fail closed.");
+  }
+  const maxDisplay = 320;
+  const scale = Math.min(1, maxDisplay / canvasW);
+  const displayW = Math.round(canvasW * scale);
+  const displayH = Math.round(canvasH * scale);
+  const palette = colorDocument?.palette || {};
+  const copy = concept.copy || {};
+  const regionHtml = regions.map(region => {
+    const bounds = sanitizeWorkshopBounds(region?.bounds, canvasW, canvasH);
+    if (!bounds) return "";
+    const type = String(region.type || "");
+    if (!ALLOWED_REGION_TYPES.includes(type)) return "";
+    const left = Math.round(bounds.x * scale);
+    const top = Math.round(bounds.y * scale);
+    const width = Math.max(1, Math.round(bounds.w * scale));
+    const height = Math.max(1, Math.round(bounds.h * scale));
+    const color = resolveWorkshopPaletteHex(palette, region.paletteRoleRef);
+    const styleParts = [`left:${left}px`, `top:${top}px`, `width:${width}px`, `height:${height}px`];
+    if (color) styleParts.push(`background:${color}`);
+    if (region.assetPlaceholder) {
+      const kind = String(region.assetPlaceholder.kind || "");
+      const label = String(region.assetPlaceholder.label || "Placeholder");
+      if (!ALLOWED_PLACEHOLDER_KINDS.includes(kind)) {
+        return `<div class="workshop-prototype-region" style="${styleParts.join(";")}"><div class="workshop-placeholder">INVALID PLACEHOLDER</div></div>`;
+      }
+      return `<div class="workshop-prototype-region" style="${styleParts.join(";")}"><div class="workshop-placeholder">${escapeHtml(kind)} · ${escapeHtml(label)}</div></div>`;
+    }
+    const textRef = region.textRef ? String(region.textRef) : "";
+    let text = "";
+    if (textRef) {
+      if (!ALLOWED_TEXT_REFS.includes(textRef)) {
+        return `<div class="workshop-prototype-region" style="${styleParts.join(";")}"><div class="workshop-placeholder">INVALID TEXT REF</div></div>`;
+      }
+      if (textRef === "copy.headline") text = copy.headline || "";
+      else if (textRef === "copy.body") text = copy.body || "";
+      else if (textRef === "copy.cta") text = copy.cta || "";
+    }
+    return `<div class="workshop-prototype-region" style="${styleParts.join(";")}" data-template="${escapeHtml(template)}">${escapeHtml(text)}</div>`;
+  }).filter(Boolean).join("");
+  return `<div class="workshop-prototype-frame" data-template="${escapeHtml(template)}" style="width:${displayW}px;height:${displayH}px;max-width:100%;position:relative;border:1px dashed #9bb4cc;background:#f0f4f8;overflow:hidden;" role="img" aria-label="Low-fi prototype preview placeholder frame">${regionHtml || `<div class="workshop-placeholder">No valid regions</div>`}</div><div class="safety-note">${escapeHtml(SYNTHETIC_DEVELOPMENT_PROTOTYPE)} · placeholders only · no generated image/assets · concept direction only</div>`;
+}
+
+function renderWeddingPlannerWorkshopInspect() {
+  const panel = $("#wedding-planner-workshop-inspect");
+  if (!panel) return;
+  const versions = state.weddingPlannerConceptPackages?.versions || [];
+  const currentId = state.weddingPlannerConceptPackages?.currentApprovedConceptPackageVersionId || null;
+  const selected = versions.find(x => x.conceptPackageVersionId === state.selectedWeddingPlannerConceptPackageId) || versions[0] || null;
+  const selectedJob = (state.weddingPlannerWorkshopJobs || []).find(x => x.workshopJobId === state.selectedWeddingPlannerWorkshopJobId) || null;
+  if (!selected && !selectedJob) {
+    panel.innerHTML = emptyState("Select a workshop job or concept package to inspect input SHA, provenance, documentJson, contributions, and agent-run receipts.");
+    return;
+  }
+
+  const jobBlock = selectedJob ? `
+    <div class="metric-grid">
+      ${metric("Job status", selectedJob.status || "—")}
+      ${metric("Input SHA-256", selectedJob.inputSha256 || "—")}
+      ${metric("Channel", selectedJob.channelFormat || "—")}
+      ${metric("Canvas", `${selectedJob.canvasWidth ?? "—"}×${selectedJob.canvasHeight ?? "—"}`)}
+      ${metric("Brand DNA", `${shortId(selectedJob.approvedBrandDnaVersionId)} v${selectedJob.approvedBrandDnaVersionNumber ?? "—"}`)}
+      ${metric("Color profile", `${shortId(selectedJob.approvedColorProfileVersionId)} v${selectedJob.approvedColorProfileVersionNumber ?? "—"}`)}
+      ${metric("Research report", `${shortId(selectedJob.approvedResearchReportVersionId)} v${selectedJob.approvedResearchReportVersionNumber ?? "—"}`)}
+      ${metric("Package", selectedJob.outputConceptPackageVersionId || "—")}
+      ${metric("Replay", selectedJob.isReplay ? "YES" : "NO")}
+    </div>
+    <div class="safety-note"><strong>Brief.</strong> Objective: ${escapeHtml(selectedJob.objective || "—")}<br>Campaign goal (planning text): ${escapeHtml(selectedJob.campaignGoal || "—")}<br>Audience: ${escapeHtml(selectedJob.audienceFocus || "—")}<br>CTA: ${escapeHtml(selectedJob.cta || "—")}</div>
+  ` : "";
+
+  if (!selected) {
+    panel.innerHTML = jobBlock || emptyState("No concept package selected.");
+    return;
+  }
+
+  const doc = parseWeddingPlannerConceptPackageDocument(selected.documentJson);
+  const concepts = Array.isArray(doc?.concepts) ? doc.concepts : [];
+  const contributions = state.weddingPlannerWorkshopContributions || [];
+  const runs = state.weddingPlannerWorkshopAgentRuns || [];
+  const isCurrent = selected.conceptPackageVersionId === currentId || selected.isCurrentApproved;
+  const hasSynthetic =
+    String(doc?.marker || "") === SYNTHETIC_DEVELOPMENT_PROTOTYPE ||
+    JSON.stringify(doc || {}).includes(SYNTHETIC_DEVELOPMENT_PROTOTYPE);
+  const selectedConceptNote = state.weddingPlannerSelectedConceptId
+    ? metric("Selected concept (decision)", state.weddingPlannerSelectedConceptId)
+    : metric("Selected concept (decision)", "— (shown when returned by decision)");
+
+  const conceptRows = concepts.length === 3
+    ? concepts.map(concept => {
+        const copy = concept.copy || {};
+        const claims = Array.isArray(concept.factualClaims) ? concept.factualClaims : [];
+        const preview = renderOpsSafePrototypePreview(concept, state.weddingPlannerWorkshopPinnedColorDocument);
+        return `<div class="activity-item"><span class="activity-icon">${escapeHtml(concept.id || "?")}</span><span><strong>${escapeHtml(concept.id || "—")} · ${escapeHtml(concept.name || "—")}</strong><small>Rationale: ${escapeHtml(concept.rationale || "—")}<br>Visual: ${escapeHtml(concept.visualDirection || "—")}<br>Palette refs: ${escapeHtml((concept.paletteRoleRefs || []).join(", ") || "—")}<br>Copy kind ${escapeHtml(copy.kind || "—")} · H: ${escapeHtml(copy.headline || "—")} · B: ${escapeHtml(copy.body || "—")} · CTA: ${escapeHtml(copy.cta || "—")}<br>Claims: ${claims.length ? claims.map(c => `${escapeHtml(c.statement || "")} [${escapeHtml((c.sourceIds || []).join(", "))}]`).join(" · ") : "none"}</small>${preview}</span></div>`;
+      }).join("")
+    : emptyState(`Expected exactly 3 concepts in server documentJson; found ${concepts.length}. No client concept invention.`);
+
+  const contributionRows = WORKSHOP_LOGICAL_ROLES.map(role => {
+    const apiRow = contributions.find(x => x.logicalRole === role);
+    const docRow = (Array.isArray(doc?.contributions) ? doc.contributions : []).find(x => x.logicalRole === role);
+    let summary = docRow?.summary || "";
+    if (apiRow?.contributionJson) {
+      try {
+        const parsed = typeof apiRow.contributionJson === "string" ? JSON.parse(apiRow.contributionJson) : apiRow.contributionJson;
+        if (parsed?.summary) summary = parsed.summary;
+      } catch { /* keep */ }
+    }
+    return `<div class="activity-item"><span class="activity-icon">◇</span><span><strong>${escapeHtml(role)}</strong><small>${escapeHtml(summary || "—")}<br>Producing run ${escapeHtml(apiRow?.producingAgentRunId || "—")}</small></span></div>`;
+  }).join("");
+
+  const runRows = runs.length
+    ? runs.map(run => `<div class="activity-item"><span class="activity-icon">◇</span><span><strong>${escapeHtml(run.logicalRole || "—")} · ${escapeHtml(run.status || "—")}</strong><small>profile ${escapeHtml(run.workerProfileVersion || "—")} · prompt ${escapeHtml(run.promptPackVersion || "—")} · assigned ${escapeHtml(run.assignedRolesJson || "—")}<br>provider ${escapeHtml(run.providerKey || "—")} · model ${escapeHtml(run.modelId || "—")} · tokens ${escapeHtml(String(run.totalTokens ?? "—"))} · cost $${escapeHtml(formatUsd(run.estimatedCostUsd))}</small></span><span class="activity-time">${relativeTime(run.completedAt || run.startedAt)}</span></div>`).join("")
+    : emptyState("No agent-run receipts for this package.");
+
+  panel.innerHTML = `
+    ${jobBlock}
+    <div class="detail-hero"><div class="detail-hero-top">${badge(selected.status)}${isCurrent ? badge("CURRENT") : ""}${hasSynthetic ? badge(SYNTHETIC_DEVELOPMENT_PROTOTYPE) : ""}</div>
+      <h3>Concept package v${escapeHtml(String(selected.versionNumber))}</h3>
+      <p>${escapeHtml(selected.summary || "No summary")}</p>
+    </div>
+    <div class="metric-grid">
+      ${metric("Schema", selected.schemaVersion || "—")}
+      ${metric("Channel", selected.channelFormat || "—")}
+      ${metric("Canvas", `${selected.canvasWidth ?? "—"}×${selected.canvasHeight ?? "—"}`)}
+      ${metric("Estimated total cost USD", formatUsd(selected.estimatedTotalCostUsd))}
+      ${metric("Brand DNA provenance", `${shortId(selected.approvedBrandDnaVersionId)} v${selected.approvedBrandDnaVersionNumber ?? "—"}`)}
+      ${metric("Color provenance", `${shortId(selected.approvedColorProfileVersionId)} v${selected.approvedColorProfileVersionNumber ?? "—"}`)}
+      ${metric("Research provenance", `${shortId(selected.approvedResearchReportVersionId)} v${selected.approvedResearchReportVersionNumber ?? "—"}`)}
+      ${metric("Current pointer", isCurrent ? "YES" : "NO")}
+      ${metric("Producing job", selected.producingWorkshopJobId || "—")}
+      ${selectedConceptNote}
+    </div>
+    <div class="safety-note"><strong>Concept-direction disclaimer (from documentJson).</strong> ${escapeHtml(doc?.disclaimer || CONCEPT_PACKAGE_DISCLAIMER)}</div>
+    ${hasSynthetic ? `<div class="safety-note curator-synthetic-warning"><strong>${escapeHtml(SYNTHETIC_DEVELOPMENT_PROTOTYPE)}</strong> Concept direction only — no generated image/assets; not campaign-ready, QA, matching, or legal/claim approval.</div>` : ""}
+    <div class="safety-note">${escapeHtml(FOUR_TO_THREE_EXPLANATION)}. Profiles ${escapeHtml(WORKSHOP_WORKER_PROFILES.join(", "))}. Showing ${runs.length} receipt(s) from /concept-packages/{id}/agent-runs — exactly 3 workers expected.</div>
+    <h3>Concepts (exactly 3)</h3>
+    ${conceptRows}
+    <h3>Contributions (exactly 4)</h3>
+    ${contributionRows}
+    <h3>Agent run receipts (exactly 3 workers)</h3>
+    ${runRows}
+  `;
+}
+
+async function submitWeddingPlannerWorkshopJob(form) {
+  const value = name => form.elements[name].value.trim();
+  const deliverables = linesToList(form.elements.deliverables?.value, 1, 6);
+  const constraints = linesToList(form.elements.constraints?.value, 0, 12);
+  if (!deliverables) {
+    toast("Provide 1–6 non-empty deliverables, one per line.", true);
+    return;
+  }
+  if (!constraints && String(form.elements.constraints?.value || "").trim()) {
+    toast("Constraints must be 0–12 non-empty lines.", true);
+    return;
+  }
+  try {
+    const workspaceId = value("workspaceId");
+    const result = await api(`/api/wedding-planner/workspaces/${workspaceId}/workshop-jobs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        objective: value("objective"),
+        campaignGoal: value("campaignGoal"),
+        audienceFocus: value("audienceFocus"),
+        channelFormat: value("channelFormat"),
+        deliverables,
+        cta: value("cta"),
+        constraints: constraints || [],
+        sourceSystem: value("sourceSystem"),
+        idempotencyKey: value("idempotencyKey")
+      })
+    });
+    const replayNote = result.isReplay && result.status === "FAILED"
+      ? " (failed replay — not a retry)"
+      : result.isReplay ? " (replay)" : "";
+    toast(`Workshop job ${result.status}${replayNote}`);
+    fillKey("#wedding-planner-workshop-job-key");
+    state.selectedWeddingPlannerWorkspace = workspaceId;
+    state.selectedWeddingPlannerWorkshopJobId = result.workshopJobId;
+    if (result.outputConceptPackageVersionId) {
+      state.selectedWeddingPlannerConceptPackageId = result.outputConceptPackageVersionId;
+    }
+    state.weddingPlannerWorkshopJobs = await api(`/api/wedding-planner/workspaces/${workspaceId}/workshop-jobs`);
+    state.weddingPlannerConceptPackages = await api(`/api/wedding-planner/workspaces/${workspaceId}/concept-packages`);
+    await mergeWeddingPlannerWorkspaceRuns(workspaceId);
+    await loadWeddingPlannerWorkshopDetails();
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function submitWeddingPlannerWorkshopDecision(form) {
+  const value = name => form.elements[name].value.trim();
+  const decision = value("decision");
+  if (decision === "APPROVE" && form.elements.confirmApprove?.checked !== true) {
+    toast("Confirm the APPROVE checkbox before approving a concept package.", true);
+    return;
+  }
+  const selectedRadio = form.querySelector('input[name="selectedConceptId"]:checked');
+  const selectedConceptId = selectedRadio ? String(selectedRadio.value || "").trim() : "";
+  if (decision === "APPROVE") {
+    if (!selectedConceptId || !["concept_1", "concept_2", "concept_3"].includes(selectedConceptId)) {
+      toast("APPROVE requires a radio-selected concept id (concept_1, concept_2, or concept_3).", true);
+      return;
+    }
+  }
+  if (decision === "REJECT" && selectedConceptId) {
+    toast("REJECT forbids concept selection. Clear the selected concept before rejecting.", true);
+    return;
+  }
+  const payload = {
+    decision,
+    rationale: value("rationale"),
+    sourceSystem: value("sourceSystem"),
+    idempotencyKey: value("idempotencyKey"),
+    selectedConceptId: decision === "APPROVE" ? selectedConceptId : null
+  };
+  try {
+    const result = await api(`/api/wedding-planner/concept-packages/${value("conceptPackageVersionId")}/decisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    toast(`Concept package ${friendlyStatus(result.decision)} recorded${result.isReplay ? " (replay)" : ""} — concept-direction approval only`);
+    form.elements.rationale.value = "";
+    if (form.elements.confirmApprove) form.elements.confirmApprove.checked = false;
+    form.querySelectorAll('input[name="selectedConceptId"]').forEach(input => { input.checked = false; });
+    fillKey("#wedding-planner-workshop-decision-key");
+    state.weddingPlannerSelectedConceptId = result.selectedConceptId || null;
+    const workspaceId = result.workspaceId || state.selectedWeddingPlannerWorkspace;
+    if (workspaceId) {
+      state.weddingPlannerConceptPackages = await api(`/api/wedding-planner/workspaces/${workspaceId}/concept-packages`);
+      state.selectedWeddingPlannerConceptPackageId = result.conceptPackageVersionId || state.selectedWeddingPlannerConceptPackageId;
+      await loadWeddingPlannerWorkshopDetails();
+    }
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
   }
 }
 
@@ -1554,9 +1995,17 @@ async function submitWeddingPlannerSession(form) {
       state.weddingPlannerResearchReports?.currentApprovedResearchReportVersionId ||
       state.weddingPlannerResearchReports?.versions?.[0]?.researchReportVersionId ||
       null;
+    state.weddingPlannerWorkshopJobs = await api(`/api/wedding-planner/workspaces/${result.workspaceId}/workshop-jobs`).catch(() => []);
+    state.weddingPlannerConceptPackages = await api(`/api/wedding-planner/workspaces/${result.workspaceId}/concept-packages`).catch(() => null);
+    state.selectedWeddingPlannerWorkshopJobId = state.weddingPlannerWorkshopJobs?.[0]?.workshopJobId || null;
+    state.selectedWeddingPlannerConceptPackageId =
+      state.weddingPlannerConceptPackages?.currentApprovedConceptPackageVersionId ||
+      state.weddingPlannerConceptPackages?.versions?.[0]?.conceptPackageVersionId ||
+      null;
     await mergeWeddingPlannerInterpreterRuns();
     await mergeWeddingPlannerWorkspaceRuns(result.workspaceId);
     await loadWeddingPlannerResearchAgentRuns();
+    await loadWeddingPlannerWorkshopDetails();
     renderWeddingPlanner();
   } catch (error) {
     toast(error.message, true);

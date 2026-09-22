@@ -725,6 +725,291 @@ a { color: inherit; }
   .curator-field-row { grid-template-columns: 1fr; }
 }
 
+.workshop-panel {
+  margin-top: 28px;
+  padding: 22px 20px 24px;
+  border: 1px solid #dfe8f4;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+  display: grid;
+  gap: 14px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+.workshop-heading p:first-child {
+  margin: 0 0 4px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  color: #3d6fa8;
+}
+.workshop-heading h3 {
+  margin: 0 0 8px;
+  font: 700 22px var(--serif);
+  color: #1e2f4a;
+}
+.workshop-copy {
+  margin: 0;
+  max-width: 760px;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #46556b;
+}
+.workshop-copy code { font-size: 10px; }
+.workshop-prereq {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d5e2f0;
+  background: #fff;
+}
+.workshop-prereq[data-ready="true"] { border-color: #b7e0c6; background: #f3faf6; }
+.workshop-prereq[data-ready="false"] { border-color: #f0d4a8; background: #fffaf0; }
+.workshop-prereq span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: #1e2f4a;
+}
+.workshop-prereq p { margin: 0; font-size: 10px; line-height: 1.45; color: #46556b; }
+.workshop-roles-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #e8f1fa;
+  color: #31445c;
+  font-size: 9px;
+  line-height: 1.5;
+}
+.workshop-roles-note code { font-size: 8px; }
+.workshop-job-form,
+.workshop-decision-form { display: grid; gap: 8px; }
+.workshop-job-form label,
+.workshop-decision-form label,
+.workshop-list-block label {
+  font-size: 9px;
+  color: #31445c;
+}
+.workshop-job-form label em,
+.workshop-list-block label small,
+.workshop-concept-select legend em {
+  font-style: normal;
+  color: #6a7a8e;
+  font-weight: 500;
+}
+.workshop-job-form input,
+.workshop-job-form textarea,
+.workshop-job-form select,
+.workshop-decision-form textarea,
+#workshop-job-select,
+#workshop-package-select {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #c9d7e8;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 11px;
+  color: #1e2f4a;
+}
+.workshop-job-form textarea { min-height: 72px; resize: vertical; }
+.workshop-job-actions,
+.workshop-decision-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.workshop-job-actions button,
+.workshop-decision-actions button {
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid #3d6fa8;
+  background: #3d6fa8;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.workshop-job-actions button:disabled,
+.workshop-decision-actions button:disabled,
+.workshop-job-form input:disabled,
+.workshop-job-form textarea:disabled,
+.workshop-job-form select:disabled,
+#workshop-job-select:disabled,
+#workshop-package-select:disabled,
+.workshop-decision-form textarea:disabled,
+.workshop-concept-select input:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.workshop-job-actions #workshop-refresh-lists,
+.workshop-decision-actions .reject {
+  background: #fff;
+  color: #3d6fa8;
+}
+.workshop-decision-actions .reject { color: #7a2430; border-color: #d9a3aa; }
+.workshop-lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.workshop-list-block { display: grid; gap: 6px; min-width: 0; }
+.workshop-job-meta,
+.workshop-package-view {
+  padding: 12px;
+  border: 1px solid #d5e2f0;
+  border-radius: 10px;
+  background: #fff;
+  display: grid;
+  gap: 10px;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+.workshop-job-meta { font-size: 9px; color: #46556b; line-height: 1.45; }
+.workshop-job-meta[data-status="FAILED"] { border-color: #e8b4bb; background: #fff7f8; }
+.workshop-job-meta[data-status="SUCCEEDED"] { border-color: #b7e0c6; }
+.workshop-job-meta[data-status="RUNNING"] { border-color: #f0d4a8; background: #fffaf0; }
+.workshop-current-pointer {
+  margin: 0;
+  font-size: 9px;
+  color: #1f6b42;
+  font-weight: 700;
+}
+.workshop-status-line { margin: 0 0 8px; font-size: 9px; color: #46556b; }
+.workshop-status-line span:first-child,
+#workshop-package-current-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  font-size: 8px;
+}
+#workshop-package-status-label[data-status="APPROVED"] { background: #e5f7ec; color: #1f6b42; }
+#workshop-package-status-label[data-status="REJECTED"] { background: #fdecee; color: #8a2432; }
+#workshop-package-status-label[data-status="SUPERSEDED"] { background: #eef0f4; color: #4d5563; }
+#workshop-package-status-label[data-status="PROPOSED"] { background: #fff4d8; color: #8a5a07; }
+#workshop-package-current-badge { background: #e5f7ec; color: #1f6b42; margin-left: 4px; }
+#workshop-package-summary-text { margin: 0 0 8px; font-size: 10px; line-height: 1.45; color: #1e2f4a; white-space: pre-wrap; overflow-wrap: anywhere; }
+.workshop-meta-line { margin: 0 0 4px; font-size: 8px; color: #46556b; word-break: break-all; overflow-wrap: anywhere; }
+.workshop-disclaimer-block,
+.workshop-synthetic-warning {
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.workshop-disclaimer-block {
+  border: 1px solid #c9d7e8;
+  background: #f4f8fc;
+  color: #31445c;
+}
+.workshop-disclaimer-block h4 { margin: 0 0 6px; font-size: 10px; color: #1e2f4a; }
+.workshop-disclaimer-block p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.workshop-synthetic-warning {
+  border: 1px solid #e0a86a;
+  background: #fff8f0;
+  color: #7a4a10;
+}
+.workshop-synthetic-warning strong { display: block; margin-bottom: 4px; letter-spacing: .04em; }
+.workshop-section h4 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: #1e2f4a;
+}
+.workshop-section h4 small { font-weight: 500; color: #6a7a8e; font-size: 8px; }
+.workshop-concept-card,
+.workshop-contribution-card,
+.workshop-run-card {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  margin-bottom: 8px;
+  border: 1px solid #d5e2f0;
+  border-radius: 8px;
+  background: #f8fbff;
+  font-size: 9px;
+  color: #46556b;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.workshop-concept-card strong,
+.workshop-contribution-card strong,
+.workshop-run-card strong { color: #1e2f4a; font-size: 10px; }
+.workshop-claim {
+  margin-top: 4px;
+  padding: 6px 8px;
+  border-left: 3px solid #3d6fa8;
+  background: #eef4fb;
+}
+.workshop-prototype-frame {
+  position: relative;
+  margin-top: 8px;
+  border: 1px dashed #9bb4cc;
+  background: #f0f4f8;
+  overflow: hidden;
+  max-width: 100%;
+}
+.workshop-prototype-region {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 4px;
+  font-size: 8px;
+  line-height: 1.25;
+  color: #1e2f4a;
+  border: 1px solid rgba(30, 47, 74, .12);
+}
+.workshop-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    -45deg,
+    #d9e4ef,
+    #d9e4ef 6px,
+    #eef3f8 6px,
+    #eef3f8 12px
+  );
+  color: #46556b;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-align: center;
+  padding: 4px;
+}
+.workshop-decision-scope {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 3px solid #3d6fa8;
+  background: #eef4fb;
+  color: #31445c;
+  font-size: 9px;
+  line-height: 1.45;
+}
+.workshop-concept-select {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid #d5e2f0;
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+}
+.workshop-concept-select legend { padding: 0 4px; font-size: 9px; color: #31445c; }
+.workshop-concept-select label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+}
+
+@media (max-width: 680px) {
+  .workshop-lists { grid-template-columns: 1fr; }
+}
+
 .audience-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; color: #fff; background: #39216e; }
 .audience-panels article { min-height: 210px; padding: 45px clamp(25px, 8vw, 120px); background: linear-gradient(135deg, #19064e, #4a1490); text-align: center; }
 .audience-panels article:last-child { background: linear-gradient(135deg, #2b0d6d, #10266b); }

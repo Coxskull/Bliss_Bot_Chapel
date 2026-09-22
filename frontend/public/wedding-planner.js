@@ -1,8 +1,11 @@
 const SOURCE_SYSTEM = "PUBLIC_WEDDING_PLANNER";
 const COLOR_INTELLIGENCE_LABEL = "PHASE 3 · DETERMINISTIC COLOR INTELLIGENCE";
 const CURATOR_LABEL = "PHASE 4 · THE CURATOR";
+const WORKSHOP_LABEL = "PHASE 5 · CONCEPT / PROTOTYPE WORKSHOP";
 const RESEARCH_DISCLAIMER =
   "Approval of this report is research approval only. It is not creative, campaign, claim, legal, matching, accessibility, or compliance approval. Source verification checks metadata and internal consistency only; live URL content is not fetched or certified.";
+const CONCEPT_PACKAGE_DISCLAIMER =
+  "Approval of this package is concept-direction approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, asset, QA, or production-artwork approval. Marketing copy is CREATIVE_NON_FACTUAL unless a factual claim cites source IDs from the pinned approved research report. Brand DNA and Color Profile are creative constraints, not factual evidence. Prototypes are structured low-fi specs only; no images are generated.";
 const CURATOR_LOGICAL_ROLES = [
   "MARKET_LANDSCAPE_RESEARCHER",
   "AUDIENCE_CONTEXT_RESEARCHER",
@@ -18,10 +21,34 @@ const CURATOR_WORKER_PROFILES = [
   "CURATOR_EVIDENCE_V1",
   "CURATOR_SYNTHESIS_RISK_V1"
 ];
+const WORKSHOP_LOGICAL_ROLES = [
+  "BRAND_STRATEGIST",
+  "ART_DIRECTOR",
+  "COPYWRITER",
+  "PRODUCTION_ARTIST"
+];
+const WORKSHOP_WORKER_PROFILES = [
+  "CONCEPT_STRATEGY_V1",
+  "CONCEPT_CREATIVE_V1",
+  "PROTOTYPE_PRODUCTION_V1"
+];
+const WORKSHOP_CHANNEL_FORMATS = [
+  "STATIC_SOCIAL_SQUARE",
+  "STATIC_SOCIAL_STORY",
+  "STATIC_DISPLAY_BANNER",
+  "EMAIL_HERO"
+];
 const RESEARCH_JOB_STATUSES = ["RUNNING", "SUCCEEDED", "FAILED"];
 const RESEARCH_REPORT_STATUSES = ["PROPOSED", "APPROVED", "REJECTED", "SUPERSEDED", "CURRENT"];
 const EIGHT_TO_THREE_EXPLANATION =
   "Eight logical roles map to 3 workers/runs, not 8 subscriptions";
+const FOUR_TO_THREE_EXPLANATION =
+  "Four logical roles map to 3 workers/runs, not 4 subscriptions";
+const SYNTHETIC_DEVELOPMENT_PROTOTYPE = "SYNTHETIC DEVELOPMENT PROTOTYPE";
+const ALLOWED_TEXT_REFS = ["copy.headline", "copy.body", "copy.cta"];
+const ALLOWED_PROTOTYPE_TEMPLATES = ["LOFI_STACK_V1", "LOFI_SPLIT_V1", "LOFI_BANNER_V1"];
+const ALLOWED_REGION_TYPES = ["HERO", "HEADER", "BODY", "HEADLINE", "SUBHEAD", "CTA", "FOOTER", "LOGO_SLOT"];
+const ALLOWED_PLACEHOLDER_KINDS = ["HERO_IMAGE", "LOGO", "PRODUCT", "DECORATIVE"];
 
 const PALETTE_ROLES = [
   "primary", "secondary", "accent", "background", "surface",
@@ -46,6 +73,14 @@ const state = {
   researchReports: null,
   researchReport: null,
   researchAgentRuns: [],
+  workshopJobs: [],
+  workshopJob: null,
+  conceptPackages: null,
+  conceptPackage: null,
+  workshopContributions: [],
+  workshopAgentRuns: [],
+  workshopSelectedConceptId: null,
+  workshopPinnedColorDocument: null,
   busy: false
 };
 
@@ -123,6 +158,43 @@ const curatorDecisionForm = document.querySelector("#curator-decision-form");
 const curatorRationale = document.querySelector("#curator-rationale");
 const curatorConfirmApprove = document.querySelector("#curator-confirm-approve");
 
+const workshopPrereq = document.querySelector("#workshop-prereq-status");
+const workshopJobForm = document.querySelector("#workshop-job-form");
+const workshopJobSubmit = document.querySelector("#workshop-job-submit");
+const workshopRefreshLists = document.querySelector("#workshop-refresh-lists");
+const workshopObjective = document.querySelector("#workshop-objective");
+const workshopCampaignGoal = document.querySelector("#workshop-campaign-goal");
+const workshopAudienceFocus = document.querySelector("#workshop-audience-focus");
+const workshopChannelFormat = document.querySelector("#workshop-channel-format");
+const workshopDeliverables = document.querySelector("#workshop-deliverables");
+const workshopCta = document.querySelector("#workshop-cta");
+const workshopConstraints = document.querySelector("#workshop-constraints");
+const workshopJobSelect = document.querySelector("#workshop-job-select");
+const workshopJobMeta = document.querySelector("#workshop-job-meta");
+const workshopPackageSelect = document.querySelector("#workshop-package-select");
+const workshopCurrentPointer = document.querySelector("#workshop-current-pointer");
+const workshopPackageView = document.querySelector("#workshop-package-view");
+const workshopPackageStatusLabel = document.querySelector("#workshop-package-status-label");
+const workshopPackageCurrentBadge = document.querySelector("#workshop-package-current-badge");
+const workshopPackageVersionNumber = document.querySelector("#workshop-package-version-number");
+const workshopPackageSummaryText = document.querySelector("#workshop-package-summary-text");
+const workshopPackageSchema = document.querySelector("#workshop-package-schema");
+const workshopPackageChannel = document.querySelector("#workshop-package-channel");
+const workshopPackageCanvas = document.querySelector("#workshop-package-canvas");
+const workshopPackageCost = document.querySelector("#workshop-package-cost");
+const workshopSelectedConceptLine = document.querySelector("#workshop-selected-concept-line");
+const workshopSelectedConceptIdEl = document.querySelector("#workshop-selected-concept-id");
+const workshopDisclaimerBlock = document.querySelector("#workshop-disclaimer-block");
+const workshopDisclaimerText = document.querySelector("#workshop-disclaimer-text");
+const workshopSyntheticWarning = document.querySelector("#workshop-synthetic-warning");
+const workshopConcepts = document.querySelector("#workshop-concepts");
+const workshopContributions = document.querySelector("#workshop-contributions");
+const workshopAgentRuns = document.querySelector("#workshop-agent-runs");
+const workshopDecisionForm = document.querySelector("#workshop-decision-form");
+const workshopConceptSelect = document.querySelector("#workshop-concept-select");
+const workshopRationale = document.querySelector("#workshop-rationale");
+const workshopConfirmApprove = document.querySelector("#workshop-confirm-approve");
+
 const colorFields = {
   primary: {
     picker: document.querySelector("#color-primary-picker"),
@@ -170,8 +242,10 @@ document.addEventListener("DOMContentLoaded", () => {
     setComposerEnabled(false);
     setColorControlsEnabled(false);
     setCuratorControlsEnabled(false);
+    setWorkshopControlsEnabled(false);
     renderColorPrerequisite();
     renderCuratorPrerequisite();
+    renderWorkshopPrerequisite();
   });
 });
 
@@ -250,6 +324,39 @@ function bindPlannerUi() {
     decideResearchReport(decision).catch(error => setTurnStatus("error", error.message));
   });
 
+  workshopJobForm?.addEventListener("submit", event => {
+    event.preventDefault();
+    submitWorkshopJob().catch(error => setTurnStatus("error", error.message));
+  });
+
+  workshopRefreshLists?.addEventListener("click", () => {
+    refreshWorkshopLists().catch(error => setTurnStatus("error", error.message));
+  });
+
+  workshopJobSelect?.addEventListener("change", () => {
+    const id = workshopJobSelect.value;
+    const selected = (state.workshopJobs || []).find(x => x.workshopJobId === id) || null;
+    state.workshopJob = selected;
+    renderWorkshopJob(selected);
+  });
+
+  workshopPackageSelect?.addEventListener("change", () => {
+    const id = workshopPackageSelect.value;
+    const versions = state.conceptPackages?.versions || [];
+    const selected = versions.find(x => x.conceptPackageVersionId === id) || null;
+    state.conceptPackage = selected;
+    state.workshopSelectedConceptId = null;
+    inspectConceptPackage(selected).catch(error => setTurnStatus("error", error.message));
+  });
+
+  workshopDecisionForm?.addEventListener("submit", event => {
+    event.preventDefault();
+    const submitter = event.submitter;
+    const decision = submitter?.dataset?.decision;
+    if (!decision) return;
+    decideConceptPackage(decision).catch(error => setTurnStatus("error", error.message));
+  });
+
   Object.values(colorFields).forEach(field => {
     field.picker?.addEventListener("input", () => {
       if (field.text) field.text.value = String(field.picker.value || "").toUpperCase();
@@ -288,9 +395,11 @@ async function bootstrapPlanner() {
     setBrandDnaControlsEnabled(false);
     setColorControlsEnabled(false);
     setCuratorControlsEnabled(false);
+    setWorkshopControlsEnabled(false);
     renderAuthGate(session);
     renderColorPrerequisite();
     renderCuratorPrerequisite();
+    renderWorkshopPrerequisite();
     return;
   }
 
@@ -306,12 +415,15 @@ async function bootstrapPlanner() {
   await loadBrandDna();
   await loadColorProfiles();
   await refreshCuratorLists();
+  await refreshWorkshopLists();
   setComposerEnabled(true);
   setBrandDnaControlsEnabled(true);
   renderColorPrerequisite();
   setColorControlsEnabled(canComputeColorProfiles());
   renderCuratorPrerequisite();
   setCuratorControlsEnabled(canSubmitResearchJobs());
+  renderWorkshopPrerequisite();
+  setWorkshopControlsEnabled(canSubmitWorkshopJobs());
   setSessionStatus(
     "Live Concierge ready",
     "Messages are saved to your planning session. Planner replies come only from the server. Brand DNA stays PROPOSED until you approve or reject it."
@@ -395,6 +507,8 @@ async function loadBrandDna() {
   setColorControlsEnabled(canComputeColorProfiles());
   renderCuratorPrerequisite();
   setCuratorControlsEnabled(canSubmitResearchJobs());
+  renderWorkshopPrerequisite();
+  setWorkshopControlsEnabled(canSubmitWorkshopJobs());
 }
 
 async function loadColorProfiles() {
@@ -412,6 +526,8 @@ async function loadColorProfiles() {
   renderColorProfileList(list, selected);
   renderColorProfile(selected, list);
   renderCuratorPrerequisite();
+  renderWorkshopPrerequisite();
+  setWorkshopControlsEnabled(canSubmitWorkshopJobs());
 }
 
 function hasCurrentApprovedBrandDna() {
@@ -424,6 +540,24 @@ function canComputeColorProfiles() {
 
 function canSubmitResearchJobs() {
   return state.liveChatEnabled && !!state.workspaceId && hasCurrentApprovedBrandDna();
+}
+
+function hasCurrentApprovedColorProfile() {
+  return !!state.colorProfiles?.currentApprovedColorProfileVersionId;
+}
+
+function hasCurrentApprovedResearchReport() {
+  return !!state.researchReports?.currentApprovedResearchReportVersionId;
+}
+
+function canSubmitWorkshopJobs() {
+  return (
+    state.liveChatEnabled &&
+    !!state.workspaceId &&
+    hasCurrentApprovedBrandDna() &&
+    hasCurrentApprovedColorProfile() &&
+    hasCurrentApprovedResearchReport()
+  );
 }
 
 function renderColorPrerequisite() {
@@ -475,6 +609,34 @@ function renderCuratorPrerequisite() {
     : "No current-approved color profile — optional and not required.";
   curatorPrereq.dataset.ready = "true";
   curatorPrereq.innerHTML = `<span>Prerequisites met · ${CURATOR_LABEL}</span><p>Authenticated writable advertiser and current-approved Brand DNA are present. ${escapeHtml(colorNote)} ${escapeHtml(EIGHT_TO_THREE_EXPLANATION)}. Local synthetic evidence is never presented as live research.</p>`;
+}
+
+function renderWorkshopPrerequisite() {
+  if (!workshopPrereq) return;
+  if (!state.session) {
+    workshopPrereq.dataset.ready = "false";
+    workshopPrereq.innerHTML = `<span>Prerequisite check</span><p>Checking authentication…</p>`;
+    return;
+  }
+
+  if (!state.liveChatEnabled) {
+    workshopPrereq.dataset.ready = "false";
+    workshopPrereq.innerHTML = `<span>Authenticated writable advertiser required</span><p>Concept Workshop submit stays disabled until an authenticated advertiser with write access is signed in. No random or test advertiser is bound automatically.</p>`;
+    return;
+  }
+
+  const missing = [];
+  if (!hasCurrentApprovedBrandDna()) missing.push("current-approved Brand DNA");
+  if (!hasCurrentApprovedColorProfile()) missing.push("current-approved Color Profile");
+  if (!hasCurrentApprovedResearchReport()) missing.push("current-approved Research Report");
+  if (missing.length) {
+    workshopPrereq.dataset.ready = "false";
+    workshopPrereq.innerHTML = `<span>Missing workshop prerequisites</span><p>Workshop jobs require all three current-approved pointers. Missing: ${escapeHtml(missing.join("; "))}. Approve Brand DNA, Color Profile, and Research Report before submit is enabled. ${escapeHtml(FOUR_TO_THREE_EXPLANATION)}.</p>`;
+    return;
+  }
+
+  workshopPrereq.dataset.ready = "true";
+  workshopPrereq.innerHTML = `<span>Prerequisites met · ${WORKSHOP_LABEL}</span><p>Authenticated writable advertiser with current-approved Brand DNA, Color Profile, and Research Report. ${escapeHtml(FOUR_TO_THREE_EXPLANATION)}. Concept direction only — no generated image/assets; not campaign-ready, QA, matching, or legal/claim approval. ${escapeHtml(SYNTHETIC_DEVELOPMENT_PROTOTYPE)} when Local path was used.</p>`;
 }
 
 async function submitTurn() {
@@ -728,6 +890,8 @@ async function refreshCuratorLists() {
   state.researchReport = selectedReport;
   renderResearchReportList(reports, selectedReport);
   await inspectResearchReport(selectedReport);
+  renderWorkshopPrerequisite();
+  setWorkshopControlsEnabled(canSubmitWorkshopJobs());
 }
 
 async function submitResearchJob() {
@@ -1397,6 +1561,605 @@ function setCuratorDecisionEnabled(enabled) {
   if (curatorRationale) curatorRationale.disabled = !enabled;
   if (curatorConfirmApprove) curatorConfirmApprove.disabled = !enabled;
   curatorDecisionForm?.querySelectorAll("button").forEach(button => {
+    button.disabled = !enabled;
+  });
+}
+
+async function refreshWorkshopLists() {
+  if (!state.workspaceId) return;
+  const [jobs, packages] = await Promise.all([
+    api(`/api/wedding-planner/workspaces/${state.workspaceId}/workshop-jobs`),
+    api(`/api/wedding-planner/workspaces/${state.workspaceId}/concept-packages`)
+  ]);
+  state.workshopJobs = Array.isArray(jobs) ? jobs : [];
+  state.conceptPackages = packages;
+  const selectedJob =
+    state.workshopJobs.find(x => x.workshopJobId === state.workshopJob?.workshopJobId) ||
+    state.workshopJobs[0] ||
+    null;
+  state.workshopJob = selectedJob;
+  renderWorkshopJobList(state.workshopJobs, selectedJob);
+  renderWorkshopJob(selectedJob);
+
+  const versions = packages?.versions || [];
+  const selectedPackage =
+    versions.find(x => x.conceptPackageVersionId === state.conceptPackage?.conceptPackageVersionId) ||
+    versions.find(x => x.status === "PROPOSED") ||
+    versions.find(x => x.conceptPackageVersionId === packages.currentApprovedConceptPackageVersionId) ||
+    versions[0] ||
+    null;
+  state.conceptPackage = selectedPackage;
+  renderConceptPackageList(packages, selectedPackage);
+  await inspectConceptPackage(selectedPackage);
+  renderWorkshopPrerequisite();
+  setWorkshopControlsEnabled(canSubmitWorkshopJobs());
+}
+
+async function submitWorkshopJob() {
+  if (!canSubmitWorkshopJobs() || state.busy) return;
+  const objective = String(workshopObjective?.value || "").trim();
+  const campaignGoal = String(workshopCampaignGoal?.value || "").trim();
+  const audienceFocus = String(workshopAudienceFocus?.value || "").trim();
+  const channelFormat = String(workshopChannelFormat?.value || "").trim();
+  const cta = String(workshopCta?.value || "").trim();
+  const deliverables = linesToList(workshopDeliverables?.value, 1, 6);
+  const constraints = linesToList(workshopConstraints?.value, 0, 12);
+
+  if (!objective || !campaignGoal || !audienceFocus || !channelFormat || !cta) {
+    setTurnStatus("error", "Objective, campaign goal, audience focus, channel format, and CTA are required.");
+    return;
+  }
+  if (!WORKSHOP_CHANNEL_FORMATS.includes(channelFormat)) {
+    setTurnStatus("error", "Select a valid channel format enum value.");
+    return;
+  }
+  if (!deliverables) {
+    setTurnStatus("error", "Provide 1–6 non-empty deliverables, one per line.");
+    return;
+  }
+  if (!constraints && String(workshopConstraints?.value || "").trim()) {
+    setTurnStatus("error", "Constraints must be 0–12 non-empty lines.");
+    return;
+  }
+
+  const payload = {
+    objective,
+    campaignGoal,
+    audienceFocus,
+    channelFormat,
+    deliverables,
+    cta,
+    constraints: constraints || [],
+    sourceSystem: SOURCE_SYSTEM,
+    idempotencyKey: `workshop-${crypto.randomUUID()}`
+  };
+
+  state.busy = true;
+  setWorkshopControlsEnabled(false);
+  setTurnStatus("loading", "Submitting concept workshop job…");
+  try {
+    const job = await api(`/api/wedding-planner/workspaces/${state.workspaceId}/workshop-jobs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    await refreshWorkshopLists();
+    state.workshopJob = job;
+    renderWorkshopJobList(state.workshopJobs, job);
+    renderWorkshopJob(job);
+    if (job.outputConceptPackageVersionId) {
+      const versions = state.conceptPackages?.versions || [];
+      const pkg = versions.find(x => x.conceptPackageVersionId === job.outputConceptPackageVersionId) || null;
+      if (pkg) {
+        state.conceptPackage = pkg;
+        renderConceptPackageList(state.conceptPackages, pkg);
+        await inspectConceptPackage(pkg);
+      }
+    }
+    setTurnStatus(job.isReplay ? "replay" : "loading", workshopJobStatusMessage(job));
+    if (!job.isReplay && job.status === "SUCCEEDED") {
+      setTimeout(() => clearTurnStatus(), 4200);
+    }
+  } finally {
+    state.busy = false;
+    setWorkshopControlsEnabled(canSubmitWorkshopJobs());
+  }
+}
+
+function workshopJobStatusMessage(job) {
+  if (job.isReplay && job.status === "FAILED") {
+    return "Replayed an existing FAILED workshop job. The failed job was returned unchanged — this is not a retry and providers were not called again.";
+  }
+  if (job.isReplay && job.status === "SUCCEEDED") {
+    return "Replayed an existing SUCCEEDED workshop job. Existing job and concept package linkage returned with no provider or AI calls.";
+  }
+  if (job.isReplay) {
+    return `Replayed an existing workshop job in status ${job.status}.`;
+  }
+  if (job.status === "FAILED") {
+    return `Workshop job failed: ${job.errorMessage || job.errorCode || "unknown error"}. No concept package was created.`;
+  }
+  return `Workshop job ${job.status}. ${FOUR_TO_THREE_EXPLANATION}. Concept direction only — no generated image/assets.`;
+}
+
+async function decideConceptPackage(decision) {
+  if (!state.liveChatEnabled || !state.conceptPackage || state.busy) return;
+  const rationale = String(workshopRationale?.value || "").trim();
+  if (!rationale) {
+    setTurnStatus("error", "A rationale is required for concept package decisions.");
+    return;
+  }
+  if (decision === "APPROVE" && !workshopConfirmApprove?.checked) {
+    setTurnStatus("error", "Confirm the APPROVE checkbox before approving a concept package.");
+    return;
+  }
+
+  const selectedRadio = workshopDecisionForm?.querySelector('input[name="selectedConceptId"]:checked');
+  const selectedConceptId = selectedRadio ? String(selectedRadio.value || "").trim() : "";
+
+  if (decision === "APPROVE") {
+    if (!selectedConceptId || !["concept_1", "concept_2", "concept_3"].includes(selectedConceptId)) {
+      setTurnStatus("error", "APPROVE requires a radio-selected concept id (concept_1, concept_2, or concept_3).");
+      return;
+    }
+  }
+  if (decision === "REJECT" && selectedConceptId) {
+    setTurnStatus("error", "REJECT forbids concept selection. Clear the selected concept before rejecting.");
+    return;
+  }
+
+  const payload = {
+    decision,
+    rationale,
+    sourceSystem: SOURCE_SYSTEM,
+    idempotencyKey: `workshop-decision-${crypto.randomUUID()}`
+  };
+  if (decision === "APPROVE") {
+    payload.selectedConceptId = selectedConceptId;
+  } else {
+    payload.selectedConceptId = null;
+  }
+
+  state.busy = true;
+  setWorkshopDecisionEnabled(false);
+  setTurnStatus("loading", `Recording concept package ${decision} decision…`);
+  try {
+    const result = await api(`/api/wedding-planner/concept-packages/${state.conceptPackage.conceptPackageVersionId}/decisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    state.workshopSelectedConceptId = result?.selectedConceptId || null;
+    await refreshWorkshopLists();
+    if (result?.version) {
+      state.conceptPackage = result.version;
+      renderConceptPackageList(state.conceptPackages, result.version);
+      await inspectConceptPackage(result.version);
+    }
+    if (workshopRationale) workshopRationale.value = "";
+    if (workshopConfirmApprove) workshopConfirmApprove.checked = false;
+    clearWorkshopConceptSelection();
+    setTurnStatus(
+      result?.isReplay ? "replay" : "loading",
+      result?.isReplay
+        ? `Replayed concept package ${decision} decision.`
+        : `${decision} recorded as concept-direction approval only — not campaign-ready, QA, matching, or legal/claim approval.`
+    );
+    if (!result?.isReplay) {
+      setTimeout(() => clearTurnStatus(), 4200);
+    }
+  } finally {
+    state.busy = false;
+    setWorkshopControlsEnabled(canSubmitWorkshopJobs());
+  }
+}
+
+function renderWorkshopJobList(jobs, selected) {
+  if (!workshopJobSelect) return;
+  if (!jobs.length) {
+    workshopJobSelect.innerHTML = `<option value="">No workshop jobs yet</option>`;
+    workshopJobSelect.disabled = true;
+    return;
+  }
+  workshopJobSelect.disabled = false;
+  workshopJobSelect.innerHTML = jobs.map(job => {
+    const markers = [job.status || "UNKNOWN"];
+    if (job.isReplay) markers.push("REPLAY");
+    return `<option value="${escapeHtml(job.workshopJobId)}"${selected?.workshopJobId === job.workshopJobId ? " selected" : ""}>${escapeHtml(markers.join(" · "))} · ${escapeHtml(job.channelFormat || shortId(job.workshopJobId))}</option>`;
+  }).join("");
+}
+
+function renderWorkshopJob(job) {
+  if (!workshopJobMeta) return;
+  if (!job) {
+    workshopJobMeta.hidden = true;
+    workshopJobMeta.innerHTML = "";
+    return;
+  }
+  workshopJobMeta.hidden = false;
+  workshopJobMeta.dataset.status = job.status || "";
+  workshopJobMeta.innerHTML = `
+    <p><strong>${escapeHtml(job.status || "UNKNOWN")}</strong>${job.isReplay ? " · replay" : ""} · ${escapeHtml(job.channelFormat || "—")} · canvas ${escapeHtml(String(job.canvasWidth ?? "—"))}×${escapeHtml(String(job.canvasHeight ?? "—"))}</p>
+    <p>Objective: ${escapeHtml(job.objective || "—")}</p>
+    <p>Campaign goal (planning text): ${escapeHtml(job.campaignGoal || "—")}</p>
+    <p>Input SHA <code>${escapeHtml(job.inputSha256 || "—")}</code></p>
+    <p>Provenance Brand DNA v${escapeHtml(String(job.approvedBrandDnaVersionNumber ?? "—"))} <code>${escapeHtml(shortId(job.approvedBrandDnaVersionId))}</code>
+      · Color v${escapeHtml(String(job.approvedColorProfileVersionNumber ?? "—"))} <code>${escapeHtml(shortId(job.approvedColorProfileVersionId))}</code>
+      · Research v${escapeHtml(String(job.approvedResearchReportVersionNumber ?? "—"))} <code>${escapeHtml(shortId(job.approvedResearchReportVersionId))}</code></p>
+    <p>Package <code>${escapeHtml(job.outputConceptPackageVersionId || "—")}</code>${job.errorMessage ? ` · error: ${escapeHtml(job.errorMessage)}` : ""}</p>
+  `;
+}
+
+function renderConceptPackageList(list, selected) {
+  if (!workshopPackageSelect) return;
+  const versions = list?.versions || [];
+  const currentId = list?.currentApprovedConceptPackageVersionId || null;
+  if (workshopCurrentPointer) {
+    workshopCurrentPointer.hidden = !currentId;
+  }
+  if (!versions.length) {
+    workshopPackageSelect.innerHTML = `<option value="">No concept packages yet</option>`;
+    workshopPackageSelect.disabled = true;
+    return;
+  }
+  workshopPackageSelect.disabled = false;
+  workshopPackageSelect.innerHTML = versions.map(version => {
+    const markers = [];
+    if (version.status) markers.push(version.status);
+    if (version.conceptPackageVersionId === currentId || version.isCurrentApproved) markers.push("CURRENT");
+    return `<option value="${escapeHtml(version.conceptPackageVersionId)}"${selected?.conceptPackageVersionId === version.conceptPackageVersionId ? " selected" : ""}>v${escapeHtml(String(version.versionNumber))} · ${escapeHtml(markers.join(" · "))}</option>`;
+  }).join("");
+}
+
+async function inspectConceptPackage(version) {
+  if (!workshopPackageView) return;
+  if (!version) {
+    workshopPackageView.hidden = true;
+    if (workshopDecisionForm) workshopDecisionForm.hidden = true;
+    state.workshopContributions = [];
+    state.workshopAgentRuns = [];
+    state.workshopPinnedColorDocument = null;
+    return;
+  }
+
+  workshopPackageView.hidden = false;
+  const currentId = state.conceptPackages?.currentApprovedConceptPackageVersionId || null;
+  const isCurrent = !!currentId && (currentId === version.conceptPackageVersionId || version.isCurrentApproved === true);
+
+  if (workshopPackageStatusLabel) {
+    workshopPackageStatusLabel.textContent = version.status || "UNKNOWN";
+    workshopPackageStatusLabel.dataset.status = version.status || "";
+  }
+  if (workshopPackageCurrentBadge) workshopPackageCurrentBadge.hidden = !isCurrent;
+  if (workshopPackageVersionNumber) workshopPackageVersionNumber.textContent = String(version.versionNumber ?? "—");
+  if (workshopPackageSummaryText) workshopPackageSummaryText.textContent = version.summary || "No summary returned by the server.";
+  if (workshopPackageSchema) workshopPackageSchema.textContent = version.schemaVersion || "—";
+  if (workshopPackageChannel) workshopPackageChannel.textContent = version.channelFormat || "—";
+  if (workshopPackageCanvas) {
+    workshopPackageCanvas.textContent = `${version.canvasWidth ?? "—"}×${version.canvasHeight ?? "—"}`;
+  }
+  if (workshopPackageCost) workshopPackageCost.textContent = formatCost(version.estimatedTotalCostUsd);
+
+  if (workshopSelectedConceptLine && workshopSelectedConceptIdEl) {
+    const selectedId = state.workshopSelectedConceptId;
+    workshopSelectedConceptLine.hidden = !selectedId;
+    workshopSelectedConceptIdEl.textContent = selectedId || "—";
+  }
+
+  const document = parseConceptPackageDocument(version.documentJson);
+  renderConceptPackageDocument(document, version);
+
+  state.workshopContributions = [];
+  state.workshopAgentRuns = [];
+  try {
+    const [contributions, runs] = await Promise.all([
+      api(`/api/wedding-planner/concept-packages/${version.conceptPackageVersionId}/contributions`),
+      api(`/api/wedding-planner/concept-packages/${version.conceptPackageVersionId}/agent-runs`)
+    ]);
+    state.workshopContributions = Array.isArray(contributions) ? contributions : [];
+    state.workshopAgentRuns = Array.isArray(runs) ? runs : [];
+  } catch {
+    state.workshopContributions = [];
+    state.workshopAgentRuns = [];
+  }
+  renderWorkshopContributions(state.workshopContributions, document);
+  renderWorkshopAgentRuns(state.workshopAgentRuns);
+
+  if (version.approvedColorProfileVersionId) {
+    try {
+      const colorVersion = await api(`/api/wedding-planner/color-profiles/${version.approvedColorProfileVersionId}`);
+      state.workshopPinnedColorDocument = parseColorDocument(colorVersion?.documentJson);
+    } catch {
+      state.workshopPinnedColorDocument = null;
+    }
+  } else {
+    state.workshopPinnedColorDocument = null;
+  }
+
+  if (document) {
+    renderWorkshopConcepts(document, state.workshopPinnedColorDocument);
+  }
+
+  const canDecide = state.liveChatEnabled && version.status === "PROPOSED";
+  if (workshopDecisionForm) workshopDecisionForm.hidden = !canDecide;
+  setWorkshopDecisionEnabled(canDecide);
+  syncWorkshopConceptRadioLabels(document);
+}
+
+function parseConceptPackageDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+function renderConceptPackageDocument(document, version) {
+  const disclaimer = document?.disclaimer || CONCEPT_PACKAGE_DISCLAIMER;
+  if (workshopDisclaimerBlock && workshopDisclaimerText) {
+    workshopDisclaimerText.textContent = disclaimer;
+    workshopDisclaimerBlock.hidden = !disclaimer;
+  }
+
+  const marker = String(document?.marker || "");
+  const hasSynthetic =
+    marker === SYNTHETIC_DEVELOPMENT_PROTOTYPE ||
+    documentJsonContainsSynthetic(document) ||
+    String(version?.summary || "").includes(SYNTHETIC_DEVELOPMENT_PROTOTYPE);
+  if (workshopSyntheticWarning) {
+    workshopSyntheticWarning.hidden = !hasSynthetic;
+  }
+}
+
+function documentJsonContainsSynthetic(document) {
+  try {
+    return JSON.stringify(document || {}).includes(SYNTHETIC_DEVELOPMENT_PROTOTYPE);
+  } catch {
+    return false;
+  }
+}
+
+function renderWorkshopConcepts(document, colorDocument) {
+  if (!workshopConcepts) return;
+  const concepts = Array.isArray(document?.concepts) ? document.concepts : [];
+  if (concepts.length !== 3) {
+    workshopConcepts.innerHTML = `<p class="seed-hint">Expected exactly 3 concepts in server documentJson; found ${escapeHtml(String(concepts.length))}. No client concept invention.</p>`;
+    return;
+  }
+  workshopConcepts.innerHTML = concepts.map(concept => {
+    const copy = concept.copy || {};
+    const claims = Array.isArray(concept.factualClaims) ? concept.factualClaims : [];
+    const paletteRefs = Array.isArray(concept.paletteRoleRefs) ? concept.paletteRoleRefs : [];
+    const preview = renderSafePrototypePreview(concept, colorDocument);
+    return `
+      <div class="workshop-concept-card" data-concept-id="${escapeHtml(concept.id || "")}">
+        <strong>${escapeHtml(concept.id || "—")} · ${escapeHtml(concept.name || "—")}</strong>
+        <span>Rationale: ${escapeHtml(concept.rationale || "—")}</span>
+        <span>Visual direction: ${escapeHtml(concept.visualDirection || "—")}</span>
+        <span>Palette role refs: <code>${escapeHtml(paletteRefs.join(", ") || "—")}</code></span>
+        <span>Copy kind <code>${escapeHtml(copy.kind || "—")}</code></span>
+        <span>Headline: ${escapeHtml(copy.headline || "—")}</span>
+        <span>Body: ${escapeHtml(copy.body || "—")}</span>
+        <span>CTA: ${escapeHtml(copy.cta || "—")}</span>
+        ${claims.length ? claims.map(claim => `
+          <div class="workshop-claim">
+            <strong>Factual claim</strong>
+            <span>${escapeHtml(claim.statement || "—")}</span>
+            <span>Source IDs: <code>${escapeHtml((claim.sourceIds || []).join(", ") || "—")}</code></span>
+          </div>`).join("") : `<span>Factual claims: none</span>`}
+        ${preview}
+      </div>`;
+  }).join("");
+}
+
+function renderSafePrototypePreview(concept, colorDocument) {
+  const prototype = concept?.prototype;
+  if (!prototype || typeof prototype !== "object") {
+    return `<p class="seed-hint">No prototype-spec.v1 in server documentJson for this concept.</p>`;
+  }
+  const template = String(prototype.template || "");
+  if (!ALLOWED_PROTOTYPE_TEMPLATES.includes(template)) {
+    return `<p class="seed-hint">Unsupported or missing prototype template. Safe renderer fails closed.</p>`;
+  }
+  const canvas = prototype.canvas || {};
+  const canvasW = Number(canvas.width);
+  const canvasH = Number(canvas.height);
+  if (!Number.isFinite(canvasW) || !Number.isFinite(canvasH) || canvasW <= 0 || canvasH <= 0) {
+    return `<p class="seed-hint">Invalid canvas bounds in prototype-spec. Fail closed.</p>`;
+  }
+  const regions = Array.isArray(prototype.regions) ? prototype.regions : [];
+  if (regions.length < 2 || regions.length > 12) {
+    return `<p class="seed-hint">Prototype regions must be 2–12 items from server JSON. Fail closed.</p>`;
+  }
+
+  const maxDisplay = 360;
+  const scale = Math.min(1, maxDisplay / canvasW);
+  const displayW = Math.round(canvasW * scale);
+  const displayH = Math.round(canvasH * scale);
+  const palette = colorDocument?.palette || {};
+  const copy = concept.copy || {};
+
+  const regionHtml = regions.map(region => {
+    const bounds = sanitizeBounds(region?.bounds, canvasW, canvasH);
+    if (!bounds) return "";
+    const type = String(region.type || "");
+    if (!ALLOWED_REGION_TYPES.includes(type)) return "";
+
+    const left = Math.round(bounds.x * scale);
+    const top = Math.round(bounds.y * scale);
+    const width = Math.max(1, Math.round(bounds.w * scale));
+    const height = Math.max(1, Math.round(bounds.h * scale));
+    const color = resolvePaletteHex(palette, region.paletteRoleRef);
+    const styleParts = [
+      `left:${left}px`,
+      `top:${top}px`,
+      `width:${width}px`,
+      `height:${height}px`
+    ];
+    if (color) styleParts.push(`background:${color}`);
+
+    if (region.assetPlaceholder) {
+      const kind = String(region.assetPlaceholder.kind || "");
+      const label = String(region.assetPlaceholder.label || "Placeholder");
+      if (!ALLOWED_PLACEHOLDER_KINDS.includes(kind)) {
+        return `<div class="workshop-prototype-region" style="${styleParts.join(";")}"><div class="workshop-placeholder">INVALID PLACEHOLDER</div></div>`;
+      }
+      return `<div class="workshop-prototype-region" style="${styleParts.join(";")}" data-region-type="${escapeHtml(type)}"><div class="workshop-placeholder">${escapeHtml(kind)} · ${escapeHtml(label)}</div></div>`;
+    }
+
+    const textRef = region.textRef ? String(region.textRef) : "";
+    let text = "";
+    if (textRef) {
+      if (!ALLOWED_TEXT_REFS.includes(textRef)) {
+        return `<div class="workshop-prototype-region" style="${styleParts.join(";")}"><div class="workshop-placeholder">INVALID TEXT REF</div></div>`;
+      }
+      if (textRef === "copy.headline") text = copy.headline || "";
+      else if (textRef === "copy.body") text = copy.body || "";
+      else if (textRef === "copy.cta") text = copy.cta || "";
+    }
+
+    return `<div class="workshop-prototype-region" style="${styleParts.join(";")}" data-region-type="${escapeHtml(type)}" data-template="${escapeHtml(template)}">${escapeHtml(text)}</div>`;
+  }).filter(Boolean).join("");
+
+  return `
+    <div class="workshop-prototype-frame" data-template="${escapeHtml(template)}" style="width:${displayW}px;height:${displayH}px;max-width:100%;" role="img" aria-label="Low-fi prototype preview placeholder frame">
+      ${regionHtml || `<div class="workshop-placeholder">No valid regions</div>`}
+    </div>
+    <p class="seed-hint">${escapeHtml(SYNTHETIC_DEVELOPMENT_PROTOTYPE)} · placeholders only · no &lt;img&gt; · concept direction only</p>`;
+}
+
+function sanitizeBounds(bounds, canvasW, canvasH) {
+  if (!bounds || typeof bounds !== "object") return null;
+  const x = Number(bounds.x);
+  const y = Number(bounds.y);
+  const w = Number(bounds.w);
+  const h = Number(bounds.h);
+  if (![x, y, w, h].every(Number.isFinite)) return null;
+  if (x < 0 || y < 0 || w <= 0 || h <= 0) return null;
+  if (x + w > canvasW + 0.0001 || y + h > canvasH + 0.0001) return null;
+  return { x, y, w, h };
+}
+
+function resolvePaletteHex(palette, roleRef) {
+  if (!roleRef) return null;
+  const role = String(roleRef);
+  const entry = palette?.[role];
+  const hex = entry?.hex || (typeof entry === "string" ? entry : null);
+  if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(String(hex))) return null;
+  return String(hex).toUpperCase();
+}
+
+function renderWorkshopContributions(contributions, document) {
+  if (!workshopContributions) return;
+  const fromApi = Array.isArray(contributions) ? contributions : [];
+  const fromDoc = Array.isArray(document?.contributions) ? document.contributions : [];
+  if (!fromApi.length && !fromDoc.length) {
+    workshopContributions.innerHTML = `<p class="seed-hint">No role contributions returned. Expected exactly 4 durable roles.</p>`;
+    return;
+  }
+
+  const ordered = WORKSHOP_LOGICAL_ROLES.map(role => {
+    const apiRow = fromApi.find(x => x.logicalRole === role);
+    const docRow = fromDoc.find(x => x.logicalRole === role);
+    return { role, apiRow, docRow };
+  });
+
+  const recognized = ordered.filter(x => x.apiRow || x.docRow).length;
+  if (recognized !== 4) {
+    workshopContributions.innerHTML = `<p class="seed-hint">Expected exactly 4 role contributions; found ${escapeHtml(String(recognized))} recognized roles. No client concept invention.</p>`;
+  }
+
+  workshopContributions.innerHTML = ordered.map(({ role, apiRow, docRow }) => {
+    let summary = docRow?.summary || "";
+    if (apiRow?.contributionJson) {
+      try {
+        const parsed = typeof apiRow.contributionJson === "string"
+          ? JSON.parse(apiRow.contributionJson)
+          : apiRow.contributionJson;
+        if (parsed?.summary) summary = parsed.summary;
+      } catch {
+        /* keep document summary */
+      }
+    }
+    return `
+      <div class="workshop-contribution-card">
+        <strong>${escapeHtml(role)}</strong>
+        <span>${escapeHtml(summary || "—")}</span>
+        <span>Producing run <code>${escapeHtml(apiRow?.producingAgentRunId || "—")}</code></span>
+      </div>`;
+  }).join("");
+}
+
+function renderWorkshopAgentRuns(runs) {
+  if (!workshopAgentRuns) return;
+  if (!runs.length) {
+    workshopAgentRuns.innerHTML = `<p class="seed-hint">No agent-run receipts returned for this package.</p>`;
+    return;
+  }
+  workshopAgentRuns.innerHTML = `
+    <p class="workshop-roles-note">${escapeHtml(FOUR_TO_THREE_EXPLANATION)}. Showing ${escapeHtml(String(runs.length))} receipt(s) from the package endpoint — exactly 3 workers expected, never 4 fake agent runs.</p>
+    ${runs.map(run => `
+      <div class="workshop-run-card">
+        <strong>${escapeHtml(run.logicalRole || "—")} · ${escapeHtml(run.status || "—")}</strong>
+        <span>Worker profile <code>${escapeHtml(run.workerProfileVersion || "—")}</code> · prompt <code>${escapeHtml(run.promptPackVersion || "—")}</code></span>
+        <span>Assigned roles <code>${escapeHtml(run.assignedRolesJson || "—")}</code></span>
+        <span>Tokens prompt/completion/total: ${escapeHtml(String(run.promptTokens ?? "—"))} / ${escapeHtml(String(run.completionTokens ?? "—"))} / ${escapeHtml(String(run.totalTokens ?? "—"))}</span>
+        <span>Estimated cost USD <code>${escapeHtml(formatCost(run.estimatedCostUsd))}</code> · provider <code>${escapeHtml(run.providerKey || "—")}</code> · model <code>${escapeHtml(run.modelId || "—")}</code></span>
+      </div>`).join("")}
+  `;
+}
+
+function syncWorkshopConceptRadioLabels(packageDocument) {
+  const concepts = Array.isArray(packageDocument?.concepts) ? packageDocument.concepts : [];
+  workshopConceptSelect?.querySelectorAll('input[name="selectedConceptId"]').forEach(input => {
+    const concept = concepts.find(c => c.id === input.value);
+    const label = input.closest("label");
+    if (!label) return;
+    const name = concept?.name ? ` · ${concept.name}` : "";
+    const textNode = Array.from(label.childNodes).find(node => node.nodeType === Node.TEXT_NODE && String(node.textContent || "").trim());
+    if (textNode) {
+      textNode.textContent = ` ${input.value}${name}`;
+    } else {
+      label.appendChild(window.document.createTextNode(` ${input.value}${name}`));
+    }
+  });
+}
+
+function clearWorkshopConceptSelection() {
+  workshopDecisionForm?.querySelectorAll('input[name="selectedConceptId"]').forEach(input => {
+    input.checked = false;
+  });
+}
+
+function setWorkshopControlsEnabled(enabled) {
+  const fields = [
+    workshopObjective, workshopCampaignGoal, workshopAudienceFocus,
+    workshopChannelFormat, workshopDeliverables, workshopCta, workshopConstraints
+  ];
+  fields.forEach(field => {
+    if (field) field.disabled = !enabled;
+  });
+  if (workshopJobSubmit) workshopJobSubmit.disabled = !enabled;
+  if (workshopRefreshLists) workshopRefreshLists.disabled = !state.liveChatEnabled || !state.workspaceId;
+  if (workshopJobSelect) {
+    const hasJobs = (state.workshopJobs || []).length > 0;
+    workshopJobSelect.disabled = !state.liveChatEnabled || !hasJobs;
+  }
+  if (workshopPackageSelect) {
+    const hasPackages = (state.conceptPackages?.versions || []).length > 0;
+    workshopPackageSelect.disabled = !state.liveChatEnabled || !hasPackages;
+  }
+  setWorkshopDecisionEnabled(enabled && state.conceptPackage?.status === "PROPOSED");
+}
+
+function setWorkshopDecisionEnabled(enabled) {
+  if (workshopRationale) workshopRationale.disabled = !enabled;
+  if (workshopConfirmApprove) workshopConfirmApprove.disabled = !enabled;
+  workshopConceptSelect?.querySelectorAll('input[name="selectedConceptId"]').forEach(input => {
+    input.disabled = !enabled;
+  });
+  workshopDecisionForm?.querySelectorAll("button").forEach(button => {
     button.disabled = !enabled;
   });
 }
