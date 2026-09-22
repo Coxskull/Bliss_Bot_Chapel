@@ -262,7 +262,13 @@ public sealed class WeddingPlannerPhase9PersistenceTests
 
     private static async Task<BlissDbContext> SeedBlissPlacementGraphAsync()
     {
-        var db = TestDb.CreateContext();
+        var postgresConnection = Environment.GetEnvironmentVariable("BLISS_PHASE9_POSTGRES");
+        var db = string.IsNullOrWhiteSpace(postgresConnection)
+            ? TestDb.CreateContext()
+            : new BlissDbContext(
+                new DbContextOptionsBuilder<BlissDbContext>()
+                    .UseNpgsql(postgresConnection)
+                    .Options);
         await new Phase1DataSeeder(db).SeedAsync();
         await new Phase2DataSeeder(db).SeedAsync();
         return db;
