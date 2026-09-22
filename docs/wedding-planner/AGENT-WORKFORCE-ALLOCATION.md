@@ -26,9 +26,21 @@ The implementation uses the low end of the blueprint's 1–2 worker range.
 Splitting the roles later requires a documented cost, quality, and security
 rationale.
 
+## Phase 3 (implemented)
+
+- New logical AI roles: 0.
+- New executable AI workers: 0.
+- Alpha Color Intelligence is pure deterministic .NET software using
+  `aci.hsl.v1`.
+- Inputs are explicit human seed colors. Approved Brand DNA is provenance
+  only and is never parsed to invent colors.
+- Outputs are immutable `color-profile.v1` versions with canonical input
+  SHA-256 and WCAG contrast arithmetic.
+- Human approval remains required; Color Intelligence cannot self-approve.
+- No provider, prompt, model, token, cost, or agent-run record is created.
+
 ## Later starting allocations
 
-- Phase 3: Alpha Color Intelligence is deterministic software.
 - Phase 4: eight Curator responsibilities on about three workers
   (research, analysis/evidence, synthesis/risk).
 - Phase 5: four workshop roles on about 2–4 workers.

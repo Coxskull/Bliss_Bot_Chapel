@@ -1,4 +1,11 @@
 const SOURCE_SYSTEM = "PUBLIC_WEDDING_PLANNER";
+const COLOR_INTELLIGENCE_LABEL = "PHASE 3 · DETERMINISTIC COLOR INTELLIGENCE";
+
+const PALETTE_ROLES = [
+  "primary", "secondary", "accent", "background", "surface",
+  "onPrimary", "onSecondary", "onAccent", "onBackground", "onSurface",
+  "neutral50", "neutral100", "neutral200", "neutral400", "neutral600", "neutral800", "neutral900"
+];
 
 const state = {
   session: null,
@@ -10,6 +17,8 @@ const state = {
   messages: [],
   brandDna: null,
   brandDnaList: null,
+  colorProfiles: null,
+  colorProfile: null,
   busy: false
 };
 
@@ -31,6 +40,57 @@ const dnaDecisionForm = document.querySelector("#brand-dna-decision-form");
 const dnaRationale = document.querySelector("#brand-dna-rationale");
 const dnaConfirmApprove = document.querySelector("#brand-dna-confirm-approve");
 
+const colorPrereq = document.querySelector("#color-prereq-status");
+const colorComputeForm = document.querySelector("#color-compute-form");
+const colorComputeSubmit = document.querySelector("#color-compute-submit");
+const colorRefreshList = document.querySelector("#color-refresh-list");
+const colorNotes = document.querySelector("#color-notes");
+const colorProfileSelect = document.querySelector("#color-profile-select");
+const colorProfileView = document.querySelector("#color-profile-view");
+const colorStatusLabel = document.querySelector("#color-status-label");
+const colorCurrentBadge = document.querySelector("#color-current-badge");
+const colorVersionNumber = document.querySelector("#color-version-number");
+const colorSummaryText = document.querySelector("#color-summary-text");
+const colorSchemaVersion = document.querySelector("#color-schema-version");
+const colorAlgorithmVersion = document.querySelector("#color-algorithm-version");
+const colorInputSha = document.querySelector("#color-input-sha");
+const colorBrandDnaProvenance = document.querySelector("#color-brand-dna-provenance");
+const colorSwatchGrid = document.querySelector("#color-swatch-grid");
+const colorContrastDisclaimer = document.querySelector("#color-contrast-disclaimer");
+const colorContrastList = document.querySelector("#color-contrast-list");
+const colorGeometryDisclaimer = document.querySelector("#color-geometry-disclaimer");
+const colorDecisionForm = document.querySelector("#color-decision-form");
+const colorRationale = document.querySelector("#color-rationale");
+const colorConfirmApprove = document.querySelector("#color-confirm-approve");
+
+const colorFields = {
+  primary: {
+    picker: document.querySelector("#color-primary-picker"),
+    text: document.querySelector("#color-primary-hex"),
+    required: true
+  },
+  secondary: {
+    picker: document.querySelector("#color-secondary-picker"),
+    text: document.querySelector("#color-secondary-hex"),
+    required: false
+  },
+  accent: {
+    picker: document.querySelector("#color-accent-picker"),
+    text: document.querySelector("#color-accent-hex"),
+    required: false
+  },
+  background: {
+    picker: document.querySelector("#color-background-picker"),
+    text: document.querySelector("#color-background-hex"),
+    required: false
+  },
+  surface: {
+    picker: document.querySelector("#color-surface-picker"),
+    text: document.querySelector("#color-surface-hex"),
+    required: false
+  }
+};
+
 menu?.addEventListener("click", () => {
   const open = nav?.classList.toggle("open") ?? false;
   menu.setAttribute("aria-expanded", String(open));
@@ -48,6 +108,8 @@ document.addEventListener("DOMContentLoaded", () => {
   bootstrapPlanner().catch(error => {
     setSessionStatus("Unable to check authentication", error.message);
     setComposerEnabled(false);
+    setColorControlsEnabled(false);
+    renderColorPrerequisite();
   });
 });
 
@@ -67,6 +129,43 @@ function bindPlannerUi() {
     const decision = submitter?.dataset?.decision;
     if (!decision) return;
     decideBrandDna(decision).catch(error => setTurnStatus("error", error.message));
+  });
+
+  colorComputeForm?.addEventListener("submit", event => {
+    event.preventDefault();
+    computeColorProfile().catch(error => setTurnStatus("error", error.message));
+  });
+
+  colorRefreshList?.addEventListener("click", () => {
+    loadColorProfiles().catch(error => setTurnStatus("error", error.message));
+  });
+
+  colorProfileSelect?.addEventListener("change", () => {
+    const id = colorProfileSelect.value;
+    const versions = state.colorProfiles?.versions || [];
+    const selected = versions.find(x => x.colorProfileVersionId === id) || null;
+    state.colorProfile = selected;
+    renderColorProfile(selected, state.colorProfiles);
+  });
+
+  colorDecisionForm?.addEventListener("submit", event => {
+    event.preventDefault();
+    const submitter = event.submitter;
+    const decision = submitter?.dataset?.decision;
+    if (!decision) return;
+    decideColorProfile(decision).catch(error => setTurnStatus("error", error.message));
+  });
+
+  Object.values(colorFields).forEach(field => {
+    field.picker?.addEventListener("input", () => {
+      if (field.text) field.text.value = String(field.picker.value || "").toUpperCase();
+    });
+    field.text?.addEventListener("input", () => {
+      const value = String(field.text.value || "").trim();
+      if (/^#[0-9A-Fa-f]{6}$/.test(value) && field.picker) {
+        field.picker.value = value;
+      }
+    });
   });
 
   document.querySelectorAll("[data-example]").forEach(button => {
@@ -93,7 +192,9 @@ async function bootstrapPlanner() {
     state.liveChatEnabled = false;
     setComposerEnabled(false);
     setBrandDnaControlsEnabled(false);
+    setColorControlsEnabled(false);
     renderAuthGate(session);
+    renderColorPrerequisite();
     return;
   }
 
@@ -107,8 +208,11 @@ async function bootstrapPlanner() {
   await openPrimaryWorkspaceAndSession(session.advertiserId);
   await loadMessages();
   await loadBrandDna();
+  await loadColorProfiles();
   setComposerEnabled(true);
   setBrandDnaControlsEnabled(true);
+  renderColorPrerequisite();
+  setColorControlsEnabled(canComputeColorProfiles());
   setSessionStatus(
     "Live Concierge ready",
     "Messages are saved to your planning session. Planner replies come only from the server. Brand DNA stays PROPOSED until you approve or reject it."
@@ -188,6 +292,56 @@ async function loadBrandDna() {
     null;
   state.brandDna = selected;
   renderBrandDna(selected, list);
+  renderColorPrerequisite();
+  setColorControlsEnabled(canComputeColorProfiles());
+}
+
+async function loadColorProfiles() {
+  if (!state.workspaceId) return;
+  const list = await api(`/api/wedding-planner/workspaces/${state.workspaceId}/color-profiles`);
+  state.colorProfiles = list;
+  const versions = list?.versions || [];
+  const selected =
+    versions.find(x => x.colorProfileVersionId === state.colorProfile?.colorProfileVersionId) ||
+    versions.find(x => x.status === "PROPOSED") ||
+    versions.find(x => x.colorProfileVersionId === list.currentApprovedColorProfileVersionId) ||
+    versions[0] ||
+    null;
+  state.colorProfile = selected;
+  renderColorProfileList(list, selected);
+  renderColorProfile(selected, list);
+}
+
+function hasCurrentApprovedBrandDna() {
+  return !!state.brandDnaList?.currentApprovedBrandDnaVersionId;
+}
+
+function canComputeColorProfiles() {
+  return state.liveChatEnabled && !!state.workspaceId && hasCurrentApprovedBrandDna();
+}
+
+function renderColorPrerequisite() {
+  if (!colorPrereq) return;
+  if (!state.session) {
+    colorPrereq.dataset.ready = "false";
+    colorPrereq.innerHTML = `<span>Prerequisite check</span><p>Checking authentication…</p>`;
+    return;
+  }
+
+  if (!state.liveChatEnabled) {
+    colorPrereq.dataset.ready = "false";
+    colorPrereq.innerHTML = `<span>Authenticated writable advertiser required</span><p>Color Intelligence compute stays disabled until an authenticated advertiser with write access is signed in. No random or test advertiser is bound automatically.</p>`;
+    return;
+  }
+
+  if (!hasCurrentApprovedBrandDna()) {
+    colorPrereq.dataset.ready = "false";
+    colorPrereq.innerHTML = `<span>Current-approved Brand DNA required</span><p>Approve a Brand DNA proposal first. Color profiles cannot be computed without a current-approved Brand DNA pointer for this workspace.</p>`;
+    return;
+  }
+
+  colorPrereq.dataset.ready = "true";
+  colorPrereq.innerHTML = `<span>Prerequisites met · ${COLOR_INTELLIGENCE_LABEL}</span><p>Authenticated writable advertiser and current-approved Brand DNA are present. Compute uses deterministic <code>aci.hsl.v1</code> only — no AI. HSL offsets are geometry, not psychology. WCAG figures are arithmetic evidence, not accessibility certification.</p>`;
 }
 
 async function submitTurn() {
@@ -314,7 +468,109 @@ async function decideBrandDna(decision) {
   } finally {
     state.busy = false;
     setBrandDnaControlsEnabled(state.liveChatEnabled);
+    setColorControlsEnabled(canComputeColorProfiles());
   }
+}
+
+async function computeColorProfile() {
+  if (!canComputeColorProfiles() || state.busy) return;
+  const primaryHex = String(colorFields.primary.text?.value || "").trim();
+  if (!primaryHex) {
+    setTurnStatus("error", "Primary hex is required to compute a color profile.");
+    return;
+  }
+
+  const payload = {
+    primaryHex,
+    secondaryHex: optionalHex(colorFields.secondary.text?.value),
+    accentHex: optionalHex(colorFields.accent.text?.value),
+    backgroundHex: optionalHex(colorFields.background.text?.value),
+    surfaceHex: optionalHex(colorFields.surface.text?.value),
+    notes: String(colorNotes?.value || "").trim() || null,
+    sourceSystem: SOURCE_SYSTEM,
+    idempotencyKey: `color-${crypto.randomUUID()}`
+  };
+
+  state.busy = true;
+  setColorControlsEnabled(false);
+  setTurnStatus("loading", "Computing deterministic color profile on the server…");
+  try {
+    const version = await api(`/api/wedding-planner/workspaces/${state.workspaceId}/color-profiles/compute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    await loadColorProfiles();
+    state.colorProfile = version;
+    renderColorProfileList(state.colorProfiles, version);
+    renderColorProfile(version, state.colorProfiles);
+    setTurnStatus(
+      version.isReplay ? "replay" : "loading",
+      version.isReplay
+        ? "Replayed an existing color profile compute."
+        : `Created PROPOSED color profile version ${version.versionNumber}. Palette and contrast come only from the server document.`
+    );
+    if (!version.isReplay) {
+      setTimeout(() => clearTurnStatus(), 4200);
+    }
+  } finally {
+    state.busy = false;
+    setColorControlsEnabled(canComputeColorProfiles());
+  }
+}
+
+async function decideColorProfile(decision) {
+  if (!state.liveChatEnabled || !state.colorProfile || state.busy) return;
+  const rationale = String(colorRationale?.value || "").trim();
+  if (!rationale) {
+    setTurnStatus("error", "A rationale is required for color profile decisions.");
+    return;
+  }
+  if (decision === "APPROVE" && !colorConfirmApprove?.checked) {
+    setTurnStatus("error", "Confirm the APPROVE checkbox before approving a color profile.");
+    return;
+  }
+
+  state.busy = true;
+  setColorDecisionEnabled(false);
+  setTurnStatus("loading", `Recording color profile ${decision} decision…`);
+  try {
+    const result = await api(`/api/wedding-planner/color-profiles/${state.colorProfile.colorProfileVersionId}/decisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        decision,
+        rationale,
+        sourceSystem: SOURCE_SYSTEM,
+        idempotencyKey: `color-decision-${crypto.randomUUID()}`
+      })
+    });
+    await loadColorProfiles();
+    if (result?.version) {
+      state.colorProfile = result.version;
+      renderColorProfileList(state.colorProfiles, result.version);
+      renderColorProfile(result.version, state.colorProfiles);
+    }
+    if (colorRationale) colorRationale.value = "";
+    if (colorConfirmApprove) colorConfirmApprove.checked = false;
+    setTurnStatus(
+      result?.isReplay ? "replay" : "loading",
+      result?.isReplay
+        ? `Replayed color profile ${decision} decision.`
+        : `${decision} recorded. PROPOSED, APPROVED, and CURRENT remain distinct.`
+    );
+    if (!result?.isReplay) {
+      setTimeout(() => clearTurnStatus(), 4200);
+    }
+  } finally {
+    state.busy = false;
+    setColorControlsEnabled(canComputeColorProfiles());
+  }
+}
+
+function optionalHex(value) {
+  const trimmed = String(value || "").trim();
+  return trimmed || null;
 }
 
 function renderMessages(messages) {
@@ -374,6 +630,147 @@ function renderBrandDna(version, list) {
   });
 }
 
+function renderColorProfileList(list, selected) {
+  if (!colorProfileSelect) return;
+  const versions = list?.versions || [];
+  const currentId = list?.currentApprovedColorProfileVersionId || null;
+  if (!versions.length) {
+    colorProfileSelect.innerHTML = `<option value="">No color profiles yet</option>`;
+    colorProfileSelect.disabled = true;
+    return;
+  }
+  colorProfileSelect.disabled = false;
+  colorProfileSelect.innerHTML = versions.map(version => {
+    const markers = [];
+    if (version.status) markers.push(version.status);
+    if (version.colorProfileVersionId === currentId || version.isCurrentApproved) markers.push("CURRENT");
+    return `<option value="${escapeHtml(version.colorProfileVersionId)}"${selected?.colorProfileVersionId === version.colorProfileVersionId ? " selected" : ""}>v${escapeHtml(String(version.versionNumber))} · ${escapeHtml(markers.join(" · "))}</option>`;
+  }).join("");
+}
+
+function renderColorProfile(version, list) {
+  if (!colorProfileView) return;
+  if (!version) {
+    colorProfileView.hidden = true;
+    if (colorDecisionForm) colorDecisionForm.hidden = true;
+    return;
+  }
+
+  colorProfileView.hidden = false;
+  const currentId = list?.currentApprovedColorProfileVersionId || null;
+  const isCurrent = !!currentId && (currentId === version.colorProfileVersionId || version.isCurrentApproved === true);
+
+  if (colorStatusLabel) {
+    colorStatusLabel.textContent = version.status || "UNKNOWN";
+    colorStatusLabel.dataset.status = version.status || "";
+  }
+  if (colorCurrentBadge) colorCurrentBadge.hidden = !isCurrent;
+  if (colorVersionNumber) colorVersionNumber.textContent = String(version.versionNumber ?? "—");
+  if (colorSummaryText) colorSummaryText.textContent = version.summary || "No summary returned by the server.";
+  if (colorSchemaVersion) colorSchemaVersion.textContent = version.schemaVersion || "—";
+  if (colorAlgorithmVersion) colorAlgorithmVersion.textContent = version.algorithmVersion || "—";
+  if (colorInputSha) colorInputSha.textContent = version.inputSha256 || "—";
+  if (colorBrandDnaProvenance) {
+    colorBrandDnaProvenance.textContent = version.approvedBrandDnaVersionId || "—";
+  }
+
+  const document = parseColorDocument(version.documentJson);
+  renderColorSwatches(document);
+  renderColorContrast(document);
+  if (colorGeometryDisclaimer) {
+    colorGeometryDisclaimer.textContent = document?.geometryDisclaimer || "";
+    colorGeometryDisclaimer.hidden = !document?.geometryDisclaimer;
+  }
+
+  const canDecide = state.liveChatEnabled && version.status === "PROPOSED";
+  if (colorDecisionForm) colorDecisionForm.hidden = !canDecide;
+  setColorDecisionEnabled(canDecide);
+}
+
+function parseColorDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+function seedProvenanceLabel(seeds, role) {
+  if (!seeds) return "SERVER";
+  if (role === "primary") return "HUMAN";
+  if (role === "secondary") return seeds.secondaryDerived ? "DERIVED" : "HUMAN";
+  if (role === "accent") return seeds.accentDerived ? "DERIVED" : "HUMAN";
+  if (role === "background") return seeds.backgroundDefaulted ? "DEFAULT" : "HUMAN";
+  if (role === "surface") return seeds.surfaceDefaulted ? "DEFAULT" : "HUMAN";
+  return "SERVER";
+}
+
+function renderColorSwatches(document) {
+  if (!colorSwatchGrid) return;
+  const palette = document?.palette;
+  if (!palette) {
+    colorSwatchGrid.innerHTML = `<p class="seed-hint">No palette roles in server documentJson.</p>`;
+    return;
+  }
+  const seeds = document?.seeds || null;
+  colorSwatchGrid.innerHTML = PALETTE_ROLES.map(role => {
+    const entry = palette[role];
+    const hex = entry?.hex;
+    if (!hex) return "";
+    const provenance = ["primary", "secondary", "accent", "background", "surface"].includes(role)
+      ? seedProvenanceLabel(seeds, role)
+      : "";
+    return `
+      <div class="color-swatch">
+        <div class="color-swatch-chip" style="background:${escapeHtml(hex)}" title="${escapeHtml(hex)}"></div>
+        <strong>${escapeHtml(role)}</strong>
+        <code>${escapeHtml(hex)}</code>
+        ${provenance ? `<span class="provenance">${escapeHtml(provenance)}</span>` : ""}
+      </div>`;
+  }).filter(Boolean).join("");
+}
+
+function renderColorContrast(document) {
+  if (!colorContrastList) return;
+  const evidence = document?.contrastEvidence;
+  if (colorContrastDisclaimer) {
+    colorContrastDisclaimer.textContent = evidence?.disclaimer || "";
+    colorContrastDisclaimer.hidden = !evidence?.disclaimer;
+  }
+  const pairs = Array.isArray(evidence?.pairs) ? evidence.pairs : [];
+  if (!pairs.length) {
+    colorContrastList.innerHTML = `<p class="seed-hint">No contrast evidence pairs in server documentJson.</p>`;
+    return;
+  }
+  colorContrastList.innerHTML = pairs.map(pair => {
+    const ratio = pair.ratio == null ? "—" : Number(pair.ratio).toFixed(2);
+    return `
+      <div class="color-contrast-row">
+        <div class="color-contrast-pair" aria-hidden="true">
+          <span style="background:${escapeHtml(pair.foregroundHex || "#000000")}"></span>
+          <span style="background:${escapeHtml(pair.backgroundHex || "#FFFFFF")}"></span>
+        </div>
+        <div class="color-contrast-info">
+          <strong>${escapeHtml(pair.foregroundRole || "?")} on ${escapeHtml(pair.backgroundRole || "?")}</strong>
+          <span>Ratio ${escapeHtml(ratio)} · ${escapeHtml(pair.foregroundHex || "")} / ${escapeHtml(pair.backgroundHex || "")}</span>
+        </div>
+        <div class="aa-badges">
+          ${aaBadge("AA", pair.aaNormal)}
+          ${aaBadge("AA large", pair.aaLarge)}
+          ${aaBadge("AAA", pair.aaaNormal)}
+          ${aaBadge("AAA large", pair.aaaLarge)}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function aaBadge(label, pass) {
+  const cls = pass === true ? "pass" : "fail";
+  const text = pass === true ? `${label} pass` : `${label} fail`;
+  return `<span class="aa-badge ${cls}">${escapeHtml(text)}</span>`;
+}
+
 function setComposerEnabled(enabled) {
   if (input) input.disabled = !enabled;
   if (sendButton) sendButton.disabled = !enabled;
@@ -389,6 +786,29 @@ function setBrandDnaControlsEnabled(enabled) {
   if (dnaConfirmApprove) dnaConfirmApprove.disabled = !canDecide;
   dnaDecisionForm?.querySelectorAll("button").forEach(button => {
     button.disabled = !canDecide;
+  });
+}
+
+function setColorControlsEnabled(enabled) {
+  Object.values(colorFields).forEach(field => {
+    if (field.picker) field.picker.disabled = !enabled;
+    if (field.text) field.text.disabled = !enabled;
+  });
+  if (colorNotes) colorNotes.disabled = !enabled;
+  if (colorComputeSubmit) colorComputeSubmit.disabled = !enabled;
+  if (colorRefreshList) colorRefreshList.disabled = !state.liveChatEnabled || !state.workspaceId;
+  if (colorProfileSelect) {
+    const hasVersions = (state.colorProfiles?.versions || []).length > 0;
+    colorProfileSelect.disabled = !state.liveChatEnabled || !hasVersions;
+  }
+  setColorDecisionEnabled(enabled && state.colorProfile?.status === "PROPOSED");
+}
+
+function setColorDecisionEnabled(enabled) {
+  if (colorRationale) colorRationale.disabled = !enabled;
+  if (colorConfirmApprove) colorConfirmApprove.disabled = !enabled;
+  colorDecisionForm?.querySelectorAll("button").forEach(button => {
+    button.disabled = !enabled;
   });
 }
 

@@ -24,6 +24,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<CampaignPlacementService>();
         services.AddScoped<WeddingPlannerService>();
         services.AddScoped<WeddingPlannerOrchestrationService>();
+        services.AddScoped<WeddingPlannerColorIntelligenceService>();
         services.AddWeddingPlannerAiProvider(configuration);
         services.AddScoped<WeddingPlannerDataSeeder>();
         return services;

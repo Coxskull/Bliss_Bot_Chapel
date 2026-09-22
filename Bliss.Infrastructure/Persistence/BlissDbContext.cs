@@ -46,6 +46,8 @@ public class BlissDbContext : DbContext
     public DbSet<WeddingPlannerAgentRun> WeddingPlannerAgentRuns => Set<WeddingPlannerAgentRun>();
     public DbSet<WeddingPlannerBrandDnaVersion> WeddingPlannerBrandDnaVersions => Set<WeddingPlannerBrandDnaVersion>();
     public DbSet<WeddingPlannerBrandDnaDecision> WeddingPlannerBrandDnaDecisions => Set<WeddingPlannerBrandDnaDecision>();
+    public DbSet<WeddingPlannerColorProfileVersion> WeddingPlannerColorProfileVersions => Set<WeddingPlannerColorProfileVersion>();
+    public DbSet<WeddingPlannerColorProfileDecision> WeddingPlannerColorProfileDecisions => Set<WeddingPlannerColorProfileDecision>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

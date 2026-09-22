@@ -29,6 +29,11 @@ public sealed class WeddingPlannerWorkspaceConfiguration : IEntityTypeConfigurat
             .HasForeignKey(x => x.CurrentApprovedBrandDnaVersionId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(x => x.CurrentApprovedColorProfileVersion)
+            .WithMany()
+            .HasForeignKey(x => x.CurrentApprovedColorProfileVersionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasMany(x => x.Sessions)
             .WithOne(x => x.Workspace)
             .HasForeignKey(x => x.WorkspaceId)

@@ -28,6 +28,11 @@ public static class WeddingPlannerAuditActions
     public const string BrandDnaApproved = "BRAND_DNA_APPROVED";
     public const string BrandDnaRejected = "BRAND_DNA_REJECTED";
     public const string BrandDnaReplayed = "BRAND_DNA_REPLAYED";
+    public const string ColorProfileProposed = "COLOR_PROFILE_PROPOSED";
+    public const string ColorProfileApproved = "COLOR_PROFILE_APPROVED";
+    public const string ColorProfileRejected = "COLOR_PROFILE_REJECTED";
+    public const string ColorProfileSuperseded = "COLOR_PROFILE_SUPERSEDED";
+    public const string ColorProfileReplayed = "COLOR_PROFILE_REPLAYED";
 }
 
 public static class WeddingPlannerOutcomes
@@ -41,6 +46,7 @@ public static class WeddingPlannerOutcomes
     public const string Proposed = "PROPOSED";
     public const string Approved = "APPROVED";
     public const string Rejected = "REJECTED";
+    public const string Superseded = "SUPERSEDED";
 }
 
 public static class WeddingPlannerAgentRoles
@@ -79,6 +85,26 @@ public static class WeddingPlannerPromptPacks
 public static class WeddingPlannerSchemaVersions
 {
     public const string BrandDnaV1 = "brand-dna.v1";
+    public const string ColorProfileV1 = "color-profile.v1";
+}
+
+public static class WeddingPlannerAlgorithmVersions
+{
+    public const string AciHslV1 = "aci.hsl.v1";
+}
+
+public static class WeddingPlannerColorProfileStatuses
+{
+    public const string Proposed = "PROPOSED";
+    public const string Approved = "APPROVED";
+    public const string Rejected = "REJECTED";
+    public const string Superseded = "SUPERSEDED";
+}
+
+public static class WeddingPlannerColorProfileDecisions
+{
+    public const string Approve = "APPROVE";
+    public const string Reject = "REJECT";
 }
 
 public static class WeddingPlannerResponseFormats
