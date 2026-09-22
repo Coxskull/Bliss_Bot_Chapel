@@ -99,4 +99,29 @@ public sealed class WeddingPlannerAccess(BlissAuthenticationOptions options, Ope
         || actor.IsAdmin
         || actor.IsReviewer
         || actor.BoundAdvertiserId.HasValue;
+
+    /// <summary>
+    /// Phase 9 job create / decision: operator/admin only.
+    /// Intentionally narrower than <see cref="CanWrite"/> and Phase 7 QA create.
+    /// </summary>
+    public bool CanWriteMeasurementLearning(WeddingPlannerActor actor) =>
+        !options.Enabled || actor.IsOperator || actor.IsAdmin;
+
+    /// <summary>
+    /// Phase 9 read across workspaces for reviewer|operator|admin.
+    /// Does not grant Phase 9 write.
+    /// </summary>
+    public bool CanAccessMeasurementLearningAcrossWorkspaces(WeddingPlannerActor actor) =>
+        !options.Enabled || actor.IsReviewer || actor.IsOperator || actor.IsAdmin;
+
+    /// <summary>
+    /// Phase 9 read: advertiser own workspace, or dedicated Phase 9 cross-workspace read policy.
+    /// Viewers have no Phase 9 read authority.
+    /// </summary>
+    public bool CanReadMeasurementLearning(WeddingPlannerActor actor) =>
+        !options.Enabled
+        || actor.IsOperator
+        || actor.IsAdmin
+        || actor.IsReviewer
+        || actor.BoundAdvertiserId.HasValue;
 }

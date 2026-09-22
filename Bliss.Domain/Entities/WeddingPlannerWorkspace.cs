@@ -17,6 +17,7 @@ public class WeddingPlannerWorkspace
     public Guid? CurrentApprovedCreativePackageVersionId { get; set; }
     public Guid? CurrentAcceptedQaReviewReportVersionId { get; set; }
     public Guid? CurrentCampaignReadinessHandshakeVersionId { get; set; }
+    public Guid? CurrentAcceptedMeasurementLearningReportVersionId { get; set; }
     public string SourceSystem { get; set; } = string.Empty;
     public string IdempotencyKey { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
@@ -30,6 +31,7 @@ public class WeddingPlannerWorkspace
     public WeddingPlannerCreativePackageVersion? CurrentApprovedCreativePackageVersion { get; set; }
     public WeddingPlannerQaReviewReportVersion? CurrentAcceptedQaReviewReportVersion { get; set; }
     public WeddingPlannerCampaignReadinessHandshakeVersion? CurrentCampaignReadinessHandshakeVersion { get; set; }
+    public WeddingPlannerMeasurementLearningReportVersion? CurrentAcceptedMeasurementLearningReportVersion { get; set; }
     public ICollection<WeddingPlannerPlanningSession> Sessions { get; set; } = new List<WeddingPlannerPlanningSession>();
     public ICollection<WeddingPlannerAuditEvent> AuditEvents { get; set; } = new List<WeddingPlannerAuditEvent>();
     public ICollection<WeddingPlannerAgentRun> AgentRuns { get; set; } = new List<WeddingPlannerAgentRun>();
@@ -60,4 +62,12 @@ public class WeddingPlannerWorkspace
         new List<WeddingPlannerCampaignReadinessHandshakeVersion>();
     public ICollection<WeddingPlannerCampaignReadinessDecision> CampaignReadinessDecisions { get; set; } =
         new List<WeddingPlannerCampaignReadinessDecision>();
+    public ICollection<WeddingPlannerMeasurementLearningJob> MeasurementLearningJobs { get; set; } =
+        new List<WeddingPlannerMeasurementLearningJob>();
+    public ICollection<WeddingPlannerMeasurementLearningReportVersion> MeasurementLearningReportVersions { get; set; } =
+        new List<WeddingPlannerMeasurementLearningReportVersion>();
+    public ICollection<WeddingPlannerMeasurementLearningRoleContribution> MeasurementLearningRoleContributions { get; set; } =
+        new List<WeddingPlannerMeasurementLearningRoleContribution>();
+    public ICollection<WeddingPlannerMeasurementLearningDecision> MeasurementLearningDecisions { get; set; } =
+        new List<WeddingPlannerMeasurementLearningDecision>();
 }

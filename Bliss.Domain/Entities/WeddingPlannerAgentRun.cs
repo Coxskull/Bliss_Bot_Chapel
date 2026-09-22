@@ -25,6 +25,7 @@ public class WeddingPlannerAgentRun
     public Guid? OutputConceptPackageVersionId { get; set; }
     public Guid? OutputCreativePackageVersionId { get; set; }
     public Guid? OutputQaReviewReportVersionId { get; set; }
+    public Guid? OutputMeasurementLearningReportVersionId { get; set; }
     public string? RequestId { get; set; }
     public string? ProviderRequestId { get; set; }
     public string SourceSystem { get; set; } = string.Empty;
@@ -50,4 +51,5 @@ public class WeddingPlannerAgentRun
     public WeddingPlannerConceptPackageVersion? OutputConceptPackageVersion { get; set; }
     public WeddingPlannerCreativePackageVersion? OutputCreativePackageVersion { get; set; }
     public WeddingPlannerQaReviewReportVersion? OutputQaReviewReportVersion { get; set; }
+    public WeddingPlannerMeasurementLearningReportVersion? OutputMeasurementLearningReportVersion { get; set; }
 }

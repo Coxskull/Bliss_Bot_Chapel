@@ -22,6 +22,7 @@ public sealed class WeddingPlannerController(
     WeddingPlannerCreativeDepartmentOrchestrationService creative,
     WeddingPlannerQaReviewOrchestrationService qaReview,
     WeddingPlannerCampaignReadinessOrchestrationService campaignReadiness,
+    WeddingPlannerMeasurementLearningOrchestrationService measurementLearning,
     WeddingPlannerAccess access) : ControllerBase
 {
     [HttpGet("workspaces")]
@@ -1563,6 +1564,212 @@ public sealed class WeddingPlannerController(
         });
     }
 
+    [HttpPost("workspaces/{workspaceId:guid}/measurement-learning-jobs")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> CreateMeasurementLearningJob(
+        Guid workspaceId,
+        [FromBody] JsonElement body,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireMeasurementLearningWrite();
+            var root = JsonNode.Parse(body.GetRawText());
+            WeddingPlannerMeasurementLearningValidation.RejectForbiddenInputFields(root);
+            var request = body.Deserialize<CreateWeddingPlannerMeasurementLearningJobRequest>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new InvalidOperationException("Request body is required.");
+
+            var result = await measurementLearning.CreateMeasurementLearningJobAsync(
+                workspaceId,
+                request.CampaignReadinessHandshakeVersionId,
+                request.ObservationStart,
+                request.ObservationEnd,
+                request.SourceLabel,
+                request.SourceSystem,
+                request.AttestationAcknowledged,
+                request.Impressions,
+                request.Clicks,
+                request.Conversions,
+                request.Spend,
+                request.Revenue,
+                request.CurrencyCode,
+                request.Notes,
+                root,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                access.CanAccessMeasurementLearningAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToMeasurementLearningJobDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/measurement-learning-jobs/{dto.MeasurementLearningJobId}", dto);
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/measurement-learning-jobs")]
+    public async Task<ActionResult> ListMeasurementLearningJobs(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireMeasurementLearningRead();
+            var items = await measurementLearning.ListMeasurementLearningJobsAsync(
+                workspaceId,
+                access.CanAccessMeasurementLearningAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToMeasurementLearningJobDto).ToList());
+        });
+    }
+
+    [HttpGet("measurement-learning-jobs/{jobId:guid}")]
+    public async Task<ActionResult> GetMeasurementLearningJob(
+        Guid jobId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireMeasurementLearningRead();
+            var result = await measurementLearning.GetMeasurementLearningJobAsync(
+                jobId,
+                access.CanAccessMeasurementLearningAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToMeasurementLearningJobDto(result));
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/measurement-learning-reports")]
+    public async Task<ActionResult> ListMeasurementLearningReports(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireMeasurementLearningRead();
+            var result = await measurementLearning.ListMeasurementLearningReportsAsync(
+                workspaceId,
+                access.CanAccessMeasurementLearningAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(new WeddingPlannerMeasurementLearningReportListDto(
+                result.WorkspaceId,
+                result.AdvertiserId,
+                result.CurrentAcceptedMeasurementLearningReportVersionId,
+                result.Versions.Select(ToMeasurementLearningReportDto).ToList()));
+        });
+    }
+
+    [HttpGet("measurement-learning-reports/{reportId:guid}")]
+    public async Task<ActionResult> GetMeasurementLearningReport(
+        Guid reportId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireMeasurementLearningRead();
+            var result = await measurementLearning.GetMeasurementLearningReportAsync(
+                reportId,
+                access.CanAccessMeasurementLearningAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToMeasurementLearningReportDto(result));
+        });
+    }
+
+    [HttpGet("measurement-learning-reports/{reportId:guid}/contributions")]
+    public async Task<ActionResult> ListMeasurementLearningContributions(
+        Guid reportId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireMeasurementLearningRead();
+            var items = await measurementLearning.ListContributionsAsync(
+                reportId,
+                access.CanAccessMeasurementLearningAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToMeasurementLearningContributionDto).ToList());
+        });
+    }
+
+    [HttpGet("measurement-learning-reports/{reportId:guid}/agent-runs")]
+    public async Task<ActionResult> ListMeasurementLearningAgentRuns(
+        Guid reportId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireMeasurementLearningRead();
+            var items = await measurementLearning.ListAgentRunsAsync(
+                reportId,
+                access.CanAccessMeasurementLearningAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToAgentRunDto).ToList());
+        });
+    }
+
+    [HttpGet("measurement-learning-reports/{reportId:guid}/decisions")]
+    public async Task<ActionResult> ListMeasurementLearningDecisions(
+        Guid reportId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireMeasurementLearningRead();
+            var items = await measurementLearning.ListDecisionsAsync(
+                reportId,
+                access.CanAccessMeasurementLearningAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToMeasurementLearningDecisionDto).ToList());
+        });
+    }
+
+    [HttpPost("measurement-learning-reports/{reportId:guid}/decisions")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> DecideMeasurementLearningReport(
+        Guid reportId,
+        [FromBody] JsonElement body,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireMeasurementLearningWrite();
+            var root = JsonNode.Parse(body.GetRawText());
+            WeddingPlannerMeasurementLearningValidation.RejectForbiddenDecisionFields(root);
+            var request = body.Deserialize<WeddingPlannerMeasurementLearningDecisionRequest>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new InvalidOperationException("Request body is required.");
+
+            var result = await measurementLearning.DecideMeasurementLearningReportAsync(
+                reportId,
+                request.Decision,
+                request.Rationale,
+                root,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                access.CanAccessMeasurementLearningAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToMeasurementLearningDecisionDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/measurement-learning-reports/{dto.MeasurementLearningReportVersionId}/decisions", dto);
+        });
+    }
+
     private WeddingPlannerActor RequireWrite()
     {
         var actor = access.Resolve(User);
@@ -1614,6 +1821,29 @@ public sealed class WeddingPlannerController(
         {
             throw new WeddingPlannerForbiddenException(
                 "Only operator or admin may commit or revoke campaign-readiness handshakes.");
+        }
+
+        return actor;
+    }
+
+    private WeddingPlannerActor RequireMeasurementLearningRead()
+    {
+        var actor = access.Resolve(User);
+        if (!access.CanReadMeasurementLearning(actor))
+        {
+            throw new WeddingPlannerNotFoundException("Measurement learning resource was not found.");
+        }
+
+        return actor;
+    }
+
+    private WeddingPlannerActor RequireMeasurementLearningWrite()
+    {
+        var actor = access.Resolve(User);
+        if (!access.CanWriteMeasurementLearning(actor))
+        {
+            throw new WeddingPlannerForbiddenException(
+                "Only operator or admin may create measurement-learning jobs or record decisions.");
         }
 
         return actor;
@@ -1713,6 +1943,7 @@ public sealed class WeddingPlannerController(
             result.OutputConceptPackageVersionId,
             result.OutputCreativePackageVersionId,
             result.OutputQaReviewReportVersionId,
+            result.OutputMeasurementLearningReportVersionId,
             result.RequestId,
             result.ProviderRequestId,
             result.SourceSystem,
@@ -2383,4 +2614,149 @@ public sealed class WeddingPlannerController(
                         s.SlotType,
                         s.IsAvailable,
                         s.AvailabilityNote)).ToList())).ToList())).ToList());
+
+    private static WeddingPlannerMeasurementLearningJobDto ToMeasurementLearningJobDto(
+        WeddingPlannerMeasurementLearningJobResult result) =>
+        new(
+            result.MeasurementLearningJobId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.CampaignReadinessHandshakeVersionId,
+            result.HandshakeStatusSnapshot,
+            result.HandshakeWasCurrentAtJobStart,
+            result.CampaignPlacementId,
+            result.CampaignPlacementRunId,
+            result.BlissMatchId,
+            result.CampaignId,
+            result.ContentItemId,
+            result.AdInventorySlotId,
+            result.QaReviewReportVersionId,
+            result.ApprovedCreativePackageVersionId,
+            result.SelectedVariantId,
+            result.SelectedCreativeAssetId,
+            result.ApprovedConceptPackageVersionId,
+            result.SelectedConceptId,
+            result.ApprovedBrandDnaVersionId,
+            result.ApprovedBrandDnaVersionNumber,
+            result.ApprovedColorProfileVersionId,
+            result.ApprovedColorProfileVersionNumber,
+            result.ApprovedResearchReportVersionId,
+            result.ApprovedResearchReportVersionNumber,
+            result.ObservationStart,
+            result.ObservationEnd,
+            result.SourceLabel,
+            result.AttestationAcknowledged,
+            result.Impressions,
+            result.Clicks,
+            result.Conversions,
+            result.Spend,
+            result.Revenue,
+            result.CurrencyCode,
+            result.Notes,
+            result.InputJson,
+            result.InputSha256,
+            result.MetricsJson,
+            result.RulesFindingsJson,
+            result.RulesOverallSeverity,
+            result.PerformanceAnalysisAgentRunId,
+            result.LearningSynthesisAgentRunId,
+            result.OutputMeasurementLearningReportVersionId,
+            result.Status,
+            result.ErrorCode,
+            result.ErrorMessage,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.ActorType,
+            result.ActorLabel,
+            result.StartedAt,
+            result.CompletedAt,
+            result.IsReplay);
+
+    private static WeddingPlannerMeasurementLearningReportVersionDto ToMeasurementLearningReportDto(
+        WeddingPlannerMeasurementLearningReportVersionResult result) =>
+        new(
+            result.MeasurementLearningReportVersionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.VersionNumber,
+            result.SchemaVersion,
+            result.DocumentJson,
+            result.Summary,
+            result.ProducingMeasurementLearningJobId,
+            result.ProducingAgentRunId,
+            result.PerformanceAnalysisAgentRunId,
+            result.LearningSynthesisAgentRunId,
+            result.CampaignReadinessHandshakeVersionId,
+            result.HandshakeStatusSnapshot,
+            result.HandshakeWasCurrentAtJobStart,
+            result.CampaignPlacementId,
+            result.CampaignPlacementRunId,
+            result.BlissMatchId,
+            result.CampaignId,
+            result.ContentItemId,
+            result.AdInventorySlotId,
+            result.QaReviewReportVersionId,
+            result.ApprovedCreativePackageVersionId,
+            result.SelectedVariantId,
+            result.SelectedCreativeAssetId,
+            result.ApprovedConceptPackageVersionId,
+            result.SelectedConceptId,
+            result.ApprovedBrandDnaVersionId,
+            result.ApprovedBrandDnaVersionNumber,
+            result.ApprovedColorProfileVersionId,
+            result.ApprovedColorProfileVersionNumber,
+            result.ApprovedResearchReportVersionId,
+            result.ApprovedResearchReportVersionNumber,
+            result.ObservationStart,
+            result.ObservationEnd,
+            result.SourceLabel,
+            result.ObservationSourceSystem,
+            result.Impressions,
+            result.Clicks,
+            result.Conversions,
+            result.Spend,
+            result.Revenue,
+            result.CurrencyCode,
+            result.MetricsJson,
+            result.RulesFindingsJson,
+            result.Status,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.ActorType,
+            result.ActorLabel,
+            result.CreatedAt,
+            result.IsCurrentAccepted,
+            result.EstimatedTotalCostUsd,
+            result.IsReplay);
+
+    private static WeddingPlannerMeasurementLearningRoleContributionDto ToMeasurementLearningContributionDto(
+        WeddingPlannerMeasurementLearningRoleContributionResult result) =>
+        new(
+            result.ContributionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.MeasurementLearningReportVersionId,
+            result.MeasurementLearningJobId,
+            result.LogicalRole,
+            result.ContributionSource,
+            result.ProducingAgentRunId,
+            result.ContributionJson,
+            result.CreatedAt);
+
+    private static WeddingPlannerMeasurementLearningDecisionDto ToMeasurementLearningDecisionDto(
+        WeddingPlannerMeasurementLearningDecisionResult result) =>
+        new(
+            result.DecisionId,
+            result.MeasurementLearningReportVersionId,
+            result.WorkspaceId,
+            result.AdvertiserId,
+            result.Decision,
+            result.Rationale,
+            result.ActorType,
+            result.ActorLabel,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.OccurredAt,
+            ToMeasurementLearningReportDto(result.Version),
+            result.IsReplay);
 }

@@ -71,6 +71,14 @@ public class BlissDbContext : DbContext
         Set<WeddingPlannerCampaignReadinessHandshakeVersion>();
     public DbSet<WeddingPlannerCampaignReadinessDecision> WeddingPlannerCampaignReadinessDecisions =>
         Set<WeddingPlannerCampaignReadinessDecision>();
+    public DbSet<WeddingPlannerMeasurementLearningJob> WeddingPlannerMeasurementLearningJobs =>
+        Set<WeddingPlannerMeasurementLearningJob>();
+    public DbSet<WeddingPlannerMeasurementLearningReportVersion> WeddingPlannerMeasurementLearningReportVersions =>
+        Set<WeddingPlannerMeasurementLearningReportVersion>();
+    public DbSet<WeddingPlannerMeasurementLearningRoleContribution> WeddingPlannerMeasurementLearningRoleContributions =>
+        Set<WeddingPlannerMeasurementLearningRoleContribution>();
+    public DbSet<WeddingPlannerMeasurementLearningDecision> WeddingPlannerMeasurementLearningDecisions =>
+        Set<WeddingPlannerMeasurementLearningDecision>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

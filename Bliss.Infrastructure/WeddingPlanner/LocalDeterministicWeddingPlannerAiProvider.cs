@@ -77,6 +77,11 @@ public sealed class LocalDeterministicWeddingPlannerAiProvider : IWeddingPlanner
             return Task.FromResult(CompleteQaReviewStage(request));
         }
 
+        if (IsMeasurementLearningStage(request))
+        {
+            return Task.FromResult(CompleteMeasurementLearningStage(request));
+        }
+
         throw new InvalidOperationException(
             $"Unsupported Wedding Planner provider request for role '{request.LogicalRole}' / pack '{request.PromptPackVersion}' / format '{request.ResponseFormat}'.");
     }
@@ -141,6 +146,120 @@ public sealed class LocalDeterministicWeddingPlannerAiProvider : IWeddingPlanner
             promptTokens + completionTokens,
             0.001m);
     }
+
+    private static bool IsMeasurementLearningStage(WeddingPlannerAiCompletionRequest request)
+    {
+        if (!string.Equals(request.ResponseFormat, WeddingPlannerResponseFormats.Json, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.PerformanceAnalysis, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.PerformanceAnalysisV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerMeasurementLearningWorkerProfiles.PerformanceAnalysisV1, StringComparison.Ordinal))
+            || (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.LearningSynthesis, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.LearningSynthesisV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerMeasurementLearningWorkerProfiles.LearningSynthesisV1, StringComparison.Ordinal));
+    }
+
+    private static WeddingPlannerAiCompletionResult CompleteMeasurementLearningStage(WeddingPlannerAiCompletionRequest request)
+    {
+        var profile = request.WorkerProfileVersion
+            ?? throw new InvalidOperationException("Measurement-learning stage requires WorkerProfileVersion.");
+        var assigned = request.AssignedRoles?.ToList()
+            ?? WeddingPlannerMeasurementLearningWorkerProfiles.AssignedRoles(profile).ToList();
+        var expected = WeddingPlannerMeasurementLearningWorkerProfiles.AssignedRoles(profile);
+        if (assigned.Count != expected.Count || !expected.All(assigned.Contains))
+        {
+            throw new InvalidOperationException("Measurement-learning AssignedRoles must match the worker profile mapping.");
+        }
+
+        var context = string.Join("\n", request.Messages.Select(x => x.Body));
+        if (context.Contains("base64", StringComparison.OrdinalIgnoreCase)
+            || context.Contains("imageBytes", StringComparison.OrdinalIgnoreCase)
+            || context.Contains("\"bytes\"", StringComparison.OrdinalIgnoreCase)
+            || context.Contains("http://", StringComparison.OrdinalIgnoreCase)
+            || context.Contains("https://", StringComparison.OrdinalIgnoreCase)
+            || context.Contains("data:image", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Local measurement-learning provider refuses bytes/URLs/event payloads in context.");
+        }
+
+        JsonObject content = profile switch
+        {
+            WeddingPlannerMeasurementLearningWorkerProfiles.PerformanceAnalysisV1 => BuildPerformanceAnalysisOutput(),
+            WeddingPlannerMeasurementLearningWorkerProfiles.LearningSynthesisV1 => BuildLearningSynthesisOutput(),
+            _ => throw new InvalidOperationException($"Unsupported measurement-learning profile '{profile}'.")
+        };
+
+        var json = content.ToJsonString(NodeWriteOptions);
+        var promptTokens = Math.Max(24, context.Length / 4);
+        var completionTokens = Math.Max(24, json.Length / 4);
+        return new WeddingPlannerAiCompletionResult(
+            json,
+            ProviderKey,
+            ModelId,
+            AdapterVersion,
+            $"local-ml-{Guid.NewGuid():N}"[..24],
+            WeddingPlannerWorkers.LocalDeterministicV1,
+            promptTokens,
+            completionTokens,
+            promptTokens + completionTokens,
+            0.001m);
+    }
+
+    private static JsonObject BuildPerformanceAnalysisOutput() =>
+        new()
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.PerformanceAnalysisWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerMeasurementLearningWorkerProfiles.PerformanceAnalysisV1,
+            ["marker"] = WeddingPlannerMeasurementLearningMarkers.SyntheticDevelopmentMeasurementLearning,
+            ["contributions"] = new JsonArray(new JsonObject
+            {
+                ["logicalRole"] = WeddingPlannerMeasurementLearningLogicalRoles.PerformanceAnalyst,
+                ["summary"] = "Observed aggregates show an association-only pattern for human review.",
+                ["descriptivePatterns"] = new JsonArray(
+                    "Click volume is associated with the supplied impression count under human attestation.",
+                    "Spend intensity should be interpreted only as an observed ratio, not a causal effect."),
+                ["limitations"] = new JsonArray(
+                    "Bliss did not verify delivery events for the PLANNED placement.",
+                    "Human-supplied aggregates cannot support causal attribution."),
+                ["dataGaps"] = new JsonArray(
+                    "No event-level observations are available by design.",
+                    "No platform reconciliation or incrementality baseline is present.")
+            })
+        };
+
+    private static JsonObject BuildLearningSynthesisOutput() =>
+        new()
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.LearningSynthesisWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerMeasurementLearningWorkerProfiles.LearningSynthesisV1,
+            ["marker"] = WeddingPlannerMeasurementLearningMarkers.SyntheticDevelopmentMeasurementLearning,
+            ["contributions"] = new JsonArray(
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerMeasurementLearningLogicalRoles.LearningSynthesizer,
+                    ["summary"] = "Learning hypotheses remain advisory and association-only.",
+                    ["learningHypotheses"] = new JsonArray(
+                        "Hypothesis: creative messaging may be associated with stronger click response under similar observation windows.",
+                        "Hypothesis: future tests should isolate one recommendation variable at a time with human oversight."),
+                    ["limitations"] = new JsonArray(
+                        "Hypotheses remain unconfirmed by the observed aggregates.",
+                        "Revoked or current handshake status is recorded but not delivery proof.")
+                },
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerMeasurementLearningLogicalRoles.OptimizationAdvisor,
+                    ["summary"] = "Recommended future tests require human operator action and do not mutate upstream records.",
+                    ["recommendedFutureTests"] = new JsonArray(
+                        "Recommendation: operators may compare a later human-attested window after an explicitly planned creative revision.",
+                        "Recommendation: keep placement PLANNED and avoid treating measurement jobs as activation."),
+                    ["limitations"] = new JsonArray(
+                        "Recommendations cannot change spend, inventory, creative, or external systems.",
+                        "No autonomous optimization is applied by Bliss.")
+                })
+        };
 
     private static JsonObject BuildChaperoneOutput(string selectedVariantId) =>
         new()

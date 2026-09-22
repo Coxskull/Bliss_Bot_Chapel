@@ -1803,6 +1803,7 @@ public sealed class WeddingPlannerCreativeDepartmentOrchestrationService
             run.OutputConceptPackageVersionId,
             run.OutputCreativePackageVersionId,
             run.OutputQaReviewReportVersionId,
+            run.OutputMeasurementLearningReportVersionId,
             run.RequestId,
             run.ProviderRequestId,
             run.SourceSystem,
