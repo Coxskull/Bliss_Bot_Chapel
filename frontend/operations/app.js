@@ -31,6 +31,10 @@ const state = {
   weddingPlannerQaJobs: [], weddingPlannerQaReports: null,
   weddingPlannerQaContributions: [], weddingPlannerQaAgentRuns: [],
   weddingPlannerQaEscalationCases: [],
+  weddingPlannerCampaignReadinessEligibility: null,
+  weddingPlannerCampaignReadinessHandshakes: [],
+  weddingPlannerCampaignReadinessDecisions: [],
+  selectedWeddingPlannerCampaignReadinessHandshakeId: null,
   selectedWeddingPlannerWorkspace: null, selectedWeddingPlannerSession: null,
   selectedWeddingPlannerColorProfileId: null,
   selectedWeddingPlannerResearchJobId: null,
@@ -810,7 +814,7 @@ function route() {
   const view=valid.includes(parts[0])?parts[0]:"overview";
   $$(".view").forEach(x=>x.classList.toggle("active",x.id===`view-${view}`));
   $$(".nav-item[data-view]").forEach(x=>{const active=x.dataset.view===view;x.classList.toggle("active",active);if(active)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});
-  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 7",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
+  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 8",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
   $("#page-title").textContent=titles[view];
   toggleMobileNav(false);
   if(!state.loaded)return;
@@ -873,6 +877,8 @@ function bindActions() {
   $("#wedding-planner-qa-job-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerQaJob(event.currentTarget);});
   $("#wedding-planner-qa-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerQaDecision(event.currentTarget);});
   $("#wedding-planner-qa-resolution-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerQaResolution(event.currentTarget);});
+  $("#wedding-planner-campaign-readiness-commit-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerCampaignReadinessCommit(event.currentTarget);});
+  $("#wedding-planner-campaign-readiness-revoke-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerCampaignReadinessRevoke(event.currentTarget);});
   $("#wedding-planner-color-version")?.addEventListener("change",event=>{
     state.selectedWeddingPlannerColorProfileId = event.currentTarget.value || null;
     renderWeddingPlannerColorInspect();
@@ -938,6 +944,12 @@ function bindActions() {
   $("#regenerate-wedding-planner-qa-job-key")?.addEventListener("click",()=>fillKey("#wedding-planner-qa-job-key"));
   $("#regenerate-wedding-planner-qa-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-qa-decision-key"));
   $("#regenerate-wedding-planner-qa-resolution-key")?.addEventListener("click",()=>fillKey("#wedding-planner-qa-resolution-key"));
+  $("#regenerate-wedding-planner-campaign-readiness-commit-key")?.addEventListener("click",()=>fillKey("#wedding-planner-campaign-readiness-commit-key"));
+  $("#regenerate-wedding-planner-campaign-readiness-revoke-key")?.addEventListener("click",()=>fillKey("#wedding-planner-campaign-readiness-revoke-key"));
+  $("#wedding-planner-campaign-readiness-match")?.addEventListener("change",()=>syncOpsCampaignReadinessCommitForm());
+  $("#wedding-planner-campaign-readiness-campaign")?.addEventListener("change",()=>syncOpsCampaignReadinessCommitForm());
+  $("#wedding-planner-campaign-readiness-content")?.addEventListener("change",()=>syncOpsCampaignReadinessCommitForm());
+  $("#wedding-planner-campaign-readiness-slot")?.addEventListener("change",()=>syncOpsCampaignReadinessSlotNote());
   $("#placement-match").addEventListener("change",event=>{state.selectedPlacement=event.target.value;renderPlacements();});
   $("#placement-content").addEventListener("change",updatePlacementSlots);
   $("#review-match").addEventListener("change",event=>{state.selectedReview=event.target.value;renderReviews();});
@@ -1023,6 +1035,15 @@ function handleDocumentClick(event) {
     const select=$("#wedding-planner-qa-escalation-case");
     if(select)select.value=state.selectedWeddingPlannerQaEscalationCaseId;
     syncOpsQaResolutionForm();
+    renderWeddingPlanner();
+  }
+  else if(target.matches("[data-wedding-campaign-readiness-handshake]")){
+    state.selectedWeddingPlannerCampaignReadinessHandshakeId=target.dataset.weddingCampaignReadinessHandshake;
+    loadWeddingPlannerCampaignReadinessDetails().then(() => {
+      renderWeddingPlannerCampaignReadinessInspect();
+      syncOpsCampaignReadinessCommitForm();
+      syncOpsCampaignReadinessRevokeForm();
+    });
     renderWeddingPlanner();
   }
   else if(target.matches("[data-match-id]"))location.hash=`#/matches/${target.dataset.matchId}`;
@@ -1172,6 +1193,8 @@ function generateWeddingPlannerKeys(){
   fillKey("#wedding-planner-qa-job-key");
   fillKey("#wedding-planner-qa-decision-key");
   fillKey("#wedding-planner-qa-resolution-key");
+  fillKey("#wedding-planner-campaign-readiness-commit-key");
+  fillKey("#wedding-planner-campaign-readiness-revoke-key");
 }
 
 function renderWeddingPlanner() {
@@ -1184,6 +1207,7 @@ function renderWeddingPlanner() {
   const workshopWorkspace = $("#wedding-planner-workshop-workspace");
   const creativeWorkspace = $("#wedding-planner-creative-workspace");
   const qaWorkspace = $("#wedding-planner-qa-workspace");
+  const campaignReadinessWorkspace = $("#wedding-planner-campaign-readiness-workspace");
   const dnaVersionSelect = $("#wedding-planner-dna-version");
   const colorVersionSelect = $("#wedding-planner-color-version");
   const researchReportSelect = $("#wedding-planner-research-report-version");
@@ -1201,6 +1225,7 @@ function renderWeddingPlanner() {
   if (workshopWorkspace) workshopWorkspace.innerHTML = workspaceOptions;
   if (creativeWorkspace) creativeWorkspace.innerHTML = workspaceOptions;
   if (qaWorkspace) qaWorkspace.innerHTML = workspaceOptions;
+  if (campaignReadinessWorkspace) campaignReadinessWorkspace.innerHTML = workspaceOptions;
   if (state.selectedWeddingPlannerWorkspace) {
     workspaceSelect.value = state.selectedWeddingPlannerWorkspace;
     if (interpretWorkspace) interpretWorkspace.value = state.selectedWeddingPlannerWorkspace;
@@ -1209,6 +1234,7 @@ function renderWeddingPlanner() {
     if (workshopWorkspace) workshopWorkspace.value = state.selectedWeddingPlannerWorkspace;
     if (creativeWorkspace) creativeWorkspace.value = state.selectedWeddingPlannerWorkspace;
     if (qaWorkspace) qaWorkspace.value = state.selectedWeddingPlannerWorkspace;
+    if (campaignReadinessWorkspace) campaignReadinessWorkspace.value = state.selectedWeddingPlannerWorkspace;
   }
   sessionSelect.innerHTML = state.weddingPlannerSessions.map(x => `<option value="${x.sessionId}">${x.sessionId.slice(0, 8)} · ${x.messageCount} messages</option>`).join("");
   if (state.selectedWeddingPlannerSession) sessionSelect.value = state.selectedWeddingPlannerSession;
@@ -1504,6 +1530,32 @@ function renderWeddingPlanner() {
   renderWeddingPlannerQaInspect();
   syncOpsQaDecisionForm();
   syncOpsQaResolutionForm();
+
+  const crHandshakes = state.weddingPlannerCampaignReadinessHandshakes || [];
+  const crCurrentId = state.weddingPlannerCampaignReadinessEligibility?.currentCampaignReadinessHandshakeVersionId
+    || crHandshakes.find(x => x.isCurrent)?.campaignReadinessHandshakeVersionId
+    || null;
+  const crCurrentLabel = $("#wedding-planner-campaign-readiness-current");
+  if (crCurrentLabel) crCurrentLabel.textContent = crCurrentId ? `CURRENT: ${shortId(crCurrentId)}` : "CURRENT: none";
+  if (!state.selectedWeddingPlannerCampaignReadinessHandshakeId && crHandshakes.length) {
+    state.selectedWeddingPlannerCampaignReadinessHandshakeId =
+      crHandshakes.find(x => x.isCurrent)?.campaignReadinessHandshakeVersionId ||
+      crHandshakes[0].campaignReadinessHandshakeVersionId;
+  }
+  const crList = $("#wedding-planner-campaign-readiness-handshake-list");
+  if (crList) {
+    crList.innerHTML = crHandshakes.length
+      ? crHandshakes.map(x => {
+          const selected = x.campaignReadinessHandshakeVersionId === state.selectedWeddingPlannerCampaignReadinessHandshakeId;
+          const isCurrent = x.isCurrent || x.campaignReadinessHandshakeVersionId === crCurrentId;
+          return `<button class="activity-item${selected ? " selected" : ""}" data-wedding-campaign-readiness-handshake="${x.campaignReadinessHandshakeVersionId}" type="button"><span class="activity-icon">${x.versionNumber}</span><span><strong>${escapeHtml(x.status)}${isCurrent ? " · CURRENT" : ""}</strong><small>${escapeHtml(x.summary || "No summary")} · ${escapeHtml(x.schemaVersion || "")} · placement ${escapeHtml(shortId(x.campaignPlacementId || ""))} · run ${escapeHtml(shortId(x.campaignPlacementRunId || ""))}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></button>`;
+        }).join("")
+      : emptyState("Select or create a workspace to list campaign-readiness handshakes.");
+  }
+  renderWeddingPlannerCampaignReadinessEligibility();
+  renderWeddingPlannerCampaignReadinessInspect();
+  syncOpsCampaignReadinessCommitForm();
+  syncOpsCampaignReadinessRevokeForm();
 }
 
 function parseWeddingPlannerColorDocument(documentJson) {
@@ -1803,12 +1855,28 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
       state.weddingPlannerQaEscalationCases?.find(x => x.status === "OPEN")?.escalationCaseId ||
       state.weddingPlannerQaEscalationCases?.[0]?.escalationCaseId ||
       null;
+    try {
+      state.weddingPlannerCampaignReadinessEligibility = await api(`/api/wedding-planner/workspaces/${workspaceId}/campaign-readiness/eligibility`);
+      state.weddingPlannerCampaignReadinessHandshakes = await api(`/api/wedding-planner/workspaces/${workspaceId}/campaign-readiness-handshakes`);
+      if (!Array.isArray(state.weddingPlannerCampaignReadinessHandshakes)) state.weddingPlannerCampaignReadinessHandshakes = [];
+      state.selectedWeddingPlannerCampaignReadinessHandshakeId =
+        state.weddingPlannerCampaignReadinessHandshakes.find(x => x.isCurrent)?.campaignReadinessHandshakeVersionId ||
+        state.weddingPlannerCampaignReadinessHandshakes[0]?.campaignReadinessHandshakeVersionId ||
+        null;
+    } catch (crError) {
+      state.weddingPlannerCampaignReadinessEligibility = null;
+      state.weddingPlannerCampaignReadinessHandshakes = [];
+      state.weddingPlannerCampaignReadinessDecisions = [];
+      state.selectedWeddingPlannerCampaignReadinessHandshakeId = null;
+      toast(crError.message, true);
+    }
     await mergeWeddingPlannerInterpreterRuns();
     await mergeWeddingPlannerWorkspaceRuns(workspaceId);
     await loadWeddingPlannerResearchAgentRuns();
     await loadWeddingPlannerWorkshopDetails();
     await loadWeddingPlannerCreativeDetails();
     await loadWeddingPlannerQaDetails();
+    await loadWeddingPlannerCampaignReadinessDetails();
   } catch (error) {
     toast(error.message, true);
     state.weddingPlannerSessions = [];
@@ -1846,6 +1914,10 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
     state.selectedWeddingPlannerQaJobId = null;
     state.selectedWeddingPlannerQaReportId = null;
     state.selectedWeddingPlannerQaEscalationCaseId = null;
+    state.weddingPlannerCampaignReadinessEligibility = null;
+    state.weddingPlannerCampaignReadinessHandshakes = [];
+    state.weddingPlannerCampaignReadinessDecisions = [];
+    state.selectedWeddingPlannerCampaignReadinessHandshakeId = null;
   }
   renderWeddingPlanner();
 }
@@ -3385,6 +3457,417 @@ async function submitWeddingPlannerQaResolution(form) {
       state.selectedWeddingPlannerQaReportId = result.qaReviewReportVersionId || state.selectedWeddingPlannerQaReportId;
       state.selectedWeddingPlannerQaEscalationCaseId = result.escalationCaseId || state.selectedWeddingPlannerQaEscalationCaseId;
       await loadWeddingPlannerQaDetails();
+    }
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+
+const CAMPAIGN_READINESS_LABEL_OPS = "PHASE 8 · BLISS HANDSHAKE / CAMPAIGN READINESS";
+const SYNTHETIC_DEVELOPMENT_CAMPAIGN_READINESS = "SYNTHETIC DEVELOPMENT CAMPAIGN READINESS";
+const CAMPAIGN_READINESS_DISCLAIMER_OPS =
+  "This campaign-readiness handshake is a deterministic planning integration only. It marks Wedding Planner campaign-ready state for a clean Phase 7 ACCEPTED QA report bound to an APPROVED Bliss match and compatible creator inventory, and records a PLANNED campaign placement. It is not research, claim, legal, accessibility, compliance, measurement, delivery, publication, or payment approval. It does not mutate Phase 6 creative packages or Phase 7 QA reports. It does not recompute Bliss matching scores. Acceptance-with-exception QA is not campaign-ready. AI cannot mark campaign ready. Advertisers and reviewers cannot create this handshake. Slot availability is not reserved. Planned placement is not activation.";
+const CAMPAIGN_READINESS_RULE_CODES_OPS = [
+  "CR_CURRENT_QA_POINTER", "CR_QA_CLEAN_ACCEPTED", "CR_QA_ACCEPT_DECISION",
+  "CR_PACKAGE_CURRENT_APPROVED", "CR_PACKAGE_DOCUMENT_SHA", "CR_CREATIVE_DECISION_VARIANT",
+  "CR_ASSET_INTEGRITY", "CR_PROVENANCE_CHAIN", "CR_MATCH_APPROVED", "CR_OPPORTUNITY_ACTIVE",
+  "CR_ADVERTISER_SCOPE", "CR_CAMPAIGN_DRAFT", "CR_CAMPAIGN_OPPORTUNITY", "CR_CONTENT_CREATOR",
+  "CR_SLOT_CONTENT", "CR_SYNTHETIC_ENVIRONMENT"
+];
+
+/** Phase 8 commit/revoke: operator|admin (or auth disabled). Narrower than canWrite — advertisers/reviewers/viewers cannot. */
+function canCommitCampaignReadiness(session = state.session) {
+  if (!session) return false;
+  if (!session.authenticationEnabled) return true;
+  return sessionHasRole(session, "bliss.operator")
+    || sessionHasRole(session, "bliss.admin");
+}
+
+function parseWeddingPlannerCampaignReadinessDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+function parseCampaignReadinessRulesOps(rulesFindingsJson, doc) {
+  if (doc?.rules && typeof doc.rules === "object") return doc.rules;
+  if (!rulesFindingsJson) return null;
+  try {
+    return typeof rulesFindingsJson === "string" ? JSON.parse(rulesFindingsJson) : rulesFindingsJson;
+  } catch {
+    return null;
+  }
+}
+
+function selectedHandshakeHasSyntheticMarker(handshake, doc) {
+  return doc?.marker === SYNTHETIC_DEVELOPMENT_CAMPAIGN_READINESS
+    || JSON.stringify(doc || {}).includes(SYNTHETIC_DEVELOPMENT_CAMPAIGN_READINESS)
+    || String(handshake?.summary || "").includes(SYNTHETIC_DEVELOPMENT_CAMPAIGN_READINESS);
+}
+
+async function loadWeddingPlannerCampaignReadinessDetails() {
+  const handshakeId = state.selectedWeddingPlannerCampaignReadinessHandshakeId;
+  if (!handshakeId) {
+    state.weddingPlannerCampaignReadinessDecisions = [];
+    return;
+  }
+  try {
+    const [handshakeDto, decisions] = await Promise.all([
+      api(`/api/wedding-planner/campaign-readiness-handshakes/${handshakeId}`),
+      api(`/api/wedding-planner/campaign-readiness-handshakes/${handshakeId}/decisions`)
+    ]);
+    state.weddingPlannerCampaignReadinessDecisions = Array.isArray(decisions) ? decisions : [];
+    const list = state.weddingPlannerCampaignReadinessHandshakes || [];
+    const idx = list.findIndex(x => x.campaignReadinessHandshakeVersionId === handshakeId);
+    if (idx >= 0 && handshakeDto) list[idx] = handshakeDto;
+  } catch {
+    state.weddingPlannerCampaignReadinessDecisions = [];
+  }
+}
+
+function getSelectedCampaignReadinessMatchCandidate() {
+  const elig = state.weddingPlannerCampaignReadinessEligibility;
+  const candidates = Array.isArray(elig?.candidates) ? elig.candidates : [];
+  const matchId = $("#wedding-planner-campaign-readiness-match")?.value || "";
+  return candidates.find(x => x.blissMatchId === matchId) || null;
+}
+
+function syncOpsCampaignReadinessSlotNote() {
+  const note = $("#wedding-planner-campaign-readiness-slot-availability-note");
+  if (!note) return;
+  const match = getSelectedCampaignReadinessMatchCandidate();
+  const contentId = $("#wedding-planner-campaign-readiness-content")?.value || "";
+  const slotId = $("#wedding-planner-campaign-readiness-slot")?.value || "";
+  const content = (match?.contentItems || []).find(c => c.contentItemId === contentId) || null;
+  const slot = (content?.slots || []).find(s => s.adInventorySlotId === slotId) || null;
+  if (!slot) {
+    note.textContent = "IsAvailable is informational / non-authoritative — not a reservation gate. Unavailable slots are never filtered out.";
+    return;
+  }
+  note.textContent = `IsAvailable=${slot.isAvailable === true ? "true" : "false"} (informational, non-authoritative — ${slot.availabilityNote || "slot availability is not reserved"}). PLANNING ONLY — NO RESERVATION · PLANNED IS NOT ACTIVATION.`;
+}
+
+function syncOpsCampaignReadinessCommitForm() {
+  const form = $("#wedding-planner-campaign-readiness-commit-form");
+  if (!form) return;
+  const elig = state.weddingPlannerCampaignReadinessEligibility;
+  const canCommit = canCommitCampaignReadiness();
+  const matchSelect = $("#wedding-planner-campaign-readiness-match");
+  const campaignSelect = $("#wedding-planner-campaign-readiness-campaign");
+  const contentSelect = $("#wedding-planner-campaign-readiness-content");
+  const slotSelect = $("#wedding-planner-campaign-readiness-slot");
+  const syntheticWrap = $("#wedding-planner-campaign-readiness-synthetic-ack-wrap");
+  const gate = $("#wedding-planner-campaign-readiness-commit-gate");
+  const candidates = Array.isArray(elig?.candidates) ? elig.candidates : [];
+
+  const previousMatch = matchSelect?.value || "";
+  const previousCampaign = campaignSelect?.value || "";
+  const previousContent = contentSelect?.value || "";
+  const previousSlot = slotSelect?.value || "";
+
+  if (matchSelect) {
+    matchSelect.innerHTML = candidates.length
+      ? candidates.map(m => `<option value="${m.blissMatchId}">${escapeHtml(m.opportunityName || shortId(m.blissMatchId))} · ${escapeHtml(m.matchStatus || "")} · score ${escapeHtml(String(m.overallScore ?? "—"))}</option>`).join("")
+      : `<option value="">No approved match candidates from eligibility</option>`;
+    if (previousMatch && candidates.some(m => m.blissMatchId === previousMatch)) matchSelect.value = previousMatch;
+  }
+
+  const match = getSelectedCampaignReadinessMatchCandidate();
+  const campaigns = Array.isArray(match?.campaigns) ? match.campaigns : [];
+  if (campaignSelect) {
+    campaignSelect.innerHTML = campaigns.length
+      ? campaigns.map(c => `<option value="${c.campaignId}">${escapeHtml(c.name || shortId(c.campaignId))} · ${escapeHtml(c.status || "")}${c.opportunityCompatible === false ? " · opportunity flag" : ""}</option>`).join("")
+      : `<option value="">No compatible DRAFT campaigns for selected match</option>`;
+    if (previousCampaign && campaigns.some(c => c.campaignId === previousCampaign)) campaignSelect.value = previousCampaign;
+  }
+
+  const contentItems = Array.isArray(match?.contentItems) ? match.contentItems : [];
+  if (contentSelect) {
+    contentSelect.innerHTML = contentItems.length
+      ? contentItems.map(c => `<option value="${c.contentItemId}">${escapeHtml(c.title || shortId(c.contentItemId))} · ${escapeHtml(c.contentType || "")}</option>`).join("")
+      : `<option value="">No creator content candidates for selected match</option>`;
+    if (previousContent && contentItems.some(c => c.contentItemId === previousContent)) contentSelect.value = previousContent;
+  }
+
+  const contentId = contentSelect?.value || "";
+  const content = contentItems.find(c => c.contentItemId === contentId) || null;
+  const slots = Array.isArray(content?.slots) ? content.slots : [];
+  if (slotSelect) {
+    // Never filter by IsAvailable — show all slots from eligibility DTO
+    slotSelect.innerHTML = slots.length
+      ? slots.map(s => `<option value="${s.adInventorySlotId}">${escapeHtml(s.slotType || shortId(s.adInventorySlotId))} · IsAvailable=${s.isAvailable === true ? "true" : "false"} (informational)</option>`).join("")
+      : `<option value="">No slots for selected content</option>`;
+    if (previousSlot && slots.some(s => s.adInventorySlotId === previousSlot)) slotSelect.value = previousSlot;
+  }
+  syncOpsCampaignReadinessSlotNote();
+
+  const hasSynthetic = elig?.hasSyntheticUpstream === true;
+  if (syntheticWrap) {
+    syntheticWrap.hidden = !hasSynthetic;
+    const box = syntheticWrap.querySelector('input[name="syntheticMarkerAcknowledged"]');
+    if (box) box.required = hasSynthetic;
+  }
+
+  const cleanOk = elig?.isCleanAccepted === true && elig?.hasCleanAcceptDecision === true && elig?.packageReady === true;
+  const pointerSet = !!elig?.currentCampaignReadinessHandshakeVersionId;
+  const exceptionQa = elig?.currentQaStatus === "ACCEPTED_WITH_EXCEPTION";
+  if (gate) {
+    const parts = [];
+    parts.push(canCommit ? "Authority: operator/admin (canCommitCampaignReadiness)." : "Authority: none — reviewer/viewer/advertiser cannot commit.");
+    parts.push(cleanOk ? "QA prerequisite: clean ACCEPTED + clean ACCEPT." : "QA prerequisite: not clean ACCEPTED (exception path cannot commit).");
+    if (exceptionQa) parts.push("Current QA is ACCEPTED_WITH_EXCEPTION — commit blocked.");
+    parts.push(pointerSet ? "Current handshake pointer is set — revoke/clear first." : "Current handshake pointer is clear.");
+    parts.push("PLANNING ONLY — NO RESERVATION · PLANNED IS NOT ACTIVATION · NO AI.");
+    gate.textContent = parts.join(" ");
+  }
+
+  const allowCommit = canCommit && cleanOk && !pointerSet && !exceptionQa && candidates.length > 0;
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = !allowCommit;
+    submitBtn.title = allowCommit
+      ? "Commit MARK_CAMPAIGN_READY handshake"
+      : (!canCommit
+        ? "Commit requires operator or admin (canCommitCampaignReadiness) — hidden authority for reviewer/viewer/advertiser"
+        : "Commit gated: clean ACCEPTED QA, no current pointer, and eligibility candidates required");
+  }
+  // Hide/disable entire form for non-commit roles when auth enabled
+  if (!canCommit && state.session?.authenticationEnabled) {
+    form.hidden = true;
+  } else {
+    form.hidden = false;
+  }
+}
+
+function syncOpsCampaignReadinessRevokeForm() {
+  const form = $("#wedding-planner-campaign-readiness-revoke-form");
+  if (!form) return;
+  const canCommit = canCommitCampaignReadiness();
+  const select = $("#wedding-planner-campaign-readiness-revoke-handshake");
+  const ready = (state.weddingPlannerCampaignReadinessHandshakes || []).filter(x => x.status === "CAMPAIGN_READY");
+  const previous = select?.value || state.selectedWeddingPlannerCampaignReadinessHandshakeId || "";
+  if (select) {
+    select.innerHTML = ready.length
+      ? ready.map(x => `<option value="${x.campaignReadinessHandshakeVersionId}">v${escapeHtml(String(x.versionNumber ?? "—"))} · ${escapeHtml(x.status)}${x.isCurrent ? " · CURRENT" : ""}</option>`).join("")
+      : `<option value="">No CAMPAIGN_READY handshakes</option>`;
+    if (previous && ready.some(x => x.campaignReadinessHandshakeVersionId === previous)) select.value = previous;
+  }
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = !canCommit || !ready.length;
+    submitBtn.title = canCommit
+      ? "Revoke CAMPAIGN_READY — placement remains PLANNED"
+      : "Revoke requires operator or admin (canCommitCampaignReadiness)";
+  }
+  if (!canCommit && state.session?.authenticationEnabled) {
+    form.hidden = true;
+  } else {
+    form.hidden = false;
+  }
+}
+
+function renderWeddingPlannerCampaignReadinessEligibility() {
+  const panel = $("#wedding-planner-campaign-readiness-eligibility");
+  if (!panel) return;
+  const elig = state.weddingPlannerCampaignReadinessEligibility;
+  if (!elig) {
+    panel.innerHTML = emptyState("Select a workspace to load campaign-readiness eligibility (GET .../campaign-readiness/eligibility).");
+    return;
+  }
+  const candidates = Array.isArray(elig.candidates) ? elig.candidates : [];
+  const candidateHtml = candidates.length
+    ? candidates.map(m => {
+        const campaigns = (m.campaigns || []).map(c => `<li>${escapeHtml(c.name || shortId(c.campaignId))} · ${escapeHtml(c.status)} · opportunityCompatible=${escapeHtml(String(!!c.opportunityCompatible))}</li>`).join("");
+        const content = (m.contentItems || []).map(ci => {
+          const slots = (ci.slots || []).map(s => `<li>${escapeHtml(s.slotType || shortId(s.adInventorySlotId))} · IsAvailable=${escapeHtml(String(!!s.isAvailable))} <em>(informational, non-authoritative — ${escapeHtml(s.availabilityNote || "not reserved")})</em></li>`).join("");
+          return `<li><strong>${escapeHtml(ci.title || shortId(ci.contentItemId))}</strong> · ${escapeHtml(ci.contentType || "")}<ul>${slots || "<li>No slots</li>"}</ul></li>`;
+        }).join("");
+        return `<div class="activity-item"><span class="activity-icon">◇</span><span><strong>${escapeHtml(m.opportunityName || shortId(m.blissMatchId))} · ${escapeHtml(m.matchStatus || "")}</strong><small>Match ${escapeHtml(m.blissMatchId)} · opportunity ${escapeHtml(m.opportunityStatus || "")} · score ${escapeHtml(String(m.overallScore ?? "—"))}</small><div><p class="safety-note">Campaigns</p><ul>${campaigns || "<li>None</li>"}</ul><p class="safety-note">Content / slots (IsAvailable never filters)</p><ul>${content || "<li>None</li>"}</ul></div></span></div>`;
+      }).join("")
+    : emptyState("No approved match candidates returned by eligibility.");
+
+  panel.innerHTML = `
+    <div class="safety-note"><strong>${escapeHtml(CAMPAIGN_READINESS_LABEL_OPS)}</strong> · NO AI · PLANNING ONLY — NO RESERVATION · PLANNED IS NOT ACTIVATION</div>
+    <div class="activity-item"><span class="activity-icon">QA</span><span><strong>Clean QA eligibility</strong><small>Pointer ${escapeHtml(elig.hasCurrentQaPointer ? "present" : "missing")} · report ${escapeHtml(elig.currentAcceptedQaReviewReportVersionId || "—")} · status ${escapeHtml(elig.currentQaStatus || "—")} · isCleanAccepted=${escapeHtml(String(!!elig.isCleanAccepted))} · hasCleanAcceptDecision=${escapeHtml(String(!!elig.hasCleanAcceptDecision))} · packageReady=${escapeHtml(String(!!elig.packageReady))} · package ${escapeHtml(elig.currentApprovedCreativePackageVersionId || "—")} · hasSyntheticUpstream=${escapeHtml(String(!!elig.hasSyntheticUpstream))} · current handshake ${escapeHtml(elig.currentCampaignReadinessHandshakeVersionId || "none")}</small></span></div>
+    <div class="safety-note">${escapeHtml(elig.noReservationDisclosure || "Slot availability is not reserved. Planned placement does not hold inventory.")}</div>
+    ${elig.currentQaStatus === "ACCEPTED_WITH_EXCEPTION" ? `<div class="safety-note"><strong>Exception QA ineligible.</strong> ACCEPTED_WITH_EXCEPTION cannot become campaign-ready — no Phase 8 waiver.</div>` : ""}
+    ${elig.hasSyntheticUpstream ? `<div class="safety-note"><strong>${escapeHtml(SYNTHETIC_DEVELOPMENT_CAMPAIGN_READINESS)}</strong> Synthetic upstream present — Development commit requires syntheticMarkerAcknowledged.</div>` : ""}
+    <p class="safety-note">Candidate grouping from dedicated eligibility DTO only — IDs selected from lists; no raw arbitrary IDs when candidates exist. Commit authority: ${canCommitCampaignReadiness() ? "operator|admin (or auth disabled)" : "none (reviewer/viewer/advertiser)"}.</p>
+    ${candidateHtml}
+  `;
+}
+
+function renderWeddingPlannerCampaignReadinessInspect() {
+  const panel = $("#wedding-planner-campaign-readiness-inspect");
+  if (!panel) return;
+  const handshakes = state.weddingPlannerCampaignReadinessHandshakes || [];
+  const selected = handshakes.find(x => x.campaignReadinessHandshakeVersionId === state.selectedWeddingPlannerCampaignReadinessHandshakeId) || null;
+  if (!selected) {
+    panel.innerHTML = emptyState("Select a campaign-readiness handshake to inspect DocumentJson, 16 PASS/BLOCK rules, pins, planned placement/run IDs, and decisions.");
+    return;
+  }
+  const doc = parseWeddingPlannerCampaignReadinessDocument(selected.documentJson);
+  const rules = parseCampaignReadinessRulesOps(selected.rulesFindingsJson, doc);
+  const findings = Array.isArray(rules?.findings) ? rules.findings : [];
+  const decisions = state.weddingPlannerCampaignReadinessDecisions || [];
+  const hasSynthetic = selectedHandshakeHasSyntheticMarker(selected, doc)
+    || state.weddingPlannerCampaignReadinessEligibility?.hasSyntheticUpstream === true;
+  let documentPretty = "";
+  try {
+    documentPretty = typeof selected.documentJson === "string"
+      ? JSON.stringify(JSON.parse(selected.documentJson), null, 2)
+      : JSON.stringify(selected.documentJson || doc || {}, null, 2);
+  } catch {
+    documentPretty = String(selected.documentJson || "");
+  }
+  const assetId = selected.selectedCreativeAssetId || null;
+  panel.innerHTML = `
+    <div class="detail-hero">
+      <div class="detail-hero-top">${badge(selected.status)}${selected.isCurrent ? badge("CURRENT") : ""}<span class="detail-score">v${escapeHtml(String(selected.versionNumber ?? "—"))}</span></div>
+      <h3>Campaign-readiness handshake</h3>
+      <p>${escapeHtml(selected.summary || "")}</p>
+    </div>
+    <div class="safety-note"><strong>Exact disclaimer.</strong> ${escapeHtml(doc?.disclaimer || CAMPAIGN_READINESS_DISCLAIMER_OPS)}</div>
+    ${hasSynthetic ? `<div class="safety-note"><strong>${escapeHtml(SYNTHETIC_DEVELOPMENT_CAMPAIGN_READINESS)}</strong> Local/synthetic campaign-readiness path — planning only; not activation.</div>` : ""}
+    <div class="safety-note"><strong>NO AI</strong> · <strong>PLANNING ONLY — NO RESERVATION</strong> · <strong>PLANNED IS NOT ACTIVATION</strong>. Authority: ${canCommitCampaignReadiness() ? "operator|admin may commit/revoke" : "read-only for this session"}.</div>
+    <section class="detail-section"><h4>Pins</h4>
+      <div class="check-item"><div><strong>QA / ACCEPT</strong><small>${escapeHtml(selected.qaReviewReportVersionId || "—")} · decision ${escapeHtml(selected.qaAcceptDecisionId || "—")}</small></div></div>
+      <div class="check-item"><div><strong>Package / SHA / creative decision</strong><small>${escapeHtml(selected.approvedCreativePackageVersionId || "—")} · ${escapeHtml(selected.creativePackageDocumentSha256 || "—")} · ${escapeHtml(selected.creativePackageDecisionId || "—")}</small></div></div>
+      <div class="check-item"><div><strong>Variant / asset</strong><small>${escapeHtml(selected.selectedVariantId || "—")} · ${escapeHtml(selected.selectedCreativeAssetId || "—")} · SHA ${escapeHtml(selected.selectedCreativeAssetSha256 || "—")}</small></div></div>
+      <div class="check-item"><div><strong>Bliss graph</strong><small>match ${escapeHtml(selected.blissMatchId || "—")} · campaign ${escapeHtml(selected.campaignId || "—")} · content ${escapeHtml(selected.contentItemId || "—")} · slot ${escapeHtml(selected.adInventorySlotId || "—")}</small></div></div>
+      <div class="check-item"><div><strong>Planned placement / run</strong><small>${escapeHtml(selected.campaignPlacementId || "—")} · ${escapeHtml(selected.campaignPlacementRunId || "—")} · revoke leaves these PLANNED</small></div></div>
+    </section>
+    ${renderOpsSafeDraftPngPreview(assetId, "Pinned selected creative PNG · same-origin · optional")}
+    <section class="detail-section"><h4>campaign-readiness-rules.v1 · ${escapeHtml(String(findings.length))} findings · overall ${escapeHtml(rules?.overallSeverity || "—")}</h4>
+      <p class="safety-note">16 CR_* codes expected (${escapeHtml(String(CAMPAIGN_READINESS_RULE_CODES_OPS.length))}). PASS/BLOCK only — no WARN. NO AI.</p>
+      ${findings.length ? findings.map(f => `<div class="check-item"><div><strong>${escapeHtml(f.code || "—")} · ${escapeHtml(f.severity || "—")}</strong><small>${escapeHtml(f.message || "—")}</small></div></div>`).join("") : emptyState("No rules findings.")}
+    </section>
+    <section class="detail-section"><h4>Canonical DocumentJson</h4><pre class="json-block">${escapeHtml(documentPretty)}</pre></section>
+    <section class="detail-section"><h4>Decisions</h4>
+      ${decisions.length ? decisions.map(d => `<div class="check-item"><div><strong>${escapeHtml(d.decision || "—")}</strong><small>${escapeHtml(d.rationale || "—")} · ${escapeHtml(d.actorLabel || d.actorType || "—")} · ${escapeHtml(d.sourceSystem || "")} · ${escapeHtml(d.idempotencyKey || "")} · ${escapeHtml(d.occurredAt || "")}${d.isReplay ? " · replay" : ""}</small></div></div>`).join("") : emptyState("No decisions loaded.")}
+    </section>
+  `;
+}
+
+async function submitWeddingPlannerCampaignReadinessCommit(form) {
+  if (!canCommitCampaignReadiness()) {
+    toast("Campaign-readiness commit requires operator or admin (canCommitCampaignReadiness).", true);
+    return;
+  }
+  const elig = state.weddingPlannerCampaignReadinessEligibility;
+  if (elig?.currentQaStatus === "ACCEPTED_WITH_EXCEPTION" || elig?.isCleanAccepted !== true) {
+    toast("Exception / non-clean QA cannot commit campaign-readiness.", true);
+    return;
+  }
+  if (elig?.currentCampaignReadinessHandshakeVersionId) {
+    toast("Current handshake pointer is set — revoke or wait for clear first.", true);
+    return;
+  }
+  const value = name => String(form.elements[name]?.value || "").trim();
+  if (form.elements.disclaimerAcknowledged?.checked !== true) {
+    toast("disclaimerAcknowledged must be true.", true);
+    return;
+  }
+  const hasSynthetic = elig?.hasSyntheticUpstream === true;
+  if (hasSynthetic && form.elements.syntheticMarkerAcknowledged?.checked !== true) {
+    toast("syntheticMarkerAcknowledged is required when hasSyntheticUpstream.", true);
+    return;
+  }
+  const candidates = Array.isArray(elig?.candidates) ? elig.candidates : [];
+  if (candidates.length) {
+    const match = candidates.find(m => m.blissMatchId === value("blissMatchId"));
+    if (!match) {
+      toast("Select a blissMatchId from eligibility candidates.", true);
+      return;
+    }
+    if (!(match.campaigns || []).some(c => c.campaignId === value("campaignId"))) {
+      toast("Select a campaignId from eligibility candidates for the match.", true);
+      return;
+    }
+    const content = (match.contentItems || []).find(c => c.contentItemId === value("contentItemId"));
+    if (!content) {
+      toast("Select a contentItemId from eligibility candidates for the match.", true);
+      return;
+    }
+    if (!(content.slots || []).some(s => s.adInventorySlotId === value("adInventorySlotId"))) {
+      toast("Select an adInventorySlotId from eligibility candidates for the content.", true);
+      return;
+    }
+  }
+  const payload = {
+    blissMatchId: value("blissMatchId"),
+    campaignId: value("campaignId"),
+    contentItemId: value("contentItemId"),
+    adInventorySlotId: value("adInventorySlotId"),
+    rationale: value("rationale"),
+    disclaimerAcknowledged: true,
+    sourceSystem: value("sourceSystem"),
+    idempotencyKey: value("idempotencyKey")
+  };
+  if (hasSynthetic) payload.syntheticMarkerAcknowledged = true;
+  try {
+    const result = await api(`/api/wedding-planner/workspaces/${value("workspaceId")}/campaign-readiness-handshakes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    toast(`Campaign-readiness ${friendlyStatus(result.status)} v${result.versionNumber}${result.isReplay ? " (replay)" : ""} — PLANNED placement only · NO AI`);
+    form.elements.rationale.value = "";
+    if (form.elements.disclaimerAcknowledged) form.elements.disclaimerAcknowledged.checked = false;
+    if (form.elements.syntheticMarkerAcknowledged) form.elements.syntheticMarkerAcknowledged.checked = false;
+    fillKey("#wedding-planner-campaign-readiness-commit-key");
+    const workspaceId = result.workspaceId || value("workspaceId") || state.selectedWeddingPlannerWorkspace;
+    if (workspaceId) {
+      state.weddingPlannerCampaignReadinessEligibility = await api(`/api/wedding-planner/workspaces/${workspaceId}/campaign-readiness/eligibility`);
+      state.weddingPlannerCampaignReadinessHandshakes = await api(`/api/wedding-planner/workspaces/${workspaceId}/campaign-readiness-handshakes`);
+      if (!Array.isArray(state.weddingPlannerCampaignReadinessHandshakes)) state.weddingPlannerCampaignReadinessHandshakes = [];
+      state.selectedWeddingPlannerCampaignReadinessHandshakeId = result.campaignReadinessHandshakeVersionId;
+      await loadWeddingPlannerCampaignReadinessDetails();
+    }
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function submitWeddingPlannerCampaignReadinessRevoke(form) {
+  if (!canCommitCampaignReadiness()) {
+    toast("Campaign-readiness revoke requires operator or admin (canCommitCampaignReadiness).", true);
+    return;
+  }
+  const value = name => String(form.elements[name]?.value || "").trim();
+  const handshakeId = value("campaignReadinessHandshakeVersionId");
+  if (!handshakeId) {
+    toast("Select a CAMPAIGN_READY handshake to revoke.", true);
+    return;
+  }
+  const payload = {
+    decision: "REVOKE_CAMPAIGN_READY",
+    rationale: value("rationale"),
+    sourceSystem: value("sourceSystem"),
+    idempotencyKey: value("idempotencyKey")
+  };
+  try {
+    const result = await api(`/api/wedding-planner/campaign-readiness-handshakes/${handshakeId}/decisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    toast(`Revoked campaign-readiness${result.isReplay ? " (replay)" : ""} — placement remains PLANNED · NO AI`);
+    form.elements.rationale.value = "";
+    fillKey("#wedding-planner-campaign-readiness-revoke-key");
+    const workspaceId = result.workspaceId || state.selectedWeddingPlannerWorkspace;
+    if (workspaceId) {
+      state.weddingPlannerCampaignReadinessEligibility = await api(`/api/wedding-planner/workspaces/${workspaceId}/campaign-readiness/eligibility`);
+      state.weddingPlannerCampaignReadinessHandshakes = await api(`/api/wedding-planner/workspaces/${workspaceId}/campaign-readiness-handshakes`);
+      if (!Array.isArray(state.weddingPlannerCampaignReadinessHandshakes)) state.weddingPlannerCampaignReadinessHandshakes = [];
+      state.selectedWeddingPlannerCampaignReadinessHandshakeId = handshakeId;
+      await loadWeddingPlannerCampaignReadinessDetails();
     }
     renderWeddingPlanner();
   } catch (error) {

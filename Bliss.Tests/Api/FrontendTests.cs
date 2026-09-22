@@ -81,6 +81,15 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("SYNTHETIC DEVELOPMENT QA REVIEW", body);
         Assert.Contains("Advertisers may request and read", body);
         Assert.Contains("request/read-only", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PHASE 8 · BLISS HANDSHAKE / CAMPAIGN READINESS", body);
+        Assert.Contains("campaign-readiness-panel", body);
+        Assert.Contains("NO AI", body);
+        Assert.Contains("PLANNING ONLY — NO RESERVATION", body);
+        Assert.Contains("PLANNED IS NOT ACTIVATION", body);
+        Assert.Contains("SYNTHETIC DEVELOPMENT CAMPAIGN READINESS", body);
+        Assert.Contains("No match / campaign / content / slot selectors", body);
+        Assert.DoesNotContain("id=\"campaign-readiness-commit-form\"", body);
+        Assert.DoesNotContain("id=\"campaign-readiness-revoke-form\"", body);
         Assert.DoesNotContain("FOUNDATION READY", body);
         Assert.DoesNotContain("Help me choose colors", body);
         Assert.DoesNotContain("Show me some design concepts", body);
@@ -316,8 +325,6 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.DoesNotContain("innerHTML = concept.html", script);
         Assert.DoesNotContain("four fake agent runs", script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("campaignReady", script);
-        Assert.DoesNotContain("matchId", script);
-        Assert.DoesNotContain("placementId", script);
         Assert.DoesNotContain("inventoryId", script);
         Assert.DoesNotContain("createObjectURL", script);
         Assert.DoesNotContain("data:image", script);
@@ -414,8 +421,6 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.DoesNotContain("clientGeneratedImage", script);
         Assert.DoesNotContain("thirteen fake agent runs", script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("campaignReady", script);
-        Assert.DoesNotContain("matchId", script);
-        Assert.DoesNotContain("placementId", script);
         Assert.DoesNotContain("inventoryId", script);
         Assert.DoesNotContain("qaApproved", script);
         Assert.DoesNotContain("legalCleared", script);
@@ -481,7 +486,6 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("rulesOverallSeverity", script);
 
         Assert.DoesNotContain("campaignReady", script);
-        Assert.DoesNotContain("markCampaignReady", script);
         Assert.DoesNotContain("three fake agent runs", script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("providerUrl", script);
         Assert.DoesNotContain("data:image", script);
@@ -493,8 +497,6 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.DoesNotContain("submitQaDecision", script);
         Assert.DoesNotContain("submitQaResolution", script);
         Assert.DoesNotContain("WAIVE_AND_ACCEPT", script);
-        Assert.DoesNotContain("matchId", script);
-        Assert.DoesNotContain("placementId", script);
         Assert.DoesNotContain("inventoryId", script);
         Assert.DoesNotContain("qaApproved", script);
         Assert.DoesNotContain("legalCleared", script);
@@ -589,7 +591,22 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("CURRENT ACCEPTED", body);
         Assert.Contains("SYNTHETIC DEVELOPMENT QA REVIEW", body);
         Assert.Contains("HUMAN_ESCALATION_STEWARD", body);
-        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, Concept Workshop, Mature Creative, and Chaperone / QA / Escalation", body);
+        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, Concept Workshop, Mature Creative, Chaperone / QA / Escalation, and Campaign-readiness handshake", body);
+        Assert.Contains("PHASE 8 · BLISS HANDSHAKE / CAMPAIGN READINESS", body);
+        Assert.Contains("wedding-planner-campaign-readiness-commit-form", body);
+        Assert.Contains("wedding-planner-campaign-readiness-revoke-form", body);
+        Assert.Contains("wedding-planner-campaign-readiness-eligibility", body);
+        Assert.Contains("wedding-planner-campaign-readiness-inspect", body);
+        Assert.Contains("wedding-planner-campaign-readiness-handshake-list", body);
+        Assert.Contains("PLANNING ONLY — NO RESERVATION", body);
+        Assert.Contains("PLANNED IS NOT ACTIVATION", body);
+        Assert.Contains("NO AI", body);
+        Assert.Contains("canCommitCampaignReadiness", body);
+        Assert.Contains("MARK_CAMPAIGN_READY", body);
+        Assert.Contains("REVOKE_CAMPAIGN_READY", body);
+        Assert.Contains("SYNTHETIC DEVELOPMENT CAMPAIGN READINESS", body);
+        Assert.Contains("Revoke leaves placement PLANNED", body);
+        Assert.Contains("IsAvailable is informational", body);
         Assert.Contains("Export ledger", body);
         Assert.Contains("Verify pack", body);
         Assert.Contains("app.js", body);
@@ -637,7 +654,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("currentApprovedResearchReportVersionId", script);
         Assert.Contains("workerProfileVersion", script);
         Assert.Contains("workspaces/${workspaceId}/agent-runs", script);
-        Assert.Contains("Wedding Planner Phase 7", script);
+        Assert.Contains("Wedding Planner Phase 8", script);
         Assert.Contains("/workshop-jobs", script);
         Assert.Contains("/concept-packages", script);
         Assert.Contains("submitWeddingPlannerWorkshopJob", script);
@@ -727,8 +744,35 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.DoesNotContain("thirteen fake agent runs", script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("three fake agent runs", script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("STEWARD_REVIEW_V1", script);
-        Assert.DoesNotContain("markCampaignReady", script);
         Assert.DoesNotContain("campaignReady", script);
+        Assert.Contains("canCommitCampaignReadiness", script);
+        Assert.Contains("submitWeddingPlannerCampaignReadinessCommit", script);
+        Assert.Contains("submitWeddingPlannerCampaignReadinessRevoke", script);
+        Assert.Contains("renderWeddingPlannerCampaignReadinessInspect", script);
+        Assert.Contains("renderWeddingPlannerCampaignReadinessEligibility", script);
+        Assert.Contains("/campaign-readiness/eligibility", script);
+        Assert.Contains("/campaign-readiness-handshakes", script);
+        Assert.Contains("MARK_CAMPAIGN_READY", script);
+        Assert.Contains("REVOKE_CAMPAIGN_READY", script);
+        Assert.Contains("bliss.operator", script);
+        Assert.Contains("bliss.admin", script);
+        Assert.Contains("hasSyntheticUpstream", script);
+        Assert.Contains("disclaimerAcknowledged", script);
+        Assert.Contains("syntheticMarkerAcknowledged", script);
+        Assert.Contains("campaign-readiness-rules.v1", script);
+        Assert.Contains("CR_CURRENT_QA_POINTER", script);
+        Assert.Contains("CR_SYNTHETIC_ENVIRONMENT", script);
+        Assert.Contains("PLANNING ONLY — NO RESERVATION", script);
+        Assert.Contains("PLANNED IS NOT ACTIVATION", script);
+        Assert.Contains("NO AI", script);
+        Assert.Contains(
+            "This campaign-readiness handshake is a deterministic planning integration only. It marks Wedding Planner campaign-ready state for a clean Phase 7 ACCEPTED QA report bound to an APPROVED Bliss match and compatible creator inventory, and records a PLANNED campaign placement. It is not research, claim, legal, accessibility, compliance, measurement, delivery, publication, or payment approval. It does not mutate Phase 6 creative packages or Phase 7 QA reports. It does not recompute Bliss matching scores. Acceptance-with-exception QA is not campaign-ready. AI cannot mark campaign ready. Advertisers and reviewers cannot create this handshake. Slot availability is not reserved. Planned placement is not activation.",
+            script);
+        Assert.Contains("placement remains PLANNED", script);
+        Assert.Contains("IsAvailable is informational", script);
+        Assert.Contains("non-authoritative", script);
+        Assert.DoesNotContain("Phase 8 agent-run", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("phase8AgentRun", script);
         Assert.DoesNotContain("fetch(imageUrl", script);
         Assert.DoesNotContain("innerHTML = variant.svg", script);
         Assert.DoesNotContain("innerHTML = asset.html", script);
@@ -749,6 +793,139 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("workshop-prototype-frame", styles);
         Assert.Contains("workshop-placeholder", styles);
         Assert.Contains("creative-draft-png", styles);
+    }
+
+
+    [Fact]
+    public async Task Public_planner_script_wires_phase8_campaign_readiness_read_only_without_commit_or_selectors()
+    {
+        var client = _factory.CreateClient();
+        var script = await (await client.GetAsync("/wedding-planner.js")).Content.ReadAsStringAsync();
+
+        Assert.Contains("PHASE 8 · BLISS HANDSHAKE / CAMPAIGN READINESS", script);
+        Assert.Contains("/campaign-readiness/eligibility", script);
+        Assert.Contains("/campaign-readiness-handshakes", script);
+        Assert.Contains("/campaign-readiness-handshakes/", script);
+        Assert.Contains("refreshCampaignReadinessLists", script);
+        Assert.Contains("inspectCampaignReadinessHandshake", script);
+        Assert.Contains("renderCampaignReadinessEligibility", script);
+        Assert.Contains("CAMPAIGN_READY", script);
+        Assert.Contains("REVOKED", script);
+        Assert.Contains("campaign-readiness-rules.v1", script);
+        Assert.Contains("CR_CURRENT_QA_POINTER", script);
+        Assert.Contains("CR_SYNTHETIC_ENVIRONMENT", script);
+        Assert.Contains("SYNTHETIC DEVELOPMENT CAMPAIGN READINESS", script);
+        Assert.Contains("NO AI", script);
+        Assert.Contains("PLANNING ONLY — NO RESERVATION", script);
+        Assert.Contains("PLANNED IS NOT ACTIVATION", script);
+        Assert.Contains("safeCreativeAssetContentUrl", script);
+        Assert.Contains("/api/wedding-planner/creative-assets/", script);
+        Assert.Contains(
+            "This campaign-readiness handshake is a deterministic planning integration only. It marks Wedding Planner campaign-ready state for a clean Phase 7 ACCEPTED QA report bound to an APPROVED Bliss match and compatible creator inventory, and records a PLANNED campaign placement. It is not research, claim, legal, accessibility, compliance, measurement, delivery, publication, or payment approval. It does not mutate Phase 6 creative packages or Phase 7 QA reports. It does not recompute Bliss matching scores. Acceptance-with-exception QA is not campaign-ready. AI cannot mark campaign ready. Advertisers and reviewers cannot create this handshake. Slot availability is not reserved. Planned placement is not activation.",
+            script);
+        Assert.Contains("X-CSRF-TOKEN", script);
+
+        Assert.DoesNotContain("submitWeddingPlannerCampaignReadinessCommit", script);
+        Assert.DoesNotContain("submitWeddingPlannerCampaignReadinessRevoke", script);
+        Assert.DoesNotContain("canCommitCampaignReadiness", script);
+        Assert.DoesNotContain("id=\"campaign-readiness-match\"", script);
+        Assert.DoesNotContain("id=\"campaign-readiness-campaign\"", script);
+        Assert.DoesNotContain("id=\"campaign-readiness-content\"", script);
+        Assert.DoesNotContain("id=\"campaign-readiness-slot\"", script);
+        Assert.DoesNotContain("name=\"blissMatchId\"", script);
+        Assert.DoesNotContain("name=\"adInventorySlotId\"", script);
+        Assert.DoesNotContain("disclaimerAcknowledged", script);
+        Assert.DoesNotContain("REVOKE_CAMPAIGN_READY", script);
+        Assert.DoesNotContain("MARK_CAMPAIGN_READY", script);
+        Assert.DoesNotContain("method: \"POST\"", ExtractPhase8PublicRegion(script));
+        Assert.DoesNotContain("providerUrl", script);
+        Assert.DoesNotContain("data:image", script);
+        Assert.DoesNotContain("createObjectURL", script);
+        Assert.DoesNotContain("blob:", script);
+        Assert.DoesNotContain("fetch(imageUrl", script);
+        Assert.DoesNotContain("Phase 8 agent-run", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("phase8AgentRun", script);
+        Assert.DoesNotContain("IWeddingPlannerAiProvider", script);
+
+        var body = await (await client.GetAsync("/")).Content.ReadAsStringAsync();
+        Assert.Contains("campaign-readiness-panel", body);
+        Assert.Contains("campaign-readiness-handshake-select", body);
+        Assert.DoesNotContain("id=\"wedding-planner-campaign-readiness-commit-form\"", body);
+        Assert.DoesNotContain("id=\"wedding-planner-campaign-readiness-revoke-form\"", body);
+        Assert.DoesNotContain("name=\"blissMatchId\"", body);
+        Assert.DoesNotContain("name=\"campaignId\"", body);
+        Assert.DoesNotContain("name=\"contentItemId\"", body);
+        Assert.DoesNotContain("name=\"adInventorySlotId\"", body);
+
+        var styles = await (await client.GetAsync("/wedding-planner.css")).Content.ReadAsStringAsync();
+        Assert.Contains("[hidden] { display: none !important; }", styles);
+        Assert.Contains("campaign-readiness-panel", styles);
+        Assert.Contains("campaign-readiness-finding-card", styles);
+    }
+
+    private static string ExtractPhase8PublicRegion(string script)
+    {
+        const string startMarker = "function parseCampaignReadinessDocument";
+        var start = script.IndexOf(startMarker, StringComparison.Ordinal);
+        if (start < 0)
+        {
+            return string.Empty;
+        }
+
+        return script[start..];
+    }
+
+    [Fact]
+    public async Task Operations_script_gates_phase8_commit_revoke_to_operator_admin_and_avoids_external_urls()
+    {
+        var client = _factory.CreateClient();
+        var script = await (await client.GetAsync("/operations/app.js")).Content.ReadAsStringAsync();
+
+        Assert.Contains("Wedding Planner Phase 8", script);
+        Assert.Contains("canCommitCampaignReadiness", script);
+        Assert.Contains("bliss.operator", script);
+        Assert.Contains("bliss.admin", script);
+        Assert.Contains("submitWeddingPlannerCampaignReadinessCommit", script);
+        Assert.Contains("submitWeddingPlannerCampaignReadinessRevoke", script);
+        Assert.Contains("syncOpsCampaignReadinessCommitForm", script);
+        Assert.Contains("syncOpsCampaignReadinessRevokeForm", script);
+        Assert.Contains("renderWeddingPlannerCampaignReadinessEligibility", script);
+        Assert.Contains("renderWeddingPlannerCampaignReadinessInspect", script);
+        Assert.Contains("/api/wedding-planner/workspaces/${workspaceId}/campaign-readiness/eligibility", script);
+        Assert.Contains("/api/wedding-planner/workspaces/${workspaceId}/campaign-readiness-handshakes", script);
+        Assert.Contains("/api/wedding-planner/campaign-readiness-handshakes/${", script);
+        Assert.Contains("/decisions", script);
+        Assert.Contains("form.hidden = true", script);
+        Assert.Contains("ACCEPTED_WITH_EXCEPTION", script);
+        Assert.Contains("Exception / non-clean QA cannot commit", script);
+        Assert.Contains("placement remains PLANNED", script);
+        Assert.Contains("IsAvailable=${", script);
+        Assert.Contains("informational", script);
+        Assert.Contains("non-authoritative", script);
+        Assert.Contains("Never filter by IsAvailable", script);
+        Assert.Contains("safeCreativeAssetContentUrlOps", script);
+        Assert.Contains("/api/wedding-planner/creative-assets/", script);
+        Assert.Contains("escapeHtml", script);
+        Assert.Contains("JSON.parse", script);
+        Assert.DoesNotContain("providerUrl", script);
+        Assert.DoesNotContain("fetch(citation", script);
+        Assert.DoesNotContain("fetch(imageUrl", script);
+        Assert.DoesNotContain("data:image", script);
+        Assert.DoesNotContain("Phase 8 agent run panel", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("phase8AgentRun", script);
+        Assert.DoesNotContain("submitWeddingPlannerCampaignReadinessAgent", script);
+
+        var body = await (await client.GetAsync("/operations")).Content.ReadAsStringAsync();
+        Assert.Contains("WEDDING PLANNER PHASE 8", body);
+        Assert.Contains("wedding-planner-campaign-readiness-match", body);
+        Assert.Contains("wedding-planner-campaign-readiness-campaign", body);
+        Assert.Contains("wedding-planner-campaign-readiness-content", body);
+        Assert.Contains("wedding-planner-campaign-readiness-slot", body);
+        Assert.Contains("disclaimerAcknowledged", body);
+        Assert.Contains("syntheticMarkerAcknowledged", body);
+        Assert.Contains(
+            "This campaign-readiness handshake is a deterministic planning integration only. It marks Wedding Planner campaign-ready state for a clean Phase 7 ACCEPTED QA report bound to an APPROVED Bliss match and compatible creator inventory, and records a PLANNED campaign placement. It is not research, claim, legal, accessibility, compliance, measurement, delivery, publication, or payment approval. It does not mutate Phase 6 creative packages or Phase 7 QA reports. It does not recompute Bliss matching scores. Acceptance-with-exception QA is not campaign-ready. AI cannot mark campaign ready. Advertisers and reviewers cannot create this handshake. Slot availability is not reserved. Planned placement is not activation.",
+            body);
     }
 
     [Theory]
