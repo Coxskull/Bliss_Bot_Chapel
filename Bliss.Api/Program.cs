@@ -57,14 +57,15 @@ if (!builder.Environment.IsDevelopment()
         "Runtime:DataProtectionKeysPath is required outside Development so OIDC sessions survive restarts and replicas.");
 }
 
-if (!builder.Environment.IsDevelopment()
+if ((!builder.Environment.IsDevelopment() || weddingPlannerAi.RequireRemoteAiProvider)
     && !string.Equals(
         weddingPlannerAi.Provider,
         WeddingPlannerAiProviderKinds.OpenAiCompatible,
         StringComparison.OrdinalIgnoreCase))
 {
     throw new InvalidOperationException(
-        "WeddingPlannerAi:Provider must be OpenAiCompatible outside Development. "
+        "WeddingPlannerAi:Provider must be OpenAiCompatible outside Development "
+        + "(or when RequireRemoteAiProvider is enabled). "
         + "The Local provider is a deterministic development/test worker, not a production AI provider.");
 }
 

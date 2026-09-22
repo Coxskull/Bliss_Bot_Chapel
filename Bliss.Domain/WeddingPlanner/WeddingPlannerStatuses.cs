@@ -42,6 +42,15 @@ public static class WeddingPlannerAuditActions
     public const string ResearchReportRejected = "RESEARCH_REPORT_REJECTED";
     public const string ResearchReportSuperseded = "RESEARCH_REPORT_SUPERSEDED";
     public const string ResearchReportReplayed = "RESEARCH_REPORT_REPLAYED";
+    public const string WorkshopJobStarted = "WORKSHOP_JOB_STARTED";
+    public const string WorkshopJobSucceeded = "WORKSHOP_JOB_SUCCEEDED";
+    public const string WorkshopJobFailed = "WORKSHOP_JOB_FAILED";
+    public const string WorkshopJobReplayed = "WORKSHOP_JOB_REPLAYED";
+    public const string ConceptPackageProposed = "CONCEPT_PACKAGE_PROPOSED";
+    public const string ConceptPackageApproved = "CONCEPT_PACKAGE_APPROVED";
+    public const string ConceptPackageRejected = "CONCEPT_PACKAGE_REJECTED";
+    public const string ConceptPackageSuperseded = "CONCEPT_PACKAGE_SUPERSEDED";
+    public const string ConceptPackageReplayed = "CONCEPT_PACKAGE_REPLAYED";
 }
 
 public static class WeddingPlannerOutcomes
@@ -67,6 +76,103 @@ public static class WeddingPlannerAgentRoles
     public const string CuratorResearch = "CURATOR_RESEARCH";
     public const string CuratorEvidence = "CURATOR_EVIDENCE";
     public const string CuratorSynthesisRisk = "CURATOR_SYNTHESIS_RISK";
+
+    /// <summary>Phase 5 Concept Workshop stage LogicalRole values (exactly 3 executable stages).</summary>
+    public const string ConceptStrategy = "CONCEPT_STRATEGY";
+    public const string ConceptCreative = "CONCEPT_CREATIVE";
+    public const string PrototypeProduction = "PROTOTYPE_PRODUCTION";
+}
+
+/// <summary>Exactly four durable Concept Workshop logical roles (not agent-run identities).</summary>
+public static class WeddingPlannerConceptWorkshopLogicalRoles
+{
+    public const string BrandStrategist = "BRAND_STRATEGIST";
+    public const string ArtDirector = "ART_DIRECTOR";
+    public const string Copywriter = "COPYWRITER";
+    public const string ProductionArtist = "PRODUCTION_ARTIST";
+
+    public static readonly IReadOnlyList<string> AllInOrder =
+    [
+        BrandStrategist,
+        ArtDirector,
+        Copywriter,
+        ProductionArtist
+    ];
+}
+
+/// <summary>Exactly three executable Concept Workshop worker profiles.</summary>
+public static class WeddingPlannerConceptWorkshopWorkerProfiles
+{
+    public const string ConceptStrategyV1 = "CONCEPT_STRATEGY_V1";
+    public const string ConceptCreativeV1 = "CONCEPT_CREATIVE_V1";
+    public const string PrototypeProductionV1 = "PROTOTYPE_PRODUCTION_V1";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        ConceptStrategyV1,
+        ConceptCreativeV1,
+        PrototypeProductionV1
+    ];
+
+    public static IReadOnlyList<string> AssignedRoles(string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            ConceptStrategyV1 => [WeddingPlannerConceptWorkshopLogicalRoles.BrandStrategist],
+            ConceptCreativeV1 =>
+            [
+                WeddingPlannerConceptWorkshopLogicalRoles.ArtDirector,
+                WeddingPlannerConceptWorkshopLogicalRoles.Copywriter
+            ],
+            PrototypeProductionV1 => [WeddingPlannerConceptWorkshopLogicalRoles.ProductionArtist],
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown Concept Workshop worker profile.")
+        };
+
+    public static string StageLogicalRole(string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            ConceptStrategyV1 => WeddingPlannerAgentRoles.ConceptStrategy,
+            ConceptCreativeV1 => WeddingPlannerAgentRoles.ConceptCreative,
+            PrototypeProductionV1 => WeddingPlannerAgentRoles.PrototypeProduction,
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown Concept Workshop worker profile.")
+        };
+
+    public static string PromptPack(string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            ConceptStrategyV1 => WeddingPlannerPromptPacks.ConceptStrategyV1,
+            ConceptCreativeV1 => WeddingPlannerPromptPacks.ConceptCreativeV1,
+            PrototypeProductionV1 => WeddingPlannerPromptPacks.PrototypeProductionV1,
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown Concept Workshop worker profile.")
+        };
+}
+
+/// <summary>
+/// Internal run/package idempotency suffixes. Public job keys must leave room for the longest suffix
+/// within the 128-character IdempotencyKey column.
+/// </summary>
+public static class WeddingPlannerConceptWorkshopIdempotency
+{
+    public const string ConceptStrategyStageSuffix = ":CONCEPT_STRATEGY";
+    public const string ConceptCreativeStageSuffix = ":CONCEPT_CREATIVE";
+    public const string PrototypeProductionStageSuffix = ":PROTOTYPE_PRODUCTION";
+    public const string PackageSuffix = ":PACKAGE";
+
+    /// <summary>Longest stage suffix length (<see cref="PrototypeProductionStageSuffix"/>).</summary>
+    public const int LongestSuffixLength = 21;
+
+    /// <summary>Max public workshop-job IdempotencyKey length (128 − longest suffix).</summary>
+    public const int MaxJobIdempotencyKeyLength = 128 - LongestSuffixLength;
+
+    public static string StageKey(string jobKey, string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            WeddingPlannerConceptWorkshopWorkerProfiles.ConceptStrategyV1 => jobKey + ConceptStrategyStageSuffix,
+            WeddingPlannerConceptWorkshopWorkerProfiles.ConceptCreativeV1 => jobKey + ConceptCreativeStageSuffix,
+            WeddingPlannerConceptWorkshopWorkerProfiles.PrototypeProductionV1 => jobKey + PrototypeProductionStageSuffix,
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion))
+        };
+
+    public static string PackageKey(string jobKey) => jobKey + PackageSuffix;
 }
 
 /// <summary>Exactly eight durable Curator logical roles (not agent-run identities).</summary>
@@ -207,6 +313,9 @@ public static class WeddingPlannerPromptPacks
     public const string CuratorResearchV1 = "wp-phase4.curator-research.v1";
     public const string CuratorEvidenceV1 = "wp-phase4.curator-evidence.v1";
     public const string CuratorSynthesisRiskV1 = "wp-phase4.curator-synthesis-risk.v1";
+    public const string ConceptStrategyV1 = "wp-phase5.concept-strategy.v1";
+    public const string ConceptCreativeV1 = "wp-phase5.concept-creative.v1";
+    public const string PrototypeProductionV1 = "wp-phase5.prototype-production.v1";
 }
 
 public static class WeddingPlannerSchemaVersions
@@ -217,6 +326,17 @@ public static class WeddingPlannerSchemaVersions
     public const string ResearchSourceCatalogV1 = "research-source-catalog.v1";
     public const string CuratorWorkerOutputV1 = "curator-worker-output.v1";
     public const string ResearchReportV1 = "research-report.v1";
+    public const string WorkshopBriefV1 = "workshop-brief.v1";
+    public const string ConceptStrategyWorkerOutputV1 = "concept-strategy-worker-output.v1";
+    public const string ConceptCreativeWorkerOutputV1 = "concept-creative-worker-output.v1";
+    public const string PrototypeProductionWorkerOutputV1 = "prototype-production-worker-output.v1";
+    public const string PrototypeSpecV1 = "prototype-spec.v1";
+    public const string ConceptPackageV1 = "concept-package.v1";
+}
+
+public static class WeddingPlannerConceptWorkshopContractVersions
+{
+    public const string ConceptWorkshopOrchestrationV1 = "wp-concept-workshop-orchestration.v1";
 }
 
 public static class WeddingPlannerResearchContractVersions
@@ -258,6 +378,141 @@ public static class WeddingPlannerResearchDisclaimer
 {
     public const string Text =
         "Approval of this report is research approval only. It is not creative, campaign, claim, legal, matching, accessibility, or compliance approval. Source verification checks metadata and internal consistency only; live URL content is not fetched or certified.";
+}
+
+public static class WeddingPlannerWorkshopJobStatuses
+{
+    public const string Running = "RUNNING";
+    public const string Succeeded = "SUCCEEDED";
+    public const string Failed = "FAILED";
+}
+
+public static class WeddingPlannerConceptPackageStatuses
+{
+    public const string Proposed = "PROPOSED";
+    public const string Approved = "APPROVED";
+    public const string Rejected = "REJECTED";
+    public const string Superseded = "SUPERSEDED";
+}
+
+public static class WeddingPlannerConceptPackageDecisions
+{
+    public const string Approve = "APPROVE";
+    public const string Reject = "REJECT";
+}
+
+public static class WeddingPlannerChannelFormats
+{
+    public const string StaticSocialSquare = "STATIC_SOCIAL_SQUARE";
+    public const string StaticSocialStory = "STATIC_SOCIAL_STORY";
+    public const string StaticDisplayBanner = "STATIC_DISPLAY_BANNER";
+    public const string EmailHero = "EMAIL_HERO";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        StaticSocialSquare,
+        StaticSocialStory,
+        StaticDisplayBanner,
+        EmailHero
+    ];
+}
+
+public static class WeddingPlannerConceptIds
+{
+    public const string Concept1 = "concept_1";
+    public const string Concept2 = "concept_2";
+    public const string Concept3 = "concept_3";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        Concept1,
+        Concept2,
+        Concept3
+    ];
+}
+
+public static class WeddingPlannerCopyKinds
+{
+    public const string CreativeNonFactual = "CREATIVE_NON_FACTUAL";
+}
+
+public static class WeddingPlannerPrototypeTemplates
+{
+    public const string LofiStackV1 = "LOFI_STACK_V1";
+    public const string LofiSplitV1 = "LOFI_SPLIT_V1";
+    public const string LofiBannerV1 = "LOFI_BANNER_V1";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        LofiStackV1,
+        LofiSplitV1,
+        LofiBannerV1
+    ];
+}
+
+public static class WeddingPlannerPrototypeRegionTypes
+{
+    public const string Hero = "HERO";
+    public const string Header = "HEADER";
+    public const string Body = "BODY";
+    public const string Headline = "HEADLINE";
+    public const string Subhead = "SUBHEAD";
+    public const string Cta = "CTA";
+    public const string Footer = "FOOTER";
+    public const string LogoSlot = "LOGO_SLOT";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        Hero,
+        Header,
+        Body,
+        Headline,
+        Subhead,
+        Cta,
+        Footer,
+        LogoSlot
+    ];
+}
+
+public static class WeddingPlannerPrototypeTextRefs
+{
+    public const string CopyHeadline = "copy.headline";
+    public const string CopyBody = "copy.body";
+    public const string CopyCta = "copy.cta";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        CopyHeadline,
+        CopyBody,
+        CopyCta
+    ];
+}
+
+public static class WeddingPlannerAssetPlaceholderKinds
+{
+    public const string HeroImage = "HERO_IMAGE";
+    public const string Logo = "LOGO";
+    public const string Product = "PRODUCT";
+    public const string Decorative = "DECORATIVE";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        HeroImage,
+        Logo,
+        Product,
+        Decorative
+    ];
+}
+
+public static class WeddingPlannerConceptWorkshopMarkers
+{
+    public const string SyntheticDevelopmentPrototype = "SYNTHETIC DEVELOPMENT PROTOTYPE";
+}
+
+public static class WeddingPlannerConceptPackageDisclaimer
+{
+    public const string Text =
+        "Approval of this package is concept-direction approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, asset, QA, or production-artwork approval. Marketing copy is CREATIVE_NON_FACTUAL unless a factual claim cites source IDs from the pinned approved research report. Brand DNA and Color Profile are creative constraints, not factual evidence. Prototypes are structured low-fi specs only; no images are generated.";
 }
 
 public static class WeddingPlannerResearchProviderKinds

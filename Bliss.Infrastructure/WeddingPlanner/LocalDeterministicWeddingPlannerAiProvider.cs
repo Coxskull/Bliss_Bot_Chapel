@@ -62,8 +62,312 @@ public sealed class LocalDeterministicWeddingPlannerAiProvider : IWeddingPlanner
             return Task.FromResult(CompleteCuratorStage(request));
         }
 
+        if (IsWorkshopStage(request))
+        {
+            return Task.FromResult(CompleteWorkshopStage(request));
+        }
+
         throw new InvalidOperationException(
             $"Unsupported Wedding Planner provider request for role '{request.LogicalRole}' / pack '{request.PromptPackVersion}' / format '{request.ResponseFormat}'.");
+    }
+
+    private static bool IsWorkshopStage(WeddingPlannerAiCompletionRequest request)
+    {
+        if (!string.Equals(request.ResponseFormat, WeddingPlannerResponseFormats.Json, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.ConceptStrategy, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.ConceptStrategyV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerConceptWorkshopWorkerProfiles.ConceptStrategyV1, StringComparison.Ordinal))
+            || (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.ConceptCreative, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.ConceptCreativeV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerConceptWorkshopWorkerProfiles.ConceptCreativeV1, StringComparison.Ordinal))
+            || (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.PrototypeProduction, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.PrototypeProductionV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerConceptWorkshopWorkerProfiles.PrototypeProductionV1, StringComparison.Ordinal));
+    }
+
+    private static WeddingPlannerAiCompletionResult CompleteWorkshopStage(WeddingPlannerAiCompletionRequest request)
+    {
+        var profile = request.WorkerProfileVersion
+            ?? throw new InvalidOperationException("Workshop stage requires WorkerProfileVersion.");
+        var assigned = request.AssignedRoles?.ToList()
+            ?? WeddingPlannerConceptWorkshopWorkerProfiles.AssignedRoles(profile).ToList();
+        var expected = WeddingPlannerConceptWorkshopWorkerProfiles.AssignedRoles(profile);
+        if (assigned.Count != expected.Count || !expected.All(assigned.Contains))
+        {
+            throw new InvalidOperationException("Workshop AssignedRoles must match the worker profile mapping.");
+        }
+
+        var context = string.Join("\n", request.Messages.Select(x => x.Body));
+        var channelFormat = ExtractChannelFormat(context);
+        var (width, height) = WeddingPlannerConceptWorkshopValidation.CanvasForChannelFormat(channelFormat);
+        var paletteRoles = ExtractPaletteRoles(context);
+        if (paletteRoles.Count == 0)
+        {
+            paletteRoles = ["primary", "secondary", "accent", "background", "neutral800"];
+        }
+
+        var sourceIds = ExtractSourceIds(context);
+        if (sourceIds.Count == 0)
+        {
+            sourceIds = ["src_1"];
+        }
+
+        var document = profile switch
+        {
+            WeddingPlannerConceptWorkshopWorkerProfiles.ConceptStrategyV1 => BuildStrategyOutput(),
+            WeddingPlannerConceptWorkshopWorkerProfiles.ConceptCreativeV1 => BuildCreativeOutput(paletteRoles, sourceIds),
+            WeddingPlannerConceptWorkshopWorkerProfiles.PrototypeProductionV1 => BuildProductionOutput(channelFormat, width, height, paletteRoles),
+            _ => throw new InvalidOperationException($"Unsupported workshop profile '{profile}'.")
+        };
+
+        return BuildResult(document.ToJsonString(NodeWriteOptions), request);
+    }
+
+    private static JsonObject BuildStrategyOutput() =>
+        new()
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.ConceptStrategyWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerConceptWorkshopWorkerProfiles.ConceptStrategyV1,
+            ["marker"] = WeddingPlannerConceptWorkshopMarkers.SyntheticDevelopmentPrototype,
+            ["contributions"] = new JsonArray(new JsonObject
+            {
+                ["logicalRole"] = WeddingPlannerConceptWorkshopLogicalRoles.BrandStrategist,
+                ["summary"] = "SYNTHETIC DEVELOPMENT PROTOTYPE — three concept directions aligned to the brief.",
+                ["concepts"] = new JsonArray(
+                    StrategyConcept(WeddingPlannerConceptIds.Concept1, "Quiet Confidence", "Leads with understated brand voice for the stated audience."),
+                    StrategyConcept(WeddingPlannerConceptIds.Concept2, "Warm Invitation", "Centers hospitality cues without inventing product facts."),
+                    StrategyConcept(WeddingPlannerConceptIds.Concept3, "Clear Next Step", "Privileges CTA clarity for the selected channel format."))
+            })
+        };
+
+    private static JsonObject StrategyConcept(string id, string name, string rationale) =>
+        new()
+        {
+            ["id"] = id,
+            ["name"] = name,
+            ["rationale"] = rationale
+        };
+
+    private static JsonObject BuildCreativeOutput(IReadOnlyList<string> paletteRoles, IReadOnlyList<string> sourceIds)
+    {
+        string Role(int index) => paletteRoles[Math.Min(index, paletteRoles.Count - 1)];
+        var primarySource = sourceIds[0];
+
+        return new JsonObject
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.ConceptCreativeWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerConceptWorkshopWorkerProfiles.ConceptCreativeV1,
+            ["marker"] = WeddingPlannerConceptWorkshopMarkers.SyntheticDevelopmentPrototype,
+            ["contributions"] = new JsonArray(
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerConceptWorkshopLogicalRoles.ArtDirector,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT PROTOTYPE — visual direction per concept.",
+                    ["concepts"] = new JsonArray(
+                        ArtConcept(WeddingPlannerConceptIds.Concept1, "Centered quiet hero with generous negative space.", Role(0), Role(3), Role(2)),
+                        ArtConcept(WeddingPlannerConceptIds.Concept2, "Split frame with soft secondary wash.", Role(0), Role(1), Role(3)),
+                        ArtConcept(WeddingPlannerConceptIds.Concept3, "Banner-forward CTA block with logo slot.", Role(0), Role(2), Role(3)))
+                },
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerConceptWorkshopLogicalRoles.Copywriter,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT PROTOTYPE — creative non-factual copy per concept.",
+                    ["concepts"] = new JsonArray(
+                        CopyConcept(WeddingPlannerConceptIds.Concept1, "Your day, thoughtfully planned.", "A calm invitation to explore options together.", "Start planning", null),
+                        CopyConcept(
+                            WeddingPlannerConceptIds.Concept2,
+                            "Warm welcomes begin here.",
+                            "Host with confidence and clarity.",
+                            "See the experience",
+                            new JsonObject
+                            {
+                                ["statement"] = "SYNTHETIC DEVELOPMENT PROTOTYPE: couples often research venues months ahead.",
+                                ["sourceIds"] = new JsonArray(primarySource)
+                            }),
+                        CopyConcept(WeddingPlannerConceptIds.Concept3, "One clear next step.", "Keep the path simple from glance to action.", "Continue", null))
+                })
+        };
+    }
+
+    private static JsonObject ArtConcept(string id, string visual, string a, string b, string c) =>
+        new()
+        {
+            ["id"] = id,
+            ["visualDirection"] = visual,
+            ["paletteRoleRefs"] = new JsonArray(a, b, c)
+        };
+
+    private static JsonObject CopyConcept(string id, string headline, string body, string cta, JsonObject? claim)
+    {
+        var claims = new JsonArray();
+        if (claim is not null)
+        {
+            claims.Add(claim);
+        }
+
+        return new JsonObject
+        {
+            ["id"] = id,
+            ["copy"] = new JsonObject
+            {
+                ["kind"] = WeddingPlannerCopyKinds.CreativeNonFactual,
+                ["headline"] = headline,
+                ["body"] = body,
+                ["cta"] = cta
+            },
+            ["factualClaims"] = claims
+        };
+    }
+
+    private static JsonObject BuildProductionOutput(string channelFormat, int width, int height, IReadOnlyList<string> paletteRoles)
+    {
+        string Role(int index) => paletteRoles[Math.Min(index, paletteRoles.Count - 1)];
+        return new JsonObject
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.PrototypeProductionWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerConceptWorkshopWorkerProfiles.PrototypeProductionV1,
+            ["marker"] = WeddingPlannerConceptWorkshopMarkers.SyntheticDevelopmentPrototype,
+            ["contributions"] = new JsonArray(new JsonObject
+            {
+                ["logicalRole"] = WeddingPlannerConceptWorkshopLogicalRoles.ProductionArtist,
+                ["summary"] = "SYNTHETIC DEVELOPMENT PROTOTYPE — low-fi prototype specs for three concepts.",
+                ["prototypes"] = new JsonArray(
+                    Prototype(WeddingPlannerConceptIds.Concept1, channelFormat, width, height, WeddingPlannerPrototypeTemplates.LofiStackV1, Role),
+                    Prototype(WeddingPlannerConceptIds.Concept2, channelFormat, width, height, WeddingPlannerPrototypeTemplates.LofiSplitV1, Role),
+                    Prototype(WeddingPlannerConceptIds.Concept3, channelFormat, width, height, WeddingPlannerPrototypeTemplates.LofiBannerV1, Role))
+            })
+        };
+    }
+
+    private static JsonObject Prototype(
+        string conceptId,
+        string channelFormat,
+        int width,
+        int height,
+        string template,
+        Func<int, string> role)
+    {
+        var heroH = Math.Max(120, (int)(height * 0.55));
+        var headlineY = heroH + 40;
+        var bodyY = headlineY + 100;
+        var ctaY = Math.Min(height - 90, bodyY + 130);
+        var logoY = height - 60;
+        var textW = Math.Max(100, width - 128);
+
+        return new JsonObject
+        {
+            ["conceptId"] = conceptId,
+            ["spec"] = new JsonObject
+            {
+                ["schemaVersion"] = WeddingPlannerSchemaVersions.PrototypeSpecV1,
+                ["format"] = channelFormat,
+                ["canvas"] = new JsonObject { ["width"] = width, ["height"] = height },
+                ["template"] = template,
+                ["regions"] = new JsonArray(
+                    Region("r1", WeddingPlannerPrototypeRegionTypes.Hero, 0, 0, width, heroH, null, null,
+                        new JsonObject
+                        {
+                            ["kind"] = WeddingPlannerAssetPlaceholderKinds.HeroImage,
+                            ["label"] = "Hero atmosphere placeholder"
+                        }),
+                    Region("r2", WeddingPlannerPrototypeRegionTypes.Headline, 64, headlineY, textW, 96,
+                        WeddingPlannerPrototypeTextRefs.CopyHeadline, role(0), null),
+                    Region("r3", WeddingPlannerPrototypeRegionTypes.Body, 64, bodyY, textW, 120,
+                        WeddingPlannerPrototypeTextRefs.CopyBody, role(Math.Min(4, 4)), null),
+                    Region("r4", WeddingPlannerPrototypeRegionTypes.Cta, 64, ctaY, Math.Min(360, textW), 72,
+                        WeddingPlannerPrototypeTextRefs.CopyCta, role(2), null),
+                    Region("r5", WeddingPlannerPrototypeRegionTypes.LogoSlot, Math.Max(0, width - 180), logoY, 116, 48,
+                        null, null,
+                        new JsonObject
+                        {
+                            ["kind"] = WeddingPlannerAssetPlaceholderKinds.Logo,
+                            ["label"] = "Logo placeholder"
+                        }))
+            }
+        };
+    }
+
+    private static JsonObject Region(
+        string id,
+        string type,
+        int x,
+        int y,
+        int w,
+        int h,
+        string? textRef,
+        string? paletteRoleRef,
+        JsonObject? assetPlaceholder)
+    {
+        var obj = new JsonObject
+        {
+            ["id"] = id,
+            ["type"] = type,
+            ["bounds"] = new JsonObject { ["x"] = x, ["y"] = y, ["w"] = w, ["h"] = h }
+        };
+        if (textRef is not null)
+        {
+            obj["textRef"] = textRef;
+        }
+
+        if (paletteRoleRef is not null)
+        {
+            obj["paletteRoleRef"] = paletteRoleRef;
+        }
+
+        if (assetPlaceholder is not null)
+        {
+            obj["assetPlaceholder"] = assetPlaceholder;
+        }
+
+        return obj;
+    }
+
+    private static string ExtractChannelFormat(string context)
+    {
+        foreach (var format in WeddingPlannerChannelFormats.All)
+        {
+            if (context.Contains(format, StringComparison.Ordinal))
+            {
+                return format;
+            }
+        }
+
+        return WeddingPlannerChannelFormats.StaticSocialSquare;
+    }
+
+    private static List<string> ExtractPaletteRoles(string context)
+    {
+        var roles = new List<string>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        const string marker = "\"paletteRoles\":";
+        var idx = context.IndexOf(marker, StringComparison.Ordinal);
+        if (idx < 0)
+        {
+            return roles;
+        }
+
+        var start = context.IndexOf('[', idx);
+        var end = context.IndexOf(']', start + 1);
+        if (start < 0 || end < 0)
+        {
+            return roles;
+        }
+
+        var slice = context[(start + 1)..end];
+        foreach (var part in slice.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var role = part.Trim().Trim('"');
+            if (!string.IsNullOrWhiteSpace(role) && seen.Add(role))
+            {
+                roles.Add(role);
+            }
+        }
+
+        return roles;
     }
 
     private static bool IsCuratorStage(WeddingPlannerAiCompletionRequest request)

@@ -58,4 +58,14 @@ public sealed class EntityDefaultTests
         Assert.Equal("brand-dna.v1", new WeddingPlannerBrandDnaVersion().SchemaVersion);
         Assert.Null(new WeddingPlannerWorkspace().CurrentApprovedBrandDnaVersionId);
     }
+
+    [Fact]
+    public void Wedding_planner_phase5_defaults_are_proposed_and_running()
+    {
+        Assert.Equal("RUNNING", new WeddingPlannerWorkshopJob().Status);
+        Assert.Equal("PROPOSED", new WeddingPlannerConceptPackageVersion().Status);
+        Assert.Equal("concept-package.v1", new WeddingPlannerConceptPackageVersion().SchemaVersion);
+        Assert.Null(new WeddingPlannerWorkspace().CurrentApprovedConceptPackageVersionId);
+        Assert.Null(new WeddingPlannerAgentRun().OutputConceptPackageVersionId);
+    }
 }
