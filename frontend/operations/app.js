@@ -18,8 +18,12 @@ const state = {
   reviewQueue: [], placementQueue: [], provenances: [],
   weddingPlannerWorkspaces: [], weddingPlannerSessions: [], weddingPlannerMessages: [],
   weddingPlannerAgentRuns: [], weddingPlannerBrandDna: null, weddingPlannerColorProfiles: null,
+  weddingPlannerResearchJobs: [], weddingPlannerResearchReports: null,
+  weddingPlannerResearchAgentRuns: [],
   selectedWeddingPlannerWorkspace: null, selectedWeddingPlannerSession: null,
   selectedWeddingPlannerColorProfileId: null,
+  selectedWeddingPlannerResearchJobId: null,
+  selectedWeddingPlannerResearchReportId: null,
   affiliateNetworks: [], networkAccesses: [], programAccesses: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations",
@@ -842,9 +846,15 @@ function bindActions() {
   $("#wedding-planner-dna-decision-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerDnaDecision(event.currentTarget);});
   $("#wedding-planner-color-compute-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerColorCompute(event.currentTarget);});
   $("#wedding-planner-color-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerColorDecision(event.currentTarget);});
+  $("#wedding-planner-research-job-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerResearchJob(event.currentTarget);});
+  $("#wedding-planner-research-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerResearchDecision(event.currentTarget);});
   $("#wedding-planner-color-version")?.addEventListener("change",event=>{
     state.selectedWeddingPlannerColorProfileId = event.currentTarget.value || null;
     renderWeddingPlannerColorInspect();
+  });
+  $("#wedding-planner-research-report-version")?.addEventListener("change",event=>{
+    state.selectedWeddingPlannerResearchReportId = event.currentTarget.value || null;
+    loadWeddingPlannerResearchAgentRuns().then(() => renderWeddingPlannerResearchInspect());
   });
   $("#regenerate-review-key").addEventListener("click",generateReviewIdempotencyKey);
   $("#regenerate-placement-key").addEventListener("click",generatePlacementIdempotencyKey);
@@ -855,6 +865,8 @@ function bindActions() {
   $("#regenerate-wedding-planner-dna-decision-key").addEventListener("click",()=>fillKey("#wedding-planner-dna-decision-key"));
   $("#regenerate-wedding-planner-color-compute-key")?.addEventListener("click",()=>fillKey("#wedding-planner-color-compute-key"));
   $("#regenerate-wedding-planner-color-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-color-decision-key"));
+  $("#regenerate-wedding-planner-research-job-key")?.addEventListener("click",()=>fillKey("#wedding-planner-research-job-key"));
+  $("#regenerate-wedding-planner-research-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-research-decision-key"));
   $("#placement-match").addEventListener("change",event=>{state.selectedPlacement=event.target.value;renderPlacements();});
   $("#placement-content").addEventListener("change",updatePlacementSlots);
   $("#review-match").addEventListener("change",event=>{state.selectedReview=event.target.value;renderReviews();});
@@ -884,6 +896,18 @@ function handleDocumentClick(event) {
     const select=$("#wedding-planner-color-version");
     if(select)select.value=state.selectedWeddingPlannerColorProfileId;
     renderWeddingPlannerColorInspect();
+  }
+  else if(target.matches("[data-wedding-research-job]")){
+    state.selectedWeddingPlannerResearchJobId=target.dataset.weddingResearchJob;
+    renderWeddingPlanner();
+  }
+  else if(target.matches("[data-wedding-research-report]")){
+    state.selectedWeddingPlannerResearchReportId=target.dataset.weddingResearchReport;
+    const select=$("#wedding-planner-research-report-version");
+    if(select)select.value=state.selectedWeddingPlannerResearchReportId;
+    loadWeddingPlannerResearchAgentRuns().then(() => {
+      renderWeddingPlanner();
+    });
   }
   else if(target.matches("[data-match-id]"))location.hash=`#/matches/${target.dataset.matchId}`;
   else if(target.matches("[data-campaign-id]")){state.inventoryTab="campaigns";renderInventory();location.hash=`#/inventory/${target.dataset.campaignId}`;}
@@ -1023,6 +1047,8 @@ function generateWeddingPlannerKeys(){
   fillKey("#wedding-planner-dna-decision-key");
   fillKey("#wedding-planner-color-compute-key");
   fillKey("#wedding-planner-color-decision-key");
+  fillKey("#wedding-planner-research-job-key");
+  fillKey("#wedding-planner-research-decision-key");
 }
 
 function renderWeddingPlanner() {
@@ -1031,18 +1057,22 @@ function renderWeddingPlanner() {
   const sessionSelect = $("#wedding-planner-session");
   const interpretWorkspace = $("#wedding-planner-interpret-workspace");
   const colorWorkspace = $("#wedding-planner-color-workspace");
+  const researchWorkspace = $("#wedding-planner-research-workspace");
   const dnaVersionSelect = $("#wedding-planner-dna-version");
   const colorVersionSelect = $("#wedding-planner-color-version");
+  const researchReportSelect = $("#wedding-planner-research-report-version");
   if (!advertiserSelect) return;
   advertiserSelect.innerHTML = state.advertisers.map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join("");
   const workspaceOptions = state.weddingPlannerWorkspaces.map(x => `<option value="${x.workspaceId}">${escapeHtml(x.advertiserName)}</option>`).join("");
   workspaceSelect.innerHTML = workspaceOptions;
   if (interpretWorkspace) interpretWorkspace.innerHTML = workspaceOptions;
   if (colorWorkspace) colorWorkspace.innerHTML = workspaceOptions;
+  if (researchWorkspace) researchWorkspace.innerHTML = workspaceOptions;
   if (state.selectedWeddingPlannerWorkspace) {
     workspaceSelect.value = state.selectedWeddingPlannerWorkspace;
     if (interpretWorkspace) interpretWorkspace.value = state.selectedWeddingPlannerWorkspace;
     if (colorWorkspace) colorWorkspace.value = state.selectedWeddingPlannerWorkspace;
+    if (researchWorkspace) researchWorkspace.value = state.selectedWeddingPlannerWorkspace;
   }
   sessionSelect.innerHTML = state.weddingPlannerSessions.map(x => `<option value="${x.sessionId}">${x.sessionId.slice(0, 8)} · ${x.messageCount} messages</option>`).join("");
   if (state.selectedWeddingPlannerSession) sessionSelect.value = state.selectedWeddingPlannerSession;
@@ -1057,8 +1087,8 @@ function renderWeddingPlanner() {
   const runs = $("#wedding-planner-agent-run-list");
   if (runs) {
     runs.innerHTML = state.weddingPlannerAgentRuns.length
-      ? state.weddingPlannerAgentRuns.map(x => `<div class="activity-item"><span class="activity-icon">◇</span><span><strong>${escapeHtml(x.logicalRole)} · ${escapeHtml(x.status)}</strong><small>${escapeHtml(x.promptPackVersion || "—")} · ${escapeHtml(x.outcome || x.errorMessage || "no outcome")} · ${x.totalTokens ?? "—"} tokens</small></span><span class="activity-time">${relativeTime(x.completedAt || x.startedAt)}</span></div>`).join("")
-      : emptyState("Select a workspace to inspect Concierge and Brand DNA Interpreter runs.");
+      ? state.weddingPlannerAgentRuns.map(x => `<div class="activity-item"><span class="activity-icon">◇</span><span><strong>${escapeHtml(x.logicalRole)} · ${escapeHtml(x.status)}</strong><small>${escapeHtml(x.promptPackVersion || "—")} · ${escapeHtml(x.workerProfileVersion || "—")} · ${escapeHtml(x.outcome || x.errorMessage || "no outcome")} · ${x.totalTokens ?? "—"} tokens · $${escapeHtml(formatUsd(x.estimatedCostUsd))}</small></span><span class="activity-time">${relativeTime(x.completedAt || x.startedAt)}</span></div>`).join("")
+      : emptyState("Select a workspace to inspect Concierge, Brand DNA Interpreter, and Curator runs.");
   }
   const versions = state.weddingPlannerBrandDna?.versions || [];
   const currentId = state.weddingPlannerBrandDna?.currentApprovedBrandDnaVersionId || null;
@@ -1105,6 +1135,55 @@ function renderWeddingPlanner() {
       : emptyState("Select or create a workspace to list color profiles.");
   }
   renderWeddingPlannerColorInspect();
+
+  const researchJobs = state.weddingPlannerResearchJobs || [];
+  const jobCount = $("#wedding-planner-research-job-count");
+  if (jobCount) jobCount.textContent = `${researchJobs.length} job${researchJobs.length === 1 ? "" : "s"}`;
+  if (!state.selectedWeddingPlannerResearchJobId && researchJobs.length) {
+    state.selectedWeddingPlannerResearchJobId = researchJobs[0].researchJobId;
+  }
+  const jobList = $("#wedding-planner-research-job-list");
+  if (jobList) {
+    jobList.innerHTML = researchJobs.length
+      ? researchJobs.map(job => {
+          const selected = job.researchJobId === state.selectedWeddingPlannerResearchJobId;
+          const replayNote = job.isReplay && job.status === "FAILED"
+            ? " · FAILED replay (not a retry)"
+            : job.isReplay ? " · replay" : "";
+          return `<button class="activity-item${selected ? " selected" : ""}" data-wedding-research-job="${job.researchJobId}" type="button"><span class="activity-icon">⌕</span><span><strong>${escapeHtml(job.status || "UNKNOWN")}${escapeHtml(replayNote)}</strong><small>${escapeHtml(job.topic || "")} · SHA ${escapeHtml(shortId(job.inputSha256 || ""))} · provider ${escapeHtml(job.researchProviderKey || "—")} · adapter ${escapeHtml(job.researchAdapterVersion || "—")} · cost $${escapeHtml(formatUsd(job.researchEstimatedCostUsd))}${job.errorMessage ? ` · error: ${escapeHtml(job.errorMessage)}` : ""}</small></span><span class="activity-time">${relativeTime(job.completedAt || job.startedAt)}</span></button>`;
+        }).join("")
+      : emptyState("Select or create a workspace to list Curator research jobs.");
+  }
+
+  const researchVersions = state.weddingPlannerResearchReports?.versions || [];
+  const researchCurrentId = state.weddingPlannerResearchReports?.currentApprovedResearchReportVersionId || null;
+  const researchCurrentLabel = $("#wedding-planner-research-current");
+  if (researchCurrentLabel) researchCurrentLabel.textContent = researchCurrentId ? `Current: ${shortId(researchCurrentId)}` : "Current: none";
+  if (!state.selectedWeddingPlannerResearchReportId && researchVersions.length) {
+    state.selectedWeddingPlannerResearchReportId =
+      researchVersions.find(x => x.status === "PROPOSED")?.researchReportVersionId ||
+      researchCurrentId ||
+      researchVersions[0].researchReportVersionId;
+  }
+  if (researchReportSelect) {
+    researchReportSelect.innerHTML = researchVersions.length
+      ? researchVersions.map(x => {
+          const markers = [x.status];
+          if (x.researchReportVersionId === researchCurrentId || x.isCurrentApproved) markers.push("CURRENT");
+          return `<option value="${x.researchReportVersionId}"${x.researchReportVersionId === state.selectedWeddingPlannerResearchReportId ? " selected" : ""}>v${x.versionNumber} · ${escapeHtml(markers.join(" · "))}</option>`;
+        }).join("")
+      : `<option value="">No research reports</option>`;
+  }
+  const reportList = $("#wedding-planner-research-report-list");
+  if (reportList) {
+    reportList.innerHTML = researchVersions.length
+      ? researchVersions.map(x => {
+          const isCurrent = x.researchReportVersionId === researchCurrentId || x.isCurrentApproved;
+          return `<button class="activity-item" data-wedding-research-report="${x.researchReportVersionId}" type="button"><span class="activity-icon">${x.versionNumber}</span><span><strong>${escapeHtml(x.status)}${isCurrent ? " · CURRENT APPROVED" : ""}</strong><small>${escapeHtml(x.summary || "No summary")} · ${escapeHtml(x.schemaVersion)} · cost $${escapeHtml(formatUsd(x.estimatedTotalCostUsd))} · Brand DNA ${escapeHtml(shortId(x.approvedBrandDnaVersionId || ""))}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></button>`;
+        }).join("")
+      : emptyState("Select or create a workspace to list research reports.");
+  }
+  renderWeddingPlannerResearchInspect();
 }
 
 function parseWeddingPlannerColorDocument(documentJson) {
@@ -1181,6 +1260,161 @@ function renderWeddingPlannerColorInspect() {
   `;
 }
 
+const CURATOR_LOGICAL_ROLES = [
+  "MARKET_LANDSCAPE_RESEARCHER",
+  "AUDIENCE_CONTEXT_RESEARCHER",
+  "COMPETITOR_SIGNALS_RESEARCHER",
+  "CHANNEL_FORMAT_RESEARCHER",
+  "EVIDENCE_ANALYST",
+  "SOURCE_VERIFIER",
+  "CLAIMS_RISK_REVIEWER",
+  "RESEARCH_SYNTHESIZER"
+];
+const EIGHT_TO_THREE_EXPLANATION = "Eight logical roles map to 3 workers/runs, not 8 subscriptions";
+
+function parseWeddingPlannerResearchDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+function formatUsd(value) {
+  if (value == null || value === "") return "—";
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(6) : String(value);
+}
+
+function renderSafeResearchLink(url) {
+  const trimmed = String(url || "").trim();
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return `<code>${escapeHtml(trimmed || "—")}</code>`;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return `<code>${escapeHtml(trimmed)}</code>`;
+    }
+  } catch {
+    return `<code>${escapeHtml(trimmed)}</code>`;
+  }
+  return `<a href="${escapeHtml(trimmed)}" target="_blank" rel="noopener noreferrer nofollow">${escapeHtml(trimmed)}</a>`;
+}
+
+function renderWeddingPlannerResearchInspect() {
+  const panel = $("#wedding-planner-research-inspect");
+  if (!panel) return;
+  const versions = state.weddingPlannerResearchReports?.versions || [];
+  const currentId = state.weddingPlannerResearchReports?.currentApprovedResearchReportVersionId || null;
+  const selected = versions.find(x => x.researchReportVersionId === state.selectedWeddingPlannerResearchReportId) || versions[0] || null;
+  const selectedJob = (state.weddingPlannerResearchJobs || []).find(x => x.researchJobId === state.selectedWeddingPlannerResearchJobId) || null;
+
+  if (!selected && !selectedJob) {
+    panel.innerHTML = emptyState("Select a research job or report to inspect provider metadata, documentJson, and agent-run receipts.");
+    return;
+  }
+
+  const jobBlock = selectedJob
+    ? `<div class="detail-hero"><div class="detail-hero-top">${badge(selectedJob.status)}${selectedJob.isReplay ? badge("REPLAY") : ""}</div>
+        <h3>Research job · ${escapeHtml(selectedJob.topic || "")}</h3>
+        <p>${escapeHtml(selectedJob.objective || "")}</p>
+      </div>
+      <div class="metric-grid">
+        ${metric("Input SHA-256", selectedJob.inputSha256 || "—")}
+        ${metric("Provider", selectedJob.researchProviderKey || "—")}
+        ${metric("Adapter", selectedJob.researchAdapterVersion || "—")}
+        ${metric("Worker", selectedJob.researchWorkerKey || "—")}
+        ${metric("Provider request", selectedJob.researchProviderRequestId || "—")}
+        ${metric("Acquisition cost USD", formatUsd(selectedJob.researchEstimatedCostUsd))}
+        ${metric("Brand DNA provenance", selectedJob.approvedBrandDnaVersionId || "—")}
+        ${metric("Color provenance", selectedJob.approvedColorProfileVersionId || "optional/none")}
+        ${metric("Error", selectedJob.errorCode || selectedJob.errorMessage ? `${selectedJob.errorCode || ""} ${selectedJob.errorMessage || ""}` : "—")}
+      </div>
+      ${selectedJob.isReplay && selectedJob.status === "FAILED"
+        ? `<div class="safety-note"><strong>Failed replay is not a retry.</strong> The existing FAILED job was returned unchanged; providers and AI were not called again.</div>`
+        : ""}`
+    : "";
+
+  if (!selected) {
+    panel.innerHTML = jobBlock || emptyState("No research report selected.");
+    return;
+  }
+
+  const doc = parseWeddingPlannerResearchDocument(selected.documentJson);
+  const sources = Array.isArray(doc?.sources) ? doc.sources : [];
+  const hasSynthetic = sources.some(source =>
+    source?.synthetic === true ||
+    /\.invalid\b/i.test(String(source?.url || "")) ||
+    /SYNTHETIC/i.test(String(source?.title || "")) ||
+    /SYNTHETIC/i.test(String(source?.publisher || ""))
+  );
+  const contributions = Array.isArray(doc?.contributions) ? doc.contributions : [];
+  const ordered = CURATOR_LOGICAL_ROLES.map(role => contributions.find(item => item?.logicalRole === role)).filter(Boolean);
+  const synthesis = doc?.synthesis || null;
+  const provenance = doc?.provenance || null;
+  const runs = state.weddingPlannerResearchAgentRuns || [];
+  const isCurrent = selected.researchReportVersionId === currentId || selected.isCurrentApproved;
+
+  const sourceRows = sources.length
+    ? sources.map(source => {
+        const synthetic = source?.synthetic === true;
+        const invalidHost = /\.invalid\b/i.test(String(source?.url || ""));
+        return `<div class="activity-item"><span class="activity-icon">${synthetic || invalidHost ? "⚠" : "▣"}</span><span><strong>${escapeHtml(source.id || "source")}${synthetic ? " · SYNTHETIC" : ""}${invalidHost ? " · .invalid" : ""}</strong><small>${escapeHtml(source.title || "")} · ${escapeHtml(source.publisher || "")}<br>${renderSafeResearchLink(source.url || "")}</small></span></div>`;
+      }).join("")
+    : emptyState("No sources in server documentJson.");
+
+  const contributionRows = ordered.length === 8
+    ? ordered.map(role => {
+        const findings = Array.isArray(role.findings) ? role.findings : [];
+        const findingText = findings.map(finding =>
+          `${finding.type || "—"} (confidence ${finding.confidence ?? "—"}) · citations: ${(Array.isArray(finding.citationSourceIds) ? finding.citationSourceIds : []).join(", ") || "(none)"} · ${finding.statement || ""}`
+        ).join(" | ");
+        return `<div class="activity-item"><span class="activity-icon">◎</span><span><strong>${escapeHtml(role.logicalRole || "")}</strong><small>${escapeHtml(role.summary || "")}<br>${escapeHtml(findingText || "No findings in documentJson.")}</small></span></div>`;
+      }).join("")
+    : `<div class="safety-note">Expected exactly 8 role contributions in documentJson; found ${ordered.length} recognized roles (total ${contributions.length}). No client-generated findings or citations are invented.</div>`;
+
+  const runRows = runs.length
+    ? runs.map(run => `<div class="activity-item"><span class="activity-icon">◇</span><span><strong>${escapeHtml(run.logicalRole || "—")} · ${escapeHtml(run.status || "—")}</strong><small>profile ${escapeHtml(run.workerProfileVersion || "—")} · prompt ${escapeHtml(run.promptPackVersion || "—")} · assigned ${escapeHtml(run.assignedRolesJson || "—")}<br>tokens ${escapeHtml(String(run.promptTokens ?? "—"))}/${escapeHtml(String(run.completionTokens ?? "—"))}/${escapeHtml(String(run.totalTokens ?? "—"))} · cost $${escapeHtml(formatUsd(run.estimatedCostUsd))}</small></span><span class="activity-time">${relativeTime(run.completedAt || run.startedAt)}</span></div>`).join("")
+    : emptyState("No agent-run receipts from the report endpoint.");
+
+  panel.innerHTML = `
+    ${jobBlock}
+    <div class="detail-hero"><div class="detail-hero-top">${badge(selected.status)}${isCurrent ? badge("CURRENT") : ""}</div>
+      <h3>Research report v${escapeHtml(String(selected.versionNumber))}</h3>
+      <p>${escapeHtml(selected.summary || "No summary")}</p>
+    </div>
+    <div class="metric-grid">
+      ${metric("Schema", selected.schemaVersion || "—")}
+      ${metric("Estimated total cost USD", formatUsd(selected.estimatedTotalCostUsd))}
+      ${metric("Brand DNA provenance", selected.approvedBrandDnaVersionId || "—")}
+      ${metric("Color provenance", selected.approvedColorProfileVersionId || "optional/none")}
+      ${metric("Current pointer", isCurrent ? "YES" : "NO")}
+      ${metric("Producing job", selected.producingResearchJobId || "—")}
+    </div>
+    <div class="safety-note"><strong>Research disclaimer (from documentJson).</strong> ${escapeHtml(doc?.disclaimer || "Disclaimer missing from server documentJson.")}</div>
+    ${hasSynthetic ? `<div class="safety-note curator-synthetic-warning"><strong>SYNTHETIC local evidence.</strong> Catalog uses .invalid hosts and/or SYNTHETIC markers. Fixture research only — never live research.</div>` : ""}
+    <div class="safety-note">${escapeHtml(EIGHT_TO_THREE_EXPLANATION)}. Showing ${runs.length} receipt(s) from /research-reports/{id}/agent-runs.</div>
+    <div class="metric-grid">
+      ${metric("Provenance Brand DNA", provenance?.approvedBrandDnaVersionId || "—")}
+      ${metric("Provenance Brand DNA #", String(provenance?.approvedBrandDnaVersionNumber ?? "—"))}
+      ${metric("Provenance color", provenance?.approvedColorProfileVersionId || "optional/none")}
+      ${metric("Provenance job", provenance?.researchJobId || "—")}
+    </div>
+    <h3>Sources</h3>
+    ${sourceRows}
+    <h3>Contributions (exactly 8)</h3>
+    ${contributionRows}
+    <h3>Synthesis</h3>
+    ${synthesis
+      ? `<div class="activity-item"><span class="activity-icon">✦</span><span><strong>Executive summary</strong><small>${escapeHtml(synthesis.executiveSummary || "")}<br>Open questions: ${escapeHtml((Array.isArray(synthesis.openQuestions) ? synthesis.openQuestions : []).join(" · ") || "(none)")}<br>Risks: ${escapeHtml((Array.isArray(synthesis.risks) ? synthesis.risks : []).join(" · ") || "(none)")}</small></span></div>`
+      : emptyState("No synthesis object in server documentJson.")}
+    <h3>Agent run receipts (exactly 3 workers)</h3>
+    ${runRows}
+  `;
+}
+
 async function selectWeddingPlannerWorkspace(workspaceId) {
   state.selectedWeddingPlannerWorkspace = workspaceId;
   try {
@@ -1200,7 +1434,17 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
       state.weddingPlannerColorProfiles?.currentApprovedColorProfileVersionId ||
       state.weddingPlannerColorProfiles?.versions?.[0]?.colorProfileVersionId ||
       null;
+    state.weddingPlannerResearchJobs = await api(`/api/wedding-planner/workspaces/${workspaceId}/research-jobs`);
+    state.weddingPlannerResearchReports = await api(`/api/wedding-planner/workspaces/${workspaceId}/research-reports`);
+    state.selectedWeddingPlannerResearchJobId = state.weddingPlannerResearchJobs?.[0]?.researchJobId || null;
+    state.selectedWeddingPlannerResearchReportId =
+      state.weddingPlannerResearchReports?.versions?.find(x => x.status === "PROPOSED")?.researchReportVersionId ||
+      state.weddingPlannerResearchReports?.currentApprovedResearchReportVersionId ||
+      state.weddingPlannerResearchReports?.versions?.[0]?.researchReportVersionId ||
+      null;
     await mergeWeddingPlannerInterpreterRuns();
+    await mergeWeddingPlannerWorkspaceRuns(workspaceId);
+    await loadWeddingPlannerResearchAgentRuns();
   } catch (error) {
     toast(error.message, true);
     state.weddingPlannerSessions = [];
@@ -1209,6 +1453,11 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
     state.weddingPlannerBrandDna = null;
     state.weddingPlannerColorProfiles = null;
     state.selectedWeddingPlannerColorProfileId = null;
+    state.weddingPlannerResearchJobs = [];
+    state.weddingPlannerResearchReports = null;
+    state.selectedWeddingPlannerResearchJobId = null;
+    state.selectedWeddingPlannerResearchReportId = null;
+    state.weddingPlannerResearchAgentRuns = [];
   }
   renderWeddingPlanner();
 }
@@ -1223,6 +1472,33 @@ async function mergeWeddingPlannerInterpreterRuns() {
   state.weddingPlannerAgentRuns = [
     ...new Map(combined.map(run => [run.agentRunId, run])).values()
   ].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt));
+}
+
+async function mergeWeddingPlannerWorkspaceRuns(workspaceId) {
+  try {
+    const workspaceRuns = await api(`/api/wedding-planner/workspaces/${workspaceId}/agent-runs`);
+    if (!Array.isArray(workspaceRuns)) return;
+    const combined = [...state.weddingPlannerAgentRuns, ...workspaceRuns];
+    state.weddingPlannerAgentRuns = [
+      ...new Map(combined.map(run => [run.agentRunId, run])).values()
+    ].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt));
+  } catch {
+    /* Workspace agent-runs are additive; session/interpreter runs remain usable. */
+  }
+}
+
+async function loadWeddingPlannerResearchAgentRuns() {
+  const reportId = state.selectedWeddingPlannerResearchReportId;
+  if (!reportId) {
+    state.weddingPlannerResearchAgentRuns = [];
+    return;
+  }
+  try {
+    const runs = await api(`/api/wedding-planner/research-reports/${reportId}/agent-runs`);
+    state.weddingPlannerResearchAgentRuns = Array.isArray(runs) ? runs : [];
+  } catch {
+    state.weddingPlannerResearchAgentRuns = [];
+  }
 }
 
 async function submitWeddingPlannerWorkspace(form) {
@@ -1271,7 +1547,16 @@ async function submitWeddingPlannerSession(form) {
       state.weddingPlannerColorProfiles?.currentApprovedColorProfileVersionId ||
       state.weddingPlannerColorProfiles?.versions?.[0]?.colorProfileVersionId ||
       null;
+    state.weddingPlannerResearchJobs = await api(`/api/wedding-planner/workspaces/${result.workspaceId}/research-jobs`).catch(() => []);
+    state.weddingPlannerResearchReports = await api(`/api/wedding-planner/workspaces/${result.workspaceId}/research-reports`).catch(() => null);
+    state.selectedWeddingPlannerResearchJobId = state.weddingPlannerResearchJobs?.[0]?.researchJobId || null;
+    state.selectedWeddingPlannerResearchReportId =
+      state.weddingPlannerResearchReports?.currentApprovedResearchReportVersionId ||
+      state.weddingPlannerResearchReports?.versions?.[0]?.researchReportVersionId ||
+      null;
     await mergeWeddingPlannerInterpreterRuns();
+    await mergeWeddingPlannerWorkspaceRuns(result.workspaceId);
+    await loadWeddingPlannerResearchAgentRuns();
     renderWeddingPlanner();
   } catch (error) {
     toast(error.message, true);
@@ -1418,6 +1703,97 @@ async function submitWeddingPlannerColorDecision(form) {
     if (workspaceId) {
       state.weddingPlannerColorProfiles = await api(`/api/wedding-planner/workspaces/${workspaceId}/color-profiles`);
       state.selectedWeddingPlannerColorProfileId = result.colorProfileVersionId || state.selectedWeddingPlannerColorProfileId;
+    }
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+function linesToList(value, min, max) {
+  const lines = String(value || "")
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+  if (lines.length < min || lines.length > max) return null;
+  return lines;
+}
+
+async function submitWeddingPlannerResearchJob(form) {
+  const value = name => form.elements[name].value.trim();
+  const questions = linesToList(form.elements.questions?.value, 1, 8);
+  const allowedDomains = linesToList(form.elements.allowedDomains?.value, 0, 10);
+  if (!questions) {
+    toast("Provide 1–8 non-empty questions, one per line.", true);
+    return;
+  }
+  if (!allowedDomains && String(form.elements.allowedDomains?.value || "").trim()) {
+    toast("Allowed domains must be 0–10 non-empty hostnames, one per line.", true);
+    return;
+  }
+  try {
+    const workspaceId = value("workspaceId");
+    const result = await api(`/api/wedding-planner/workspaces/${workspaceId}/research-jobs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        topic: value("topic"),
+        objective: value("objective"),
+        questions,
+        geography: value("geography"),
+        language: value("language"),
+        allowedDomains: allowedDomains || [],
+        sourceSystem: value("sourceSystem"),
+        idempotencyKey: value("idempotencyKey")
+      })
+    });
+    const replayNote = result.isReplay && result.status === "FAILED"
+      ? " (failed replay — not a retry)"
+      : result.isReplay ? " (replay)" : "";
+    toast(`Research job ${result.status}${replayNote}`);
+    fillKey("#wedding-planner-research-job-key");
+    state.selectedWeddingPlannerWorkspace = workspaceId;
+    state.selectedWeddingPlannerResearchJobId = result.researchJobId;
+    if (result.outputResearchReportVersionId) {
+      state.selectedWeddingPlannerResearchReportId = result.outputResearchReportVersionId;
+    }
+    state.weddingPlannerResearchJobs = await api(`/api/wedding-planner/workspaces/${workspaceId}/research-jobs`);
+    state.weddingPlannerResearchReports = await api(`/api/wedding-planner/workspaces/${workspaceId}/research-reports`);
+    await mergeWeddingPlannerWorkspaceRuns(workspaceId);
+    await loadWeddingPlannerResearchAgentRuns();
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function submitWeddingPlannerResearchDecision(form) {
+  const value = name => form.elements[name].value.trim();
+  const decision = value("decision");
+  if (decision === "APPROVE" && form.elements.confirmApprove?.checked !== true) {
+    toast("Confirm the APPROVE checkbox before approving a research report.", true);
+    return;
+  }
+  try {
+    const result = await api(`/api/wedding-planner/research-reports/${value("researchReportVersionId")}/decisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        decision,
+        rationale: value("rationale"),
+        sourceSystem: value("sourceSystem"),
+        idempotencyKey: value("idempotencyKey")
+      })
+    });
+    toast(`Research ${friendlyStatus(result.decision)} recorded${result.isReplay ? " (replay)" : ""} — research approval only`);
+    form.elements.rationale.value = "";
+    if (form.elements.confirmApprove) form.elements.confirmApprove.checked = false;
+    fillKey("#wedding-planner-research-decision-key");
+    const workspaceId = result.workspaceId || state.selectedWeddingPlannerWorkspace;
+    if (workspaceId) {
+      state.weddingPlannerResearchReports = await api(`/api/wedding-planner/workspaces/${workspaceId}/research-reports`);
+      state.selectedWeddingPlannerResearchReportId = result.researchReportVersionId || state.selectedWeddingPlannerResearchReportId;
+      await loadWeddingPlannerResearchAgentRuns();
     }
     renderWeddingPlanner();
   } catch (error) {

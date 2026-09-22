@@ -44,6 +44,14 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("arithmetic evidence", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("not accessibility certification", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("not psychology", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PHASE 4 · THE CURATOR", body);
+        Assert.Contains("curator-panel", body);
+        Assert.Contains("curator-job-form", body);
+        Assert.Contains("curator-decision-form", body);
+        Assert.Contains("Evidence-backed research", body);
+        Assert.Contains("Eight logical roles map to 3 workers/runs, not 8 subscriptions", body);
+        Assert.Contains("never presented as live research", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Research approval only", body);
         Assert.DoesNotContain("FOUNDATION READY", body);
         Assert.DoesNotContain("Help me choose colors", body);
         Assert.DoesNotContain("Show me some design concepts", body);
@@ -136,6 +144,68 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
     }
 
     [Fact]
+    public async Task Public_planner_script_wires_phase4_curator_from_server_documents_only()
+    {
+        var client = _factory.CreateClient();
+        var script = await (await client.GetAsync("/wedding-planner.js")).Content.ReadAsStringAsync();
+
+        Assert.Contains("PHASE 4 · THE CURATOR", script);
+        Assert.Contains("/research-jobs", script);
+        Assert.Contains("/research-reports", script);
+        Assert.Contains("/research-reports/", script);
+        Assert.Contains("/agent-runs", script);
+        Assert.Contains("/decisions", script);
+        Assert.Contains("canSubmitResearchJobs", script);
+        Assert.Contains("currentApprovedBrandDnaVersionId", script);
+        Assert.Contains("parseResearchDocument", script);
+        Assert.Contains("documentJson", script);
+        Assert.Contains("Eight logical roles map to 3 workers/runs, not 8 subscriptions", script);
+        Assert.Contains("MARKET_LANDSCAPE_RESEARCHER", script);
+        Assert.Contains("RESEARCH_SYNTHESIZER", script);
+        Assert.Contains("CURATOR_RESEARCH_V1", script);
+        Assert.Contains("CURATOR_EVIDENCE_V1", script);
+        Assert.Contains("CURATOR_SYNTHESIS_RISK_V1", script);
+        Assert.Contains("RUNNING", script);
+        Assert.Contains("SUCCEEDED", script);
+        Assert.Contains("FAILED", script);
+        Assert.Contains("PROPOSED", script);
+        Assert.Contains("APPROVED", script);
+        Assert.Contains("CURRENT", script);
+        Assert.Contains("SYNTHETIC", script);
+        Assert.Contains(".invalid", script);
+        Assert.Contains("not a retry", script);
+        Assert.Contains("research approval only", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("X-CSRF-TOKEN", script);
+        Assert.Contains("idempotencyKey", script);
+        Assert.Contains("citationSourceIds", script);
+        Assert.Contains("workerProfileVersion", script);
+        Assert.Contains("promptPackVersion", script);
+        Assert.Contains("estimatedCostUsd", script);
+        Assert.Contains("target=\"_blank\"", script);
+        Assert.Contains("noopener noreferrer nofollow", script);
+        Assert.Contains("never presented as live research", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            "Approval of this report is research approval only. It is not creative, campaign, claim, legal, matching, accessibility, or compliance approval.",
+            script);
+
+        Assert.DoesNotContain("fetch(citation", script);
+        Assert.DoesNotContain("fetch(source.url", script);
+        Assert.DoesNotContain("fetch(url)", script);
+        Assert.DoesNotContain("inventFinding", script);
+        Assert.DoesNotContain("fabricateFinding", script);
+        Assert.DoesNotContain("fakeCitation", script);
+        Assert.DoesNotContain("clientGeneratedFinding", script);
+        Assert.DoesNotContain("generateCitation", script);
+        Assert.DoesNotContain("crawlUrl", script);
+        Assert.DoesNotContain("eight fake agent runs", script);
+
+        var styles = await (await client.GetAsync("/wedding-planner.css")).Content.ReadAsStringAsync();
+        Assert.Contains("[hidden] { display: none !important; }", styles);
+        Assert.Contains("curator-panel", styles);
+        Assert.Contains("synthetic-badge", styles);
+    }
+
+    [Fact]
     public async Task Operations_route_preserves_the_internal_console()
     {
         var client = _factory.CreateClient();
@@ -166,6 +236,15 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("wedding-planner-color-decision-form", body);
         Assert.Contains("wedding-planner-color-profile-list", body);
         Assert.Contains("wedding-planner-color-inspect", body);
+        Assert.Contains("PHASE 4 · THE CURATOR", body);
+        Assert.Contains("wedding-planner-research-job-form", body);
+        Assert.Contains("wedding-planner-research-decision-form", body);
+        Assert.Contains("wedding-planner-research-job-list", body);
+        Assert.Contains("wedding-planner-research-report-list", body);
+        Assert.Contains("wedding-planner-research-inspect", body);
+        Assert.Contains("Eight logical roles map to 3 workers/runs, not 8 subscriptions", body);
+        Assert.Contains("Approve or reject research report", body);
+        Assert.Contains("RUNNING · SUCCEEDED · FAILED", body);
         Assert.Contains("Export ledger", body);
         Assert.Contains("Verify pack", body);
         Assert.Contains("app.js", body);
@@ -198,6 +277,27 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("submitWeddingPlannerColorCompute", script);
         Assert.Contains("submitWeddingPlannerColorDecision", script);
         Assert.Contains("renderWeddingPlannerColorInspect", script);
+        Assert.Contains("/research-jobs", script);
+        Assert.Contains("/research-reports", script);
+        Assert.Contains("submitWeddingPlannerResearchJob", script);
+        Assert.Contains("submitWeddingPlannerResearchDecision", script);
+        Assert.Contains("renderWeddingPlannerResearchInspect", script);
+        Assert.Contains("parseWeddingPlannerResearchDocument", script);
+        Assert.Contains("Eight logical roles map to 3 workers/runs, not 8 subscriptions", script);
+        Assert.Contains("SYNTHETIC", script);
+        Assert.Contains(".invalid", script);
+        Assert.Contains("not a retry", script);
+        Assert.Contains("research approval only", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("noopener noreferrer nofollow", script);
+        Assert.Contains("currentApprovedResearchReportVersionId", script);
+        Assert.Contains("workerProfileVersion", script);
+        Assert.Contains("workspaces/${workspaceId}/agent-runs", script);
+        Assert.DoesNotContain("fetch(citation", script);
+        Assert.DoesNotContain("inventFinding", script);
+        Assert.DoesNotContain("fabricateFinding", script);
+        Assert.DoesNotContain("fakeCitation", script);
+        Assert.DoesNotContain("generateCitation", script);
+        Assert.DoesNotContain("crawlUrl", script);
         Assert.Contains("Open primary workspace", body);
         Assert.Contains("Append a human message", body);
         Assert.DoesNotContain("Phase 1 does not invoke AI", body);
@@ -207,6 +307,9 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.DoesNotContain("srgbToLinear", script);
         Assert.DoesNotContain("fabricateColor", script);
         Assert.DoesNotContain("fakePalette", script);
+
+        var styles = await (await client.GetAsync("/operations/app.css")).Content.ReadAsStringAsync();
+        Assert.Contains("[hidden]", styles);
     }
 
     [Theory]

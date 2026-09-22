@@ -73,6 +73,12 @@ a { color: inherit; }
 .content.auth-required .view { display: none; }
 .auth-gate { min-height: calc(100vh - 150px); display: grid; place-items: center; }
 .auth-gate[hidden] { display: none; }
+[hidden] { display: none !important; }
+.curator-synthetic-warning {
+  border-color: #c9852f !important;
+  background: #fff4e5 !important;
+  color: #7a4a10;
+}
 .auth-gate-card { width: min(470px, 100%); padding: 45px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: var(--shadow); text-align: center; }
 .auth-gate-card .brand-mark { margin: 0 auto 22px; }
 .auth-gate-card .brand-mark svg { stroke: var(--forest); }
