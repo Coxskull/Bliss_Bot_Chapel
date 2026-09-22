@@ -1,0 +1,11 @@
+HEAD=f863495be5c260d80510d0c8cbac1ac116a1f840
+origin/main=f01fa05f28ec08c0d3c65259e851afab0c311508
+
+YES dca4138 Merge pull request #1 from Coxskull/cursor/phase1-foundation-cf4e
+YES 07b9c58 Merge pull request #20 from Coxskull/cursor/phase14-campaign-case-export-cc83
+YES 8958595 Merge pull request #21 from Coxskull/cursor/phase15-export-integrity-cc83
+YES 7488a74 Merge pull request #22 from Coxskull/cursor/phase16-export-verify-cc83
+YES 7d30c5a Merge pull request #24 from Coxskull/cursor/phase17-verify-receipt-cc83
+YES f01fa05 Merge pull request #26 from Coxskull/cursor/reconcile-phase15-17-cc83
+YES 3e65de7 Show last verification receipt and drawer Verify pack
+YES a29d437 Merge pull request #25 from Coxskull/cursor/phase18-last-verification-cc83
