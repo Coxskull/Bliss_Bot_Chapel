@@ -1,0 +1,12 @@
+HTTP/1.1 200 OK
+Content-Length: 4139
+Content-Type: application/json
+Date: Tue, 22 Sep 2026 03:33:45 GMT
+X-Content-SHA256: abc6f31c07233622e9ff8fc3afb819b490f02a02f175861ab2ebf244200cd228
+Content-Disposition: attachment; filename=bliss-match-77777777777777777777777777777776-20260922033345Z.json; filename*=UTF-8''bliss-match-77777777777777777777777777777776-20260922033345Z.json
+X-Content-Type-Options: nosniff
+Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+X-Request-Id: aa4d5906-63c9-4221-bcc9-10cd9e7cbc87
+

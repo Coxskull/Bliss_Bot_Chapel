@@ -134,3 +134,5 @@ Phase 17 verification receipt contract: `docs/bliss/PHASE-17-ENGINEERING-CONTRAC
 Phase 17 verification receipt evidence: `docs/bliss/PHASE-17-EVIDENCE.md`.
 Phase 18 last verification contract: `docs/bliss/PHASE-18-ENGINEERING-CONTRACT.md`.
 Phase 18 last verification evidence: `docs/bliss/PHASE-18-EVIDENCE.md`.
+Phase 19 verification history contract: `docs/bliss/PHASE-19-ENGINEERING-CONTRACT.md`.
+Phase 19 verification history evidence: `docs/bliss/PHASE-19-EVIDENCE.md`.
