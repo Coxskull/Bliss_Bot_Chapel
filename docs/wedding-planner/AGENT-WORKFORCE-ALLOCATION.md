@@ -82,9 +82,43 @@ rationale.
 - Out of scope: campaign-ready state, Chaperone/QA, asset/revision
   production, and Bliss matching writes.
 
+## Phase 6 (implemented)
+
+- New logical AI roles: exactly 13 —
+  `CREATIVE_DIRECTOR`, `CAMPAIGN_STRATEGIST`, `AUDIENCE_STRATEGIST`,
+  `OFFER_STRATEGIST`, `CHANNEL_STRATEGIST`, `VISUAL_DESIGNER`,
+  `LAYOUT_DESIGNER`, `TYPOGRAPHY_DESIGNER`, `IMAGE_PROMPT_DESIGNER`,
+  `HEADLINE_SPECIALIST`, `BODY_COPY_SPECIALIST`, `CTA_SPECIALIST`,
+  `VARIANT_PRODUCER`.
+- New executable worker profiles: exactly 6 per successful job.
+- Exact 13→6 mapping:
+  - `CREATIVE_DIRECTION_V1` → `CREATIVE_DIRECTOR`, `CAMPAIGN_STRATEGIST`
+  - `STRATEGY_ADAPTATION_V1` → `AUDIENCE_STRATEGIST`, `OFFER_STRATEGIST`,
+    `CHANNEL_STRATEGIST`
+  - `VISUAL_SYSTEM_V1` → `VISUAL_DESIGNER`, `LAYOUT_DESIGNER`,
+    `TYPOGRAPHY_DESIGNER`
+  - `IMAGE_DIRECTION_V1` → `IMAGE_PROMPT_DESIGNER`
+  - `COPY_SYSTEM_V1` → `HEADLINE_SPECIALIST`, `BODY_COPY_SPECIALIST`,
+    `CTA_SPECIALIST`
+  - `VARIANT_PRODUCTION_V1` → `VARIANT_PRODUCER`
+- Successful jobs create exactly 6 agent-run receipts and exactly 13
+  immutable role contributions; they do not create thirteen fake model
+  calls. Phase 5 roles remain pinned concept provenance only.
+- Separate non-AI asset provider:
+  `IWeddingPlannerCreativeAssetProvider` (Local deterministic +
+  `RemoteHttp` raw PNG). Not an AI worker/run. PNG-only ≤2 MiB, max 4,
+  exact canvas, strict IHDR/IDAT/IEND CRC/zlib/filter validation, `bytea`
+  transactional storage, authenticated same-origin content endpoint with
+  no-store/nosniff/ETag; no URL/base64/SVG/HTML.
+- `INITIAL` / `REVISION` one-parent immutable jobs; revision reruns all
+  six profiles. Human `APPROVE` selects variant decision-only; draft
+  creative approval only. No partial packages.
+- Out of scope: Phase 7 Chaperone/QA/escalation, Phase 8
+  campaign-ready/handshake, Bliss matching writes, measurement, Alpha
+  Auto, and n8n/GHL.
+
 ## Later starting allocations
 
-- Phase 6: about thirteen primary logical roles on about 5–7 workers.
 - Phase 7: three control roles on about 1–2 AI workers plus deterministic
   rules and human authority.
 - Phase 8: no new AI agents.
