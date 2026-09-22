@@ -95,6 +95,22 @@ Public files live in `frontend/public`. Operator files live in
 `frontend/operations`. The API serves both folders; it does not keep
 frontend source inside `Bliss.Api`.
 
+Wedding Planner Phase 2 uses the deterministic local worker in Development.
+For non-Development environments configure:
+
+```text
+WeddingPlannerAi__Provider=OpenAiCompatible
+WeddingPlannerAi__BaseUrl=https://provider.example/v1/
+WeddingPlannerAi__ApiKey=<secret>
+WeddingPlannerAi__ModelId=<model>
+WeddingPlannerAi__InputPricePerMillionTokens=<usd>
+WeddingPlannerAi__OutputPricePerMillionTokens=<usd>
+```
+
+The adapter uses a chat-completions-compatible HTTP contract. Keep the API key
+in the deployment secret store; it is never written to agent-run or audit
+records.
+
 ## Documentation
 
 See `docs/bliss/` for Phase 1 architecture, requirements, and migration review.
@@ -140,4 +156,6 @@ Phase 19 verification history contract: `docs/bliss/PHASE-19-ENGINEERING-CONTRAC
 Phase 19 verification history evidence: `docs/bliss/PHASE-19-EVIDENCE.md`.
 
 Wedding Planner Phase 1 foundation contract: `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md`.
+Wedding Planner Phase 2 contract: `docs/wedding-planner/PHASE-2-ENGINEERING-CONTRACT.md`.
+Wedding Planner Phase 2 evidence: `docs/wedding-planner/PHASE-2-EVIDENCE.md`.
 Wedding Planner master blueprint v1.1: `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md`.

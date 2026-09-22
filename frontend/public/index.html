@@ -49,9 +49,9 @@
 
     <section class="planner-section" id="wedding-planner" aria-labelledby="planner-title">
       <div class="planner-heading">
-        <p>MEET YOUR AI WEDDING PLANNER</p>
+        <p>PHASE 2 · LIVE CONCIERGE + BRAND DNA</p>
         <h2 id="planner-title">Welcome to Bliss Chapel</h2>
-        <span>Let’s create something amazing together. Explore your brand, shape beautiful campaigns, and discover how Bliss Chapel can help your business grow.</span>
+        <span>Share your brand story with the Concierge, then create and approve Brand DNA proposals before anything moves further.</span>
       </div>
 
       <div class="planner-layout">
@@ -61,38 +61,40 @@
           <p class="online"><i></i> Online now</p>
           <ul>
             <li>Brand Guidance</li>
-            <li>Creative Concepts</li>
-            <li>Campaign Planning</li>
-            <li>Industry Insights</li>
-            <li>Logo &amp; Visual Design</li>
-            <li>Unlimited Revisions</li>
+            <li>Durable Planning Sessions</li>
+            <li>Brand DNA Proposals</li>
+            <li>Human Approval Gate</li>
             <li>Save &amp; Continue Anytime</li>
             <li>Nothing Goes Live Without Your Approval</li>
           </ul>
           <div class="profile-note"><span>♥</span><p>Patient. Creative.<br>Experienced. Here for you.</p></div>
         </aside>
 
-        <section class="conversation-card" aria-label="Wedding Planner preview">
-          <div class="message-row">
-            <div class="mini-bot">⌁</div>
-            <div class="message">
-              <strong>Welcome to Bliss Chapel.</strong>
-              <b>I am your Wedding Planner. 💒</b>
-              <p>I’m here to help you prepare your business for its Alpha campaign. We can explore your brand, create amazing campaigns, and discover how Bliss Chapel can help your business grow.</p>
-              <p>To get started, could you tell me a little about your business?</p>
-              <p>I’m here to listen! 💜</p>
-              <time>3:25 PM</time>
+        <section class="conversation-card" aria-label="Wedding Planner conversation">
+          <div class="session-status" id="planner-session-status" role="status" aria-live="polite">
+            <span>PHASE 2 · LIVE CONCIERGE</span>
+            <p>Sign in as an authorized advertiser with write access to enable live chat and Brand DNA proposals. Without an authenticated advertiser session, the composer stays disabled.</p>
+          </div>
+
+          <div class="message-stream" id="planner-message-stream" aria-live="polite" aria-relevant="additions">
+            <div class="message-row planner-static">
+              <div class="mini-bot" aria-hidden="true">⌁</div>
+              <div class="message">
+                <strong>Welcome to Bliss Chapel.</strong>
+                <b>I am your Wedding Planner.</b>
+                <p>After you sign in, I can continue our planning conversation from your durable session and help prepare Brand DNA proposals for your explicit approval.</p>
+                <p>To get started, tell me a little about your business, audience, and what you offer.</p>
+              </div>
             </div>
           </div>
-          <div class="phase-notice">
-            <span>FOUNDATION READY</span>
-            <p>The secure workspace is being prepared. AI conversation begins only after the next approved engineering contract.</p>
-          </div>
-          <form class="message-composer">
-            <button type="button" aria-label="Attach a file">⌕</button>
-            <input aria-label="Message preview" placeholder="Type your message here..." disabled>
+
+          <div class="turn-status" id="planner-turn-status" role="status" aria-live="assertive" hidden></div>
+
+          <form class="message-composer" id="planner-composer" novalidate>
+            <button type="button" aria-label="Attach a file" disabled>⌕</button>
+            <input id="planner-message-input" name="body" aria-label="Message to the Wedding Planner" placeholder="Type your message here..." disabled maxlength="8000" autocomplete="off">
             <button type="button" aria-label="Voice message" disabled>♩</button>
-            <button class="send" type="button" aria-label="Send message" disabled>➤</button>
+            <button class="send" type="submit" id="planner-send" aria-label="Send message" disabled>➤</button>
           </form>
           <small class="privacy-note">Your plan stays private and belongs to you.</small>
         </section>
@@ -100,19 +102,41 @@
         <aside class="suggestions">
           <section>
             <h3><span>💡</span> Try These Examples</h3>
-            <button type="button">“I don’t have a logo yet” <b>›</b></button>
-            <button type="button">“Create a campaign for my restaurant” <b>›</b></button>
-            <button type="button">“Help me choose colors” <b>›</b></button>
-            <button type="button">“Show me some design concepts” <b>›</b></button>
-            <button type="button">“What advertising works in my industry?” <b>›</b></button>
-            <button type="button">“I want to see different styles” <b>›</b></button>
+            <button type="button" data-example="I don’t have a logo yet, but here is how we sound.">“I don’t have a logo yet” <b>›</b></button>
+            <button type="button" data-example="Our business helps local families with whitening and cleanings.">“Tell me about my business” <b>›</b></button>
+            <button type="button" data-example="Our audience is busy parents who want trustworthy local care.">“Who is my audience?” <b>›</b></button>
+            <button type="button" data-example="Please help me clarify our brand voice and offers.">“Clarify my brand voice” <b>›</b></button>
+            <button type="button" data-example="I want to save this so we can continue later.">“Save and continue later” <b>›</b></button>
+            <button type="button" data-example="What should we capture before a Brand DNA proposal?">“Prepare Brand DNA draft” <b>›</b></button>
           </section>
           <section class="also">
             <h3><span>✦</span> You Can Also:</h3>
-            <p><i>▧</i> Upload existing images</p>
             <p><i>↗</i> Share your website</p>
             <p><i>◎</i> Tell us your goals</p>
-            <p><i>◔</i> Ask questions anytime</p>
+            <p><i>◔</i> Ask clarifying questions</p>
+            <p><i>▧</i> Review Brand DNA proposals</p>
+          </section>
+          <section class="brand-dna-panel" id="brand-dna-panel" aria-labelledby="brand-dna-title">
+            <h3 id="brand-dna-title"><span>◎</span> Brand DNA</h3>
+            <p class="brand-dna-copy">Create an immutable Brand DNA proposal from this planning conversation. Only a human APPROVE or REJECT decision can change status.</p>
+            <button type="button" class="brand-dna-action" id="create-brand-dna" disabled>Create Brand DNA proposal</button>
+            <div class="brand-dna-summary" id="brand-dna-summary" hidden>
+              <p class="brand-dna-meta"><span id="brand-dna-status-label">PROPOSED</span> · version <strong id="brand-dna-version">—</strong></p>
+              <p id="brand-dna-summary-text"></p>
+              <p class="brand-dna-current" id="brand-dna-current-pointer" hidden>Current approved pointer is set for this workspace.</p>
+            </div>
+            <form class="brand-dna-decision" id="brand-dna-decision-form" hidden>
+              <label for="brand-dna-rationale">Decision rationale *</label>
+              <textarea id="brand-dna-rationale" name="rationale" maxlength="2000" required placeholder="Explain why you approve or reject this proposal" disabled></textarea>
+              <label class="confirm-approve">
+                <input type="checkbox" id="brand-dna-confirm-approve" disabled>
+                <span>I confirm this APPROVE decision and understand it sets the workspace current approved Brand DNA pointer.</span>
+              </label>
+              <div class="brand-dna-decision-actions">
+                <button type="submit" class="approve" data-decision="APPROVE" disabled>Approve</button>
+                <button type="submit" class="reject" data-decision="REJECT" disabled>Reject</button>
+              </div>
+            </form>
           </section>
         </aside>
       </div>

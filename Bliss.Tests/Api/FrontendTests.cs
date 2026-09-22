@@ -27,12 +27,45 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Welcome to Bliss Chapel", body);
         Assert.Contains("The Wedding Planner", body);
         Assert.Contains("Nothing Goes Live Without Your Approval", body);
-        Assert.Contains("FOUNDATION READY", body);
-        Assert.Contains("AI conversation begins only after the next approved engineering contract", body);
+        Assert.Contains("PHASE 2", body);
+        Assert.Contains("LIVE CONCIERGE", body);
+        Assert.Contains("Create Brand DNA proposal", body);
+        Assert.Contains("brand-dna-decision-form", body);
+        Assert.Contains("planner-composer", body);
+        Assert.Contains("planner-message-stream", body);
+        Assert.DoesNotContain("FOUNDATION READY", body);
+        Assert.DoesNotContain("Help me choose colors", body);
+        Assert.DoesNotContain("Show me some design concepts", body);
+        Assert.DoesNotContain("Create a campaign for my restaurant", body);
+        Assert.DoesNotContain("What advertising works in my industry?", body);
         Assert.Contains("wedding-planner.css", body);
         Assert.Contains("wedding-planner.js", body);
         Assert.DoesNotContain("Operations audit", body);
-        Assert.DoesNotContain("Advertiser workspace and session ledger", body);
+        Assert.DoesNotContain("Advertiser workspace, Concierge runs, and Brand DNA", body);
+    }
+
+    [Fact]
+    public async Task Public_planner_script_wires_phase2_live_chat_and_brand_dna_without_fabricated_replies()
+    {
+        var client = _factory.CreateClient();
+        var script = await (await client.GetAsync("/wedding-planner.js")).Content.ReadAsStringAsync();
+
+        Assert.Contains("/api/auth/session", script);
+        Assert.Contains("/api/wedding-planner/workspaces", script);
+        Assert.Contains("/sessions", script);
+        Assert.Contains("/turns", script);
+        Assert.Contains("/brand-dna/interpret", script);
+        Assert.Contains("/decisions", script);
+        Assert.Contains("X-CSRF-TOKEN", script);
+        Assert.Contains("authenticationEnabled", script);
+        Assert.Contains("canWrite", script);
+        Assert.Contains("advertiserId", script);
+        Assert.Contains("plannerMessage", script);
+        Assert.Contains("does not fabricate", script);
+        Assert.DoesNotContain("fabricate a planner", script);
+        Assert.DoesNotContain("fakePlanner", script);
+        Assert.DoesNotContain("synthetic reply", script);
+        Assert.DoesNotContain("I'm here to listen", script);
     }
 
     [Fact]
@@ -55,7 +88,10 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Last verification", body);
         Assert.Contains("Recent verifications", body);
         Assert.Contains("Wedding Planner", body);
-        Assert.Contains("Advertiser workspace and session ledger", body);
+        Assert.Contains("Advertiser workspace, Concierge runs, and Brand DNA", body);
+        Assert.Contains("Concierge + Brand DNA Interpreter runs", body);
+        Assert.Contains("Create Brand DNA proposal", body);
+        Assert.Contains("Approve or reject Brand DNA", body);
         Assert.Contains("Export ledger", body);
         Assert.Contains("Verify pack", body);
         Assert.Contains("app.js", body);
@@ -73,7 +109,13 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("bliss-verify-", script);
         Assert.Contains("event.detail", script);
         Assert.Contains("/api/wedding-planner/workspaces", script);
-        Assert.Contains("Phase 1 does not invoke AI", body);
+        Assert.Contains("/agent-runs", script);
+        Assert.Contains("/brand-dna", script);
+        Assert.Contains("/brand-dna/interpret", script);
+        Assert.Contains("/decisions", script);
+        Assert.Contains("Open primary workspace", body);
+        Assert.Contains("Append a human message", body);
+        Assert.DoesNotContain("Phase 1 does not invoke AI", body);
         Assert.DoesNotContain("TEST ENVIRONMENT", body);
         Assert.DoesNotContain("TEST_OPERATOR", body);
     }

@@ -43,5 +43,11 @@ public sealed class ApiSurfaceTests
         Assert.Contains("api/runtime", prefixes);
         Assert.Contains("api/audit", prefixes);
         Assert.Contains("api/wedding-planner", prefixes);
+
+        var weddingPlanner = routes.Single(r => r.Route == "api/wedding-planner");
+        Assert.Contains("sessions/{sessionId:guid}/agent-runs", weddingPlanner.Methods);
+        Assert.Contains("agent-runs/{agentRunId:guid}", weddingPlanner.Methods);
+        Assert.Contains("workspaces/{workspaceId:guid}/brand-dna", weddingPlanner.Methods);
+        Assert.Contains("brand-dna/{brandDnaVersionId:guid}", weddingPlanner.Methods);
     }
 }

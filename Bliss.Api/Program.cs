@@ -3,9 +3,11 @@ using System.Threading.RateLimiting;
 using System.Text.Json.Serialization;
 using Bliss.Api.Runtime;
 using Bliss.Api.Security;
+using Bliss.Domain.WeddingPlanner;
 using Microsoft.Extensions.FileProviders;
 using Bliss.Infrastructure.DependencyInjection;
 using Bliss.Infrastructure.Persistence;
+using Bliss.Infrastructure.WeddingPlanner;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -26,6 +28,9 @@ var authentication = builder.Configuration
 var runtime = builder.Configuration
     .GetSection(BlissRuntimeOptions.SectionName)
     .Get<BlissRuntimeOptions>() ?? new BlissRuntimeOptions();
+var weddingPlannerAi = builder.Configuration
+    .GetSection(WeddingPlannerAiOptions.SectionName)
+    .Get<WeddingPlannerAiOptions>() ?? new WeddingPlannerAiOptions();
 
 if (!authentication.Enabled && !builder.Environment.IsDevelopment())
 {
@@ -47,6 +52,17 @@ if (!builder.Environment.IsDevelopment()
 {
     throw new InvalidOperationException(
         "Runtime:DataProtectionKeysPath is required outside Development so OIDC sessions survive restarts and replicas.");
+}
+
+if (!builder.Environment.IsDevelopment()
+    && !string.Equals(
+        weddingPlannerAi.Provider,
+        WeddingPlannerAiProviderKinds.OpenAiCompatible,
+        StringComparison.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException(
+        "WeddingPlannerAi:Provider must be OpenAiCompatible outside Development. "
+        + "The Local provider is a deterministic development/test worker, not a production AI provider.");
 }
 
 if (runtime.WriteRateLimitPermitLimit <= 0
