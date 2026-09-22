@@ -17,6 +17,7 @@ const state = {
   runs: [], ingestions: [], formations: [], reviews: [], placements: [],
   reviewQueue: [], placementQueue: [], provenances: [],
   weddingPlannerWorkspaces: [], weddingPlannerSessions: [], weddingPlannerMessages: [],
+  weddingPlannerAgentRuns: [], weddingPlannerBrandDna: null,
   selectedWeddingPlannerWorkspace: null, selectedWeddingPlannerSession: null,
   affiliateNetworks: [], networkAccesses: [], programAccesses: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "",
@@ -786,7 +787,7 @@ function route() {
   const view=valid.includes(parts[0])?parts[0]:"overview";
   $$(".view").forEach(x=>x.classList.toggle("active",x.id===`view-${view}`));
   $$(".nav-item[data-view]").forEach(x=>{const active=x.dataset.view===view;x.classList.toggle("active",active);if(active)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});
-  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner foundation",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
+  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 2",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
   $("#page-title").textContent=titles[view];
   toggleMobileNav(false);
   if(!state.loaded)return;
@@ -836,11 +837,15 @@ function bindActions() {
   $("#wedding-planner-open-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerWorkspace(event.currentTarget);});
   $("#wedding-planner-session-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerSession(event.currentTarget);});
   $("#wedding-planner-message-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerMessage(event.currentTarget);});
+  $("#wedding-planner-interpret-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerInterpret(event.currentTarget);});
+  $("#wedding-planner-dna-decision-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerDnaDecision(event.currentTarget);});
   $("#regenerate-review-key").addEventListener("click",generateReviewIdempotencyKey);
   $("#regenerate-placement-key").addEventListener("click",generatePlacementIdempotencyKey);
   $("#regenerate-wedding-planner-workspace-key").addEventListener("click",()=>fillKey("#wedding-planner-workspace-key"));
   $("#regenerate-wedding-planner-session-key").addEventListener("click",()=>fillKey("#wedding-planner-session-key"));
   $("#regenerate-wedding-planner-message-key").addEventListener("click",()=>fillKey("#wedding-planner-message-key"));
+  $("#regenerate-wedding-planner-interpret-key").addEventListener("click",()=>fillKey("#wedding-planner-interpret-key"));
+  $("#regenerate-wedding-planner-dna-decision-key").addEventListener("click",()=>fillKey("#wedding-planner-dna-decision-key"));
   $("#placement-match").addEventListener("change",event=>{state.selectedPlacement=event.target.value;renderPlacements();});
   $("#placement-content").addEventListener("change",updatePlacementSlots);
   $("#review-match").addEventListener("change",event=>{state.selectedReview=event.target.value;renderReviews();});
@@ -995,16 +1000,29 @@ function skeleton(){return `<div class="activity-skeleton"></div><div class="act
 function generateReviewIdempotencyKey(){const field=$("#review-idempotency");if(field)field.value=`manual-${crypto.randomUUID()}`;}
 function generatePlacementIdempotencyKey(){const field=$("#placement-idempotency");if(field)field.value=`manual-${crypto.randomUUID()}`;}
 function fillKey(selector){const field=$(selector);if(field)field.value=`manual-${crypto.randomUUID()}`;}
-function generateWeddingPlannerKeys(){fillKey("#wedding-planner-workspace-key");fillKey("#wedding-planner-session-key");fillKey("#wedding-planner-message-key");}
+function generateWeddingPlannerKeys(){
+  fillKey("#wedding-planner-workspace-key");
+  fillKey("#wedding-planner-session-key");
+  fillKey("#wedding-planner-message-key");
+  fillKey("#wedding-planner-interpret-key");
+  fillKey("#wedding-planner-dna-decision-key");
+}
 
 function renderWeddingPlanner() {
   const advertiserSelect = $("#wedding-planner-advertiser");
   const workspaceSelect = $("#wedding-planner-workspace");
   const sessionSelect = $("#wedding-planner-session");
+  const interpretWorkspace = $("#wedding-planner-interpret-workspace");
+  const dnaVersionSelect = $("#wedding-planner-dna-version");
   if (!advertiserSelect) return;
   advertiserSelect.innerHTML = state.advertisers.map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join("");
-  workspaceSelect.innerHTML = state.weddingPlannerWorkspaces.map(x => `<option value="${x.workspaceId}">${escapeHtml(x.advertiserName)}</option>`).join("");
-  if (state.selectedWeddingPlannerWorkspace) workspaceSelect.value = state.selectedWeddingPlannerWorkspace;
+  const workspaceOptions = state.weddingPlannerWorkspaces.map(x => `<option value="${x.workspaceId}">${escapeHtml(x.advertiserName)}</option>`).join("");
+  workspaceSelect.innerHTML = workspaceOptions;
+  if (interpretWorkspace) interpretWorkspace.innerHTML = workspaceOptions;
+  if (state.selectedWeddingPlannerWorkspace) {
+    workspaceSelect.value = state.selectedWeddingPlannerWorkspace;
+    if (interpretWorkspace) interpretWorkspace.value = state.selectedWeddingPlannerWorkspace;
+  }
   sessionSelect.innerHTML = state.weddingPlannerSessions.map(x => `<option value="${x.sessionId}">${x.sessionId.slice(0, 8)} · ${x.messageCount} messages</option>`).join("");
   if (state.selectedWeddingPlannerSession) sessionSelect.value = state.selectedWeddingPlannerSession;
   const list = $("#wedding-planner-workspace-list");
@@ -1015,6 +1033,27 @@ function renderWeddingPlanner() {
   messages.innerHTML = state.weddingPlannerMessages.length
     ? state.weddingPlannerMessages.map(x => `<div class="activity-item"><span class="activity-icon">${x.sequenceNumber}</span><span><strong>${escapeHtml(x.actorType)}</strong><small>${escapeHtml(x.body)}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></div>`).join("")
     : emptyState("Select a session to resume durable messages.");
+  const runs = $("#wedding-planner-agent-run-list");
+  if (runs) {
+    runs.innerHTML = state.weddingPlannerAgentRuns.length
+      ? state.weddingPlannerAgentRuns.map(x => `<div class="activity-item"><span class="activity-icon">◇</span><span><strong>${escapeHtml(x.logicalRole)} · ${escapeHtml(x.status)}</strong><small>${escapeHtml(x.promptPackVersion || "—")} · ${escapeHtml(x.outcome || x.errorMessage || "no outcome")} · ${x.totalTokens ?? "—"} tokens</small></span><span class="activity-time">${relativeTime(x.completedAt || x.startedAt)}</span></div>`).join("")
+      : emptyState("Select a session to inspect Concierge agent runs.");
+  }
+  const versions = state.weddingPlannerBrandDna?.versions || [];
+  const currentId = state.weddingPlannerBrandDna?.currentApprovedBrandDnaVersionId || null;
+  const currentLabel = $("#wedding-planner-dna-current");
+  if (currentLabel) currentLabel.textContent = currentId ? `Current: ${shortId(currentId)}` : "Current: none";
+  if (dnaVersionSelect) {
+    dnaVersionSelect.innerHTML = versions.length
+      ? versions.map(x => `<option value="${x.brandDnaVersionId}">v${x.versionNumber} · ${escapeHtml(x.status)}${x.brandDnaVersionId === currentId ? " · CURRENT" : ""}</option>`).join("")
+      : `<option value="">No Brand DNA versions</option>`;
+  }
+  const dnaList = $("#wedding-planner-brand-dna-list");
+  if (dnaList) {
+    dnaList.innerHTML = versions.length
+      ? versions.map(x => `<div class="activity-item"><span class="activity-icon">${x.versionNumber}</span><span><strong>${escapeHtml(x.status)}${x.brandDnaVersionId === currentId ? " · CURRENT APPROVED" : ""}</strong><small>${escapeHtml(x.summary || "No summary")} · ${escapeHtml(x.schemaVersion)}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></div>`).join("")
+      : emptyState("Select or create a workspace to list Brand DNA versions.");
+  }
 }
 
 async function selectWeddingPlannerWorkspace(workspaceId) {
@@ -1024,13 +1063,18 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
     state.selectedWeddingPlannerSession = state.weddingPlannerSessions[0]?.sessionId || null;
     if (state.selectedWeddingPlannerSession) {
       state.weddingPlannerMessages = await api(`/api/wedding-planner/sessions/${state.selectedWeddingPlannerSession}/messages`);
+      state.weddingPlannerAgentRuns = await api(`/api/wedding-planner/sessions/${state.selectedWeddingPlannerSession}/agent-runs`);
     } else {
       state.weddingPlannerMessages = [];
+      state.weddingPlannerAgentRuns = [];
     }
+    state.weddingPlannerBrandDna = await api(`/api/wedding-planner/workspaces/${workspaceId}/brand-dna`);
   } catch (error) {
     toast(error.message, true);
     state.weddingPlannerSessions = [];
     state.weddingPlannerMessages = [];
+    state.weddingPlannerAgentRuns = [];
+    state.weddingPlannerBrandDna = null;
   }
   renderWeddingPlanner();
 }
@@ -1074,6 +1118,8 @@ async function submitWeddingPlannerSession(form) {
     state.selectedWeddingPlannerSession = result.sessionId;
     state.weddingPlannerSessions = await api(`/api/wedding-planner/workspaces/${result.workspaceId}/sessions`);
     state.weddingPlannerMessages = await api(`/api/wedding-planner/sessions/${result.sessionId}/messages`);
+    state.weddingPlannerAgentRuns = await api(`/api/wedding-planner/sessions/${result.sessionId}/agent-runs`);
+    state.weddingPlannerBrandDna = await api(`/api/wedding-planner/workspaces/${result.workspaceId}/brand-dna`);
     renderWeddingPlanner();
   } catch (error) {
     toast(error.message, true);
@@ -1098,6 +1144,61 @@ async function submitWeddingPlannerMessage(form) {
     fillKey("#wedding-planner-message-key");
     state.selectedWeddingPlannerSession = result.sessionId;
     state.weddingPlannerMessages = await api(`/api/wedding-planner/sessions/${result.sessionId}/messages`);
+    state.weddingPlannerAgentRuns = await api(`/api/wedding-planner/sessions/${result.sessionId}/agent-runs`).catch(() => state.weddingPlannerAgentRuns);
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function submitWeddingPlannerInterpret(form) {
+  const value = name => form.elements[name].value.trim();
+  try {
+    const workspaceId = value("workspaceId");
+    const result = await api(`/api/wedding-planner/workspaces/${workspaceId}/brand-dna/interpret`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sourceSystem: value("sourceSystem"),
+        idempotencyKey: value("idempotencyKey")
+      })
+    });
+    toast(result.isReplay ? `Brand DNA v${result.versionNumber} replayed` : `Brand DNA v${result.versionNumber} proposed`);
+    fillKey("#wedding-planner-interpret-key");
+    state.selectedWeddingPlannerWorkspace = workspaceId;
+    state.weddingPlannerBrandDna = await api(`/api/wedding-planner/workspaces/${workspaceId}/brand-dna`);
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function submitWeddingPlannerDnaDecision(form) {
+  const value = name => form.elements[name].value.trim();
+  const decision = value("decision");
+  if (decision === "APPROVE" && form.elements.confirmApprove?.checked !== true) {
+    toast("Confirm the APPROVE checkbox before approving Brand DNA.", true);
+    return;
+  }
+  try {
+    const result = await api(`/api/wedding-planner/brand-dna/${value("brandDnaVersionId")}/decisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        decision,
+        rationale: value("rationale"),
+        sourceSystem: value("sourceSystem"),
+        idempotencyKey: value("idempotencyKey")
+      })
+    });
+    toast(`${friendlyStatus(result.decision)} recorded${result.isReplay ? " (replay)" : ""}`);
+    form.elements.rationale.value = "";
+    if (form.elements.confirmApprove) form.elements.confirmApprove.checked = false;
+    fillKey("#wedding-planner-dna-decision-key");
+    const workspaceId = result.workspaceId || state.selectedWeddingPlannerWorkspace;
+    if (workspaceId) {
+      state.weddingPlannerBrandDna = await api(`/api/wedding-planner/workspaces/${workspaceId}/brand-dna`);
+    }
     renderWeddingPlanner();
   } catch (error) {
     toast(error.message, true);

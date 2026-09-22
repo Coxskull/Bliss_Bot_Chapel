@@ -166,19 +166,19 @@
         <section class="view" id="view-wedding-planner" aria-labelledby="wedding-planner-title">
           <div class="section-intro">
             <div>
-              <p class="eyebrow">WEDDING PLANNER FOUNDATION</p>
-              <h2 id="wedding-planner-title">Advertiser workspace and session ledger</h2>
-              <p>Open the primary workspace, resume planning sessions, and append durable human messages. Phase 1 does not invoke AI, Color Intelligence, Curator, or campaign placement.</p>
+              <p class="eyebrow">WEDDING PLANNER PHASE 2</p>
+              <h2 id="wedding-planner-title">Advertiser workspace, Concierge runs, and Brand DNA</h2>
+              <p>Open the primary workspace, resume planning sessions, append durable human messages, inspect Concierge agent runs, and manage Brand DNA proposals. AI replies and proposals come only from the server; humans alone approve or reject Brand DNA.</p>
             </div>
           </div>
-          <div class="safety-note"><strong>Infrastructure only.</strong> Ownership is enforced by the API. The browser never becomes the authority, and there is no Wedding Planner chatbot in this phase.</div>
+          <div class="safety-note"><strong>Human authority preserved.</strong> Ownership is enforced by the API. Clients cannot forge PLANNER messages, and Brand DNA stays PROPOSED until an explicit APPROVE or REJECT decision.</div>
           <div class="workflow-layout">
             <section>
               <div class="queue-list" id="wedding-planner-workspace-list"></div>
             </section>
             <div>
               <form class="panel workflow-form" id="wedding-planner-open-form">
-                <div class="panel-header"><div><p class="eyebrow">WORKSPACE</p><h3>Open primary workspace</h3></div><span class="record-tag">NO AI</span></div>
+                <div class="panel-header"><div><p class="eyebrow">WORKSPACE</p><h3>Open primary workspace</h3></div><span class="record-tag">PHASE 2</span></div>
                 <div class="form-grid">
                   <label class="span-two"><span>Advertiser *</span><select name="advertiserId" id="wedding-planner-advertiser" required></select></label>
                   <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-workspace-key" readonly required><button type="button" id="regenerate-wedding-planner-workspace-key" aria-label="Generate a new workspace idempotency key">↻</button></div></label></div></details>
@@ -198,12 +198,37 @@
                 <div class="form-grid">
                   <label class="span-two"><span>Session *</span><select name="sessionId" id="wedding-planner-session" required></select></label>
                   <label><span>Actor *</span><select name="actorType" required><option value="OPERATOR">Operator</option><option value="ADVERTISER">Advertiser</option><option value="SYSTEM">System</option></select></label>
-                  <label class="span-two"><span>Message *</span><textarea name="body" maxlength="8000" required placeholder="Durable note. This is not an AI reply."></textarea></label>
+                  <label class="span-two"><span>Message *</span><textarea name="body" maxlength="8000" required placeholder="Durable note. Prefer Concierge turns for AI replies."></textarea></label>
                   <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-message-key" readonly required><button type="button" id="regenerate-wedding-planner-message-key" aria-label="Generate a new message idempotency key">↻</button></div></label></div></details>
                 </div>
                 <div class="form-actions"><button class="primary-button" type="submit">Append message <span>→</span></button></div>
               </form>
               <section class="panel ledger-panel"><div class="panel-header"><div><p class="eyebrow">RESUME</p><h3>Session messages</h3></div></div><div id="wedding-planner-message-list" class="activity-list"></div></section>
+              <section class="panel ledger-panel"><div class="panel-header"><div><p class="eyebrow">AGENT RUNS</p><h3>Session Concierge runs</h3></div></div><div id="wedding-planner-agent-run-list" class="activity-list"></div></section>
+              <form class="panel workflow-form" id="wedding-planner-interpret-form">
+                <div class="panel-header"><div><p class="eyebrow">BRAND DNA</p><h3>Interpret Brand DNA proposal</h3></div><span class="record-tag">PROPOSED ONLY</span></div>
+                <div class="safety-note"><strong>Interpreter cannot approve.</strong> This creates an immutable PROPOSED version from authorized conversation history.</div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Workspace *</span><select name="workspaceId" id="wedding-planner-interpret-workspace" required></select></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-interpret-key" readonly required><button type="button" id="regenerate-wedding-planner-interpret-key" aria-label="Generate a new interpret idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><button class="primary-button" type="submit">Create Brand DNA proposal <span>→</span></button></div>
+              </form>
+              <form class="panel workflow-form" id="wedding-planner-dna-decision-form">
+                <div class="panel-header"><div><p class="eyebrow">HUMAN DECISION</p><h3>Approve or reject Brand DNA</h3></div></div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Brand DNA version *</span><select name="brandDnaVersionId" id="wedding-planner-dna-version" required></select></label>
+                  <label><span>Decision *</span><select name="decision" required><option value="APPROVE">Approve</option><option value="REJECT">Reject</option></select></label>
+                  <label class="span-two"><span>Rationale *</span><textarea name="rationale" maxlength="2000" required placeholder="Explicit rationale required for APPROVE and REJECT"></textarea></label>
+                  <label class="span-two checkbox-label"><input name="confirmApprove" type="checkbox"><span>I confirm APPROVE will set the workspace current approved Brand DNA pointer</span></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-dna-decision-key" readonly required><button type="button" id="regenerate-wedding-planner-dna-decision-key" aria-label="Generate a new Brand DNA decision idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>Rejected versions never become current. Approval never edits the immutable document.</small><button class="primary-button" type="submit">Record Brand DNA decision <span>→</span></button></div>
+              </form>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">BRAND DNA VERSIONS</p><h3>Workspace proposals and approvals</h3></div><span class="record-tag" id="wedding-planner-dna-current">Current: none</span></div>
+                <div id="wedding-planner-brand-dna-list" class="activity-list"></div>
+              </section>
             </div>
           </div>
         </section>
