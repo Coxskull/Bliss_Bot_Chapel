@@ -78,7 +78,7 @@ The internal operator console remains available at `/operations`, including
 the Phase 1 workspace/session/message resume ledger.
 
 Neither public surface calls an LLM. The public conversation is visibly
-identified as a Phase 1 preview rather than a functioning bot.
+identified as a Phase 1 preview rather than a functioning bot. Frontend source lives in `frontend/public` and `frontend/operations`.
 
 Screenshot:
 `docs/wedding-planner/evidence/phase1/browser/public-bliss-chapel.png`

@@ -59,7 +59,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Export ledger", body);
         Assert.Contains("Verify pack", body);
         Assert.Contains("app.js", body);
-        var script = await (await client.GetAsync("/app.js")).Content.ReadAsStringAsync();
+        var script = await (await client.GetAsync("/operations/app.js")).Content.ReadAsStringAsync();
         Assert.Contains("Export case file", script);
         Assert.Contains("/api/audit/export/matches/", script);
         Assert.Contains("/api/audit/export/creators/", script);
@@ -79,8 +79,8 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
     }
 
     [Theory]
-    [InlineData("/app.css", "text/css")]
-    [InlineData("/app.js", "text/javascript")]
+    [InlineData("/operations/app.css", "text/css")]
+    [InlineData("/operations/app.js", "text/javascript")]
     [InlineData("/wedding-planner.css", "text/css")]
     [InlineData("/wedding-planner.js", "text/javascript")]
     public async Task Frontend_assets_are_served(string path, string mediaType)
@@ -100,7 +100,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
     {
         var client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/matches");
+        var response = await client.GetAsync("/operations/matches");
         var body = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);

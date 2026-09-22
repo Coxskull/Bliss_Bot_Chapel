@@ -22,7 +22,7 @@ Inspected from `origin/main` after Phase 19 verification-history merge.
 | Data | EF Core + Npgsql, PostgreSQL/Supabase-compatible, restrict deletes, unique source+idempotency | Same `BlissDbContext`, new tables, restrict FKs, unique primary workspace per advertiser. |
 | API | `/api/...` controllers, write rate limits, CSRF when auth enabled, `X-Request-Id` | `/api/wedding-planner/...` with the same write/CSRF/correlation pattern. |
 | Audit | Immutable run/decision tables plus in-process operational events | Durable `WeddingPlannerAuditEvents` for workspace/session/message writes. |
-| Frontend | Existing same-origin operations shell | Keep operator controls at `/operations`. Root `/` is the public advertiser/creator Bliss Chapel experience matching the supplied visual direction. Phase 1 presents a disabled conversation preview; it does not impersonate an AI worker. |
+| Frontend | Dedicated `frontend/` folder | Public advertiser/creator UI in `frontend/public`, served at `/`. Operator console in `frontend/operations`, served at `/operations`. The API serves those files and does not keep frontend source in `wwwroot`. |
 | Tests | xUnit, in-memory EF, `BlissApiFactory`, `OidcSecurityApiFactory` | Phase 1 proofs plus cross-tenant negatives on the OIDC factory. |
 | Matching | `DeterministicRuleEvaluator` is scoring authority | Unchanged. Wedding Planner code must not call it. |
 | Alpha Auto | Explicitly separate product | No references, no shared identity, no shared writes. |

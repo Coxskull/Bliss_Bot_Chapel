@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using System.Text.Json.Serialization;
 using Bliss.Api.Runtime;
 using Bliss.Api.Security;
+using Microsoft.Extensions.FileProviders;
 using Bliss.Infrastructure.DependencyInjection;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Antiforgery;
@@ -287,7 +288,18 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseStaticFiles();
+var frontendRoot = FrontendHost.ResolveRoot(app.Environment);
+var publicFrontend = Path.Combine(frontendRoot, "public");
+var operationsFrontend = Path.Combine(frontendRoot, "operations");
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(publicFrontend)
+});
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(operationsFrontend),
+    RequestPath = "/operations"
+});
 
 if (app.Environment.IsDevelopment())
 {
@@ -391,17 +403,17 @@ app.MapHealthChecks(
     .DisableRateLimiting();
 app.MapGet(
         "/",
-        () => Results.File(
-            Path.Combine(app.Environment.WebRootPath, "wedding-planner.html"),
-            "text/html"))
+        () => Results.File(Path.Combine(publicFrontend, "index.html"), "text/html"))
     .AllowAnonymous();
 app.MapGet(
         "/operations",
-        () => Results.File(
-            Path.Combine(app.Environment.WebRootPath, "index.html"),
-            "text/html"))
+        () => Results.File(Path.Combine(operationsFrontend, "index.html"), "text/html"))
     .AllowAnonymous();
-app.MapFallbackToFile("index.html").AllowAnonymous();
+app.MapFallbackToFile(
+        "/operations/{*path:nonfile}",
+        "index.html",
+        new StaticFileOptions { FileProvider = new PhysicalFileProvider(operationsFrontend) })
+    .AllowAnonymous();
 app.Run();
 
 public partial class Program;

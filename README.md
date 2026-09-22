@@ -13,7 +13,8 @@ This repository and database are **not** connected to Alpha Auto. They are separ
 
 ## Solution
 
-- `Bliss.Api` — REST API + Swagger + same-origin responsive operations frontend
+- `Bliss.Api` — REST API + Swagger
+- `frontend/` — public Bliss Chapel experience and operations console
 - `Bliss.Domain` — entities and constants
 - `Bliss.Infrastructure` — EF Core, configurations, migrations, seed data
 - `Bliss.Tests` — architecture and persistence proofs
@@ -84,14 +85,15 @@ dotnet ef migrations script --project Bliss.Infrastructure --startup-project Bli
 dotnet run --project Bliss.Api
 ```
 
-Dashboard: `/`
+Public Bliss Chapel: `/`
+
+Operator console: `/operations`
 
 Swagger (Development): `/swagger`
 
-The frontend covers creator intake and profiles, match formation and evaluation,
-human review, placement planning, partner and inventory directories, campaign
-placements, and all operational ledgers. Operator labels stored in the browser
-are audit labels only; they are not authentication.
+Public files live in `frontend/public`. Operator files live in
+`frontend/operations`. The API serves both folders; it does not keep
+frontend source inside `Bliss.Api`.
 
 ## Documentation
 
