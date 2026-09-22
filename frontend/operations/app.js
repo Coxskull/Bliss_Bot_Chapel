@@ -35,6 +35,13 @@ const state = {
   weddingPlannerCampaignReadinessHandshakes: [],
   weddingPlannerCampaignReadinessDecisions: [],
   selectedWeddingPlannerCampaignReadinessHandshakeId: null,
+  weddingPlannerMeasurementLearningJobs: [],
+  weddingPlannerMeasurementLearningReports: null,
+  weddingPlannerMeasurementLearningContributions: [],
+  weddingPlannerMeasurementLearningAgentRuns: [],
+  weddingPlannerMeasurementLearningDecisions: [],
+  selectedWeddingPlannerMeasurementLearningJobId: null,
+  selectedWeddingPlannerMeasurementLearningReportId: null,
   selectedWeddingPlannerWorkspace: null, selectedWeddingPlannerSession: null,
   selectedWeddingPlannerColorProfileId: null,
   selectedWeddingPlannerResearchJobId: null,
@@ -814,7 +821,7 @@ function route() {
   const view=valid.includes(parts[0])?parts[0]:"overview";
   $$(".view").forEach(x=>x.classList.toggle("active",x.id===`view-${view}`));
   $$(".nav-item[data-view]").forEach(x=>{const active=x.dataset.view===view;x.classList.toggle("active",active);if(active)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});
-  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 8",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
+  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 9",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
   $("#page-title").textContent=titles[view];
   toggleMobileNav(false);
   if(!state.loaded)return;
@@ -879,6 +886,8 @@ function bindActions() {
   $("#wedding-planner-qa-resolution-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerQaResolution(event.currentTarget);});
   $("#wedding-planner-campaign-readiness-commit-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerCampaignReadinessCommit(event.currentTarget);});
   $("#wedding-planner-campaign-readiness-revoke-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerCampaignReadinessRevoke(event.currentTarget);});
+  $("#wedding-planner-measurement-learning-job-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerMeasurementLearningJob(event.currentTarget);});
+  $("#wedding-planner-measurement-learning-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerMeasurementLearningDecision(event.currentTarget);});
   $("#wedding-planner-color-version")?.addEventListener("change",event=>{
     state.selectedWeddingPlannerColorProfileId = event.currentTarget.value || null;
     renderWeddingPlannerColorInspect();
@@ -946,10 +955,19 @@ function bindActions() {
   $("#regenerate-wedding-planner-qa-resolution-key")?.addEventListener("click",()=>fillKey("#wedding-planner-qa-resolution-key"));
   $("#regenerate-wedding-planner-campaign-readiness-commit-key")?.addEventListener("click",()=>fillKey("#wedding-planner-campaign-readiness-commit-key"));
   $("#regenerate-wedding-planner-campaign-readiness-revoke-key")?.addEventListener("click",()=>fillKey("#wedding-planner-campaign-readiness-revoke-key"));
+  $("#regenerate-wedding-planner-measurement-learning-job-key")?.addEventListener("click",()=>fillKey("#wedding-planner-measurement-learning-job-key"));
+  $("#regenerate-wedding-planner-measurement-learning-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-measurement-learning-decision-key"));
   $("#wedding-planner-campaign-readiness-match")?.addEventListener("change",()=>syncOpsCampaignReadinessCommitForm());
   $("#wedding-planner-campaign-readiness-campaign")?.addEventListener("change",()=>syncOpsCampaignReadinessCommitForm());
   $("#wedding-planner-campaign-readiness-content")?.addEventListener("change",()=>syncOpsCampaignReadinessCommitForm());
   $("#wedding-planner-campaign-readiness-slot")?.addEventListener("change",()=>syncOpsCampaignReadinessSlotNote());
+  $("#wedding-planner-measurement-learning-report-version")?.addEventListener("change",event=>{
+    state.selectedWeddingPlannerMeasurementLearningReportId = event.currentTarget.value || null;
+    loadWeddingPlannerMeasurementLearningDetails().then(() => {
+      renderWeddingPlannerMeasurementLearningInspect();
+      syncOpsMeasurementLearningDecisionForm();
+    });
+  });
   $("#placement-match").addEventListener("change",event=>{state.selectedPlacement=event.target.value;renderPlacements();});
   $("#placement-content").addEventListener("change",updatePlacementSlots);
   $("#review-match").addEventListener("change",event=>{state.selectedReview=event.target.value;renderReviews();});
@@ -1045,6 +1063,18 @@ function handleDocumentClick(event) {
       syncOpsCampaignReadinessRevokeForm();
     });
     renderWeddingPlanner();
+  }
+  else if(target.matches("[data-wedding-measurement-learning-job]")){
+    state.selectedWeddingPlannerMeasurementLearningJobId=target.dataset.weddingMeasurementLearningJob;
+    renderWeddingPlanner();
+  }
+  else if(target.matches("[data-wedding-measurement-learning-report]")){
+    state.selectedWeddingPlannerMeasurementLearningReportId=target.dataset.weddingMeasurementLearningReport;
+    const select=$("#wedding-planner-measurement-learning-report-version");
+    if(select)select.value=state.selectedWeddingPlannerMeasurementLearningReportId;
+    loadWeddingPlannerMeasurementLearningDetails().then(() => {
+      renderWeddingPlanner();
+    });
   }
   else if(target.matches("[data-match-id]"))location.hash=`#/matches/${target.dataset.matchId}`;
   else if(target.matches("[data-campaign-id]")){state.inventoryTab="campaigns";renderInventory();location.hash=`#/inventory/${target.dataset.campaignId}`;}
@@ -1195,6 +1225,8 @@ function generateWeddingPlannerKeys(){
   fillKey("#wedding-planner-qa-resolution-key");
   fillKey("#wedding-planner-campaign-readiness-commit-key");
   fillKey("#wedding-planner-campaign-readiness-revoke-key");
+  fillKey("#wedding-planner-measurement-learning-job-key");
+  fillKey("#wedding-planner-measurement-learning-decision-key");
 }
 
 function renderWeddingPlanner() {
@@ -1208,6 +1240,7 @@ function renderWeddingPlanner() {
   const creativeWorkspace = $("#wedding-planner-creative-workspace");
   const qaWorkspace = $("#wedding-planner-qa-workspace");
   const campaignReadinessWorkspace = $("#wedding-planner-campaign-readiness-workspace");
+  const measurementLearningWorkspace = $("#wedding-planner-measurement-learning-workspace");
   const dnaVersionSelect = $("#wedding-planner-dna-version");
   const colorVersionSelect = $("#wedding-planner-color-version");
   const researchReportSelect = $("#wedding-planner-research-report-version");
@@ -1226,6 +1259,7 @@ function renderWeddingPlanner() {
   if (creativeWorkspace) creativeWorkspace.innerHTML = workspaceOptions;
   if (qaWorkspace) qaWorkspace.innerHTML = workspaceOptions;
   if (campaignReadinessWorkspace) campaignReadinessWorkspace.innerHTML = workspaceOptions;
+  if (measurementLearningWorkspace) measurementLearningWorkspace.innerHTML = workspaceOptions;
   if (state.selectedWeddingPlannerWorkspace) {
     workspaceSelect.value = state.selectedWeddingPlannerWorkspace;
     if (interpretWorkspace) interpretWorkspace.value = state.selectedWeddingPlannerWorkspace;
@@ -1235,6 +1269,7 @@ function renderWeddingPlanner() {
     if (creativeWorkspace) creativeWorkspace.value = state.selectedWeddingPlannerWorkspace;
     if (qaWorkspace) qaWorkspace.value = state.selectedWeddingPlannerWorkspace;
     if (campaignReadinessWorkspace) campaignReadinessWorkspace.value = state.selectedWeddingPlannerWorkspace;
+    if (measurementLearningWorkspace) measurementLearningWorkspace.value = state.selectedWeddingPlannerWorkspace;
   }
   sessionSelect.innerHTML = state.weddingPlannerSessions.map(x => `<option value="${x.sessionId}">${x.sessionId.slice(0, 8)} · ${x.messageCount} messages</option>`).join("");
   if (state.selectedWeddingPlannerSession) sessionSelect.value = state.selectedWeddingPlannerSession;
@@ -1556,6 +1591,53 @@ function renderWeddingPlanner() {
   renderWeddingPlannerCampaignReadinessInspect();
   syncOpsCampaignReadinessCommitForm();
   syncOpsCampaignReadinessRevokeForm();
+
+  const mlJobs = state.weddingPlannerMeasurementLearningJobs || [];
+  const mlJobCount = $("#wedding-planner-measurement-learning-job-count");
+  if (mlJobCount) mlJobCount.textContent = `${mlJobs.length} job${mlJobs.length === 1 ? "" : "s"}`;
+  if (!state.selectedWeddingPlannerMeasurementLearningJobId && mlJobs.length) {
+    state.selectedWeddingPlannerMeasurementLearningJobId = mlJobs[0].measurementLearningJobId;
+  }
+  const mlJobList = $("#wedding-planner-measurement-learning-job-list");
+  if (mlJobList) {
+    mlJobList.innerHTML = mlJobs.length
+      ? mlJobs.map(x => {
+          const selected = x.measurementLearningJobId === state.selectedWeddingPlannerMeasurementLearningJobId;
+          return `<button class="activity-item${selected ? " selected" : ""}" data-wedding-measurement-learning-job="${x.measurementLearningJobId}" type="button"><span class="activity-icon">ML</span><span><strong>${escapeHtml(x.status)}${x.isReplay ? " · replay" : ""}</strong><small>${escapeHtml(x.sourceLabel || "No source")} · handshake ${escapeHtml(shortId(x.campaignReadinessHandshakeVersionId || ""))} · ${escapeHtml(x.impressions ?? 0)} imp / ${escapeHtml(x.clicks ?? 0)} clk · report ${escapeHtml(shortId(x.outputMeasurementLearningReportVersionId || ""))}</small></span><span class="activity-time">${relativeTime(x.startedAt)}</span></button>`;
+        }).join("")
+      : emptyState("Select or create a workspace to list measurement-learning jobs.");
+  }
+
+  const mlReports = state.weddingPlannerMeasurementLearningReports;
+  const mlVersions = mlReports?.versions || [];
+  const mlCurrentId = mlReports?.currentAcceptedMeasurementLearningReportVersionId || null;
+  const mlCurrentLabel = $("#wedding-planner-measurement-learning-current");
+  if (mlCurrentLabel) mlCurrentLabel.textContent = mlCurrentId ? `CURRENT ACCEPTED: ${shortId(mlCurrentId)}` : "CURRENT ACCEPTED: none";
+  if (!state.selectedWeddingPlannerMeasurementLearningReportId && mlVersions.length) {
+    state.selectedWeddingPlannerMeasurementLearningReportId =
+      mlVersions.find(x => x.status === "PROPOSED")?.measurementLearningReportVersionId ||
+      mlCurrentId ||
+      mlVersions[0].measurementLearningReportVersionId;
+  }
+  const mlReportSelect = $("#wedding-planner-measurement-learning-report-version");
+  if (mlReportSelect) {
+    mlReportSelect.innerHTML = mlVersions.length
+      ? mlVersions.map(x => `<option value="${x.measurementLearningReportVersionId}"${x.measurementLearningReportVersionId === state.selectedWeddingPlannerMeasurementLearningReportId ? " selected" : ""}>${escapeHtml(x.status)}${x.isCurrentAccepted || x.measurementLearningReportVersionId === mlCurrentId ? " · CURRENT ACCEPTED" : ""} · v${escapeHtml(String(x.versionNumber))}</option>`).join("")
+      : `<option value="">No measurement-learning reports</option>`;
+  }
+  const mlReportList = $("#wedding-planner-measurement-learning-report-list");
+  if (mlReportList) {
+    mlReportList.innerHTML = mlVersions.length
+      ? mlVersions.map(x => {
+          const selected = x.measurementLearningReportVersionId === state.selectedWeddingPlannerMeasurementLearningReportId;
+          const isCurrent = x.isCurrentAccepted || x.measurementLearningReportVersionId === mlCurrentId;
+          return `<button class="activity-item${selected ? " selected" : ""}" data-wedding-measurement-learning-report="${x.measurementLearningReportVersionId}" type="button"><span class="activity-icon">${x.versionNumber}</span><span><strong>${escapeHtml(x.status)}${isCurrent ? " · CURRENT ACCEPTED" : ""}</strong><small>${escapeHtml(x.summary || "No summary")} · ${escapeHtml(x.schemaVersion || "")} · ${escapeHtml(x.sourceLabel || "")} · cost $${escapeHtml(formatUsd(x.estimatedTotalCostUsd))}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></button>`;
+        }).join("")
+      : emptyState("Select or create a workspace to list measurement-learning reports.");
+  }
+  renderWeddingPlannerMeasurementLearningInspect();
+  syncOpsMeasurementLearningJobForm();
+  syncOpsMeasurementLearningDecisionForm();
 }
 
 function parseWeddingPlannerColorDocument(documentJson) {
@@ -1870,6 +1952,27 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
       state.selectedWeddingPlannerCampaignReadinessHandshakeId = null;
       toast(crError.message, true);
     }
+    try {
+      state.weddingPlannerMeasurementLearningJobs = await api(`/api/wedding-planner/workspaces/${workspaceId}/measurement-learning-jobs`);
+      if (!Array.isArray(state.weddingPlannerMeasurementLearningJobs)) state.weddingPlannerMeasurementLearningJobs = [];
+      state.weddingPlannerMeasurementLearningReports = await api(`/api/wedding-planner/workspaces/${workspaceId}/measurement-learning-reports`);
+      state.selectedWeddingPlannerMeasurementLearningJobId = state.weddingPlannerMeasurementLearningJobs[0]?.measurementLearningJobId || null;
+      const mlVersions = state.weddingPlannerMeasurementLearningReports?.versions || [];
+      state.selectedWeddingPlannerMeasurementLearningReportId =
+        mlVersions.find(x => x.status === "PROPOSED")?.measurementLearningReportVersionId ||
+        state.weddingPlannerMeasurementLearningReports?.currentAcceptedMeasurementLearningReportVersionId ||
+        mlVersions[0]?.measurementLearningReportVersionId ||
+        null;
+    } catch (mlError) {
+      state.weddingPlannerMeasurementLearningJobs = [];
+      state.weddingPlannerMeasurementLearningReports = null;
+      state.weddingPlannerMeasurementLearningContributions = [];
+      state.weddingPlannerMeasurementLearningAgentRuns = [];
+      state.weddingPlannerMeasurementLearningDecisions = [];
+      state.selectedWeddingPlannerMeasurementLearningJobId = null;
+      state.selectedWeddingPlannerMeasurementLearningReportId = null;
+      toast(mlError.message, true);
+    }
     await mergeWeddingPlannerInterpreterRuns();
     await mergeWeddingPlannerWorkspaceRuns(workspaceId);
     await loadWeddingPlannerResearchAgentRuns();
@@ -1877,6 +1980,7 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
     await loadWeddingPlannerCreativeDetails();
     await loadWeddingPlannerQaDetails();
     await loadWeddingPlannerCampaignReadinessDetails();
+    await loadWeddingPlannerMeasurementLearningDetails();
   } catch (error) {
     toast(error.message, true);
     state.weddingPlannerSessions = [];
@@ -3868,6 +3972,367 @@ async function submitWeddingPlannerCampaignReadinessRevoke(form) {
       if (!Array.isArray(state.weddingPlannerCampaignReadinessHandshakes)) state.weddingPlannerCampaignReadinessHandshakes = [];
       state.selectedWeddingPlannerCampaignReadinessHandshakeId = handshakeId;
       await loadWeddingPlannerCampaignReadinessDetails();
+    }
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+
+const MEASUREMENT_LEARNING_LABEL_OPS = "PHASE 9 · MEASUREMENT / LEARNING";
+const SYNTHETIC_DEVELOPMENT_MEASUREMENT_LEARNING = "SYNTHETIC DEVELOPMENT MEASUREMENT LEARNING";
+const MEASUREMENT_LEARNING_LABELS_OPS = [
+  "HUMAN-SUPPLIED AGGREGATES",
+  "ASSOCIATION — NOT CAUSATION",
+  "ADVISORY ONLY"
+];
+const MEASUREMENT_LEARNING_ATTESTATION_OPS =
+  "These are human-supplied aggregate observations from the named source. Bliss did not collect or verify delivery events. The linked placement remains PLANNED and does not prove activation or delivery. Metrics show association only, not causation or incrementality. No event-level data, personal data, external URLs, or platform credentials are included. AI output is advisory and cannot change creative, campaign, placement, inventory, spend, or external systems.";
+const MEASUREMENT_LEARNING_DISCLAIMER_OPS =
+  "This measurement-learning report is advisory only. Observed aggregates are human-supplied and unverified by Bliss. Derived metrics are deterministic arithmetic with null denominators when counts are zero. Descriptive patterns, hypotheses, and recommended future tests are association-only AI recommendations. They do not prove causation, guarantee outcomes, certify statistical significance, claim incrementality, activate campaigns, revise creative, change spend, reserve inventory, or write to external systems. The linked placement remains PLANNED and does not prove delivery.";
+const MEASUREMENT_LEARNING_RULE_CODES_OPS = [
+  "ML_HANDSHAKE_SCOPE", "ML_HANDSHAKE_PLACEMENT_LINK", "ML_PLACEMENT_STILL_PLANNED",
+  "ML_OBSERVATION_WINDOW", "ML_SOURCE_ATTESTED", "ML_AGGREGATE_COUNTS",
+  "ML_FINANCIAL_VALUES", "ML_CURRENCY_CODE", "ML_NO_EVENT_LEVEL_DATA", "ML_PROVENANCE_CHAIN"
+];
+const MEASUREMENT_LEARNING_LOGICAL_ROLES_OPS = [
+  "PERFORMANCE_ANALYST", "LEARNING_SYNTHESIZER", "OPTIMIZATION_ADVISOR"
+];
+const MEASUREMENT_LEARNING_WORKER_PROFILES_OPS = [
+  "PERFORMANCE_ANALYSIS_V1", "LEARNING_SYNTHESIS_V1"
+];
+
+/** Phase 9 job create / decision: operator|admin (or auth disabled). Narrower than canWrite — advertisers/reviewers/viewers cannot. */
+function canWriteMeasurementLearning(session = state.session) {
+  if (!session) return false;
+  if (!session.authenticationEnabled) return true;
+  return sessionHasRole(session, "bliss.operator")
+    || sessionHasRole(session, "bliss.admin");
+}
+
+function parseWeddingPlannerMeasurementLearningDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+function parseMeasurementLearningJsonOps(raw) {
+  if (!raw) return null;
+  try {
+    return typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    return null;
+  }
+}
+
+function measurementLearningHasSyntheticMarkerOps(report, doc) {
+  return doc?.marker === SYNTHETIC_DEVELOPMENT_MEASUREMENT_LEARNING
+    || JSON.stringify(doc || {}).includes(SYNTHETIC_DEVELOPMENT_MEASUREMENT_LEARNING)
+    || String(report?.summary || "").includes(SYNTHETIC_DEVELOPMENT_MEASUREMENT_LEARNING);
+}
+
+function toUtcIsoFromDatetimeLocal(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  // Treat datetime-local as UTC wall clock for operator entry (append Z when no zone).
+  if (/[zZ]|[+-]\d{2}:\d{2}$/.test(raw)) return new Date(raw).toISOString();
+  const normalized = raw.length === 16 ? `${raw}:00` : raw;
+  return new Date(`${normalized}Z`).toISOString();
+}
+
+async function loadWeddingPlannerMeasurementLearningDetails() {
+  const reportId = state.selectedWeddingPlannerMeasurementLearningReportId;
+  if (!reportId) {
+    state.weddingPlannerMeasurementLearningContributions = [];
+    state.weddingPlannerMeasurementLearningAgentRuns = [];
+    state.weddingPlannerMeasurementLearningDecisions = [];
+    return;
+  }
+  try {
+    const [reportDto, contributions, runs, decisions] = await Promise.all([
+      api(`/api/wedding-planner/measurement-learning-reports/${reportId}`),
+      api(`/api/wedding-planner/measurement-learning-reports/${reportId}/contributions`),
+      api(`/api/wedding-planner/measurement-learning-reports/${reportId}/agent-runs`),
+      api(`/api/wedding-planner/measurement-learning-reports/${reportId}/decisions`)
+    ]);
+    state.weddingPlannerMeasurementLearningContributions = Array.isArray(contributions) ? contributions : [];
+    state.weddingPlannerMeasurementLearningAgentRuns = Array.isArray(runs) ? runs : [];
+    state.weddingPlannerMeasurementLearningDecisions = Array.isArray(decisions) ? decisions : [];
+    const versions = state.weddingPlannerMeasurementLearningReports?.versions || [];
+    const idx = versions.findIndex(x => x.measurementLearningReportVersionId === reportId);
+    if (idx >= 0 && reportDto) versions[idx] = reportDto;
+  } catch {
+    state.weddingPlannerMeasurementLearningContributions = [];
+    state.weddingPlannerMeasurementLearningAgentRuns = [];
+    state.weddingPlannerMeasurementLearningDecisions = [];
+  }
+}
+
+function syncOpsMeasurementLearningJobForm() {
+  const form = $("#wedding-planner-measurement-learning-job-form");
+  if (!form) return;
+  const canWrite = canWriteMeasurementLearning();
+  const gate = $("#wedding-planner-measurement-learning-job-gate");
+  const handshakeSelect = $("#wedding-planner-measurement-learning-handshake");
+  const handshakes = (state.weddingPlannerCampaignReadinessHandshakes || []).filter(
+    x => x.status === "CAMPAIGN_READY" || x.status === "REVOKED"
+  );
+  const previous = handshakeSelect?.value || "";
+  if (handshakeSelect) {
+    handshakeSelect.innerHTML = handshakes.length
+      ? handshakes.map(h => `<option value="${h.campaignReadinessHandshakeVersionId}">v${escapeHtml(String(h.versionNumber ?? "—"))} · ${escapeHtml(h.status || "")}${h.isCurrent ? " · CURRENT" : ""} · placement ${escapeHtml(shortId(h.campaignPlacementId || ""))}</option>`).join("")
+      : `<option value="">No CAMPAIGN_READY or REVOKED handshakes</option>`;
+    if (previous && handshakes.some(h => h.campaignReadinessHandshakeVersionId === previous)) {
+      handshakeSelect.value = previous;
+    }
+  }
+  form.hidden = !canWrite;
+  Array.from(form.querySelectorAll("input, select, textarea, button")).forEach(el => {
+    if (el.id && el.id.startsWith("regenerate-")) return;
+    if (el.name === "idempotencyKey") return;
+    if (el.type === "button") return;
+  });
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit) {
+    submit.disabled = !canWrite || !handshakes.length;
+    submit.textContent = canWrite
+      ? (handshakes.length ? "Create measurement-learning job →" : "No eligible handshake — create requires CAMPAIGN_READY or REVOKED")
+      : "Create requires operator or admin (canWriteMeasurementLearning) — hidden authority for reviewer/viewer/advertiser";
+  }
+  if (gate) {
+    gate.textContent = canWrite
+      ? "Authority: operator/admin (canWriteMeasurementLearning). Handshake must be CAMPAIGN_READY or REVOKED. Attestation required. HUMAN-SUPPLIED AGGREGATES · ASSOCIATION — NOT CAUSATION · ADVISORY ONLY. Placement remains PLANNED — not activation or delivery."
+      : "Authority: none — reviewer/viewer/advertiser cannot create measurement-learning jobs (canWriteMeasurementLearning).";
+  }
+}
+
+function syncOpsMeasurementLearningDecisionForm() {
+  const form = $("#wedding-planner-measurement-learning-decision-form");
+  if (!form) return;
+  const canWrite = canWriteMeasurementLearning();
+  const gate = $("#wedding-planner-measurement-learning-decision-gate");
+  const select = $("#wedding-planner-measurement-learning-report-version");
+  const versions = (state.weddingPlannerMeasurementLearningReports?.versions || []).filter(x => x.status === "PROPOSED");
+  const allVersions = state.weddingPlannerMeasurementLearningReports?.versions || [];
+  const previous = select?.value || state.selectedWeddingPlannerMeasurementLearningReportId || "";
+  if (select) {
+    const options = canWrite ? versions : allVersions;
+    select.innerHTML = options.length
+      ? options.map(x => `<option value="${x.measurementLearningReportVersionId}">${escapeHtml(x.status)} · v${escapeHtml(String(x.versionNumber))}${x.isCurrentAccepted ? " · CURRENT ACCEPTED" : ""}</option>`).join("")
+      : `<option value="">${canWrite ? "No PROPOSED reports" : "No reports"}</option>`;
+    if (previous && options.some(x => x.measurementLearningReportVersionId === previous)) select.value = previous;
+  }
+  form.hidden = !canWrite;
+  const submit = form.querySelector('button[type="submit"]');
+  if (submit) {
+    submit.disabled = !canWrite || !versions.length;
+    submit.textContent = canWrite
+      ? (versions.length ? "Record measurement-learning decision →" : "No PROPOSED report to decide")
+      : "Decision requires operator or admin (canWriteMeasurementLearning)";
+  }
+  if (gate) {
+    gate.textContent = canWrite
+      ? "Authority: operator/admin (canWriteMeasurementLearning). ACCEPT sets current-accepted pointer; REJECT does not. ADVISORY ONLY — never activation, delivery, creative revision, or spend change."
+      : "Authority: none — reviewer/viewer/advertiser cannot ACCEPT or REJECT measurement-learning reports.";
+  }
+}
+
+function renderWeddingPlannerMeasurementLearningInspect() {
+  const panel = $("#wedding-planner-measurement-learning-inspect");
+  if (!panel) return;
+  const versions = state.weddingPlannerMeasurementLearningReports?.versions || [];
+  const selected = versions.find(x => x.measurementLearningReportVersionId === state.selectedWeddingPlannerMeasurementLearningReportId) || null;
+  const selectedJob = (state.weddingPlannerMeasurementLearningJobs || []).find(x => x.measurementLearningJobId === state.selectedWeddingPlannerMeasurementLearningJobId) || null;
+  if (!selected && !selectedJob) {
+    panel.innerHTML = emptyState("Select a measurement-learning report or job to inspect aggregates, derived metrics, 3 contributions, 2 agent runs, and decisions.");
+    return;
+  }
+  if (!selected) {
+    panel.innerHTML = `
+      <div class="detail-hero"><div class="detail-hero-top">${badge(selectedJob.status)}<span class="detail-score">ML</span></div>
+        <h3>Measurement-learning job</h3>
+        <p>${escapeHtml(MEASUREMENT_LEARNING_LABEL_OPS)} · ${escapeHtml(MEASUREMENT_LEARNING_LABELS_OPS.join(" · "))}</p>
+      </div>
+      <div class="safety-note"><strong>Job receipt only.</strong> Status ${escapeHtml(selectedJob.status || "—")}. Handshake ${escapeHtml(selectedJob.campaignReadinessHandshakeVersionId || "—")} · snapshot ${escapeHtml(selectedJob.handshakeStatusSnapshot || "—")}. Output report ${escapeHtml(selectedJob.outputMeasurementLearningReportVersionId || "none")}. Placement ${escapeHtml(selectedJob.campaignPlacementId || "—")} remains PLANNED — not delivery. Error ${escapeHtml(selectedJob.errorCode || "none")} ${escapeHtml(selectedJob.errorMessage || "")}</div>
+    `;
+    return;
+  }
+  const doc = parseWeddingPlannerMeasurementLearningDocument(selected.documentJson);
+  const metrics = parseMeasurementLearningJsonOps(selected.metricsJson) || doc?.derivedMetrics || {};
+  const rules = parseMeasurementLearningJsonOps(selected.rulesFindingsJson) || doc?.rulesFindings || {};
+  const findings = Array.isArray(rules.findings) ? rules.findings : [];
+  const contributions = state.weddingPlannerMeasurementLearningContributions || [];
+  const runs = state.weddingPlannerMeasurementLearningAgentRuns || [];
+  const decisions = state.weddingPlannerMeasurementLearningDecisions || [];
+  const hasSynthetic = measurementLearningHasSyntheticMarkerOps(selected, doc);
+  const fmt = v => (v === null || v === undefined || v === "" ? "null" : String(v));
+  panel.innerHTML = `
+    <div class="detail-hero"><div class="detail-hero-top">${badge(selected.status)}${selected.isCurrentAccepted ? '<span class="status-badge success">CURRENT ACCEPTED</span>' : ""}<span class="detail-score">v${escapeHtml(String(selected.versionNumber ?? "—"))}</span></div>
+      <h3>Measurement-learning report</h3>
+      <p>${escapeHtml(selected.summary || "No summary")}</p>
+    </div>
+    ${hasSynthetic ? `<div class="safety-note"><strong>${escapeHtml(SYNTHETIC_DEVELOPMENT_MEASUREMENT_LEARNING)}</strong> Local/synthetic measurement-learning path — advisory only; not production measurement or delivery proof.</div>` : ""}
+    <div class="safety-note"><strong>${escapeHtml(MEASUREMENT_LEARNING_LABELS_OPS.join(" · "))}</strong>. Authority: ${canWriteMeasurementLearning() ? "operator|admin may create jobs and ACCEPT/REJECT" : "read-only for this session"}. Three intelligence roles map to 2 AI workers/runs, not 3 subscriptions. Placement remains PLANNED — not activation or delivery.</div>
+    <div class="safety-note"><strong>Exact attestation.</strong> ${escapeHtml(MEASUREMENT_LEARNING_ATTESTATION_OPS)}</div>
+    <div class="safety-note"><strong>Report disclaimer.</strong> ${escapeHtml(doc?.disclaimer || MEASUREMENT_LEARNING_DISCLAIMER_OPS)}</div>
+    <section class="detail-section"><h4>Provenance pins</h4>
+      <p>Schema <code>${escapeHtml(selected.schemaVersion || "measurement-learning-report.v1")}</code> · job <code>${escapeHtml(selected.producingMeasurementLearningJobId || "—")}</code></p>
+      <p>Handshake <code>${escapeHtml(selected.campaignReadinessHandshakeVersionId || "—")}</code> · snapshot <code>${escapeHtml(selected.handshakeStatusSnapshot || "—")}</code> · wasCurrentAtJobStart <code>${escapeHtml(String(!!selected.handshakeWasCurrentAtJobStart))}</code></p>
+      <p>PLANNED placement <code>${escapeHtml(selected.campaignPlacementId || "—")}</code> · placement run <code>${escapeHtml(selected.campaignPlacementRunId || "—")}</code> · not delivery proof</p>
+      <p>Observation <code>${escapeHtml(selected.observationStart || "—")}</code> → <code>${escapeHtml(selected.observationEnd || "—")}</code> · source <code>${escapeHtml(selected.sourceLabel || "—")}</code> · system <code>${escapeHtml(selected.observationSourceSystem || "—")}</code></p>
+      <p>Runs PERFORMANCE_ANALYSIS <code>${escapeHtml(selected.performanceAnalysisAgentRunId || "—")}</code> · LEARNING_SYNTHESIS <code>${escapeHtml(selected.learningSynthesisAgentRunId || "—")}</code></p>
+    </section>
+    <section class="detail-section"><h4>Observed aggregates · HUMAN-SUPPLIED AGGREGATES</h4>
+      <p>Impressions <code>${escapeHtml(fmt(selected.impressions))}</code> · clicks <code>${escapeHtml(fmt(selected.clicks))}</code> · conversions <code>${escapeHtml(fmt(selected.conversions))}</code></p>
+      <p>Spend <code>${escapeHtml(fmt(selected.spend))}</code> · revenue <code>${escapeHtml(fmt(selected.revenue))}</code> · currency <code>${escapeHtml(selected.currencyCode || "—")}</code></p>
+    </section>
+    <section class="detail-section"><h4>Derived metrics · ASSOCIATION — NOT CAUSATION</h4>
+      <p>CTR <code>${escapeHtml(fmt(metrics.ctr))}</code> · conversion rate <code>${escapeHtml(fmt(metrics.conversionRate))}</code> · CPM <code>${escapeHtml(fmt(metrics.cpm))}</code> · CPC <code>${escapeHtml(fmt(metrics.cpc))}</code> · CPA <code>${escapeHtml(fmt(metrics.cpa))}</code> · ROAS <code>${escapeHtml(fmt(metrics.roas))}</code></p>
+      <p>Zero denominators are null — never zero, infinity, or NaN.</p>
+    </section>
+    <section class="detail-section"><h4>ADVISORY ONLY · patterns · limitations · hypotheses · tests</h4>
+      <p>Descriptive patterns: ${escapeHtml((doc?.descriptivePatterns || []).join(" · ") || "none")}</p>
+      <p>Limitations: ${escapeHtml((doc?.limitations || []).join(" · ") || "none")}</p>
+      <p>Data gaps: ${escapeHtml((doc?.dataGaps || []).join(" · ") || "none")}</p>
+      <p>Learning hypotheses: ${escapeHtml((doc?.learningHypotheses || []).join(" · ") || "none")}</p>
+      <p>Recommended future tests: ${escapeHtml((doc?.recommendedFutureTests || []).join(" · ") || "none")}</p>
+    </section>
+    <section class="detail-section"><h4>measurement-rules.v1 · ${escapeHtml(String(findings.length))} findings · overall ${escapeHtml(rules?.overallSeverity || "—")}</h4>
+      ${findings.length ? findings.map(f => `<div class="activity-item"><span class="activity-icon">${escapeHtml((f.severity || "?").slice(0,1))}</span><span><strong>${escapeHtml(f.code || "—")} · ${escapeHtml(f.severity || "—")}</strong><small>${escapeHtml(f.message || "")}</small></span></div>`).join("") : emptyState("No findings")}
+      <p class="safety-note">Expected codes: ${escapeHtml(MEASUREMENT_LEARNING_RULE_CODES_OPS.join(", "))} · PASS/BLOCK only · no WARN.</p>
+    </section>
+    <section class="detail-section"><h4>Role contributions · exactly 3 · ${escapeHtml(MEASUREMENT_LEARNING_LOGICAL_ROLES_OPS.join(" · "))}</h4>
+      ${contributions.length ? contributions.map(c => `<div class="activity-item"><span class="activity-icon">R</span><span><strong>${escapeHtml(c.logicalRole || "—")} · ${escapeHtml(c.contributionSource || "—")}</strong><small>run ${escapeHtml(shortId(c.producingAgentRunId || ""))} · ${escapeHtml(c.contributionId || "")}</small></span></div>`).join("") : emptyState("No contributions loaded")}
+      <p class="safety-note">Workers: ${escapeHtml(MEASUREMENT_LEARNING_WORKER_PROFILES_OPS.join(" · "))} — never a third fake model call.</p>
+    </section>
+    <section class="detail-section"><h4>Agent runs · exactly 2</h4>
+      ${runs.length ? runs.map(r => `<div class="activity-item"><span class="activity-icon">AI</span><span><strong>${escapeHtml(r.workerProfileVersion || r.logicalRole || "—")} · ${escapeHtml(r.status || "—")}</strong><small>roles ${escapeHtml(r.assignedRolesJson || "—")} · tokens ${escapeHtml(String(r.totalTokens ?? "—"))} · cost $${escapeHtml(formatUsd(r.estimatedCostUsd))}</small></span></div>`).join("") : emptyState("No agent runs loaded")}
+    </section>
+    <section class="detail-section"><h4>Decisions</h4>
+      ${decisions.length ? decisions.map(d => `<div class="activity-item"><span class="activity-icon">✓</span><span><strong>${escapeHtml(d.decision || "—")}</strong><small>${escapeHtml(d.rationale || "")} · ${escapeHtml(d.actorLabel || d.actorType || "")}${d.isReplay ? " · replay" : ""}</small></span><span class="activity-time">${relativeTime(d.occurredAt)}</span></div>`).join("") : emptyState("No decisions yet")}
+    </section>
+    <section class="detail-section"><h4>DocumentJson</h4>
+      <pre class="code-block">${escapeHtml((() => { try { return JSON.stringify(typeof selected.documentJson === "string" ? JSON.parse(selected.documentJson) : (selected.documentJson || doc || {}), null, 2); } catch { return String(selected.documentJson || ""); } })())}</pre>
+    </section>
+  `;
+}
+
+async function submitWeddingPlannerMeasurementLearningJob(form) {
+  if (!canWriteMeasurementLearning()) {
+    toast("Measurement-learning job create requires operator or admin (canWriteMeasurementLearning).", true);
+    return;
+  }
+  const data = new FormData(form);
+  const value = name => String(data.get(name) || "").trim();
+  const handshakeId = value("campaignReadinessHandshakeVersionId");
+  if (!handshakeId) {
+    toast("Select a CAMPAIGN_READY or REVOKED handshake.", true);
+    return;
+  }
+  if (data.get("attestationAcknowledged") !== "on" && data.get("attestationAcknowledged") !== "true") {
+    toast("Exact Phase 9 attestation must be acknowledged (attestationAcknowledged=true).", true);
+    return;
+  }
+  const observationStart = toUtcIsoFromDatetimeLocal(value("observationStart"));
+  const observationEnd = toUtcIsoFromDatetimeLocal(value("observationEnd"));
+  if (!observationStart || !observationEnd) {
+    toast("Observation start and end (UTC) are required.", true);
+    return;
+  }
+  const impressions = Number(value("impressions"));
+  const clicks = Number(value("clicks"));
+  const conversions = Number(value("conversions"));
+  const spend = Number(value("spend"));
+  const revenueRaw = value("revenue");
+  const revenue = revenueRaw === "" ? null : Number(revenueRaw);
+  const currencyCode = value("currencyCode").toUpperCase();
+  const body = {
+    campaignReadinessHandshakeVersionId: handshakeId,
+    observationStart,
+    observationEnd,
+    sourceLabel: value("sourceLabel"),
+    sourceSystem: value("sourceSystem") || "OPERATOR_CONSOLE",
+    attestationAcknowledged: true,
+    impressions,
+    clicks,
+    conversions,
+    spend,
+    revenue,
+    currencyCode,
+    notes: value("notes") || null,
+    idempotencyKey: value("idempotencyKey")
+  };
+  try {
+    const result = await api(`/api/wedding-planner/workspaces/${value("workspaceId")}/measurement-learning-jobs`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    });
+    toast(`Measurement-learning job ${result.status || "submitted"}${result.isReplay ? " (replay)" : ""} · ${MEASUREMENT_LEARNING_LABELS_OPS.join(" · ")} · not activation`);
+    fillKey("#wedding-planner-measurement-learning-job-key");
+    form.reset();
+    fillKey("#wedding-planner-measurement-learning-job-key");
+    const sourceSystem = form.querySelector('[name="sourceSystem"]');
+    if (sourceSystem) sourceSystem.value = "OPERATOR_CONSOLE";
+    const currency = form.querySelector('[name="currencyCode"]');
+    if (currency) currency.value = "USD";
+    const workspaceId = value("workspaceId") || state.selectedWeddingPlannerWorkspace;
+    if (workspaceId) {
+      state.weddingPlannerMeasurementLearningJobs = await api(`/api/wedding-planner/workspaces/${workspaceId}/measurement-learning-jobs`);
+      if (!Array.isArray(state.weddingPlannerMeasurementLearningJobs)) state.weddingPlannerMeasurementLearningJobs = [];
+      state.weddingPlannerMeasurementLearningReports = await api(`/api/wedding-planner/workspaces/${workspaceId}/measurement-learning-reports`);
+      state.selectedWeddingPlannerMeasurementLearningJobId = result.measurementLearningJobId;
+      state.selectedWeddingPlannerMeasurementLearningReportId =
+        result.outputMeasurementLearningReportVersionId ||
+        state.weddingPlannerMeasurementLearningReports?.versions?.[0]?.measurementLearningReportVersionId ||
+        null;
+      await loadWeddingPlannerMeasurementLearningDetails();
+    }
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function submitWeddingPlannerMeasurementLearningDecision(form) {
+  if (!canWriteMeasurementLearning()) {
+    toast("Measurement-learning decision requires operator or admin (canWriteMeasurementLearning).", true);
+    return;
+  }
+  const data = new FormData(form);
+  const value = name => String(data.get(name) || "").trim();
+  const reportId = value("measurementLearningReportVersionId");
+  if (!reportId) {
+    toast("Select a PROPOSED measurement-learning report.", true);
+    return;
+  }
+  const decision = value("decision");
+  if (decision !== "ACCEPT" && decision !== "REJECT") {
+    toast("Decision must be ACCEPT or REJECT.", true);
+    return;
+  }
+  const body = {
+    decision,
+    rationale: value("rationale"),
+    sourceSystem: value("sourceSystem") || "OPERATOR_CONSOLE",
+    idempotencyKey: value("idempotencyKey")
+  };
+  try {
+    const result = await api(`/api/wedding-planner/measurement-learning-reports/${reportId}/decisions`, {
+      method: "POST",
+      body: JSON.stringify(body)
+    });
+    toast(`Measurement-learning ${decision}${result.isReplay ? " (replay)" : ""} · ADVISORY ONLY · pointer ${decision === "ACCEPT" ? "set" : "unchanged"}`);
+    fillKey("#wedding-planner-measurement-learning-decision-key");
+    form.querySelector('[name="rationale"]').value = "";
+    const workspaceId = state.selectedWeddingPlannerWorkspace;
+    if (workspaceId) {
+      state.weddingPlannerMeasurementLearningReports = await api(`/api/wedding-planner/workspaces/${workspaceId}/measurement-learning-reports`);
+      state.selectedWeddingPlannerMeasurementLearningReportId = reportId;
+      await loadWeddingPlannerMeasurementLearningDetails();
     }
     renderWeddingPlanner();
   } catch (error) {

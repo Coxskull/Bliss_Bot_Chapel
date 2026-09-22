@@ -591,7 +591,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("CURRENT ACCEPTED", body);
         Assert.Contains("SYNTHETIC DEVELOPMENT QA REVIEW", body);
         Assert.Contains("HUMAN_ESCALATION_STEWARD", body);
-        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, Concept Workshop, Mature Creative, Chaperone / QA / Escalation, and Campaign-readiness handshake", body);
+        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, Concept Workshop, Mature Creative, Chaperone / QA / Escalation, Campaign-readiness handshake, and Measurement / Learning", body);
         Assert.Contains("PHASE 8 · BLISS HANDSHAKE / CAMPAIGN READINESS", body);
         Assert.Contains("wedding-planner-campaign-readiness-commit-form", body);
         Assert.Contains("wedding-planner-campaign-readiness-revoke-form", body);
@@ -607,6 +607,24 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("SYNTHETIC DEVELOPMENT CAMPAIGN READINESS", body);
         Assert.Contains("Revoke leaves placement PLANNED", body);
         Assert.Contains("IsAvailable is informational", body);
+        Assert.Contains("PHASE 9 · MEASUREMENT / LEARNING", body);
+        Assert.Contains("wedding-planner-measurement-learning-job-form", body);
+        Assert.Contains("wedding-planner-measurement-learning-decision-form", body);
+        Assert.Contains("wedding-planner-measurement-learning-job-list", body);
+        Assert.Contains("wedding-planner-measurement-learning-report-list", body);
+        Assert.Contains("wedding-planner-measurement-learning-inspect", body);
+        Assert.Contains("HUMAN-SUPPLIED AGGREGATES", body);
+        Assert.Contains("ASSOCIATION — NOT CAUSATION", body);
+        Assert.Contains("ADVISORY ONLY", body);
+        Assert.Contains("canWriteMeasurementLearning", body);
+        Assert.Contains("attestationAcknowledged", body);
+        Assert.Contains("PERFORMANCE_ANALYSIS_V1", body);
+        Assert.Contains("LEARNING_SYNTHESIS_V1", body);
+        Assert.Contains("PERFORMANCE_ANALYST", body);
+        Assert.Contains("LEARNING_SYNTHESIZER", body);
+        Assert.Contains("OPTIMIZATION_ADVISOR", body);
+        Assert.Contains("SYNTHETIC DEVELOPMENT MEASUREMENT LEARNING", body);
+        Assert.Contains("3→2 WORKERS", body);
         Assert.Contains("Export ledger", body);
         Assert.Contains("Verify pack", body);
         Assert.Contains("app.js", body);
@@ -654,7 +672,8 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("currentApprovedResearchReportVersionId", script);
         Assert.Contains("workerProfileVersion", script);
         Assert.Contains("workspaces/${workspaceId}/agent-runs", script);
-        Assert.Contains("Wedding Planner Phase 8", script);
+        Assert.Contains("Wedding Planner Phase 9", script);
+        Assert.Contains("PHASE 8 · BLISS HANDSHAKE / CAMPAIGN READINESS", script);
         Assert.Contains("/workshop-jobs", script);
         Assert.Contains("/concept-packages", script);
         Assert.Contains("submitWeddingPlannerWorkshopJob", script);
@@ -773,6 +792,34 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("non-authoritative", script);
         Assert.DoesNotContain("Phase 8 agent-run", script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("phase8AgentRun", script);
+        Assert.Contains("Wedding Planner Phase 9", script);
+        Assert.Contains("canWriteMeasurementLearning", script);
+        Assert.Contains("submitWeddingPlannerMeasurementLearningJob", script);
+        Assert.Contains("submitWeddingPlannerMeasurementLearningDecision", script);
+        Assert.Contains("renderWeddingPlannerMeasurementLearningInspect", script);
+        Assert.Contains("syncOpsMeasurementLearningJobForm", script);
+        Assert.Contains("syncOpsMeasurementLearningDecisionForm", script);
+        Assert.Contains("/measurement-learning-jobs", script);
+        Assert.Contains("/measurement-learning-reports", script);
+        Assert.Contains("HUMAN-SUPPLIED AGGREGATES", script);
+        Assert.Contains("ASSOCIATION — NOT CAUSATION", script);
+        Assert.Contains("ADVISORY ONLY", script);
+        Assert.Contains("attestationAcknowledged", script);
+        Assert.Contains("measurement-rules.v1", script);
+        Assert.Contains("ML_HANDSHAKE_SCOPE", script);
+        Assert.Contains("ML_PROVENANCE_CHAIN", script);
+        Assert.Contains("PERFORMANCE_ANALYSIS_V1", script);
+        Assert.Contains("LEARNING_SYNTHESIS_V1", script);
+        Assert.Contains("PERFORMANCE_ANALYST", script);
+        Assert.Contains("LEARNING_SYNTHESIZER", script);
+        Assert.Contains("OPTIMIZATION_ADVISOR", script);
+        Assert.Contains("SYNTHETIC DEVELOPMENT MEASUREMENT LEARNING", script);
+        Assert.Contains(
+            "These are human-supplied aggregate observations from the named source. Bliss did not collect or verify delivery events. The linked placement remains PLANNED and does not prove activation or delivery. Metrics show association only, not causation or incrementality. No event-level data, personal data, external URLs, or platform credentials are included. AI output is advisory and cannot change creative, campaign, placement, inventory, spend, or external systems.",
+            script);
+        Assert.Contains("Three intelligence roles map to 2 AI workers/runs, not 3 subscriptions", script);
+        Assert.Contains("placement remains PLANNED", script);
+        Assert.DoesNotContain("create three fake model calls as separate subscriptions", script, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("fetch(imageUrl", script);
         Assert.DoesNotContain("innerHTML = variant.svg", script);
         Assert.DoesNotContain("innerHTML = asset.html", script);
@@ -881,7 +928,8 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         var client = _factory.CreateClient();
         var script = await (await client.GetAsync("/operations/app.js")).Content.ReadAsStringAsync();
 
-        Assert.Contains("Wedding Planner Phase 8", script);
+        Assert.Contains("Wedding Planner Phase 9", script);
+        Assert.Contains("PHASE 8 · BLISS HANDSHAKE / CAMPAIGN READINESS", script);
         Assert.Contains("canCommitCampaignReadiness", script);
         Assert.Contains("bliss.operator", script);
         Assert.Contains("bliss.admin", script);
@@ -916,7 +964,8 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.DoesNotContain("submitWeddingPlannerCampaignReadinessAgent", script);
 
         var body = await (await client.GetAsync("/operations")).Content.ReadAsStringAsync();
-        Assert.Contains("WEDDING PLANNER PHASE 8", body);
+        Assert.Contains("WEDDING PLANNER PHASE 9", body);
+        Assert.Contains("PHASE 8 · BLISS HANDSHAKE / CAMPAIGN READINESS", body);
         Assert.Contains("wedding-planner-campaign-readiness-match", body);
         Assert.Contains("wedding-planner-campaign-readiness-campaign", body);
         Assert.Contains("wedding-planner-campaign-readiness-content", body);
@@ -925,6 +974,119 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("syntheticMarkerAcknowledged", body);
         Assert.Contains(
             "This campaign-readiness handshake is a deterministic planning integration only. It marks Wedding Planner campaign-ready state for a clean Phase 7 ACCEPTED QA report bound to an APPROVED Bliss match and compatible creator inventory, and records a PLANNED campaign placement. It is not research, claim, legal, accessibility, compliance, measurement, delivery, publication, or payment approval. It does not mutate Phase 6 creative packages or Phase 7 QA reports. It does not recompute Bliss matching scores. Acceptance-with-exception QA is not campaign-ready. AI cannot mark campaign ready. Advertisers and reviewers cannot create this handshake. Slot availability is not reserved. Planned placement is not activation.",
+            body);
+    }
+
+
+    [Fact]
+    public async Task Public_planner_script_wires_phase9_measurement_learning_read_only_without_job_or_decision_forms()
+    {
+        var client = _factory.CreateClient();
+        var script = await (await client.GetAsync("/wedding-planner.js")).Content.ReadAsStringAsync();
+
+        Assert.Contains("PHASE 9 · MEASUREMENT / LEARNING", script);
+        Assert.Contains("/measurement-learning-jobs", script);
+        Assert.Contains("/measurement-learning-reports", script);
+        Assert.Contains("refreshMeasurementLearningLists", script);
+        Assert.Contains("inspectMeasurementLearningReport", script);
+        Assert.Contains("HUMAN-SUPPLIED AGGREGATES", script);
+        Assert.Contains("ASSOCIATION — NOT CAUSATION", script);
+        Assert.Contains("ADVISORY ONLY", script);
+        Assert.Contains("SYNTHETIC DEVELOPMENT MEASUREMENT LEARNING", script);
+        Assert.Contains("measurement-rules.v1", script);
+        Assert.Contains("ML_HANDSHAKE_SCOPE", script);
+        Assert.Contains("ML_PROVENANCE_CHAIN", script);
+        Assert.Contains("PERFORMANCE_ANALYSIS_V1", script);
+        Assert.Contains("LEARNING_SYNTHESIS_V1", script);
+        Assert.Contains("PERFORMANCE_ANALYST", script);
+        Assert.Contains("LEARNING_SYNTHESIZER", script);
+        Assert.Contains("OPTIMIZATION_ADVISOR", script);
+        Assert.Contains(
+            "These are human-supplied aggregate observations from the named source. Bliss did not collect or verify delivery events. The linked placement remains PLANNED and does not prove activation or delivery. Metrics show association only, not causation or incrementality. No event-level data, personal data, external URLs, or platform credentials are included. AI output is advisory and cannot change creative, campaign, placement, inventory, spend, or external systems.",
+            script);
+        Assert.Contains("X-CSRF-TOKEN", script);
+
+        Assert.DoesNotContain("submitWeddingPlannerMeasurementLearningJob", script);
+        Assert.DoesNotContain("submitWeddingPlannerMeasurementLearningDecision", script);
+        Assert.DoesNotContain("canWriteMeasurementLearning", script);
+        Assert.DoesNotContain("name=\"attestationAcknowledged\"", script);
+        Assert.DoesNotContain("attestationAcknowledged: true", script);
+        Assert.DoesNotContain("attestationAcknowledged:true", script);
+        Assert.DoesNotContain("method: \"POST\"", ExtractPhase9PublicRegion(script));
+        Assert.DoesNotContain("providerUrl", script);
+        Assert.DoesNotContain("data:image", script);
+        Assert.DoesNotContain("create three fake model calls as separate subscriptions", script, StringComparison.OrdinalIgnoreCase);
+
+        var body = await (await client.GetAsync("/")).Content.ReadAsStringAsync();
+        Assert.Contains("measurement-learning-panel", body);
+        Assert.Contains("measurement-learning-report-select", body);
+        Assert.Contains("HUMAN-SUPPLIED AGGREGATES", body);
+        Assert.Contains("ASSOCIATION — NOT CAUSATION", body);
+        Assert.Contains("ADVISORY ONLY", body);
+        Assert.DoesNotContain("id=\"wedding-planner-measurement-learning-job-form\"", body);
+        Assert.DoesNotContain("id=\"wedding-planner-measurement-learning-decision-form\"", body);
+        Assert.DoesNotContain("name=\"attestationAcknowledged\"", body);
+
+        var styles = await (await client.GetAsync("/wedding-planner.css")).Content.ReadAsStringAsync();
+        Assert.Contains("measurement-learning-panel", styles);
+        Assert.Contains("measurement-learning-finding-card", styles);
+    }
+
+    private static string ExtractPhase9PublicRegion(string script)
+    {
+        const string startMarker = "function parseMeasurementLearningDocument";
+        var start = script.IndexOf(startMarker, StringComparison.Ordinal);
+        if (start < 0)
+        {
+            return string.Empty;
+        }
+
+        return script[start..];
+    }
+
+    [Fact]
+    public async Task Operations_script_gates_phase9_job_and_decision_to_operator_admin_with_attestation_labels()
+    {
+        var client = _factory.CreateClient();
+        var script = await (await client.GetAsync("/operations/app.js")).Content.ReadAsStringAsync();
+
+        Assert.Contains("Wedding Planner Phase 9", script);
+        Assert.Contains("canWriteMeasurementLearning", script);
+        Assert.Contains("bliss.operator", script);
+        Assert.Contains("bliss.admin", script);
+        Assert.Contains("submitWeddingPlannerMeasurementLearningJob", script);
+        Assert.Contains("submitWeddingPlannerMeasurementLearningDecision", script);
+        Assert.Contains("syncOpsMeasurementLearningJobForm", script);
+        Assert.Contains("syncOpsMeasurementLearningDecisionForm", script);
+        Assert.Contains("renderWeddingPlannerMeasurementLearningInspect", script);
+        Assert.Contains("/api/wedding-planner/workspaces/${workspaceId}/measurement-learning-jobs", script);
+        Assert.Contains("/api/wedding-planner/workspaces/${workspaceId}/measurement-learning-reports", script);
+        Assert.Contains("/api/wedding-planner/measurement-learning-reports/${", script);
+        Assert.Contains("/decisions", script);
+        Assert.Contains("/contributions", script);
+        Assert.Contains("/agent-runs", script);
+        Assert.Contains("form.hidden = true", script);
+        Assert.Contains("attestationAcknowledged", script);
+        Assert.Contains("HUMAN-SUPPLIED AGGREGATES", script);
+        Assert.Contains("ASSOCIATION — NOT CAUSATION", script);
+        Assert.Contains("ADVISORY ONLY", script);
+        Assert.Contains("ACCEPT", script);
+        Assert.Contains("REJECT", script);
+        Assert.Contains("PLANNED", script);
+        Assert.Contains("not activation", script);
+        Assert.Contains("escapeHtml", script);
+        Assert.Contains("JSON.parse", script);
+        Assert.DoesNotContain("providerUrl", script);
+        Assert.DoesNotContain("fetch(citation", script);
+        Assert.DoesNotContain("create three fake model calls as separate subscriptions", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("submitWeddingPlannerMeasurementLearningAgent", script);
+
+        var body = await (await client.GetAsync("/operations")).Content.ReadAsStringAsync();
+        Assert.Contains("WEDDING PLANNER PHASE 9", body);
+        Assert.Contains("wedding-planner-measurement-learning-handshake", body);
+        Assert.Contains("attestationAcknowledged", body);
+        Assert.Contains(
+            "These are human-supplied aggregate observations from the named source. Bliss did not collect or verify delivery events. The linked placement remains PLANNED and does not prove activation or delivery. Metrics show association only, not causation or incrementality. No event-level data, personal data, external URLs, or platform credentials are included. AI output is advisory and cannot change creative, campaign, placement, inventory, spend, or external systems.",
             body);
     }
 

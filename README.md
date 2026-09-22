@@ -168,4 +168,7 @@ Wedding Planner Phase 6 contract: `docs/wedding-planner/PHASE-6-ENGINEERING-CONT
 Wedding Planner Phase 6 evidence: `docs/wedding-planner/PHASE-6-EVIDENCE.md`.
 Wedding Planner Phase 7 contract: `docs/wedding-planner/PHASE-7-ENGINEERING-CONTRACT.md`.
 Wedding Planner Phase 7 evidence: `docs/wedding-planner/PHASE-7-EVIDENCE.md`.
+Wedding Planner Phase 8 contract: `docs/wedding-planner/PHASE-8-ENGINEERING-CONTRACT.md`.
+Wedding Planner Phase 9 contract: `docs/wedding-planner/PHASE-9-ENGINEERING-CONTRACT.md`.
+Wedding Planner agent workforce allocation: `docs/wedding-planner/AGENT-WORKFORCE-ALLOCATION.md`.
 Wedding Planner master blueprint v1.1: `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md`.

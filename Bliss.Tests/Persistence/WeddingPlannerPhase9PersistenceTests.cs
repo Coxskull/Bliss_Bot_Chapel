@@ -123,7 +123,7 @@ public sealed class WeddingPlannerPhase9PersistenceTests
         Assert.Equal(jobCount, await db.WeddingPlannerMeasurementLearningJobs.CountAsync());
         Assert.Equal(reportCount, await db.WeddingPlannerMeasurementLearningReportVersions.CountAsync());
         Assert.Equal(runCount, await db.WeddingPlannerAgentRuns.CountAsync());
-        Assert.Equal(auditCount + 1, await db.WeddingPlannerAuditEvents.CountAsync());
+        Assert.Equal(auditCount, await db.WeddingPlannerAuditEvents.CountAsync());
     }
 
     [Fact]
