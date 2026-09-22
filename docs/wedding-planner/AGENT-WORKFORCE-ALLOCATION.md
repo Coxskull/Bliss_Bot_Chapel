@@ -117,10 +117,33 @@ rationale.
   campaign-ready/handshake, Bliss matching writes, measurement, Alpha
   Auto, and n8n/GHL.
 
+## Phase 7 (implemented)
+
+- New logical control roles: exactly 3 —
+  `CREATIVE_CHAPERONE`, `QA_INSPECTOR`, `HUMAN_ESCALATION_STEWARD`.
+- New executable AI profiles: exactly 2 per successful job
+  (`CHAPERONE_REVIEW_V1`, `QA_INSPECTION_V1`).
+- Exact 3→2 + rules/humans mapping: Chaperone and QA Inspector are AI
+  contributions; Human Escalation Steward is `RULES_HUMAN` only
+  (deterministic routing + reviewer/operator/admin authority;
+  `ProducingAgentRunId` null; no third fake agent run).
+- Deterministic `qa-rules.v1` runs before AI (authoritative
+  PASS/WARN/BLOCK; AI cannot downgrade). Structural integrity /
+  provenance only — not semantic, legal, visual, or campaign
+  certification.
+- Prerequisites: current-approved Phase 6 selected variant + exactly one
+  PNG; all package/decision/variant/asset/DNA/color/research pins.
+  AI never receives image bytes/base64/URL/pixels; humans confirm via
+  same-origin PNG.
+- Dedicated review authority: advertisers create/read only; reviewer /
+  operator / admin decide and resolve returns; `WAIVE_AND_ACCEPT` is
+  operator/admin only. Later creative APPROVE clears the QA pointer only.
+- Out of scope: Phase 8 handshake/campaign-ready, Bliss writes, visual
+  AI/OCR, legal/accessibility certification, measurement, Alpha Auto, and
+  n8n/GHL. Phase 7 does not auto-advance.
+
 ## Later starting allocations
 
-- Phase 7: three control roles on about 1–2 AI workers plus deterministic
-  rules and human authority.
 - Phase 8: no new AI agents.
 - Phase 9: three intelligence roles on about 1–2 workers.
 
