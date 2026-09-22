@@ -633,4 +633,62 @@ public sealed record WeddingPlannerBrandDnaDecisionDto(
     WeddingPlannerBrandDnaVersionDto Version,
     bool IsReplay);
 
+public sealed record ComputeWeddingPlannerColorProfileRequest(
+    string PrimaryHex,
+    string? SecondaryHex,
+    string? AccentHex,
+    string? BackgroundHex,
+    string? SurfaceHex,
+    string? Notes,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerColorProfileVersionDto(
+    Guid ColorProfileVersionId,
+    Guid AdvertiserId,
+    Guid WorkspaceId,
+    int VersionNumber,
+    string SchemaVersion,
+    string AlgorithmVersion,
+    Guid ApprovedBrandDnaVersionId,
+    string DocumentJson,
+    string Summary,
+    string InputJson,
+    string InputSha256,
+    string Status,
+    string SourceSystem,
+    string IdempotencyKey,
+    string ActorType,
+    string ActorLabel,
+    DateTime CreatedAt,
+    bool IsCurrentApproved,
+    bool IsReplay);
+
+public sealed record WeddingPlannerColorProfileListDto(
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    Guid? CurrentApprovedColorProfileVersionId,
+    IReadOnlyList<WeddingPlannerColorProfileVersionDto> Versions);
+
+public sealed record WeddingPlannerColorProfileDecisionRequest(
+    string Decision,
+    string Rationale,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerColorProfileDecisionDto(
+    Guid DecisionId,
+    Guid ColorProfileVersionId,
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    string Decision,
+    string ActorType,
+    string ActorLabel,
+    string Rationale,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime OccurredAt,
+    WeddingPlannerColorProfileVersionDto Version,
+    bool IsReplay);
+
 

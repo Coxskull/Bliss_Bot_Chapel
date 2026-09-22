@@ -14,6 +14,7 @@ namespace Bliss.Api.Controllers;
 public sealed class WeddingPlannerController(
     WeddingPlannerService weddingPlanner,
     WeddingPlannerOrchestrationService orchestration,
+    WeddingPlannerColorIntelligenceService colorIntelligence,
     WeddingPlannerAccess access) : ControllerBase
 {
     [HttpGet("workspaces")]
@@ -402,6 +403,108 @@ public sealed class WeddingPlannerController(
         });
     }
 
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("workspaces/{workspaceId:guid}/color-profiles/compute")]
+    public async Task<ActionResult> ComputeColorProfile(
+        Guid workspaceId,
+        ComputeWeddingPlannerColorProfileRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireWrite();
+            var result = await colorIntelligence.ComputeAsync(
+                workspaceId,
+                request.PrimaryHex,
+                request.SecondaryHex,
+                request.AccentHex,
+                request.BackgroundHex,
+                request.SurfaceHex,
+                request.Notes,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToColorProfileDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/color-profiles/{dto.ColorProfileVersionId}", dto);
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/color-profiles")]
+    public async Task<ActionResult> ListColorProfiles(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await colorIntelligence.ListAsync(
+                workspaceId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(new WeddingPlannerColorProfileListDto(
+                result.WorkspaceId,
+                result.AdvertiserId,
+                result.CurrentApprovedColorProfileVersionId,
+                result.Versions.Select(ToColorProfileDto).ToList()));
+        });
+    }
+
+    [HttpGet("color-profiles/{colorProfileVersionId:guid}")]
+    public async Task<ActionResult> GetColorProfile(
+        Guid colorProfileVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await colorIntelligence.GetAsync(
+                colorProfileVersionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToColorProfileDto(result));
+        });
+    }
+
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("color-profiles/{colorProfileVersionId:guid}/decisions")]
+    public async Task<ActionResult> DecideColorProfile(
+        Guid colorProfileVersionId,
+        WeddingPlannerColorProfileDecisionRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireWrite();
+            var result = await colorIntelligence.DecideAsync(
+                colorProfileVersionId,
+                request.Decision,
+                request.Rationale,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToColorProfileDecisionDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/color-profiles/{dto.ColorProfileVersionId}/decisions", dto);
+        });
+    }
+
     private WeddingPlannerActor RequireWrite()
     {
         var actor = access.Resolve(User);
@@ -551,5 +654,44 @@ public sealed class WeddingPlannerController(
             result.IdempotencyKey,
             result.OccurredAt,
             ToBrandDnaDto(result.Version),
+            result.IsReplay);
+
+    private static WeddingPlannerColorProfileVersionDto ToColorProfileDto(WeddingPlannerColorProfileVersionResult result) =>
+        new(
+            result.ColorProfileVersionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.VersionNumber,
+            result.SchemaVersion,
+            result.AlgorithmVersion,
+            result.ApprovedBrandDnaVersionId,
+            result.DocumentJson,
+            result.Summary,
+            result.InputJson,
+            result.InputSha256,
+            result.Status,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.ActorType,
+            result.ActorLabel,
+            result.CreatedAt,
+            result.IsCurrentApproved,
+            result.IsReplay);
+
+    private static WeddingPlannerColorProfileDecisionDto ToColorProfileDecisionDto(
+        WeddingPlannerColorProfileDecisionResult result) =>
+        new(
+            result.DecisionId,
+            result.ColorProfileVersionId,
+            result.WorkspaceId,
+            result.AdvertiserId,
+            result.Decision,
+            result.ActorType,
+            result.ActorLabel,
+            result.Rationale,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.OccurredAt,
+            ToColorProfileDto(result.Version),
             result.IsReplay);
 }
