@@ -26,6 +26,8 @@ public sealed class WeddingPlannerAgentRunConfiguration : IEntityTypeConfigurati
         builder.Property(x => x.ErrorCode).HasMaxLength(64);
         builder.Property(x => x.ErrorMessage).HasMaxLength(2000);
         builder.Property(x => x.EstimatedCostUsd).HasPrecision(18, 6);
+        builder.Property(x => x.WorkerProfileVersion).HasMaxLength(64);
+        builder.Property(x => x.AssignedRolesJson).HasMaxLength(2000);
 
         builder.HasIndex(x => x.AdvertiserId);
         builder.HasIndex(x => x.WorkspaceId);
@@ -61,6 +63,11 @@ public sealed class WeddingPlannerAgentRunConfiguration : IEntityTypeConfigurati
         builder.HasOne(x => x.OutputBrandDnaVersion)
             .WithMany()
             .HasForeignKey(x => x.OutputBrandDnaVersionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.OutputResearchReportVersion)
+            .WithMany()
+            .HasForeignKey(x => x.OutputResearchReportVersionId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

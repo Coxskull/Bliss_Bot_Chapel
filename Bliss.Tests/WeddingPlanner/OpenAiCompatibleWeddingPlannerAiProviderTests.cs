@@ -123,6 +123,43 @@ public sealed class OpenAiCompatibleWeddingPlannerAiProviderTests
     }
 
     [Fact]
+    public async Task Curator_stage_request_includes_profile_roles_and_schema_rules()
+    {
+        string? capturedBody = null;
+        var handler = new FakeHandler(async (request, _) =>
+        {
+            capturedBody = await request.Content!.ReadAsStringAsync();
+            return JsonResponse("""
+                {
+                  "id": "chatcmpl-curator-1",
+                  "model": "gpt-test",
+                  "choices": [{ "message": { "content": "{\"schemaVersion\":\"curator-worker-output.v1\"}" } }],
+                  "usage": { "prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15 }
+                }
+                """);
+        });
+
+        var provider = CreateProvider(handler);
+        var roles = WeddingPlannerCuratorWorkerProfiles.AssignedRoles(WeddingPlannerCuratorWorkerProfiles.EvidenceV1);
+        await provider.CompleteAsync(new WeddingPlannerAiCompletionRequest(
+            WeddingPlannerAgentRoles.CuratorEvidence,
+            WeddingPlannerPromptPacks.CuratorEvidenceV1,
+            new[] { new WeddingPlannerAiMessage(WeddingPlannerActorTypes.System, "{\"sourceCatalog\":{}}") },
+            WeddingPlannerResponseFormats.Json,
+            1024,
+            WeddingPlannerCuratorWorkerProfiles.EvidenceV1,
+            roles));
+
+        using var doc = JsonDocument.Parse(capturedBody!);
+        var system = doc.RootElement.GetProperty("messages")[0].GetProperty("content").GetString();
+        Assert.Contains("curator-worker-output.v1", system, StringComparison.Ordinal);
+        Assert.Contains(WeddingPlannerCuratorWorkerProfiles.EvidenceV1, system, StringComparison.Ordinal);
+        Assert.Contains(WeddingPlannerCuratorLogicalRoles.EvidenceAnalyst, system, StringComparison.Ordinal);
+        Assert.Contains("Never fetch live URL content", system, StringComparison.Ordinal);
+        Assert.Equal("json_object", doc.RootElement.GetProperty("response_format").GetProperty("type").GetString());
+    }
+
+    [Fact]
     public async Task Non_success_errors_are_bounded_and_secret_safe()
     {
         var handler = new FakeHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized)

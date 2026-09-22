@@ -252,6 +252,134 @@
           </form>
         </div>
       </section>
+
+      <section class="curator-panel" id="curator-panel" aria-labelledby="curator-title">
+        <div class="curator-heading">
+          <p>PHASE 4 · THE CURATOR</p>
+          <h3 id="curator-title">Evidence-backed research</h3>
+          <p class="curator-copy">
+            Submit a research brief for source acquisition and exactly three Curator worker profiles.
+            Eight logical roles map to 3 workers/runs, not 8 subscriptions.
+            Findings and citations come only from stored server <code>documentJson</code> — the app never fetches citation URLs and never invents live research.
+            Local synthetic catalogs remain conspicuously marked and are never presented as live research.
+          </p>
+        </div>
+
+        <div class="curator-prereq" id="curator-prereq-status" role="status">
+          <span>Prerequisite check</span>
+          <p>Sign in as an authenticated advertiser with write access and approve Brand DNA before research job submit is enabled. A current-approved color profile is optional provenance only.</p>
+        </div>
+
+        <p class="curator-roles-note" id="curator-roles-note">
+          Eight logical roles map to 3 workers/runs, not 8 subscriptions:
+          <code>CURATOR_RESEARCH_V1</code> (roles 1–4),
+          <code>CURATOR_EVIDENCE_V1</code> (roles 5–6),
+          <code>CURATOR_SYNTHESIS_RISK_V1</code> (roles 7–8).
+        </p>
+
+        <form class="curator-job-form" id="curator-job-form">
+          <label for="curator-topic">Topic *</label>
+          <input type="text" id="curator-topic" name="topic" maxlength="200" required disabled placeholder="Research topic" autocomplete="off">
+          <label for="curator-objective">Objective *</label>
+          <textarea id="curator-objective" name="objective" maxlength="4000" required disabled placeholder="What should this research answer?"></textarea>
+          <label for="curator-questions">Questions * <em>one per line · 1–8</em></label>
+          <textarea id="curator-questions" name="questions" maxlength="4000" required disabled placeholder="Question one&#10;Question two"></textarea>
+          <div class="curator-field-row">
+            <label for="curator-geography">Geography *</label>
+            <input type="text" id="curator-geography" name="geography" maxlength="200" required disabled placeholder="e.g. United States" autocomplete="off">
+            <label for="curator-language">Language *</label>
+            <input type="text" id="curator-language" name="language" maxlength="64" required disabled placeholder="e.g. en" autocomplete="off">
+          </div>
+          <label for="curator-allowed-domains">Allowed domains <em>one per line · 0–10 exact hostnames</em></label>
+          <textarea id="curator-allowed-domains" name="allowedDomains" maxlength="2000" disabled placeholder="example.com&#10;(empty = no host allowlist)"></textarea>
+          <div class="curator-job-actions">
+            <button type="submit" id="curator-job-submit" disabled>Submit research job</button>
+            <button type="button" id="curator-refresh-lists" disabled>Refresh jobs &amp; reports</button>
+          </div>
+        </form>
+
+        <div class="curator-lists">
+          <div class="curator-list-block">
+            <label for="curator-job-select">Research jobs <small>RUNNING · SUCCEEDED · FAILED</small></label>
+            <select id="curator-job-select" disabled>
+              <option value="">No research jobs yet</option>
+            </select>
+            <div class="curator-job-meta" id="curator-job-meta" hidden></div>
+          </div>
+          <div class="curator-list-block">
+            <label for="curator-report-select">Research reports <small>PROPOSED · APPROVED · CURRENT</small></label>
+            <select id="curator-report-select" disabled>
+              <option value="">No research reports yet</option>
+            </select>
+            <p class="curator-current-pointer" id="curator-current-pointer" hidden>Current approved research report pointer is set for this workspace.</p>
+          </div>
+        </div>
+
+        <div class="curator-report-view" id="curator-report-view" hidden>
+          <div class="curator-report-meta">
+            <p class="curator-status-line">
+              <span id="curator-report-status-label">PROPOSED</span>
+              <span id="curator-report-current-badge" hidden>CURRENT</span>
+              · version <strong id="curator-report-version-number">—</strong>
+            </p>
+            <p id="curator-report-summary-text"></p>
+            <p class="curator-meta-line">Schema <code id="curator-report-schema">—</code></p>
+            <p class="curator-meta-line">Estimated cost USD <code id="curator-report-cost">—</code></p>
+          </div>
+
+          <div class="curator-disclaimer-block" id="curator-disclaimer-block" hidden>
+            <h4>Research disclaimer</h4>
+            <p id="curator-disclaimer-text"></p>
+          </div>
+
+          <div class="curator-synthetic-warning" id="curator-synthetic-warning" hidden role="status">
+            <strong>SYNTHETIC local evidence.</strong>
+            This catalog uses <code>.invalid</code> hosts and SYNTHETIC markers. It is fixture research only — never live research.
+          </div>
+
+          <div class="curator-section" id="curator-provenance-section">
+            <h4>Provenance</h4>
+            <div id="curator-provenance"></div>
+          </div>
+
+          <div class="curator-section" id="curator-sources-section">
+            <h4>Source catalog</h4>
+            <div id="curator-sources"></div>
+          </div>
+
+          <div class="curator-section" id="curator-contributions-section">
+            <h4>Role contributions <small>exactly 8 from documentJson</small></h4>
+            <div id="curator-contributions"></div>
+          </div>
+
+          <div class="curator-section" id="curator-synthesis-section">
+            <h4>Synthesis</h4>
+            <div id="curator-synthesis"></div>
+          </div>
+
+          <div class="curator-section" id="curator-runs-section">
+            <h4>Agent run receipts <small>exactly 3 workers</small></h4>
+            <p class="curator-roles-note">Eight logical roles map to 3 workers/runs, not 8 subscriptions. Receipts below come from the report agent-runs endpoint.</p>
+            <div id="curator-agent-runs"></div>
+          </div>
+
+          <form class="curator-decision-form" id="curator-decision-form" hidden>
+            <p class="curator-decision-scope">
+              Research approval only — not creative, campaign, claim, legal, matching, accessibility, or compliance approval.
+            </p>
+            <label for="curator-rationale">Decision rationale *</label>
+            <textarea id="curator-rationale" name="rationale" maxlength="2000" required placeholder="Explain why you approve or reject this research report" disabled></textarea>
+            <label class="confirm-approve">
+              <input type="checkbox" id="curator-confirm-approve" disabled>
+              <span>I confirm this APPROVE decision sets the workspace current approved research report pointer. This is research approval only.</span>
+            </label>
+            <div class="curator-decision-actions">
+              <button type="submit" class="approve" data-decision="APPROVE" disabled>Approve</button>
+              <button type="submit" class="reject" data-decision="REJECT" disabled>Reject</button>
+            </div>
+          </form>
+        </div>
+      </section>
     </section>
 
     <section class="audience-panels">

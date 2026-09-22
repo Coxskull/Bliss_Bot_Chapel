@@ -166,12 +166,12 @@
         <section class="view" id="view-wedding-planner" aria-labelledby="wedding-planner-title">
           <div class="section-intro">
             <div>
-              <p class="eyebrow">WEDDING PLANNER PHASE 3</p>
-              <h2 id="wedding-planner-title">Advertiser workspace, Concierge, Brand DNA, and Color Intelligence</h2>
-              <p>Open the primary workspace, resume planning sessions, append durable human messages, inspect Concierge agent runs, manage Brand DNA proposals, and compute deterministic color profiles. AI replies and Brand DNA proposals come only from the server. Color Intelligence is deterministic geometry with no AI — humans alone approve or reject.</p>
+              <p class="eyebrow">WEDDING PLANNER PHASE 4</p>
+              <h2 id="wedding-planner-title">Advertiser workspace, Concierge, Brand DNA, Color Intelligence, and Curator research</h2>
+              <p>Open the primary workspace, resume planning sessions, append durable human messages, inspect Concierge agent runs, manage Brand DNA proposals, compute deterministic color profiles, and run Phase 4 Curator research jobs. AI replies and Brand DNA proposals come only from the server. Color Intelligence is deterministic geometry with no AI. Curator findings come only from stored server documentJson — humans alone approve or reject research reports.</p>
             </div>
           </div>
-          <div class="safety-note"><strong>Human authority preserved.</strong> Ownership is enforced by the API. Clients cannot forge PLANNER messages. Brand DNA and color profiles stay PROPOSED until an explicit APPROVE or REJECT decision. WCAG figures are arithmetic evidence, not certification.</div>
+          <div class="safety-note"><strong>Human authority preserved.</strong> Ownership is enforced by the API. Clients cannot forge PLANNER messages. Brand DNA, color profiles, and research reports stay PROPOSED until an explicit APPROVE or REJECT decision. Research approval is research approval only — not creative, campaign, claim, legal, matching, accessibility, or compliance approval. WCAG figures are arithmetic evidence, not certification. Local synthetic catalogs are never live research.</div>
           <div class="workflow-layout">
             <section>
               <div class="queue-list" id="wedding-planner-workspace-list"></div>
@@ -262,6 +262,46 @@
               <section class="panel ledger-panel">
                 <div class="panel-header"><div><p class="eyebrow">INSPECT</p><h3>Selected color profile document</h3></div></div>
                 <div id="wedding-planner-color-inspect" class="activity-list"></div>
+              </section>
+              <form class="panel workflow-form" id="wedding-planner-research-job-form">
+                <div class="panel-header"><div><p class="eyebrow">PHASE 4 · THE CURATOR</p><h3>Submit research job</h3></div><span class="record-tag">8→3 WORKERS</span></div>
+                <div class="safety-note"><strong>Evidence-backed research.</strong> Requires current-approved Brand DNA. Color profile is optional provenance only. Eight logical roles map to 3 workers/runs, not 8 subscriptions. Findings come only from stored server <code>documentJson</code>. The app never fetches citation URLs. Local SYNTHETIC / <code>.invalid</code> catalogs are never presented as live research.</div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Workspace *</span><select name="workspaceId" id="wedding-planner-research-workspace" required></select></label>
+                  <label class="span-two"><span>Topic *</span><input name="topic" maxlength="200" required placeholder="Research topic"></label>
+                  <label class="span-two"><span>Objective *</span><textarea name="objective" maxlength="4000" required placeholder="What should this research answer?"></textarea></label>
+                  <label class="span-two"><span>Questions * (one per line, 1–8)</span><textarea name="questions" maxlength="4000" required placeholder="Question one&#10;Question two"></textarea></label>
+                  <label><span>Geography *</span><input name="geography" maxlength="200" required placeholder="e.g. United States"></label>
+                  <label><span>Language *</span><input name="language" maxlength="64" required placeholder="e.g. en"></label>
+                  <label class="span-two"><span>Allowed domains (one per line, 0–10)</span><textarea name="allowedDomains" maxlength="2000" placeholder="example.com&#10;(empty = no host allowlist)"></textarea></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-research-job-key" readonly required><button type="button" id="regenerate-wedding-planner-research-job-key" aria-label="Generate a new research job idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>Idempotent create. FAILED replay returns the failed job and is never a retry.</small><button class="primary-button" type="submit">Submit research job <span>→</span></button></div>
+              </form>
+              <form class="panel workflow-form" id="wedding-planner-research-decision-form">
+                <div class="panel-header"><div><p class="eyebrow">HUMAN DECISION</p><h3>Approve or reject research report</h3></div></div>
+                <div class="safety-note"><strong>Research approval only.</strong> Not creative, campaign, claim, legal, matching, accessibility, or compliance approval. PROPOSED, APPROVED, and CURRENT remain distinct.</div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Research report version *</span><select name="researchReportVersionId" id="wedding-planner-research-report-version" required></select></label>
+                  <label><span>Decision *</span><select name="decision" required><option value="APPROVE">Approve</option><option value="REJECT">Reject</option></select></label>
+                  <label class="span-two"><span>Rationale *</span><textarea name="rationale" maxlength="2000" required placeholder="Explicit rationale required for APPROVE and REJECT"></textarea></label>
+                  <label class="span-two checkbox-label"><input name="confirmApprove" type="checkbox"><span>I confirm APPROVE will set the workspace current approved research report pointer. This is research approval only.</span></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-research-decision-key" readonly required><button type="button" id="regenerate-wedding-planner-research-decision-key" aria-label="Generate a new research decision idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>Rejected versions never become current. Approval never edits the immutable document.</small><button class="primary-button" type="submit">Record research report decision <span>→</span></button></div>
+              </form>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">RESEARCH JOBS</p><h3>RUNNING · SUCCEEDED · FAILED</h3></div><span class="record-tag" id="wedding-planner-research-job-count">0 jobs</span></div>
+                <div id="wedding-planner-research-job-list" class="activity-list"></div>
+              </section>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">RESEARCH REPORTS</p><h3>Workspace reports and current pointer</h3></div><span class="record-tag" id="wedding-planner-research-current">Current: none</span></div>
+                <div id="wedding-planner-research-report-list" class="activity-list"></div>
+              </section>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">INSPECT</p><h3>Selected research report · sources · contributions · 3 run receipts</h3></div></div>
+                <p class="safety-note">Eight logical roles map to 3 workers/runs, not 8 subscriptions. Inspector parses stored server documentJson only — never invents findings/citations and never fetches citation URLs.</p>
+                <div id="wedding-planner-research-inspect" class="activity-list"></div>
               </section>
             </div>
           </div>

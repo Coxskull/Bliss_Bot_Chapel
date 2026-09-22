@@ -26,7 +26,9 @@ public sealed record WeddingPlannerAiCompletionRequest(
     string PromptPackVersion,
     IReadOnlyList<WeddingPlannerAiMessage> Messages,
     string ResponseFormat,
-    int MaxOutputTokens);
+    int MaxOutputTokens,
+    string? WorkerProfileVersion = null,
+    IReadOnlyList<string>? AssignedRoles = null);
 
 public sealed record WeddingPlannerAiCompletionResult(
     string Content,

@@ -191,9 +191,58 @@ public sealed class OpenAiCompatibleWeddingPlannerAiProvider : IWeddingPlannerAi
                 request.PromptPackVersion + ".";
         }
 
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.CuratorResearch, StringComparison.Ordinal))
+        {
+            return BuildCuratorInstruction(
+                request,
+                WeddingPlannerCuratorWorkerProfiles.ResearchV1,
+                "Produce market, audience, competitor, and channel findings only from the provided source catalog and brief. Brand DNA is framing only and is never evidence.");
+        }
+
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.CuratorEvidence, StringComparison.Ordinal))
+        {
+            return BuildCuratorInstruction(
+                request,
+                WeddingPlannerCuratorWorkerProfiles.EvidenceV1,
+                "Analyze and verify source metadata/internal consistency only. Never fetch live URL content. Brand DNA is never evidence.");
+        }
+
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.CuratorSynthesisRisk, StringComparison.Ordinal))
+        {
+            return BuildCuratorInstruction(
+                request,
+                WeddingPlannerCuratorWorkerProfiles.SynthesisRiskV1,
+                "Review claim risk and synthesize prior stage contributions. Do not approve the research report. Never fetch live URL content.");
+        }
+
         throw new WeddingPlannerAiProviderException(
             $"Unsupported Wedding Planner logical role '{SanitizeForError(request.LogicalRole)}'.",
             "PROVIDER_UNSUPPORTED_ROLE");
+    }
+
+    private static string BuildCuratorInstruction(
+        WeddingPlannerAiCompletionRequest request,
+        string expectedProfile,
+        string stageRule)
+    {
+        var profile = string.IsNullOrWhiteSpace(request.WorkerProfileVersion)
+            ? expectedProfile
+            : request.WorkerProfileVersion.Trim();
+        var roles = request.AssignedRoles is { Count: > 0 }
+            ? request.AssignedRoles
+            : WeddingPlannerCuratorWorkerProfiles.AssignedRoles(expectedProfile);
+        var roleList = string.Join(", ", roles);
+
+        return
+            "You are a Wedding Planner Curator stage worker. Emit a single JSON object for schema " +
+            "curator-worker-output.v1 with keys: schemaVersion, workerProfileVersion, contributions. " +
+            $"workerProfileVersion must be {profile}. contributions must include exactly these logicalRole values " +
+            $"and no others: {roleList}. Each contribution needs summary and findings[]. Finding type is " +
+            "FACT|INFERENCE|GAP|RISK; confidence is in [0,1]; FACT/INFERENCE/RISK require known citationSourceIds " +
+            "from the provided catalog; GAP may be uncited. Unknown/dangling citations are forbidden. " +
+            stageRule +
+            " You cannot approve research reports, change matching, fetch citation URLs, or invent live facts " +
+            "beyond the provided catalog. Prompt pack: " + request.PromptPackVersion + ".";
     }
 
     private ChatCompletionRequest BuildRequestPayload(

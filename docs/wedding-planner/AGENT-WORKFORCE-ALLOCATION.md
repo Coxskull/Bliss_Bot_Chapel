@@ -39,10 +39,27 @@ rationale.
 - Human approval remains required; Color Intelligence cannot self-approve.
 - No provider, prompt, model, token, cost, or agent-run record is created.
 
+## Phase 4 (implemented)
+
+- New logical AI roles: 8 Curator research responsibilities.
+- New executable worker profiles: exactly 3 per successful job.
+- `CURATOR_RESEARCH_V1` covers market, audience, competitor, and
+  channel/format research.
+- `CURATOR_EVIDENCE_V1` covers evidence analysis and source verification.
+- `CURATOR_SYNTHESIS_RISK_V1` covers claims-risk review and research
+  synthesis.
+- Successful jobs create exactly 3 agent-run receipts and exactly 8 durable
+  role contributions; they do not create eight fake model calls.
+- Source acquisition is provider-neutral. Local Development/CI evidence is
+  visibly `SYNTHETIC` and uses `.invalid` hosts; Production requires the
+  remote HTTP adapter.
+- Factual, inferential, and risk findings require citations to the validated
+  source catalog. The app never fetches returned citation URLs.
+- Humans alone approve/reject immutable research reports. Approval is
+  research approval only.
+
 ## Later starting allocations
 
-- Phase 4: eight Curator responsibilities on about three workers
-  (research, analysis/evidence, synthesis/risk).
 - Phase 5: four workshop roles on about 2–4 workers.
 - Phase 6: about thirteen primary logical roles on about 5–7 workers.
 - Phase 7: three control roles on about 1–2 AI workers plus deterministic
