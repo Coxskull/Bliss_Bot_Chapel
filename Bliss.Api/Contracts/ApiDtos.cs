@@ -1248,3 +1248,115 @@ public sealed record WeddingPlannerQaEscalationResolutionDto(
     WeddingPlannerQaReviewReportVersionDto Version,
     bool IsReplay);
 
+public sealed record CommitWeddingPlannerCampaignReadinessHandshakeRequest(
+    Guid BlissMatchId,
+    Guid CampaignId,
+    Guid ContentItemId,
+    Guid AdInventorySlotId,
+    string Rationale,
+    bool DisclaimerAcknowledged,
+    bool? SyntheticMarkerAcknowledged,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerCampaignReadinessDecisionRequest(
+    string Decision,
+    string Rationale,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerCampaignReadinessHandshakeDto(
+    Guid CampaignReadinessHandshakeVersionId,
+    Guid AdvertiserId,
+    Guid WorkspaceId,
+    int VersionNumber,
+    string SchemaVersion,
+    string DocumentJson,
+    string Summary,
+    string Status,
+    Guid QaReviewReportVersionId,
+    Guid QaAcceptDecisionId,
+    Guid ApprovedCreativePackageVersionId,
+    string CreativePackageDocumentSha256,
+    Guid CreativePackageDecisionId,
+    string SelectedVariantId,
+    Guid SelectedCreativeAssetId,
+    string SelectedCreativeAssetSha256,
+    Guid BlissMatchId,
+    Guid CampaignId,
+    Guid ContentItemId,
+    Guid AdInventorySlotId,
+    Guid CampaignPlacementId,
+    Guid CampaignPlacementRunId,
+    string RulesFindingsJson,
+    string Rationale,
+    bool DisclaimerAcknowledged,
+    bool? SyntheticMarkerAcknowledged,
+    string SourceSystem,
+    string IdempotencyKey,
+    string ActorType,
+    string ActorLabel,
+    DateTime CreatedAt,
+    bool IsCurrent,
+    bool IsReplay);
+
+public sealed record WeddingPlannerCampaignReadinessDecisionDto(
+    Guid CampaignReadinessDecisionId,
+    Guid CampaignReadinessHandshakeVersionId,
+    Guid AdvertiserId,
+    Guid WorkspaceId,
+    string Decision,
+    string Rationale,
+    string ActorType,
+    string ActorLabel,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime OccurredAt,
+    WeddingPlannerCampaignReadinessHandshakeDto Version,
+    bool IsReplay);
+
+public sealed record WeddingPlannerCampaignReadinessEligibilityDto(
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    bool HasCurrentQaPointer,
+    Guid? CurrentAcceptedQaReviewReportVersionId,
+    string? CurrentQaStatus,
+    bool IsCleanAccepted,
+    bool HasCleanAcceptDecision,
+    Guid? CurrentApprovedCreativePackageVersionId,
+    bool PackageReady,
+    bool HasSyntheticUpstream,
+    Guid? CurrentCampaignReadinessHandshakeVersionId,
+    string NoReservationDisclosure,
+    IReadOnlyList<CampaignReadinessMatchCandidateDto> Candidates);
+
+public sealed record CampaignReadinessMatchCandidateDto(
+    Guid BlissMatchId,
+    Guid CreatorId,
+    Guid AdvertiserOpportunityId,
+    string MatchStatus,
+    decimal? OverallScore,
+    string OpportunityStatus,
+    string OpportunityName,
+    IReadOnlyList<CampaignReadinessCampaignCandidateDto> Campaigns,
+    IReadOnlyList<CampaignReadinessContentCandidateDto> ContentItems);
+
+public sealed record CampaignReadinessCampaignCandidateDto(
+    Guid CampaignId,
+    string Name,
+    string Status,
+    Guid? AdvertiserOpportunityId,
+    bool OpportunityCompatible);
+
+public sealed record CampaignReadinessContentCandidateDto(
+    Guid ContentItemId,
+    string Title,
+    string ContentType,
+    IReadOnlyList<CampaignReadinessSlotCandidateDto> Slots);
+
+public sealed record CampaignReadinessSlotCandidateDto(
+    Guid AdInventorySlotId,
+    string SlotType,
+    bool IsAvailable,
+    string AvailabilityNote);
+

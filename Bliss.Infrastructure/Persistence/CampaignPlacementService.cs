@@ -32,6 +32,7 @@ public sealed record CampaignPlacementResult(
 /// <summary>
 /// Records explicit campaign planning intent. It does not reserve slots,
 /// schedule, deliver, measure, or settle media.
+/// Shared bind core is always no-save/no-transaction for Phase 8 outer commits.
 /// </summary>
 public sealed class CampaignPlacementService
 {
@@ -58,8 +59,32 @@ public sealed class CampaignPlacementService
             return ToResult(replay, true);
         }
 
+        await using var transaction = _db.Database.IsRelational()
+            ? await _db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
+        var result = await BindCoreInternalAsync(normalized, cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Internal bind core: validates graph, tracks PLANNED placement + COMPLETED/PLANNED run.
+    /// Never begins a transaction and never SaveChanges — caller owns persistence.
+    /// </summary>
+    internal async Task<CampaignPlacementResult> BindCoreInternalAsync(
+        CampaignPlacementCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = Normalize(command);
+
         var match = await _db.BlissMatches
-            .AsNoTracking()
             .Include(x => x.AdvertiserOpportunity)
             .SingleOrDefaultAsync(x => x.Id == normalized.BlissMatchId, cancellationToken);
         if (match is null)
@@ -92,7 +117,6 @@ public sealed class CampaignPlacementService
         }
 
         var content = await _db.ContentItems
-            .AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == normalized.ContentItemId, cancellationToken);
         if (content is null)
         {
@@ -104,7 +128,6 @@ public sealed class CampaignPlacementService
         }
 
         var slot = await _db.AdInventorySlots
-            .AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == normalized.AdInventorySlotId, cancellationToken);
         if (slot is null)
         {
@@ -116,10 +139,6 @@ public sealed class CampaignPlacementService
         }
 
         var startedAt = DateTime.UtcNow;
-        await using var transaction = _db.Database.IsRelational()
-            ? await _db.Database.BeginTransactionAsync(cancellationToken)
-            : null;
-
         campaign.AdvertiserOpportunityId ??= match.AdvertiserOpportunityId;
         var placement = new CampaignPlacement
         {
@@ -151,11 +170,6 @@ public sealed class CampaignPlacementService
         };
         _db.CampaignPlacements.Add(placement);
         _db.CampaignPlacementRuns.Add(run);
-        await _db.SaveChangesAsync(cancellationToken);
-        if (transaction is not null)
-        {
-            await transaction.CommitAsync(cancellationToken);
-        }
 
         return ToResult(run, false);
     }

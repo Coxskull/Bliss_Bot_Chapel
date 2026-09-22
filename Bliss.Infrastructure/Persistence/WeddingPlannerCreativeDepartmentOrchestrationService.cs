@@ -1012,8 +1012,25 @@ public sealed class WeddingPlannerCreativeDepartmentOrchestrationService
 
             version.Status = WeddingPlannerCreativePackageStatuses.Approved;
             workspaceEntity.CurrentApprovedCreativePackageVersionId = version.Id;
-            // Later Phase 6 creative APPROVE clears the QA pointer only; historical QA reports unchanged.
+            // Later Phase 6 creative APPROVE clears the QA pointer and campaign-readiness
+            // handshake pointer only; historical QA / handshake rows unchanged.
             workspaceEntity.CurrentAcceptedQaReviewReportVersionId = null;
+            if (workspaceEntity.CurrentCampaignReadinessHandshakeVersionId is not null)
+            {
+                workspaceEntity.CurrentCampaignReadinessHandshakeVersionId = null;
+                _planner.AddAuditForOrchestration(
+                    version.AdvertiserId,
+                    version.WorkspaceId,
+                    null,
+                    null,
+                    WeddingPlannerAuditActions.CampaignReadinessPointerCleared,
+                    actorType,
+                    actorLabel,
+                    WeddingPlannerOutcomes.Superseded,
+                    requestId,
+                    "CurrentCampaignReadinessHandshakeVersionId cleared by later creative APPROVE.");
+            }
+
             workspaceEntity.UpdatedAt = DateTime.UtcNow;
             _planner.AddAuditForOrchestration(
                 version.AdvertiserId,

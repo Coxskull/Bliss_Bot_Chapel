@@ -74,4 +74,29 @@ public sealed class WeddingPlannerAccess(BlissAuthenticationOptions options, Ope
     /// <summary>Phase 7 WAIVE_AND_ACCEPT: operator/admin only.</summary>
     public bool CanWaiveQaEscalation(WeddingPlannerActor actor) =>
         !options.Enabled || actor.IsOperator || actor.IsAdmin;
+
+    /// <summary>
+    /// Phase 8 commit/revoke: operator/admin only.
+    /// Intentionally narrower than <see cref="CanWrite"/> — do not widen generic write.
+    /// </summary>
+    public bool CanCommitCampaignReadiness(WeddingPlannerActor actor) =>
+        !options.Enabled || actor.IsOperator || actor.IsAdmin;
+
+    /// <summary>
+    /// Phase 8 handshake read across workspaces for reviewer|operator|admin.
+    /// Does not grant Phase 8 write or widen generic WeddingPlanner write.
+    /// </summary>
+    public bool CanAccessCampaignReadinessAcrossWorkspaces(WeddingPlannerActor actor) =>
+        !options.Enabled || actor.IsReviewer || actor.IsOperator || actor.IsAdmin;
+
+    /// <summary>
+    /// Phase 8 eligibility/handshake read: advertiser own workspace, or explicit handshake read policy.
+    /// Viewers have no Phase 8 read authority.
+    /// </summary>
+    public bool CanReadCampaignReadiness(WeddingPlannerActor actor) =>
+        !options.Enabled
+        || actor.IsOperator
+        || actor.IsAdmin
+        || actor.IsReviewer
+        || actor.BoundAdvertiserId.HasValue;
 }
