@@ -31,6 +31,9 @@ var runtime = builder.Configuration
 var weddingPlannerAi = builder.Configuration
     .GetSection(WeddingPlannerAiOptions.SectionName)
     .Get<WeddingPlannerAiOptions>() ?? new WeddingPlannerAiOptions();
+var weddingPlannerResearch = builder.Configuration
+    .GetSection(WeddingPlannerResearchOptions.SectionName)
+    .Get<WeddingPlannerResearchOptions>() ?? new WeddingPlannerResearchOptions();
 
 if (!authentication.Enabled && !builder.Environment.IsDevelopment())
 {
@@ -63,6 +66,18 @@ if (!builder.Environment.IsDevelopment()
     throw new InvalidOperationException(
         "WeddingPlannerAi:Provider must be OpenAiCompatible outside Development. "
         + "The Local provider is a deterministic development/test worker, not a production AI provider.");
+}
+
+if ((!builder.Environment.IsDevelopment() || weddingPlannerResearch.RequireRemoteResearchProvider)
+    && !string.Equals(
+        weddingPlannerResearch.Provider,
+        WeddingPlannerResearchProviderKinds.RemoteHttp,
+        StringComparison.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException(
+        "WeddingPlannerResearch:Provider must be RemoteHttp outside Development "
+        + "(or when RequireRemoteResearchProvider is enabled). "
+        + "The Local provider is a deterministic development/test worker, not a production research provider.");
 }
 
 if (runtime.WriteRateLimitPermitLimit <= 0

@@ -28,3 +28,24 @@ public sealed class WeddingPlannerProviderException : InvalidOperationException
         AgentRunId = agentRunId;
     }
 }
+
+/// <summary>
+/// Raised after a durable FAILED research job is persisted when source acquisition fails
+/// (0 agent runs). Controllers map this to HTTP 502.
+/// </summary>
+public sealed class WeddingPlannerResearchJobProviderException : InvalidOperationException
+{
+    public Guid ResearchJobId { get; }
+    public string ErrorCode { get; }
+
+    public WeddingPlannerResearchJobProviderException(
+        Guid researchJobId,
+        string message,
+        string errorCode,
+        Exception? innerException = null)
+        : base(message, innerException)
+    {
+        ResearchJobId = researchJobId;
+        ErrorCode = errorCode;
+    }
+}

@@ -560,6 +560,9 @@ public sealed record WeddingPlannerAgentRunDto(
     Guid? TriggerMessageId,
     Guid? OutputMessageId,
     Guid? OutputBrandDnaVersionId,
+    string? WorkerProfileVersion,
+    string? AssignedRolesJson,
+    Guid? OutputResearchReportVersionId,
     string? RequestId,
     string? ProviderRequestId,
     string SourceSystem,
@@ -689,6 +692,111 @@ public sealed record WeddingPlannerColorProfileDecisionDto(
     string IdempotencyKey,
     DateTime OccurredAt,
     WeddingPlannerColorProfileVersionDto Version,
+    bool IsReplay);
+
+public sealed record CreateWeddingPlannerResearchJobRequest(
+    string Topic,
+    string Objective,
+    IReadOnlyList<string> Questions,
+    string Geography,
+    string Language,
+    IReadOnlyList<string>? AllowedDomains,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerResearchJobDto(
+    Guid ResearchJobId,
+    Guid AdvertiserId,
+    Guid WorkspaceId,
+    string Topic,
+    string Objective,
+    IReadOnlyList<string> Questions,
+    string Geography,
+    string Language,
+    IReadOnlyList<string> AllowedDomains,
+    string InputJson,
+    string InputSha256,
+    Guid ApprovedBrandDnaVersionId,
+    Guid? ApprovedColorProfileVersionId,
+    string? ResearchProviderKey,
+    string? ResearchAdapterVersion,
+    string? ResearchProviderRequestId,
+    string? ResearchWorkerKey,
+    decimal? ResearchEstimatedCostUsd,
+    string? SourceCatalogJson,
+    Guid? ResearchAgentRunId,
+    Guid? EvidenceAgentRunId,
+    Guid? SynthesisRiskAgentRunId,
+    Guid? OutputResearchReportVersionId,
+    string Status,
+    string? ErrorCode,
+    string? ErrorMessage,
+    string SourceSystem,
+    string IdempotencyKey,
+    string ActorType,
+    string ActorLabel,
+    DateTime StartedAt,
+    DateTime? CompletedAt,
+    bool IsReplay);
+
+public sealed record WeddingPlannerResearchReportVersionDto(
+    Guid ResearchReportVersionId,
+    Guid AdvertiserId,
+    Guid WorkspaceId,
+    int VersionNumber,
+    string SchemaVersion,
+    string DocumentJson,
+    string Summary,
+    Guid ProducingResearchJobId,
+    Guid ProducingAgentRunId,
+    Guid ApprovedBrandDnaVersionId,
+    Guid? ApprovedColorProfileVersionId,
+    string Status,
+    string SourceSystem,
+    string IdempotencyKey,
+    string ActorType,
+    string ActorLabel,
+    DateTime CreatedAt,
+    bool IsCurrentApproved,
+    decimal? EstimatedTotalCostUsd,
+    bool IsReplay);
+
+public sealed record WeddingPlannerResearchReportListDto(
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    Guid? CurrentApprovedResearchReportVersionId,
+    IReadOnlyList<WeddingPlannerResearchReportVersionDto> Versions);
+
+public sealed record WeddingPlannerResearchRoleContributionDto(
+    Guid ContributionId,
+    Guid AdvertiserId,
+    Guid WorkspaceId,
+    Guid ResearchReportVersionId,
+    Guid ResearchJobId,
+    string LogicalRole,
+    Guid ProducingAgentRunId,
+    string ContributionJson,
+    DateTime CreatedAt);
+
+public sealed record WeddingPlannerResearchReportDecisionRequest(
+    string Decision,
+    string Rationale,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerResearchReportDecisionDto(
+    Guid DecisionId,
+    Guid ResearchReportVersionId,
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    string Decision,
+    string ActorType,
+    string ActorLabel,
+    string Rationale,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime OccurredAt,
+    WeddingPlannerResearchReportVersionDto Version,
     bool IsReplay);
 
 

@@ -15,6 +15,7 @@ public sealed class WeddingPlannerController(
     WeddingPlannerService weddingPlanner,
     WeddingPlannerOrchestrationService orchestration,
     WeddingPlannerColorIntelligenceService colorIntelligence,
+    WeddingPlannerCuratorOrchestrationService curator,
     WeddingPlannerAccess access) : ControllerBase
 {
     [HttpGet("workspaces")]
@@ -505,6 +506,193 @@ public sealed class WeddingPlannerController(
         });
     }
 
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("workspaces/{workspaceId:guid}/research-jobs")]
+    public async Task<ActionResult> CreateResearchJob(
+        Guid workspaceId,
+        CreateWeddingPlannerResearchJobRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireWrite();
+            var result = await curator.CreateResearchJobAsync(
+                workspaceId,
+                request.Topic,
+                request.Objective,
+                request.Questions,
+                request.Geography,
+                request.Language,
+                request.AllowedDomains,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToResearchJobDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/research-jobs/{dto.ResearchJobId}", dto);
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/research-jobs")]
+    public async Task<ActionResult> ListResearchJobs(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await curator.ListResearchJobsAsync(
+                workspaceId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToResearchJobDto).ToList());
+        });
+    }
+
+    [HttpGet("research-jobs/{researchJobId:guid}")]
+    public async Task<ActionResult> GetResearchJob(
+        Guid researchJobId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await curator.GetResearchJobAsync(
+                researchJobId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToResearchJobDto(result));
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/research-reports")]
+    public async Task<ActionResult> ListResearchReports(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await curator.ListResearchReportsAsync(
+                workspaceId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(new WeddingPlannerResearchReportListDto(
+                result.WorkspaceId,
+                result.AdvertiserId,
+                result.CurrentApprovedResearchReportVersionId,
+                result.Versions.Select(ToResearchReportDto).ToList()));
+        });
+    }
+
+    [HttpGet("research-reports/{researchReportVersionId:guid}")]
+    public async Task<ActionResult> GetResearchReport(
+        Guid researchReportVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await curator.GetResearchReportAsync(
+                researchReportVersionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToResearchReportDto(result));
+        });
+    }
+
+    [HttpGet("research-reports/{researchReportVersionId:guid}/contributions")]
+    public async Task<ActionResult> ListResearchReportContributions(
+        Guid researchReportVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await curator.ListContributionsAsync(
+                researchReportVersionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToContributionDto).ToList());
+        });
+    }
+
+    [HttpGet("research-reports/{researchReportVersionId:guid}/agent-runs")]
+    public async Task<ActionResult> ListResearchReportAgentRuns(
+        Guid researchReportVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await curator.ListReportAgentRunsAsync(
+                researchReportVersionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToAgentRunDto).ToList());
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/agent-runs")]
+    public async Task<ActionResult> ListWorkspaceAgentRuns(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await curator.ListWorkspaceAgentRunsAsync(
+                workspaceId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToAgentRunDto).ToList());
+        });
+    }
+
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("research-reports/{researchReportVersionId:guid}/decisions")]
+    public async Task<ActionResult> DecideResearchReport(
+        Guid researchReportVersionId,
+        WeddingPlannerResearchReportDecisionRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireWrite();
+            var result = await curator.DecideAsync(
+                researchReportVersionId,
+                request.Decision,
+                request.Rationale,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToResearchDecisionDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/research-reports/{dto.ResearchReportVersionId}/decisions", dto);
+        });
+    }
+
     private WeddingPlannerActor RequireWrite()
     {
         var actor = access.Resolve(User);
@@ -533,6 +721,10 @@ public sealed class WeddingPlannerController(
         catch (WeddingPlannerProviderException ex)
         {
             return StatusCode(StatusCodes.Status502BadGateway, new { error = ex.Message, agentRunId = ex.AgentRunId });
+        }
+        catch (WeddingPlannerResearchJobProviderException ex)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new { error = ex.Message, researchJobId = ex.ResearchJobId, errorCode = ex.ErrorCode });
         }
         catch (InvalidOperationException ex)
         {
@@ -596,6 +788,9 @@ public sealed class WeddingPlannerController(
             result.TriggerMessageId,
             result.OutputMessageId,
             result.OutputBrandDnaVersionId,
+            result.WorkerProfileVersion,
+            result.AssignedRolesJson,
+            result.OutputResearchReportVersionId,
             result.RequestId,
             result.ProviderRequestId,
             result.SourceSystem,
@@ -693,5 +888,95 @@ public sealed class WeddingPlannerController(
             result.IdempotencyKey,
             result.OccurredAt,
             ToColorProfileDto(result.Version),
+            result.IsReplay);
+
+    private static WeddingPlannerResearchJobDto ToResearchJobDto(WeddingPlannerResearchJobResult result) =>
+        new(
+            result.ResearchJobId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.Topic,
+            result.Objective,
+            result.Questions,
+            result.Geography,
+            result.Language,
+            result.AllowedDomains,
+            result.InputJson,
+            result.InputSha256,
+            result.ApprovedBrandDnaVersionId,
+            result.ApprovedColorProfileVersionId,
+            result.ResearchProviderKey,
+            result.ResearchAdapterVersion,
+            result.ResearchProviderRequestId,
+            result.ResearchWorkerKey,
+            result.ResearchEstimatedCostUsd,
+            result.SourceCatalogJson,
+            result.ResearchAgentRunId,
+            result.EvidenceAgentRunId,
+            result.SynthesisRiskAgentRunId,
+            result.OutputResearchReportVersionId,
+            result.Status,
+            result.ErrorCode,
+            result.ErrorMessage,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.ActorType,
+            result.ActorLabel,
+            result.StartedAt,
+            result.CompletedAt,
+            result.IsReplay);
+
+    private static WeddingPlannerResearchReportVersionDto ToResearchReportDto(
+        WeddingPlannerResearchReportVersionResult result) =>
+        new(
+            result.ResearchReportVersionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.VersionNumber,
+            result.SchemaVersion,
+            result.DocumentJson,
+            result.Summary,
+            result.ProducingResearchJobId,
+            result.ProducingAgentRunId,
+            result.ApprovedBrandDnaVersionId,
+            result.ApprovedColorProfileVersionId,
+            result.Status,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.ActorType,
+            result.ActorLabel,
+            result.CreatedAt,
+            result.IsCurrentApproved,
+            result.EstimatedTotalCostUsd,
+            result.IsReplay);
+
+    private static WeddingPlannerResearchRoleContributionDto ToContributionDto(
+        WeddingPlannerResearchRoleContributionResult result) =>
+        new(
+            result.ContributionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.ResearchReportVersionId,
+            result.ResearchJobId,
+            result.LogicalRole,
+            result.ProducingAgentRunId,
+            result.ContributionJson,
+            result.CreatedAt);
+
+    private static WeddingPlannerResearchReportDecisionDto ToResearchDecisionDto(
+        WeddingPlannerResearchReportDecisionResult result) =>
+        new(
+            result.DecisionId,
+            result.ResearchReportVersionId,
+            result.WorkspaceId,
+            result.AdvertiserId,
+            result.Decision,
+            result.ActorType,
+            result.ActorLabel,
+            result.Rationale,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.OccurredAt,
+            ToResearchReportDto(result.Version),
             result.IsReplay);
 }

@@ -25,7 +25,9 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<WeddingPlannerService>();
         services.AddScoped<WeddingPlannerOrchestrationService>();
         services.AddScoped<WeddingPlannerColorIntelligenceService>();
+        services.AddScoped<WeddingPlannerCuratorOrchestrationService>();
         services.AddWeddingPlannerAiProvider(configuration);
+        services.AddWeddingPlannerResearchProvider(configuration);
         services.AddScoped<WeddingPlannerDataSeeder>();
         return services;
     }
@@ -76,6 +78,60 @@ public static class InfrastructureServiceCollectionExtensions
             throw new InvalidOperationException(
                 $"Unsupported WeddingPlannerAi:Provider '{providerKind}'. "
                 + $"Use {WeddingPlannerAiProviderKinds.Local} or {WeddingPlannerAiProviderKinds.OpenAiCompatible}.");
+        }
+
+        return services;
+    }
+
+    public static IServiceCollection AddWeddingPlannerResearchProvider(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<WeddingPlannerResearchOptions>(
+            configuration.GetSection(WeddingPlannerResearchOptions.SectionName));
+
+        var providerKind = configuration
+            .GetSection(WeddingPlannerResearchOptions.SectionName)
+            .GetValue<string>(nameof(WeddingPlannerResearchOptions.Provider));
+
+        if (string.Equals(providerKind, WeddingPlannerResearchProviderKinds.RemoteHttp, StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddHttpClient<RemoteHttpWeddingPlannerResearchProvider>((sp, client) =>
+                {
+                    var options = sp.GetRequiredService<IOptions<WeddingPlannerResearchOptions>>().Value;
+                    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+                    {
+                        var baseUrl = options.BaseUrl.Trim();
+                        if (!baseUrl.EndsWith('/'))
+                        {
+                            baseUrl += "/";
+                        }
+
+                        client.BaseAddress = new Uri(baseUrl, UriKind.Absolute);
+                    }
+
+                    var timeoutSeconds = options.TimeoutSeconds <= 0 ? 30 : options.TimeoutSeconds;
+                    client.Timeout = TimeSpan.FromSeconds(Math.Clamp(timeoutSeconds, 1, 600));
+                    // ApiKey is attached per request so DefaultRequestHeaders never hold secrets.
+                });
+
+            services.AddScoped<IWeddingPlannerResearchProvider>(sp =>
+                sp.GetRequiredService<RemoteHttpWeddingPlannerResearchProvider>());
+        }
+        else if (string.IsNullOrWhiteSpace(providerKind)
+            || string.Equals(providerKind, WeddingPlannerResearchProviderKinds.Local, StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddScoped<IWeddingPlannerResearchProvider>(sp =>
+            {
+                var options = sp.GetRequiredService<IOptions<WeddingPlannerResearchOptions>>().Value;
+                return new LocalDeterministicWeddingPlannerResearchProvider(options);
+            });
+        }
+        else
+        {
+            throw new InvalidOperationException(
+                $"Unsupported WeddingPlannerResearch:Provider '{providerKind}'. "
+                + $"Use {WeddingPlannerResearchProviderKinds.Local} or {WeddingPlannerResearchProviderKinds.RemoteHttp}.");
         }
 
         return services;
