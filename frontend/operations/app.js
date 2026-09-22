@@ -4269,6 +4269,7 @@ async function submitWeddingPlannerMeasurementLearningJob(form) {
   try {
     const result = await api(`/api/wedding-planner/workspaces/${value("workspaceId")}/measurement-learning-jobs`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
     toast(`Measurement-learning job ${result.status || "submitted"}${result.isReplay ? " (replay)" : ""} · ${MEASUREMENT_LEARNING_LABELS_OPS.join(" · ")} · not activation`);
@@ -4323,6 +4324,7 @@ async function submitWeddingPlannerMeasurementLearningDecision(form) {
   try {
     const result = await api(`/api/wedding-planner/measurement-learning-reports/${reportId}/decisions`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
     });
     toast(`Measurement-learning ${decision}${result.isReplay ? " (replay)" : ""} · ADVISORY ONLY · pointer ${decision === "ACCEPT" ? "set" : "unchanged"}`);

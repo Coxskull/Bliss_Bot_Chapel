@@ -1065,6 +1065,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("/decisions", script);
         Assert.Contains("/contributions", script);
         Assert.Contains("/agent-runs", script);
+        Assert.Contains("headers: { \"Content-Type\": \"application/json\" }", script);
         Assert.Contains("form.hidden = true", script);
         Assert.Contains("attestationAcknowledged", script);
         Assert.Contains("HUMAN-SUPPLIED AGGREGATES", script);
