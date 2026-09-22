@@ -71,6 +71,13 @@ Operations shell gained a **Wedding Planner** resume ledger:
 
 It is not the marketing chapel dashboard and does not call an LLM.
 
+Browser check against a Development process (no PostgreSQL in this
+environment, so directory APIs return 500 and the shell shows API
+unavailable): the `#/wedding-planner` view still renders the foundation
+ledger, the “no chatbot” notice, and the three human forms.
+
+Screenshot: `docs/wedding-planner/evidence/phase1/browser/wedding-planner-foundation.png`
+
 ## Explicitly out of scope (not done)
 
 - Phase 2 conversational AI / Brand DNA interpreter
