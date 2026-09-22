@@ -3,12 +3,15 @@ const COLOR_INTELLIGENCE_LABEL = "PHASE 3 · DETERMINISTIC COLOR INTELLIGENCE";
 const CURATOR_LABEL = "PHASE 4 · THE CURATOR";
 const WORKSHOP_LABEL = "PHASE 5 · CONCEPT / PROTOTYPE WORKSHOP";
 const CREATIVE_LABEL = "PHASE 6 · MATURE CREATIVE DEPARTMENT";
+const QA_LABEL = "PHASE 7 · CHAPERONE / QA / HUMAN ESCALATION";
 const RESEARCH_DISCLAIMER =
   "Approval of this report is research approval only. It is not creative, campaign, claim, legal, matching, accessibility, or compliance approval. Source verification checks metadata and internal consistency only; live URL content is not fetched or certified.";
 const CONCEPT_PACKAGE_DISCLAIMER =
   "Approval of this package is concept-direction approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, asset, QA, or production-artwork approval. Marketing copy is CREATIVE_NON_FACTUAL unless a factual claim cites source IDs from the pinned approved research report. Brand DNA and Color Profile are creative constraints, not factual evidence. Prototypes are structured low-fi specs only; no images are generated.";
 const CREATIVE_PACKAGE_DISCLAIMER =
   "Approval of this package is draft creative approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, QA, or final production-artwork approval. It does not authorize Bliss matching or placement. Marketing copy is CREATIVE_NON_FACTUAL unless a factual claim exactly preserves a cited claim from the pinned selected concept using source IDs from the pinned approved research report. Brand DNA and Color Profile are creative constraints, not factual evidence. Draft PNG assets are provider-generated renditions for review only; Wedding Planner orchestrates providers and is not itself an image generator. Phase 5 concept contributions remain pinned provenance and are not re-approved here.";
+const QA_REVIEW_DISCLAIMER =
+  "Acceptance of this QA review report is control review only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, final production-artwork, or Bliss handshake approval. Deterministic rules check package, decision, variant, asset integrity, and provenance only; they do not certify semantic truth, visual safety, or campaign readiness. AI control roles never receive image bytes and cannot approve or waive. Humans must view the same-origin selected PNG before ACCEPT. The Human Escalation Steward is a rules-first human authority, not an AI worker. Phase 8 must independently define handshake and may distinguish clean acceptance from acceptance-with-exception.";
 const CURATOR_LOGICAL_ROLES = [
   "MARKET_LANDSCAPE_RESEARCHER",
   "AUDIENCE_CONTEXT_RESEARCHER",
@@ -78,8 +81,35 @@ const FOUR_TO_THREE_EXPLANATION =
   "Four logical roles map to 3 workers/runs, not 4 subscriptions";
 const THIRTEEN_TO_SIX_EXPLANATION =
   "Thirteen logical roles map to 6 workers/runs, not 13 subscriptions";
+const THREE_TO_TWO_EXPLANATION =
+  "Three control roles map to 2 AI workers/runs, not 3 subscriptions";
 const SYNTHETIC_DEVELOPMENT_PROTOTYPE = "SYNTHETIC DEVELOPMENT PROTOTYPE";
 const SYNTHETIC_DEVELOPMENT_CREATIVE_PACKAGE = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE";
+const SYNTHETIC_DEVELOPMENT_QA_REVIEW = "SYNTHETIC DEVELOPMENT QA REVIEW";
+const QA_LOGICAL_ROLES = [
+  "CREATIVE_CHAPERONE",
+  "QA_INSPECTOR",
+  "HUMAN_ESCALATION_STEWARD"
+];
+const QA_WORKER_PROFILES = [
+  "CHAPERONE_REVIEW_V1",
+  "QA_INSPECTION_V1"
+];
+const QA_FOCUS_AREAS = [
+  "COPY",
+  "VISUAL",
+  "PROVENANCE",
+  "CLAIMS",
+  "FORMAT",
+  "ASSET_INTEGRITY"
+];
+const QA_REPORT_STATUSES = [
+  "PROPOSED",
+  "ACCEPTED",
+  "RETURNED_FOR_REVISION",
+  "ESCALATED",
+  "ACCEPTED_WITH_EXCEPTION"
+];
 const GUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 const ALLOWED_TEXT_REFS = ["copy.headline", "copy.body", "copy.cta"];
 const ALLOWED_PROTOTYPE_TEMPLATES = ["LOFI_STACK_V1", "LOFI_SPLIT_V1", "LOFI_BANNER_V1"];
@@ -125,6 +155,12 @@ const state = {
   creativeAssets: [],
   creativeAgentRuns: [],
   creativeSelectedVariantId: null,
+  qaJobs: [],
+  qaJob: null,
+  qaReports: null,
+  qaReport: null,
+  qaContributions: [],
+  qaAgentRuns: [],
   busy: false
 };
 
@@ -283,6 +319,41 @@ const creativeVariantSelect = document.querySelector("#creative-variant-select")
 const creativeRationale = document.querySelector("#creative-rationale");
 const creativeConfirmApprove = document.querySelector("#creative-confirm-approve");
 
+const qaPrereq = document.querySelector("#qa-prereq-status");
+const qaJobForm = document.querySelector("#qa-job-form");
+const qaReviewObjective = document.querySelector("#qa-review-objective");
+const qaFocusSelect = document.querySelector("#qa-focus-select");
+const qaNotes = document.querySelector("#qa-notes");
+const qaJobSubmit = document.querySelector("#qa-job-submit");
+const qaRefreshLists = document.querySelector("#qa-refresh-lists");
+const qaJobSelect = document.querySelector("#qa-job-select");
+const qaJobMeta = document.querySelector("#qa-job-meta");
+const qaReportSelect = document.querySelector("#qa-report-select");
+const qaCurrentPointer = document.querySelector("#qa-current-pointer");
+const qaReportView = document.querySelector("#qa-report-view");
+const qaReportStatusLabel = document.querySelector("#qa-report-status-label");
+const qaReportCurrentBadge = document.querySelector("#qa-report-current-badge");
+const qaReportVersionNumber = document.querySelector("#qa-report-version-number");
+const qaReportSummaryText = document.querySelector("#qa-report-summary-text");
+const qaReportSchema = document.querySelector("#qa-report-schema");
+const qaReportSelectedVariant = document.querySelector("#qa-report-selected-variant");
+const qaReportPackagePin = document.querySelector("#qa-report-package-pin");
+const qaReportPackageSha = document.querySelector("#qa-report-package-sha");
+const qaReportDecisionPin = document.querySelector("#qa-report-decision-pin");
+const qaReportAssetPin = document.querySelector("#qa-report-asset-pin");
+const qaReportAssetSha = document.querySelector("#qa-report-asset-sha");
+const qaReportProvenancePins = document.querySelector("#qa-report-provenance-pins");
+const qaReportRulesSeverity = document.querySelector("#qa-report-rules-severity");
+const qaReportCost = document.querySelector("#qa-report-cost");
+const qaReportProposedOutcome = document.querySelector("#qa-report-proposed-outcome");
+const qaDisclaimerBlock = document.querySelector("#qa-disclaimer-block");
+const qaDisclaimerText = document.querySelector("#qa-disclaimer-text");
+const qaSyntheticWarning = document.querySelector("#qa-synthetic-warning");
+const qaSelectedPng = document.querySelector("#qa-selected-png");
+const qaRulesFindings = document.querySelector("#qa-rules-findings");
+const qaContributions = document.querySelector("#qa-contributions");
+const qaAgentRuns = document.querySelector("#qa-agent-runs");
+
 const colorFields = {
   primary: {
     picker: document.querySelector("#color-primary-picker"),
@@ -332,10 +403,12 @@ document.addEventListener("DOMContentLoaded", () => {
     setCuratorControlsEnabled(false);
     setWorkshopControlsEnabled(false);
     setCreativeControlsEnabled(false);
+    setQaControlsEnabled(false);
     renderColorPrerequisite();
     renderCuratorPrerequisite();
     renderWorkshopPrerequisite();
     renderCreativePrerequisite();
+    renderQaPrerequisite();
   });
 });
 
@@ -484,6 +557,30 @@ function bindPlannerUi() {
     decideCreativePackage(decision).catch(error => setTurnStatus("error", error.message));
   });
 
+  qaJobForm?.addEventListener("submit", event => {
+    event.preventDefault();
+    submitQaReviewJob().catch(error => setTurnStatus("error", error.message));
+  });
+
+  qaRefreshLists?.addEventListener("click", () => {
+    refreshQaLists().catch(error => setTurnStatus("error", error.message));
+  });
+
+  qaJobSelect?.addEventListener("change", () => {
+    const id = qaJobSelect.value;
+    const selected = (state.qaJobs || []).find(x => x.qaReviewJobId === id) || null;
+    state.qaJob = selected;
+    renderQaJob(selected);
+  });
+
+  qaReportSelect?.addEventListener("change", () => {
+    const id = qaReportSelect.value;
+    const versions = state.qaReports?.versions || [];
+    const selected = versions.find(x => x.qaReviewReportVersionId === id) || null;
+    state.qaReport = selected;
+    inspectQaReport(selected).catch(error => setTurnStatus("error", error.message));
+  });
+
   Object.values(colorFields).forEach(field => {
     field.picker?.addEventListener("input", () => {
       if (field.text) field.text.value = String(field.picker.value || "").toUpperCase();
@@ -524,11 +621,13 @@ async function bootstrapPlanner() {
     setCuratorControlsEnabled(false);
     setWorkshopControlsEnabled(false);
     setCreativeControlsEnabled(false);
+    setQaControlsEnabled(false);
     renderAuthGate(session);
     renderColorPrerequisite();
     renderCuratorPrerequisite();
     renderWorkshopPrerequisite();
     renderCreativePrerequisite();
+    renderQaPrerequisite();
     return;
   }
 
@@ -546,6 +645,7 @@ async function bootstrapPlanner() {
   await refreshCuratorLists();
   await refreshWorkshopLists();
   await refreshCreativeLists();
+  await refreshQaLists();
   setComposerEnabled(true);
   setBrandDnaControlsEnabled(true);
   renderColorPrerequisite();
@@ -556,6 +656,8 @@ async function bootstrapPlanner() {
   setWorkshopControlsEnabled(canSubmitWorkshopJobs());
   renderCreativePrerequisite();
   setCreativeControlsEnabled(canSubmitCreativeJobs());
+  renderQaPrerequisite();
+  setQaControlsEnabled(canSubmitQaReviewJobs());
   setSessionStatus(
     "Live Concierge ready",
     "Messages are saved to your planning session. Planner replies come only from the server. Brand DNA stays PROPOSED until you approve or reject it."
@@ -708,6 +810,18 @@ function canSubmitCreativeJobs() {
   );
 }
 
+function hasCurrentApprovedCreativePackage() {
+  return !!state.creativePackages?.currentApprovedCreativePackageVersionId;
+}
+
+function canSubmitQaReviewJobs() {
+  return (
+    state.liveChatEnabled &&
+    !!state.workspaceId &&
+    hasCurrentApprovedCreativePackage()
+  );
+}
+
 function renderColorPrerequisite() {
   if (!colorPrereq) return;
   if (!state.session) {
@@ -815,6 +929,36 @@ function renderCreativePrerequisite() {
 
   creativePrereq.dataset.ready = "true";
   creativePrereq.innerHTML = `<span>Prerequisites met · ${CREATIVE_LABEL}</span><p>Authenticated writable advertiser with current-approved Phase 5 concept package. Server will resolve the latest SelectedConceptId. ${escapeHtml(THIRTEEN_TO_SIX_EXPLANATION)}, plus a separate non-AI asset provider. Phase 5 roles remain pinned provenance. Draft creative approval only — not final, campaign-ready, QA, legal, matching, accessibility, or compliance. ${escapeHtml(SYNTHETIC_DEVELOPMENT_CREATIVE_PACKAGE)} when Local path was used.</p>`;
+}
+
+function renderQaPrerequisite() {
+  if (!qaPrereq) return;
+  if (!state.session) {
+    qaPrereq.dataset.ready = "false";
+    qaPrereq.innerHTML = `<span>Prerequisite check</span><p>Checking authentication…</p>`;
+    return;
+  }
+
+  if (!state.session.authenticationEnabled) {
+    qaPrereq.dataset.ready = "false";
+    qaPrereq.innerHTML = `<span>Authentication disabled</span><p>QA Review stays disabled when authentication is not enabled. No development advertiser is bound automatically. Server requires a current-approved Phase 6 creative package with SelectedVariantId and exactly one selected PNG before QA review jobs can start.</p>`;
+    return;
+  }
+
+  if (!state.liveChatEnabled) {
+    qaPrereq.dataset.ready = "false";
+    qaPrereq.innerHTML = `<span>Authenticated writable advertiser required</span><p>QA review submit stays disabled until an authenticated advertiser with write access is signed in. Advertisers may request and read; QA decisions and escalation resolutions are not available on this public surface.</p>`;
+    return;
+  }
+
+  if (!hasCurrentApprovedCreativePackage()) {
+    qaPrereq.dataset.ready = "false";
+    qaPrereq.innerHTML = `<span>Missing QA review prerequisites</span><p>Requires a current-approved Phase 6 creative package whose latest APPROVE carries a SelectedVariantId and exactly one selected PNG asset. Approve a creative package first. Server resolves package/decision/variant/asset pins — clients cannot override. ${escapeHtml(THREE_TO_TWO_EXPLANATION)} plus qa-rules.v1 and RULES_HUMAN Steward (no third AI run).</p>`;
+    return;
+  }
+
+  qaPrereq.dataset.ready = "true";
+  qaPrereq.innerHTML = `<span>Prerequisites met · ${QA_LABEL}</span><p>Authenticated writable advertiser with current-approved Phase 6 creative package. Server will pin SelectedVariantId + selected PNG. ${escapeHtml(THREE_TO_TWO_EXPLANATION)} plus deterministic qa-rules.v1 and human authority. HUMAN_ESCALATION_STEWARD is RULES_HUMAN — not a third AI run. Advertiser request/read-only on this surface — no decision or escalation resolve controls. Control review only — not campaign-ready, final, legal, accessibility, compliance, or Bliss handshake. ${escapeHtml(SYNTHETIC_DEVELOPMENT_QA_REVIEW)} when Local path was used.</p>`;
 }
 
 async function submitTurn() {
@@ -2375,6 +2519,8 @@ async function refreshCreativeLists() {
   await inspectCreativePackage(selectedPackage);
   renderCreativePrerequisite();
   setCreativeControlsEnabled(canSubmitCreativeJobs());
+  renderQaPrerequisite();
+  setQaControlsEnabled(canSubmitQaReviewJobs());
   syncCreativeRevisionFields();
 }
 
@@ -3059,4 +3205,389 @@ function escapeHtml(value) {
     '"': "&quot;",
     "'": "&#039;"
   }[char]));
+}
+
+function setQaControlsEnabled(enabled) {
+  if (qaReviewObjective) qaReviewObjective.disabled = !enabled;
+  if (qaNotes) qaNotes.disabled = !enabled;
+  if (qaJobSubmit) qaJobSubmit.disabled = !enabled;
+  if (qaRefreshLists) qaRefreshLists.disabled = !state.liveChatEnabled;
+  if (qaJobSelect) qaJobSelect.disabled = !state.liveChatEnabled;
+  if (qaReportSelect) qaReportSelect.disabled = !state.liveChatEnabled;
+  qaFocusSelect?.querySelectorAll('input[name="qaFocusArea"]').forEach(input => {
+    input.disabled = !enabled;
+  });
+}
+
+function selectedQaFocusAreas() {
+  const boxes = qaFocusSelect?.querySelectorAll('input[name="qaFocusArea"]:checked') || [];
+  const values = [...boxes].map(input => String(input.value || "").trim()).filter(Boolean);
+  return [...new Set(values)];
+}
+
+async function refreshQaLists() {
+  if (!state.workspaceId) return;
+  const [jobs, reports] = await Promise.all([
+    api(`/api/wedding-planner/workspaces/${state.workspaceId}/qa-review-jobs`),
+    api(`/api/wedding-planner/workspaces/${state.workspaceId}/qa-review-reports`)
+  ]);
+  state.qaJobs = Array.isArray(jobs) ? jobs : [];
+  state.qaReports = reports || null;
+
+  const selectedJob =
+    state.qaJobs.find(x => x.qaReviewJobId === state.qaJob?.qaReviewJobId) ||
+    state.qaJobs[0] ||
+    null;
+  state.qaJob = selectedJob;
+  renderQaJobList(state.qaJobs, selectedJob);
+  renderQaJob(selectedJob);
+
+  const versions = state.qaReports?.versions || [];
+  const selectedReport =
+    versions.find(x => x.qaReviewReportVersionId === state.qaReport?.qaReviewReportVersionId) ||
+    versions.find(x => x.status === "PROPOSED") ||
+    versions.find(x => x.qaReviewReportVersionId === state.qaReports?.currentAcceptedQaReviewReportVersionId) ||
+    versions[0] ||
+    null;
+  state.qaReport = selectedReport;
+  renderQaReportList(state.qaReports, selectedReport);
+  if (selectedReport) {
+    await inspectQaReport(selectedReport);
+  } else if (qaReportView) {
+    qaReportView.hidden = true;
+  }
+  renderQaPrerequisite();
+  setQaControlsEnabled(canSubmitQaReviewJobs());
+}
+
+async function submitQaReviewJob() {
+  if (!canSubmitQaReviewJobs() || state.busy) return;
+  const reviewObjective = String(qaReviewObjective?.value || "").trim();
+  const focusAreas = selectedQaFocusAreas();
+  const notesRaw = String(qaNotes?.value || "").trim();
+  if (!reviewObjective) {
+    setTurnStatus("error", "Review objective is required.");
+    return;
+  }
+  if (!focusAreas.length || focusAreas.length > 6 || focusAreas.some(f => !QA_FOCUS_AREAS.includes(f))) {
+    setTurnStatus("error", "Select 1–6 unique focus areas from COPY, VISUAL, PROVENANCE, CLAIMS, FORMAT, ASSET_INTEGRITY.");
+    return;
+  }
+
+  state.busy = true;
+  setQaControlsEnabled(false);
+  setTurnStatus("loading", "Submitting QA review job…");
+  try {
+    const payload = {
+      reviewObjective,
+      focusAreas,
+      sourceSystem: SOURCE_SYSTEM,
+      idempotencyKey: `qa-review-job-${crypto.randomUUID()}`
+    };
+    if (notesRaw) payload.notes = notesRaw;
+    const job = await api(`/api/wedding-planner/workspaces/${state.workspaceId}/qa-review-jobs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (qaReviewObjective) qaReviewObjective.value = "";
+    if (qaNotes) qaNotes.value = "";
+    qaFocusSelect?.querySelectorAll('input[name="qaFocusArea"]').forEach(input => { input.checked = false; });
+    state.qaJob = job;
+    await refreshQaLists();
+    if (job.outputQaReviewReportVersionId && state.qaReports?.versions) {
+      const report = state.qaReports.versions.find(
+        x => x.qaReviewReportVersionId === job.outputQaReviewReportVersionId
+      );
+      if (report) {
+        state.qaReport = report;
+        if (qaReportSelect) qaReportSelect.value = report.qaReviewReportVersionId;
+        await inspectQaReport(report);
+      }
+    }
+    const replayNote = job.isReplay && job.status === "FAILED"
+      ? " (failed replay — not a retry)"
+      : job.isReplay ? " (replay)" : "";
+    setTurnStatus(
+      job.status === "FAILED" ? "error" : "loading",
+      `QA review job ${job.status}${replayNote}. ${THREE_TO_TWO_EXPLANATION} plus qa-rules.v1 and RULES_HUMAN Steward. Advertiser request/read-only — no public decision controls.`
+    );
+  } catch (error) {
+    setTurnStatus("error", error.message || "QA review job failed.");
+    throw error;
+  } finally {
+    state.busy = false;
+    setQaControlsEnabled(canSubmitQaReviewJobs());
+  }
+}
+
+function renderQaJobList(jobs, selected) {
+  if (!qaJobSelect) return;
+  if (!jobs.length) {
+    qaJobSelect.innerHTML = `<option value="">No QA review jobs yet</option>`;
+    return;
+  }
+  qaJobSelect.innerHTML = jobs.map(job => {
+    const selectedAttr = selected && job.qaReviewJobId === selected.qaReviewJobId ? " selected" : "";
+    const replay = job.isReplay ? " · replay" : "";
+    return `<option value="${escapeHtml(job.qaReviewJobId)}"${selectedAttr}>${escapeHtml(job.status || "UNKNOWN")}${escapeHtml(replay)} · ${(job.focusAreas || []).join(",") || "—"}</option>`;
+  }).join("");
+}
+
+function renderQaJob(job) {
+  if (!qaJobMeta) return;
+  if (!job) {
+    qaJobMeta.hidden = true;
+    qaJobMeta.innerHTML = "";
+    return;
+  }
+  qaJobMeta.hidden = false;
+  const focus = Array.isArray(job.focusAreas) ? job.focusAreas.join(", ") : "—";
+  qaJobMeta.innerHTML = `
+    <strong>${escapeHtml(job.status || "UNKNOWN")}${job.isReplay ? " · replay" : ""}</strong>
+    <span>Objective: ${escapeHtml(job.reviewObjective || "—")}</span>
+    <span>Focus: <code>${escapeHtml(focus)}</code></span>
+    <span>Input SHA-256 <code>${escapeHtml(job.inputSha256 || "—")}</code></span>
+    <span>Package pin <code>${escapeHtml(job.approvedCreativePackageVersionId || "—")}</code> · package SHA <code>${escapeHtml(job.creativePackageDocumentSha256 || "—")}</code></span>
+    <span>Decision <code>${escapeHtml(job.creativePackageDecisionId || "—")}</code> · variant <code>${escapeHtml(job.selectedVariantId || "—")}</code></span>
+    <span>Asset <code>${escapeHtml(job.selectedCreativeAssetId || "—")}</code> · SHA <code>${escapeHtml(job.selectedCreativeAssetSha256 || "—")}</code> · ${escapeHtml(String(job.selectedCreativeAssetWidth ?? "—"))}×${escapeHtml(String(job.selectedCreativeAssetHeight ?? "—"))}</span>
+    <span>Concept/DNA/color/research <code>${escapeHtml(job.selectedConceptId || "—")}</code> / <code>${escapeHtml(job.approvedBrandDnaVersionId || "—")}</code> v${escapeHtml(String(job.approvedBrandDnaVersionNumber ?? "—"))} / <code>${escapeHtml(job.approvedColorProfileVersionId || "—")}</code> v${escapeHtml(String(job.approvedColorProfileVersionNumber ?? "—"))} / <code>${escapeHtml(job.approvedResearchReportVersionId || "—")}</code> v${escapeHtml(String(job.approvedResearchReportVersionNumber ?? "—"))}</span>
+    <span>Rules severity <code>${escapeHtml(job.rulesOverallSeverity || "—")}</code> · Chaperone run <code>${escapeHtml(job.chaperoneReviewAgentRunId || "—")}</code> · QA run <code>${escapeHtml(job.qaInspectionAgentRunId || "—")}</code></span>
+    <span>Output report <code>${escapeHtml(job.outputQaReviewReportVersionId || "—")}</code>${job.errorMessage ? ` · error: ${escapeHtml(job.errorMessage)}` : ""}</span>
+  `;
+}
+
+function renderQaReportList(list, selected) {
+  if (!qaReportSelect) return;
+  const versions = list?.versions || [];
+  const currentId = list?.currentAcceptedQaReviewReportVersionId || null;
+  if (qaCurrentPointer) {
+    qaCurrentPointer.hidden = !currentId;
+    if (currentId) {
+      qaCurrentPointer.textContent = `CURRENT ACCEPTED QA report pointer: ${currentId}`;
+    }
+  }
+  if (!versions.length) {
+    qaReportSelect.innerHTML = `<option value="">No QA review reports yet</option>`;
+    return;
+  }
+  qaReportSelect.innerHTML = versions.map(version => {
+    const markers = [version.status || "UNKNOWN"];
+    if (version.qaReviewReportVersionId === currentId || version.isCurrentAccepted) markers.push("CURRENT ACCEPTED");
+    const selectedAttr = selected && version.qaReviewReportVersionId === selected.qaReviewReportVersionId ? " selected" : "";
+    return `<option value="${escapeHtml(version.qaReviewReportVersionId)}"${selectedAttr}>v${escapeHtml(String(version.versionNumber))} · ${escapeHtml(markers.join(" · "))}</option>`;
+  }).join("");
+}
+
+function parseQaReportDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+function parseQaRulesFindings(rulesFindingsJson, document) {
+  if (document?.rules && typeof document.rules === "object") return document.rules;
+  if (!rulesFindingsJson) return null;
+  try {
+    return typeof rulesFindingsJson === "string" ? JSON.parse(rulesFindingsJson) : rulesFindingsJson;
+  } catch {
+    return null;
+  }
+}
+
+function qaDocumentContainsSynthetic(document) {
+  try {
+    return JSON.stringify(document || {}).includes(SYNTHETIC_DEVELOPMENT_QA_REVIEW);
+  } catch {
+    return false;
+  }
+}
+
+async function inspectQaReport(version) {
+  if (!qaReportView) return;
+  if (!version) {
+    qaReportView.hidden = true;
+    return;
+  }
+  qaReportView.hidden = false;
+  const reportId = version.qaReviewReportVersionId;
+  let detail = version;
+  let contributions = [];
+  let runs = [];
+  try {
+    const [reportDto, contribDto, runDto] = await Promise.all([
+      api(`/api/wedding-planner/qa-review-reports/${reportId}`),
+      api(`/api/wedding-planner/qa-review-reports/${reportId}/contributions`),
+      api(`/api/wedding-planner/qa-review-reports/${reportId}/agent-runs`)
+    ]);
+    detail = reportDto || version;
+    contributions = Array.isArray(contribDto) ? contribDto : [];
+    runs = Array.isArray(runDto) ? runDto : [];
+  } catch (error) {
+    setTurnStatus("error", error.message || "Failed to inspect QA report.");
+  }
+  state.qaReport = detail;
+  state.qaContributions = contributions;
+  state.qaAgentRuns = runs;
+
+  const document = parseQaReportDocument(detail.documentJson);
+  const currentId = state.qaReports?.currentAcceptedQaReviewReportVersionId || null;
+  const isCurrent = detail.qaReviewReportVersionId === currentId || detail.isCurrentAccepted;
+  if (qaReportStatusLabel) qaReportStatusLabel.textContent = detail.status || "—";
+  if (qaReportCurrentBadge) qaReportCurrentBadge.hidden = !isCurrent;
+  if (qaReportVersionNumber) qaReportVersionNumber.textContent = String(detail.versionNumber ?? "—");
+  if (qaReportSummaryText) qaReportSummaryText.textContent = detail.summary || "";
+  if (qaReportSchema) qaReportSchema.textContent = detail.schemaVersion || document?.schemaVersion || "—";
+  if (qaReportSelectedVariant) qaReportSelectedVariant.textContent = detail.selectedVariantId || "—";
+  if (qaReportPackagePin) qaReportPackagePin.textContent = detail.approvedCreativePackageVersionId || "—";
+  if (qaReportPackageSha) qaReportPackageSha.textContent = detail.creativePackageDocumentSha256 || "—";
+  if (qaReportDecisionPin) qaReportDecisionPin.textContent = detail.creativePackageDecisionId || "—";
+  if (qaReportAssetPin) qaReportAssetPin.textContent = detail.selectedCreativeAssetId || "—";
+  if (qaReportAssetSha) qaReportAssetSha.textContent = detail.selectedCreativeAssetSha256 || "—";
+  if (qaReportProvenancePins) {
+    qaReportProvenancePins.textContent = [
+      detail.selectedConceptId || "—",
+      `${detail.approvedBrandDnaVersionId || "—"} v${detail.approvedBrandDnaVersionNumber ?? "—"}`,
+      `${detail.approvedColorProfileVersionId || "—"} v${detail.approvedColorProfileVersionNumber ?? "—"}`,
+      `${detail.approvedResearchReportVersionId || "—"} v${detail.approvedResearchReportVersionNumber ?? "—"}`
+    ].join(" · ");
+  }
+  if (qaReportRulesSeverity) qaReportRulesSeverity.textContent = detail.rulesOverallSeverity || document?.rules?.overallSeverity || "—";
+  if (qaReportCost) qaReportCost.textContent = formatCost(detail.estimatedTotalCostUsd);
+
+  const inspectorContrib = (document?.contributions || []).find(c => c.logicalRole === "QA_INSPECTOR");
+  if (qaReportProposedOutcome) {
+    qaReportProposedOutcome.textContent = inspectorContrib?.proposedOutcome || "—";
+  }
+
+  const disclaimer = document?.disclaimer || "";
+  if (qaDisclaimerBlock && qaDisclaimerText) {
+    const show = !!disclaimer;
+    qaDisclaimerBlock.hidden = !show;
+    qaDisclaimerText.textContent = disclaimer || QA_REVIEW_DISCLAIMER;
+  }
+  if (qaSyntheticWarning) {
+    qaSyntheticWarning.hidden = !(
+      document?.marker === SYNTHETIC_DEVELOPMENT_QA_REVIEW ||
+      qaDocumentContainsSynthetic(document) ||
+      String(detail.summary || "").includes(SYNTHETIC_DEVELOPMENT_QA_REVIEW)
+    );
+  }
+
+  renderQaSelectedPng(detail, document);
+  renderQaRulesFindings(document, state.qaJob);
+  renderQaContributions(contributions, document);
+  renderQaAgentRuns(runs);
+}
+
+function renderQaSelectedPng(version, document) {
+  if (!qaSelectedPng) return;
+  const assetId = version?.selectedCreativeAssetId
+    || document?.provenance?.selectedCreativeAssetId
+    || document?.selectedVariantSnapshot?.asset?.creativeAssetId
+    || null;
+  const meta = document?.selectedVariantSnapshot?.asset || document?.provenance?.selectedCreativeAssetMeta || {};
+  qaSelectedPng.innerHTML = `
+    <p class="qa-meta-line">Selected variant <code>${escapeHtml(version?.selectedVariantId || document?.provenance?.selectedVariantId || "—")}</code> · asset <code>${escapeHtml(assetId || "—")}</code> · type <code>${escapeHtml(meta.contentType || "image/png")}</code> · ${escapeHtml(String(meta.width ?? "—"))}×${escapeHtml(String(meta.height ?? "—"))} · SHA <code>${escapeHtml(version?.selectedCreativeAssetSha256 || meta.sha256 || document?.provenance?.selectedCreativeAssetSha256 || "—")}</code></p>
+    ${renderSafeDraftPngPreview(assetId, "Selected creative PNG for human QA visual review only · same-origin content")}
+    <span class="seed-hint">Human visual review only · same-origin /api/wedding-planner/creative-assets/{validated-guid}/content · no provider URL, data/base64/blob, SVG/HTML, or visual AI</span>
+  `;
+}
+
+function renderQaRulesFindings(document, job) {
+  if (!qaRulesFindings) return;
+  const rules = parseQaRulesFindings(job?.rulesFindingsJson, document);
+  if (!rules) {
+    qaRulesFindings.innerHTML = `<p class="seed-hint">No qa-rules.v1 findings available yet.</p>`;
+    return;
+  }
+  const findings = Array.isArray(rules.findings) ? rules.findings : [];
+  qaRulesFindings.innerHTML = `
+    <p class="qa-roles-note">Rules schema <code>${escapeHtml(rules.schemaVersion || "qa-rules.v1")}</code> · overall severity <code>${escapeHtml(rules.overallSeverity || "—")}</code> (authoritative; AI cannot downgrade). Showing all findings.</p>
+    ${findings.length ? findings.map(finding => `
+      <div class="qa-finding-card">
+        <strong>${escapeHtml(finding.code || "—")} · ${escapeHtml(finding.severity || "—")}</strong>
+        <span>${escapeHtml(finding.message || "—")}</span>
+      </div>`).join("") : `<p class="seed-hint">Findings array empty — unexpected for qa-rules.v1.</p>`}
+  `;
+}
+
+function renderQaContributions(contributions, document) {
+  if (!qaContributions) return;
+  const fromApi = Array.isArray(contributions) ? contributions : [];
+  const fromDoc = Array.isArray(document?.contributions) ? document.contributions : [];
+  if (!fromApi.length && !fromDoc.length) {
+    qaContributions.innerHTML = `<p class="seed-hint">No role contributions returned. Expected exactly 3 durable roles with sources AI, AI, RULES_HUMAN.</p>`;
+    return;
+  }
+
+  const ordered = QA_LOGICAL_ROLES.map(role => {
+    const apiRow = fromApi.find(x => x.logicalRole === role);
+    const docRow = fromDoc.find(x => x.logicalRole === role);
+    return { role, apiRow, docRow };
+  });
+  const recognized = ordered.filter(x => x.apiRow || x.docRow).length;
+  const countNote = recognized !== 3
+    ? `<p class="seed-hint">Expected exactly 3 role contributions; found ${escapeHtml(String(recognized))} recognized roles. No client invention.</p>`
+    : `<p class="seed-hint">${escapeHtml(THREE_TO_TWO_EXPLANATION)}. Showing exactly ${escapeHtml(String(recognized))} durable contributions with sources AI / AI / RULES_HUMAN. Steward is not an AI worker.</p>`;
+
+  qaContributions.innerHTML = countNote + ordered.map(({ role, apiRow, docRow }) => {
+    let summary = docRow?.summary || "";
+    let proposedOutcome = docRow?.proposedOutcome || "";
+    let routing = docRow?.routing || null;
+    let source = apiRow?.contributionSource || docRow?.contributionSource || (role === "HUMAN_ESCALATION_STEWARD" ? "RULES_HUMAN" : "AI");
+    if (apiRow?.contributionJson) {
+      try {
+        const parsed = typeof apiRow.contributionJson === "string"
+          ? JSON.parse(apiRow.contributionJson)
+          : apiRow.contributionJson;
+        if (parsed?.summary) summary = parsed.summary;
+        if (parsed?.proposedOutcome) proposedOutcome = parsed.proposedOutcome;
+        if (parsed?.routing) routing = parsed.routing;
+        if (parsed?.contributionSource) source = parsed.contributionSource;
+      } catch {
+        /* keep document fields */
+      }
+    }
+    const stewardNote = role === "HUMAN_ESCALATION_STEWARD"
+      ? `<span class="seed-hint">RULES_HUMAN Steward · producingAgentRunId must be null · not a third AI run</span>`
+      : "";
+    const outcomeNote = proposedOutcome
+      ? `<span>Proposed outcome <code>${escapeHtml(proposedOutcome)}</code></span>`
+      : "";
+    const routingNote = routing
+      ? `<span>Routing <code>${escapeHtml(routing.proposedRouting || "—")}</code> · blockers <code>${escapeHtml((routing.blockerCodes || []).join(", ") || "—")}</code> · warns <code>${escapeHtml((routing.warnCodes || []).join(", ") || "—")}</code></span>`
+      : "";
+    return `
+      <div class="qa-contribution-card" data-source="${escapeHtml(source)}">
+        <strong>${escapeHtml(role)} · ${escapeHtml(source)}</strong>
+        <span>${escapeHtml(summary || "—")}</span>
+        ${outcomeNote}
+        ${routingNote}
+        <span>Producing run <code>${escapeHtml(apiRow?.producingAgentRunId == null ? "null" : apiRow.producingAgentRunId)}</code></span>
+        ${stewardNote}
+      </div>`;
+  }).join("");
+}
+
+function renderQaAgentRuns(runs) {
+  if (!qaAgentRuns) return;
+  if (!runs.length) {
+    qaAgentRuns.innerHTML = `<p class="seed-hint">No agent-run receipts returned for this report. Expected exactly 2 AI workers — never a third Steward run.</p>`;
+    return;
+  }
+  qaAgentRuns.innerHTML = `
+    <p class="qa-roles-note">${escapeHtml(THREE_TO_TWO_EXPLANATION)}. Showing ${escapeHtml(String(runs.length))} receipt(s) from /qa-review-reports/{id}/agent-runs — exactly 2 AI workers expected. Profiles ${escapeHtml(QA_WORKER_PROFILES.join(", "))}. No Steward agent run.</p>
+    ${runs.map(run => `
+      <div class="qa-run-card">
+        <strong>${escapeHtml(run.logicalRole || "—")} · ${escapeHtml(run.status || "—")}</strong>
+        <span>Worker profile <code>${escapeHtml(run.workerProfileVersion || "—")}</code> · prompt <code>${escapeHtml(run.promptPackVersion || "—")}</code></span>
+        <span>Assigned roles <code>${escapeHtml(run.assignedRolesJson || "—")}</code></span>
+        <span>Tokens prompt/completion/total: ${escapeHtml(String(run.promptTokens ?? "—"))} / ${escapeHtml(String(run.completionTokens ?? "—"))} / ${escapeHtml(String(run.totalTokens ?? "—"))}</span>
+        <span>Estimated cost USD <code>${escapeHtml(formatCost(run.estimatedCostUsd))}</code> · provider <code>${escapeHtml(run.providerKey || "—")}</code> · model <code>${escapeHtml(run.modelId || "—")}</code></span>
+      </div>`).join("")}
+  `;
 }

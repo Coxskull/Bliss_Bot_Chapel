@@ -71,6 +71,16 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Phase 5 roles remain pinned", body);
         Assert.Contains("SYNTHETIC DEVELOPMENT CREATIVE PACKAGE", body);
         Assert.Contains("draft creative approval only", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PHASE 7 · CHAPERONE / QA / HUMAN ESCALATION", body);
+        Assert.Contains("qa-panel", body);
+        Assert.Contains("qa-job-form", body);
+        Assert.Contains("Exactly 3 control roles map to exactly 2 AI workers/runs", body);
+        Assert.Contains("qa-rules.v1", body);
+        Assert.Contains("HUMAN_ESCALATION_STEWARD", body);
+        Assert.Contains("RULES_HUMAN", body);
+        Assert.Contains("SYNTHETIC DEVELOPMENT QA REVIEW", body);
+        Assert.Contains("Advertisers may request and read", body);
+        Assert.Contains("request/read-only", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("FOUNDATION READY", body);
         Assert.DoesNotContain("Help me choose colors", body);
         Assert.DoesNotContain("Show me some design concepts", body);
@@ -418,6 +428,95 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
     }
 
     [Fact]
+    public async Task Public_planner_script_wires_phase7_qa_chaperone_with_safe_same_origin_png_and_no_public_decisions()
+    {
+        var client = _factory.CreateClient();
+        var script = await (await client.GetAsync("/wedding-planner.js")).Content.ReadAsStringAsync();
+
+        Assert.Contains("PHASE 7 · CHAPERONE / QA / HUMAN ESCALATION", script);
+        Assert.Contains("/qa-review-jobs", script);
+        Assert.Contains("/qa-review-reports", script);
+        Assert.Contains("/qa-review-reports/", script);
+        Assert.Contains("/contributions", script);
+        Assert.Contains("/agent-runs", script);
+        Assert.Contains("canSubmitQaReviewJobs", script);
+        Assert.Contains("currentApprovedCreativePackageVersionId", script);
+        Assert.Contains("Three control roles map to 2 AI workers/runs, not 3 subscriptions", script);
+        Assert.Contains("CREATIVE_CHAPERONE", script);
+        Assert.Contains("QA_INSPECTOR", script);
+        Assert.Contains("HUMAN_ESCALATION_STEWARD", script);
+        Assert.Contains("RULES_HUMAN", script);
+        Assert.Contains("CHAPERONE_REVIEW_V1", script);
+        Assert.Contains("QA_INSPECTION_V1", script);
+        Assert.Contains("qa-rules.v1", script);
+        Assert.Contains("COPY", script);
+        Assert.Contains("VISUAL", script);
+        Assert.Contains("PROVENANCE", script);
+        Assert.Contains("CLAIMS", script);
+        Assert.Contains("FORMAT", script);
+        Assert.Contains("ASSET_INTEGRITY", script);
+        Assert.Contains("proposedOutcome", script);
+        Assert.Contains("PROPOSED", script);
+        Assert.Contains("ACCEPTED", script);
+        Assert.Contains("RETURNED_FOR_REVISION", script);
+        Assert.Contains("ESCALATED", script);
+        Assert.Contains("ACCEPTED_WITH_EXCEPTION", script);
+        Assert.Contains("CURRENT ACCEPTED", script);
+        Assert.Contains("SYNTHETIC DEVELOPMENT QA REVIEW", script);
+        Assert.Contains("safeCreativeAssetContentUrl", script);
+        Assert.Contains("/api/wedding-planner/creative-assets/", script);
+        Assert.Contains("/content", script);
+        Assert.Contains("<img", script);
+        Assert.Contains("renderSafeDraftPngPreview", script);
+        Assert.Contains("Missing QA review prerequisites", script);
+        Assert.Contains("Advertiser request/read-only", script);
+        Assert.Contains(
+            "Acceptance of this QA review report is control review only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, final production-artwork, or Bliss handshake approval.",
+            script);
+        Assert.Contains("X-CSRF-TOKEN", script);
+        Assert.Contains("idempotencyKey", script);
+        Assert.Contains("inputSha256", script);
+        Assert.Contains("selectedVariantId", script);
+        Assert.Contains("selectedCreativeAssetId", script);
+        Assert.Contains("rulesOverallSeverity", script);
+
+        Assert.DoesNotContain("campaignReady", script);
+        Assert.DoesNotContain("markCampaignReady", script);
+        Assert.DoesNotContain("three fake agent runs", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("providerUrl", script);
+        Assert.DoesNotContain("data:image", script);
+        Assert.DoesNotContain("createObjectURL", script);
+        Assert.DoesNotContain("blob:", script);
+        Assert.DoesNotContain("fetch(imageUrl", script);
+        Assert.DoesNotContain("innerHTML = asset.html", script);
+        Assert.DoesNotContain("id=\"qa-decision-form\"", script);
+        Assert.DoesNotContain("submitQaDecision", script);
+        Assert.DoesNotContain("submitQaResolution", script);
+        Assert.DoesNotContain("WAIVE_AND_ACCEPT", script);
+        Assert.DoesNotContain("matchId", script);
+        Assert.DoesNotContain("placementId", script);
+        Assert.DoesNotContain("inventoryId", script);
+        Assert.DoesNotContain("qaApproved", script);
+        Assert.DoesNotContain("legalCleared", script);
+        Assert.DoesNotContain("STEWARD_REVIEW_V1", script);
+        Assert.DoesNotContain("pixelDiff", script);
+        Assert.DoesNotContain("ocrProvider", script);
+
+        var body = await (await client.GetAsync("/")).Content.ReadAsStringAsync();
+        Assert.DoesNotContain("id=\"qa-decision-form\"", body);
+        Assert.DoesNotContain("data-decision=\"ACCEPT\"", body);
+        Assert.DoesNotContain("data-decision=\"RETURN_FOR_REVISION\"", body);
+        Assert.DoesNotContain("data-decision=\"ESCALATE\"", body);
+        Assert.Contains("No ACCEPT / RETURN_FOR_REVISION / ESCALATE", body);
+
+        var styles = await (await client.GetAsync("/wedding-planner.css")).Content.ReadAsStringAsync();
+        Assert.Contains("[hidden] { display: none !important; }", styles);
+        Assert.Contains("qa-panel", styles);
+        Assert.Contains("qa-contribution-card", styles);
+        Assert.Contains("creative-draft-png", styles);
+    }
+
+    [Fact]
     public async Task Operations_route_preserves_the_internal_console()
     {
         var client = _factory.CreateClient();
@@ -437,7 +536,6 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Last verification", body);
         Assert.Contains("Recent verifications", body);
         Assert.Contains("Wedding Planner", body);
-        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, Concept Workshop, and Mature Creative Department", body);
         Assert.Contains("Concierge + Brand DNA Interpreter runs", body);
         Assert.Contains("Create Brand DNA proposal", body);
         Assert.Contains("Approve or reject Brand DNA", body);
@@ -477,6 +575,21 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Approve or reject creative package", body);
         Assert.Contains("SYNTHETIC DEVELOPMENT CREATIVE PACKAGE", body);
         Assert.Contains("draft creative approval only", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PHASE 7 · CHAPERONE / QA / HUMAN ESCALATION", body);
+        Assert.Contains("wedding-planner-qa-job-form", body);
+        Assert.Contains("wedding-planner-qa-decision-form", body);
+        Assert.Contains("wedding-planner-qa-resolution-form", body);
+        Assert.Contains("wedding-planner-qa-job-list", body);
+        Assert.Contains("wedding-planner-qa-report-list", body);
+        Assert.Contains("wedding-planner-qa-escalation-list", body);
+        Assert.Contains("wedding-planner-qa-inspect", body);
+        Assert.Contains("3→2 + RULES_HUMAN", body);
+        Assert.Contains("ACCEPT / RETURN_FOR_REVISION / ESCALATE", body);
+        Assert.Contains("WAIVE_AND_ACCEPT", body);
+        Assert.Contains("CURRENT ACCEPTED", body);
+        Assert.Contains("SYNTHETIC DEVELOPMENT QA REVIEW", body);
+        Assert.Contains("HUMAN_ESCALATION_STEWARD", body);
+        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, Concept Workshop, Mature Creative, and Chaperone / QA / Escalation", body);
         Assert.Contains("Export ledger", body);
         Assert.Contains("Verify pack", body);
         Assert.Contains("app.js", body);
@@ -524,7 +637,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("currentApprovedResearchReportVersionId", script);
         Assert.Contains("workerProfileVersion", script);
         Assert.Contains("workspaces/${workspaceId}/agent-runs", script);
-        Assert.Contains("Wedding Planner Phase 6", script);
+        Assert.Contains("Wedding Planner Phase 7", script);
         Assert.Contains("/workshop-jobs", script);
         Assert.Contains("/concept-packages", script);
         Assert.Contains("submitWeddingPlannerWorkshopJob", script);
@@ -560,6 +673,42 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("currentApprovedCreativePackageVersionId", script);
         Assert.Contains("<img", script);
         Assert.Contains("creative-draft-png", script);
+        Assert.Contains("/qa-review-jobs", script);
+        Assert.Contains("/qa-review-reports", script);
+        Assert.Contains("/qa-escalation-cases", script);
+        Assert.Contains("submitWeddingPlannerQaJob", script);
+        Assert.Contains("submitWeddingPlannerQaDecision", script);
+        Assert.Contains("submitWeddingPlannerQaResolution", script);
+        Assert.Contains("renderWeddingPlannerQaInspect", script);
+        Assert.Contains("canDecideQaReview", script);
+        Assert.Contains("canWaiveQaEscalation", script);
+        Assert.Contains("bliss.operator", script);
+        Assert.Contains("bliss.reviewer", script);
+        Assert.Contains("bliss.admin", script);
+        Assert.Contains("Three control roles map to 2 AI workers/runs, not 3 subscriptions", script);
+        Assert.Contains("CREATIVE_CHAPERONE", script);
+        Assert.Contains("QA_INSPECTOR", script);
+        Assert.Contains("HUMAN_ESCALATION_STEWARD", script);
+        Assert.Contains("RULES_HUMAN", script);
+        Assert.Contains("CHAPERONE_REVIEW_V1", script);
+        Assert.Contains("QA_INSPECTION_V1", script);
+        Assert.Contains("qa-rules.v1", script);
+        Assert.Contains("ACCEPT", script);
+        Assert.Contains("RETURN_FOR_REVISION", script);
+        Assert.Contains("ESCALATE", script);
+        Assert.Contains("WAIVE_AND_ACCEPT", script);
+        Assert.Contains("VISUAL_UNCERTAINTY", script);
+        Assert.Contains("CLAIM_BOUNDARY", script);
+        Assert.Contains("CURRENT ACCEPTED", script);
+        Assert.Contains("ACCEPTED_WITH_EXCEPTION", script);
+        Assert.Contains("SYNTHETIC DEVELOPMENT QA REVIEW", script);
+        Assert.Contains("acknowledgedBlockerCodes", script);
+        Assert.Contains("deriveBlockerCodesFromRules", script);
+        Assert.Contains("visualReviewConfirmed", script);
+        Assert.Contains("Do not rely only on session.canReview", script);
+        Assert.Contains(
+            "Acceptance of this QA review report is control review only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, final production-artwork, or Bliss handshake approval.",
+            script);
         Assert.DoesNotContain("fetch(citation", script);
         Assert.DoesNotContain("inventFinding", script);
         Assert.DoesNotContain("fabricateFinding", script);
@@ -576,6 +725,10 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.DoesNotContain("providerUrl", script);
         Assert.DoesNotContain("generateImage", script);
         Assert.DoesNotContain("thirteen fake agent runs", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("three fake agent runs", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("STEWARD_REVIEW_V1", script);
+        Assert.DoesNotContain("markCampaignReady", script);
+        Assert.DoesNotContain("campaignReady", script);
         Assert.DoesNotContain("fetch(imageUrl", script);
         Assert.DoesNotContain("innerHTML = variant.svg", script);
         Assert.DoesNotContain("innerHTML = asset.html", script);

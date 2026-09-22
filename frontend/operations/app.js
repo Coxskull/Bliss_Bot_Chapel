@@ -28,6 +28,9 @@ const state = {
   weddingPlannerCreativeContributions: [], weddingPlannerCreativeAssets: [],
   weddingPlannerCreativeAgentRuns: [],
   weddingPlannerSelectedVariantId: null,
+  weddingPlannerQaJobs: [], weddingPlannerQaReports: null,
+  weddingPlannerQaContributions: [], weddingPlannerQaAgentRuns: [],
+  weddingPlannerQaEscalationCases: [],
   selectedWeddingPlannerWorkspace: null, selectedWeddingPlannerSession: null,
   selectedWeddingPlannerColorProfileId: null,
   selectedWeddingPlannerResearchJobId: null,
@@ -36,6 +39,9 @@ const state = {
   selectedWeddingPlannerConceptPackageId: null,
   selectedWeddingPlannerCreativeJobId: null,
   selectedWeddingPlannerCreativePackageId: null,
+  selectedWeddingPlannerQaJobId: null,
+  selectedWeddingPlannerQaReportId: null,
+  selectedWeddingPlannerQaEscalationCaseId: null,
   affiliateNetworks: [], networkAccesses: [], programAccesses: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations",
@@ -804,7 +810,7 @@ function route() {
   const view=valid.includes(parts[0])?parts[0]:"overview";
   $$(".view").forEach(x=>x.classList.toggle("active",x.id===`view-${view}`));
   $$(".nav-item[data-view]").forEach(x=>{const active=x.dataset.view===view;x.classList.toggle("active",active);if(active)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});
-  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 6",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
+  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 7",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
   $("#page-title").textContent=titles[view];
   toggleMobileNav(false);
   if(!state.loaded)return;
@@ -864,6 +870,9 @@ function bindActions() {
   $("#wedding-planner-workshop-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerWorkshopDecision(event.currentTarget);});
   $("#wedding-planner-creative-job-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerCreativeJob(event.currentTarget);});
   $("#wedding-planner-creative-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerCreativeDecision(event.currentTarget);});
+  $("#wedding-planner-qa-job-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerQaJob(event.currentTarget);});
+  $("#wedding-planner-qa-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerQaDecision(event.currentTarget);});
+  $("#wedding-planner-qa-resolution-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerQaResolution(event.currentTarget);});
   $("#wedding-planner-color-version")?.addEventListener("change",event=>{
     state.selectedWeddingPlannerColorProfileId = event.currentTarget.value || null;
     renderWeddingPlannerColorInspect();
@@ -898,6 +907,19 @@ function bindActions() {
       $$('#wedding-planner-creative-variant-radios input[name="selectedVariantId"]').forEach(input => { input.checked = false; });
     }
   });
+  $("#wedding-planner-qa-report-version")?.addEventListener("change",event=>{
+    state.selectedWeddingPlannerQaReportId = event.currentTarget.value || null;
+    loadWeddingPlannerQaDetails().then(() => {
+      renderWeddingPlannerQaInspect();
+      syncOpsQaDecisionForm();
+    });
+  });
+  $("#wedding-planner-qa-decision")?.addEventListener("change",()=>syncOpsQaDecisionForm());
+  $("#wedding-planner-qa-resolution")?.addEventListener("change",()=>syncOpsQaResolutionForm());
+  $("#wedding-planner-qa-escalation-case")?.addEventListener("change",event=>{
+    state.selectedWeddingPlannerQaEscalationCaseId = event.currentTarget.value || null;
+    syncOpsQaResolutionForm();
+  });
   $("#regenerate-review-key").addEventListener("click",generateReviewIdempotencyKey);
   $("#regenerate-placement-key").addEventListener("click",generatePlacementIdempotencyKey);
   $("#regenerate-wedding-planner-workspace-key").addEventListener("click",()=>fillKey("#wedding-planner-workspace-key"));
@@ -913,6 +935,9 @@ function bindActions() {
   $("#regenerate-wedding-planner-workshop-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-workshop-decision-key"));
   $("#regenerate-wedding-planner-creative-job-key")?.addEventListener("click",()=>fillKey("#wedding-planner-creative-job-key"));
   $("#regenerate-wedding-planner-creative-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-creative-decision-key"));
+  $("#regenerate-wedding-planner-qa-job-key")?.addEventListener("click",()=>fillKey("#wedding-planner-qa-job-key"));
+  $("#regenerate-wedding-planner-qa-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-qa-decision-key"));
+  $("#regenerate-wedding-planner-qa-resolution-key")?.addEventListener("click",()=>fillKey("#wedding-planner-qa-resolution-key"));
   $("#placement-match").addEventListener("change",event=>{state.selectedPlacement=event.target.value;renderPlacements();});
   $("#placement-content").addEventListener("change",updatePlacementSlots);
   $("#review-match").addEventListener("change",event=>{state.selectedReview=event.target.value;renderReviews();});
@@ -980,6 +1005,25 @@ function handleDocumentClick(event) {
     loadWeddingPlannerCreativeDetails().then(() => {
       renderWeddingPlanner();
     });
+  }
+  else if(target.matches("[data-wedding-qa-job]")){
+    state.selectedWeddingPlannerQaJobId=target.dataset.weddingQaJob;
+    renderWeddingPlanner();
+  }
+  else if(target.matches("[data-wedding-qa-report]")){
+    state.selectedWeddingPlannerQaReportId=target.dataset.weddingQaReport;
+    const select=$("#wedding-planner-qa-report-version");
+    if(select)select.value=state.selectedWeddingPlannerQaReportId;
+    loadWeddingPlannerQaDetails().then(() => {
+      renderWeddingPlanner();
+    });
+  }
+  else if(target.matches("[data-wedding-qa-escalation]")){
+    state.selectedWeddingPlannerQaEscalationCaseId=target.dataset.weddingQaEscalation;
+    const select=$("#wedding-planner-qa-escalation-case");
+    if(select)select.value=state.selectedWeddingPlannerQaEscalationCaseId;
+    syncOpsQaResolutionForm();
+    renderWeddingPlanner();
   }
   else if(target.matches("[data-match-id]"))location.hash=`#/matches/${target.dataset.matchId}`;
   else if(target.matches("[data-campaign-id]")){state.inventoryTab="campaigns";renderInventory();location.hash=`#/inventory/${target.dataset.campaignId}`;}
@@ -1125,6 +1169,9 @@ function generateWeddingPlannerKeys(){
   fillKey("#wedding-planner-workshop-decision-key");
   fillKey("#wedding-planner-creative-job-key");
   fillKey("#wedding-planner-creative-decision-key");
+  fillKey("#wedding-planner-qa-job-key");
+  fillKey("#wedding-planner-qa-decision-key");
+  fillKey("#wedding-planner-qa-resolution-key");
 }
 
 function renderWeddingPlanner() {
@@ -1136,11 +1183,14 @@ function renderWeddingPlanner() {
   const researchWorkspace = $("#wedding-planner-research-workspace");
   const workshopWorkspace = $("#wedding-planner-workshop-workspace");
   const creativeWorkspace = $("#wedding-planner-creative-workspace");
+  const qaWorkspace = $("#wedding-planner-qa-workspace");
   const dnaVersionSelect = $("#wedding-planner-dna-version");
   const colorVersionSelect = $("#wedding-planner-color-version");
   const researchReportSelect = $("#wedding-planner-research-report-version");
   const workshopPackageSelect = $("#wedding-planner-workshop-package-version");
   const creativePackageSelect = $("#wedding-planner-creative-package-version");
+  const qaReportSelect = $("#wedding-planner-qa-report-version");
+  const qaEscalationSelect = $("#wedding-planner-qa-escalation-case");
   if (!advertiserSelect) return;
   advertiserSelect.innerHTML = state.advertisers.map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join("");
   const workspaceOptions = state.weddingPlannerWorkspaces.map(x => `<option value="${x.workspaceId}">${escapeHtml(x.advertiserName)}</option>`).join("");
@@ -1150,6 +1200,7 @@ function renderWeddingPlanner() {
   if (researchWorkspace) researchWorkspace.innerHTML = workspaceOptions;
   if (workshopWorkspace) workshopWorkspace.innerHTML = workspaceOptions;
   if (creativeWorkspace) creativeWorkspace.innerHTML = workspaceOptions;
+  if (qaWorkspace) qaWorkspace.innerHTML = workspaceOptions;
   if (state.selectedWeddingPlannerWorkspace) {
     workspaceSelect.value = state.selectedWeddingPlannerWorkspace;
     if (interpretWorkspace) interpretWorkspace.value = state.selectedWeddingPlannerWorkspace;
@@ -1157,6 +1208,7 @@ function renderWeddingPlanner() {
     if (researchWorkspace) researchWorkspace.value = state.selectedWeddingPlannerWorkspace;
     if (workshopWorkspace) workshopWorkspace.value = state.selectedWeddingPlannerWorkspace;
     if (creativeWorkspace) creativeWorkspace.value = state.selectedWeddingPlannerWorkspace;
+    if (qaWorkspace) qaWorkspace.value = state.selectedWeddingPlannerWorkspace;
   }
   sessionSelect.innerHTML = state.weddingPlannerSessions.map(x => `<option value="${x.sessionId}">${x.sessionId.slice(0, 8)} · ${x.messageCount} messages</option>`).join("");
   if (state.selectedWeddingPlannerSession) sessionSelect.value = state.selectedWeddingPlannerSession;
@@ -1377,6 +1429,81 @@ function renderWeddingPlanner() {
   }
   renderWeddingPlannerCreativeInspect();
   syncOpsCreativeVariantRadios();
+
+  const qaJobs = state.weddingPlannerQaJobs || [];
+  const qaJobCount = $("#wedding-planner-qa-job-count");
+  if (qaJobCount) qaJobCount.textContent = `${qaJobs.length} job${qaJobs.length === 1 ? "" : "s"}`;
+  if (!state.selectedWeddingPlannerQaJobId && qaJobs.length) {
+    state.selectedWeddingPlannerQaJobId = qaJobs[0].qaReviewJobId;
+  }
+  const qaJobList = $("#wedding-planner-qa-job-list");
+  if (qaJobList) {
+    qaJobList.innerHTML = qaJobs.length
+      ? qaJobs.map(job => {
+          const selected = job.qaReviewJobId === state.selectedWeddingPlannerQaJobId;
+          const replayNote = job.isReplay && job.status === "FAILED"
+            ? " · failed replay (not a retry)"
+            : job.isReplay ? " · replay" : "";
+          const focus = Array.isArray(job.focusAreas) ? job.focusAreas.join(",") : "";
+          return `<button class="activity-item${selected ? " selected" : ""}" data-wedding-qa-job="${job.qaReviewJobId}" type="button"><span class="activity-icon">◇</span><span><strong>${escapeHtml(job.status || "UNKNOWN")}${escapeHtml(replayNote)}</strong><small>${escapeHtml(focus)} · SHA ${escapeHtml(job.inputSha256 || "")} · variant ${escapeHtml(job.selectedVariantId || "")} · rules ${escapeHtml(job.rulesOverallSeverity || "—")} · package ${escapeHtml(shortId(job.approvedCreativePackageVersionId || ""))}${job.errorMessage ? ` · error: ${escapeHtml(job.errorMessage)}` : ""}</small></span><span class="activity-time">${relativeTime(job.completedAt || job.startedAt)}</span></button>`;
+        }).join("")
+      : emptyState("Select or create a workspace to list QA review jobs.");
+  }
+
+  const qaVersions = state.weddingPlannerQaReports?.versions || [];
+  const qaCurrentId = state.weddingPlannerQaReports?.currentAcceptedQaReviewReportVersionId || null;
+  const qaCurrentLabel = $("#wedding-planner-qa-current");
+  if (qaCurrentLabel) qaCurrentLabel.textContent = qaCurrentId ? `CURRENT ACCEPTED: ${shortId(qaCurrentId)}` : "CURRENT ACCEPTED: none";
+  if (!state.selectedWeddingPlannerQaReportId && qaVersions.length) {
+    state.selectedWeddingPlannerQaReportId =
+      qaVersions.find(x => x.status === "PROPOSED")?.qaReviewReportVersionId ||
+      qaCurrentId ||
+      qaVersions[0].qaReviewReportVersionId;
+  }
+  if (qaReportSelect) {
+    qaReportSelect.innerHTML = qaVersions.length
+      ? qaVersions.map(x => {
+          const markers = [x.status];
+          if (x.qaReviewReportVersionId === qaCurrentId || x.isCurrentAccepted) markers.push("CURRENT ACCEPTED");
+          return `<option value="${x.qaReviewReportVersionId}"${x.qaReviewReportVersionId === state.selectedWeddingPlannerQaReportId ? " selected" : ""}>v${x.versionNumber} · ${escapeHtml(markers.join(" · "))}</option>`;
+        }).join("")
+      : `<option value="">No QA reports</option>`;
+  }
+  const qaReportList = $("#wedding-planner-qa-report-list");
+  if (qaReportList) {
+    qaReportList.innerHTML = qaVersions.length
+      ? qaVersions.map(x => {
+          const isCurrent = x.qaReviewReportVersionId === qaCurrentId || x.isCurrentAccepted;
+          return `<button class="activity-item" data-wedding-qa-report="${x.qaReviewReportVersionId}" type="button"><span class="activity-icon">${x.versionNumber}</span><span><strong>${escapeHtml(x.status)}${isCurrent ? " · CURRENT ACCEPTED" : ""}</strong><small>${escapeHtml(x.summary || "No summary")} · ${escapeHtml(x.schemaVersion)} · variant ${escapeHtml(x.selectedVariantId || "")} · rules ${escapeHtml(x.rulesOverallSeverity || "—")} · cost $${escapeHtml(formatUsd(x.estimatedTotalCostUsd))}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></button>`;
+        }).join("")
+      : emptyState("Select or create a workspace to list QA review reports.");
+  }
+
+  const qaCases = state.weddingPlannerQaEscalationCases || [];
+  const qaEscalationCount = $("#wedding-planner-qa-escalation-count");
+  if (qaEscalationCount) qaEscalationCount.textContent = `${qaCases.length} case${qaCases.length === 1 ? "" : "s"}`;
+  if (!state.selectedWeddingPlannerQaEscalationCaseId && qaCases.length) {
+    state.selectedWeddingPlannerQaEscalationCaseId =
+      qaCases.find(x => x.status === "OPEN")?.escalationCaseId ||
+      qaCases[0].escalationCaseId;
+  }
+  if (qaEscalationSelect) {
+    qaEscalationSelect.innerHTML = qaCases.length
+      ? qaCases.map(x => `<option value="${x.escalationCaseId}"${x.escalationCaseId === state.selectedWeddingPlannerQaEscalationCaseId ? " selected" : ""}>${escapeHtml(x.status)} · ${escapeHtml(x.category)} · ${shortId(x.escalationCaseId)}</option>`).join("")
+      : `<option value="">No escalation cases</option>`;
+  }
+  const qaEscalationList = $("#wedding-planner-qa-escalation-list");
+  if (qaEscalationList) {
+    qaEscalationList.innerHTML = qaCases.length
+      ? qaCases.map(x => {
+          const selected = x.escalationCaseId === state.selectedWeddingPlannerQaEscalationCaseId;
+          return `<button class="activity-item${selected ? " selected" : ""}" data-wedding-qa-escalation="${x.escalationCaseId}" type="button"><span class="activity-icon">⚠</span><span><strong>${escapeHtml(x.status)} · ${escapeHtml(x.category)}</strong><small>Human-only · variant ${escapeHtml(x.selectedVariantId || "")} · report ${escapeHtml(shortId(x.qaReviewReportVersionId || ""))} · ${escapeHtml(x.rationaleSnapshot || "")}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></button>`;
+        }).join("")
+      : emptyState("No escalation cases. ESCALATE a PROPOSED report to open a human-only case.");
+  }
+  renderWeddingPlannerQaInspect();
+  syncOpsQaDecisionForm();
+  syncOpsQaResolutionForm();
 }
 
 function parseWeddingPlannerColorDocument(documentJson) {
@@ -1663,11 +1790,25 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
       state.weddingPlannerCreativePackages?.versions?.[0]?.creativePackageVersionId ||
       null;
     state.weddingPlannerSelectedVariantId = null;
+    state.weddingPlannerQaJobs = await api(`/api/wedding-planner/workspaces/${workspaceId}/qa-review-jobs`);
+    state.weddingPlannerQaReports = await api(`/api/wedding-planner/workspaces/${workspaceId}/qa-review-reports`);
+    state.weddingPlannerQaEscalationCases = await api(`/api/wedding-planner/workspaces/${workspaceId}/qa-escalation-cases`);
+    state.selectedWeddingPlannerQaJobId = state.weddingPlannerQaJobs?.[0]?.qaReviewJobId || null;
+    state.selectedWeddingPlannerQaReportId =
+      state.weddingPlannerQaReports?.versions?.find(x => x.status === "PROPOSED")?.qaReviewReportVersionId ||
+      state.weddingPlannerQaReports?.currentAcceptedQaReviewReportVersionId ||
+      state.weddingPlannerQaReports?.versions?.[0]?.qaReviewReportVersionId ||
+      null;
+    state.selectedWeddingPlannerQaEscalationCaseId =
+      state.weddingPlannerQaEscalationCases?.find(x => x.status === "OPEN")?.escalationCaseId ||
+      state.weddingPlannerQaEscalationCases?.[0]?.escalationCaseId ||
+      null;
     await mergeWeddingPlannerInterpreterRuns();
     await mergeWeddingPlannerWorkspaceRuns(workspaceId);
     await loadWeddingPlannerResearchAgentRuns();
     await loadWeddingPlannerWorkshopDetails();
     await loadWeddingPlannerCreativeDetails();
+    await loadWeddingPlannerQaDetails();
   } catch (error) {
     toast(error.message, true);
     state.weddingPlannerSessions = [];
@@ -1697,6 +1838,14 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
     state.weddingPlannerCreativeAssets = [];
     state.weddingPlannerCreativeAgentRuns = [];
     state.weddingPlannerSelectedVariantId = null;
+    state.weddingPlannerQaJobs = [];
+    state.weddingPlannerQaReports = null;
+    state.weddingPlannerQaContributions = [];
+    state.weddingPlannerQaAgentRuns = [];
+    state.weddingPlannerQaEscalationCases = [];
+    state.selectedWeddingPlannerQaJobId = null;
+    state.selectedWeddingPlannerQaReportId = null;
+    state.selectedWeddingPlannerQaEscalationCaseId = null;
   }
   renderWeddingPlanner();
 }
@@ -2716,3 +2865,529 @@ async function submitWeddingPlannerResearchDecision(form) {
 function prettyJson(value){try{return escapeHtml(JSON.stringify(typeof value==="string"?JSON.parse(value):value,null,2));}catch{return escapeHtml(value||"No snapshot");}}
 function emptyState(message){return `<div class="empty-state">${escapeHtml(message)}</div>`;}
 function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));}
+
+const QA_LABEL_OPS = "PHASE 7 · CHAPERONE / QA / HUMAN ESCALATION";
+const SYNTHETIC_DEVELOPMENT_QA_REVIEW = "SYNTHETIC DEVELOPMENT QA REVIEW";
+const THREE_TO_TWO_EXPLANATION_OPS = "Three control roles map to 2 AI workers/runs, not 3 subscriptions";
+const QA_REVIEW_DISCLAIMER_OPS =
+  "Acceptance of this QA review report is control review only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, final production-artwork, or Bliss handshake approval. Deterministic rules check package, decision, variant, asset integrity, and provenance only; they do not certify semantic truth, visual safety, or campaign readiness. AI control roles never receive image bytes and cannot approve or waive. Humans must view the same-origin selected PNG before ACCEPT. The Human Escalation Steward is a rules-first human authority, not an AI worker. Phase 8 must independently define handshake and may distinguish clean acceptance from acceptance-with-exception.";
+const QA_LOGICAL_ROLES_OPS = ["CREATIVE_CHAPERONE", "QA_INSPECTOR", "HUMAN_ESCALATION_STEWARD"];
+const QA_WORKER_PROFILES_OPS = ["CHAPERONE_REVIEW_V1", "QA_INSPECTION_V1"];
+const QA_FOCUS_AREAS_OPS = ["COPY", "VISUAL", "PROVENANCE", "CLAIMS", "FORMAT", "ASSET_INTEGRITY"];
+const QA_REPORT_STATUSES_OPS = [
+  "PROPOSED",
+  "ACCEPTED",
+  "RETURNED_FOR_REVISION",
+  "ESCALATED",
+  "ACCEPTED_WITH_EXCEPTION"
+];
+const QA_ESCALATION_CATEGORIES_OPS = [
+  "VISUAL_UNCERTAINTY", "CLAIM_BOUNDARY", "PROVENANCE", "ASSET_INTEGRITY", "COPY_QUALITY", "POLICY_OTHER"
+];
+
+function sessionHasRole(session, roleName) {
+  const roles = session?.roles || [];
+  const needle = String(roleName || "").toLowerCase();
+  return roles.some(role => String(role || "").toLowerCase() === needle);
+}
+
+/** QA decision authority: reviewer|operator|admin (or auth disabled). Do not rely only on session.canReview — operators must decide. */
+function canDecideQaReview(session = state.session) {
+  if (!session) return false;
+  if (!session.authenticationEnabled) return true;
+  return sessionHasRole(session, "bliss.reviewer")
+    || sessionHasRole(session, "bliss.operator")
+    || sessionHasRole(session, "bliss.admin");
+}
+
+/** WAIVE_AND_ACCEPT authority: operator|admin (or auth disabled). */
+function canWaiveQaEscalation(session = state.session) {
+  if (!session) return false;
+  if (!session.authenticationEnabled) return true;
+  return sessionHasRole(session, "bliss.operator")
+    || sessionHasRole(session, "bliss.admin");
+}
+
+function parseWeddingPlannerQaDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+function parseQaRulesFromJobOrDoc(job, doc) {
+  if (doc?.rules && typeof doc.rules === "object") return doc.rules;
+  if (!job?.rulesFindingsJson) return null;
+  try {
+    return typeof job.rulesFindingsJson === "string"
+      ? JSON.parse(job.rulesFindingsJson)
+      : job.rulesFindingsJson;
+  } catch {
+    return null;
+  }
+}
+
+function deriveBlockerCodesFromRules(rules) {
+  const findings = Array.isArray(rules?.findings) ? rules.findings : [];
+  return findings
+    .filter(f => String(f.severity || "").toUpperCase() === "BLOCK")
+    .map(f => String(f.code || "").trim())
+    .filter(Boolean);
+}
+
+function selectedReportHasSyntheticMarker(report, doc) {
+  return doc?.marker === SYNTHETIC_DEVELOPMENT_QA_REVIEW
+    || JSON.stringify(doc || {}).includes(SYNTHETIC_DEVELOPMENT_QA_REVIEW)
+    || String(report?.summary || "").includes(SYNTHETIC_DEVELOPMENT_QA_REVIEW);
+}
+
+async function loadWeddingPlannerQaDetails() {
+  const reportId = state.selectedWeddingPlannerQaReportId;
+  if (!reportId) {
+    state.weddingPlannerQaContributions = [];
+    state.weddingPlannerQaAgentRuns = [];
+    return;
+  }
+  try {
+    const [contributions, runs, reportDto] = await Promise.all([
+      api(`/api/wedding-planner/qa-review-reports/${reportId}/contributions`),
+      api(`/api/wedding-planner/qa-review-reports/${reportId}/agent-runs`),
+      api(`/api/wedding-planner/qa-review-reports/${reportId}`)
+    ]);
+    state.weddingPlannerQaContributions = Array.isArray(contributions) ? contributions : [];
+    state.weddingPlannerQaAgentRuns = Array.isArray(runs) ? runs : [];
+    const versions = state.weddingPlannerQaReports?.versions || [];
+    const idx = versions.findIndex(x => x.qaReviewReportVersionId === reportId);
+    if (idx >= 0 && reportDto) versions[idx] = reportDto;
+  } catch {
+    state.weddingPlannerQaContributions = [];
+    state.weddingPlannerQaAgentRuns = [];
+  }
+}
+
+function syncOpsQaDecisionForm() {
+  const form = $("#wedding-planner-qa-decision-form");
+  if (!form) return;
+  const decision = $("#wedding-planner-qa-decision")?.value || "ACCEPT";
+  const acceptWrap = $("#wedding-planner-qa-accept-confirmations");
+  const escalateWrap = $("#wedding-planner-qa-escalate-category-wrap");
+  const syntheticWrap = $("#wedding-planner-qa-synthetic-ack-wrap");
+  const variantInput = $("#wedding-planner-qa-selected-variant");
+  const versions = state.weddingPlannerQaReports?.versions || [];
+  const selected = versions.find(x => x.qaReviewReportVersionId === state.selectedWeddingPlannerQaReportId) || null;
+  const doc = parseWeddingPlannerQaDocument(selected?.documentJson);
+  if (variantInput) variantInput.value = selected?.selectedVariantId || "";
+  if (acceptWrap) acceptWrap.hidden = decision !== "ACCEPT";
+  if (escalateWrap) escalateWrap.hidden = decision !== "ESCALATE";
+  if (syntheticWrap) {
+    const needsSynthetic = decision === "ACCEPT" && selectedReportHasSyntheticMarker(selected, doc);
+    syntheticWrap.hidden = !needsSynthetic;
+  }
+  const canDecide = canDecideQaReview();
+  form.querySelectorAll("button, input, select, textarea").forEach(el => {
+    if (el.name === "selectedVariantId") {
+      el.readOnly = true;
+      return;
+    }
+    if (el.id === "regenerate-wedding-planner-qa-decision-key") return;
+    if (el.closest("details.advanced-fields") && (el.name === "sourceSystem" || el.name === "idempotencyKey")) return;
+  });
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = !canDecide;
+    submitBtn.title = canDecide
+      ? "Human reviewer/operator/admin decision"
+      : "QA decisions require reviewer, operator, or admin authority (not advertiser; not canReview alone)";
+  }
+}
+
+function syncOpsQaResolutionForm() {
+  const form = $("#wedding-planner-qa-resolution-form");
+  if (!form) return;
+  const resolution = $("#wedding-planner-qa-resolution")?.value || "RETURN_FOR_REVISION";
+  const waiveFields = $("#wedding-planner-qa-waive-fields");
+  const note = $("#wedding-planner-qa-blocker-codes-note");
+  if (waiveFields) waiveFields.hidden = resolution !== "WAIVE_AND_ACCEPT";
+  const versions = state.weddingPlannerQaReports?.versions || [];
+  const cases = state.weddingPlannerQaEscalationCases || [];
+  const selectedCase = cases.find(x => x.escalationCaseId === state.selectedWeddingPlannerQaEscalationCaseId) || null;
+  const report = versions.find(x => x.qaReviewReportVersionId === selectedCase?.qaReviewReportVersionId)
+    || versions.find(x => x.qaReviewReportVersionId === state.selectedWeddingPlannerQaReportId)
+    || null;
+  const job = (state.weddingPlannerQaJobs || []).find(j => j.outputQaReviewReportVersionId === report?.qaReviewReportVersionId)
+    || (state.weddingPlannerQaJobs || []).find(j => j.qaReviewJobId === state.selectedWeddingPlannerQaJobId)
+    || null;
+  const doc = parseWeddingPlannerQaDocument(report?.documentJson);
+  const rules = parseQaRulesFromJobOrDoc(job, doc);
+  const blockers = deriveBlockerCodesFromRules(rules);
+  if (note) {
+    note.textContent = `Acknowledged blocker codes (exact set from report BLOCK findings, auto-derived): ${blockers.length ? blockers.join(", ") : "(none — empty array will be submitted)"}`;
+  }
+  const canReturn = canDecideQaReview();
+  const canWaive = canWaiveQaEscalation();
+  const waiveOption = form.querySelector('#wedding-planner-qa-resolution option[value="WAIVE_AND_ACCEPT"]');
+  if (waiveOption) waiveOption.disabled = !canWaive;
+  if (resolution === "WAIVE_AND_ACCEPT" && !canWaive) {
+    const select = $("#wedding-planner-qa-resolution");
+    if (select) select.value = "RETURN_FOR_REVISION";
+    if (waiveFields) waiveFields.hidden = true;
+  }
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    const allowed = resolution === "WAIVE_AND_ACCEPT" ? canWaive : canReturn;
+    submitBtn.disabled = !allowed;
+    submitBtn.title = allowed
+      ? "Human-only escalation resolution"
+      : resolution === "WAIVE_AND_ACCEPT"
+        ? "WAIVE_AND_ACCEPT requires operator or admin (or auth disabled)"
+        : "RETURN_FOR_REVISION requires reviewer, operator, or admin";
+  }
+}
+
+function renderWeddingPlannerQaInspect() {
+  const panel = $("#wedding-planner-qa-inspect");
+  if (!panel) return;
+  const versions = state.weddingPlannerQaReports?.versions || [];
+  const currentId = state.weddingPlannerQaReports?.currentAcceptedQaReviewReportVersionId || null;
+  const selected = versions.find(x => x.qaReviewReportVersionId === state.selectedWeddingPlannerQaReportId) || versions[0] || null;
+  const selectedJob = (state.weddingPlannerQaJobs || []).find(x => x.qaReviewJobId === state.selectedWeddingPlannerQaJobId) || null;
+  const selectedCase = (state.weddingPlannerQaEscalationCases || []).find(x => x.escalationCaseId === state.selectedWeddingPlannerQaEscalationCaseId) || null;
+  if (!selected && !selectedJob) {
+    panel.innerHTML = emptyState("Select a QA review job or report to inspect pins, qa-rules.v1 findings, selected PNG, 3 contributions, and 2 AI receipts.");
+    return;
+  }
+
+  const doc = parseWeddingPlannerQaDocument(selected?.documentJson);
+  const isCurrent = selected && (selected.qaReviewReportVersionId === currentId || selected.isCurrentAccepted);
+  const hasSynthetic = selectedReportHasSyntheticMarker(selected, doc);
+  const contributions = state.weddingPlannerQaContributions || [];
+  const runs = state.weddingPlannerQaAgentRuns || [];
+  const rules = parseQaRulesFromJobOrDoc(selectedJob, doc);
+  const findings = Array.isArray(rules?.findings) ? rules.findings : [];
+  const inspectorDoc = (doc?.contributions || []).find(c => c.logicalRole === "QA_INSPECTOR");
+  const proposedOutcome = inspectorDoc?.proposedOutcome || "—";
+
+  const jobBlock = selectedJob ? `
+    <div class="detail-hero"><div class="detail-hero-top">${badge(selectedJob.status)}</div>
+      <h3>QA review job</h3>
+      <p>${escapeHtml(selectedJob.reviewObjective || "No objective")}</p>
+    </div>
+    <div class="metric-grid">
+      ${metric("Input SHA-256", selectedJob.inputSha256 || "—")}
+      ${metric("Focus areas", Array.isArray(selectedJob.focusAreas) ? selectedJob.focusAreas.join(", ") : "—")}
+      ${metric("Package pin", selectedJob.approvedCreativePackageVersionId || "—")}
+      ${metric("Package SHA", selectedJob.creativePackageDocumentSha256 || "—")}
+      ${metric("Decision pin", selectedJob.creativePackageDecisionId || "—")}
+      ${metric("Selected variant", selectedJob.selectedVariantId || "—")}
+      ${metric("Selected asset", selectedJob.selectedCreativeAssetId || "—")}
+      ${metric("Asset SHA", selectedJob.selectedCreativeAssetSha256 || "—")}
+      ${metric("Asset meta", `${selectedJob.selectedCreativeAssetContentType || "—"} · ${selectedJob.selectedCreativeAssetByteSize ?? "—"} B · ${selectedJob.selectedCreativeAssetWidth ?? "—"}×${selectedJob.selectedCreativeAssetHeight ?? "—"}`)}
+      ${metric("Selected concept", selectedJob.selectedConceptId || "—")}
+      ${metric("Brand DNA pin", `${shortId(selectedJob.approvedBrandDnaVersionId || "")} v${selectedJob.approvedBrandDnaVersionNumber ?? "—"}`)}
+      ${metric("Color pin", `${shortId(selectedJob.approvedColorProfileVersionId || "")} v${selectedJob.approvedColorProfileVersionNumber ?? "—"}`)}
+      ${metric("Research pin", `${shortId(selectedJob.approvedResearchReportVersionId || "")} v${selectedJob.approvedResearchReportVersionNumber ?? "—"}`)}
+      ${metric("Rules severity", selectedJob.rulesOverallSeverity || "—")}
+      ${metric("Chaperone run", selectedJob.chaperoneReviewAgentRunId || "—")}
+      ${metric("QA inspection run", selectedJob.qaInspectionAgentRunId || "—")}
+      ${metric("Output report", selectedJob.outputQaReviewReportVersionId || "—")}
+    </div>
+  ` : "";
+
+  const findingRows = findings.length
+    ? findings.map(f => `<div class="activity-item"><span class="activity-icon">${escapeHtml(f.severity || "?")}</span><span><strong>${escapeHtml(f.code || "—")} · ${escapeHtml(f.severity || "—")}</strong><small>${escapeHtml(f.message || "")}</small></span></div>`).join("")
+    : emptyState("No qa-rules.v1 findings on this job/report yet.");
+
+  const contributionRows = QA_LOGICAL_ROLES_OPS.map(role => {
+    const row = contributions.find(x => x.logicalRole === role);
+    const docRow = (doc?.contributions || []).find(x => x.logicalRole === role);
+    let summary = docRow?.summary || "";
+    let source = row?.contributionSource || docRow?.contributionSource || (role === "HUMAN_ESCALATION_STEWARD" ? "RULES_HUMAN" : "AI");
+    let proposed = docRow?.proposedOutcome || "";
+    let routing = docRow?.routing || null;
+    if (row?.contributionJson) {
+      try {
+        const parsed = typeof row.contributionJson === "string" ? JSON.parse(row.contributionJson) : row.contributionJson;
+        if (parsed?.summary) summary = parsed.summary;
+        if (parsed?.contributionSource) source = parsed.contributionSource;
+        if (parsed?.proposedOutcome) proposed = parsed.proposedOutcome;
+        if (parsed?.routing) routing = parsed.routing;
+      } catch { /* keep */ }
+    }
+    const stewardClass = source === "RULES_HUMAN" ? " status-review-required" : "";
+    const stewardNote = role === "HUMAN_ESCALATION_STEWARD"
+      ? `<br><em>RULES_HUMAN Steward · producingAgentRunId null · not a third AI run · human authority</em>`
+      : "";
+    return `<div class="activity-item${stewardClass}"><span class="activity-icon">${escapeHtml(source)}</span><span><strong>${escapeHtml(role)} · ${escapeHtml(source)}</strong><small>${escapeHtml(summary || "—")}${proposed ? `<br>proposedOutcome: ${escapeHtml(proposed)}` : ""}${routing ? `<br>routing: ${escapeHtml(routing.proposedRouting || "—")} · blockers ${escapeHtml((routing.blockerCodes || []).join(",") || "—")}` : ""}<br>producingAgentRunId: ${escapeHtml(row?.producingAgentRunId == null ? "null" : row.producingAgentRunId)}${stewardNote}</small></span></div>`;
+  }).join("");
+
+  const runRows = runs.length
+    ? `<p class="safety-note">${escapeHtml(THREE_TO_TWO_EXPLANATION_OPS)}. Profiles ${escapeHtml(QA_WORKER_PROFILES_OPS.join(", "))}. Showing ${runs.length} receipt(s). No Steward run. Do not claim visual AI.</p>` +
+      runs.map(run => `<div class="activity-item"><span class="activity-icon">◇</span><span><strong>${escapeHtml(run.logicalRole || "—")} · ${escapeHtml(run.status || "—")}</strong><small>profile ${escapeHtml(run.workerProfileVersion || "—")} · prompt ${escapeHtml(run.promptPackVersion || "—")} · assigned ${escapeHtml(run.assignedRolesJson || "—")}<br>tokens ${escapeHtml(String(run.promptTokens ?? "—"))}/${escapeHtml(String(run.completionTokens ?? "—"))}/${escapeHtml(String(run.totalTokens ?? "—"))} · cost $${escapeHtml(formatUsd(run.estimatedCostUsd))} · provider ${escapeHtml(run.providerKey || "—")} · model ${escapeHtml(run.modelId || "—")}</small></span></div>`).join("")
+    : emptyState("No QA agent-run receipts. Expected exactly 2 AI runs — never a third Steward run.");
+
+  const assetId = selected?.selectedCreativeAssetId
+    || doc?.provenance?.selectedCreativeAssetId
+    || doc?.selectedVariantSnapshot?.asset?.creativeAssetId
+    || selectedJob?.selectedCreativeAssetId
+    || null;
+
+  const caseBlock = selectedCase ? `
+    <div class="detail-hero"><div class="detail-hero-top">${badge(selectedCase.status)}</div>
+      <h3>Escalation case · human-only</h3>
+      <p>${escapeHtml(selectedCase.category)} · ${escapeHtml(selectedCase.rationaleSnapshot || "")}</p>
+    </div>
+    <div class="metric-grid">
+      ${metric("Case id", selectedCase.escalationCaseId || "—")}
+      ${metric("Report", selectedCase.qaReviewReportVersionId || "—")}
+      ${metric("Decision", selectedCase.qaReviewDecisionId || "—")}
+      ${metric("Variant", selectedCase.selectedVariantId || "—")}
+      ${metric("Resolution id", selectedCase.resolutionId || "—")}
+    </div>
+  ` : "";
+
+  panel.innerHTML = `
+    ${jobBlock}
+    ${selected ? `
+      <div class="detail-hero"><div class="detail-hero-top">${badge(selected.status)}${isCurrent ? ` ${badge("CURRENT ACCEPTED")}` : ""}</div>
+        <h3>QA review report v${escapeHtml(String(selected.versionNumber ?? "—"))}</h3>
+        <p>${escapeHtml(selected.summary || "No summary")}</p>
+      </div>
+      <div class="safety-note"><strong>Exact disclaimer.</strong> ${escapeHtml(doc?.disclaimer || QA_REVIEW_DISCLAIMER_OPS)}</div>
+      ${hasSynthetic ? `<div class="safety-note"><strong>${escapeHtml(SYNTHETIC_DEVELOPMENT_QA_REVIEW)}</strong> Local/synthetic QA path — control review only; not campaign-ready.</div>` : ""}
+      <div class="metric-grid">
+        ${metric("Status", selected.status || "—")}
+        ${metric("Schema", selected.schemaVersion || doc?.schemaVersion || "—")}
+        ${metric("Selected variant", selected.selectedVariantId || "—")}
+        ${metric("Package pin", selected.approvedCreativePackageVersionId || "—")}
+        ${metric("Package SHA", selected.creativePackageDocumentSha256 || "—")}
+        ${metric("Decision pin", selected.creativePackageDecisionId || "—")}
+        ${metric("Asset pin", selected.selectedCreativeAssetId || "—")}
+        ${metric("Asset SHA", selected.selectedCreativeAssetSha256 || "—")}
+        ${metric("Concept", selected.selectedConceptId || "—")}
+        ${metric("DNA pin", `${shortId(selected.approvedBrandDnaVersionId || "")} v${selected.approvedBrandDnaVersionNumber ?? "—"}`)}
+        ${metric("Color pin", `${shortId(selected.approvedColorProfileVersionId || "")} v${selected.approvedColorProfileVersionNumber ?? "—"}`)}
+        ${metric("Research pin", `${shortId(selected.approvedResearchReportVersionId || "")} v${selected.approvedResearchReportVersionNumber ?? "—"}`)}
+        ${metric("Rules severity", selected.rulesOverallSeverity || rules?.overallSeverity || "—")}
+        ${metric("Rules version", rules?.schemaVersion || "qa-rules.v1")}
+        ${metric("Proposed outcome", proposedOutcome)}
+        ${metric("Estimated cost USD", formatUsd(selected.estimatedTotalCostUsd))}
+        ${metric("CURRENT ACCEPTED pointer", currentId || "none")}
+      </div>
+      <h3>Selected PNG · human visual review · same-origin only</h3>
+      ${renderOpsSafeDraftPngPreview(assetId, "Selected creative PNG for human QA visual review · not visual AI")}
+      <p class="safety-note">Humans must view same-origin /api/wedding-planner/creative-assets/{validated-guid}/content before ACCEPT. Never provider URL, data/base64/blob, SVG/HTML, or visual AI.</p>
+      <h3>qa-rules.v1 findings</h3>
+      ${findingRows}
+      <h3>Role contributions (exactly 3 · AI / AI / RULES_HUMAN)</h3>
+      <p class="safety-note">${escapeHtml(THREE_TO_TWO_EXPLANATION_OPS)}. Steward is RULES_HUMAN and visibly distinguished — not an AI worker.</p>
+      ${contributionRows}
+      <h3>Agent run receipts (exactly 2 AI workers)</h3>
+      ${runRows}
+    ` : emptyState("No QA report selected.")}
+    ${caseBlock}
+    <p class="safety-note"><strong>${escapeHtml(QA_LABEL_OPS)}</strong> Control review only. Decision authority: ${canDecideQaReview() ? "reviewer|operator|admin (or auth disabled)" : "none"}. Waive authority: ${canWaiveQaEscalation() ? "operator|admin (or auth disabled)" : "none"}. Do not rely only on session.canReview.</p>
+  `;
+}
+
+async function submitWeddingPlannerQaJob(form) {
+  const value = name => form.elements[name]?.value?.trim?.() ?? String(form.elements[name]?.value || "").trim();
+  const focusAreas = [...form.querySelectorAll('input[name="qaFocusArea"]:checked')]
+    .map(input => String(input.value || "").trim())
+    .filter(Boolean);
+  const unique = [...new Set(focusAreas)];
+  if (!unique.length || unique.length > 6 || unique.some(f => !QA_FOCUS_AREAS_OPS.includes(f)) || unique.length !== focusAreas.length) {
+    toast("Select 1–6 unique focus areas from the locked Phase 7 set.", true);
+    return;
+  }
+  const payload = {
+    reviewObjective: value("reviewObjective"),
+    focusAreas: unique,
+    sourceSystem: value("sourceSystem"),
+    idempotencyKey: value("idempotencyKey")
+  };
+  const notes = value("notes");
+  if (notes) payload.notes = notes;
+  try {
+    const workspaceId = value("workspaceId");
+    const result = await api(`/api/wedding-planner/workspaces/${workspaceId}/qa-review-jobs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const replayNote = result.isReplay && result.status === "FAILED"
+      ? " (failed replay — not a retry)"
+      : result.isReplay ? " (replay)" : "";
+    toast(`QA review job ${result.status}${replayNote}`);
+    fillKey("#wedding-planner-qa-job-key");
+    form.querySelectorAll('input[name="qaFocusArea"]').forEach(input => { input.checked = false; });
+    if (form.elements.reviewObjective) form.elements.reviewObjective.value = "";
+    if (form.elements.notes) form.elements.notes.value = "";
+    state.selectedWeddingPlannerWorkspace = workspaceId;
+    state.selectedWeddingPlannerQaJobId = result.qaReviewJobId;
+    if (result.outputQaReviewReportVersionId) {
+      state.selectedWeddingPlannerQaReportId = result.outputQaReviewReportVersionId;
+    }
+    state.weddingPlannerQaJobs = await api(`/api/wedding-planner/workspaces/${workspaceId}/qa-review-jobs`);
+    state.weddingPlannerQaReports = await api(`/api/wedding-planner/workspaces/${workspaceId}/qa-review-reports`);
+    state.weddingPlannerQaEscalationCases = await api(`/api/wedding-planner/workspaces/${workspaceId}/qa-escalation-cases`);
+    await mergeWeddingPlannerWorkspaceRuns(workspaceId);
+    await loadWeddingPlannerQaDetails();
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function submitWeddingPlannerQaDecision(form) {
+  if (!canDecideQaReview()) {
+    toast("QA decisions require reviewer, operator, or admin authority (operators included — do not rely only on canReview).", true);
+    return;
+  }
+  const value = name => form.elements[name]?.value?.trim?.() ?? String(form.elements[name]?.value || "").trim();
+  const decision = value("decision");
+  const selectedVariantId = value("selectedVariantId");
+  const versions = state.weddingPlannerQaReports?.versions || [];
+  const selected = versions.find(x => x.qaReviewReportVersionId === value("qaReviewReportVersionId")) || null;
+  const doc = parseWeddingPlannerQaDocument(selected?.documentJson);
+  if (!selectedVariantId || (selected?.selectedVariantId && selectedVariantId !== selected.selectedVariantId)) {
+    toast("selectedVariantId must exactly echo the server-provided report pin.", true);
+    return;
+  }
+  if (decision === "ACCEPT") {
+    if (form.elements.confirmAccept?.checked !== true) {
+      toast("Confirm the ACCEPT checkbox before accepting a QA report.", true);
+      return;
+    }
+    if (form.elements.visualReviewConfirmed?.checked !== true
+      || form.elements.copyReviewConfirmed?.checked !== true
+      || form.elements.provenanceReviewConfirmed?.checked !== true) {
+      toast("ACCEPT requires visual, copy, and provenance review confirmations (human visual review of same-origin PNG — not visual AI).", true);
+      return;
+    }
+    if (selectedReportHasSyntheticMarker(selected, doc) && form.elements.syntheticMarkerAcknowledged?.checked !== true) {
+      toast("ACCEPT requires synthetic marker acknowledgement when SYNTHETIC DEVELOPMENT QA REVIEW is present.", true);
+      return;
+    }
+  }
+  if (decision === "ESCALATE") {
+    const category = value("escalationCategory");
+    if (!QA_ESCALATION_CATEGORIES_OPS.includes(category)) {
+      toast("ESCALATE requires an exact escalation category enum.", true);
+      return;
+    }
+  }
+  const payload = {
+    decision,
+    rationale: value("rationale"),
+    selectedVariantId,
+    sourceSystem: value("sourceSystem"),
+    idempotencyKey: value("idempotencyKey")
+  };
+  if (decision === "ACCEPT") {
+    payload.visualReviewConfirmed = true;
+    payload.copyReviewConfirmed = true;
+    payload.provenanceReviewConfirmed = true;
+    if (selectedReportHasSyntheticMarker(selected, doc)) {
+      payload.syntheticMarkerAcknowledged = true;
+    }
+  }
+  if (decision === "ESCALATE") {
+    payload.escalationCategory = value("escalationCategory");
+  }
+  try {
+    const result = await api(`/api/wedding-planner/qa-review-reports/${value("qaReviewReportVersionId")}/decisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    toast(`QA ${friendlyStatus(result.decision)} recorded${result.isReplay ? " (replay)" : ""} — control review only`);
+    form.elements.rationale.value = "";
+    if (form.elements.confirmAccept) form.elements.confirmAccept.checked = false;
+    if (form.elements.visualReviewConfirmed) form.elements.visualReviewConfirmed.checked = false;
+    if (form.elements.copyReviewConfirmed) form.elements.copyReviewConfirmed.checked = false;
+    if (form.elements.provenanceReviewConfirmed) form.elements.provenanceReviewConfirmed.checked = false;
+    if (form.elements.syntheticMarkerAcknowledged) form.elements.syntheticMarkerAcknowledged.checked = false;
+    fillKey("#wedding-planner-qa-decision-key");
+    const workspaceId = result.workspaceId || state.selectedWeddingPlannerWorkspace;
+    if (workspaceId) {
+      state.weddingPlannerQaReports = await api(`/api/wedding-planner/workspaces/${workspaceId}/qa-review-reports`);
+      state.weddingPlannerQaEscalationCases = await api(`/api/wedding-planner/workspaces/${workspaceId}/qa-escalation-cases`);
+      state.selectedWeddingPlannerQaReportId = result.qaReviewReportVersionId || state.selectedWeddingPlannerQaReportId;
+      if (result.escalationCaseId) {
+        state.selectedWeddingPlannerQaEscalationCaseId = result.escalationCaseId;
+      }
+      await loadWeddingPlannerQaDetails();
+    }
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function submitWeddingPlannerQaResolution(form) {
+  const value = name => form.elements[name]?.value?.trim?.() ?? String(form.elements[name]?.value || "").trim();
+  const resolution = value("resolution");
+  if (resolution === "WAIVE_AND_ACCEPT" && !canWaiveQaEscalation()) {
+    toast("WAIVE_AND_ACCEPT requires operator or admin (or auth disabled).", true);
+    return;
+  }
+  if (resolution === "RETURN_FOR_REVISION" && !canDecideQaReview()) {
+    toast("RETURN_FOR_REVISION resolution requires reviewer, operator, or admin.", true);
+    return;
+  }
+  const cases = state.weddingPlannerQaEscalationCases || [];
+  const selectedCase = cases.find(x => x.escalationCaseId === value("escalationCaseId")) || null;
+  const versions = state.weddingPlannerQaReports?.versions || [];
+  const report = versions.find(x => x.qaReviewReportVersionId === selectedCase?.qaReviewReportVersionId)
+    || versions.find(x => x.qaReviewReportVersionId === state.selectedWeddingPlannerQaReportId)
+    || null;
+  const job = (state.weddingPlannerQaJobs || []).find(j => j.outputQaReviewReportVersionId === report?.qaReviewReportVersionId) || null;
+  const doc = parseWeddingPlannerQaDocument(report?.documentJson);
+  const rules = parseQaRulesFromJobOrDoc(job, doc);
+  const blockerCodes = deriveBlockerCodesFromRules(rules);
+  const payload = {
+    resolution,
+    rationale: value("rationale"),
+    sourceSystem: value("sourceSystem"),
+    idempotencyKey: value("idempotencyKey")
+  };
+  if (resolution === "WAIVE_AND_ACCEPT") {
+    const exceptionRationale = value("exceptionRationale");
+    if (!exceptionRationale) {
+      toast("WAIVE_AND_ACCEPT requires exception rationale.", true);
+      return;
+    }
+    if (form.elements.exceptionAcknowledged?.checked !== true) {
+      toast("WAIVE_AND_ACCEPT requires exception acknowledgement.", true);
+      return;
+    }
+    payload.exceptionRationale = exceptionRationale;
+    payload.exceptionAcknowledged = true;
+    payload.acknowledgedBlockerCodes = blockerCodes;
+  }
+  try {
+    const result = await api(`/api/wedding-planner/qa-escalation-cases/${value("escalationCaseId")}/resolutions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    toast(`Escalation ${friendlyStatus(result.resolution)} recorded${result.isReplay ? " (replay)" : ""} — human-only · report may become RETURNED_FOR_REVISION or ACCEPTED_WITH_EXCEPTION`);
+    form.elements.rationale.value = "";
+    if (form.elements.exceptionRationale) form.elements.exceptionRationale.value = "";
+    if (form.elements.exceptionAcknowledged) form.elements.exceptionAcknowledged.checked = false;
+    fillKey("#wedding-planner-qa-resolution-key");
+    const workspaceId = result.workspaceId || state.selectedWeddingPlannerWorkspace;
+    if (workspaceId) {
+      state.weddingPlannerQaReports = await api(`/api/wedding-planner/workspaces/${workspaceId}/qa-review-reports`);
+      state.weddingPlannerQaEscalationCases = await api(`/api/wedding-planner/workspaces/${workspaceId}/qa-escalation-cases`);
+      state.selectedWeddingPlannerQaReportId = result.qaReviewReportVersionId || state.selectedWeddingPlannerQaReportId;
+      state.selectedWeddingPlannerQaEscalationCaseId = result.escalationCaseId || state.selectedWeddingPlannerQaEscalationCaseId;
+      await loadWeddingPlannerQaDetails();
+    }
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
