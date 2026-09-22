@@ -135,7 +135,7 @@ namespace Bliss.Infrastructure.Migrations
                     Decision = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     ActorType = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     ActorLabel = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    Rationale = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    Rationale = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
                     SourceSystem = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     IdempotencyKey = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     OccurredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)

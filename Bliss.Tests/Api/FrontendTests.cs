@@ -89,7 +89,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Recent verifications", body);
         Assert.Contains("Wedding Planner", body);
         Assert.Contains("Advertiser workspace, Concierge runs, and Brand DNA", body);
-        Assert.Contains("Session Concierge runs", body);
+        Assert.Contains("Concierge + Brand DNA Interpreter runs", body);
         Assert.Contains("Create Brand DNA proposal", body);
         Assert.Contains("Approve or reject Brand DNA", body);
         Assert.Contains("Export ledger", body);

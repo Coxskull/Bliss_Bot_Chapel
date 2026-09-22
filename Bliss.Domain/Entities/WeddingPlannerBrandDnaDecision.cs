@@ -13,7 +13,7 @@ public class WeddingPlannerBrandDnaDecision
     public string Decision { get; set; } = string.Empty;
     public string ActorType { get; set; } = string.Empty;
     public string ActorLabel { get; set; } = string.Empty;
-    public string? Rationale { get; set; }
+    public string Rationale { get; set; } = string.Empty;
     public string SourceSystem { get; set; } = string.Empty;
     public string IdempotencyKey { get; set; } = string.Empty;
     public DateTime OccurredAt { get; set; }

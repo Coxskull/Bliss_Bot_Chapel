@@ -14,7 +14,7 @@ public sealed class WeddingPlannerBrandDnaDecisionConfiguration : IEntityTypeCon
         builder.Property(x => x.Decision).IsRequired().HasMaxLength(32);
         builder.Property(x => x.ActorType).IsRequired().HasMaxLength(32);
         builder.Property(x => x.ActorLabel).IsRequired().HasMaxLength(128);
-        builder.Property(x => x.Rationale).HasMaxLength(2000);
+        builder.Property(x => x.Rationale).IsRequired().HasMaxLength(2000);
         builder.Property(x => x.SourceSystem).IsRequired().HasMaxLength(64);
         builder.Property(x => x.IdempotencyKey).IsRequired().HasMaxLength(128);
 

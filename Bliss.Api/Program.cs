@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using System.Text.Json.Serialization;
 using Bliss.Api.Runtime;
 using Bliss.Api.Security;
+using Bliss.Domain.WeddingPlanner;
 using Microsoft.Extensions.FileProviders;
 using Bliss.Infrastructure.DependencyInjection;
 using Bliss.Infrastructure.Persistence;

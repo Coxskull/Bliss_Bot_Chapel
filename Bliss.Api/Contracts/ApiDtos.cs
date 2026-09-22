@@ -614,7 +614,7 @@ public sealed record WeddingPlannerBrandDnaListDto(
 
 public sealed record WeddingPlannerBrandDnaDecisionRequest(
     string Decision,
-    string? Rationale,
+    string Rationale,
     string SourceSystem,
     string IdempotencyKey);
 
@@ -626,7 +626,7 @@ public sealed record WeddingPlannerBrandDnaDecisionDto(
     string Decision,
     string ActorType,
     string ActorLabel,
-    string? Rationale,
+    string Rationale,
     string SourceSystem,
     string IdempotencyKey,
     DateTime OccurredAt,

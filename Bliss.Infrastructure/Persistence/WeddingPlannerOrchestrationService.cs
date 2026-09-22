@@ -76,7 +76,7 @@ public sealed record WeddingPlannerBrandDnaDecisionResult(
     string Decision,
     string ActorType,
     string ActorLabel,
-    string? Rationale,
+    string Rationale,
     string SourceSystem,
     string IdempotencyKey,
     DateTime OccurredAt,
@@ -606,6 +606,7 @@ public sealed class WeddingPlannerOrchestrationService
 
         var workspace = await _planner.RequireWorkspaceForOrchestrationAsync(
             version.WorkspaceId, isChapelStaff, boundAdvertiserId, cancellationToken);
+        var decisionRationale = Required(rationale, nameof(rationale), 2000);
 
         if (!string.Equals(version.Status, WeddingPlannerBrandDnaStatuses.Proposed, StringComparison.Ordinal))
         {
@@ -625,7 +626,7 @@ public sealed class WeddingPlannerOrchestrationService
             Decision = normalizedDecision,
             ActorType = actorType,
             ActorLabel = actorLabel,
-            Rationale = string.IsNullOrWhiteSpace(rationale) ? null : Required(rationale, nameof(rationale), 2000),
+            Rationale = decisionRationale,
             SourceSystem = source,
             IdempotencyKey = key,
             OccurredAt = now

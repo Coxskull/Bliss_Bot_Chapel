@@ -3,15 +3,31 @@
 Logical roles are job positions. They are not automatically separate
 models, subscriptions, servers, or processes.
 
-## Phase 1 (authorized now)
+## Phase 1 (implemented)
 
 - Logical AI roles: 0
 - Executable AI workers: 0
 - Reason: infrastructure, tenancy, durable workspace/session/message/audit.
 
+## Phase 2 (implemented)
+
+- Logical AI roles: 2 — Wedding Planner / Concierge and Brand DNA Interpreter.
+- Executable workers: 1 shared worker selected behind
+  `IWeddingPlannerAiProvider`.
+- Development/CI worker: deterministic local adapter; no network.
+- Production worker: OpenAI-compatible HTTP adapter configured through secrets.
+- Routing: deterministic by endpoint and prompt pack; no intelligent router.
+- Human authority: workers may converse and propose immutable Brand DNA
+  versions, but only an authenticated human may approve or reject.
+- Recorded evidence: worker, provider, model, adapter, prompt pack, request,
+  tokens, estimated cost, status, outcome, and bounded errors.
+
+The implementation uses the low end of the blueprint's 1–2 worker range.
+Splitting the roles later requires a documented cost, quality, and security
+rationale.
+
 ## Later starting allocations
 
-- Phase 2: Wedding Planner / Concierge + Brief/Brand DNA interpreter (1–2 workers).
 - Phase 3: Alpha Color Intelligence is deterministic software.
 - Phase 4: eight Curator responsibilities on about three workers
   (research, analysis/evidence, synthesis/risk).

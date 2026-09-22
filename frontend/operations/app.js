@@ -1037,7 +1037,7 @@ function renderWeddingPlanner() {
   if (runs) {
     runs.innerHTML = state.weddingPlannerAgentRuns.length
       ? state.weddingPlannerAgentRuns.map(x => `<div class="activity-item"><span class="activity-icon">◇</span><span><strong>${escapeHtml(x.logicalRole)} · ${escapeHtml(x.status)}</strong><small>${escapeHtml(x.promptPackVersion || "—")} · ${escapeHtml(x.outcome || x.errorMessage || "no outcome")} · ${x.totalTokens ?? "—"} tokens</small></span><span class="activity-time">${relativeTime(x.completedAt || x.startedAt)}</span></div>`).join("")
-      : emptyState("Select a session to inspect Concierge agent runs.");
+      : emptyState("Select a workspace to inspect Concierge and Brand DNA Interpreter runs.");
   }
   const versions = state.weddingPlannerBrandDna?.versions || [];
   const currentId = state.weddingPlannerBrandDna?.currentApprovedBrandDnaVersionId || null;
@@ -1069,6 +1069,7 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
       state.weddingPlannerAgentRuns = [];
     }
     state.weddingPlannerBrandDna = await api(`/api/wedding-planner/workspaces/${workspaceId}/brand-dna`);
+    await mergeWeddingPlannerInterpreterRuns();
   } catch (error) {
     toast(error.message, true);
     state.weddingPlannerSessions = [];
@@ -1077,6 +1078,18 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
     state.weddingPlannerBrandDna = null;
   }
   renderWeddingPlanner();
+}
+
+async function mergeWeddingPlannerInterpreterRuns() {
+  const versions = state.weddingPlannerBrandDna?.versions || [];
+  const runIds = [...new Set(versions.map(x => x.producingAgentRunId).filter(Boolean))];
+  const interpreterRuns = await Promise.all(
+    runIds.map(id => api(`/api/wedding-planner/agent-runs/${id}`).catch(() => null))
+  );
+  const combined = [...state.weddingPlannerAgentRuns, ...interpreterRuns.filter(Boolean)];
+  state.weddingPlannerAgentRuns = [
+    ...new Map(combined.map(run => [run.agentRunId, run])).values()
+  ].sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt));
 }
 
 async function submitWeddingPlannerWorkspace(form) {
@@ -1120,6 +1133,7 @@ async function submitWeddingPlannerSession(form) {
     state.weddingPlannerMessages = await api(`/api/wedding-planner/sessions/${result.sessionId}/messages`);
     state.weddingPlannerAgentRuns = await api(`/api/wedding-planner/sessions/${result.sessionId}/agent-runs`);
     state.weddingPlannerBrandDna = await api(`/api/wedding-planner/workspaces/${result.workspaceId}/brand-dna`);
+    await mergeWeddingPlannerInterpreterRuns();
     renderWeddingPlanner();
   } catch (error) {
     toast(error.message, true);
@@ -1167,6 +1181,7 @@ async function submitWeddingPlannerInterpret(form) {
     fillKey("#wedding-planner-interpret-key");
     state.selectedWeddingPlannerWorkspace = workspaceId;
     state.weddingPlannerBrandDna = await api(`/api/wedding-planner/workspaces/${workspaceId}/brand-dna`);
+    await mergeWeddingPlannerInterpreterRuns();
     renderWeddingPlanner();
   } catch (error) {
     toast(error.message, true);

@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Bliss.Infrastructure.Migrations
 {
     [DbContext(typeof(BlissDbContext))]
-    [Migration("20260922074346_WeddingPlannerPhase2ConversationBrandDna")]
+    [Migration("20260922080549_WeddingPlannerPhase2ConversationBrandDna")]
     partial class WeddingPlannerPhase2ConversationBrandDna
     {
         /// <inheritdoc />
@@ -1312,6 +1312,7 @@ namespace Bliss.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Rationale")
+                        .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 

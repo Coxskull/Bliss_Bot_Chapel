@@ -145,6 +145,11 @@ public sealed class WeddingPlannerPhase2ApiTests : IClassFixture<BlissApiFactory
         Assert.True(replayed!.IsReplay);
         Assert.Equal(v1.BrandDnaVersionId, replayed.BrandDnaVersionId);
 
+        var missingRationale = await client.PostAsJsonAsync(
+            $"/api/wedding-planner/brand-dna/{v1.BrandDnaVersionId}/decisions",
+            new WeddingPlannerBrandDnaDecisionRequest("APPROVE", string.Empty, "DashboardFixture", $"missing-rationale-{key}"));
+        Assert.Equal(HttpStatusCode.BadRequest, missingRationale.StatusCode);
+
         var approve = await client.PostAsJsonAsync(
             $"/api/wedding-planner/brand-dna/{v1.BrandDnaVersionId}/decisions",
             new WeddingPlannerBrandDnaDecisionRequest("APPROVE", "Looks solid", "DashboardFixture", $"approve-1-{key}"));
@@ -300,7 +305,7 @@ public sealed class WeddingPlannerPhase2IsolationTests : IClassFixture<WeddingPl
         Assert.Equal(HttpStatusCode.NotFound,
             (await restaurant.PostAsJsonAsync(
                 $"/api/wedding-planner/brand-dna/{dna.BrandDnaVersionId}/decisions",
-                new WeddingPlannerBrandDnaDecisionRequest("APPROVE", null, "SECURITY_TEST", $"bad-dec-{Guid.NewGuid():N}"))).StatusCode);
+                new WeddingPlannerBrandDnaDecisionRequest("APPROVE", "Unauthorized attempt", "SECURITY_TEST", $"bad-dec-{Guid.NewGuid():N}"))).StatusCode);
 
         var anonymous = _factory.CreateSecureClient();
         Assert.Equal(HttpStatusCode.Unauthorized,
