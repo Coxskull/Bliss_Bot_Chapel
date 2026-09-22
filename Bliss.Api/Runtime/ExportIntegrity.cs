@@ -73,6 +73,16 @@ public static class ExportIntegrity
         return true;
     }
 
+    public static string ReceiptDetail(ExportVerificationDto result)
+    {
+        var outcome = result.Matched ? "matched" : "mismatch";
+        var prefix = result.ComputedSha256.Length >= 12
+            ? result.ComputedSha256[..12]
+            : result.ComputedSha256;
+        var text = $"{result.PackKind} {outcome} {prefix}";
+        return text.Length <= 128 ? text : text[..128];
+    }
+
     public static bool TryHashDomain(JsonElement root, out string packKind, out string digest, out string error)
     {
         packKind = string.Empty;
@@ -139,4 +149,6 @@ public sealed record ExportVerificationDto(
     string PackKind,
     string DeclaredSha256,
     string ComputedSha256,
-    bool Matched);
+    bool Matched,
+    string? RequestId = null,
+    DateTime? VerifiedAt = null);
