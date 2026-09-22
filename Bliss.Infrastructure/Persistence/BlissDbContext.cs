@@ -52,6 +52,10 @@ public class BlissDbContext : DbContext
     public DbSet<WeddingPlannerResearchReportVersion> WeddingPlannerResearchReportVersions => Set<WeddingPlannerResearchReportVersion>();
     public DbSet<WeddingPlannerResearchRoleContribution> WeddingPlannerResearchRoleContributions => Set<WeddingPlannerResearchRoleContribution>();
     public DbSet<WeddingPlannerResearchReportDecision> WeddingPlannerResearchReportDecisions => Set<WeddingPlannerResearchReportDecision>();
+    public DbSet<WeddingPlannerWorkshopJob> WeddingPlannerWorkshopJobs => Set<WeddingPlannerWorkshopJob>();
+    public DbSet<WeddingPlannerConceptPackageVersion> WeddingPlannerConceptPackageVersions => Set<WeddingPlannerConceptPackageVersion>();
+    public DbSet<WeddingPlannerConceptRoleContribution> WeddingPlannerConceptRoleContributions => Set<WeddingPlannerConceptRoleContribution>();
+    public DbSet<WeddingPlannerConceptPackageDecision> WeddingPlannerConceptPackageDecisions => Set<WeddingPlannerConceptPackageDecision>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

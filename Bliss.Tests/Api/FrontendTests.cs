@@ -52,6 +52,16 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Eight logical roles map to 3 workers/runs, not 8 subscriptions", body);
         Assert.Contains("never presented as live research", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Research approval only", body);
+        Assert.Contains("PHASE 5 · CONCEPT / PROTOTYPE WORKSHOP", body);
+        Assert.Contains("workshop-panel", body);
+        Assert.Contains("workshop-job-form", body);
+        Assert.Contains("workshop-decision-form", body);
+        Assert.Contains("Concept direction workshop", body);
+        Assert.Contains("Four logical roles map to 3 workers/runs, not 4 subscriptions", body);
+        Assert.Contains("no generated image/assets", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not campaign-ready", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("SYNTHETIC DEVELOPMENT PROTOTYPE", body);
+        Assert.Contains("concept-direction approval only", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("FOUNDATION READY", body);
         Assert.DoesNotContain("Help me choose colors", body);
         Assert.DoesNotContain("Show me some design concepts", body);
@@ -206,6 +216,96 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
     }
 
     [Fact]
+    public async Task Public_planner_script_wires_phase5_concept_workshop_from_server_documents_only()
+    {
+        var client = _factory.CreateClient();
+        var script = await (await client.GetAsync("/wedding-planner.js")).Content.ReadAsStringAsync();
+
+        Assert.Contains("PHASE 5 · CONCEPT / PROTOTYPE WORKSHOP", script);
+        Assert.Contains("/workshop-jobs", script);
+        Assert.Contains("/concept-packages", script);
+        Assert.Contains("/concept-packages/", script);
+        Assert.Contains("/contributions", script);
+        Assert.Contains("/agent-runs", script);
+        Assert.Contains("/decisions", script);
+        Assert.Contains("canSubmitWorkshopJobs", script);
+        Assert.Contains("currentApprovedBrandDnaVersionId", script);
+        Assert.Contains("currentApprovedColorProfileVersionId", script);
+        Assert.Contains("currentApprovedResearchReportVersionId", script);
+        Assert.Contains("parseConceptPackageDocument", script);
+        Assert.Contains("documentJson", script);
+        Assert.Contains("Four logical roles map to 3 workers/runs, not 4 subscriptions", script);
+        Assert.Contains("BRAND_STRATEGIST", script);
+        Assert.Contains("ART_DIRECTOR", script);
+        Assert.Contains("COPYWRITER", script);
+        Assert.Contains("PRODUCTION_ARTIST", script);
+        Assert.Contains("CONCEPT_STRATEGY_V1", script);
+        Assert.Contains("CONCEPT_CREATIVE_V1", script);
+        Assert.Contains("PROTOTYPE_PRODUCTION_V1", script);
+        Assert.Contains("STATIC_SOCIAL_SQUARE", script);
+        Assert.Contains("STATIC_SOCIAL_STORY", script);
+        Assert.Contains("STATIC_DISPLAY_BANNER", script);
+        Assert.Contains("EMAIL_HERO", script);
+        Assert.Contains("concept_1", script);
+        Assert.Contains("concept_2", script);
+        Assert.Contains("concept_3", script);
+        Assert.Contains("selectedConceptId", script);
+        Assert.Contains("CREATIVE_NON_FACTUAL", script);
+        Assert.Contains("factualClaims", script);
+        Assert.Contains("sourceIds", script);
+        Assert.Contains("paletteRoleRefs", script);
+        Assert.Contains("LOFI_STACK_V1", script);
+        Assert.Contains("LOFI_SPLIT_V1", script);
+        Assert.Contains("LOFI_BANNER_V1", script);
+        Assert.Contains("textRef", script);
+        Assert.Contains("copy.headline", script);
+        Assert.Contains("copy.body", script);
+        Assert.Contains("copy.cta", script);
+        Assert.Contains("renderSafePrototypePreview", script);
+        Assert.Contains("assetPlaceholder", script);
+        Assert.Contains("SYNTHETIC DEVELOPMENT PROTOTYPE", script);
+        Assert.Contains("concept-direction approval only", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("no generated image/assets", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not campaign-ready", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("X-CSRF-TOKEN", script);
+        Assert.Contains("idempotencyKey", script);
+        Assert.Contains("workerProfileVersion", script);
+        Assert.Contains("promptPackVersion", script);
+        Assert.Contains("estimatedCostUsd", script);
+        Assert.Contains("approvedColorProfileVersionId", script);
+        Assert.Contains("/color-profiles/", script);
+        Assert.Contains(
+            "Approval of this package is concept-direction approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, asset, QA, or production-artwork approval.",
+            script);
+        Assert.Contains("Missing workshop prerequisites", script);
+        Assert.Contains("REJECT forbids", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("APPROVE requires", script, StringComparison.OrdinalIgnoreCase);
+
+        Assert.DoesNotContain("<img", script);
+        Assert.DoesNotContain("fetch(media", script);
+        Assert.DoesNotContain("fetch(image", script);
+        Assert.DoesNotContain("fetch(asset", script);
+        Assert.DoesNotContain("inventConcept", script);
+        Assert.DoesNotContain("fabricateConcept", script);
+        Assert.DoesNotContain("fakeConcept", script);
+        Assert.DoesNotContain("clientGeneratedConcept", script);
+        Assert.DoesNotContain("generateConcept", script);
+        Assert.DoesNotContain("eval(", script);
+        Assert.DoesNotContain("innerHTML = concept.html", script);
+        Assert.DoesNotContain("four fake agent runs", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("campaignReady", script);
+        Assert.DoesNotContain("matchId", script);
+        Assert.DoesNotContain("placementId", script);
+        Assert.DoesNotContain("inventoryId", script);
+
+        var styles = await (await client.GetAsync("/wedding-planner.css")).Content.ReadAsStringAsync();
+        Assert.Contains("[hidden] { display: none !important; }", styles);
+        Assert.Contains("workshop-panel", styles);
+        Assert.Contains("workshop-prototype-frame", styles);
+        Assert.Contains("workshop-placeholder", styles);
+    }
+
+    [Fact]
     public async Task Operations_route_preserves_the_internal_console()
     {
         var client = _factory.CreateClient();
@@ -225,7 +325,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Last verification", body);
         Assert.Contains("Recent verifications", body);
         Assert.Contains("Wedding Planner", body);
-        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, Color Intelligence, and Curator research", body);
+        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, and Concept Workshop", body);
         Assert.Contains("Concierge + Brand DNA Interpreter runs", body);
         Assert.Contains("Create Brand DNA proposal", body);
         Assert.Contains("Approve or reject Brand DNA", body);
@@ -245,6 +345,16 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Eight logical roles map to 3 workers/runs, not 8 subscriptions", body);
         Assert.Contains("Approve or reject research report", body);
         Assert.Contains("RUNNING · SUCCEEDED · FAILED", body);
+        Assert.Contains("PHASE 5 · CONCEPT / PROTOTYPE WORKSHOP", body);
+        Assert.Contains("wedding-planner-workshop-job-form", body);
+        Assert.Contains("wedding-planner-workshop-decision-form", body);
+        Assert.Contains("wedding-planner-workshop-job-list", body);
+        Assert.Contains("wedding-planner-workshop-package-list", body);
+        Assert.Contains("wedding-planner-workshop-inspect", body);
+        Assert.Contains("Four logical roles map to 3 workers/runs, not 4 subscriptions", body);
+        Assert.Contains("Approve or reject concept package", body);
+        Assert.Contains("SYNTHETIC DEVELOPMENT PROTOTYPE", body);
+        Assert.Contains("concept-direction approval only", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Export ledger", body);
         Assert.Contains("Verify pack", body);
         Assert.Contains("app.js", body);
@@ -282,7 +392,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("submitWeddingPlannerResearchJob", script);
         Assert.Contains("submitWeddingPlannerResearchDecision", script);
         Assert.Contains("renderWeddingPlannerResearchInspect", script);
-        Assert.Contains("Wedding Planner Phase 4", script);
+        Assert.Contains("Wedding Planner Phase 5", script);
         Assert.Contains("parseWeddingPlannerResearchDocument", script);
         Assert.Contains("Eight logical roles map to 3 workers/runs, not 8 subscriptions", script);
         Assert.Contains("SYNTHETIC", script);
@@ -293,12 +403,37 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("currentApprovedResearchReportVersionId", script);
         Assert.Contains("workerProfileVersion", script);
         Assert.Contains("workspaces/${workspaceId}/agent-runs", script);
+        Assert.Contains("Wedding Planner Phase 5", script);
+        Assert.Contains("/workshop-jobs", script);
+        Assert.Contains("/concept-packages", script);
+        Assert.Contains("submitWeddingPlannerWorkshopJob", script);
+        Assert.Contains("submitWeddingPlannerWorkshopDecision", script);
+        Assert.Contains("renderWeddingPlannerWorkshopInspect", script);
+        Assert.Contains("parseWeddingPlannerConceptPackageDocument", script);
+        Assert.Contains("renderOpsSafePrototypePreview", script);
+        Assert.Contains("Four logical roles map to 3 workers/runs, not 4 subscriptions", script);
+        Assert.Contains("BRAND_STRATEGIST", script);
+        Assert.Contains("CONCEPT_STRATEGY_V1", script);
+        Assert.Contains("selectedConceptId", script);
+        Assert.Contains("SYNTHETIC DEVELOPMENT PROTOTYPE", script);
+        Assert.Contains("concept-direction approval only", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("currentApprovedConceptPackageVersionId", script);
+        Assert.Contains("inputSha256", script);
+        Assert.Contains("LOFI_STACK_V1", script);
+        Assert.Contains("copy.headline", script);
         Assert.DoesNotContain("fetch(citation", script);
         Assert.DoesNotContain("inventFinding", script);
         Assert.DoesNotContain("fabricateFinding", script);
         Assert.DoesNotContain("fakeCitation", script);
         Assert.DoesNotContain("generateCitation", script);
         Assert.DoesNotContain("crawlUrl", script);
+        Assert.DoesNotContain("<img", script);
+        Assert.DoesNotContain("fetch(media", script);
+        Assert.DoesNotContain("inventConcept", script);
+        Assert.DoesNotContain("fabricateConcept", script);
+        Assert.DoesNotContain("fakeConcept", script);
+        Assert.DoesNotContain("generateConcept", script);
+        Assert.DoesNotContain("eval(", script);
         Assert.Contains("Open primary workspace", body);
         Assert.Contains("Append a human message", body);
         Assert.DoesNotContain("Phase 1 does not invoke AI", body);
@@ -313,6 +448,8 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("[hidden]", styles);
         Assert.Contains("grid-template-columns: 34px minmax(0, 1fr) auto", styles);
         Assert.Contains("overflow-wrap: anywhere", styles);
+        Assert.Contains("workshop-prototype-frame", styles);
+        Assert.Contains("workshop-placeholder", styles);
     }
 
     [Theory]

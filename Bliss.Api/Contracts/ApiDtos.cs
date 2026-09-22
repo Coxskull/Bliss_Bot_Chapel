@@ -563,6 +563,7 @@ public sealed record WeddingPlannerAgentRunDto(
     string? WorkerProfileVersion,
     string? AssignedRolesJson,
     Guid? OutputResearchReportVersionId,
+    Guid? OutputConceptPackageVersionId,
     string? RequestId,
     string? ProviderRequestId,
     string SourceSystem,
@@ -797,6 +798,124 @@ public sealed record WeddingPlannerResearchReportDecisionDto(
     string IdempotencyKey,
     DateTime OccurredAt,
     WeddingPlannerResearchReportVersionDto Version,
+    bool IsReplay);
+
+public sealed record CreateWeddingPlannerWorkshopJobRequest(
+    string Objective,
+    string CampaignGoal,
+    string AudienceFocus,
+    string ChannelFormat,
+    IReadOnlyList<string> Deliverables,
+    string Cta,
+    IReadOnlyList<string>? Constraints,
+    int? CanvasWidth,
+    int? CanvasHeight,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerWorkshopJobDto(
+    Guid WorkshopJobId,
+    Guid AdvertiserId,
+    Guid WorkspaceId,
+    string Objective,
+    string CampaignGoal,
+    string AudienceFocus,
+    string ChannelFormat,
+    int CanvasWidth,
+    int CanvasHeight,
+    IReadOnlyList<string> Deliverables,
+    string Cta,
+    IReadOnlyList<string> Constraints,
+    string InputJson,
+    string InputSha256,
+    Guid ApprovedBrandDnaVersionId,
+    int ApprovedBrandDnaVersionNumber,
+    Guid ApprovedColorProfileVersionId,
+    int ApprovedColorProfileVersionNumber,
+    Guid ApprovedResearchReportVersionId,
+    int ApprovedResearchReportVersionNumber,
+    Guid? StrategyAgentRunId,
+    Guid? CreativeAgentRunId,
+    Guid? ProductionAgentRunId,
+    Guid? OutputConceptPackageVersionId,
+    string Status,
+    string? ErrorCode,
+    string? ErrorMessage,
+    string SourceSystem,
+    string IdempotencyKey,
+    string ActorType,
+    string ActorLabel,
+    DateTime StartedAt,
+    DateTime? CompletedAt,
+    bool IsReplay);
+
+public sealed record WeddingPlannerConceptPackageVersionDto(
+    Guid ConceptPackageVersionId,
+    Guid AdvertiserId,
+    Guid WorkspaceId,
+    int VersionNumber,
+    string SchemaVersion,
+    string DocumentJson,
+    string Summary,
+    Guid ProducingWorkshopJobId,
+    Guid ProducingAgentRunId,
+    Guid ApprovedBrandDnaVersionId,
+    int ApprovedBrandDnaVersionNumber,
+    Guid ApprovedColorProfileVersionId,
+    int ApprovedColorProfileVersionNumber,
+    Guid ApprovedResearchReportVersionId,
+    int ApprovedResearchReportVersionNumber,
+    string ChannelFormat,
+    int CanvasWidth,
+    int CanvasHeight,
+    string Status,
+    string SourceSystem,
+    string IdempotencyKey,
+    string ActorType,
+    string ActorLabel,
+    DateTime CreatedAt,
+    bool IsCurrentApproved,
+    decimal? EstimatedTotalCostUsd,
+    bool IsReplay);
+
+public sealed record WeddingPlannerConceptPackageListDto(
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    Guid? CurrentApprovedConceptPackageVersionId,
+    IReadOnlyList<WeddingPlannerConceptPackageVersionDto> Versions);
+
+public sealed record WeddingPlannerConceptRoleContributionDto(
+    Guid ContributionId,
+    Guid AdvertiserId,
+    Guid WorkspaceId,
+    Guid ConceptPackageVersionId,
+    Guid WorkshopJobId,
+    string LogicalRole,
+    Guid ProducingAgentRunId,
+    string ContributionJson,
+    DateTime CreatedAt);
+
+public sealed record WeddingPlannerConceptPackageDecisionRequest(
+    string Decision,
+    string Rationale,
+    string? SelectedConceptId,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerConceptPackageDecisionDto(
+    Guid DecisionId,
+    Guid ConceptPackageVersionId,
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    string Decision,
+    string? SelectedConceptId,
+    string ActorType,
+    string ActorLabel,
+    string Rationale,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime OccurredAt,
+    WeddingPlannerConceptPackageVersionDto Version,
     bool IsReplay);
 
 

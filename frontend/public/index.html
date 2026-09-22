@@ -380,6 +380,138 @@
           </form>
         </div>
       </section>
+
+      <section class="workshop-panel" id="workshop-panel" aria-labelledby="workshop-title">
+        <div class="workshop-heading">
+          <p>PHASE 5 · CONCEPT / PROTOTYPE WORKSHOP</p>
+          <h3 id="workshop-title">Concept direction workshop</h3>
+          <p class="workshop-copy">
+            Submit a human creative brief when Brand DNA, Color Profile, and Research Report are all currently approved.
+            Four logical roles map to 3 workers/runs, not 4 subscriptions.
+            Concepts and low-fi prototype specs come only from stored server <code>documentJson</code>.
+            Prototypes use placeholders only — no generated images or assets. Concept-direction approval only — not campaign-ready, QA, matching, or legal/claim approval.
+          </p>
+        </div>
+
+        <div class="workshop-prereq" id="workshop-prereq-status" role="status">
+          <span>Prerequisite check</span>
+          <p>Sign in as an authenticated advertiser with write access. Workshop submit requires current-approved Brand DNA, Color Profile, and Research Report.</p>
+        </div>
+
+        <p class="workshop-roles-note" id="workshop-roles-note">
+          Four logical roles map to 3 workers/runs, not 4 subscriptions:
+          <code>CONCEPT_STRATEGY_V1</code> (BRAND_STRATEGIST),
+          <code>CONCEPT_CREATIVE_V1</code> (ART_DIRECTOR + COPYWRITER),
+          <code>PROTOTYPE_PRODUCTION_V1</code> (PRODUCTION_ARTIST).
+        </p>
+
+        <form class="workshop-job-form" id="workshop-job-form">
+          <label for="workshop-objective">Objective *</label>
+          <textarea id="workshop-objective" name="objective" maxlength="4000" required disabled placeholder="What should this concept workshop achieve?"></textarea>
+          <label for="workshop-campaign-goal">Campaign goal * <em>planning text only — not a campaign id</em></label>
+          <input type="text" id="workshop-campaign-goal" name="campaignGoal" maxlength="500" required disabled placeholder="Planning goal text" autocomplete="off">
+          <label for="workshop-audience-focus">Audience focus *</label>
+          <textarea id="workshop-audience-focus" name="audienceFocus" maxlength="1000" required disabled placeholder="Who is this for?"></textarea>
+          <label for="workshop-channel-format">Channel format *</label>
+          <select id="workshop-channel-format" name="channelFormat" required disabled>
+            <option value="">Select channel format</option>
+            <option value="STATIC_SOCIAL_SQUARE">STATIC_SOCIAL_SQUARE (1080×1080)</option>
+            <option value="STATIC_SOCIAL_STORY">STATIC_SOCIAL_STORY (1080×1920)</option>
+            <option value="STATIC_DISPLAY_BANNER">STATIC_DISPLAY_BANNER (1200×628)</option>
+            <option value="EMAIL_HERO">EMAIL_HERO (1200×600)</option>
+          </select>
+          <label for="workshop-deliverables">Deliverables * <em>one per line · 1–6</em></label>
+          <textarea id="workshop-deliverables" name="deliverables" maxlength="2000" required disabled placeholder="Primary creative concept&#10;CTA variant"></textarea>
+          <label for="workshop-cta">CTA *</label>
+          <input type="text" id="workshop-cta" name="cta" maxlength="200" required disabled placeholder="Call to action text" autocomplete="off">
+          <label for="workshop-constraints">Constraints <em>one per line · 0–12</em></label>
+          <textarea id="workshop-constraints" name="constraints" maxlength="3000" disabled placeholder="Optional constraint&#10;(empty allowed)"></textarea>
+          <div class="workshop-job-actions">
+            <button type="submit" id="workshop-job-submit" disabled>Submit workshop job</button>
+            <button type="button" id="workshop-refresh-lists" disabled>Refresh jobs &amp; packages</button>
+          </div>
+        </form>
+
+        <div class="workshop-lists">
+          <div class="workshop-list-block">
+            <label for="workshop-job-select">Workshop jobs <small>RUNNING · SUCCEEDED · FAILED</small></label>
+            <select id="workshop-job-select" disabled>
+              <option value="">No workshop jobs yet</option>
+            </select>
+            <div class="workshop-job-meta" id="workshop-job-meta" hidden></div>
+          </div>
+          <div class="workshop-list-block">
+            <label for="workshop-package-select">Concept packages <small>PROPOSED · APPROVED · CURRENT</small></label>
+            <select id="workshop-package-select" disabled>
+              <option value="">No concept packages yet</option>
+            </select>
+            <p class="workshop-current-pointer" id="workshop-current-pointer" hidden>Current approved concept package pointer is set for this workspace.</p>
+          </div>
+        </div>
+
+        <div class="workshop-package-view" id="workshop-package-view" hidden>
+          <div class="workshop-package-meta">
+            <p class="workshop-status-line">
+              <span id="workshop-package-status-label">PROPOSED</span>
+              <span id="workshop-package-current-badge" hidden>CURRENT</span>
+              · version <strong id="workshop-package-version-number">—</strong>
+            </p>
+            <p id="workshop-package-summary-text"></p>
+            <p class="workshop-meta-line">Schema <code id="workshop-package-schema">—</code> · channel <code id="workshop-package-channel">—</code> · canvas <code id="workshop-package-canvas">—</code></p>
+            <p class="workshop-meta-line">Estimated cost USD <code id="workshop-package-cost">—</code></p>
+            <p class="workshop-meta-line" id="workshop-selected-concept-line" hidden>Selected concept <code id="workshop-selected-concept-id">—</code></p>
+          </div>
+
+          <div class="workshop-disclaimer-block" id="workshop-disclaimer-block" hidden>
+            <h4>Concept-direction disclaimer</h4>
+            <p id="workshop-disclaimer-text"></p>
+          </div>
+
+          <div class="workshop-synthetic-warning" id="workshop-synthetic-warning" hidden role="status">
+            <strong>SYNTHETIC DEVELOPMENT PROTOTYPE</strong>
+            Local or synthetic workshop output. Concept direction only — no generated image/assets; not campaign-ready, QA, matching, or legal/claim approval.
+          </div>
+
+          <div class="workshop-section" id="workshop-concepts-section">
+            <h4>Concepts <small>exactly 3 from documentJson</small></h4>
+            <div id="workshop-concepts"></div>
+          </div>
+
+          <div class="workshop-section" id="workshop-contributions-section">
+            <h4>Role contributions <small>exactly 4 durable roles</small></h4>
+            <div id="workshop-contributions"></div>
+          </div>
+
+          <div class="workshop-section" id="workshop-runs-section">
+            <h4>Agent run receipts <small>exactly 3 workers</small></h4>
+            <p class="workshop-roles-note">Four logical roles map to 3 workers/runs, not 4 subscriptions. Receipts below come from the package agent-runs endpoint.</p>
+            <div id="workshop-agent-runs"></div>
+          </div>
+
+          <form class="workshop-decision-form" id="workshop-decision-form" hidden>
+            <p class="workshop-decision-scope">
+              Concept-direction approval only — not research, claim, legal, matching, accessibility, compliance, campaign-ready, asset, QA, or production-artwork approval.
+              No generated image/assets. SYNTHETIC DEVELOPMENT PROTOTYPE when Local path was used.
+            </p>
+            <fieldset class="workshop-concept-select" id="workshop-concept-select">
+              <legend>Selected concept * <em>required for APPROVE · forbidden for REJECT</em></legend>
+              <label><input type="radio" name="selectedConceptId" value="concept_1" disabled> concept_1</label>
+              <label><input type="radio" name="selectedConceptId" value="concept_2" disabled> concept_2</label>
+              <label><input type="radio" name="selectedConceptId" value="concept_3" disabled> concept_3</label>
+            </fieldset>
+            <label for="workshop-rationale">Decision rationale *</label>
+            <textarea id="workshop-rationale" name="rationale" maxlength="2000" required placeholder="Explain why you approve or reject this concept package" disabled></textarea>
+            <label class="confirm-approve">
+              <input type="checkbox" id="workshop-confirm-approve" disabled>
+              <span>I confirm this APPROVE decision sets the workspace current approved concept package pointer. This is concept-direction approval only.</span>
+            </label>
+            <div class="workshop-decision-actions">
+              <button type="submit" class="approve" data-decision="APPROVE" disabled>Approve</button>
+              <button type="submit" class="reject" data-decision="REJECT" disabled>Reject</button>
+            </div>
+          </form>
+        </div>
+      </section>
     </section>
 
     <section class="audience-panels">

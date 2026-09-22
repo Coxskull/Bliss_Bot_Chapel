@@ -6,6 +6,8 @@ using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Bliss.Api.Controllers;
 
@@ -16,6 +18,7 @@ public sealed class WeddingPlannerController(
     WeddingPlannerOrchestrationService orchestration,
     WeddingPlannerColorIntelligenceService colorIntelligence,
     WeddingPlannerCuratorOrchestrationService curator,
+    WeddingPlannerConceptWorkshopOrchestrationService workshop,
     WeddingPlannerAccess access) : ControllerBase
 {
     [HttpGet("workspaces")]
@@ -693,6 +696,194 @@ public sealed class WeddingPlannerController(
         });
     }
 
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("workspaces/{workspaceId:guid}/workshop-jobs")]
+    public async Task<ActionResult> CreateWorkshopJob(
+        Guid workspaceId,
+        [FromBody] JsonElement body,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireWrite();
+            if (body.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+            {
+                throw new InvalidOperationException("Workshop job body is required.");
+            }
+
+            var root = JsonNode.Parse(body.GetRawText())
+                ?? throw new InvalidOperationException("Workshop job body is required.");
+            WeddingPlannerConceptWorkshopValidation.RejectForbiddenBriefFields(root);
+
+            var request = body.Deserialize<CreateWeddingPlannerWorkshopJobRequest>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new InvalidOperationException("Workshop job body is invalid.");
+
+            var result = await workshop.CreateWorkshopJobAsync(
+                workspaceId,
+                request.Objective,
+                request.CampaignGoal,
+                request.AudienceFocus,
+                request.ChannelFormat,
+                request.Deliverables,
+                request.Cta,
+                request.Constraints,
+                request.CanvasWidth,
+                request.CanvasHeight,
+                root,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToWorkshopJobDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/workshop-jobs/{dto.WorkshopJobId}", dto);
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/workshop-jobs")]
+    public async Task<ActionResult> ListWorkshopJobs(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await workshop.ListWorkshopJobsAsync(
+                workspaceId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToWorkshopJobDto).ToList());
+        });
+    }
+
+    [HttpGet("workshop-jobs/{workshopJobId:guid}")]
+    public async Task<ActionResult> GetWorkshopJob(
+        Guid workshopJobId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await workshop.GetWorkshopJobAsync(
+                workshopJobId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToWorkshopJobDto(result));
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/concept-packages")]
+    public async Task<ActionResult> ListConceptPackages(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await workshop.ListConceptPackagesAsync(
+                workspaceId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(new WeddingPlannerConceptPackageListDto(
+                result.WorkspaceId,
+                result.AdvertiserId,
+                result.CurrentApprovedConceptPackageVersionId,
+                result.Versions.Select(ToConceptPackageDto).ToList()));
+        });
+    }
+
+    [HttpGet("concept-packages/{conceptPackageVersionId:guid}")]
+    public async Task<ActionResult> GetConceptPackage(
+        Guid conceptPackageVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await workshop.GetConceptPackageAsync(
+                conceptPackageVersionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToConceptPackageDto(result));
+        });
+    }
+
+    [HttpGet("concept-packages/{conceptPackageVersionId:guid}/contributions")]
+    public async Task<ActionResult> ListConceptPackageContributions(
+        Guid conceptPackageVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await workshop.ListContributionsAsync(
+                conceptPackageVersionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToConceptContributionDto).ToList());
+        });
+    }
+
+    [HttpGet("concept-packages/{conceptPackageVersionId:guid}/agent-runs")]
+    public async Task<ActionResult> ListConceptPackageAgentRuns(
+        Guid conceptPackageVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await workshop.ListPackageAgentRunsAsync(
+                conceptPackageVersionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToAgentRunDto).ToList());
+        });
+    }
+
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("concept-packages/{conceptPackageVersionId:guid}/decisions")]
+    public async Task<ActionResult> DecideConceptPackage(
+        Guid conceptPackageVersionId,
+        WeddingPlannerConceptPackageDecisionRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireWrite();
+            var result = await workshop.DecideAsync(
+                conceptPackageVersionId,
+                request.Decision,
+                request.Rationale,
+                request.SelectedConceptId,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToConceptDecisionDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/concept-packages/{dto.ConceptPackageVersionId}/decisions", dto);
+        });
+    }
+
     private WeddingPlannerActor RequireWrite()
     {
         var actor = access.Resolve(User);
@@ -791,6 +982,7 @@ public sealed class WeddingPlannerController(
             result.WorkerProfileVersion,
             result.AssignedRolesJson,
             result.OutputResearchReportVersionId,
+            result.OutputConceptPackageVersionId,
             result.RequestId,
             result.ProviderRequestId,
             result.SourceSystem,
@@ -978,5 +1170,104 @@ public sealed class WeddingPlannerController(
             result.IdempotencyKey,
             result.OccurredAt,
             ToResearchReportDto(result.Version),
+            result.IsReplay);
+
+    private static WeddingPlannerWorkshopJobDto ToWorkshopJobDto(WeddingPlannerWorkshopJobResult result) =>
+        new(
+            result.WorkshopJobId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.Objective,
+            result.CampaignGoal,
+            result.AudienceFocus,
+            result.ChannelFormat,
+            result.CanvasWidth,
+            result.CanvasHeight,
+            result.Deliverables,
+            result.Cta,
+            result.Constraints,
+            result.InputJson,
+            result.InputSha256,
+            result.ApprovedBrandDnaVersionId,
+            result.ApprovedBrandDnaVersionNumber,
+            result.ApprovedColorProfileVersionId,
+            result.ApprovedColorProfileVersionNumber,
+            result.ApprovedResearchReportVersionId,
+            result.ApprovedResearchReportVersionNumber,
+            result.StrategyAgentRunId,
+            result.CreativeAgentRunId,
+            result.ProductionAgentRunId,
+            result.OutputConceptPackageVersionId,
+            result.Status,
+            result.ErrorCode,
+            result.ErrorMessage,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.ActorType,
+            result.ActorLabel,
+            result.StartedAt,
+            result.CompletedAt,
+            result.IsReplay);
+
+    private static WeddingPlannerConceptPackageVersionDto ToConceptPackageDto(
+        WeddingPlannerConceptPackageVersionResult result) =>
+        new(
+            result.ConceptPackageVersionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.VersionNumber,
+            result.SchemaVersion,
+            result.DocumentJson,
+            result.Summary,
+            result.ProducingWorkshopJobId,
+            result.ProducingAgentRunId,
+            result.ApprovedBrandDnaVersionId,
+            result.ApprovedBrandDnaVersionNumber,
+            result.ApprovedColorProfileVersionId,
+            result.ApprovedColorProfileVersionNumber,
+            result.ApprovedResearchReportVersionId,
+            result.ApprovedResearchReportVersionNumber,
+            result.ChannelFormat,
+            result.CanvasWidth,
+            result.CanvasHeight,
+            result.Status,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.ActorType,
+            result.ActorLabel,
+            result.CreatedAt,
+            result.IsCurrentApproved,
+            result.EstimatedTotalCostUsd,
+            result.IsReplay);
+
+    private static WeddingPlannerConceptRoleContributionDto ToConceptContributionDto(
+        WeddingPlannerConceptRoleContributionResult result) =>
+        new(
+            result.ContributionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.ConceptPackageVersionId,
+            result.WorkshopJobId,
+            result.LogicalRole,
+            result.ProducingAgentRunId,
+            result.ContributionJson,
+            result.CreatedAt);
+
+    private static WeddingPlannerConceptPackageDecisionDto ToConceptDecisionDto(
+        WeddingPlannerConceptPackageDecisionResult result) =>
+        new(
+            result.DecisionId,
+            result.ConceptPackageVersionId,
+            result.WorkspaceId,
+            result.AdvertiserId,
+            result.Decision,
+            result.SelectedConceptId,
+            result.ActorType,
+            result.ActorLabel,
+            result.Rationale,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.OccurredAt,
+            ToConceptPackageDto(result.Version),
             result.IsReplay);
 }

@@ -13,6 +13,7 @@ public class WeddingPlannerWorkspace
     public Guid? CurrentApprovedBrandDnaVersionId { get; set; }
     public Guid? CurrentApprovedColorProfileVersionId { get; set; }
     public Guid? CurrentApprovedResearchReportVersionId { get; set; }
+    public Guid? CurrentApprovedConceptPackageVersionId { get; set; }
     public string SourceSystem { get; set; } = string.Empty;
     public string IdempotencyKey { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
@@ -22,6 +23,7 @@ public class WeddingPlannerWorkspace
     public WeddingPlannerBrandDnaVersion? CurrentApprovedBrandDnaVersion { get; set; }
     public WeddingPlannerColorProfileVersion? CurrentApprovedColorProfileVersion { get; set; }
     public WeddingPlannerResearchReportVersion? CurrentApprovedResearchReportVersion { get; set; }
+    public WeddingPlannerConceptPackageVersion? CurrentApprovedConceptPackageVersion { get; set; }
     public ICollection<WeddingPlannerPlanningSession> Sessions { get; set; } = new List<WeddingPlannerPlanningSession>();
     public ICollection<WeddingPlannerAuditEvent> AuditEvents { get; set; } = new List<WeddingPlannerAuditEvent>();
     public ICollection<WeddingPlannerAgentRun> AgentRuns { get; set; } = new List<WeddingPlannerAgentRun>();
@@ -33,4 +35,8 @@ public class WeddingPlannerWorkspace
     public ICollection<WeddingPlannerResearchReportVersion> ResearchReportVersions { get; set; } = new List<WeddingPlannerResearchReportVersion>();
     public ICollection<WeddingPlannerResearchRoleContribution> ResearchRoleContributions { get; set; } = new List<WeddingPlannerResearchRoleContribution>();
     public ICollection<WeddingPlannerResearchReportDecision> ResearchReportDecisions { get; set; } = new List<WeddingPlannerResearchReportDecision>();
+    public ICollection<WeddingPlannerWorkshopJob> WorkshopJobs { get; set; } = new List<WeddingPlannerWorkshopJob>();
+    public ICollection<WeddingPlannerConceptPackageVersion> ConceptPackageVersions { get; set; } = new List<WeddingPlannerConceptPackageVersion>();
+    public ICollection<WeddingPlannerConceptRoleContribution> ConceptRoleContributions { get; set; } = new List<WeddingPlannerConceptRoleContribution>();
+    public ICollection<WeddingPlannerConceptPackageDecision> ConceptPackageDecisions { get; set; } = new List<WeddingPlannerConceptPackageDecision>();
 }

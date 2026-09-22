@@ -55,4 +55,9 @@ public sealed class WeddingPlannerAiOptions
     /// Estimated USD price per one million completion/output tokens.
     /// </summary>
     public decimal OutputPricePerMillionTokens { get; set; }
+
+    /// <summary>
+    /// When true, Local provider is rejected even outside Production (startup and workshop job create).
+    /// </summary>
+    public bool RequireRemoteAiProvider { get; set; }
 }

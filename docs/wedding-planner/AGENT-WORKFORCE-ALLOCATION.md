@@ -58,9 +58,32 @@ rationale.
 - Humans alone approve/reject immutable research reports. Approval is
   research approval only.
 
+## Phase 5 (implemented)
+
+- New logical AI roles: 4 — `BRAND_STRATEGIST`, `ART_DIRECTOR`,
+  `COPYWRITER`, `PRODUCTION_ARTIST`.
+- New executable worker profiles: exactly 3 per successful job
+  (`CONCEPT_STRATEGY_V1`, `CONCEPT_CREATIVE_V1`,
+  `PROTOTYPE_PRODUCTION_V1`).
+- Exact 4→3 mapping: strategy owns Brand Strategist; creative owns Art
+  Director + Copywriter; production owns Production Artist. Successful jobs
+  create exactly 3 agent-run receipts and exactly 4 immutable role
+  contributions; they do not create four fake model calls.
+- Prerequisites: current-approved Brand DNA, Color Profile, and Research
+  Report are required and pinned. Brand DNA and color constrain creative
+  direction only; only pinned research source ids may support factual
+  claims.
+- Safe low-fi prototypes: structured `prototype-spec.v1` with exact channel
+  canvases, bounded regions/templates/text refs/palette refs, and asset
+  placeholders only — no image generation, media URL fetch, or arbitrary
+  markup. UI uses an escaped fixed renderer.
+- Humans alone approve/reject immutable concept packages and select
+  `selectedConceptId` on APPROVE. Approval is concept-direction only.
+- Out of scope: campaign-ready state, Chaperone/QA, asset/revision
+  production, and Bliss matching writes.
+
 ## Later starting allocations
 
-- Phase 5: four workshop roles on about 2–4 workers.
 - Phase 6: about thirteen primary logical roles on about 5–7 workers.
 - Phase 7: three control roles on about 1–2 AI workers plus deterministic
   rules and human authority.

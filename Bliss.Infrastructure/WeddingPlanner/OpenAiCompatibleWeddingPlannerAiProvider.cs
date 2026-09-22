@@ -215,9 +215,62 @@ public sealed class OpenAiCompatibleWeddingPlannerAiProvider : IWeddingPlannerAi
                 "Review claim risk and synthesize prior stage contributions. Do not approve the research report. Never fetch live URL content.");
         }
 
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.ConceptStrategy, StringComparison.Ordinal))
+        {
+            return BuildWorkshopInstruction(
+                request,
+                WeddingPlannerConceptWorkshopWorkerProfiles.ConceptStrategyV1,
+                WeddingPlannerSchemaVersions.ConceptStrategyWorkerOutputV1,
+                "Emit strategy only for exactly concept_1, concept_2, concept_3 with name and rationale. No visual direction, copy, claims, or prototype specs.");
+        }
+
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.ConceptCreative, StringComparison.Ordinal))
+        {
+            return BuildWorkshopInstruction(
+                request,
+                WeddingPlannerConceptWorkshopWorkerProfiles.ConceptCreativeV1,
+                WeddingPlannerSchemaVersions.ConceptCreativeWorkerOutputV1,
+                "Emit ART_DIRECTOR and COPYWRITER contributions for the same three concept ids. copy.kind must be CREATIVE_NON_FACTUAL. factualClaims sourceIds must come only from the pinned research report catalog. paletteRoleRefs must exist on the pinned color profile. Brand DNA and color ids are never factual sources.");
+        }
+
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.PrototypeProduction, StringComparison.Ordinal))
+        {
+            return BuildWorkshopInstruction(
+                request,
+                WeddingPlannerConceptWorkshopWorkerProfiles.PrototypeProductionV1,
+                WeddingPlannerSchemaVersions.PrototypeProductionWorkerOutputV1,
+                "Emit PRODUCTION_ARTIST prototypes only as prototype-spec.v1 for concept_1–concept_3. textRef may only be copy.headline, copy.body, or copy.cta. No html/css/svg/script/src/url/href/base64/image bytes. No image generation.");
+        }
+
         throw new WeddingPlannerAiProviderException(
             $"Unsupported Wedding Planner logical role '{SanitizeForError(request.LogicalRole)}'.",
             "PROVIDER_UNSUPPORTED_ROLE");
+    }
+
+    private static string BuildWorkshopInstruction(
+        WeddingPlannerAiCompletionRequest request,
+        string expectedProfile,
+        string schemaVersion,
+        string stageRule)
+    {
+        var profile = string.IsNullOrWhiteSpace(request.WorkerProfileVersion)
+            ? expectedProfile
+            : request.WorkerProfileVersion.Trim();
+        var roles = request.AssignedRoles is { Count: > 0 }
+            ? request.AssignedRoles
+            : WeddingPlannerConceptWorkshopWorkerProfiles.AssignedRoles(expectedProfile);
+        var roleList = string.Join(", ", roles);
+
+        return
+            "You are a Wedding Planner Concept Workshop stage worker. Emit a single JSON object for schema " +
+            schemaVersion + " with keys: schemaVersion, workerProfileVersion, contributions " +
+            "(optional marker). Unknown fields are forbidden. Never include html, css, svg, script, src, url, href, " +
+            "base64, or image bytes in any field. " +
+            $"workerProfileVersion must be {profile}. contributions must include exactly these logicalRole values " +
+            $"and no others: {roleList}. Concept ids must be exactly concept_1, concept_2, concept_3. " +
+            stageRule +
+            " You cannot approve concept packages, select winning concepts, generate images, fetch URLs, change matching, " +
+            "or invent live market facts beyond pinned research source ids. Prompt pack: " + request.PromptPackVersion + ".";
     }
 
     private static string BuildCuratorInstruction(

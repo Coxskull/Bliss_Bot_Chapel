@@ -162,4 +162,6 @@ Wedding Planner Phase 3 contract: `docs/wedding-planner/PHASE-3-ENGINEERING-CONT
 Wedding Planner Phase 3 evidence: `docs/wedding-planner/PHASE-3-EVIDENCE.md`.
 Wedding Planner Phase 4 contract: `docs/wedding-planner/PHASE-4-ENGINEERING-CONTRACT.md`.
 Wedding Planner Phase 4 evidence: `docs/wedding-planner/PHASE-4-EVIDENCE.md`.
+Wedding Planner Phase 5 contract: `docs/wedding-planner/PHASE-5-ENGINEERING-CONTRACT.md`.
+Wedding Planner Phase 5 evidence: `docs/wedding-planner/PHASE-5-EVIDENCE.md`.
 Wedding Planner master blueprint v1.1: `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md`.

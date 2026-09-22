@@ -160,6 +160,46 @@ public sealed class OpenAiCompatibleWeddingPlannerAiProviderTests
     }
 
     [Fact]
+    public async Task Workshop_stage_request_includes_strict_schema_and_forbidden_media_rules()
+    {
+        string? capturedBody = null;
+        var handler = new FakeHandler(async (request, _) =>
+        {
+            capturedBody = await request.Content!.ReadAsStringAsync();
+            return JsonResponse("""
+                {
+                  "id": "chatcmpl-workshop-1",
+                  "model": "gpt-test",
+                  "choices": [{ "message": { "content": "{\"schemaVersion\":\"concept-strategy-worker-output.v1\"}" } }],
+                  "usage": { "prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15 }
+                }
+                """);
+        });
+
+        var provider = CreateProvider(handler);
+        var roles = WeddingPlannerConceptWorkshopWorkerProfiles.AssignedRoles(
+            WeddingPlannerConceptWorkshopWorkerProfiles.ConceptStrategyV1);
+        await provider.CompleteAsync(new WeddingPlannerAiCompletionRequest(
+            WeddingPlannerAgentRoles.ConceptStrategy,
+            WeddingPlannerPromptPacks.ConceptStrategyV1,
+            new[] { new WeddingPlannerAiMessage(WeddingPlannerActorTypes.System, "{\"brief\":{}}") },
+            WeddingPlannerResponseFormats.Json,
+            1024,
+            WeddingPlannerConceptWorkshopWorkerProfiles.ConceptStrategyV1,
+            roles));
+
+        using var doc = JsonDocument.Parse(capturedBody!);
+        var system = doc.RootElement.GetProperty("messages")[0].GetProperty("content").GetString();
+        Assert.Contains("concept-strategy-worker-output.v1", system, StringComparison.Ordinal);
+        Assert.Contains(WeddingPlannerConceptWorkshopWorkerProfiles.ConceptStrategyV1, system, StringComparison.Ordinal);
+        Assert.Contains(WeddingPlannerConceptWorkshopLogicalRoles.BrandStrategist, system, StringComparison.Ordinal);
+        Assert.Contains("html", system, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("concept_1", system, StringComparison.Ordinal);
+        Assert.Contains("generate images", system, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("json_object", doc.RootElement.GetProperty("response_format").GetProperty("type").GetString());
+    }
+
+    [Fact]
     public async Task Non_success_errors_are_bounded_and_secret_safe()
     {
         var handler = new FakeHandler((_, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized)
