@@ -43,7 +43,8 @@ public sealed class RuntimeStatusController(
                 entry.Path,
                 entry.StatusCode,
                 entry.RequestId,
-                entry.Detail)).ToList()));
+                entry.Detail)).ToList(),
+            events.LastVerification));
     }
 
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
@@ -63,7 +64,8 @@ public sealed record RuntimeStatusDto(
     int AuthenticationRateLimitPermitLimit,
     int RateLimitWindowSeconds,
     string? LastRequestId,
-    IReadOnlyList<RuntimeEventDto> RecentEvents);
+    IReadOnlyList<RuntimeEventDto> RecentEvents,
+    ExportVerificationDto? LastVerification = null);
 
 public sealed record RuntimeEventDto(
     DateTime OccurredAt,
