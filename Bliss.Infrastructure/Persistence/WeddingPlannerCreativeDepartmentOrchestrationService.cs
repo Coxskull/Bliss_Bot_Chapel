@@ -1012,6 +1012,8 @@ public sealed class WeddingPlannerCreativeDepartmentOrchestrationService
 
             version.Status = WeddingPlannerCreativePackageStatuses.Approved;
             workspaceEntity.CurrentApprovedCreativePackageVersionId = version.Id;
+            // Later Phase 6 creative APPROVE clears the QA pointer only; historical QA reports unchanged.
+            workspaceEntity.CurrentAcceptedQaReviewReportVersionId = null;
             workspaceEntity.UpdatedAt = DateTime.UtcNow;
             _planner.AddAuditForOrchestration(
                 version.AdvertiserId,
@@ -1783,6 +1785,7 @@ public sealed class WeddingPlannerCreativeDepartmentOrchestrationService
             run.OutputResearchReportVersionId,
             run.OutputConceptPackageVersionId,
             run.OutputCreativePackageVersionId,
+            run.OutputQaReviewReportVersionId,
             run.RequestId,
             run.ProviderRequestId,
             run.SourceSystem,

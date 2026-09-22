@@ -296,9 +296,53 @@ public sealed class OpenAiCompatibleWeddingPlannerAiProvider : IWeddingPlannerAi
                 "Emit VARIANT_PRODUCER only with exact variant_1..variant_N production specs. Each brief format must be used at least once. Canvas must match the server format table. Refs must resolve to prior stage outputs. No new copy invention, bytes, URLs, markup, or extra/missing variants.");
         }
 
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.ChaperoneReview, StringComparison.Ordinal))
+        {
+            return BuildQaInstruction(
+                request,
+                WeddingPlannerQaWorkerProfiles.ChaperoneReviewV1,
+                WeddingPlannerSchemaVersions.ChaperoneReviewWorkerOutputV1,
+                "Emit CREATIVE_CHAPERONE only with boundary/provenance/brand/claim risk notes and uncertainties. Never approve, waive, claim pixel certification, create Steward contributions, or request image bytes.");
+        }
+
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.QaInspection, StringComparison.Ordinal))
+        {
+            return BuildQaInstruction(
+                request,
+                WeddingPlannerQaWorkerProfiles.QaInspectionV1,
+                WeddingPlannerSchemaVersions.QaInspectionWorkerOutputV1,
+                "Emit QA_INSPECTOR only with alignment notes, uncertainties, and proposedOutcome in PASS_RECOMMENDED|RETURN_FOR_REVISION|HUMAN_ESCALATION. rulesOverallSeverity must echo durable rules. When rules overallSeverity is BLOCK, proposedOutcome must not be PASS_RECOMMENDED. Never create Steward contributions, escalate cases, or receive image bytes.");
+        }
+
         throw new WeddingPlannerAiProviderException(
             $"Unsupported Wedding Planner logical role '{SanitizeForError(request.LogicalRole)}'.",
             "PROVIDER_UNSUPPORTED_ROLE");
+    }
+
+    private static string BuildQaInstruction(
+        WeddingPlannerAiCompletionRequest request,
+        string expectedProfile,
+        string schemaVersion,
+        string stageRule)
+    {
+        var profile = string.IsNullOrWhiteSpace(request.WorkerProfileVersion)
+            ? expectedProfile
+            : request.WorkerProfileVersion.Trim();
+        var roles = request.AssignedRoles is { Count: > 0 }
+            ? request.AssignedRoles
+            : WeddingPlannerQaWorkerProfiles.AssignedRoles(expectedProfile);
+        var roleList = string.Join(", ", roles);
+
+        return
+            "You are a Wedding Planner Phase 7 QA control-review stage worker. Emit a single JSON object for schema " +
+            schemaVersion + " with only the locked keys for that schema. Unknown fields are forbidden. Never include html, css, " +
+            "svg, script, src, url, href, base64, image bytes, pixel arrays, or asset content URLs. Never approve, waive, create " +
+            "or resolve escalation cases, claim human-steward authority, or emit a HUMAN_ESCALATION_STEWARD contribution. Never " +
+            "downgrade qa-rules.v1 severity or treat BLOCK as PASS. Review only the pinned SelectedVariantId. " +
+            $"workerProfileVersion must be {profile}. contributions must include exactly these logicalRole values " +
+            $"and no others: {roleList}. " +
+            stageRule +
+            " Prompt pack: " + request.PromptPackVersion + ".";
     }
 
     private static string BuildCreativeDepartmentInstruction(

@@ -15,6 +15,7 @@ public class WeddingPlannerWorkspace
     public Guid? CurrentApprovedResearchReportVersionId { get; set; }
     public Guid? CurrentApprovedConceptPackageVersionId { get; set; }
     public Guid? CurrentApprovedCreativePackageVersionId { get; set; }
+    public Guid? CurrentAcceptedQaReviewReportVersionId { get; set; }
     public string SourceSystem { get; set; } = string.Empty;
     public string IdempotencyKey { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
@@ -26,6 +27,7 @@ public class WeddingPlannerWorkspace
     public WeddingPlannerResearchReportVersion? CurrentApprovedResearchReportVersion { get; set; }
     public WeddingPlannerConceptPackageVersion? CurrentApprovedConceptPackageVersion { get; set; }
     public WeddingPlannerCreativePackageVersion? CurrentApprovedCreativePackageVersion { get; set; }
+    public WeddingPlannerQaReviewReportVersion? CurrentAcceptedQaReviewReportVersion { get; set; }
     public ICollection<WeddingPlannerPlanningSession> Sessions { get; set; } = new List<WeddingPlannerPlanningSession>();
     public ICollection<WeddingPlannerAuditEvent> AuditEvents { get; set; } = new List<WeddingPlannerAuditEvent>();
     public ICollection<WeddingPlannerAgentRun> AgentRuns { get; set; } = new List<WeddingPlannerAgentRun>();
@@ -46,4 +48,10 @@ public class WeddingPlannerWorkspace
     public ICollection<WeddingPlannerCreativeRoleContribution> CreativeRoleContributions { get; set; } = new List<WeddingPlannerCreativeRoleContribution>();
     public ICollection<WeddingPlannerCreativeAsset> CreativeAssets { get; set; } = new List<WeddingPlannerCreativeAsset>();
     public ICollection<WeddingPlannerCreativePackageDecision> CreativePackageDecisions { get; set; } = new List<WeddingPlannerCreativePackageDecision>();
+    public ICollection<WeddingPlannerQaReviewJob> QaReviewJobs { get; set; } = new List<WeddingPlannerQaReviewJob>();
+    public ICollection<WeddingPlannerQaReviewReportVersion> QaReviewReportVersions { get; set; } = new List<WeddingPlannerQaReviewReportVersion>();
+    public ICollection<WeddingPlannerQaRoleContribution> QaRoleContributions { get; set; } = new List<WeddingPlannerQaRoleContribution>();
+    public ICollection<WeddingPlannerQaReviewDecision> QaReviewDecisions { get; set; } = new List<WeddingPlannerQaReviewDecision>();
+    public ICollection<WeddingPlannerQaEscalationCase> QaEscalationCases { get; set; } = new List<WeddingPlannerQaEscalationCase>();
+    public ICollection<WeddingPlannerQaEscalationResolution> QaEscalationResolutions { get; set; } = new List<WeddingPlannerQaEscalationResolution>();
 }

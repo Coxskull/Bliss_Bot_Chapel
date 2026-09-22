@@ -166,12 +166,12 @@
         <section class="view" id="view-wedding-planner" aria-labelledby="wedding-planner-title">
           <div class="section-intro">
             <div>
-              <p class="eyebrow">WEDDING PLANNER PHASE 6</p>
-              <h2 id="wedding-planner-title">Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, Concept Workshop, and Mature Creative Department</h2>
-              <p>Open the primary workspace, resume planning sessions, append durable human messages, inspect Concierge agent runs, manage Brand DNA proposals, compute deterministic color profiles, run Phase 4 Curator research jobs, submit Phase 5 Concept Workshop briefs, and run Phase 6 creative-production jobs. AI replies and Brand DNA proposals come only from the server. Color Intelligence is deterministic geometry with no AI. Curator findings and workshop concepts come only from stored server documentJson — humans alone approve or reject. Four logical roles map to 3 workers/runs, not 4 subscriptions. Concept-direction approval only — no generated image/assets; not campaign-ready, QA, matching, or legal/claim approval. Phase 6: thirteen new logical roles map to exactly 6 AI workers/runs plus a separate non-AI asset provider. Phase 5 roles remain pinned provenance. Draft creative approval only — not final or campaign-ready.</p>
+              <p class="eyebrow">WEDDING PLANNER PHASE 7</p>
+              <h2 id="wedding-planner-title">Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, Concept Workshop, Mature Creative, and Chaperone / QA / Escalation</h2>
+              <p>Open the primary workspace, resume planning sessions, append durable human messages, inspect Concierge agent runs, manage Brand DNA proposals, compute deterministic color profiles, run Phase 4 Curator research jobs, submit Phase 5 Concept Workshop briefs, run Phase 6 creative-production jobs, and run Phase 7 QA review / escalation. AI replies and Brand DNA proposals come only from the server. Color Intelligence is deterministic geometry with no AI. Curator findings and workshop concepts come only from stored server documentJson — humans alone approve or reject. Four logical roles map to 3 workers/runs, not 4 subscriptions. Concept-direction approval only — no generated image/assets; not campaign-ready, QA, matching, or legal/claim approval. Phase 6: thirteen new logical roles map to exactly 6 AI workers/runs plus a separate non-AI asset provider. Phase 7: exactly 3 control roles map to exactly 2 AI workers/runs plus qa-rules.v1 and human authority — HUMAN_ESCALATION_STEWARD is RULES_HUMAN, not a third AI run. Control review only — not campaign-ready, final, legal, or Bliss handshake.</p>
             </div>
           </div>
-          <div class="safety-note"><strong>Human authority preserved.</strong> Ownership is enforced by the API. Clients cannot forge PLANNER messages. Brand DNA, color profiles, research reports, concept packages, and creative packages stay PROPOSED until an explicit APPROVE or REJECT decision. Research approval is research approval only. Concept package approval is concept-direction approval only — not campaign-ready, asset, QA, matching, or legal/claim approval. Creative package approval is draft creative approval only — not final, campaign-ready, QA, legal, matching, accessibility, or compliance. WCAG figures are arithmetic evidence, not certification. Local SYNTHETIC DEVELOPMENT PROTOTYPE catalogs are never live creative or campaign-ready. Local SYNTHETIC DEVELOPMENT CREATIVE PACKAGE markers remain conspicuous for draft creatives.</div>
+          <div class="safety-note"><strong>Human authority preserved.</strong> Ownership is enforced by the API. Clients cannot forge PLANNER messages. Brand DNA, color profiles, research reports, concept packages, and creative packages stay PROPOSED until an explicit APPROVE or REJECT decision. Research approval is research approval only. Concept package approval is concept-direction approval only — not campaign-ready, asset, QA, matching, or legal/claim approval. Creative package approval is draft creative approval only — not final, campaign-ready, QA, legal, matching, accessibility, or compliance. QA ACCEPT / RETURN / ESCALATE require reviewer/operator/admin; WAIVE_AND_ACCEPT is operator/admin only. Advertisers may request QA jobs and read reports but cannot decide or resolve. WCAG figures are arithmetic evidence, not certification. Local SYNTHETIC DEVELOPMENT PROTOTYPE catalogs are never live creative or campaign-ready. Local SYNTHETIC DEVELOPMENT CREATIVE PACKAGE and SYNTHETIC DEVELOPMENT QA REVIEW markers remain conspicuous. AI control roles never receive image bytes and cannot approve or waive. Humans must view the same-origin selected PNG before ACCEPT. Do not claim visual AI.</div>
           <div class="workflow-layout">
             <section>
               <div class="queue-list" id="wedding-planner-workspace-list"></div>
@@ -406,6 +406,90 @@
                 <div class="panel-header"><div><p class="eyebrow">INSPECT</p><h3>Selected creative package · concept pin · 13 contributions · N variants · 6 run receipts · same-origin draft PNG</h3></div></div>
                 <p class="safety-note">Thirteen logical roles map to 6 workers/runs, not 13 subscriptions. Inspector parses stored server documentJson only. Draft PNG &lt;img&gt; src uses only same-origin /api/wedding-planner/creative-assets/{guid}/content from validated server asset IDs. Never provider URLs, data/blob/base64, SVG/HTML injection, or client image generation. Phase 5 remains placeholder-only.</p>
                 <div id="wedding-planner-creative-inspect" class="activity-list"></div>
+              </section>
+              <form class="panel workflow-form" id="wedding-planner-qa-job-form">
+                <div class="panel-header"><div><p class="eyebrow">PHASE 7 · CHAPERONE / QA / HUMAN ESCALATION</p><h3>Submit QA review job</h3></div><span class="record-tag">3→2 + RULES_HUMAN</span></div>
+                <div class="safety-note"><strong>Control review only.</strong> Requires current-approved Phase 6 creative package with SelectedVariantId and exactly one selected PNG (server pins — no client override). Exactly 3 control roles map to exactly 2 AI workers/runs plus deterministic <code>qa-rules.v1</code> and human authority. <code>HUMAN_ESCALATION_STEWARD</code> is <code>RULES_HUMAN</code> — not a third AI run. AI never receives image bytes. No campaign/match/placement/inventory IDs, readiness/QA/legal flags, provider config, URLs, base64, or package/variant/asset overrides. <strong>SYNTHETIC DEVELOPMENT QA REVIEW</strong> when Local path was used. Do not claim visual AI.</div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Workspace *</span><select name="workspaceId" id="wedding-planner-qa-workspace" required></select></label>
+                  <label class="span-two"><span>Review objective *</span><textarea name="reviewObjective" maxlength="4000" required placeholder="What should this control-review QA job focus on?"></textarea></label>
+                  <label class="span-two"><span>Focus areas * (1–6 unique)</span>
+                    <div class="workshop-ops-concept-radios" id="wedding-planner-qa-focus-areas">
+                      <label class="checkbox-label"><input type="checkbox" name="qaFocusArea" value="COPY"> COPY</label>
+                      <label class="checkbox-label"><input type="checkbox" name="qaFocusArea" value="VISUAL"> VISUAL</label>
+                      <label class="checkbox-label"><input type="checkbox" name="qaFocusArea" value="PROVENANCE"> PROVENANCE</label>
+                      <label class="checkbox-label"><input type="checkbox" name="qaFocusArea" value="CLAIMS"> CLAIMS</label>
+                      <label class="checkbox-label"><input type="checkbox" name="qaFocusArea" value="FORMAT"> FORMAT</label>
+                      <label class="checkbox-label"><input type="checkbox" name="qaFocusArea" value="ASSET_INTEGRITY"> ASSET_INTEGRITY</label>
+                    </div>
+                  </label>
+                  <label class="span-two"><span>Notes (optional)</span><textarea name="notes" maxlength="4000" placeholder="Optional notes for the review brief"></textarea></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-qa-job-key" readonly required><button type="button" id="regenerate-wedding-planner-qa-job-key" aria-label="Generate a new QA job idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>Idempotent create. FAILED replay returns the failed job and is never a retry. Exactly 2 agent runs on success — never 3 fake runs. Steward is RULES_HUMAN only.</small><button class="primary-button" type="submit">Submit QA review job <span>→</span></button></div>
+              </form>
+              <form class="panel workflow-form" id="wedding-planner-qa-decision-form">
+                <div class="panel-header"><div><p class="eyebrow">HUMAN DECISION · REVIEWER / OPERATOR / ADMIN</p><h3>ACCEPT / RETURN_FOR_REVISION / ESCALATE QA report</h3></div></div>
+                <div class="safety-note"><strong>Control review decision only.</strong> Not research, claim, legal, matching, accessibility, compliance, campaign-ready, final production-artwork, or Bliss handshake approval. Exact <code>selectedVariantId</code> must echo the server-provided pin. ACCEPT requires visual/copy/provenance confirmations (and synthetic marker acknowledgement when Local marker is present). RETURN_FOR_REVISION does not require accept confirmations. ESCALATE requires an exact escalation category enum. AI cannot decide. Do not claim visual AI — humans must view the same-origin selected PNG.</div>
+                <div class="form-grid">
+                  <label class="span-two"><span>QA report version *</span><select name="qaReviewReportVersionId" id="wedding-planner-qa-report-version" required></select></label>
+                  <label><span>Decision *</span><select name="decision" id="wedding-planner-qa-decision" required><option value="ACCEPT">ACCEPT</option><option value="RETURN_FOR_REVISION">RETURN_FOR_REVISION</option><option value="ESCALATE">ESCALATE</option></select></label>
+                  <label class="span-two"><span>Selected variant id * (exact server echo)</span><input name="selectedVariantId" id="wedding-planner-qa-selected-variant" maxlength="64" required readonly placeholder="Loads from selected report pin"></label>
+                  <label class="span-two" id="wedding-planner-qa-escalate-category-wrap" hidden><span>Escalation category * (ESCALATE only)</span>
+                    <select name="escalationCategory" id="wedding-planner-qa-escalate-category">
+                      <option value="">Select category</option>
+                      <option value="VISUAL_UNCERTAINTY">VISUAL_UNCERTAINTY</option>
+                      <option value="CLAIM_BOUNDARY">CLAIM_BOUNDARY</option>
+                      <option value="PROVENANCE">PROVENANCE</option>
+                      <option value="ASSET_INTEGRITY">ASSET_INTEGRITY</option>
+                      <option value="COPY_QUALITY">COPY_QUALITY</option>
+                      <option value="POLICY_OTHER">POLICY_OTHER</option>
+                    </select>
+                  </label>
+                  <label class="span-two"><span>Rationale *</span><textarea name="rationale" maxlength="2000" required placeholder="Explicit human rationale required"></textarea></label>
+                  <div class="span-two" id="wedding-planner-qa-accept-confirmations">
+                    <label class="checkbox-label"><input name="visualReviewConfirmed" type="checkbox"><span>Visual review confirmed — I viewed the same-origin selected PNG (human only; not visual AI)</span></label>
+                    <label class="checkbox-label"><input name="copyReviewConfirmed" type="checkbox"><span>Copy review confirmed</span></label>
+                    <label class="checkbox-label"><input name="provenanceReviewConfirmed" type="checkbox"><span>Provenance review confirmed</span></label>
+                    <label class="checkbox-label" id="wedding-planner-qa-synthetic-ack-wrap" hidden><input name="syntheticMarkerAcknowledged" type="checkbox"><span>I acknowledge SYNTHETIC DEVELOPMENT QA REVIEW (required for ACCEPT when Local marker is present)</span></label>
+                    <label class="checkbox-label"><input name="confirmAccept" type="checkbox"><span>I confirm ACCEPT will set the workspace CURRENT ACCEPTED QA report pointer. This is control review only — not campaign-ready.</span></label>
+                  </div>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-qa-decision-key" readonly required><button type="button" id="regenerate-wedding-planner-qa-decision-key" aria-label="Generate a new QA decision idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>Decisions never mutate DocumentJson or contributions. Advertisers cannot decide (403). On ACCEPT the CURRENT ACCEPTED pointer refreshes.</small><button class="primary-button" type="submit">Record QA decision <span>→</span></button></div>
+              </form>
+              <form class="panel workflow-form" id="wedding-planner-qa-resolution-form">
+                <div class="panel-header"><div><p class="eyebrow">HUMAN ESCALATION RESOLUTION · HUMAN-ONLY</p><h3>Resolve escalation case</h3></div></div>
+                <div class="safety-note"><strong>Human-only resolution.</strong> RETURN_FOR_REVISION: reviewer/operator/admin. WAIVE_AND_ACCEPT: operator/admin only (or auth disabled). Exact blocker codes are auto-derived from report <code>qa-rules.v1</code> BLOCK findings and must be submitted as-is. Exception rationale + acknowledgement required for waive. AI cannot create or resolve escalations. Do not claim visual AI.</div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Escalation case *</span><select name="escalationCaseId" id="wedding-planner-qa-escalation-case" required></select></label>
+                  <label><span>Resolution *</span><select name="resolution" id="wedding-planner-qa-resolution" required><option value="RETURN_FOR_REVISION">RETURN_FOR_REVISION</option><option value="WAIVE_AND_ACCEPT">WAIVE_AND_ACCEPT</option></select></label>
+                  <label class="span-two"><span>Rationale *</span><textarea name="rationale" maxlength="2000" required placeholder="Human resolution rationale"></textarea></label>
+                  <div class="span-two" id="wedding-planner-qa-waive-fields" hidden>
+                    <label class="span-two"><span>Exception rationale * (WAIVE_AND_ACCEPT)</span><textarea name="exceptionRationale" maxlength="4000" placeholder="Document the operator/admin exception"></textarea></label>
+                    <label class="checkbox-label"><input name="exceptionAcknowledged" type="checkbox"><span>I acknowledge this WAIVE_AND_ACCEPT exception (operator/admin only)</span></label>
+                    <p class="safety-note" id="wedding-planner-qa-blocker-codes-note">Acknowledged blocker codes (exact set from report BLOCK findings) will be submitted automatically.</p>
+                  </div>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-qa-resolution-key" readonly required><button type="button" id="regenerate-wedding-planner-qa-resolution-key" aria-label="Generate a new QA resolution idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>OPEN cases only. WAIVE sets ACCEPTED_WITH_EXCEPTION + CURRENT ACCEPTED pointer. RETURN sets RETURNED_FOR_REVISION.</small><button class="primary-button" type="submit">Record escalation resolution <span>→</span></button></div>
+              </form>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">QA REVIEW JOBS</p><h3>RUNNING · SUCCEEDED · FAILED</h3></div><span class="record-tag" id="wedding-planner-qa-job-count">0 jobs</span></div>
+                <div id="wedding-planner-qa-job-list" class="activity-list"></div>
+              </section>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">QA REVIEW REPORTS</p><h3>PROPOSED · ACCEPTED · RETURNED_FOR_REVISION · ESCALATED · ACCEPTED_WITH_EXCEPTION</h3></div><span class="record-tag" id="wedding-planner-qa-current">CURRENT ACCEPTED: none</span></div>
+                <div id="wedding-planner-qa-report-list" class="activity-list"></div>
+              </section>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">QA ESCALATION CASES</p><h3>OPEN · RESOLVED · human-only</h3></div><span class="record-tag" id="wedding-planner-qa-escalation-count">0 cases</span></div>
+                <div id="wedding-planner-qa-escalation-list" class="activity-list"></div>
+              </section>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">INSPECT</p><h3>Selected QA report · rules findings · selected PNG · 3 contributions · 2 AI receipts · Steward RULES_HUMAN</h3></div></div>
+                <p class="safety-note">Three control roles map to 2 AI workers/runs, not 3 subscriptions. Steward is RULES_HUMAN with null producingAgentRunId — never a third AI run. Selected PNG &lt;img&gt; uses only same-origin /api/wedding-planner/creative-assets/{guid}/content. Never provider URLs, data/blob/base64, SVG/HTML, or visual AI. Acceptance of this QA review report is control review only.</p>
+                <div id="wedding-planner-qa-inspect" class="activity-list"></div>
               </section>
             </div>
           </div>

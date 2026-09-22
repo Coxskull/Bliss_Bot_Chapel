@@ -20,6 +20,7 @@ public sealed class WeddingPlannerController(
     WeddingPlannerCuratorOrchestrationService curator,
     WeddingPlannerConceptWorkshopOrchestrationService workshop,
     WeddingPlannerCreativeDepartmentOrchestrationService creative,
+    WeddingPlannerQaReviewOrchestrationService qaReview,
     WeddingPlannerAccess access) : ControllerBase
 {
     [HttpGet("workspaces")]
@@ -1097,9 +1098,11 @@ public sealed class WeddingPlannerController(
         return await ExecuteAsync(async () =>
         {
             var actor = access.Resolve(User);
+            // Reviewers need metadata for QA visual-review UI; do not widen Phase 1–6 writes.
+            var canAccess = actor.IsChapelStaff || access.CanAccessQaAcrossWorkspaces(actor);
             var result = await creative.GetAssetAsync(
                 creativeAssetId,
-                actor.IsChapelStaff,
+                canAccess,
                 actor.BoundAdvertiserId,
                 cancellationToken);
             return Ok(ToCreativeAssetDto(result));
@@ -1114,9 +1117,11 @@ public sealed class WeddingPlannerController(
         return await ExecuteAsync(async () =>
         {
             var actor = access.Resolve(User);
+            // Reviewers who can decide QA must view same-origin selected PNG content.
+            var canAccess = actor.IsChapelStaff || access.CanAccessQaAcrossWorkspaces(actor);
             var result = await creative.GetAssetContentAsync(
                 creativeAssetId,
-                actor.IsChapelStaff,
+                canAccess,
                 actor.BoundAdvertiserId,
                 actor.ActorType,
                 actor.ActorLabel,
@@ -1131,12 +1136,315 @@ public sealed class WeddingPlannerController(
         });
     }
 
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("workspaces/{workspaceId:guid}/qa-review-jobs")]
+    public async Task<ActionResult> CreateQaReviewJob(
+        Guid workspaceId,
+        [FromBody] JsonElement body,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireQaCreate();
+            if (body.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+            {
+                throw new InvalidOperationException("QA review job body is required.");
+            }
+
+            var root = JsonNode.Parse(body.GetRawText())
+                ?? throw new InvalidOperationException("QA review job body is required.");
+            WeddingPlannerQaReviewValidation.RejectForbiddenBriefFields(root);
+
+            var request = body.Deserialize<CreateWeddingPlannerQaReviewJobRequest>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new InvalidOperationException("QA review job body is invalid.");
+
+            var result = await qaReview.CreateQaReviewJobAsync(
+                workspaceId,
+                request.ReviewObjective,
+                request.FocusAreas,
+                request.Notes,
+                root,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                access.CanAccessQaAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToQaReviewJobDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/qa-review-jobs/{dto.QaReviewJobId}", dto);
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/qa-review-jobs")]
+    public async Task<ActionResult> ListQaReviewJobs(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await qaReview.ListQaReviewJobsAsync(
+                workspaceId,
+                access.CanAccessQaAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToQaReviewJobDto).ToList());
+        });
+    }
+
+    [HttpGet("qa-review-jobs/{qaReviewJobId:guid}")]
+    public async Task<ActionResult> GetQaReviewJob(
+        Guid qaReviewJobId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await qaReview.GetQaReviewJobAsync(
+                qaReviewJobId,
+                access.CanAccessQaAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToQaReviewJobDto(result));
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/qa-review-reports")]
+    public async Task<ActionResult> ListQaReviewReports(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await qaReview.ListQaReviewReportsAsync(
+                workspaceId,
+                access.CanAccessQaAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(new WeddingPlannerQaReviewReportListDto(
+                result.WorkspaceId,
+                result.AdvertiserId,
+                result.CurrentAcceptedQaReviewReportVersionId,
+                result.Versions.Select(ToQaReviewReportDto).ToList()));
+        });
+    }
+
+    [HttpGet("qa-review-reports/{qaReviewReportVersionId:guid}")]
+    public async Task<ActionResult> GetQaReviewReport(
+        Guid qaReviewReportVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await qaReview.GetQaReviewReportAsync(
+                qaReviewReportVersionId,
+                access.CanAccessQaAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToQaReviewReportDto(result));
+        });
+    }
+
+    [HttpGet("qa-review-reports/{qaReviewReportVersionId:guid}/contributions")]
+    public async Task<ActionResult> ListQaReviewContributions(
+        Guid qaReviewReportVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await qaReview.ListContributionsAsync(
+                qaReviewReportVersionId,
+                access.CanAccessQaAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToQaContributionDto).ToList());
+        });
+    }
+
+    [HttpGet("qa-review-reports/{qaReviewReportVersionId:guid}/agent-runs")]
+    public async Task<ActionResult> ListQaReviewAgentRuns(
+        Guid qaReviewReportVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await qaReview.ListReportAgentRunsAsync(
+                qaReviewReportVersionId,
+                access.CanAccessQaAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToAgentRunDto).ToList());
+        });
+    }
+
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("qa-review-reports/{qaReviewReportVersionId:guid}/decisions")]
+    public async Task<ActionResult> DecideQaReviewReport(
+        Guid qaReviewReportVersionId,
+        [FromBody] JsonElement body,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireQaDecide();
+            if (body.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+            {
+                throw new InvalidOperationException("QA review decision body is required.");
+            }
+
+            var root = JsonNode.Parse(body.GetRawText())
+                ?? throw new InvalidOperationException("QA review decision body is required.");
+            var request = body.Deserialize<WeddingPlannerQaReviewDecisionRequest>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new InvalidOperationException("QA review decision body is invalid.");
+
+            var result = await qaReview.DecideQaReviewReportAsync(
+                qaReviewReportVersionId,
+                request.Decision,
+                request.Rationale,
+                request.SelectedVariantId,
+                request.VisualReviewConfirmed,
+                request.CopyReviewConfirmed,
+                request.ProvenanceReviewConfirmed,
+                request.SyntheticMarkerAcknowledged,
+                request.EscalationCategory,
+                root,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                access.CanAccessQaAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                access.CanDecideQaReview(actor),
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToQaDecisionDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/qa-review-reports/{dto.QaReviewReportVersionId}/decisions", dto);
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/qa-escalation-cases")]
+    public async Task<ActionResult> ListQaEscalationCases(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await qaReview.ListEscalationCasesAsync(
+                workspaceId,
+                access.CanAccessQaAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToQaEscalationCaseDto).ToList());
+        });
+    }
+
+    [HttpGet("qa-escalation-cases/{escalationCaseId:guid}")]
+    public async Task<ActionResult> GetQaEscalationCase(
+        Guid escalationCaseId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await qaReview.GetEscalationCaseAsync(
+                escalationCaseId,
+                access.CanAccessQaAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToQaEscalationCaseDto(result));
+        });
+    }
+
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("qa-escalation-cases/{escalationCaseId:guid}/resolutions")]
+    public async Task<ActionResult> ResolveQaEscalationCase(
+        Guid escalationCaseId,
+        [FromBody] JsonElement body,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireQaDecide();
+            if (body.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+            {
+                throw new InvalidOperationException("QA escalation resolution body is required.");
+            }
+
+            var root = JsonNode.Parse(body.GetRawText())
+                ?? throw new InvalidOperationException("QA escalation resolution body is required.");
+            var request = body.Deserialize<WeddingPlannerQaEscalationResolutionRequest>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new InvalidOperationException("QA escalation resolution body is invalid.");
+
+            var result = await qaReview.ResolveEscalationCaseAsync(
+                escalationCaseId,
+                request.Resolution,
+                request.Rationale,
+                request.ExceptionRationale,
+                request.ExceptionAcknowledged,
+                request.AcknowledgedBlockerCodes,
+                root,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                access.CanAccessQaAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                access.CanDecideQaReview(actor),
+                access.CanWaiveQaEscalation(actor),
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToQaEscalationResolutionDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/qa-escalation-cases/{dto.EscalationCaseId}/resolutions", dto);
+        });
+    }
+
     private WeddingPlannerActor RequireWrite()
     {
         var actor = access.Resolve(User);
         if (!access.CanWrite(actor))
         {
             throw new WeddingPlannerForbiddenException("The authenticated identity cannot write Wedding Planner records.");
+        }
+
+        return actor;
+    }
+
+    private WeddingPlannerActor RequireQaCreate()
+    {
+        var actor = access.Resolve(User);
+        if (!access.CanCreateQaReview(actor))
+        {
+            throw new WeddingPlannerForbiddenException("The authenticated identity cannot create QA review jobs.");
+        }
+
+        return actor;
+    }
+
+    private WeddingPlannerActor RequireQaDecide()
+    {
+        var actor = access.Resolve(User);
+        if (!access.CanDecideQaReview(actor))
+        {
+            throw new WeddingPlannerForbiddenException("The authenticated identity cannot record QA review decisions.");
         }
 
         return actor;
@@ -1235,6 +1543,7 @@ public sealed class WeddingPlannerController(
             result.OutputResearchReportVersionId,
             result.OutputConceptPackageVersionId,
             result.OutputCreativePackageVersionId,
+            result.OutputQaReviewReportVersionId,
             result.RequestId,
             result.ProviderRequestId,
             result.SourceSystem,
@@ -1650,5 +1959,166 @@ public sealed class WeddingPlannerController(
             result.IdempotencyKey,
             result.OccurredAt,
             ToCreativePackageDto(result.Version),
+            result.IsReplay);
+
+    private static WeddingPlannerQaReviewJobDto ToQaReviewJobDto(WeddingPlannerQaReviewJobResult result) =>
+        new(
+            result.QaReviewJobId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.ReviewObjective,
+            result.FocusAreas,
+            result.Notes,
+            result.InputJson,
+            result.InputSha256,
+            result.ApprovedCreativePackageVersionId,
+            result.CreativePackageDocumentSha256,
+            result.CreativePackageDecisionId,
+            result.SelectedVariantId,
+            result.SelectedCreativeAssetId,
+            result.SelectedCreativeAssetSha256,
+            result.SelectedCreativeAssetContentType,
+            result.SelectedCreativeAssetByteSize,
+            result.SelectedCreativeAssetWidth,
+            result.SelectedCreativeAssetHeight,
+            result.SelectedConceptId,
+            result.ApprovedBrandDnaVersionId,
+            result.ApprovedBrandDnaVersionNumber,
+            result.ApprovedColorProfileVersionId,
+            result.ApprovedColorProfileVersionNumber,
+            result.ApprovedResearchReportVersionId,
+            result.ApprovedResearchReportVersionNumber,
+            result.RulesFindingsJson,
+            result.RulesOverallSeverity,
+            result.ChaperoneReviewAgentRunId,
+            result.QaInspectionAgentRunId,
+            result.OutputQaReviewReportVersionId,
+            result.Status,
+            result.ErrorCode,
+            result.ErrorMessage,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.ActorType,
+            result.ActorLabel,
+            result.StartedAt,
+            result.CompletedAt,
+            result.IsReplay);
+
+    private static WeddingPlannerQaReviewReportVersionDto ToQaReviewReportDto(
+        WeddingPlannerQaReviewReportVersionResult result) =>
+        new(
+            result.QaReviewReportVersionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.VersionNumber,
+            result.SchemaVersion,
+            result.DocumentJson,
+            result.Summary,
+            result.ProducingQaReviewJobId,
+            result.ProducingAgentRunId,
+            result.ApprovedCreativePackageVersionId,
+            result.CreativePackageDocumentSha256,
+            result.CreativePackageDecisionId,
+            result.SelectedVariantId,
+            result.SelectedCreativeAssetId,
+            result.SelectedCreativeAssetSha256,
+            result.SelectedConceptId,
+            result.ApprovedBrandDnaVersionId,
+            result.ApprovedBrandDnaVersionNumber,
+            result.ApprovedColorProfileVersionId,
+            result.ApprovedColorProfileVersionNumber,
+            result.ApprovedResearchReportVersionId,
+            result.ApprovedResearchReportVersionNumber,
+            result.Status,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.ActorType,
+            result.ActorLabel,
+            result.CreatedAt,
+            result.IsCurrentAccepted,
+            result.RulesOverallSeverity,
+            result.EstimatedTotalCostUsd,
+            result.IsReplay);
+
+    private static WeddingPlannerQaRoleContributionDto ToQaContributionDto(
+        WeddingPlannerQaRoleContributionResult result) =>
+        new(
+            result.ContributionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.QaReviewReportVersionId,
+            result.QaReviewJobId,
+            result.LogicalRole,
+            result.ContributionSource,
+            result.ProducingAgentRunId,
+            result.ContributionJson,
+            result.CreatedAt);
+
+    private static WeddingPlannerQaReviewDecisionDto ToQaDecisionDto(
+        WeddingPlannerQaReviewDecisionResult result) =>
+        new(
+            result.DecisionId,
+            result.QaReviewReportVersionId,
+            result.WorkspaceId,
+            result.AdvertiserId,
+            result.Decision,
+            result.SelectedVariantId,
+            result.Rationale,
+            result.VisualReviewConfirmed,
+            result.CopyReviewConfirmed,
+            result.ProvenanceReviewConfirmed,
+            result.SyntheticMarkerAcknowledged,
+            result.EscalationCategory,
+            result.ActorType,
+            result.ActorLabel,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.OccurredAt,
+            ToQaReviewReportDto(result.Version),
+            result.EscalationCaseId,
+            result.IsReplay);
+
+    private static WeddingPlannerQaEscalationCaseDto ToQaEscalationCaseDto(
+        WeddingPlannerQaEscalationCaseResult result) =>
+        new(
+            result.EscalationCaseId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.QaReviewReportVersionId,
+            result.QaReviewDecisionId,
+            result.Category,
+            result.Status,
+            result.RationaleSnapshot,
+            result.SelectedVariantId,
+            result.ApprovedCreativePackageVersionId,
+            result.SelectedCreativeAssetId,
+            result.ActorType,
+            result.ActorLabel,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.CreatedAt,
+            result.ResolutionId,
+            result.IsReplay);
+
+    private static WeddingPlannerQaEscalationResolutionDto ToQaEscalationResolutionDto(
+        WeddingPlannerQaEscalationResolutionResult result) =>
+        new(
+            result.ResolutionId,
+            result.EscalationCaseId,
+            result.QaReviewReportVersionId,
+            result.WorkspaceId,
+            result.AdvertiserId,
+            result.Resolution,
+            result.Rationale,
+            result.ExceptionRationale,
+            result.ExceptionAcknowledged,
+            result.AcknowledgedBlockerCodes,
+            result.ActorType,
+            result.ActorLabel,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.OccurredAt,
+            ToQaEscalationCaseDto(result.Case),
+            ToQaReviewReportDto(result.Version),
             result.IsReplay);
 }

@@ -72,8 +72,164 @@ public sealed class LocalDeterministicWeddingPlannerAiProvider : IWeddingPlanner
             return Task.FromResult(CompleteCreativeDepartmentStage(request));
         }
 
+        if (IsQaReviewStage(request))
+        {
+            return Task.FromResult(CompleteQaReviewStage(request));
+        }
+
         throw new InvalidOperationException(
             $"Unsupported Wedding Planner provider request for role '{request.LogicalRole}' / pack '{request.PromptPackVersion}' / format '{request.ResponseFormat}'.");
+    }
+
+    private static bool IsQaReviewStage(WeddingPlannerAiCompletionRequest request)
+    {
+        if (!string.Equals(request.ResponseFormat, WeddingPlannerResponseFormats.Json, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.ChaperoneReview, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.ChaperoneReviewV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerQaWorkerProfiles.ChaperoneReviewV1, StringComparison.Ordinal))
+            || (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.QaInspection, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.QaInspectionV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerQaWorkerProfiles.QaInspectionV1, StringComparison.Ordinal));
+    }
+
+    private static WeddingPlannerAiCompletionResult CompleteQaReviewStage(WeddingPlannerAiCompletionRequest request)
+    {
+        var profile = request.WorkerProfileVersion
+            ?? throw new InvalidOperationException("QA stage requires WorkerProfileVersion.");
+        var assigned = request.AssignedRoles?.ToList()
+            ?? WeddingPlannerQaWorkerProfiles.AssignedRoles(profile).ToList();
+        var expected = WeddingPlannerQaWorkerProfiles.AssignedRoles(profile);
+        if (assigned.Count != expected.Count || !expected.All(assigned.Contains))
+        {
+            throw new InvalidOperationException("QA AssignedRoles must match the worker profile mapping.");
+        }
+
+        var context = string.Join("\n", request.Messages.Select(x => x.Body));
+        if (context.Contains("base64", StringComparison.OrdinalIgnoreCase)
+            || context.Contains("imageBytes", StringComparison.OrdinalIgnoreCase)
+            || context.Contains("\"bytes\"", StringComparison.OrdinalIgnoreCase)
+            || context.Contains("data:image", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Local QA provider refuses image bytes/base64 in context.");
+        }
+
+        var selectedVariantId = ExtractQaSelectedVariantId(context);
+        var rulesSeverity = ExtractQaRulesOverallSeverity(context);
+        JsonObject content = profile switch
+        {
+            WeddingPlannerQaWorkerProfiles.ChaperoneReviewV1 => BuildChaperoneOutput(selectedVariantId),
+            WeddingPlannerQaWorkerProfiles.QaInspectionV1 => BuildQaInspectionOutput(selectedVariantId, rulesSeverity),
+            _ => throw new InvalidOperationException($"Unsupported QA profile '{profile}'.")
+        };
+
+        var json = content.ToJsonString(NodeWriteOptions);
+        var promptTokens = Math.Max(24, context.Length / 4);
+        var completionTokens = Math.Max(24, json.Length / 4);
+        return new WeddingPlannerAiCompletionResult(
+            json,
+            ProviderKey,
+            ModelId,
+            AdapterVersion,
+            $"local-qa-{Guid.NewGuid():N}"[..24],
+            WeddingPlannerWorkers.LocalDeterministicV1,
+            promptTokens,
+            completionTokens,
+            promptTokens + completionTokens,
+            0.001m);
+    }
+
+    private static JsonObject BuildChaperoneOutput(string selectedVariantId) =>
+        new()
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.ChaperoneReviewWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerQaWorkerProfiles.ChaperoneReviewV1,
+            ["marker"] = WeddingPlannerQaMarkers.SyntheticDevelopmentQaReview,
+            ["selectedVariantId"] = selectedVariantId,
+            ["contributions"] = new JsonArray(new JsonObject
+            {
+                ["logicalRole"] = WeddingPlannerQaLogicalRoles.CreativeChaperone,
+                ["summary"] = "Boundary and provenance risk notes for the selected variant.",
+                ["riskNotes"] = new JsonObject
+                {
+                    ["boundary"] = new JsonArray("Pinned concept boundary must remain intact."),
+                    ["provenance"] = new JsonArray("Creative package provenance pins must stay consistent."),
+                    ["brand"] = new JsonArray("Brand DNA remains a creative constraint only."),
+                    ["claims"] = new JsonArray("Any factual claims must preserve exact source IDs.")
+                },
+                ["uncertainties"] = new JsonArray("Human must visually review the selected PNG.")
+            })
+        };
+
+    private static JsonObject BuildQaInspectionOutput(string selectedVariantId, string rulesOverallSeverity)
+    {
+        var proposed = string.Equals(rulesOverallSeverity, WeddingPlannerQaFindingSeverities.Block, StringComparison.Ordinal)
+            ? WeddingPlannerQaProposedOutcomes.ReturnForRevision
+            : WeddingPlannerQaProposedOutcomes.PassRecommended;
+        return new JsonObject
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.QaInspectionWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerQaWorkerProfiles.QaInspectionV1,
+            ["marker"] = WeddingPlannerQaMarkers.SyntheticDevelopmentQaReview,
+            ["selectedVariantId"] = selectedVariantId,
+            ["rulesOverallSeverity"] = rulesOverallSeverity,
+            ["contributions"] = new JsonArray(new JsonObject
+            {
+                ["logicalRole"] = WeddingPlannerQaLogicalRoles.QaInspector,
+                ["summary"] = "Deterministic alignment and format notes.",
+                ["alignmentNotes"] = new JsonObject
+                {
+                    ["format"] = new JsonArray("Selected variant canvas matches locked format table."),
+                    ["copy"] = new JsonArray("Copy fields are present for human review."),
+                    ["assetMetadata"] = new JsonArray("Asset metadata only; no pixel inspection performed.")
+                },
+                ["uncertainties"] = new JsonArray("Rules do not certify semantic or visual safety."),
+                ["proposedOutcome"] = proposed
+            })
+        };
+    }
+
+    private static string ExtractQaSelectedVariantId(string context)
+    {
+        var marker = "\"selectedVariantId\"";
+        var start = context.IndexOf(marker, StringComparison.Ordinal);
+        if (start < 0)
+        {
+            return "variant_1";
+        }
+
+        var colon = context.IndexOf(':', start);
+        var quote1 = context.IndexOf('"', colon + 1);
+        var quote2 = context.IndexOf('"', quote1 + 1);
+        if (quote1 < 0 || quote2 < 0)
+        {
+            return "variant_1";
+        }
+
+        return context[(quote1 + 1)..quote2];
+    }
+
+    private static string ExtractQaRulesOverallSeverity(string context)
+    {
+        var marker = "\"overallSeverity\"";
+        var start = context.IndexOf(marker, StringComparison.Ordinal);
+        if (start < 0)
+        {
+            return WeddingPlannerQaFindingSeverities.Pass;
+        }
+
+        var colon = context.IndexOf(':', start);
+        var quote1 = context.IndexOf('"', colon + 1);
+        var quote2 = context.IndexOf('"', quote1 + 1);
+        if (quote1 < 0 || quote2 < 0)
+        {
+            return WeddingPlannerQaFindingSeverities.Pass;
+        }
+
+        return context[(quote1 + 1)..quote2];
     }
 
     private static bool IsCreativeDepartmentStage(WeddingPlannerAiCompletionRequest request)

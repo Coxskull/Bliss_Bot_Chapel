@@ -667,6 +667,125 @@
           </form>
         </div>
       </section>
+
+      <section class="qa-panel" id="qa-panel" aria-labelledby="qa-title">
+        <div class="qa-heading">
+          <p>PHASE 7 · CHAPERONE / QA / HUMAN ESCALATION</p>
+          <h3 id="qa-title">Chaperone, QA review &amp; human escalation</h3>
+          <p class="qa-copy">
+            Request a control-review QA job when a current-approved Phase 6 creative package carries a
+            <code>SelectedVariantId</code> and exactly one selected PNG (server pins package, decision, variant, and asset — no client override).
+            <strong>Exactly 3 control roles map to exactly 2 AI workers/runs</strong> plus deterministic <code>qa-rules.v1</code> and human authority.
+            <code>HUMAN_ESCALATION_STEWARD</code> is <code>RULES_HUMAN</code> only — not a third AI run.
+            Advertisers may request and read QA jobs/reports. QA decisions and escalation resolutions are human reviewer/operator/admin authority only — this public surface is request/read-only.
+            Control review only — not research, claim, legal, matching, accessibility, compliance, campaign-ready, final production-artwork, or Bliss handshake approval.
+          </p>
+        </div>
+
+        <div class="qa-prereq" id="qa-prereq-status" role="status">
+          <span>Prerequisite check</span>
+          <p>Sign in as an authenticated advertiser with write access. QA review submit requires a current-approved Phase 6 creative package whose latest APPROVE carries a SelectedVariantId and exactly one selected PNG asset. Server resolves pins — clients cannot override package/variant/asset ids.</p>
+        </div>
+
+        <p class="qa-roles-note" id="qa-roles-note">
+          Exactly 3 NEW control roles → exactly 2 AI workers/runs (not 3 fake agent runs), plus deterministic <code>qa-rules.v1</code> and human authority:
+          <code>CHAPERONE_REVIEW_V1</code> (<code>CREATIVE_CHAPERONE</code> · AI),
+          <code>QA_INSPECTION_V1</code> (<code>QA_INSPECTOR</code> · AI),
+          <code>HUMAN_ESCALATION_STEWARD</code> (<code>RULES_HUMAN</code> · no AI profile/run).
+          Phase 6 creative roles remain pinned provenance and are not re-run.
+        </p>
+
+        <form class="qa-job-form" id="qa-job-form">
+          <label for="qa-review-objective">Review objective *</label>
+          <textarea id="qa-review-objective" name="reviewObjective" maxlength="4000" required disabled placeholder="What should this control-review QA job focus on?"></textarea>
+          <fieldset class="qa-focus-select" id="qa-focus-select">
+            <legend>Focus areas * <em>1–6 unique</em></legend>
+            <label><input type="checkbox" name="qaFocusArea" value="COPY" disabled> COPY</label>
+            <label><input type="checkbox" name="qaFocusArea" value="VISUAL" disabled> VISUAL</label>
+            <label><input type="checkbox" name="qaFocusArea" value="PROVENANCE" disabled> PROVENANCE</label>
+            <label><input type="checkbox" name="qaFocusArea" value="CLAIMS" disabled> CLAIMS</label>
+            <label><input type="checkbox" name="qaFocusArea" value="FORMAT" disabled> FORMAT</label>
+            <label><input type="checkbox" name="qaFocusArea" value="ASSET_INTEGRITY" disabled> ASSET_INTEGRITY</label>
+          </fieldset>
+          <label for="qa-notes">Notes <em>optional</em></label>
+          <textarea id="qa-notes" name="notes" maxlength="4000" disabled placeholder="Optional notes for the review brief"></textarea>
+          <div class="qa-job-actions">
+            <button type="submit" id="qa-job-submit" disabled>Submit QA review job</button>
+            <button type="button" id="qa-refresh-lists" disabled>Refresh jobs &amp; reports</button>
+          </div>
+          <p class="qa-authority-note">Advertiser request / read-only authority on this public surface. ACCEPT / RETURN_FOR_REVISION / ESCALATE and escalation resolutions are not available here — use Operations with reviewer/operator/admin authority.</p>
+        </form>
+
+        <div class="qa-lists">
+          <div class="qa-list-block">
+            <label for="qa-job-select">QA review jobs <small>RUNNING · SUCCEEDED · FAILED</small></label>
+            <select id="qa-job-select" disabled>
+              <option value="">No QA review jobs yet</option>
+            </select>
+            <div class="qa-job-meta" id="qa-job-meta" hidden></div>
+          </div>
+          <div class="qa-list-block">
+            <label for="qa-report-select">QA review reports <small>PROPOSED · ACCEPTED · RETURNED_FOR_REVISION · ESCALATED · ACCEPTED_WITH_EXCEPTION</small></label>
+            <select id="qa-report-select" disabled>
+              <option value="">No QA review reports yet</option>
+            </select>
+            <p class="qa-current-pointer" id="qa-current-pointer" hidden>CURRENT ACCEPTED QA report pointer is set for this workspace.</p>
+          </div>
+        </div>
+
+        <div class="qa-report-view" id="qa-report-view" hidden>
+          <div class="qa-report-meta">
+            <p class="qa-status-line">
+              <span id="qa-report-status-label">PROPOSED</span>
+              <span id="qa-report-current-badge" hidden>CURRENT ACCEPTED</span>
+              · version <strong id="qa-report-version-number">—</strong>
+            </p>
+            <p id="qa-report-summary-text"></p>
+            <p class="qa-meta-line">Schema <code id="qa-report-schema">—</code> · selected variant <code id="qa-report-selected-variant">—</code></p>
+            <p class="qa-meta-line">Package pin <code id="qa-report-package-pin">—</code> · package SHA <code id="qa-report-package-sha">—</code></p>
+            <p class="qa-meta-line">Decision pin <code id="qa-report-decision-pin">—</code> · asset <code id="qa-report-asset-pin">—</code> · asset SHA <code id="qa-report-asset-sha">—</code></p>
+            <p class="qa-meta-line">Concept/DNA/color/research pins <code id="qa-report-provenance-pins">—</code></p>
+            <p class="qa-meta-line">Rules severity <code id="qa-report-rules-severity">—</code> · estimated cost <code id="qa-report-cost">—</code></p>
+            <p class="qa-meta-line">Proposed outcome <code id="qa-report-proposed-outcome">—</code></p>
+          </div>
+
+          <div class="qa-disclaimer-block" id="qa-disclaimer-block" hidden>
+            <h4>Control-review disclaimer</h4>
+            <p id="qa-disclaimer-text"></p>
+          </div>
+
+          <div class="qa-synthetic-warning" id="qa-synthetic-warning" hidden role="status">
+            <strong>SYNTHETIC DEVELOPMENT QA REVIEW</strong>
+            Local or synthetic QA output. Control review only — not campaign-ready, final, legal, accessibility, compliance, or Bliss handshake approval.
+          </div>
+
+          <div class="qa-section" id="qa-selected-png-section">
+            <h4>Selected PNG <small>human visual review · same-origin content only</small></h4>
+            <div id="qa-selected-png"></div>
+          </div>
+
+          <div class="qa-section" id="qa-rules-section">
+            <h4>qa-rules.v1 findings <small>authoritative severity · all codes</small></h4>
+            <div id="qa-rules-findings"></div>
+          </div>
+
+          <div class="qa-section" id="qa-contributions-section">
+            <h4>Role contributions <small>exactly 3 · AI / AI / RULES_HUMAN</small></h4>
+            <div id="qa-contributions"></div>
+          </div>
+
+          <div class="qa-section" id="qa-runs-section">
+            <h4>Agent run receipts <small>exactly 2 AI workers · no Steward run</small></h4>
+            <p class="qa-roles-note">Three control roles map to 2 AI workers/runs, not 3 subscriptions. Steward is RULES_HUMAN with null producingAgentRunId. Receipts below come from the report agent-runs endpoint.</p>
+            <div id="qa-agent-runs"></div>
+          </div>
+
+          <p class="qa-authority-note" id="qa-public-decision-note">
+            No ACCEPT / RETURN_FOR_REVISION / ESCALATE or escalation resolve controls on this public advertiser surface.
+            Human authority for decisions and resolutions lives in Operations (reviewer / operator / admin).
+          </p>
+        </div>
+      </section>
     </section>
 
     <section class="audience-panels">
