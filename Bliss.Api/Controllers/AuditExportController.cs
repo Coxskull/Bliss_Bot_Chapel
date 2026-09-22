@@ -408,6 +408,7 @@ public sealed class AuditExportController(
             var requestId = RequestCorrelation.Resolve(HttpContext);
             var verifiedAt = DateTime.UtcNow;
             var receipt = result with { RequestId = requestId, VerifiedAt = verifiedAt };
+            events.RememberVerification(receipt);
             events.Record(new OperationalEvent(
                 verifiedAt,
                 "AuditVerified",
