@@ -33,6 +33,17 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("brand-dna-decision-form", body);
         Assert.Contains("planner-composer", body);
         Assert.Contains("planner-message-stream", body);
+        Assert.Contains("PHASE 3 · DETERMINISTIC COLOR INTELLIGENCE", body);
+        Assert.Contains("color-intelligence-panel", body);
+        Assert.Contains("color-compute-form", body);
+        Assert.Contains("color-decision-form", body);
+        Assert.Contains("color-swatch-grid", body);
+        Assert.Contains("color-contrast-list", body);
+        Assert.Contains("Deterministic palette computation only", body);
+        Assert.Contains("no AI", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("arithmetic evidence", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not accessibility certification", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not psychology", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("FOUNDATION READY", body);
         Assert.DoesNotContain("Help me choose colors", body);
         Assert.DoesNotContain("Show me some design concepts", body);
@@ -69,6 +80,59 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
     }
 
     [Fact]
+    public async Task Public_planner_script_wires_phase3_color_intelligence_from_server_documents_only()
+    {
+        var client = _factory.CreateClient();
+        var script = await (await client.GetAsync("/wedding-planner.js")).Content.ReadAsStringAsync();
+
+        Assert.Contains("PHASE 3", script);
+        Assert.Contains("/color-profiles/compute", script);
+        Assert.Contains("/color-profiles", script);
+        Assert.Contains("/color-profiles/", script);
+        Assert.Contains("/decisions", script);
+        Assert.Contains("currentApprovedBrandDnaVersionId", script);
+        Assert.Contains("documentJson", script);
+        Assert.Contains("parseColorDocument", script);
+        Assert.Contains("contrastEvidence", script);
+        Assert.Contains("geometryDisclaimer", script);
+        Assert.Contains("HUMAN", script);
+        Assert.Contains("DERIVED", script);
+        Assert.Contains("DEFAULT", script);
+        Assert.Contains("secondaryDerived", script);
+        Assert.Contains("accentDerived", script);
+        Assert.Contains("backgroundDefaulted", script);
+        Assert.Contains("surfaceDefaulted", script);
+        Assert.Contains("aaNormal", script);
+        Assert.Contains("aaLarge", script);
+        Assert.Contains("inputSha256", script);
+        Assert.Contains("approvedBrandDnaVersionId", script);
+        Assert.Contains("isCurrentApproved", script);
+        Assert.Contains("PROPOSED", script);
+        Assert.Contains("APPROVED", script);
+        Assert.Contains("CURRENT", script);
+        Assert.Contains("X-CSRF-TOKEN", script);
+        Assert.Contains("idempotencyKey", script);
+        Assert.Contains("canComputeColorProfiles", script);
+        Assert.Contains("No random or test advertiser is bound automatically", script);
+        Assert.Contains("deterministic", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("no AI", script, StringComparison.OrdinalIgnoreCase);
+
+        Assert.DoesNotContain("relativeLuminance", script);
+        Assert.DoesNotContain("srgbToLinear", script);
+        Assert.DoesNotContain("contrastRatio", script);
+        Assert.DoesNotContain("mixTowardBlack", script);
+        Assert.DoesNotContain("hue + 180", script);
+        Assert.DoesNotContain("hue+180", script);
+        Assert.DoesNotContain("fabricateColor", script);
+        Assert.DoesNotContain("fakePalette", script);
+        Assert.DoesNotContain("syntheticProfile", script);
+        Assert.DoesNotContain("clientDerived", script);
+        Assert.DoesNotContain("Math.pow", script);
+        Assert.DoesNotContain("4.5", script);
+        Assert.DoesNotContain("7.0", script);
+    }
+
+    [Fact]
     public async Task Operations_route_preserves_the_internal_console()
     {
         var client = _factory.CreateClient();
@@ -88,10 +152,17 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Last verification", body);
         Assert.Contains("Recent verifications", body);
         Assert.Contains("Wedding Planner", body);
-        Assert.Contains("Advertiser workspace, Concierge runs, and Brand DNA", body);
+        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, and Color Intelligence", body);
         Assert.Contains("Concierge + Brand DNA Interpreter runs", body);
         Assert.Contains("Create Brand DNA proposal", body);
         Assert.Contains("Approve or reject Brand DNA", body);
+        Assert.Contains("PHASE 3 · DETERMINISTIC COLOR INTELLIGENCE", body);
+        Assert.Contains("Compute color profile", body);
+        Assert.Contains("Approve or reject color profile", body);
+        Assert.Contains("wedding-planner-color-compute-form", body);
+        Assert.Contains("wedding-planner-color-decision-form", body);
+        Assert.Contains("wedding-planner-color-profile-list", body);
+        Assert.Contains("wedding-planner-color-inspect", body);
         Assert.Contains("Export ledger", body);
         Assert.Contains("Verify pack", body);
         Assert.Contains("app.js", body);
@@ -113,11 +184,26 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("/brand-dna", script);
         Assert.Contains("/brand-dna/interpret", script);
         Assert.Contains("/decisions", script);
+        Assert.Contains("/color-profiles/compute", script);
+        Assert.Contains("/color-profiles", script);
+        Assert.Contains("documentJson", script);
+        Assert.Contains("contrastEvidence", script);
+        Assert.Contains("geometryDisclaimer", script);
+        Assert.Contains("inputSha256", script);
+        Assert.Contains("approvedBrandDnaVersionId", script);
+        Assert.Contains("currentApprovedColorProfileVersionId", script);
+        Assert.Contains("submitWeddingPlannerColorCompute", script);
+        Assert.Contains("submitWeddingPlannerColorDecision", script);
+        Assert.Contains("renderWeddingPlannerColorInspect", script);
         Assert.Contains("Open primary workspace", body);
         Assert.Contains("Append a human message", body);
         Assert.DoesNotContain("Phase 1 does not invoke AI", body);
         Assert.DoesNotContain("TEST ENVIRONMENT", body);
         Assert.DoesNotContain("TEST_OPERATOR", body);
+        Assert.DoesNotContain("relativeLuminance", script);
+        Assert.DoesNotContain("srgbToLinear", script);
+        Assert.DoesNotContain("fabricateColor", script);
+        Assert.DoesNotContain("fakePalette", script);
     }
 
     [Theory]

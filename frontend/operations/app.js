@@ -17,8 +17,9 @@ const state = {
   runs: [], ingestions: [], formations: [], reviews: [], placements: [],
   reviewQueue: [], placementQueue: [], provenances: [],
   weddingPlannerWorkspaces: [], weddingPlannerSessions: [], weddingPlannerMessages: [],
-  weddingPlannerAgentRuns: [], weddingPlannerBrandDna: null,
+  weddingPlannerAgentRuns: [], weddingPlannerBrandDna: null, weddingPlannerColorProfiles: null,
   selectedWeddingPlannerWorkspace: null, selectedWeddingPlannerSession: null,
+  selectedWeddingPlannerColorProfileId: null,
   affiliateNetworks: [], networkAccesses: [], programAccesses: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations",
@@ -787,7 +788,7 @@ function route() {
   const view=valid.includes(parts[0])?parts[0]:"overview";
   $$(".view").forEach(x=>x.classList.toggle("active",x.id===`view-${view}`));
   $$(".nav-item[data-view]").forEach(x=>{const active=x.dataset.view===view;x.classList.toggle("active",active);if(active)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});
-  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 2",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
+  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 3",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
   $("#page-title").textContent=titles[view];
   toggleMobileNav(false);
   if(!state.loaded)return;
@@ -839,6 +840,12 @@ function bindActions() {
   $("#wedding-planner-message-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerMessage(event.currentTarget);});
   $("#wedding-planner-interpret-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerInterpret(event.currentTarget);});
   $("#wedding-planner-dna-decision-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerDnaDecision(event.currentTarget);});
+  $("#wedding-planner-color-compute-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerColorCompute(event.currentTarget);});
+  $("#wedding-planner-color-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerColorDecision(event.currentTarget);});
+  $("#wedding-planner-color-version")?.addEventListener("change",event=>{
+    state.selectedWeddingPlannerColorProfileId = event.currentTarget.value || null;
+    renderWeddingPlannerColorInspect();
+  });
   $("#regenerate-review-key").addEventListener("click",generateReviewIdempotencyKey);
   $("#regenerate-placement-key").addEventListener("click",generatePlacementIdempotencyKey);
   $("#regenerate-wedding-planner-workspace-key").addEventListener("click",()=>fillKey("#wedding-planner-workspace-key"));
@@ -846,6 +853,8 @@ function bindActions() {
   $("#regenerate-wedding-planner-message-key").addEventListener("click",()=>fillKey("#wedding-planner-message-key"));
   $("#regenerate-wedding-planner-interpret-key").addEventListener("click",()=>fillKey("#wedding-planner-interpret-key"));
   $("#regenerate-wedding-planner-dna-decision-key").addEventListener("click",()=>fillKey("#wedding-planner-dna-decision-key"));
+  $("#regenerate-wedding-planner-color-compute-key")?.addEventListener("click",()=>fillKey("#wedding-planner-color-compute-key"));
+  $("#regenerate-wedding-planner-color-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-color-decision-key"));
   $("#placement-match").addEventListener("change",event=>{state.selectedPlacement=event.target.value;renderPlacements();});
   $("#placement-content").addEventListener("change",updatePlacementSlots);
   $("#review-match").addEventListener("change",event=>{state.selectedReview=event.target.value;renderReviews();});
@@ -870,6 +879,12 @@ function handleDocumentClick(event) {
   else if(target.matches("[data-regenerate-inline]"))target.previousElementSibling.value=`manual-${crypto.randomUUID()}`;
   else if(target.matches("[data-creator-id]"))location.hash=`#/creators/${target.dataset.creatorId}`;
   else if(target.matches("[data-wedding-workspace]"))location.hash=`#/wedding-planner/${target.dataset.weddingWorkspace}`;
+  else if(target.matches("[data-wedding-color-profile]")){
+    state.selectedWeddingPlannerColorProfileId=target.dataset.weddingColorProfile;
+    const select=$("#wedding-planner-color-version");
+    if(select)select.value=state.selectedWeddingPlannerColorProfileId;
+    renderWeddingPlannerColorInspect();
+  }
   else if(target.matches("[data-match-id]"))location.hash=`#/matches/${target.dataset.matchId}`;
   else if(target.matches("[data-campaign-id]")){state.inventoryTab="campaigns";renderInventory();location.hash=`#/inventory/${target.dataset.campaignId}`;}
   else if(target.matches("[data-content-id]"))openContent(target.dataset.contentId);
@@ -1006,6 +1021,8 @@ function generateWeddingPlannerKeys(){
   fillKey("#wedding-planner-message-key");
   fillKey("#wedding-planner-interpret-key");
   fillKey("#wedding-planner-dna-decision-key");
+  fillKey("#wedding-planner-color-compute-key");
+  fillKey("#wedding-planner-color-decision-key");
 }
 
 function renderWeddingPlanner() {
@@ -1013,15 +1030,19 @@ function renderWeddingPlanner() {
   const workspaceSelect = $("#wedding-planner-workspace");
   const sessionSelect = $("#wedding-planner-session");
   const interpretWorkspace = $("#wedding-planner-interpret-workspace");
+  const colorWorkspace = $("#wedding-planner-color-workspace");
   const dnaVersionSelect = $("#wedding-planner-dna-version");
+  const colorVersionSelect = $("#wedding-planner-color-version");
   if (!advertiserSelect) return;
   advertiserSelect.innerHTML = state.advertisers.map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join("");
   const workspaceOptions = state.weddingPlannerWorkspaces.map(x => `<option value="${x.workspaceId}">${escapeHtml(x.advertiserName)}</option>`).join("");
   workspaceSelect.innerHTML = workspaceOptions;
   if (interpretWorkspace) interpretWorkspace.innerHTML = workspaceOptions;
+  if (colorWorkspace) colorWorkspace.innerHTML = workspaceOptions;
   if (state.selectedWeddingPlannerWorkspace) {
     workspaceSelect.value = state.selectedWeddingPlannerWorkspace;
     if (interpretWorkspace) interpretWorkspace.value = state.selectedWeddingPlannerWorkspace;
+    if (colorWorkspace) colorWorkspace.value = state.selectedWeddingPlannerWorkspace;
   }
   sessionSelect.innerHTML = state.weddingPlannerSessions.map(x => `<option value="${x.sessionId}">${x.sessionId.slice(0, 8)} · ${x.messageCount} messages</option>`).join("");
   if (state.selectedWeddingPlannerSession) sessionSelect.value = state.selectedWeddingPlannerSession;
@@ -1054,6 +1075,110 @@ function renderWeddingPlanner() {
       ? versions.map(x => `<div class="activity-item"><span class="activity-icon">${x.versionNumber}</span><span><strong>${escapeHtml(x.status)}${x.brandDnaVersionId === currentId ? " · CURRENT APPROVED" : ""}</strong><small>${escapeHtml(x.summary || "No summary")} · ${escapeHtml(x.schemaVersion)}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></div>`).join("")
       : emptyState("Select or create a workspace to list Brand DNA versions.");
   }
+
+  const colorVersions = state.weddingPlannerColorProfiles?.versions || [];
+  const colorCurrentId = state.weddingPlannerColorProfiles?.currentApprovedColorProfileVersionId || null;
+  const colorCurrentLabel = $("#wedding-planner-color-current");
+  if (colorCurrentLabel) colorCurrentLabel.textContent = colorCurrentId ? `Current: ${shortId(colorCurrentId)}` : "Current: none";
+  if (!state.selectedWeddingPlannerColorProfileId && colorVersions.length) {
+    state.selectedWeddingPlannerColorProfileId =
+      colorVersions.find(x => x.status === "PROPOSED")?.colorProfileVersionId ||
+      colorCurrentId ||
+      colorVersions[0].colorProfileVersionId;
+  }
+  if (colorVersionSelect) {
+    colorVersionSelect.innerHTML = colorVersions.length
+      ? colorVersions.map(x => {
+          const markers = [x.status];
+          if (x.colorProfileVersionId === colorCurrentId || x.isCurrentApproved) markers.push("CURRENT");
+          return `<option value="${x.colorProfileVersionId}"${x.colorProfileVersionId === state.selectedWeddingPlannerColorProfileId ? " selected" : ""}>v${x.versionNumber} · ${escapeHtml(markers.join(" · "))}</option>`;
+        }).join("")
+      : `<option value="">No color profiles</option>`;
+  }
+  const colorList = $("#wedding-planner-color-profile-list");
+  if (colorList) {
+    colorList.innerHTML = colorVersions.length
+      ? colorVersions.map(x => {
+          const isCurrent = x.colorProfileVersionId === colorCurrentId || x.isCurrentApproved;
+          return `<button class="activity-item" data-wedding-color-profile="${x.colorProfileVersionId}" type="button"><span class="activity-icon">${x.versionNumber}</span><span><strong>${escapeHtml(x.status)}${isCurrent ? " · CURRENT APPROVED" : ""}</strong><small>${escapeHtml(x.summary || "No summary")} · ${escapeHtml(x.schemaVersion)} · ${escapeHtml(x.algorithmVersion)} · SHA ${escapeHtml(shortId(x.inputSha256 || ""))} · Brand DNA ${escapeHtml(shortId(x.approvedBrandDnaVersionId || ""))}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></button>`;
+        }).join("")
+      : emptyState("Select or create a workspace to list color profiles.");
+  }
+  renderWeddingPlannerColorInspect();
+}
+
+function parseWeddingPlannerColorDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+function seedProvenanceLabel(seeds, role) {
+  if (!seeds) return "SERVER";
+  if (role === "primary") return "HUMAN";
+  if (role === "secondary") return seeds.secondaryDerived ? "DERIVED" : "HUMAN";
+  if (role === "accent") return seeds.accentDerived ? "DERIVED" : "HUMAN";
+  if (role === "background") return seeds.backgroundDefaulted ? "DEFAULT" : "HUMAN";
+  if (role === "surface") return seeds.surfaceDefaulted ? "DEFAULT" : "HUMAN";
+  return "SERVER";
+}
+
+function renderWeddingPlannerColorInspect() {
+  const panel = $("#wedding-planner-color-inspect");
+  if (!panel) return;
+  const versions = state.weddingPlannerColorProfiles?.versions || [];
+  const currentId = state.weddingPlannerColorProfiles?.currentApprovedColorProfileVersionId || null;
+  const selected = versions.find(x => x.colorProfileVersionId === state.selectedWeddingPlannerColorProfileId) || versions[0] || null;
+  if (!selected) {
+    panel.innerHTML = emptyState("Select a color profile version to inspect the server document.");
+    return;
+  }
+  const doc = parseWeddingPlannerColorDocument(selected.documentJson);
+  const palette = doc?.palette || {};
+  const seeds = doc?.seeds || null;
+  const roles = ["primary", "secondary", "accent", "background", "surface", "onPrimary", "onSecondary", "onAccent", "onBackground", "onSurface", "neutral50", "neutral100", "neutral200", "neutral400", "neutral600", "neutral800", "neutral900"];
+  const swatches = roles.map(role => {
+    const hex = palette[role]?.hex;
+    if (!hex) return "";
+    const provenance = ["primary", "secondary", "accent", "background", "surface"].includes(role)
+      ? ` · ${seedProvenanceLabel(seeds, role)}`
+      : "";
+    return `<div class="metric-box"><span>${escapeHtml(role)}${escapeHtml(provenance)}</span><strong style="display:flex;align-items:center;gap:8px"><span style="display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid rgba(0,0,0,.12);background:${escapeHtml(hex)}"></span>${escapeHtml(hex)}</strong></div>`;
+  }).filter(Boolean).join("");
+  const pairs = Array.isArray(doc?.contrastEvidence?.pairs) ? doc.contrastEvidence.pairs : [];
+  const contrastRows = pairs.length
+    ? pairs.map(pair => {
+        const ratio = pair.ratio == null ? "—" : Number(pair.ratio).toFixed(2);
+        const badges = [
+          ["AA", pair.aaNormal],
+          ["AA large", pair.aaLarge],
+          ["AAA", pair.aaaNormal],
+          ["AAA large", pair.aaaLarge]
+        ].map(([label, pass]) => `<span class="status-badge ${pass ? "status-approved" : "status-ineligible"}">${escapeHtml(label)} ${pass ? "pass" : "fail"}</span>`).join(" ");
+        return `<div class="activity-item"><span class="activity-icon" style="background:linear-gradient(90deg,${escapeHtml(pair.foregroundHex || "#000")},${escapeHtml(pair.backgroundHex || "#fff")})"></span><span><strong>${escapeHtml(pair.foregroundRole || "?")} on ${escapeHtml(pair.backgroundRole || "?")} · ${escapeHtml(ratio)}</strong><small>${escapeHtml(pair.foregroundHex || "")} / ${escapeHtml(pair.backgroundHex || "")}<br>${badges}</small></span></div>`;
+      }).join("")
+    : emptyState("No contrast evidence pairs in server documentJson.");
+  const isCurrent = selected.colorProfileVersionId === currentId || selected.isCurrentApproved;
+  panel.innerHTML = `
+    <div class="detail-hero"><div class="detail-hero-top">${badge(selected.status)}${isCurrent ? badge("CURRENT") : ""}</div>
+      <h3>Color profile v${escapeHtml(String(selected.versionNumber))}</h3>
+      <p>${escapeHtml(selected.summary || "No summary")}</p>
+    </div>
+    <div class="metric-grid">
+      ${metric("Schema", selected.schemaVersion || "—")}
+      ${metric("Algorithm", selected.algorithmVersion || "—")}
+      ${metric("Input SHA-256", selected.inputSha256 || "—")}
+      ${metric("Brand DNA provenance", selected.approvedBrandDnaVersionId || "—")}
+      ${metric("Current pointer", isCurrent ? "YES" : "NO")}
+    </div>
+    <div class="metric-grid">${swatches || emptyState("No palette roles in server documentJson.")}</div>
+    <div class="safety-note">${escapeHtml(doc?.contrastEvidence?.disclaimer || "Contrast disclaimer missing from server document.")}</div>
+    <div class="safety-note">${escapeHtml(doc?.geometryDisclaimer || "Geometry disclaimer missing from server document.")}</div>
+    ${contrastRows}
+  `;
 }
 
 async function selectWeddingPlannerWorkspace(workspaceId) {
@@ -1069,6 +1194,12 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
       state.weddingPlannerAgentRuns = [];
     }
     state.weddingPlannerBrandDna = await api(`/api/wedding-planner/workspaces/${workspaceId}/brand-dna`);
+    state.weddingPlannerColorProfiles = await api(`/api/wedding-planner/workspaces/${workspaceId}/color-profiles`);
+    state.selectedWeddingPlannerColorProfileId =
+      state.weddingPlannerColorProfiles?.versions?.find(x => x.status === "PROPOSED")?.colorProfileVersionId ||
+      state.weddingPlannerColorProfiles?.currentApprovedColorProfileVersionId ||
+      state.weddingPlannerColorProfiles?.versions?.[0]?.colorProfileVersionId ||
+      null;
     await mergeWeddingPlannerInterpreterRuns();
   } catch (error) {
     toast(error.message, true);
@@ -1076,6 +1207,8 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
     state.weddingPlannerMessages = [];
     state.weddingPlannerAgentRuns = [];
     state.weddingPlannerBrandDna = null;
+    state.weddingPlannerColorProfiles = null;
+    state.selectedWeddingPlannerColorProfileId = null;
   }
   renderWeddingPlanner();
 }
@@ -1133,6 +1266,11 @@ async function submitWeddingPlannerSession(form) {
     state.weddingPlannerMessages = await api(`/api/wedding-planner/sessions/${result.sessionId}/messages`);
     state.weddingPlannerAgentRuns = await api(`/api/wedding-planner/sessions/${result.sessionId}/agent-runs`);
     state.weddingPlannerBrandDna = await api(`/api/wedding-planner/workspaces/${result.workspaceId}/brand-dna`);
+    state.weddingPlannerColorProfiles = await api(`/api/wedding-planner/workspaces/${result.workspaceId}/color-profiles`);
+    state.selectedWeddingPlannerColorProfileId =
+      state.weddingPlannerColorProfiles?.currentApprovedColorProfileVersionId ||
+      state.weddingPlannerColorProfiles?.versions?.[0]?.colorProfileVersionId ||
+      null;
     await mergeWeddingPlannerInterpreterRuns();
     renderWeddingPlanner();
   } catch (error) {
@@ -1213,6 +1351,73 @@ async function submitWeddingPlannerDnaDecision(form) {
     const workspaceId = result.workspaceId || state.selectedWeddingPlannerWorkspace;
     if (workspaceId) {
       state.weddingPlannerBrandDna = await api(`/api/wedding-planner/workspaces/${workspaceId}/brand-dna`);
+      state.weddingPlannerColorProfiles = await api(`/api/wedding-planner/workspaces/${workspaceId}/color-profiles`).catch(() => state.weddingPlannerColorProfiles);
+    }
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function submitWeddingPlannerColorCompute(form) {
+  const value = name => form.elements[name].value.trim();
+  const optional = name => {
+    const raw = value(name);
+    return raw || null;
+  };
+  try {
+    const workspaceId = value("workspaceId");
+    const result = await api(`/api/wedding-planner/workspaces/${workspaceId}/color-profiles/compute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        primaryHex: value("primaryHex"),
+        secondaryHex: optional("secondaryHex"),
+        accentHex: optional("accentHex"),
+        backgroundHex: optional("backgroundHex"),
+        surfaceHex: optional("surfaceHex"),
+        notes: optional("notes"),
+        sourceSystem: value("sourceSystem"),
+        idempotencyKey: value("idempotencyKey")
+      })
+    });
+    toast(result.isReplay ? `Color profile v${result.versionNumber} replayed` : `Color profile v${result.versionNumber} proposed`);
+    fillKey("#wedding-planner-color-compute-key");
+    state.selectedWeddingPlannerWorkspace = workspaceId;
+    state.selectedWeddingPlannerColorProfileId = result.colorProfileVersionId;
+    state.weddingPlannerColorProfiles = await api(`/api/wedding-planner/workspaces/${workspaceId}/color-profiles`);
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function submitWeddingPlannerColorDecision(form) {
+  const value = name => form.elements[name].value.trim();
+  const decision = value("decision");
+  if (decision === "APPROVE" && form.elements.confirmApprove?.checked !== true) {
+    toast("Confirm the APPROVE checkbox before approving a color profile.", true);
+    return;
+  }
+  try {
+    const result = await api(`/api/wedding-planner/color-profiles/${value("colorProfileVersionId")}/decisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        decision,
+        rationale: value("rationale"),
+        sourceSystem: value("sourceSystem"),
+        idempotencyKey: value("idempotencyKey")
+      })
+    });
+    toast(`Color ${friendlyStatus(result.decision)} recorded${result.isReplay ? " (replay)" : ""}`);
+    form.elements.rationale.value = "";
+    if (form.elements.confirmApprove) form.elements.confirmApprove.checked = false;
+    fillKey("#wedding-planner-color-decision-key");
+    const workspaceId = result.workspaceId || state.selectedWeddingPlannerWorkspace;
+    if (workspaceId) {
+      state.weddingPlannerColorProfiles = await api(`/api/wedding-planner/workspaces/${workspaceId}/color-profiles`);
+      state.selectedWeddingPlannerColorProfileId = result.colorProfileVersionId || state.selectedWeddingPlannerColorProfileId;
     }
     renderWeddingPlanner();
   } catch (error) {

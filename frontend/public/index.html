@@ -140,6 +140,118 @@
           </section>
         </aside>
       </div>
+
+      <section class="color-intelligence-panel" id="color-intelligence-panel" aria-labelledby="color-intelligence-title">
+        <div class="color-intelligence-heading">
+          <p>PHASE 3 · DETERMINISTIC COLOR INTELLIGENCE</p>
+          <h3 id="color-intelligence-title">Alpha Color Intelligence</h3>
+          <p class="color-intelligence-copy">
+            Deterministic palette computation only — no AI. Seed colors you supply are run through server-side
+            <code>aci.hsl.v1</code> geometry (not psychology). WCAG contrast figures are arithmetic evidence, not accessibility certification.
+            Compute requires an authenticated writable advertiser session and a current-approved Brand DNA.
+          </p>
+        </div>
+
+        <div class="color-prereq" id="color-prereq-status" role="status">
+          <span>Prerequisite check</span>
+          <p>Sign in as an authenticated advertiser with write access and approve Brand DNA before compute is enabled. No development or test advertiser is bound automatically.</p>
+        </div>
+
+        <form class="color-compute-form" id="color-compute-form">
+          <div class="color-seed-grid">
+            <label class="color-seed required">
+              <span>Primary *</span>
+              <div class="color-seed-inputs">
+                <input type="color" id="color-primary-picker" value="#336699" disabled aria-label="Primary color picker">
+                <input type="text" id="color-primary-hex" name="primaryHex" value="#336699" maxlength="7" pattern="#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?" required disabled placeholder="#RRGGBB" autocomplete="off">
+              </div>
+              <small class="seed-provenance" data-role="primary">HUMAN</small>
+            </label>
+            <label class="color-seed">
+              <span>Secondary <em>optional</em></span>
+              <div class="color-seed-inputs">
+                <input type="color" id="color-secondary-picker" value="#996633" disabled aria-label="Secondary color picker">
+                <input type="text" id="color-secondary-hex" name="secondaryHex" value="" maxlength="7" pattern="#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?" disabled placeholder="omit → derived" autocomplete="off">
+              </div>
+              <small class="seed-hint">Omitted seeds are derived by server HSL geometry only.</small>
+            </label>
+            <label class="color-seed">
+              <span>Accent <em>optional</em></span>
+              <div class="color-seed-inputs">
+                <input type="color" id="color-accent-picker" value="#669933" disabled aria-label="Accent color picker">
+                <input type="text" id="color-accent-hex" name="accentHex" value="" maxlength="7" pattern="#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?" disabled placeholder="omit → derived" autocomplete="off">
+              </div>
+            </label>
+            <label class="color-seed">
+              <span>Background <em>optional</em></span>
+              <div class="color-seed-inputs">
+                <input type="color" id="color-background-picker" value="#ffffff" disabled aria-label="Background color picker">
+                <input type="text" id="color-background-hex" name="backgroundHex" value="" maxlength="7" pattern="#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?" disabled placeholder="omit → #FFFFFF" autocomplete="off">
+              </div>
+            </label>
+            <label class="color-seed">
+              <span>Surface <em>optional</em></span>
+              <div class="color-seed-inputs">
+                <input type="color" id="color-surface-picker" value="#ffffff" disabled aria-label="Surface color picker">
+                <input type="text" id="color-surface-hex" name="surfaceHex" value="" maxlength="7" pattern="#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?" disabled placeholder="omit → background" autocomplete="off">
+              </div>
+            </label>
+          </div>
+          <label class="color-notes" for="color-notes">Notes <em>optional · not hashed</em></label>
+          <textarea id="color-notes" name="notes" maxlength="2000" disabled placeholder="Human notes stored with the profile; excluded from input SHA"></textarea>
+          <div class="color-compute-actions">
+            <button type="submit" id="color-compute-submit" disabled>Compute color profile</button>
+            <button type="button" id="color-refresh-list" disabled>Refresh versions</button>
+          </div>
+        </form>
+
+        <div class="color-profile-browser">
+          <label for="color-profile-select">Profile versions</label>
+          <select id="color-profile-select" disabled>
+            <option value="">No color profiles yet</option>
+          </select>
+        </div>
+
+        <div class="color-profile-view" id="color-profile-view" hidden>
+          <div class="color-profile-meta">
+            <p class="color-status-line">
+              <span id="color-status-label">PROPOSED</span>
+              <span id="color-current-badge" hidden>CURRENT</span>
+              · version <strong id="color-version-number">—</strong>
+            </p>
+            <p id="color-summary-text"></p>
+            <p class="color-meta-line">Schema <code id="color-schema-version">—</code> · Algorithm <code id="color-algorithm-version">—</code></p>
+            <p class="color-meta-line">Input SHA-256 <code id="color-input-sha">—</code></p>
+            <p class="color-meta-line">Brand DNA provenance <code id="color-brand-dna-provenance">—</code></p>
+          </div>
+
+          <div class="color-swatch-section">
+            <h4>Palette roles <small>(stored hex only · no client derivation)</small></h4>
+            <div class="color-swatch-grid" id="color-swatch-grid"></div>
+          </div>
+
+          <div class="color-contrast-section">
+            <h4>Contrast evidence pairs</h4>
+            <p class="color-disclaimer" id="color-contrast-disclaimer"></p>
+            <div class="color-contrast-list" id="color-contrast-list"></div>
+          </div>
+
+          <p class="color-disclaimer geometry" id="color-geometry-disclaimer"></p>
+
+          <form class="color-decision-form" id="color-decision-form" hidden>
+            <label for="color-rationale">Decision rationale *</label>
+            <textarea id="color-rationale" name="rationale" maxlength="2000" required placeholder="Explain why you approve or reject this color profile" disabled></textarea>
+            <label class="confirm-approve">
+              <input type="checkbox" id="color-confirm-approve" disabled>
+              <span>I confirm this APPROVE decision and understand it sets the workspace current approved color profile pointer. PROPOSED, APPROVED, and CURRENT remain distinct.</span>
+            </label>
+            <div class="color-decision-actions">
+              <button type="submit" class="approve" data-decision="APPROVE" disabled>Approve</button>
+              <button type="submit" class="reject" data-decision="REJECT" disabled>Reject</button>
+            </div>
+          </form>
+        </div>
+      </section>
     </section>
 
     <section class="audience-panels">

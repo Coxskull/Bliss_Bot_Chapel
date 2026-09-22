@@ -166,12 +166,12 @@
         <section class="view" id="view-wedding-planner" aria-labelledby="wedding-planner-title">
           <div class="section-intro">
             <div>
-              <p class="eyebrow">WEDDING PLANNER PHASE 2</p>
-              <h2 id="wedding-planner-title">Advertiser workspace, Concierge runs, and Brand DNA</h2>
-              <p>Open the primary workspace, resume planning sessions, append durable human messages, inspect Concierge agent runs, and manage Brand DNA proposals. AI replies and proposals come only from the server; humans alone approve or reject Brand DNA.</p>
+              <p class="eyebrow">WEDDING PLANNER PHASE 3</p>
+              <h2 id="wedding-planner-title">Advertiser workspace, Concierge, Brand DNA, and Color Intelligence</h2>
+              <p>Open the primary workspace, resume planning sessions, append durable human messages, inspect Concierge agent runs, manage Brand DNA proposals, and compute deterministic color profiles. AI replies and Brand DNA proposals come only from the server. Color Intelligence is deterministic geometry with no AI — humans alone approve or reject.</p>
             </div>
           </div>
-          <div class="safety-note"><strong>Human authority preserved.</strong> Ownership is enforced by the API. Clients cannot forge PLANNER messages, and Brand DNA stays PROPOSED until an explicit APPROVE or REJECT decision.</div>
+          <div class="safety-note"><strong>Human authority preserved.</strong> Ownership is enforced by the API. Clients cannot forge PLANNER messages. Brand DNA and color profiles stay PROPOSED until an explicit APPROVE or REJECT decision. WCAG figures are arithmetic evidence, not certification.</div>
           <div class="workflow-layout">
             <section>
               <div class="queue-list" id="wedding-planner-workspace-list"></div>
@@ -228,6 +228,40 @@
               <section class="panel ledger-panel">
                 <div class="panel-header"><div><p class="eyebrow">BRAND DNA VERSIONS</p><h3>Workspace proposals and approvals</h3></div><span class="record-tag" id="wedding-planner-dna-current">Current: none</span></div>
                 <div id="wedding-planner-brand-dna-list" class="activity-list"></div>
+              </section>
+              <form class="panel workflow-form" id="wedding-planner-color-compute-form">
+                <div class="panel-header"><div><p class="eyebrow">PHASE 3 · DETERMINISTIC COLOR INTELLIGENCE</p><h3>Compute color profile</h3></div><span class="record-tag">NO AI</span></div>
+                <div class="safety-note"><strong>Deterministic only.</strong> Requires current-approved Brand DNA. Server runs <code>aci.hsl.v1</code> HSL geometry (not psychology). WCAG contrast is arithmetic evidence, not accessibility certification. No client-side palette or contrast derivation.</div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Workspace *</span><select name="workspaceId" id="wedding-planner-color-workspace" required></select></label>
+                  <label><span>Primary hex *</span><input name="primaryHex" id="wedding-planner-color-primary" value="#336699" maxlength="7" required placeholder="#RRGGBB"></label>
+                  <label><span>Secondary hex</span><input name="secondaryHex" maxlength="7" placeholder="omit → derived"></label>
+                  <label><span>Accent hex</span><input name="accentHex" maxlength="7" placeholder="omit → derived"></label>
+                  <label><span>Background hex</span><input name="backgroundHex" maxlength="7" placeholder="omit → #FFFFFF"></label>
+                  <label><span>Surface hex</span><input name="surfaceHex" maxlength="7" placeholder="omit → background"></label>
+                  <label class="span-two"><span>Notes</span><textarea name="notes" maxlength="2000" placeholder="Optional human notes; excluded from input SHA"></textarea></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-color-compute-key" readonly required><button type="button" id="regenerate-wedding-planner-color-compute-key" aria-label="Generate a new color compute idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>Creates an immutable PROPOSED color-profile.v1 version.</small><button class="primary-button" type="submit">Compute color profile <span>→</span></button></div>
+              </form>
+              <form class="panel workflow-form" id="wedding-planner-color-decision-form">
+                <div class="panel-header"><div><p class="eyebrow">HUMAN DECISION</p><h3>Approve or reject color profile</h3></div></div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Color profile version *</span><select name="colorProfileVersionId" id="wedding-planner-color-version" required></select></label>
+                  <label><span>Decision *</span><select name="decision" required><option value="APPROVE">Approve</option><option value="REJECT">Reject</option></select></label>
+                  <label class="span-two"><span>Rationale *</span><textarea name="rationale" maxlength="2000" required placeholder="Explicit rationale required for APPROVE and REJECT"></textarea></label>
+                  <label class="span-two checkbox-label"><input name="confirmApprove" type="checkbox"><span>I confirm APPROVE will set the workspace current approved color profile pointer. PROPOSED, APPROVED, and CURRENT remain distinct.</span></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-color-decision-key" readonly required><button type="button" id="regenerate-wedding-planner-color-decision-key" aria-label="Generate a new color decision idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>Rejected versions never become current. Approval never edits the immutable document.</small><button class="primary-button" type="submit">Record color profile decision <span>→</span></button></div>
+              </form>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">COLOR PROFILE VERSIONS</p><h3>Workspace profiles and current pointer</h3></div><span class="record-tag" id="wedding-planner-color-current">Current: none</span></div>
+                <div id="wedding-planner-color-profile-list" class="activity-list"></div>
+              </section>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">INSPECT</p><h3>Selected color profile document</h3></div></div>
+                <div id="wedding-planner-color-inspect" class="activity-list"></div>
               </section>
             </div>
           </div>
