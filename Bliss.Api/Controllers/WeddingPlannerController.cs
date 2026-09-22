@@ -19,6 +19,7 @@ public sealed class WeddingPlannerController(
     WeddingPlannerColorIntelligenceService colorIntelligence,
     WeddingPlannerCuratorOrchestrationService curator,
     WeddingPlannerConceptWorkshopOrchestrationService workshop,
+    WeddingPlannerCreativeDepartmentOrchestrationService creative,
     WeddingPlannerAccess access) : ControllerBase
 {
     [HttpGet("workspaces")]
@@ -884,6 +885,252 @@ public sealed class WeddingPlannerController(
         });
     }
 
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("workspaces/{workspaceId:guid}/creative-production-jobs")]
+    public async Task<ActionResult> CreateCreativeProductionJob(
+        Guid workspaceId,
+        [FromBody] JsonElement body,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireWrite();
+            if (body.ValueKind is JsonValueKind.Undefined or JsonValueKind.Null)
+            {
+                throw new InvalidOperationException("Creative production job body is required.");
+            }
+
+            var root = JsonNode.Parse(body.GetRawText())
+                ?? throw new InvalidOperationException("Creative production job body is required.");
+            WeddingPlannerCreativeDepartmentValidation.RejectForbiddenBriefFields(root);
+
+            var request = body.Deserialize<CreateWeddingPlannerCreativeProductionJobRequest>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new InvalidOperationException("Creative production job body is invalid.");
+
+            var result = await creative.CreateCreativeProductionJobAsync(
+                workspaceId,
+                request.JobKind,
+                request.Objective,
+                request.Formats,
+                request.RequestedVariantCount,
+                request.RevisionParentCreativePackageVersionId,
+                request.RevisionNotes,
+                request.CanvasWidth,
+                request.CanvasHeight,
+                root,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToCreativeProductionJobDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/creative-production-jobs/{dto.CreativeProductionJobId}", dto);
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/creative-production-jobs")]
+    public async Task<ActionResult> ListCreativeProductionJobs(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await creative.ListCreativeProductionJobsAsync(
+                workspaceId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToCreativeProductionJobDto).ToList());
+        });
+    }
+
+    [HttpGet("creative-production-jobs/{creativeProductionJobId:guid}")]
+    public async Task<ActionResult> GetCreativeProductionJob(
+        Guid creativeProductionJobId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await creative.GetCreativeProductionJobAsync(
+                creativeProductionJobId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToCreativeProductionJobDto(result));
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/creative-packages")]
+    public async Task<ActionResult> ListCreativePackages(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await creative.ListCreativePackagesAsync(
+                workspaceId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(new WeddingPlannerCreativePackageListDto(
+                result.WorkspaceId,
+                result.AdvertiserId,
+                result.CurrentApprovedCreativePackageVersionId,
+                result.Versions.Select(ToCreativePackageDto).ToList()));
+        });
+    }
+
+    [HttpGet("creative-packages/{creativePackageVersionId:guid}")]
+    public async Task<ActionResult> GetCreativePackage(
+        Guid creativePackageVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await creative.GetCreativePackageAsync(
+                creativePackageVersionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToCreativePackageDto(result));
+        });
+    }
+
+    [HttpGet("creative-packages/{creativePackageVersionId:guid}/contributions")]
+    public async Task<ActionResult> ListCreativePackageContributions(
+        Guid creativePackageVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await creative.ListContributionsAsync(
+                creativePackageVersionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToCreativeContributionDto).ToList());
+        });
+    }
+
+    [HttpGet("creative-packages/{creativePackageVersionId:guid}/assets")]
+    public async Task<ActionResult> ListCreativePackageAssets(
+        Guid creativePackageVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await creative.ListAssetsAsync(
+                creativePackageVersionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToCreativeAssetDto).ToList());
+        });
+    }
+
+    [HttpGet("creative-packages/{creativePackageVersionId:guid}/agent-runs")]
+    public async Task<ActionResult> ListCreativePackageAgentRuns(
+        Guid creativePackageVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await creative.ListPackageAgentRunsAsync(
+                creativePackageVersionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToAgentRunDto).ToList());
+        });
+    }
+
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("creative-packages/{creativePackageVersionId:guid}/decisions")]
+    public async Task<ActionResult> DecideCreativePackage(
+        Guid creativePackageVersionId,
+        WeddingPlannerCreativePackageDecisionRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireWrite();
+            var result = await creative.DecideAsync(
+                creativePackageVersionId,
+                request.Decision,
+                request.Rationale,
+                request.SelectedVariantId,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToCreativeDecisionDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/creative-packages/{dto.CreativePackageVersionId}/decisions", dto);
+        });
+    }
+
+    [HttpGet("creative-assets/{creativeAssetId:guid}")]
+    public async Task<ActionResult> GetCreativeAsset(
+        Guid creativeAssetId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await creative.GetAssetAsync(
+                creativeAssetId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToCreativeAssetDto(result));
+        });
+    }
+
+    [HttpGet("creative-assets/{creativeAssetId:guid}/content")]
+    public async Task<ActionResult> GetCreativeAssetContent(
+        Guid creativeAssetId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await creative.GetAssetContentAsync(
+                creativeAssetId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+
+            Response.Headers.Append("X-Content-Type-Options", "nosniff");
+            Response.Headers.CacheControl = "private, no-store";
+            Response.Headers.ETag = $"\"{result.Sha256}\"";
+            Response.Headers.ContentDisposition = $"inline; filename=\"{result.FileName}\"";
+            return File(result.Bytes, result.ContentType);
+        });
+    }
+
     private WeddingPlannerActor RequireWrite()
     {
         var actor = access.Resolve(User);
@@ -916,6 +1163,10 @@ public sealed class WeddingPlannerController(
         catch (WeddingPlannerResearchJobProviderException ex)
         {
             return StatusCode(StatusCodes.Status502BadGateway, new { error = ex.Message, researchJobId = ex.ResearchJobId, errorCode = ex.ErrorCode });
+        }
+        catch (WeddingPlannerCreativeAssetJobProviderException ex)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new { error = ex.Message, creativeProductionJobId = ex.CreativeProductionJobId, errorCode = ex.ErrorCode });
         }
         catch (InvalidOperationException ex)
         {
@@ -983,6 +1234,7 @@ public sealed class WeddingPlannerController(
             result.AssignedRolesJson,
             result.OutputResearchReportVersionId,
             result.OutputConceptPackageVersionId,
+            result.OutputCreativePackageVersionId,
             result.RequestId,
             result.ProviderRequestId,
             result.SourceSystem,
@@ -1269,5 +1521,134 @@ public sealed class WeddingPlannerController(
             result.IdempotencyKey,
             result.OccurredAt,
             ToConceptPackageDto(result.Version),
+            result.IsReplay);
+
+    private static WeddingPlannerCreativeProductionJobDto ToCreativeProductionJobDto(
+        WeddingPlannerCreativeProductionJobResult result) =>
+        new(
+            result.CreativeProductionJobId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.JobKind,
+            result.Objective,
+            result.Formats,
+            result.RequestedVariantCount,
+            result.RevisionParentCreativePackageVersionId,
+            result.RevisionNotes,
+            result.InputJson,
+            result.InputSha256,
+            result.ApprovedConceptPackageVersionId,
+            result.SelectedConceptId,
+            result.ApprovedBrandDnaVersionId,
+            result.ApprovedBrandDnaVersionNumber,
+            result.ApprovedColorProfileVersionId,
+            result.ApprovedColorProfileVersionNumber,
+            result.ApprovedResearchReportVersionId,
+            result.ApprovedResearchReportVersionNumber,
+            result.CreativeDirectionAgentRunId,
+            result.StrategyAdaptationAgentRunId,
+            result.VisualSystemAgentRunId,
+            result.ImageDirectionAgentRunId,
+            result.CopySystemAgentRunId,
+            result.VariantProductionAgentRunId,
+            result.AssetProviderKey,
+            result.AssetProviderAdapterVersion,
+            result.AssetProviderRequestId,
+            result.AssetProviderEstimatedCostUsd,
+            result.OutputCreativePackageVersionId,
+            result.Status,
+            result.ErrorCode,
+            result.ErrorMessage,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.ActorType,
+            result.ActorLabel,
+            result.StartedAt,
+            result.CompletedAt,
+            result.IsReplay);
+
+    private static WeddingPlannerCreativePackageVersionDto ToCreativePackageDto(
+        WeddingPlannerCreativePackageVersionResult result) =>
+        new(
+            result.CreativePackageVersionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.VersionNumber,
+            result.SchemaVersion,
+            result.DocumentJson,
+            result.Summary,
+            result.ProducingCreativeProductionJobId,
+            result.ProducingAgentRunId,
+            result.ApprovedConceptPackageVersionId,
+            result.SelectedConceptId,
+            result.ApprovedBrandDnaVersionId,
+            result.ApprovedBrandDnaVersionNumber,
+            result.ApprovedColorProfileVersionId,
+            result.ApprovedColorProfileVersionNumber,
+            result.ApprovedResearchReportVersionId,
+            result.ApprovedResearchReportVersionNumber,
+            result.JobKind,
+            result.ParentCreativePackageVersionId,
+            result.Status,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.ActorType,
+            result.ActorLabel,
+            result.CreatedAt,
+            result.IsCurrentApproved,
+            result.EstimatedTotalCostUsd,
+            result.EstimatedAssetCostUsd,
+            result.IsReplay);
+
+    private static WeddingPlannerCreativeRoleContributionDto ToCreativeContributionDto(
+        WeddingPlannerCreativeRoleContributionResult result) =>
+        new(
+            result.ContributionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.CreativePackageVersionId,
+            result.CreativeProductionJobId,
+            result.LogicalRole,
+            result.ProducingAgentRunId,
+            result.ContributionJson,
+            result.CreatedAt);
+
+    private static WeddingPlannerCreativeAssetDto ToCreativeAssetDto(
+        WeddingPlannerCreativeAssetResult result) =>
+        new(
+            result.CreativeAssetId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.CreativePackageVersionId,
+            result.CreativeProductionJobId,
+            result.VariantId,
+            result.Format,
+            result.Width,
+            result.Height,
+            result.ContentType,
+            result.ByteSize,
+            result.Sha256,
+            result.ProviderKey,
+            result.AdapterVersion,
+            result.ProviderRequestId,
+            result.EstimatedCostUsd,
+            result.CreatedAt);
+
+    private static WeddingPlannerCreativePackageDecisionDto ToCreativeDecisionDto(
+        WeddingPlannerCreativePackageDecisionResult result) =>
+        new(
+            result.DecisionId,
+            result.CreativePackageVersionId,
+            result.WorkspaceId,
+            result.AdvertiserId,
+            result.Decision,
+            result.SelectedVariantId,
+            result.ActorType,
+            result.ActorLabel,
+            result.Rationale,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.OccurredAt,
+            ToCreativePackageDto(result.Version),
             result.IsReplay);
 }

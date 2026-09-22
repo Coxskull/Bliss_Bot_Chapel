@@ -62,6 +62,15 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("not campaign-ready", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("SYNTHETIC DEVELOPMENT PROTOTYPE", body);
         Assert.Contains("concept-direction approval only", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PHASE 6 · MATURE CREATIVE DEPARTMENT", body);
+        Assert.Contains("creative-panel", body);
+        Assert.Contains("creative-job-form", body);
+        Assert.Contains("creative-decision-form", body);
+        Assert.Contains("Thirteen new logical roles map to exactly 6 AI workers/runs", body);
+        Assert.Contains("separate non-AI asset provider", body);
+        Assert.Contains("Phase 5 roles remain pinned", body);
+        Assert.Contains("SYNTHETIC DEVELOPMENT CREATIVE PACKAGE", body);
+        Assert.Contains("draft creative approval only", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("FOUNDATION READY", body);
         Assert.DoesNotContain("Help me choose colors", body);
         Assert.DoesNotContain("Show me some design concepts", body);
@@ -281,7 +290,10 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("REJECT forbids", script, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("APPROVE requires", script, StringComparison.OrdinalIgnoreCase);
 
-        Assert.DoesNotContain("<img", script);
+        Assert.Contains("renderSafePrototypePreview", script);
+        Assert.Contains("workshop-placeholder", script);
+        Assert.Contains("placeholders only", script);
+        Assert.Contains("no &lt;img&gt;", script);
         Assert.DoesNotContain("fetch(media", script);
         Assert.DoesNotContain("fetch(image", script);
         Assert.DoesNotContain("fetch(asset", script);
@@ -297,11 +309,111 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.DoesNotContain("matchId", script);
         Assert.DoesNotContain("placementId", script);
         Assert.DoesNotContain("inventoryId", script);
+        Assert.DoesNotContain("createObjectURL", script);
+        Assert.DoesNotContain("data:image", script);
+        Assert.DoesNotContain("generateImage", script);
 
         var styles = await (await client.GetAsync("/wedding-planner.css")).Content.ReadAsStringAsync();
         Assert.Contains("[hidden] { display: none !important; }", styles);
         Assert.Contains("workshop-panel", styles);
         Assert.Contains("workshop-prototype-frame", styles);
+        Assert.Contains("workshop-placeholder", styles);
+    }
+
+    [Fact]
+    public async Task Public_planner_script_wires_phase6_creative_department_with_safe_same_origin_assets()
+    {
+        var client = _factory.CreateClient();
+        var script = await (await client.GetAsync("/wedding-planner.js")).Content.ReadAsStringAsync();
+
+        Assert.Contains("PHASE 6 · MATURE CREATIVE DEPARTMENT", script);
+        Assert.Contains("/creative-production-jobs", script);
+        Assert.Contains("/creative-packages", script);
+        Assert.Contains("/creative-packages/", script);
+        Assert.Contains("/creative-assets/", script);
+        Assert.Contains("/content", script);
+        Assert.Contains("/contributions", script);
+        Assert.Contains("/assets", script);
+        Assert.Contains("/agent-runs", script);
+        Assert.Contains("/decisions", script);
+        Assert.Contains("canSubmitCreativeJobs", script);
+        Assert.Contains("currentApprovedConceptPackageVersionId", script);
+        Assert.Contains("parseCreativePackageDocument", script);
+        Assert.Contains("documentJson", script);
+        Assert.Contains("Thirteen logical roles map to 6 workers/runs, not 13 subscriptions", script);
+        Assert.Contains("CREATIVE_DIRECTOR", script);
+        Assert.Contains("CAMPAIGN_STRATEGIST", script);
+        Assert.Contains("AUDIENCE_STRATEGIST", script);
+        Assert.Contains("OFFER_STRATEGIST", script);
+        Assert.Contains("CHANNEL_STRATEGIST", script);
+        Assert.Contains("VISUAL_DESIGNER", script);
+        Assert.Contains("LAYOUT_DESIGNER", script);
+        Assert.Contains("TYPOGRAPHY_DESIGNER", script);
+        Assert.Contains("IMAGE_PROMPT_DESIGNER", script);
+        Assert.Contains("HEADLINE_SPECIALIST", script);
+        Assert.Contains("BODY_COPY_SPECIALIST", script);
+        Assert.Contains("CTA_SPECIALIST", script);
+        Assert.Contains("VARIANT_PRODUCER", script);
+        Assert.Contains("CREATIVE_DIRECTION_V1", script);
+        Assert.Contains("STRATEGY_ADAPTATION_V1", script);
+        Assert.Contains("VISUAL_SYSTEM_V1", script);
+        Assert.Contains("IMAGE_DIRECTION_V1", script);
+        Assert.Contains("COPY_SYSTEM_V1", script);
+        Assert.Contains("VARIANT_PRODUCTION_V1", script);
+        Assert.Contains("STATIC_SOCIAL_SQUARE", script);
+        Assert.Contains("INITIAL", script);
+        Assert.Contains("REVISION", script);
+        Assert.Contains("selectedVariantId", script);
+        Assert.Contains("selectedConceptId", script);
+        Assert.Contains("CREATIVE_NON_FACTUAL", script);
+        Assert.Contains("factualClaims", script);
+        Assert.Contains("paletteRoleRefs", script);
+        Assert.Contains("imagePrompt", script);
+        Assert.Contains("inputSha256", script);
+        Assert.Contains("renderSafeDraftPngPreview", script);
+        Assert.Contains("safeCreativeAssetContentUrl", script);
+        Assert.Contains("/api/wedding-planner/creative-assets/", script);
+        Assert.Contains("<img", script);
+        Assert.Contains("creative-draft-png", script);
+        Assert.Contains("SYNTHETIC DEVELOPMENT CREATIVE PACKAGE", script);
+        Assert.Contains("draft creative approval only", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Missing creative-production prerequisites", script);
+        Assert.Contains("Phase 5 roles remain pinned provenance", script);
+        Assert.Contains("separate non-AI asset provider", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("REJECT forbids", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("APPROVE requires", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            "Approval of this package is draft creative approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, QA, or final production-artwork approval.",
+            script);
+        Assert.Contains("X-CSRF-TOKEN", script);
+        Assert.Contains("idempotencyKey", script);
+        Assert.Contains("workerProfileVersion", script);
+        Assert.Contains("promptPackVersion", script);
+        Assert.Contains("estimatedCostUsd", script);
+        Assert.Contains("assetProviderKey", script);
+
+        Assert.DoesNotContain("fetch(media", script);
+        Assert.DoesNotContain("fetch(imageUrl", script);
+        Assert.DoesNotContain("providerUrl", script);
+        Assert.DoesNotContain("data:image", script);
+        Assert.DoesNotContain("createObjectURL", script);
+        Assert.DoesNotContain("blob:", script);
+        Assert.DoesNotContain("innerHTML = variant.svg", script);
+        Assert.DoesNotContain("innerHTML = asset.html", script);
+        Assert.DoesNotContain("generateImage", script);
+        Assert.DoesNotContain("clientGeneratedImage", script);
+        Assert.DoesNotContain("thirteen fake agent runs", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("campaignReady", script);
+        Assert.DoesNotContain("matchId", script);
+        Assert.DoesNotContain("placementId", script);
+        Assert.DoesNotContain("inventoryId", script);
+        Assert.DoesNotContain("qaApproved", script);
+        Assert.DoesNotContain("legalCleared", script);
+
+        var styles = await (await client.GetAsync("/wedding-planner.css")).Content.ReadAsStringAsync();
+        Assert.Contains("[hidden] { display: none !important; }", styles);
+        Assert.Contains("creative-panel", styles);
+        Assert.Contains("creative-draft-png", styles);
         Assert.Contains("workshop-placeholder", styles);
     }
 
@@ -325,7 +437,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Last verification", body);
         Assert.Contains("Recent verifications", body);
         Assert.Contains("Wedding Planner", body);
-        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, and Concept Workshop", body);
+        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, Concept Workshop, and Mature Creative Department", body);
         Assert.Contains("Concierge + Brand DNA Interpreter runs", body);
         Assert.Contains("Create Brand DNA proposal", body);
         Assert.Contains("Approve or reject Brand DNA", body);
@@ -355,6 +467,16 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Approve or reject concept package", body);
         Assert.Contains("SYNTHETIC DEVELOPMENT PROTOTYPE", body);
         Assert.Contains("concept-direction approval only", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PHASE 6 · MATURE CREATIVE DEPARTMENT", body);
+        Assert.Contains("wedding-planner-creative-job-form", body);
+        Assert.Contains("wedding-planner-creative-decision-form", body);
+        Assert.Contains("wedding-planner-creative-job-list", body);
+        Assert.Contains("wedding-planner-creative-package-list", body);
+        Assert.Contains("wedding-planner-creative-inspect", body);
+        Assert.Contains("Thirteen new logical roles map to exactly 6 AI workers/runs", body);
+        Assert.Contains("Approve or reject creative package", body);
+        Assert.Contains("SYNTHETIC DEVELOPMENT CREATIVE PACKAGE", body);
+        Assert.Contains("draft creative approval only", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Export ledger", body);
         Assert.Contains("Verify pack", body);
         Assert.Contains("app.js", body);
@@ -392,7 +514,6 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("submitWeddingPlannerResearchJob", script);
         Assert.Contains("submitWeddingPlannerResearchDecision", script);
         Assert.Contains("renderWeddingPlannerResearchInspect", script);
-        Assert.Contains("Wedding Planner Phase 5", script);
         Assert.Contains("parseWeddingPlannerResearchDocument", script);
         Assert.Contains("Eight logical roles map to 3 workers/runs, not 8 subscriptions", script);
         Assert.Contains("SYNTHETIC", script);
@@ -403,7 +524,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("currentApprovedResearchReportVersionId", script);
         Assert.Contains("workerProfileVersion", script);
         Assert.Contains("workspaces/${workspaceId}/agent-runs", script);
-        Assert.Contains("Wedding Planner Phase 5", script);
+        Assert.Contains("Wedding Planner Phase 6", script);
         Assert.Contains("/workshop-jobs", script);
         Assert.Contains("/concept-packages", script);
         Assert.Contains("submitWeddingPlannerWorkshopJob", script);
@@ -421,19 +542,43 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("inputSha256", script);
         Assert.Contains("LOFI_STACK_V1", script);
         Assert.Contains("copy.headline", script);
+        Assert.Contains("/creative-production-jobs", script);
+        Assert.Contains("/creative-packages", script);
+        Assert.Contains("/creative-assets/", script);
+        Assert.Contains("submitWeddingPlannerCreativeJob", script);
+        Assert.Contains("submitWeddingPlannerCreativeDecision", script);
+        Assert.Contains("renderWeddingPlannerCreativeInspect", script);
+        Assert.Contains("parseWeddingPlannerCreativePackageDocument", script);
+        Assert.Contains("renderOpsSafeDraftPngPreview", script);
+        Assert.Contains("safeCreativeAssetContentUrlOps", script);
+        Assert.Contains("Thirteen logical roles map to 6 workers/runs, not 13 subscriptions", script);
+        Assert.Contains("CREATIVE_DIRECTOR", script);
+        Assert.Contains("CREATIVE_DIRECTION_V1", script);
+        Assert.Contains("selectedVariantId", script);
+        Assert.Contains("SYNTHETIC DEVELOPMENT CREATIVE PACKAGE", script);
+        Assert.Contains("draft creative approval only", script, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("currentApprovedCreativePackageVersionId", script);
+        Assert.Contains("<img", script);
+        Assert.Contains("creative-draft-png", script);
         Assert.DoesNotContain("fetch(citation", script);
         Assert.DoesNotContain("inventFinding", script);
         Assert.DoesNotContain("fabricateFinding", script);
         Assert.DoesNotContain("fakeCitation", script);
         Assert.DoesNotContain("generateCitation", script);
         Assert.DoesNotContain("crawlUrl", script);
-        Assert.DoesNotContain("<img", script);
         Assert.DoesNotContain("fetch(media", script);
         Assert.DoesNotContain("inventConcept", script);
         Assert.DoesNotContain("fabricateConcept", script);
         Assert.DoesNotContain("fakeConcept", script);
         Assert.DoesNotContain("generateConcept", script);
         Assert.DoesNotContain("eval(", script);
+        Assert.DoesNotContain("data:image", script);
+        Assert.DoesNotContain("providerUrl", script);
+        Assert.DoesNotContain("generateImage", script);
+        Assert.DoesNotContain("thirteen fake agent runs", script, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("fetch(imageUrl", script);
+        Assert.DoesNotContain("innerHTML = variant.svg", script);
+        Assert.DoesNotContain("innerHTML = asset.html", script);
         Assert.Contains("Open primary workspace", body);
         Assert.Contains("Append a human message", body);
         Assert.DoesNotContain("Phase 1 does not invoke AI", body);
@@ -450,6 +595,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("overflow-wrap: anywhere", styles);
         Assert.Contains("workshop-prototype-frame", styles);
         Assert.Contains("workshop-placeholder", styles);
+        Assert.Contains("creative-draft-png", styles);
     }
 
     [Theory]

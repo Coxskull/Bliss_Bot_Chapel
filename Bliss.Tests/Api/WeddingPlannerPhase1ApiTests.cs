@@ -225,6 +225,7 @@ public sealed class WeddingPlannerOidcFactory : WebApplicationFactory<Program>
         builder.UseSetting("Authentication:Enabled", "true");
         builder.UseSetting("Authentication:Authority", "https://identity.example.test");
         builder.UseSetting("Authentication:ClientId", "bliss-tests");
+        builder.UseSetting("Runtime:WriteRateLimitPermitLimit", "1000");
         builder.ConfigureServices(services =>
         {
             var toRemove = services.Where(descriptor =>

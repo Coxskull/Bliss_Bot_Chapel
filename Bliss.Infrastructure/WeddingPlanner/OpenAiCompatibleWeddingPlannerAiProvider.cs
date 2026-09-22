@@ -242,9 +242,94 @@ public sealed class OpenAiCompatibleWeddingPlannerAiProvider : IWeddingPlannerAi
                 "Emit PRODUCTION_ARTIST prototypes only as prototype-spec.v1 for concept_1–concept_3. textRef may only be copy.headline, copy.body, or copy.cta. No html/css/svg/script/src/url/href/base64/image bytes. No image generation.");
         }
 
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.CreativeDirection, StringComparison.Ordinal))
+        {
+            return BuildCreativeDepartmentInstruction(
+                request,
+                WeddingPlannerCreativeDepartmentWorkerProfiles.CreativeDirectionV1,
+                WeddingPlannerSchemaVersions.CreativeDirectionWorkerOutputV1,
+                "Emit CREATIVE_DIRECTOR and CAMPAIGN_STRATEGIST only for the pinned selectedConceptId. No layouts, typography scales, image prompts, final copy strings, or variant canvas assignments.");
+        }
+
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.StrategyAdaptation, StringComparison.Ordinal))
+        {
+            return BuildCreativeDepartmentInstruction(
+                request,
+                WeddingPlannerCreativeDepartmentWorkerProfiles.StrategyAdaptationV1,
+                WeddingPlannerSchemaVersions.StrategyAdaptationWorkerOutputV1,
+                "Emit AUDIENCE_STRATEGIST, OFFER_STRATEGIST, and CHANNEL_STRATEGIST only. Channel formats must be a subset of the brief formats. No visual tokens, image prompts, final headline/body/cta, or asset bytes.");
+        }
+
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.VisualSystem, StringComparison.Ordinal))
+        {
+            return BuildCreativeDepartmentInstruction(
+                request,
+                WeddingPlannerCreativeDepartmentWorkerProfiles.VisualSystemV1,
+                WeddingPlannerSchemaVersions.VisualSystemWorkerOutputV1,
+                "Emit VISUAL_DESIGNER, LAYOUT_DESIGNER, and TYPOGRAPHY_DESIGNER only. paletteRoleRefs must exist on the pinned color profile. No final marketing copy invention, image bytes, or new concept ids.");
+        }
+
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.ImageDirection, StringComparison.Ordinal))
+        {
+            return BuildCreativeDepartmentInstruction(
+                request,
+                WeddingPlannerCreativeDepartmentWorkerProfiles.ImageDirectionV1,
+                WeddingPlannerSchemaVersions.ImageDirectionWorkerOutputV1,
+                "Emit IMAGE_PROMPT_DESIGNER only with exactly variant_1..variant_N image prompts/specs. Prompts only — never bytes, URLs, or base64. No copy or layout ownership.");
+        }
+
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.CopySystem, StringComparison.Ordinal))
+        {
+            return BuildCreativeDepartmentInstruction(
+                request,
+                WeddingPlannerCreativeDepartmentWorkerProfiles.CopySystemV1,
+                WeddingPlannerSchemaVersions.CopySystemWorkerOutputV1,
+                "Emit HEADLINE_SPECIALIST, BODY_COPY_SPECIALIST, and CTA_SPECIALIST for variant_1..variant_N. Assembled copy.kind must be CREATIVE_NON_FACTUAL. factualClaims may only preserve exact statement + same sourceIds from the pinned selected Phase 5 concept. Brand DNA/color/provenance ids are never sourceIds. No visual/layout ownership or image bytes.");
+        }
+
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.VariantProduction, StringComparison.Ordinal))
+        {
+            return BuildCreativeDepartmentInstruction(
+                request,
+                WeddingPlannerCreativeDepartmentWorkerProfiles.VariantProductionV1,
+                WeddingPlannerSchemaVersions.VariantProductionWorkerOutputV1,
+                "Emit VARIANT_PRODUCER only with exact variant_1..variant_N production specs. Each brief format must be used at least once. Canvas must match the server format table. Refs must resolve to prior stage outputs. No new copy invention, bytes, URLs, markup, or extra/missing variants.");
+        }
+
         throw new WeddingPlannerAiProviderException(
             $"Unsupported Wedding Planner logical role '{SanitizeForError(request.LogicalRole)}'.",
             "PROVIDER_UNSUPPORTED_ROLE");
+    }
+
+    private static string BuildCreativeDepartmentInstruction(
+        WeddingPlannerAiCompletionRequest request,
+        string expectedProfile,
+        string schemaVersion,
+        string stageRule)
+    {
+        var profile = string.IsNullOrWhiteSpace(request.WorkerProfileVersion)
+            ? expectedProfile
+            : request.WorkerProfileVersion.Trim();
+        var roles = request.AssignedRoles is { Count: > 0 }
+            ? request.AssignedRoles
+            : WeddingPlannerCreativeDepartmentWorkerProfiles.AssignedRoles(expectedProfile);
+        var roleList = string.Join(", ", roles);
+
+        return
+            "You are a Wedding Planner Creative Production stage worker. Emit a single JSON object for schema " +
+            schemaVersion + " with keys: schemaVersion, workerProfileVersion, selectedConceptId, contributions " +
+            "(optional marker). Unknown fields are forbidden. Never include html, css, svg, script, src, url, href, " +
+            "base64, or image bytes in any field. Never invent new factual claims or source ids; when preserving claims, " +
+            "require exact statement text + exact same source IDs from the pinned selected Phase 5 concept. Never treat " +
+            "Brand DNA or color profile ids as factual source ids. Label marketing copy as creative/non-factual unless a " +
+            "preserved factual claim object is explicitly supplied. Produce only for the pinned selectedConceptId — never " +
+            "invent sibling concepts or override selection. Emit exactly the requested variant ids variant_1..variant_N " +
+            "where required by the stage, and no others. " +
+            $"workerProfileVersion must be {profile}. contributions must include exactly these logicalRole values " +
+            $"and no others: {roleList}. " +
+            stageRule +
+            " You cannot approve creative packages, select winning variants, generate image bytes, fetch URLs, change matching, " +
+            "or invent live market facts. Prompt pack: " + request.PromptPackVersion + ".";
     }
 
     private static string BuildWorkshopInstruction(
