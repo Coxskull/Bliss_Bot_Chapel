@@ -13,6 +13,7 @@ namespace Bliss.Api.Controllers;
 [Route("api/wedding-planner")]
 public sealed class WeddingPlannerController(
     WeddingPlannerService weddingPlanner,
+    WeddingPlannerOrchestrationService orchestration,
     WeddingPlannerAccess access) : ControllerBase
 {
     [HttpGet("workspaces")]
@@ -242,6 +243,165 @@ public sealed class WeddingPlannerController(
         });
     }
 
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("sessions/{sessionId:guid}/turns")]
+    public async Task<ActionResult> ExecuteTurn(
+        Guid sessionId,
+        WeddingPlannerTurnRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireWrite();
+            var result = await orchestration.ExecuteConciergeTurnAsync(
+                sessionId,
+                request.Body,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToTurnDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/agent-runs/{dto.AgentRunId}", dto);
+        });
+    }
+
+    [HttpGet("sessions/{sessionId:guid}/agent-runs")]
+    public async Task<ActionResult> ListSessionAgentRuns(
+        Guid sessionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await orchestration.ListSessionAgentRunsAsync(
+                sessionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToAgentRunDto).ToList());
+        });
+    }
+
+    [HttpGet("agent-runs/{agentRunId:guid}")]
+    public async Task<ActionResult> GetAgentRun(
+        Guid agentRunId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await orchestration.GetAgentRunAsync(
+                agentRunId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToAgentRunDto(result));
+        });
+    }
+
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("workspaces/{workspaceId:guid}/brand-dna/interpret")]
+    public async Task<ActionResult> InterpretBrandDna(
+        Guid workspaceId,
+        InterpretWeddingPlannerBrandDnaRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireWrite();
+            var result = await orchestration.InterpretBrandDnaAsync(
+                workspaceId,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToBrandDnaDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/brand-dna/{dto.BrandDnaVersionId}", dto);
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/brand-dna")]
+    public async Task<ActionResult> ListBrandDna(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await orchestration.ListBrandDnaAsync(
+                workspaceId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(new WeddingPlannerBrandDnaListDto(
+                result.WorkspaceId,
+                result.AdvertiserId,
+                result.CurrentApprovedBrandDnaVersionId,
+                result.Versions.Select(ToBrandDnaDto).ToList()));
+        });
+    }
+
+    [HttpGet("brand-dna/{brandDnaVersionId:guid}")]
+    public async Task<ActionResult> GetBrandDna(
+        Guid brandDnaVersionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await orchestration.GetBrandDnaAsync(
+                brandDnaVersionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToBrandDnaDto(result));
+        });
+    }
+
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("brand-dna/{brandDnaVersionId:guid}/decisions")]
+    public async Task<ActionResult> DecideBrandDna(
+        Guid brandDnaVersionId,
+        WeddingPlannerBrandDnaDecisionRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireWrite();
+            var result = await orchestration.DecideBrandDnaAsync(
+                brandDnaVersionId,
+                request.Decision,
+                request.Rationale,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToDecisionDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/brand-dna/{dto.BrandDnaVersionId}/decisions", dto);
+        });
+    }
+
     private WeddingPlannerActor RequireWrite()
     {
         var actor = access.Resolve(User);
@@ -266,6 +426,10 @@ public sealed class WeddingPlannerController(
         catch (WeddingPlannerNotFoundException ex)
         {
             return NotFound(new { error = ex.Message });
+        }
+        catch (WeddingPlannerProviderException ex)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new { error = ex.Message, agentRunId = ex.AgentRunId });
         }
         catch (InvalidOperationException ex)
         {
@@ -312,5 +476,80 @@ public sealed class WeddingPlannerController(
             result.SourceSystem,
             result.IdempotencyKey,
             result.CreatedAt,
+            result.IsReplay);
+
+    private static WeddingPlannerAgentRunDto ToAgentRunDto(WeddingPlannerAgentRunResult result) =>
+        new(
+            result.AgentRunId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.SessionId,
+            result.LogicalRole,
+            result.WorkerKey,
+            result.PromptPackVersion,
+            result.ProviderKey,
+            result.ModelId,
+            result.AdapterVersion,
+            result.TriggerMessageId,
+            result.OutputMessageId,
+            result.OutputBrandDnaVersionId,
+            result.RequestId,
+            result.ProviderRequestId,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.Status,
+            result.Outcome,
+            result.ErrorCode,
+            result.ErrorMessage,
+            result.StartedAt,
+            result.CompletedAt,
+            result.PromptTokens,
+            result.CompletionTokens,
+            result.TotalTokens,
+            result.EstimatedCostUsd,
+            result.IsReplay);
+
+    private static WeddingPlannerTurnDto ToTurnDto(WeddingPlannerTurnResult result) =>
+        new(
+            result.AgentRunId,
+            result.SessionId,
+            result.WorkspaceId,
+            result.AdvertiserId,
+            ToMessageDto(result.HumanMessage),
+            result.PlannerMessage is null ? null : ToMessageDto(result.PlannerMessage),
+            ToAgentRunDto(result.AgentRun),
+            result.IsReplay);
+
+    private static WeddingPlannerBrandDnaVersionDto ToBrandDnaDto(WeddingPlannerBrandDnaVersionResult result) =>
+        new(
+            result.BrandDnaVersionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.VersionNumber,
+            result.SchemaVersion,
+            result.DocumentJson,
+            result.Summary,
+            result.ProducingAgentRunId,
+            result.Status,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.CreatedAt,
+            result.IsCurrentApproved,
+            result.IsReplay);
+
+    private static WeddingPlannerBrandDnaDecisionDto ToDecisionDto(WeddingPlannerBrandDnaDecisionResult result) =>
+        new(
+            result.DecisionId,
+            result.BrandDnaVersionId,
+            result.WorkspaceId,
+            result.AdvertiserId,
+            result.Decision,
+            result.ActorType,
+            result.ActorLabel,
+            result.Rationale,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.OccurredAt,
+            ToBrandDnaDto(result.Version),
             result.IsReplay);
 }

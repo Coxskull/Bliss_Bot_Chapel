@@ -49,4 +49,13 @@ public sealed class EntityDefaultTests
         Assert.Equal("ACTIVE", workspace.Status);
         Assert.Equal("OPEN", new WeddingPlannerPlanningSession().Status);
     }
+
+    [Fact]
+    public void Wedding_planner_phase2_defaults_are_proposed_and_running()
+    {
+        Assert.Equal("RUNNING", new WeddingPlannerAgentRun().Status);
+        Assert.Equal("PROPOSED", new WeddingPlannerBrandDnaVersion().Status);
+        Assert.Equal("brand-dna.v1", new WeddingPlannerBrandDnaVersion().SchemaVersion);
+        Assert.Null(new WeddingPlannerWorkspace().CurrentApprovedBrandDnaVersionId);
+    }
 }

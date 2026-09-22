@@ -541,4 +541,96 @@ public sealed record WeddingPlannerAuditEventDto(
     string? Detail,
     DateTime OccurredAt);
 
+public sealed record WeddingPlannerTurnRequest(
+    string Body,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerAgentRunDto(
+    Guid AgentRunId,
+    Guid AdvertiserId,
+    Guid WorkspaceId,
+    Guid? SessionId,
+    string LogicalRole,
+    string WorkerKey,
+    string PromptPackVersion,
+    string? ProviderKey,
+    string? ModelId,
+    string? AdapterVersion,
+    Guid? TriggerMessageId,
+    Guid? OutputMessageId,
+    Guid? OutputBrandDnaVersionId,
+    string? RequestId,
+    string? ProviderRequestId,
+    string SourceSystem,
+    string IdempotencyKey,
+    string Status,
+    string? Outcome,
+    string? ErrorCode,
+    string? ErrorMessage,
+    DateTime StartedAt,
+    DateTime? CompletedAt,
+    int? PromptTokens,
+    int? CompletionTokens,
+    int? TotalTokens,
+    decimal? EstimatedCostUsd,
+    bool IsReplay);
+
+public sealed record WeddingPlannerTurnDto(
+    Guid AgentRunId,
+    Guid SessionId,
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    WeddingPlannerMessageDto HumanMessage,
+    WeddingPlannerMessageDto? PlannerMessage,
+    WeddingPlannerAgentRunDto AgentRun,
+    bool IsReplay);
+
+public sealed record InterpretWeddingPlannerBrandDnaRequest(
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerBrandDnaVersionDto(
+    Guid BrandDnaVersionId,
+    Guid AdvertiserId,
+    Guid WorkspaceId,
+    int VersionNumber,
+    string SchemaVersion,
+    string DocumentJson,
+    string Summary,
+    Guid ProducingAgentRunId,
+    string Status,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime CreatedAt,
+    bool IsCurrentApproved,
+    bool IsReplay);
+
+public sealed record WeddingPlannerBrandDnaListDto(
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    Guid? CurrentApprovedBrandDnaVersionId,
+    IReadOnlyList<WeddingPlannerBrandDnaVersionDto> Versions);
+
+public sealed record WeddingPlannerBrandDnaDecisionRequest(
+    string Decision,
+    string? Rationale,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerBrandDnaDecisionDto(
+    Guid DecisionId,
+    Guid BrandDnaVersionId,
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    string Decision,
+    string ActorType,
+    string ActorLabel,
+    string? Rationale,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime OccurredAt,
+    WeddingPlannerBrandDnaVersionDto Version,
+    bool IsReplay);
+
 

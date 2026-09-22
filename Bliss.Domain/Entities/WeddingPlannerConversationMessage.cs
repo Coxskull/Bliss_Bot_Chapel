@@ -1,8 +1,8 @@
 namespace Bliss.Domain.Entities;
 
 /// <summary>
-/// Append-only conversation record. Phase 1 stores human and system messages only.
-/// AI providers are not a source of truth and are not invoked.
+/// Append-only conversation record. Clients may append ADVERTISER/OPERATOR/SYSTEM.
+/// PLANNER messages are server-owned via orchestration only.
 /// </summary>
 public class WeddingPlannerConversationMessage
 {

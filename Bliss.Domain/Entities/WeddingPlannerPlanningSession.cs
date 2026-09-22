@@ -18,4 +18,5 @@ public class WeddingPlannerPlanningSession
     public WeddingPlannerWorkspace Workspace { get; set; } = null!;
     public Advertiser Advertiser { get; set; } = null!;
     public ICollection<WeddingPlannerConversationMessage> Messages { get; set; } = new List<WeddingPlannerConversationMessage>();
+    public ICollection<WeddingPlannerAgentRun> AgentRuns { get; set; } = new List<WeddingPlannerAgentRun>();
 }

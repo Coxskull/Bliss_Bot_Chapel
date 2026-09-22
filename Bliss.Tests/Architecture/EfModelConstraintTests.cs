@@ -78,6 +78,13 @@ public sealed class EfModelConstraintTests
         Assert.Contains("WeddingPlannerConversationMessage.WorkspaceId", restrictKeys);
         Assert.Contains("WeddingPlannerConversationMessage.AdvertiserId", restrictKeys);
         Assert.Contains("WeddingPlannerAuditEvent.AdvertiserId", restrictKeys);
+        Assert.Contains("WeddingPlannerAgentRun.AdvertiserId", restrictKeys);
+        Assert.Contains("WeddingPlannerAgentRun.WorkspaceId", restrictKeys);
+        Assert.Contains("WeddingPlannerBrandDnaVersion.WorkspaceId", restrictKeys);
+        Assert.Contains("WeddingPlannerBrandDnaVersion.ProducingAgentRunId", restrictKeys);
+        Assert.Contains("WeddingPlannerBrandDnaDecision.BrandDnaVersionId", restrictKeys);
+        Assert.Contains("WeddingPlannerBrandDnaDecision.WorkspaceId", restrictKeys);
+        Assert.Contains("WeddingPlannerWorkspace.CurrentApprovedBrandDnaVersionId", restrictKeys);
     }
 
     [Fact]
@@ -268,6 +275,33 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(WeddingPlannerPlanningSession), nameof(WeddingPlannerPlanningSession.WorkspaceId));
         AssertIndex(db, typeof(WeddingPlannerConversationMessage), nameof(WeddingPlannerConversationMessage.SessionId));
         AssertIndex(db, typeof(WeddingPlannerAuditEvent), nameof(WeddingPlannerAuditEvent.AdvertiserId));
+        AssertIndex(db, typeof(WeddingPlannerAgentRun), nameof(WeddingPlannerAgentRun.WorkspaceId));
+        AssertIndex(db, typeof(WeddingPlannerAgentRun), nameof(WeddingPlannerAgentRun.AdvertiserId));
+        AssertIndex(db, typeof(WeddingPlannerBrandDnaVersion), nameof(WeddingPlannerBrandDnaVersion.WorkspaceId));
+        AssertIndex(db, typeof(WeddingPlannerBrandDnaDecision), nameof(WeddingPlannerBrandDnaDecision.BrandDnaVersionId));
+    }
+
+    [Fact]
+    public void Wedding_planner_phase2_idempotency_and_version_indexes_are_unique()
+    {
+        using var db = TestDb.CreateContext();
+
+        AssertUniqueComposite(db, typeof(WeddingPlannerAgentRun),
+            nameof(WeddingPlannerAgentRun.SourceSystem), nameof(WeddingPlannerAgentRun.IdempotencyKey));
+        AssertUniqueComposite(db, typeof(WeddingPlannerBrandDnaVersion),
+            nameof(WeddingPlannerBrandDnaVersion.SourceSystem), nameof(WeddingPlannerBrandDnaVersion.IdempotencyKey));
+        AssertUniqueComposite(db, typeof(WeddingPlannerBrandDnaVersion),
+            nameof(WeddingPlannerBrandDnaVersion.WorkspaceId), nameof(WeddingPlannerBrandDnaVersion.VersionNumber));
+        AssertUniqueComposite(db, typeof(WeddingPlannerBrandDnaDecision),
+            nameof(WeddingPlannerBrandDnaDecision.SourceSystem), nameof(WeddingPlannerBrandDnaDecision.IdempotencyKey));
+    }
+
+    private static void AssertUniqueComposite(BlissDbContext db, Type type, params string[] propertyNames)
+    {
+        var entity = db.Model.FindEntityType(type)!;
+        var index = entity.GetIndexes().Single(i =>
+            i.Properties.Select(p => p.Name).SequenceEqual(propertyNames));
+        Assert.True(index.IsUnique);
     }
 
     private static void AssertIndex(BlissDbContext db, Type type, string propertyName)

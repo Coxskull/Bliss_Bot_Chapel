@@ -388,7 +388,7 @@ public sealed class WeddingPlannerService
         if (!AllowedMessageActors.Contains(requestedActor))
         {
             throw new InvalidOperationException(
-                "Phase 1 conversation messages may only use ADVERTISER, OPERATOR, or SYSTEM actors. AI planner messages are out of scope.");
+                "Client conversation messages may only use ADVERTISER, OPERATOR, or SYSTEM actors. AI planner messages are out of scope.");
         }
 
         if (!isChapelStaff && !requestedActor.Equals(WeddingPlannerActorTypes.Advertiser, StringComparison.OrdinalIgnoreCase))
@@ -396,6 +396,122 @@ public sealed class WeddingPlannerService
             throw new WeddingPlannerForbiddenException("Advertisers may only append ADVERTISER messages.");
         }
 
+        return await AppendMessageCoreAsync(
+            session,
+            requestedActor.ToUpperInvariant(),
+            actorLabel,
+            text,
+            source,
+            key,
+            actorType,
+            actorLabel,
+            requestId,
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// Server-owned PLANNER append used only by orchestration. Not exposed through the client message API.
+    /// </summary>
+    internal async Task<WeddingPlannerMessageResult> AppendPlannerMessageForOrchestrationAsync(
+        Guid sessionId,
+        string body,
+        string sourceSystem,
+        string idempotencyKey,
+        string plannerLabel,
+        string? requestId,
+        CancellationToken cancellationToken = default)
+    {
+        var session = await _db.WeddingPlannerPlanningSessions
+            .SingleAsync(x => x.Id == sessionId, cancellationToken);
+        return await AppendMessageCoreAsync(
+            session,
+            WeddingPlannerActorTypes.Planner,
+            plannerLabel,
+            Required(body, nameof(body), 8000),
+            Required(sourceSystem, nameof(sourceSystem), 64),
+            Required(idempotencyKey, nameof(idempotencyKey), 128),
+            WeddingPlannerActorTypes.System,
+            plannerLabel,
+            requestId,
+            cancellationToken);
+    }
+
+    internal async Task<WeddingPlannerMessageResult> AppendClientMessageForOrchestrationAsync(
+        Guid sessionId,
+        string actorTypeRequested,
+        string body,
+        string sourceSystem,
+        string idempotencyKey,
+        bool isChapelStaff,
+        Guid? boundAdvertiserId,
+        string actorType,
+        string actorLabel,
+        string? requestId,
+        CancellationToken cancellationToken = default) =>
+        await AppendMessageAsync(
+            sessionId,
+            actorTypeRequested,
+            body,
+            sourceSystem,
+            idempotencyKey,
+            isChapelStaff,
+            boundAdvertiserId,
+            actorType,
+            actorLabel,
+            requestId,
+            cancellationToken);
+
+    internal async Task<WeddingPlannerWorkspace> RequireWorkspaceForOrchestrationAsync(
+        Guid workspaceId,
+        bool isChapelStaff,
+        Guid? boundAdvertiserId,
+        CancellationToken cancellationToken = default) =>
+        await RequireWorkspaceAsync(workspaceId, isChapelStaff, boundAdvertiserId, "SYSTEM", "orchestration", null, cancellationToken);
+
+    internal async Task<WeddingPlannerPlanningSession> RequireSessionForOrchestrationAsync(
+        Guid sessionId,
+        bool isChapelStaff,
+        Guid? boundAdvertiserId,
+        CancellationToken cancellationToken = default) =>
+        await RequireSessionAsync(sessionId, isChapelStaff, boundAdvertiserId, "SYSTEM", "orchestration", null, cancellationToken);
+
+    internal void EnsureAdvertiserAccessForOrchestration(
+        Guid advertiserId,
+        bool isChapelStaff,
+        Guid? boundAdvertiserId,
+        string resourceKind) =>
+        EnsureAdvertiserAccess(advertiserId, isChapelStaff, boundAdvertiserId, resourceKind);
+
+    internal void AddAuditForOrchestration(
+        Guid advertiserId,
+        Guid? workspaceId,
+        Guid? sessionId,
+        Guid? messageId,
+        string action,
+        string actorType,
+        string actorLabel,
+        string outcome,
+        string? requestId,
+        string? detail) =>
+        AddAudit(advertiserId, workspaceId, sessionId, messageId, action, actorType, actorLabel, outcome, requestId, detail);
+
+    internal WeddingPlannerMessageResult ToMessageResultForOrchestration(
+        WeddingPlannerConversationMessage message,
+        bool isReplay) =>
+        ToMessageResult(message, isReplay);
+
+    private async Task<WeddingPlannerMessageResult> AppendMessageCoreAsync(
+        WeddingPlannerPlanningSession session,
+        string actorTypeValue,
+        string messageActorLabel,
+        string text,
+        string source,
+        string key,
+        string auditActorType,
+        string auditActorLabel,
+        string? requestId,
+        CancellationToken cancellationToken)
+    {
         var replay = await _db.WeddingPlannerConversationMessages
             .SingleOrDefaultAsync(
                 x => x.SourceSystem == source && x.IdempotencyKey == key,
@@ -423,8 +539,8 @@ public sealed class WeddingPlannerService
             WorkspaceId = session.WorkspaceId,
             AdvertiserId = session.AdvertiserId,
             SequenceNumber = nextSequence + 1,
-            ActorType = requestedActor.ToUpperInvariant(),
-            ActorLabel = actorLabel,
+            ActorType = actorTypeValue,
+            ActorLabel = messageActorLabel,
             Body = text,
             SourceSystem = source,
             IdempotencyKey = key,
@@ -438,8 +554,8 @@ public sealed class WeddingPlannerService
             session.Id,
             message.Id,
             WeddingPlannerAuditActions.MessageAppended,
-            actorType,
-            actorLabel,
+            auditActorType,
+            auditActorLabel,
             WeddingPlannerOutcomes.Appended,
             requestId,
             $"Sequence {message.SequenceNumber}.");
