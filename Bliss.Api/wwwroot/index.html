@@ -183,8 +183,8 @@
 
         <section class="view" id="view-audit" aria-labelledby="audit-title">
           <div class="section-intro">
-            <div><p class="eyebrow">IMMUTABLE HISTORY</p><h2 id="audit-title">Operations audit</h2><p>Trace every controlled write and deterministic decision through its immutable record. Export a bounded JSON evidence pack of the selected ledger. Snapshots and secrets are omitted.</p></div>
-            <div class="section-actions"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="audit-search" type="search" placeholder="Search the selected ledger" aria-label="Search audit ledger"></div><button class="secondary-button" id="export-audit-ledger" type="button">Export ledger</button></div>
+            <div><p class="eyebrow">IMMUTABLE HISTORY</p><h2 id="audit-title">Operations audit</h2><p>Trace every controlled write and deterministic decision through its immutable record. Export a bounded JSON evidence pack of the selected ledger, then verify its SHA-256 digest. Snapshots and secrets are omitted.</p></div>
+            <div class="section-actions"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="audit-search" type="search" placeholder="Search the selected ledger" aria-label="Search audit ledger"></div><button class="secondary-button" id="export-audit-ledger" type="button">Export ledger</button><button class="secondary-button" id="verify-audit-pack" type="button">Verify pack</button><input id="verify-audit-file" type="file" accept="application/json,.json" hidden></div>
           </div>
           <div class="tab-row" id="audit-tabs" role="tablist">
             <button class="tab-button active" data-audit-tab="evaluations" role="tab" aria-selected="true">Evaluations</button>
@@ -194,12 +194,13 @@
             <button class="tab-button" data-audit-tab="ingestions" role="tab" aria-selected="false">Ingestions</button>
             <button class="tab-button" data-audit-tab="provenance" role="tab" aria-selected="false">Provenance</button>
           </div>
+          <p class="verify-result" id="verify-audit-result" hidden></p>
           <div class="panel table-panel"><div class="table-wrap" id="audit-content"></div></div>
         </section>
 
         <section class="view" id="view-status" aria-labelledby="status-title">
           <div class="section-intro">
-            <div><p class="eyebrow">RUNTIME OBSERVABILITY</p><h2 id="status-title">Workspace status</h2><p>Inspect process and database readiness, request correlation, and recent security or throttle events. This view never shows secrets or identity-provider credentials.</p></div>
+            <div><p class="eyebrow">RUNTIME OBSERVABILITY</p><h2 id="status-title">Workspace status</h2><p>Inspect process and database readiness, request correlation, recent security or throttle events, and verification receipts. This view never shows secrets or identity-provider credentials.</p></div>
             <button class="secondary-button" id="refresh-runtime-status" type="button">Refresh status</button>
           </div>
           <div class="stat-grid" id="runtime-health-cards"></div>

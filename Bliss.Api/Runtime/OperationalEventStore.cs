@@ -8,7 +8,8 @@ public sealed record OperationalEvent(
     string Method,
     string Path,
     int StatusCode,
-    string RequestId);
+    string RequestId,
+    string? Detail = null);
 
 public sealed class OperationalEventStore
 {

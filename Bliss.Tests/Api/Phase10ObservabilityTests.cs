@@ -94,4 +94,5 @@ public sealed record RuntimeEventResponse(
     string Method,
     string Path,
     int StatusCode,
-    string RequestId);
+    string RequestId,
+    string? Detail = null);
