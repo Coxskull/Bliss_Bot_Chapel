@@ -1,0 +1,13 @@
+  Determining projects to restore...
+  All projects are up-to-date for restore.
+  Bliss.Domain -> /workspace/Bliss.Domain/bin/Debug/net8.0/Bliss.Domain.dll
+  Bliss.Infrastructure -> /workspace/Bliss.Infrastructure/bin/Debug/net8.0/Bliss.Infrastructure.dll
+  Bliss.Api -> /workspace/Bliss.Api/bin/Debug/net8.0/Bliss.Api.dll
+  Bliss.Tests -> /workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll
+Test run for /workspace/Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll (.NETCoreApp,Version=v8.0)
+VSTest version 17.11.1 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:   117, Skipped:     0, Total:   117, Duration: 2 s - Bliss.Tests.dll (net8.0)

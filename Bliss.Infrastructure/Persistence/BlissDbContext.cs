@@ -39,6 +39,11 @@ public class BlissDbContext : DbContext
 
     public DbSet<MatchEvaluationRun> MatchEvaluationRuns => Set<MatchEvaluationRun>();
 
+    public DbSet<WeddingPlannerWorkspace> WeddingPlannerWorkspaces => Set<WeddingPlannerWorkspace>();
+    public DbSet<WeddingPlannerPlanningSession> WeddingPlannerPlanningSessions => Set<WeddingPlannerPlanningSession>();
+    public DbSet<WeddingPlannerConversationMessage> WeddingPlannerConversationMessages => Set<WeddingPlannerConversationMessage>();
+    public DbSet<WeddingPlannerAuditEvent> WeddingPlannerAuditEvents => Set<WeddingPlannerAuditEvent>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BlissDbContext).Assembly);

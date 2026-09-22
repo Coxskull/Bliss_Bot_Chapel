@@ -3,6 +3,7 @@ using System.Threading.RateLimiting;
 using System.Text.Json.Serialization;
 using Bliss.Api.Runtime;
 using Bliss.Api.Security;
+using Microsoft.Extensions.FileProviders;
 using Bliss.Infrastructure.DependencyInjection;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Antiforgery;
@@ -73,6 +74,7 @@ builder.Services.AddSingleton(authentication);
 builder.Services.AddSingleton(runtime);
 builder.Services.AddSingleton<OperationalEventStore>();
 builder.Services.AddScoped<OperatorIdentity>();
+builder.Services.AddScoped<WeddingPlannerAccess>();
 builder.Services.AddProblemDetails();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -245,7 +247,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "Bliss Bot Chapel API",
         Version = "v1",
-        Description = "Standalone Bliss API: controlled ingestion, matching, human review, and campaign placement planning."
+        Description = "Standalone Bliss API: controlled ingestion, matching, human review, campaign placement planning, and Wedding Planner foundation."
     });
 });
 
@@ -286,8 +288,18 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseDefaultFiles();
-app.UseStaticFiles();
+var frontendRoot = FrontendHost.ResolveRoot(app.Environment);
+var publicFrontend = Path.Combine(frontendRoot, "public");
+var operationsFrontend = Path.Combine(frontendRoot, "operations");
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(publicFrontend)
+});
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(operationsFrontend),
+    RequestPath = "/operations"
+});
 
 if (app.Environment.IsDevelopment())
 {
@@ -309,6 +321,8 @@ if (app.Environment.IsDevelopment())
                 await phase2.SeedAsync();
                 var phase3 = scope.ServiceProvider.GetRequiredService<Phase3DataSeeder>();
                 await phase3.SeedAsync();
+                var weddingPlanner = scope.ServiceProvider.GetRequiredService<WeddingPlannerDataSeeder>();
+                await weddingPlanner.SeedAsync();
             }
         }
         catch (Exception ex)
@@ -387,7 +401,19 @@ app.MapHealthChecks(
         })
     .AllowAnonymous()
     .DisableRateLimiting();
-app.MapFallbackToFile("index.html").AllowAnonymous();
+app.MapGet(
+        "/",
+        () => Results.File(Path.Combine(publicFrontend, "index.html"), "text/html"))
+    .AllowAnonymous();
+app.MapGet(
+        "/operations",
+        () => Results.File(Path.Combine(operationsFrontend, "index.html"), "text/html"))
+    .AllowAnonymous();
+app.MapFallbackToFile(
+        "/operations/{*path:nonfile}",
+        "index.html",
+        new StaticFileOptions { FileProvider = new PhysicalFileProvider(operationsFrontend) })
+    .AllowAnonymous();
 app.Run();
 
 public partial class Program;
