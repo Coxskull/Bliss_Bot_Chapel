@@ -133,3 +133,4 @@ Phase 16 export pack verification evidence: `docs/bliss/PHASE-16-EVIDENCE.md`.
 Phase 17 verification receipt contract: `docs/bliss/PHASE-17-ENGINEERING-CONTRACT.md`.
 Phase 17 verification receipt evidence: `docs/bliss/PHASE-17-EVIDENCE.md`.
 Phase 18 last verification contract: `docs/bliss/PHASE-18-ENGINEERING-CONTRACT.md`.
+Phase 18 last verification evidence: `docs/bliss/PHASE-18-EVIDENCE.md`.
