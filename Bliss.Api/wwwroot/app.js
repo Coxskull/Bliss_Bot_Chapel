@@ -365,6 +365,7 @@ function renderRuntimeStatus() {
     $("#runtime-correlation").innerHTML = emptyState("No request identifier yet.");
     $("#runtime-limits").innerHTML = emptyState("Throttle policy is unavailable.");
     $("#runtime-last-verification").innerHTML = emptyState("No verification receipt yet.");
+    $("#runtime-recent-verifications").innerHTML = emptyState("No verification receipts yet.");
     $("#runtime-events").innerHTML = emptyState("No operational events recorded.");
     return;
   }
@@ -380,6 +381,8 @@ function renderRuntimeStatus() {
   $("#runtime-last-verification").innerHTML = last
     ? `<p><strong>${escapeHtml(last.matched ? "Matched" : "Mismatch")}</strong><span class="request-id">${escapeHtml(last.packKind || "pack")}</span></p><p><code>sha256:${escapeHtml((last.computedSha256 || "").slice(0, 12))}…</code> ${last.requestId ? `· ${escapeHtml(last.requestId.slice(0, 8))}…` : ""}</p>`
     : emptyState("No verification receipt in this process yet.");
+  const history = runtime.recentVerifications || [];
+  $("#runtime-recent-verifications").innerHTML = history.length ? `<table><thead><tr><th>When</th><th>Outcome</th><th>Pack</th><th>Digest</th><th>Correlation</th></tr></thead><tbody>${history.map(item => `<tr><td>${formatDate(item.verifiedAt)}</td><td>${badge(item.matched ? "MATCHED" : "MISMATCH")}</td><td>${escapeHtml(item.packKind || "pack")}</td><td><code>sha256:${escapeHtml((item.computedSha256 || "").slice(0, 12))}…</code></td><td><code>${escapeHtml(item.requestId || "—")}</code></td></tr>`).join("")}</tbody></table>` : emptyState("No verification receipts have been recorded in this process.");
   const events = runtime.recentEvents || [];
   $("#runtime-events").innerHTML = events.length ? `<table><thead><tr><th>When</th><th>Kind</th><th>Request</th><th>Status</th><th>Correlation</th><th>Detail</th></tr></thead><tbody>${events.map(event => `<tr><td>${formatDate(event.occurredAt)}</td><td>${badge(event.kind)}</td><td><code>${escapeHtml(event.method)} ${escapeHtml(event.path)}</code></td><td>${event.statusCode}</td><td><code>${escapeHtml(event.requestId)}</code></td><td>${event.detail ? `<code>${escapeHtml(event.detail)}</code>` : "—"}</td></tr>`).join("")}</tbody></table>` : emptyState("No security or throttle events have been recorded in this process.");
 }

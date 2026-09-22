@@ -30,6 +30,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Continue with SSO", body);
         Assert.Contains("Workspace status", body);
         Assert.Contains("Last verification", body);
+        Assert.Contains("Recent verifications", body);
         Assert.Contains("Export ledger", body);
         Assert.Contains("Verify pack", body);
         Assert.Contains("app.js", body);
@@ -43,6 +44,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("/api/audit/verify", script);
         Assert.Contains("data-verify-pack", script);
         Assert.Contains("lastVerification", script);
+        Assert.Contains("recentVerifications", script);
         Assert.Contains("bliss-verify-", script);
         Assert.Contains("event.detail", script);
         Assert.DoesNotContain("TEST ENVIRONMENT", body);
