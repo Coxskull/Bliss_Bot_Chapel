@@ -130,6 +130,9 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.DoesNotContain("Math.pow", script);
         Assert.DoesNotContain("4.5", script);
         Assert.DoesNotContain("7.0", script);
+
+        var styles = await (await client.GetAsync("/wedding-planner.css")).Content.ReadAsStringAsync();
+        Assert.Contains("[hidden] { display: none !important; }", styles);
     }
 
     [Fact]

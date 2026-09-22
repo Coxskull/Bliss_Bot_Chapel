@@ -158,4 +158,6 @@ Phase 19 verification history evidence: `docs/bliss/PHASE-19-EVIDENCE.md`.
 Wedding Planner Phase 1 foundation contract: `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md`.
 Wedding Planner Phase 2 contract: `docs/wedding-planner/PHASE-2-ENGINEERING-CONTRACT.md`.
 Wedding Planner Phase 2 evidence: `docs/wedding-planner/PHASE-2-EVIDENCE.md`.
+Wedding Planner Phase 3 contract: `docs/wedding-planner/PHASE-3-ENGINEERING-CONTRACT.md`.
+Wedding Planner Phase 3 evidence: `docs/wedding-planner/PHASE-3-EVIDENCE.md`.
 Wedding Planner master blueprint v1.1: `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md`.
