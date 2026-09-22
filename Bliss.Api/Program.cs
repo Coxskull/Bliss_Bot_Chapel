@@ -122,6 +122,8 @@ builder.Services.AddSingleton(runtime);
 builder.Services.AddSingleton<OperationalEventStore>();
 builder.Services.AddScoped<OperatorIdentity>();
 builder.Services.AddScoped<WeddingPlannerAccess>();
+builder.Services.AddSingleton<IWeddingPlannerCampaignReadinessHostEnvironment>(
+    new AspNetWeddingPlannerCampaignReadinessHostEnvironment(builder.Environment));
 builder.Services.AddProblemDetails();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {

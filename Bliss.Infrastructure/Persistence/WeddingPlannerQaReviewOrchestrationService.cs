@@ -884,6 +884,22 @@ public sealed class WeddingPlannerQaReviewOrchestrationService
         {
             version.Status = WeddingPlannerQaReviewReportStatuses.Accepted;
             workspaceEntity.CurrentAcceptedQaReviewReportVersionId = version.Id;
+            if (workspaceEntity.CurrentCampaignReadinessHandshakeVersionId is not null)
+            {
+                workspaceEntity.CurrentCampaignReadinessHandshakeVersionId = null;
+                _planner.AddAuditForOrchestration(
+                    version.AdvertiserId,
+                    version.WorkspaceId,
+                    null,
+                    null,
+                    WeddingPlannerAuditActions.CampaignReadinessPointerCleared,
+                    actorType,
+                    actorLabel,
+                    WeddingPlannerOutcomes.Superseded,
+                    requestId,
+                    "CurrentCampaignReadinessHandshakeVersionId cleared by QA ACCEPT pointer move.");
+            }
+
             workspaceEntity.UpdatedAt = DateTime.UtcNow;
             _planner.AddAuditForOrchestration(
                 version.AdvertiserId,
@@ -1207,6 +1223,22 @@ public sealed class WeddingPlannerQaReviewOrchestrationService
         {
             version.Status = WeddingPlannerQaReviewReportStatuses.AcceptedWithException;
             workspaceEntity.CurrentAcceptedQaReviewReportVersionId = version.Id;
+            if (workspaceEntity.CurrentCampaignReadinessHandshakeVersionId is not null)
+            {
+                workspaceEntity.CurrentCampaignReadinessHandshakeVersionId = null;
+                _planner.AddAuditForOrchestration(
+                    version.AdvertiserId,
+                    version.WorkspaceId,
+                    null,
+                    null,
+                    WeddingPlannerAuditActions.CampaignReadinessPointerCleared,
+                    actorType,
+                    actorLabel,
+                    WeddingPlannerOutcomes.Superseded,
+                    requestId,
+                    "CurrentCampaignReadinessHandshakeVersionId cleared by QA WAIVE_AND_ACCEPT pointer move.");
+            }
+
             workspaceEntity.UpdatedAt = DateTime.UtcNow;
             _planner.AddAuditForOrchestration(
                 version.AdvertiserId,

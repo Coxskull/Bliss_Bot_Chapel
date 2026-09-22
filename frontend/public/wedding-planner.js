@@ -12,6 +12,29 @@ const CREATIVE_PACKAGE_DISCLAIMER =
   "Approval of this package is draft creative approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, QA, or final production-artwork approval. It does not authorize Bliss matching or placement. Marketing copy is CREATIVE_NON_FACTUAL unless a factual claim exactly preserves a cited claim from the pinned selected concept using source IDs from the pinned approved research report. Brand DNA and Color Profile are creative constraints, not factual evidence. Draft PNG assets are provider-generated renditions for review only; Wedding Planner orchestrates providers and is not itself an image generator. Phase 5 concept contributions remain pinned provenance and are not re-approved here.";
 const QA_REVIEW_DISCLAIMER =
   "Acceptance of this QA review report is control review only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, final production-artwork, or Bliss handshake approval. Deterministic rules check package, decision, variant, asset integrity, and provenance only; they do not certify semantic truth, visual safety, or campaign readiness. AI control roles never receive image bytes and cannot approve or waive. Humans must view the same-origin selected PNG before ACCEPT. The Human Escalation Steward is a rules-first human authority, not an AI worker. Phase 8 must independently define handshake and may distinguish clean acceptance from acceptance-with-exception.";
+const CAMPAIGN_READINESS_LABEL = "PHASE 8 · BLISS HANDSHAKE / CAMPAIGN READINESS";
+const CAMPAIGN_READINESS_STATUSES = ["CAMPAIGN_READY", "REVOKED"];
+const SYNTHETIC_DEVELOPMENT_CAMPAIGN_READINESS = "SYNTHETIC DEVELOPMENT CAMPAIGN READINESS";
+const CAMPAIGN_READINESS_DISCLAIMER =
+  "This campaign-readiness handshake is a deterministic planning integration only. It marks Wedding Planner campaign-ready state for a clean Phase 7 ACCEPTED QA report bound to an APPROVED Bliss match and compatible creator inventory, and records a PLANNED campaign placement. It is not research, claim, legal, accessibility, compliance, measurement, delivery, publication, or payment approval. It does not mutate Phase 6 creative packages or Phase 7 QA reports. It does not recompute Bliss matching scores. Acceptance-with-exception QA is not campaign-ready. AI cannot mark campaign ready. Advertisers and reviewers cannot create this handshake. Slot availability is not reserved. Planned placement is not activation.";
+const CAMPAIGN_READINESS_RULE_CODES = [
+  "CR_CURRENT_QA_POINTER",
+  "CR_QA_CLEAN_ACCEPTED",
+  "CR_QA_ACCEPT_DECISION",
+  "CR_PACKAGE_CURRENT_APPROVED",
+  "CR_PACKAGE_DOCUMENT_SHA",
+  "CR_CREATIVE_DECISION_VARIANT",
+  "CR_ASSET_INTEGRITY",
+  "CR_PROVENANCE_CHAIN",
+  "CR_MATCH_APPROVED",
+  "CR_OPPORTUNITY_ACTIVE",
+  "CR_ADVERTISER_SCOPE",
+  "CR_CAMPAIGN_DRAFT",
+  "CR_CAMPAIGN_OPPORTUNITY",
+  "CR_CONTENT_CREATOR",
+  "CR_SLOT_CONTENT",
+  "CR_SYNTHETIC_ENVIRONMENT"
+];
 const CURATOR_LOGICAL_ROLES = [
   "MARKET_LANDSCAPE_RESEARCHER",
   "AUDIENCE_CONTEXT_RESEARCHER",
@@ -161,6 +184,10 @@ const state = {
   qaReport: null,
   qaContributions: [],
   qaAgentRuns: [],
+  campaignReadinessEligibility: null,
+  campaignReadinessHandshakes: [],
+  campaignReadinessHandshake: null,
+  campaignReadinessDecisions: [],
   busy: false
 };
 
@@ -353,6 +380,37 @@ const qaSelectedPng = document.querySelector("#qa-selected-png");
 const qaRulesFindings = document.querySelector("#qa-rules-findings");
 const qaContributions = document.querySelector("#qa-contributions");
 const qaAgentRuns = document.querySelector("#qa-agent-runs");
+
+const campaignReadinessEligibilityEl = document.querySelector("#campaign-readiness-eligibility");
+const campaignReadinessSyntheticWarning = document.querySelector("#campaign-readiness-synthetic-warning");
+const campaignReadinessHandshakeSelect = document.querySelector("#campaign-readiness-handshake-select");
+const campaignReadinessCurrentPointer = document.querySelector("#campaign-readiness-current-pointer");
+const campaignReadinessRefresh = document.querySelector("#campaign-readiness-refresh");
+const campaignReadinessDetail = document.querySelector("#campaign-readiness-detail");
+const campaignReadinessStatusLabel = document.querySelector("#campaign-readiness-status-label");
+const campaignReadinessCurrentBadge = document.querySelector("#campaign-readiness-current-badge");
+const campaignReadinessVersionNumber = document.querySelector("#campaign-readiness-version-number");
+const campaignReadinessSummaryText = document.querySelector("#campaign-readiness-summary-text");
+const campaignReadinessSchema = document.querySelector("#campaign-readiness-schema");
+const campaignReadinessQaPin = document.querySelector("#campaign-readiness-qa-pin");
+const campaignReadinessQaDecisionPin = document.querySelector("#campaign-readiness-qa-decision-pin");
+const campaignReadinessPackagePin = document.querySelector("#campaign-readiness-package-pin");
+const campaignReadinessPackageSha = document.querySelector("#campaign-readiness-package-sha");
+const campaignReadinessCreativeDecisionPin = document.querySelector("#campaign-readiness-creative-decision-pin");
+const campaignReadinessVariantPin = document.querySelector("#campaign-readiness-variant-pin");
+const campaignReadinessAssetPin = document.querySelector("#campaign-readiness-asset-pin");
+const campaignReadinessBlissMatch = document.querySelector("#campaign-readiness-bliss-match");
+const campaignReadinessCampaign = document.querySelector("#campaign-readiness-campaign");
+const campaignReadinessContent = document.querySelector("#campaign-readiness-content");
+const campaignReadinessSlot = document.querySelector("#campaign-readiness-slot");
+const campaignReadinessPlacement = document.querySelector("#campaign-readiness-placement");
+const campaignReadinessPlacementRun = document.querySelector("#campaign-readiness-placement-run");
+const campaignReadinessRationale = document.querySelector("#campaign-readiness-rationale");
+const campaignReadinessSelectedPng = document.querySelector("#campaign-readiness-selected-png");
+const campaignReadinessRulesFindings = document.querySelector("#campaign-readiness-rules-findings");
+const campaignReadinessDocumentJson = document.querySelector("#campaign-readiness-document-json");
+const campaignReadinessDecisionsEl = document.querySelector("#campaign-readiness-decisions");
+const campaignReadinessDisclaimerText = document.querySelector("#campaign-readiness-disclaimer-text");
 
 const colorFields = {
   primary: {
@@ -581,6 +639,19 @@ function bindPlannerUi() {
     inspectQaReport(selected).catch(error => setTurnStatus("error", error.message));
   });
 
+  campaignReadinessRefresh?.addEventListener("click", () => {
+    refreshCampaignReadinessLists().catch(error => setTurnStatus("error", error.message));
+  });
+
+  campaignReadinessHandshakeSelect?.addEventListener("change", () => {
+    const id = campaignReadinessHandshakeSelect.value;
+    const selected = (state.campaignReadinessHandshakes || []).find(
+      x => x.campaignReadinessHandshakeVersionId === id
+    ) || null;
+    state.campaignReadinessHandshake = selected;
+    inspectCampaignReadinessHandshake(selected).catch(error => setTurnStatus("error", error.message));
+  });
+
   Object.values(colorFields).forEach(field => {
     field.picker?.addEventListener("input", () => {
       if (field.text) field.text.value = String(field.picker.value || "").toUpperCase();
@@ -628,6 +699,7 @@ async function bootstrapPlanner() {
     renderWorkshopPrerequisite();
     renderCreativePrerequisite();
     renderQaPrerequisite();
+    renderCampaignReadinessEligibility();
     return;
   }
 
@@ -646,6 +718,7 @@ async function bootstrapPlanner() {
   await refreshWorkshopLists();
   await refreshCreativeLists();
   await refreshQaLists();
+  await refreshCampaignReadinessLists();
   setComposerEnabled(true);
   setBrandDnaControlsEnabled(true);
   renderColorPrerequisite();
@@ -658,6 +731,8 @@ async function bootstrapPlanner() {
   setCreativeControlsEnabled(canSubmitCreativeJobs());
   renderQaPrerequisite();
   setQaControlsEnabled(canSubmitQaReviewJobs());
+  renderCampaignReadinessEligibility();
+  setCampaignReadinessControlsEnabled(true);
   setSessionStatus(
     "Live Concierge ready",
     "Messages are saved to your planning session. Planner replies come only from the server. Brand DNA stays PROPOSED until you approve or reject it."
@@ -3590,4 +3665,229 @@ function renderQaAgentRuns(runs) {
         <span>Estimated cost USD <code>${escapeHtml(formatCost(run.estimatedCostUsd))}</code> · provider <code>${escapeHtml(run.providerKey || "—")}</code> · model <code>${escapeHtml(run.modelId || "—")}</code></span>
       </div>`).join("")}
   `;
+}
+
+
+function parseCampaignReadinessDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+function parseCampaignReadinessRules(rulesFindingsJson, document) {
+  if (document?.rules && typeof document.rules === "object") return document.rules;
+  if (!rulesFindingsJson) return null;
+  try {
+    return typeof rulesFindingsJson === "string"
+      ? JSON.parse(rulesFindingsJson)
+      : rulesFindingsJson;
+  } catch {
+    return null;
+  }
+}
+
+function handshakeHasSyntheticMarker(handshake, doc) {
+  return doc?.marker === SYNTHETIC_DEVELOPMENT_CAMPAIGN_READINESS
+    || JSON.stringify(doc || {}).includes(SYNTHETIC_DEVELOPMENT_CAMPAIGN_READINESS)
+    || String(handshake?.summary || "").includes(SYNTHETIC_DEVELOPMENT_CAMPAIGN_READINESS);
+}
+
+function setCampaignReadinessControlsEnabled(enabled) {
+  if (campaignReadinessRefresh) campaignReadinessRefresh.disabled = !enabled;
+  if (campaignReadinessHandshakeSelect) campaignReadinessHandshakeSelect.disabled = !enabled;
+}
+
+function renderCampaignReadinessEligibility() {
+  if (!campaignReadinessEligibilityEl) return;
+  if (campaignReadinessDisclaimerText) {
+    campaignReadinessDisclaimerText.textContent = CAMPAIGN_READINESS_DISCLAIMER;
+  }
+  const elig = state.campaignReadinessEligibility;
+  if (!state.session || !state.liveChatEnabled || !state.workspaceId) {
+    campaignReadinessEligibilityEl.dataset.ready = "false";
+    campaignReadinessEligibilityEl.innerHTML = `<span>Campaign-readiness requires an authenticated advertiser workspace</span><p>${escapeHtml(CAMPAIGN_READINESS_LABEL)}. Read-only eligibility and handshake history load after workspace refresh. Statuses ${escapeHtml(CAMPAIGN_READINESS_STATUSES.join(" · "))} · NO AI · PLANNING ONLY — NO RESERVATION · PLANNED IS NOT ACTIVATION. No commit/revoke on this public surface.</p>`;
+    if (campaignReadinessSyntheticWarning) campaignReadinessSyntheticWarning.hidden = true;
+    return;
+  }
+  if (!elig) {
+    campaignReadinessEligibilityEl.dataset.ready = "false";
+    campaignReadinessEligibilityEl.innerHTML = `<span>No eligibility loaded yet</span><p>Refresh to load /api/wedding-planner/workspaces/{id}/campaign-readiness/eligibility and handshake history. Clean ACCEPTED QA only — ACCEPTED_WITH_EXCEPTION is ineligible.</p>`;
+    return;
+  }
+
+  const cleanOk = elig.isCleanAccepted === true && elig.hasCleanAcceptDecision === true && elig.packageReady === true;
+  const pointerSet = !!elig.currentCampaignReadinessHandshakeVersionId;
+  const qaStatus = elig.currentQaStatus || "none";
+  const exceptionNote = qaStatus === "ACCEPTED_WITH_EXCEPTION"
+    ? " Current QA is ACCEPTED_WITH_EXCEPTION — ineligible for campaign-readiness (no Phase 8 waiver)."
+    : "";
+  const readyLabel = cleanOk
+    ? (pointerSet ? "Clean QA eligible · current handshake pointer set" : "Clean QA eligible · no current handshake pointer")
+    : "Not eligible for campaign-readiness commit";
+  campaignReadinessEligibilityEl.dataset.ready = cleanOk ? "true" : "false";
+  campaignReadinessEligibilityEl.innerHTML = `<span>${escapeHtml(readyLabel)}</span><p>${escapeHtml(CAMPAIGN_READINESS_LABEL)}. Current QA pointer ${escapeHtml(elig.hasCurrentQaPointer ? "present" : "missing")} · status <code>${escapeHtml(qaStatus)}</code> · clean ACCEPTED ${escapeHtml(String(!!elig.isCleanAccepted))} · clean ACCEPT decision ${escapeHtml(String(!!elig.hasCleanAcceptDecision))} · package ready ${escapeHtml(String(!!elig.packageReady))} · synthetic upstream ${escapeHtml(String(!!elig.hasSyntheticUpstream))} · current handshake <code>${escapeHtml(elig.currentCampaignReadinessHandshakeVersionId || "none")}</code>. ${escapeHtml(elig.noReservationDisclosure || "Slot availability is not reserved. Planned placement does not hold inventory.")}${escapeHtml(exceptionNote)} Advertiser read-only — no match/campaign/content/slot selectors and no commit/revoke.</p>`;
+
+  if (campaignReadinessSyntheticWarning) {
+    const showSynthetic = elig.hasSyntheticUpstream === true
+      || handshakeHasSyntheticMarker(state.campaignReadinessHandshake, parseCampaignReadinessDocument(state.campaignReadinessHandshake?.documentJson));
+    campaignReadinessSyntheticWarning.hidden = !showSynthetic;
+  }
+  if (campaignReadinessCurrentPointer) {
+    campaignReadinessCurrentPointer.hidden = !pointerSet;
+  }
+}
+
+async function refreshCampaignReadinessLists() {
+  if (!state.workspaceId) return;
+  try {
+    const [eligibility, handshakes] = await Promise.all([
+      api(`/api/wedding-planner/workspaces/${state.workspaceId}/campaign-readiness/eligibility`),
+      api(`/api/wedding-planner/workspaces/${state.workspaceId}/campaign-readiness-handshakes`)
+    ]);
+    state.campaignReadinessEligibility = eligibility || null;
+    state.campaignReadinessHandshakes = Array.isArray(handshakes) ? handshakes : [];
+    const selected =
+      state.campaignReadinessHandshakes.find(
+        x => x.campaignReadinessHandshakeVersionId === state.campaignReadinessHandshake?.campaignReadinessHandshakeVersionId
+      ) ||
+      state.campaignReadinessHandshakes.find(x => x.isCurrent) ||
+      state.campaignReadinessHandshakes[0] ||
+      null;
+    state.campaignReadinessHandshake = selected;
+    renderCampaignReadinessHandshakeList(state.campaignReadinessHandshakes, selected);
+    renderCampaignReadinessEligibility();
+    setCampaignReadinessControlsEnabled(!!state.liveChatEnabled);
+    if (selected) {
+      await inspectCampaignReadinessHandshake(selected);
+    } else if (campaignReadinessDetail) {
+      campaignReadinessDetail.hidden = true;
+      state.campaignReadinessDecisions = [];
+    }
+  } catch (error) {
+    state.campaignReadinessEligibility = null;
+    state.campaignReadinessHandshakes = [];
+    state.campaignReadinessHandshake = null;
+    state.campaignReadinessDecisions = [];
+    renderCampaignReadinessEligibility();
+    if (campaignReadinessDetail) campaignReadinessDetail.hidden = true;
+    throw error;
+  }
+}
+
+function renderCampaignReadinessHandshakeList(handshakes, selected) {
+  if (!campaignReadinessHandshakeSelect) return;
+  if (!handshakes.length) {
+    campaignReadinessHandshakeSelect.innerHTML = `<option value="">No campaign-readiness handshakes yet</option>`;
+    return;
+  }
+  campaignReadinessHandshakeSelect.innerHTML = handshakes.map(h => {
+    const markers = [h.status || "UNKNOWN"];
+    if (h.isCurrent) markers.push("CURRENT");
+    const selectedAttr = selected && h.campaignReadinessHandshakeVersionId === selected.campaignReadinessHandshakeVersionId ? " selected" : "";
+    return `<option value="${escapeHtml(h.campaignReadinessHandshakeVersionId)}"${selectedAttr}>v${escapeHtml(String(h.versionNumber ?? "—"))} · ${escapeHtml(markers.join(" · "))}</option>`;
+  }).join("");
+}
+
+async function inspectCampaignReadinessHandshake(handshake) {
+  if (!campaignReadinessDetail) return;
+  if (!handshake) {
+    campaignReadinessDetail.hidden = true;
+    return;
+  }
+  let detail = handshake;
+  let decisions = [];
+  try {
+    detail = await api(`/api/wedding-planner/campaign-readiness-handshakes/${handshake.campaignReadinessHandshakeVersionId}`);
+    decisions = await api(`/api/wedding-planner/campaign-readiness-handshakes/${handshake.campaignReadinessHandshakeVersionId}/decisions`);
+  } catch (error) {
+    setTurnStatus("error", error.message || "Failed to load campaign-readiness handshake.");
+    campaignReadinessDetail.hidden = true;
+    return;
+  }
+  state.campaignReadinessHandshake = detail;
+  state.campaignReadinessDecisions = Array.isArray(decisions) ? decisions : [];
+  const doc = parseCampaignReadinessDocument(detail.documentJson);
+  campaignReadinessDetail.hidden = false;
+  if (campaignReadinessStatusLabel) campaignReadinessStatusLabel.textContent = detail.status || "—";
+  if (campaignReadinessCurrentBadge) campaignReadinessCurrentBadge.hidden = !detail.isCurrent;
+  if (campaignReadinessVersionNumber) campaignReadinessVersionNumber.textContent = String(detail.versionNumber ?? "—");
+  if (campaignReadinessSummaryText) campaignReadinessSummaryText.textContent = detail.summary || "";
+  if (campaignReadinessSchema) campaignReadinessSchema.textContent = detail.schemaVersion || doc?.schemaVersion || "—";
+  if (campaignReadinessQaPin) campaignReadinessQaPin.textContent = detail.qaReviewReportVersionId || "—";
+  if (campaignReadinessQaDecisionPin) campaignReadinessQaDecisionPin.textContent = detail.qaAcceptDecisionId || "—";
+  if (campaignReadinessPackagePin) campaignReadinessPackagePin.textContent = detail.approvedCreativePackageVersionId || "—";
+  if (campaignReadinessPackageSha) campaignReadinessPackageSha.textContent = detail.creativePackageDocumentSha256 || "—";
+  if (campaignReadinessCreativeDecisionPin) campaignReadinessCreativeDecisionPin.textContent = detail.creativePackageDecisionId || "—";
+  if (campaignReadinessVariantPin) campaignReadinessVariantPin.textContent = detail.selectedVariantId || "—";
+  if (campaignReadinessAssetPin) campaignReadinessAssetPin.textContent = detail.selectedCreativeAssetId || "—";
+  if (campaignReadinessBlissMatch) campaignReadinessBlissMatch.textContent = detail.blissMatchId || "—";
+  if (campaignReadinessCampaign) campaignReadinessCampaign.textContent = detail.campaignId || "—";
+  if (campaignReadinessContent) campaignReadinessContent.textContent = detail.contentItemId || "—";
+  if (campaignReadinessSlot) campaignReadinessSlot.textContent = detail.adInventorySlotId || "—";
+  if (campaignReadinessPlacement) campaignReadinessPlacement.textContent = detail.campaignPlacementId || "—";
+  if (campaignReadinessPlacementRun) campaignReadinessPlacementRun.textContent = detail.campaignPlacementRunId || "—";
+  if (campaignReadinessRationale) campaignReadinessRationale.textContent = detail.rationale || "—";
+
+  if (campaignReadinessSyntheticWarning) {
+    const eligSynthetic = state.campaignReadinessEligibility?.hasSyntheticUpstream === true;
+    campaignReadinessSyntheticWarning.hidden = !(eligSynthetic || handshakeHasSyntheticMarker(detail, doc));
+  }
+
+  if (campaignReadinessSelectedPng) {
+    campaignReadinessSelectedPng.innerHTML = detail.selectedCreativeAssetId
+      ? renderSafeDraftPngPreview(detail.selectedCreativeAssetId, "Pinned selected creative PNG · same-origin authenticated content · optional preview")
+      : `<p class="seed-hint">No selected creative asset pin on this handshake.</p>`;
+  }
+
+  renderCampaignReadinessRulesFindings(detail, doc);
+  if (campaignReadinessDocumentJson) {
+    try {
+      const pretty = typeof detail.documentJson === "string"
+        ? JSON.stringify(JSON.parse(detail.documentJson), null, 2)
+        : JSON.stringify(detail.documentJson || doc || {}, null, 2);
+      campaignReadinessDocumentJson.textContent = pretty;
+    } catch {
+      campaignReadinessDocumentJson.textContent = String(detail.documentJson || "");
+    }
+  }
+  renderCampaignReadinessDecisions(state.campaignReadinessDecisions);
+}
+
+function renderCampaignReadinessRulesFindings(detail, document) {
+  if (!campaignReadinessRulesFindings) return;
+  const rules = parseCampaignReadinessRules(detail?.rulesFindingsJson, document);
+  if (!rules) {
+    campaignReadinessRulesFindings.innerHTML = `<p class="seed-hint">No campaign-readiness-rules.v1 findings available yet.</p>`;
+    return;
+  }
+  const findings = Array.isArray(rules.findings) ? rules.findings : [];
+  const codesNote = CAMPAIGN_READINESS_RULE_CODES.length === 16
+    ? "Expected 16 CR_* codes (PASS/BLOCK only — no WARN)."
+    : "";
+  campaignReadinessRulesFindings.innerHTML = `
+    <p class="campaign-readiness-authority-note">Rules schema <code>${escapeHtml(rules.schemaVersion || "campaign-readiness-rules.v1")}</code> · overall <code>${escapeHtml(rules.overallSeverity || "—")}</code>. ${escapeHtml(codesNote)} NO AI.</p>
+    ${findings.length ? findings.map(finding => `
+      <div class="campaign-readiness-finding-card">
+        <strong>${escapeHtml(finding.code || "—")} · ${escapeHtml(finding.severity || "—")}</strong>
+        <span>${escapeHtml(finding.message || "—")}</span>
+      </div>`).join("") : `<p class="seed-hint">Findings array empty — unexpected for campaign-readiness-rules.v1.</p>`}
+  `;
+}
+
+function renderCampaignReadinessDecisions(decisions) {
+  if (!campaignReadinessDecisionsEl) return;
+  if (!decisions.length) {
+    campaignReadinessDecisionsEl.innerHTML = `<p class="seed-hint">No decisions loaded for this handshake.</p>`;
+    return;
+  }
+  campaignReadinessDecisionsEl.innerHTML = decisions.map(d => `
+    <div class="campaign-readiness-decision-card">
+      <strong>${escapeHtml(d.decision || "—")}</strong>
+      <span>${escapeHtml(d.rationale || "—")}</span>
+      <span>Actor <code>${escapeHtml(d.actorLabel || d.actorType || "—")}</code> · source <code>${escapeHtml(d.sourceSystem || "—")}</code> · key <code>${escapeHtml(d.idempotencyKey || "—")}</code></span>
+      <span>Occurred <code>${escapeHtml(d.occurredAt || "—")}</code>${d.isReplay ? " · replay" : ""}</span>
+    </div>`).join("");
 }

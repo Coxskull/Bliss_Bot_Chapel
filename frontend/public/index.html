@@ -786,6 +786,91 @@
           </p>
         </div>
       </section>
+
+      <section class="campaign-readiness-panel" id="campaign-readiness-panel" aria-labelledby="campaign-readiness-title">
+        <div class="campaign-readiness-heading">
+          <p>PHASE 8 · BLISS HANDSHAKE / CAMPAIGN READINESS</p>
+          <h3 id="campaign-readiness-title">Campaign-readiness handshake <span class="record-tag">NO AI</span></h3>
+          <p class="campaign-readiness-copy">
+            Read-only planning integration for a clean Phase 7 <code>ACCEPTED</code> QA report.
+            Labels: <strong>PLANNING ONLY — NO RESERVATION</strong> · <strong>PLANNED IS NOT ACTIVATION</strong> · <strong>NO AI</strong>.
+            Commit and revoke live only in Operations (operator/admin). This public surface never selects inventory or posts handshakes.
+          </p>
+        </div>
+
+        <div class="campaign-readiness-prereq" id="campaign-readiness-eligibility" role="status" data-ready="false">
+          <span>Loading campaign-readiness eligibility…</span>
+          <p>Workspace refresh loads eligibility and handshake history. Exception QA (<code>ACCEPTED_WITH_EXCEPTION</code>) is not campaign-ready.</p>
+        </div>
+
+        <p class="campaign-readiness-labels" id="campaign-readiness-labels">
+          <span>NO AI</span>
+          <span>PLANNING ONLY — NO RESERVATION</span>
+          <span>PLANNED IS NOT ACTIVATION</span>
+        </p>
+
+        <div class="campaign-readiness-disclaimer-block" id="campaign-readiness-disclaimer-block">
+          <h4>Exact disclaimer</h4>
+          <p id="campaign-readiness-disclaimer-text">This campaign-readiness handshake is a deterministic planning integration only. It marks Wedding Planner campaign-ready state for a clean Phase 7 ACCEPTED QA report bound to an APPROVED Bliss match and compatible creator inventory, and records a PLANNED campaign placement. It is not research, claim, legal, accessibility, compliance, measurement, delivery, publication, or payment approval. It does not mutate Phase 6 creative packages or Phase 7 QA reports. It does not recompute Bliss matching scores. Acceptance-with-exception QA is not campaign-ready. AI cannot mark campaign ready. Advertisers and reviewers cannot create this handshake. Slot availability is not reserved. Planned placement is not activation.</p>
+        </div>
+
+        <div class="campaign-readiness-synthetic-warning" id="campaign-readiness-synthetic-warning" hidden role="status">
+          <strong>SYNTHETIC DEVELOPMENT CAMPAIGN READINESS</strong>
+          Local/synthetic upstream path — planning integration only; not activation or reservation.
+        </div>
+
+        <div class="campaign-readiness-lists">
+          <div class="campaign-readiness-list-block">
+            <label for="campaign-readiness-handshake-select">Handshake history <small>read-only</small></label>
+            <select id="campaign-readiness-handshake-select" disabled>
+              <option value="">No handshakes yet</option>
+            </select>
+            <p class="campaign-readiness-current-pointer" id="campaign-readiness-current-pointer" hidden>CURRENT handshake pointer is set for this workspace.</p>
+            <button type="button" id="campaign-readiness-refresh" disabled>Refresh eligibility &amp; handshakes</button>
+          </div>
+        </div>
+
+        <div class="campaign-readiness-detail" id="campaign-readiness-detail" hidden>
+          <div class="campaign-readiness-status-line">
+            <span id="campaign-readiness-status-label">—</span>
+            <span id="campaign-readiness-current-badge" hidden>CURRENT</span>
+            · version <strong id="campaign-readiness-version-number">—</strong>
+          </div>
+          <p id="campaign-readiness-summary-text"></p>
+          <p class="campaign-readiness-meta-line">Schema <code id="campaign-readiness-schema">—</code></p>
+          <p class="campaign-readiness-meta-line">QA report pin <code id="campaign-readiness-qa-pin">—</code> · ACCEPT decision <code id="campaign-readiness-qa-decision-pin">—</code></p>
+          <p class="campaign-readiness-meta-line">Package pin <code id="campaign-readiness-package-pin">—</code> · package SHA <code id="campaign-readiness-package-sha">—</code></p>
+          <p class="campaign-readiness-meta-line">Creative decision <code id="campaign-readiness-creative-decision-pin">—</code> · variant <code id="campaign-readiness-variant-pin">—</code> · asset <code id="campaign-readiness-asset-pin">—</code></p>
+          <p class="campaign-readiness-meta-line">Bliss match <code id="campaign-readiness-bliss-match">—</code> · campaign <code id="campaign-readiness-campaign">—</code> · content <code id="campaign-readiness-content">—</code> · slot <code id="campaign-readiness-slot">—</code></p>
+          <p class="campaign-readiness-meta-line">Planned placement <code id="campaign-readiness-placement">—</code> · placement run <code id="campaign-readiness-placement-run">—</code></p>
+          <p class="campaign-readiness-meta-line">Rationale <code id="campaign-readiness-rationale">—</code></p>
+
+          <div class="campaign-readiness-section" id="campaign-readiness-png-section">
+            <h4>Selected creative PNG <small>same-origin pin only · optional</small></h4>
+            <div id="campaign-readiness-selected-png"></div>
+          </div>
+
+          <div class="campaign-readiness-section" id="campaign-readiness-rules-section">
+            <h4>campaign-readiness-rules.v1 · 16 PASS/BLOCK codes</h4>
+            <div id="campaign-readiness-rules-findings"></div>
+          </div>
+
+          <div class="campaign-readiness-section" id="campaign-readiness-document-section">
+            <h4>Canonical DocumentJson</h4>
+            <pre class="campaign-readiness-json" id="campaign-readiness-document-json"></pre>
+          </div>
+
+          <div class="campaign-readiness-section" id="campaign-readiness-decisions-section">
+            <h4>Decisions</h4>
+            <div id="campaign-readiness-decisions"></div>
+          </div>
+
+          <p class="campaign-readiness-authority-note" id="campaign-readiness-public-note">
+            No match / campaign / content / slot selectors and no commit / revoke controls on this public advertiser surface.
+            Operator/admin commit and revoke live in Operations only. PLANNED is not activation; slot availability is not reserved.
+          </p>
+        </div>
+      </section>
     </section>
 
     <section class="audience-panels">

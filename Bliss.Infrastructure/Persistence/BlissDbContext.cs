@@ -67,6 +67,10 @@ public class BlissDbContext : DbContext
     public DbSet<WeddingPlannerQaReviewDecision> WeddingPlannerQaReviewDecisions => Set<WeddingPlannerQaReviewDecision>();
     public DbSet<WeddingPlannerQaEscalationCase> WeddingPlannerQaEscalationCases => Set<WeddingPlannerQaEscalationCase>();
     public DbSet<WeddingPlannerQaEscalationResolution> WeddingPlannerQaEscalationResolutions => Set<WeddingPlannerQaEscalationResolution>();
+    public DbSet<WeddingPlannerCampaignReadinessHandshakeVersion> WeddingPlannerCampaignReadinessHandshakeVersions =>
+        Set<WeddingPlannerCampaignReadinessHandshakeVersion>();
+    public DbSet<WeddingPlannerCampaignReadinessDecision> WeddingPlannerCampaignReadinessDecisions =>
+        Set<WeddingPlannerCampaignReadinessDecision>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

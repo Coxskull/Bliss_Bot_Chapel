@@ -78,6 +78,14 @@ public static class WeddingPlannerAuditActions
     public const string QaReviewReportReplayed = "QA_REVIEW_REPORT_REPLAYED";
     public const string QaEscalationCaseOpened = "QA_ESCALATION_CASE_OPENED";
     public const string QaEscalationCaseResolved = "QA_ESCALATION_CASE_RESOLVED";
+    public const string CampaignReadinessHandshakeCommitted = "CAMPAIGN_READINESS_HANDSHAKE_COMMITTED";
+    public const string CampaignReadinessHandshakeReplayed = "CAMPAIGN_READINESS_HANDSHAKE_REPLAYED";
+    public const string CampaignReadinessRulesFindingsRecorded = "CAMPAIGN_READINESS_RULES_FINDINGS_RECORDED";
+    public const string CampaignReadinessPlacementCreated = "CAMPAIGN_READINESS_PLACEMENT_CREATED";
+    public const string CampaignReadinessMarkDecisionRecorded = "CAMPAIGN_READINESS_MARK_DECISION_RECORDED";
+    public const string CampaignReadinessPointerSet = "CAMPAIGN_READINESS_POINTER_SET";
+    public const string CampaignReadinessPointerCleared = "CAMPAIGN_READINESS_POINTER_CLEARED";
+    public const string CampaignReadinessRevoked = "CAMPAIGN_READINESS_REVOKED";
 }
 
 public static class WeddingPlannerOutcomes
@@ -617,6 +625,8 @@ public static class WeddingPlannerSchemaVersions
     public const string ChaperoneReviewWorkerOutputV1 = "chaperone-review-worker-output.v1";
     public const string QaInspectionWorkerOutputV1 = "qa-inspection-worker-output.v1";
     public const string QaReviewReportV1 = "qa-review-report.v1";
+    public const string CampaignReadinessHandshakeV1 = "campaign-readiness-handshake.v1";
+    public const string CampaignReadinessRulesV1 = "campaign-readiness-rules.v1";
 }
 
 public static class WeddingPlannerQaContractVersions
@@ -1101,4 +1111,93 @@ public static class WeddingPlannerQaRequiredHumanAuthority
         AcceptRequiresReviewerOrAbove,
         WaiveRequiresOperatorOrAdmin
     ];
+}
+
+public static class WeddingPlannerCampaignReadinessHandshakeStatuses
+{
+    public const string CampaignReady = "CAMPAIGN_READY";
+    public const string Revoked = "REVOKED";
+
+    public static readonly IReadOnlyList<string> All = [CampaignReady, Revoked];
+}
+
+public static class WeddingPlannerCampaignReadinessDecisions
+{
+    public const string MarkCampaignReady = "MARK_CAMPAIGN_READY";
+    public const string RevokeCampaignReady = "REVOKE_CAMPAIGN_READY";
+
+    public static readonly IReadOnlyList<string> All = [MarkCampaignReady, RevokeCampaignReady];
+}
+
+public static class WeddingPlannerCampaignReadinessFindingSeverities
+{
+    public const string Pass = "PASS";
+    public const string Block = "BLOCK";
+}
+
+public static class WeddingPlannerCampaignReadinessRuleCodes
+{
+    public const string CurrentQaPointer = "CR_CURRENT_QA_POINTER";
+    public const string QaCleanAccepted = "CR_QA_CLEAN_ACCEPTED";
+    public const string QaAcceptDecision = "CR_QA_ACCEPT_DECISION";
+    public const string PackageCurrentApproved = "CR_PACKAGE_CURRENT_APPROVED";
+    public const string PackageDocumentSha = "CR_PACKAGE_DOCUMENT_SHA";
+    public const string CreativeDecisionVariant = "CR_CREATIVE_DECISION_VARIANT";
+    public const string AssetIntegrity = "CR_ASSET_INTEGRITY";
+    public const string ProvenanceChain = "CR_PROVENANCE_CHAIN";
+    public const string MatchApproved = "CR_MATCH_APPROVED";
+    public const string OpportunityActive = "CR_OPPORTUNITY_ACTIVE";
+    public const string AdvertiserScope = "CR_ADVERTISER_SCOPE";
+    public const string CampaignDraft = "CR_CAMPAIGN_DRAFT";
+    public const string CampaignOpportunity = "CR_CAMPAIGN_OPPORTUNITY";
+    public const string ContentCreator = "CR_CONTENT_CREATOR";
+    public const string SlotContent = "CR_SLOT_CONTENT";
+    public const string SyntheticEnvironment = "CR_SYNTHETIC_ENVIRONMENT";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        CurrentQaPointer,
+        QaCleanAccepted,
+        QaAcceptDecision,
+        PackageCurrentApproved,
+        PackageDocumentSha,
+        CreativeDecisionVariant,
+        AssetIntegrity,
+        ProvenanceChain,
+        MatchApproved,
+        OpportunityActive,
+        AdvertiserScope,
+        CampaignDraft,
+        CampaignOpportunity,
+        ContentCreator,
+        SlotContent,
+        SyntheticEnvironment
+    ];
+}
+
+public static class WeddingPlannerCampaignReadinessMarkers
+{
+    public const string SyntheticDevelopmentCampaignReadiness = "SYNTHETIC DEVELOPMENT CAMPAIGN READINESS";
+}
+
+public static class WeddingPlannerCampaignReadinessHandshakeDisclaimer
+{
+    public const string Text =
+        "This campaign-readiness handshake is a deterministic planning integration only. It marks Wedding Planner campaign-ready state for a clean Phase 7 ACCEPTED QA report bound to an APPROVED Bliss match and compatible creator inventory, and records a PLANNED campaign placement. It is not research, claim, legal, accessibility, compliance, measurement, delivery, publication, or payment approval. It does not mutate Phase 6 creative packages or Phase 7 QA reports. It does not recompute Bliss matching scores. Acceptance-with-exception QA is not campaign-ready. AI cannot mark campaign ready. Advertisers and reviewers cannot create this handshake. Slot availability is not reserved. Planned placement is not activation.";
+}
+
+public static class WeddingPlannerCampaignReadinessContractVersions
+{
+    public const string CampaignReadinessRulesV1 = "campaign-readiness-rules.v1";
+    public const string CampaignReadinessOrchestrationV1 = "wp-campaign-readiness-orchestration.v1";
+}
+
+public static class WeddingPlannerCampaignReadinessDisclosures
+{
+    public const string NoReservation =
+        "Slot availability is not reserved. Planned placement does not hold inventory.";
+    public const string NotActivation =
+        "Planned placement is not activation, delivery, publication, or payment.";
+    public const string NotLegalMeasurementPayment =
+        "This handshake is not legal, measurement, or payment approval.";
 }

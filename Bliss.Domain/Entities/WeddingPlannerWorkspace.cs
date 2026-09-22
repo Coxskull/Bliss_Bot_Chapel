@@ -16,6 +16,7 @@ public class WeddingPlannerWorkspace
     public Guid? CurrentApprovedConceptPackageVersionId { get; set; }
     public Guid? CurrentApprovedCreativePackageVersionId { get; set; }
     public Guid? CurrentAcceptedQaReviewReportVersionId { get; set; }
+    public Guid? CurrentCampaignReadinessHandshakeVersionId { get; set; }
     public string SourceSystem { get; set; } = string.Empty;
     public string IdempotencyKey { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
@@ -28,6 +29,7 @@ public class WeddingPlannerWorkspace
     public WeddingPlannerConceptPackageVersion? CurrentApprovedConceptPackageVersion { get; set; }
     public WeddingPlannerCreativePackageVersion? CurrentApprovedCreativePackageVersion { get; set; }
     public WeddingPlannerQaReviewReportVersion? CurrentAcceptedQaReviewReportVersion { get; set; }
+    public WeddingPlannerCampaignReadinessHandshakeVersion? CurrentCampaignReadinessHandshakeVersion { get; set; }
     public ICollection<WeddingPlannerPlanningSession> Sessions { get; set; } = new List<WeddingPlannerPlanningSession>();
     public ICollection<WeddingPlannerAuditEvent> AuditEvents { get; set; } = new List<WeddingPlannerAuditEvent>();
     public ICollection<WeddingPlannerAgentRun> AgentRuns { get; set; } = new List<WeddingPlannerAgentRun>();
@@ -54,4 +56,8 @@ public class WeddingPlannerWorkspace
     public ICollection<WeddingPlannerQaReviewDecision> QaReviewDecisions { get; set; } = new List<WeddingPlannerQaReviewDecision>();
     public ICollection<WeddingPlannerQaEscalationCase> QaEscalationCases { get; set; } = new List<WeddingPlannerQaEscalationCase>();
     public ICollection<WeddingPlannerQaEscalationResolution> QaEscalationResolutions { get; set; } = new List<WeddingPlannerQaEscalationResolution>();
+    public ICollection<WeddingPlannerCampaignReadinessHandshakeVersion> CampaignReadinessHandshakeVersions { get; set; } =
+        new List<WeddingPlannerCampaignReadinessHandshakeVersion>();
+    public ICollection<WeddingPlannerCampaignReadinessDecision> CampaignReadinessDecisions { get; set; } =
+        new List<WeddingPlannerCampaignReadinessDecision>();
 }

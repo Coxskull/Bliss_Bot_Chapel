@@ -21,6 +21,7 @@ public sealed class WeddingPlannerController(
     WeddingPlannerConceptWorkshopOrchestrationService workshop,
     WeddingPlannerCreativeDepartmentOrchestrationService creative,
     WeddingPlannerQaReviewOrchestrationService qaReview,
+    WeddingPlannerCampaignReadinessOrchestrationService campaignReadiness,
     WeddingPlannerAccess access) : ControllerBase
 {
     [HttpGet("workspaces")]
@@ -1417,6 +1418,151 @@ public sealed class WeddingPlannerController(
         });
     }
 
+    [HttpGet("workspaces/{workspaceId:guid}/campaign-readiness/eligibility")]
+    public async Task<ActionResult> GetCampaignReadinessEligibility(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireCampaignReadinessRead();
+            var result = await campaignReadiness.GetEligibilityAsync(
+                workspaceId,
+                access.CanAccessCampaignReadinessAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToCampaignReadinessEligibilityDto(result));
+        });
+    }
+
+    [HttpGet("workspaces/{workspaceId:guid}/campaign-readiness-handshakes")]
+    public async Task<ActionResult> ListCampaignReadinessHandshakes(
+        Guid workspaceId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireCampaignReadinessRead();
+            var items = await campaignReadiness.ListHandshakesAsync(
+                workspaceId,
+                access.CanAccessCampaignReadinessAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToCampaignReadinessHandshakeDto).ToList());
+        });
+    }
+
+    [HttpGet("campaign-readiness-handshakes/{handshakeId:guid}")]
+    public async Task<ActionResult> GetCampaignReadinessHandshake(
+        Guid handshakeId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireCampaignReadinessRead();
+            var result = await campaignReadiness.GetHandshakeAsync(
+                handshakeId,
+                access.CanAccessCampaignReadinessAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToCampaignReadinessHandshakeDto(result));
+        });
+    }
+
+    [HttpGet("campaign-readiness-handshakes/{handshakeId:guid}/decisions")]
+    public async Task<ActionResult> ListCampaignReadinessDecisions(
+        Guid handshakeId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireCampaignReadinessRead();
+            var items = await campaignReadiness.ListDecisionsAsync(
+                handshakeId,
+                access.CanAccessCampaignReadinessAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToCampaignReadinessDecisionDto).ToList());
+        });
+    }
+
+    [HttpPost("workspaces/{workspaceId:guid}/campaign-readiness-handshakes")]
+    public async Task<ActionResult> CommitCampaignReadinessHandshake(
+        Guid workspaceId,
+        [FromBody] JsonNode? body,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireCampaignReadinessCommit();
+            var root = body as JsonObject
+                ?? throw new InvalidOperationException("Request body must be a JSON object.");
+            WeddingPlannerCampaignReadinessValidation.RejectForbiddenCommitFields(root);
+            var request = body.Deserialize<CommitWeddingPlannerCampaignReadinessHandshakeRequest>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new InvalidOperationException("Request body is required.");
+            var result = await campaignReadiness.CommitAsync(
+                workspaceId,
+                request.BlissMatchId,
+                request.CampaignId,
+                request.ContentItemId,
+                request.AdInventorySlotId,
+                request.Rationale,
+                request.DisclaimerAcknowledged,
+                request.SyntheticMarkerAcknowledged,
+                root,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                access.CanCommitCampaignReadiness(actor),
+                access.CanAccessCampaignReadinessAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToCampaignReadinessHandshakeDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/campaign-readiness-handshakes/{dto.CampaignReadinessHandshakeVersionId}", dto);
+        });
+    }
+
+    [HttpPost("campaign-readiness-handshakes/{handshakeId:guid}/decisions")]
+    public async Task<ActionResult> DecideCampaignReadinessHandshake(
+        Guid handshakeId,
+        [FromBody] JsonNode? body,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireCampaignReadinessCommit();
+            var root = body as JsonObject
+                ?? throw new InvalidOperationException("Request body must be a JSON object.");
+            WeddingPlannerCampaignReadinessValidation.RejectForbiddenRevokeFields(root);
+            var request = body.Deserialize<WeddingPlannerCampaignReadinessDecisionRequest>(
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new InvalidOperationException("Request body is required.");
+            var result = await campaignReadiness.RevokeAsync(
+                handshakeId,
+                request.Decision,
+                request.Rationale,
+                root,
+                request.SourceSystem,
+                request.IdempotencyKey,
+                access.CanCommitCampaignReadiness(actor),
+                access.CanAccessCampaignReadinessAcrossWorkspaces(actor),
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToCampaignReadinessDecisionDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created($"/api/wedding-planner/campaign-readiness-handshakes/{dto.CampaignReadinessHandshakeVersionId}/decisions", dto);
+        });
+    }
+
     private WeddingPlannerActor RequireWrite()
     {
         var actor = access.Resolve(User);
@@ -1445,6 +1591,29 @@ public sealed class WeddingPlannerController(
         if (!access.CanDecideQaReview(actor))
         {
             throw new WeddingPlannerForbiddenException("The authenticated identity cannot record QA review decisions.");
+        }
+
+        return actor;
+    }
+
+    private WeddingPlannerActor RequireCampaignReadinessRead()
+    {
+        var actor = access.Resolve(User);
+        if (!access.CanReadCampaignReadiness(actor))
+        {
+            throw new WeddingPlannerNotFoundException("Campaign readiness resource was not found.");
+        }
+
+        return actor;
+    }
+
+    private WeddingPlannerActor RequireCampaignReadinessCommit()
+    {
+        var actor = access.Resolve(User);
+        if (!access.CanCommitCampaignReadiness(actor))
+        {
+            throw new WeddingPlannerForbiddenException(
+                "Only operator or admin may commit or revoke campaign-readiness handshakes.");
         }
 
         return actor;
@@ -2121,4 +2290,97 @@ public sealed class WeddingPlannerController(
             ToQaEscalationCaseDto(result.Case),
             ToQaReviewReportDto(result.Version),
             result.IsReplay);
+
+    private static WeddingPlannerCampaignReadinessHandshakeDto ToCampaignReadinessHandshakeDto(
+        WeddingPlannerCampaignReadinessHandshakeResult result) =>
+        new(
+            result.CampaignReadinessHandshakeVersionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.VersionNumber,
+            result.SchemaVersion,
+            result.DocumentJson,
+            result.Summary,
+            result.Status,
+            result.QaReviewReportVersionId,
+            result.QaAcceptDecisionId,
+            result.ApprovedCreativePackageVersionId,
+            result.CreativePackageDocumentSha256,
+            result.CreativePackageDecisionId,
+            result.SelectedVariantId,
+            result.SelectedCreativeAssetId,
+            result.SelectedCreativeAssetSha256,
+            result.BlissMatchId,
+            result.CampaignId,
+            result.ContentItemId,
+            result.AdInventorySlotId,
+            result.CampaignPlacementId,
+            result.CampaignPlacementRunId,
+            result.RulesFindingsJson,
+            result.Rationale,
+            result.DisclaimerAcknowledged,
+            result.SyntheticMarkerAcknowledged,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.ActorType,
+            result.ActorLabel,
+            result.CreatedAt,
+            result.IsCurrent,
+            result.IsReplay);
+
+    private static WeddingPlannerCampaignReadinessDecisionDto ToCampaignReadinessDecisionDto(
+        WeddingPlannerCampaignReadinessDecisionResult result) =>
+        new(
+            result.CampaignReadinessDecisionId,
+            result.CampaignReadinessHandshakeVersionId,
+            result.AdvertiserId,
+            result.WorkspaceId,
+            result.Decision,
+            result.Rationale,
+            result.ActorType,
+            result.ActorLabel,
+            result.SourceSystem,
+            result.IdempotencyKey,
+            result.OccurredAt,
+            ToCampaignReadinessHandshakeDto(result.Version),
+            result.IsReplay);
+
+    private static WeddingPlannerCampaignReadinessEligibilityDto ToCampaignReadinessEligibilityDto(
+        WeddingPlannerCampaignReadinessEligibilityResult result) =>
+        new(
+            result.WorkspaceId,
+            result.AdvertiserId,
+            result.HasCurrentQaPointer,
+            result.CurrentAcceptedQaReviewReportVersionId,
+            result.CurrentQaStatus,
+            result.IsCleanAccepted,
+            result.HasCleanAcceptDecision,
+            result.CurrentApprovedCreativePackageVersionId,
+            result.PackageReady,
+            result.HasSyntheticUpstream,
+            result.CurrentCampaignReadinessHandshakeVersionId,
+            result.NoReservationDisclosure,
+            result.Candidates.Select(m => new CampaignReadinessMatchCandidateDto(
+                m.BlissMatchId,
+                m.CreatorId,
+                m.AdvertiserOpportunityId,
+                m.MatchStatus,
+                m.OverallScore,
+                m.OpportunityStatus,
+                m.OpportunityName,
+                m.Campaigns.Select(c => new CampaignReadinessCampaignCandidateDto(
+                    c.CampaignId,
+                    c.Name,
+                    c.Status,
+                    c.AdvertiserOpportunityId,
+                    c.OpportunityCompatible)).ToList(),
+                m.ContentItems.Select(ci => new CampaignReadinessContentCandidateDto(
+                    ci.ContentItemId,
+                    ci.Title,
+                    ci.ContentType,
+                    ci.Slots.Select(s => new CampaignReadinessSlotCandidateDto(
+                        s.AdInventorySlotId,
+                        s.SlotType,
+                        s.IsAvailable,
+                        s.AvailabilityNote)).ToList())).ToList())).ToList());
 }
