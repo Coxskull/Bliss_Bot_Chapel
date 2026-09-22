@@ -1,0 +1,48 @@
+*   0f2ceaa (HEAD -> cursor/reconcile-phase15-17-cc83) Merge Phases 15-17 onto main
+|\  
+| *   7d30c5a Merge pull request #24 from Coxskull/cursor/phase17-verify-receipt-cc83
+| |\  
+| | * 72ce883 (origin/cursor/phase17-verify-receipt-cc83, cursor/phase17-verify-receipt-cc83) Document Phase 17 verification receipt evidence
+| | * 02ab3e2 Add verification receipts and Status event detail
+| |/  
+| *   7488a74 Merge pull request #22 from Coxskull/cursor/phase16-export-verify-cc83
+| |\  
+| | * d85656d (origin/cursor/phase16-export-verify-cc83, cursor/phase16-export-verify-cc83) Document Phase 16 export pack verification evidence
+| | * f6d5f42 Send raw export pack bytes during digest verification
+| | * 46d5ed3 Add operator verification of audit export pack digests
+| |/  
+| *   8958595 Merge pull request #21 from Coxskull/cursor/phase15-export-integrity-cc83
+| |\  
+| | * bd61fe4 (origin/cursor/phase15-export-integrity-cc83, cursor/phase15-export-integrity-cc83) Document Phase 15 export integrity evidence
+| | * 91c054a Add SHA-256 integrity digests to audit export packs
+| |/  
+* |   d58d2ea (origin/main, origin/HEAD) Merge pull request #23 from Coxskull/cursor/phase9-runtime-hardening-cc83
+|\ \  
+| * | 07b9c58 (origin/cursor/phase9-runtime-hardening-cc83) Merge pull request #20 from Coxskull/cursor/phase14-campaign-case-export-cc83
+| |\| 
+| | * a978649 (cursor/phase14-campaign-case-export-cc83) Document Phase 14 campaign case file evidence
+| | * d1a310c Add campaign case file export
+| |/  
+| *   8b66ce4 Merge pull request #19 from Coxskull/cursor/phase13-creator-case-export-cc83
+| |\  
+| | * ecaf1b4 (origin/cursor/phase13-creator-case-export-cc83, cursor/phase13-creator-case-export-cc83) Document Phase 13 creator case file evidence
+| | * 02f9daa Add creator case file export
+| |/  
+| *   4cf653b Merge pull request #18 from Coxskull/cursor/phase12-match-case-export-cc83
+| |\  
+| | * 643c846 (origin/cursor/phase12-match-case-export-cc83, cursor/phase12-match-case-export-cc83) Document Phase 12 match case file evidence
+| | * 33ccdec Add match case file export
+| |/  
+| *   2bcf8d7 Merge pull request #17 from Coxskull/cursor/phase11-audit-export-cc83
+| |\  
+| | * adb2ca9 (origin/cursor/phase11-audit-export-cc83, cursor/phase11-audit-export-cc83) Document Phase 11 audit export evidence
+| | * eb8cd7e Add operator audit ledger export
+| |/  
+| *   d77f487 Merge pull request #16 from Coxskull/cursor/phase10-operator-observability-cc83
+| |\  
+| | * caf8c7a (origin/cursor/phase10-operator-observability-cc83, cursor/phase10-operator-observability-cc83) Document Phase 10 observability evidence
+| | * c8f8cf8 Preserve runtime status after directory load failures
+| | * 92262ae Keep runtime status visible when directory reads fail
+| | * 6ad6bdb Add operator runtime observability
+| |/  
+| * 0551a5b (cursor/phase9-runtime-hardening-cc83) Document Phase 9 runtime acceptance

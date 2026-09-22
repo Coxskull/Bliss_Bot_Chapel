@@ -1,0 +1,14 @@
+HEAD=0f2ceaaf92a93aee175eda4b253d829e7963ab06
+origin/main=d58d2eadc02d64c5df8f44b69a024319fa075dfe
+
+ancestors:
+YES 91c054a Add SHA-256 integrity digests to audit export packs
+YES 8958595 Merge pull request #21 from Coxskull/cursor/phase15-export-integrity-cc83
+YES 46d5ed3 Add operator verification of audit export pack digests
+YES 7488a74 Merge pull request #22 from Coxskull/cursor/phase16-export-verify-cc83
+YES 02ab3e2 Add verification receipts and Status event detail
+YES 7d30c5a Merge pull request #24 from Coxskull/cursor/phase17-verify-receipt-cc83
+YES 07b9c58 Merge pull request #20 from Coxskull/cursor/phase14-campaign-case-export-cc83
+YES d58d2ea Merge pull request #23 from Coxskull/cursor/phase9-runtime-hardening-cc83
+YES dca4138 Merge pull request #1 from Coxskull/cursor/phase1-foundation-cf4e
+NO 3e65de7 Show last verification receipt and drawer Verify pack
