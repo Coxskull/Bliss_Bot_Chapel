@@ -166,12 +166,12 @@
         <section class="view" id="view-wedding-planner" aria-labelledby="wedding-planner-title">
           <div class="section-intro">
             <div>
-              <p class="eyebrow">WEDDING PLANNER PHASE 5</p>
-              <h2 id="wedding-planner-title">Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, and Concept Workshop</h2>
-              <p>Open the primary workspace, resume planning sessions, append durable human messages, inspect Concierge agent runs, manage Brand DNA proposals, compute deterministic color profiles, run Phase 4 Curator research jobs, and submit Phase 5 Concept Workshop briefs. AI replies and Brand DNA proposals come only from the server. Color Intelligence is deterministic geometry with no AI. Curator findings and workshop concepts come only from stored server documentJson — humans alone approve or reject. Four logical roles map to 3 workers/runs, not 4 subscriptions. Concept-direction approval only — no generated image/assets; not campaign-ready, QA, matching, or legal/claim approval.</p>
+              <p class="eyebrow">WEDDING PLANNER PHASE 6</p>
+              <h2 id="wedding-planner-title">Advertiser workspace, Concierge, Brand DNA, Color Intelligence, Curator research, Concept Workshop, and Mature Creative Department</h2>
+              <p>Open the primary workspace, resume planning sessions, append durable human messages, inspect Concierge agent runs, manage Brand DNA proposals, compute deterministic color profiles, run Phase 4 Curator research jobs, submit Phase 5 Concept Workshop briefs, and run Phase 6 creative-production jobs. AI replies and Brand DNA proposals come only from the server. Color Intelligence is deterministic geometry with no AI. Curator findings and workshop concepts come only from stored server documentJson — humans alone approve or reject. Four logical roles map to 3 workers/runs, not 4 subscriptions. Concept-direction approval only — no generated image/assets; not campaign-ready, QA, matching, or legal/claim approval. Phase 6: thirteen new logical roles map to exactly 6 AI workers/runs plus a separate non-AI asset provider. Phase 5 roles remain pinned provenance. Draft creative approval only — not final or campaign-ready.</p>
             </div>
           </div>
-          <div class="safety-note"><strong>Human authority preserved.</strong> Ownership is enforced by the API. Clients cannot forge PLANNER messages. Brand DNA, color profiles, research reports, and concept packages stay PROPOSED until an explicit APPROVE or REJECT decision. Research approval is research approval only. Concept package approval is concept-direction approval only — not campaign-ready, asset, QA, matching, or legal/claim approval. WCAG figures are arithmetic evidence, not certification. Local SYNTHETIC DEVELOPMENT PROTOTYPE catalogs are never live creative or campaign-ready.</div>
+          <div class="safety-note"><strong>Human authority preserved.</strong> Ownership is enforced by the API. Clients cannot forge PLANNER messages. Brand DNA, color profiles, research reports, concept packages, and creative packages stay PROPOSED until an explicit APPROVE or REJECT decision. Research approval is research approval only. Concept package approval is concept-direction approval only — not campaign-ready, asset, QA, matching, or legal/claim approval. Creative package approval is draft creative approval only — not final, campaign-ready, QA, legal, matching, accessibility, or compliance. WCAG figures are arithmetic evidence, not certification. Local SYNTHETIC DEVELOPMENT PROTOTYPE catalogs are never live creative or campaign-ready. Local SYNTHETIC DEVELOPMENT CREATIVE PACKAGE markers remain conspicuous for draft creatives.</div>
           <div class="workflow-layout">
             <section>
               <div class="queue-list" id="wedding-planner-workspace-list"></div>
@@ -350,6 +350,62 @@
                 <div class="panel-header"><div><p class="eyebrow">INSPECT</p><h3>Selected concept package · 3 concepts · 4 contributions · 3 run receipts · safe preview</h3></div></div>
                 <p class="safety-note">Four logical roles map to 3 workers/runs, not 4 subscriptions. Inspector parses stored server documentJson only — never invents concepts, never renders &lt;img&gt;, never fetches media URLs, never executes arbitrary markup.</p>
                 <div id="wedding-planner-workshop-inspect" class="activity-list"></div>
+              </section>
+              <form class="panel workflow-form" id="wedding-planner-creative-job-form">
+                <div class="panel-header"><div><p class="eyebrow">PHASE 6 · MATURE CREATIVE DEPARTMENT</p><h3>Submit creative-production job</h3></div><span class="record-tag">13→6 WORKERS</span></div>
+                <div class="safety-note"><strong>Draft creative production.</strong> Requires current-approved Phase 5 concept package with SelectedConceptId (server resolves latest APPROVE — no client override). Thirteen new logical roles map to exactly 6 AI workers/runs, plus a separate non-AI asset provider. Phase 5 roles remain pinned provenance. One form supports INITIAL and REVISION. Formats are 1–4 unique Phase 5 enums; variant count 1–4 and ≥ formats. No campaign/match/placement/inventory IDs, readiness/QA/legal flags, provider config, URLs, base64, or concept override. <strong>SYNTHETIC DEVELOPMENT CREATIVE PACKAGE</strong> when Local path was used.</div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Workspace *</span><select name="workspaceId" id="wedding-planner-creative-workspace" required></select></label>
+                  <label><span>Job kind *</span><select name="jobKind" id="wedding-planner-creative-job-kind" required><option value="INITIAL">INITIAL</option><option value="REVISION">REVISION</option></select></label>
+                  <label><span>Requested variant count * (1–4, ≥ formats)</span><input name="requestedVariantCount" id="wedding-planner-creative-variant-count" type="number" min="1" max="4" step="1" value="1" required></label>
+                  <label class="span-two"><span>Objective *</span><textarea name="objective" maxlength="4000" required placeholder="What should this creative production achieve?"></textarea></label>
+                  <label class="span-two"><span>Formats * (1–4 unique Phase 5 formats)</span>
+                    <div class="workshop-ops-concept-radios" id="wedding-planner-creative-formats">
+                      <label class="checkbox-label"><input type="checkbox" name="creativeFormat" value="STATIC_SOCIAL_SQUARE"> STATIC_SOCIAL_SQUARE</label>
+                      <label class="checkbox-label"><input type="checkbox" name="creativeFormat" value="STATIC_SOCIAL_STORY"> STATIC_SOCIAL_STORY</label>
+                      <label class="checkbox-label"><input type="checkbox" name="creativeFormat" value="STATIC_DISPLAY_BANNER"> STATIC_DISPLAY_BANNER</label>
+                      <label class="checkbox-label"><input type="checkbox" name="creativeFormat" value="EMAIL_HERO"> EMAIL_HERO</label>
+                    </div>
+                  </label>
+                  <div class="span-two" id="wedding-planner-creative-revision-fields" hidden>
+                    <div class="form-grid">
+                      <label class="span-two"><span>Revision parent creative package *</span><select name="revisionParentCreativePackageVersionId" id="wedding-planner-creative-revision-parent"><option value="">Select parent</option></select></label>
+                      <label class="span-two"><span>Revision notes *</span><textarea name="revisionNotes" maxlength="4000" placeholder="What should change in this revision?"></textarea></label>
+                    </div>
+                  </div>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-creative-job-key" readonly required><button type="button" id="regenerate-wedding-planner-creative-job-key" aria-label="Generate a new creative job idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>Idempotent create. FAILED replay returns the failed job and is never a retry. Exactly 6 agent runs on success — never 13 fake runs. Asset provider is separate and non-AI.</small><button class="primary-button" type="submit">Submit creative-production job <span>→</span></button></div>
+              </form>
+              <form class="panel workflow-form" id="wedding-planner-creative-decision-form">
+                <div class="panel-header"><div><p class="eyebrow">HUMAN DECISION</p><h3>Approve or reject creative package</h3></div></div>
+                <div class="safety-note"><strong>Draft creative approval only.</strong> Not research, claim, legal, matching, accessibility, compliance, campaign-ready, QA, or final production-artwork approval. APPROVE requires selectedVariantId radio + confirmation; REJECT sends null. Selection lives on the decision only.</div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Creative package version *</span><select name="creativePackageVersionId" id="wedding-planner-creative-package-version" required></select></label>
+                  <label><span>Decision *</span><select name="decision" id="wedding-planner-creative-decision" required><option value="APPROVE">Approve</option><option value="REJECT">Reject</option></select></label>
+                  <label class="span-two"><span>Selected variant (required for APPROVE · forbidden for REJECT)</span>
+                    <div class="workshop-ops-concept-radios" id="wedding-planner-creative-variant-radios">
+                      <p class="safety-note">Variants load from the selected package documentJson.</p>
+                    </div>
+                  </label>
+                  <label class="span-two"><span>Rationale *</span><textarea name="rationale" maxlength="2000" required placeholder="Explicit rationale required for APPROVE and REJECT"></textarea></label>
+                  <label class="span-two checkbox-label"><input name="confirmApprove" type="checkbox"><span>I confirm APPROVE will set the workspace current approved creative package pointer. This is draft creative approval only — not final or campaign-ready.</span></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-creative-decision-key" readonly required><button type="button" id="regenerate-wedding-planner-creative-decision-key" aria-label="Generate a new creative decision idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>Rejected versions never become current. Selection lives on the decision only — package DocumentJson is never mutated.</small><button class="primary-button" type="submit">Record creative package decision <span>→</span></button></div>
+              </form>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">CREATIVE-PRODUCTION JOBS</p><h3>RUNNING · SUCCEEDED · FAILED</h3></div><span class="record-tag" id="wedding-planner-creative-job-count">0 jobs</span></div>
+                <div id="wedding-planner-creative-job-list" class="activity-list"></div>
+              </section>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">CREATIVE PACKAGES</p><h3>Workspace packages and current pointer</h3></div><span class="record-tag" id="wedding-planner-creative-current">Current: none</span></div>
+                <div id="wedding-planner-creative-package-list" class="activity-list"></div>
+              </section>
+              <section class="panel ledger-panel">
+                <div class="panel-header"><div><p class="eyebrow">INSPECT</p><h3>Selected creative package · concept pin · 13 contributions · N variants · 6 run receipts · same-origin draft PNG</h3></div></div>
+                <p class="safety-note">Thirteen logical roles map to 6 workers/runs, not 13 subscriptions. Inspector parses stored server documentJson only. Draft PNG &lt;img&gt; src uses only same-origin /api/wedding-planner/creative-assets/{guid}/content from validated server asset IDs. Never provider URLs, data/blob/base64, SVG/HTML injection, or client image generation. Phase 5 remains placeholder-only.</p>
+                <div id="wedding-planner-creative-inspect" class="activity-list"></div>
               </section>
             </div>
           </div>

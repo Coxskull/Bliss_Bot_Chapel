@@ -512,6 +512,161 @@
           </form>
         </div>
       </section>
+
+      <section class="creative-panel" id="creative-panel" aria-labelledby="creative-title">
+        <div class="creative-heading">
+          <p>PHASE 6 · MATURE CREATIVE DEPARTMENT</p>
+          <h3 id="creative-title">Creative production &amp; draft assets</h3>
+          <p class="creative-copy">
+            Submit a creative-production brief when a current-approved Phase 5 concept package carries a
+            <code>SelectedConceptId</code> (server pins the latest APPROVE selection — no client override).
+            <strong>Thirteen new logical roles map to exactly 6 AI workers/runs</strong>, plus a separate non-AI asset provider.
+            Phase 5 roles remain pinned concept provenance and are not re-run.
+            Draft creative approval only — not final, campaign-ready, QA, legal, matching, accessibility, or compliance approval.
+          </p>
+        </div>
+
+        <div class="creative-prereq" id="creative-prereq-status" role="status">
+          <span>Prerequisite check</span>
+          <p>Sign in as an authenticated advertiser with write access. Creative-production submit requires a current-approved Phase 5 concept package with SelectedConceptId. Server resolves the latest selectedConceptId.</p>
+        </div>
+
+        <p class="creative-roles-note" id="creative-roles-note">
+          Exactly 13 NEW logical roles → exactly 6 AI workers/runs (not 13 fake agent runs), plus a separate non-AI asset provider:
+          <code>CREATIVE_DIRECTION_V1</code> (CREATIVE_DIRECTOR + CAMPAIGN_STRATEGIST),
+          <code>STRATEGY_ADAPTATION_V1</code> (AUDIENCE + OFFER + CHANNEL),
+          <code>VISUAL_SYSTEM_V1</code> (VISUAL + LAYOUT + TYPOGRAPHY),
+          <code>IMAGE_DIRECTION_V1</code> (IMAGE_PROMPT_DESIGNER),
+          <code>COPY_SYSTEM_V1</code> (HEADLINE + BODY + CTA),
+          <code>VARIANT_PRODUCTION_V1</code> (VARIANT_PRODUCER).
+          Phase 5 BRAND_STRATEGIST / ART_DIRECTOR / COPYWRITER / PRODUCTION_ARTIST remain pinned provenance only.
+        </p>
+
+        <form class="creative-job-form" id="creative-job-form">
+          <label for="creative-job-kind">Job kind *</label>
+          <select id="creative-job-kind" name="jobKind" required disabled>
+            <option value="INITIAL">INITIAL</option>
+            <option value="REVISION">REVISION</option>
+          </select>
+          <label for="creative-objective">Objective *</label>
+          <textarea id="creative-objective" name="objective" maxlength="4000" required disabled placeholder="What should this creative production achieve?"></textarea>
+          <fieldset class="creative-format-select" id="creative-format-select">
+            <legend>Formats * <em>1–4 unique Phase 5 formats</em></legend>
+            <label><input type="checkbox" name="creativeFormat" value="STATIC_SOCIAL_SQUARE" disabled> STATIC_SOCIAL_SQUARE</label>
+            <label><input type="checkbox" name="creativeFormat" value="STATIC_SOCIAL_STORY" disabled> STATIC_SOCIAL_STORY</label>
+            <label><input type="checkbox" name="creativeFormat" value="STATIC_DISPLAY_BANNER" disabled> STATIC_DISPLAY_BANNER</label>
+            <label><input type="checkbox" name="creativeFormat" value="EMAIL_HERO" disabled> EMAIL_HERO</label>
+          </fieldset>
+          <label for="creative-variant-count">Requested variant count * <em>1–4 and ≥ selected formats</em></label>
+          <input type="number" id="creative-variant-count" name="requestedVariantCount" min="1" max="4" step="1" value="1" required disabled>
+          <div class="creative-revision-fields" id="creative-revision-fields" hidden>
+            <label for="creative-revision-parent">Revision parent creative package *</label>
+            <select id="creative-revision-parent" name="revisionParentCreativePackageVersionId" disabled>
+              <option value="">Select parent package</option>
+            </select>
+            <label for="creative-revision-notes">Revision notes *</label>
+            <textarea id="creative-revision-notes" name="revisionNotes" maxlength="4000" disabled placeholder="What should change in this revision?"></textarea>
+          </div>
+          <div class="creative-job-actions">
+            <button type="submit" id="creative-job-submit" disabled>Submit creative-production job</button>
+            <button type="button" id="creative-refresh-lists" disabled>Refresh jobs &amp; packages</button>
+          </div>
+        </form>
+
+        <div class="creative-lists">
+          <div class="creative-list-block">
+            <label for="creative-job-select">Creative-production jobs <small>RUNNING · SUCCEEDED · FAILED</small></label>
+            <select id="creative-job-select" disabled>
+              <option value="">No creative-production jobs yet</option>
+            </select>
+            <div class="creative-job-meta" id="creative-job-meta" hidden></div>
+          </div>
+          <div class="creative-list-block">
+            <label for="creative-package-select">Creative packages <small>PROPOSED · APPROVED · CURRENT · SUPERSEDED</small></label>
+            <select id="creative-package-select" disabled>
+              <option value="">No creative packages yet</option>
+            </select>
+            <p class="creative-current-pointer" id="creative-current-pointer" hidden>Current approved creative package pointer is set for this workspace.</p>
+          </div>
+        </div>
+
+        <div class="creative-package-view" id="creative-package-view" hidden>
+          <div class="creative-package-meta">
+            <p class="creative-status-line">
+              <span id="creative-package-status-label">PROPOSED</span>
+              <span id="creative-package-current-badge" hidden>CURRENT</span>
+              <span id="creative-package-superseded-badge" hidden>SUPERSEDED</span>
+              · version <strong id="creative-package-version-number">—</strong>
+              · <code id="creative-package-job-kind">—</code>
+            </p>
+            <p id="creative-package-summary-text"></p>
+            <p class="creative-meta-line">Schema <code id="creative-package-schema">—</code> · selected concept <code id="creative-package-selected-concept">—</code></p>
+            <p class="creative-meta-line">Concept package pin <code id="creative-package-concept-pin">—</code></p>
+            <p class="creative-meta-line">DNA/color/research pins <code id="creative-package-provenance-pins">—</code></p>
+            <p class="creative-meta-line">Parent revision <code id="creative-package-parent">—</code></p>
+            <p class="creative-meta-line">AI cost <code id="creative-package-ai-cost">—</code> · asset cost <code id="creative-package-asset-cost">—</code></p>
+            <p class="creative-meta-line" id="creative-selected-variant-line" hidden>Selected variant (decision) <code id="creative-selected-variant-id">—</code></p>
+          </div>
+
+          <div class="creative-disclaimer-block" id="creative-disclaimer-block" hidden>
+            <h4>Draft creative disclaimer</h4>
+            <p id="creative-disclaimer-text"></p>
+          </div>
+
+          <div class="creative-synthetic-warning" id="creative-synthetic-warning" hidden role="status">
+            <strong>SYNTHETIC DEVELOPMENT CREATIVE PACKAGE</strong>
+            Local or synthetic creative output. Draft creative approval only — not final, campaign-ready, QA, legal, matching, accessibility, or compliance approval.
+          </div>
+
+          <div class="creative-section" id="creative-concept-snapshot-section">
+            <h4>Selected concept snapshot <small>pinned Phase 5 provenance</small></h4>
+            <div id="creative-concept-snapshot"></div>
+          </div>
+
+          <div class="creative-section" id="creative-variants-section">
+            <h4>Variants <small>exact N from documentJson · draft PNG via same-origin content only</small></h4>
+            <div id="creative-variants"></div>
+          </div>
+
+          <div class="creative-section" id="creative-contributions-section">
+            <h4>Role contributions <small>exactly 13 durable roles</small></h4>
+            <div id="creative-contributions"></div>
+          </div>
+
+          <div class="creative-section" id="creative-assets-section">
+            <h4>Creative assets <small>provider receipts · not AI runs</small></h4>
+            <div id="creative-assets"></div>
+          </div>
+
+          <div class="creative-section" id="creative-runs-section">
+            <h4>Agent run receipts <small>exactly 6 workers</small></h4>
+            <p class="creative-roles-note">Thirteen logical roles map to 6 workers/runs, not 13 subscriptions. Receipts below come from the package agent-runs endpoint. Asset provider is separate and non-AI.</p>
+            <div id="creative-agent-runs"></div>
+          </div>
+
+          <form class="creative-decision-form" id="creative-decision-form" hidden>
+            <p class="creative-decision-scope">
+              Draft creative approval only — not research, claim, legal, matching, accessibility, compliance, campaign-ready, QA, or final production-artwork approval.
+              APPROVE requires a selected variant radio + confirmation. REJECT sends null selectedVariantId.
+              SYNTHETIC DEVELOPMENT CREATIVE PACKAGE when Local path was used.
+            </p>
+            <fieldset class="creative-variant-select" id="creative-variant-select">
+              <legend>Selected variant * <em>required for APPROVE · forbidden for REJECT</em></legend>
+              <p class="seed-hint">Variants appear after package inspect loads documentJson.</p>
+            </fieldset>
+            <label for="creative-rationale">Decision rationale *</label>
+            <textarea id="creative-rationale" name="rationale" maxlength="2000" required placeholder="Explain why you approve or reject this creative package" disabled></textarea>
+            <label class="confirm-approve">
+              <input type="checkbox" id="creative-confirm-approve" disabled>
+              <span>I confirm this APPROVE decision sets the workspace current approved creative package pointer. This is draft creative approval only — not final or campaign-ready.</span>
+            </label>
+            <div class="creative-decision-actions">
+              <button type="submit" class="approve" data-decision="APPROVE" disabled>Approve</button>
+              <button type="submit" class="reject" data-decision="REJECT" disabled>Reject</button>
+            </div>
+          </form>
+        </div>
+      </section>
     </section>
 
     <section class="audience-panels">

@@ -24,12 +24,18 @@ const state = {
   weddingPlannerWorkshopContributions: [], weddingPlannerWorkshopAgentRuns: [],
   weddingPlannerWorkshopPinnedColorDocument: null,
   weddingPlannerSelectedConceptId: null,
+  weddingPlannerCreativeJobs: [], weddingPlannerCreativePackages: null,
+  weddingPlannerCreativeContributions: [], weddingPlannerCreativeAssets: [],
+  weddingPlannerCreativeAgentRuns: [],
+  weddingPlannerSelectedVariantId: null,
   selectedWeddingPlannerWorkspace: null, selectedWeddingPlannerSession: null,
   selectedWeddingPlannerColorProfileId: null,
   selectedWeddingPlannerResearchJobId: null,
   selectedWeddingPlannerResearchReportId: null,
   selectedWeddingPlannerWorkshopJobId: null,
   selectedWeddingPlannerConceptPackageId: null,
+  selectedWeddingPlannerCreativeJobId: null,
+  selectedWeddingPlannerCreativePackageId: null,
   affiliateNetworks: [], networkAccesses: [], programAccesses: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations",
@@ -798,7 +804,7 @@ function route() {
   const view=valid.includes(parts[0])?parts[0]:"overview";
   $$(".view").forEach(x=>x.classList.toggle("active",x.id===`view-${view}`));
   $$(".nav-item[data-view]").forEach(x=>{const active=x.dataset.view===view;x.classList.toggle("active",active);if(active)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});
-  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 5",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
+  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner Phase 6",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
   $("#page-title").textContent=titles[view];
   toggleMobileNav(false);
   if(!state.loaded)return;
@@ -856,6 +862,8 @@ function bindActions() {
   $("#wedding-planner-research-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerResearchDecision(event.currentTarget);});
   $("#wedding-planner-workshop-job-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerWorkshopJob(event.currentTarget);});
   $("#wedding-planner-workshop-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerWorkshopDecision(event.currentTarget);});
+  $("#wedding-planner-creative-job-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerCreativeJob(event.currentTarget);});
+  $("#wedding-planner-creative-decision-form")?.addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerCreativeDecision(event.currentTarget);});
   $("#wedding-planner-color-version")?.addEventListener("change",event=>{
     state.selectedWeddingPlannerColorProfileId = event.currentTarget.value || null;
     renderWeddingPlannerColorInspect();
@@ -875,6 +883,21 @@ function bindActions() {
       $$('input[name="selectedConceptId"]').forEach(input => { input.checked = false; });
     }
   });
+  $("#wedding-planner-creative-package-version")?.addEventListener("change",event=>{
+    state.selectedWeddingPlannerCreativePackageId = event.currentTarget.value || null;
+    state.weddingPlannerSelectedVariantId = null;
+    loadWeddingPlannerCreativeDetails().then(() => {
+      renderWeddingPlannerCreativeInspect();
+      syncOpsCreativeVariantRadios();
+    });
+  });
+  $("#wedding-planner-creative-job-kind")?.addEventListener("change",()=>syncOpsCreativeRevisionFields());
+  $("#wedding-planner-creative-decision")?.addEventListener("change",event=>{
+    const decision = event.currentTarget.value;
+    if (decision === "REJECT") {
+      $$('#wedding-planner-creative-variant-radios input[name="selectedVariantId"]').forEach(input => { input.checked = false; });
+    }
+  });
   $("#regenerate-review-key").addEventListener("click",generateReviewIdempotencyKey);
   $("#regenerate-placement-key").addEventListener("click",generatePlacementIdempotencyKey);
   $("#regenerate-wedding-planner-workspace-key").addEventListener("click",()=>fillKey("#wedding-planner-workspace-key"));
@@ -888,6 +911,8 @@ function bindActions() {
   $("#regenerate-wedding-planner-research-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-research-decision-key"));
   $("#regenerate-wedding-planner-workshop-job-key")?.addEventListener("click",()=>fillKey("#wedding-planner-workshop-job-key"));
   $("#regenerate-wedding-planner-workshop-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-workshop-decision-key"));
+  $("#regenerate-wedding-planner-creative-job-key")?.addEventListener("click",()=>fillKey("#wedding-planner-creative-job-key"));
+  $("#regenerate-wedding-planner-creative-decision-key")?.addEventListener("click",()=>fillKey("#wedding-planner-creative-decision-key"));
   $("#placement-match").addEventListener("change",event=>{state.selectedPlacement=event.target.value;renderPlacements();});
   $("#placement-content").addEventListener("change",updatePlacementSlots);
   $("#review-match").addEventListener("change",event=>{state.selectedReview=event.target.value;renderReviews();});
@@ -940,6 +965,19 @@ function handleDocumentClick(event) {
     const select=$("#wedding-planner-workshop-package-version");
     if(select)select.value=state.selectedWeddingPlannerConceptPackageId;
     loadWeddingPlannerWorkshopDetails().then(() => {
+      renderWeddingPlanner();
+    });
+  }
+  else if(target.matches("[data-wedding-creative-job]")){
+    state.selectedWeddingPlannerCreativeJobId=target.dataset.weddingCreativeJob;
+    renderWeddingPlanner();
+  }
+  else if(target.matches("[data-wedding-creative-package]")){
+    state.selectedWeddingPlannerCreativePackageId=target.dataset.weddingCreativePackage;
+    state.weddingPlannerSelectedVariantId=null;
+    const select=$("#wedding-planner-creative-package-version");
+    if(select)select.value=state.selectedWeddingPlannerCreativePackageId;
+    loadWeddingPlannerCreativeDetails().then(() => {
       renderWeddingPlanner();
     });
   }
@@ -1085,6 +1123,8 @@ function generateWeddingPlannerKeys(){
   fillKey("#wedding-planner-research-decision-key");
   fillKey("#wedding-planner-workshop-job-key");
   fillKey("#wedding-planner-workshop-decision-key");
+  fillKey("#wedding-planner-creative-job-key");
+  fillKey("#wedding-planner-creative-decision-key");
 }
 
 function renderWeddingPlanner() {
@@ -1095,10 +1135,12 @@ function renderWeddingPlanner() {
   const colorWorkspace = $("#wedding-planner-color-workspace");
   const researchWorkspace = $("#wedding-planner-research-workspace");
   const workshopWorkspace = $("#wedding-planner-workshop-workspace");
+  const creativeWorkspace = $("#wedding-planner-creative-workspace");
   const dnaVersionSelect = $("#wedding-planner-dna-version");
   const colorVersionSelect = $("#wedding-planner-color-version");
   const researchReportSelect = $("#wedding-planner-research-report-version");
   const workshopPackageSelect = $("#wedding-planner-workshop-package-version");
+  const creativePackageSelect = $("#wedding-planner-creative-package-version");
   if (!advertiserSelect) return;
   advertiserSelect.innerHTML = state.advertisers.map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join("");
   const workspaceOptions = state.weddingPlannerWorkspaces.map(x => `<option value="${x.workspaceId}">${escapeHtml(x.advertiserName)}</option>`).join("");
@@ -1107,12 +1149,14 @@ function renderWeddingPlanner() {
   if (colorWorkspace) colorWorkspace.innerHTML = workspaceOptions;
   if (researchWorkspace) researchWorkspace.innerHTML = workspaceOptions;
   if (workshopWorkspace) workshopWorkspace.innerHTML = workspaceOptions;
+  if (creativeWorkspace) creativeWorkspace.innerHTML = workspaceOptions;
   if (state.selectedWeddingPlannerWorkspace) {
     workspaceSelect.value = state.selectedWeddingPlannerWorkspace;
     if (interpretWorkspace) interpretWorkspace.value = state.selectedWeddingPlannerWorkspace;
     if (colorWorkspace) colorWorkspace.value = state.selectedWeddingPlannerWorkspace;
     if (researchWorkspace) researchWorkspace.value = state.selectedWeddingPlannerWorkspace;
     if (workshopWorkspace) workshopWorkspace.value = state.selectedWeddingPlannerWorkspace;
+    if (creativeWorkspace) creativeWorkspace.value = state.selectedWeddingPlannerWorkspace;
   }
   sessionSelect.innerHTML = state.weddingPlannerSessions.map(x => `<option value="${x.sessionId}">${x.sessionId.slice(0, 8)} · ${x.messageCount} messages</option>`).join("");
   if (state.selectedWeddingPlannerSession) sessionSelect.value = state.selectedWeddingPlannerSession;
@@ -1273,6 +1317,66 @@ function renderWeddingPlanner() {
       : emptyState("Select or create a workspace to list concept packages.");
   }
   renderWeddingPlannerWorkshopInspect();
+
+  const creativeJobs = state.weddingPlannerCreativeJobs || [];
+  const creativeJobCount = $("#wedding-planner-creative-job-count");
+  if (creativeJobCount) creativeJobCount.textContent = `${creativeJobs.length} job${creativeJobs.length === 1 ? "" : "s"}`;
+  if (!state.selectedWeddingPlannerCreativeJobId && creativeJobs.length) {
+    state.selectedWeddingPlannerCreativeJobId = creativeJobs[0].creativeProductionJobId;
+  }
+  const creativeJobList = $("#wedding-planner-creative-job-list");
+  if (creativeJobList) {
+    creativeJobList.innerHTML = creativeJobs.length
+      ? creativeJobs.map(job => {
+          const selected = job.creativeProductionJobId === state.selectedWeddingPlannerCreativeJobId;
+          const replayNote = job.isReplay && job.status === "FAILED"
+            ? " · failed replay (not a retry)"
+            : job.isReplay ? " · replay" : "";
+          const formats = Array.isArray(job.formats) ? job.formats.join(",") : "";
+          return `<button class="activity-item${selected ? " selected" : ""}" data-wedding-creative-job="${job.creativeProductionJobId}" type="button"><span class="activity-icon">▣</span><span><strong>${escapeHtml(job.status || "UNKNOWN")}${escapeHtml(replayNote)} · ${escapeHtml(job.jobKind || "")}</strong><small>${escapeHtml(formats)} · variants ${escapeHtml(String(job.requestedVariantCount ?? "—"))} · SHA ${escapeHtml(job.inputSha256 || "")} · concept ${escapeHtml(job.selectedConceptId || "")} · DNA ${escapeHtml(shortId(job.approvedBrandDnaVersionId || ""))} · Color ${escapeHtml(shortId(job.approvedColorProfileVersionId || ""))} · Research ${escapeHtml(shortId(job.approvedResearchReportVersionId || ""))} · asset $${escapeHtml(formatUsd(job.assetProviderEstimatedCostUsd))}${job.errorMessage ? ` · error: ${escapeHtml(job.errorMessage)}` : ""}</small></span><span class="activity-time">${relativeTime(job.completedAt || job.startedAt)}</span></button>`;
+        }).join("")
+      : emptyState("Select or create a workspace to list creative-production jobs.");
+  }
+
+  const creativeVersions = state.weddingPlannerCreativePackages?.versions || [];
+  const creativeCurrentId = state.weddingPlannerCreativePackages?.currentApprovedCreativePackageVersionId || null;
+  const creativeCurrentLabel = $("#wedding-planner-creative-current");
+  if (creativeCurrentLabel) creativeCurrentLabel.textContent = creativeCurrentId ? `Current: ${shortId(creativeCurrentId)}` : "Current: none";
+  if (!state.selectedWeddingPlannerCreativePackageId && creativeVersions.length) {
+    state.selectedWeddingPlannerCreativePackageId =
+      creativeVersions.find(x => x.status === "PROPOSED")?.creativePackageVersionId ||
+      creativeCurrentId ||
+      creativeVersions[0].creativePackageVersionId;
+  }
+  if (creativePackageSelect) {
+    creativePackageSelect.innerHTML = creativeVersions.length
+      ? creativeVersions.map(x => {
+          const markers = [x.status];
+          if (x.creativePackageVersionId === creativeCurrentId || x.isCurrentApproved) markers.push("CURRENT");
+          return `<option value="${x.creativePackageVersionId}"${x.creativePackageVersionId === state.selectedWeddingPlannerCreativePackageId ? " selected" : ""}>v${x.versionNumber} · ${escapeHtml(markers.join(" · "))}</option>`;
+        }).join("")
+      : `<option value="">No creative packages</option>`;
+  }
+  const revisionParent = $("#wedding-planner-creative-revision-parent");
+  if (revisionParent) {
+    revisionParent.innerHTML = creativeVersions.length
+      ? `<option value="">Select parent</option>` + creativeVersions.map(x =>
+          `<option value="${x.creativePackageVersionId}">v${x.versionNumber} · ${escapeHtml(x.status)} · ${escapeHtml(x.selectedConceptId || "")}</option>`
+        ).join("")
+      : `<option value="">No parent packages</option>`;
+  }
+  syncOpsCreativeRevisionFields();
+  const creativePackageList = $("#wedding-planner-creative-package-list");
+  if (creativePackageList) {
+    creativePackageList.innerHTML = creativeVersions.length
+      ? creativeVersions.map(x => {
+          const isCurrent = x.creativePackageVersionId === creativeCurrentId || x.isCurrentApproved;
+          return `<button class="activity-item" data-wedding-creative-package="${x.creativePackageVersionId}" type="button"><span class="activity-icon">${x.versionNumber}</span><span><strong>${escapeHtml(x.status)}${isCurrent ? " · CURRENT APPROVED" : ""}</strong><small>${escapeHtml(x.summary || "No summary")} · ${escapeHtml(x.schemaVersion)} · ${escapeHtml(x.jobKind || "")} · concept ${escapeHtml(x.selectedConceptId || "")} · AI+asset $${escapeHtml(formatUsd(x.estimatedTotalCostUsd))} · asset $${escapeHtml(formatUsd(x.estimatedAssetCostUsd))} · parent ${escapeHtml(shortId(x.parentCreativePackageVersionId || "—"))}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></button>`;
+        }).join("")
+      : emptyState("Select or create a workspace to list creative packages.");
+  }
+  renderWeddingPlannerCreativeInspect();
+  syncOpsCreativeVariantRadios();
 }
 
 function parseWeddingPlannerColorDocument(documentJson) {
@@ -1550,10 +1654,20 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
       state.weddingPlannerConceptPackages?.versions?.[0]?.conceptPackageVersionId ||
       null;
     state.weddingPlannerSelectedConceptId = null;
+    state.weddingPlannerCreativeJobs = await api(`/api/wedding-planner/workspaces/${workspaceId}/creative-production-jobs`);
+    state.weddingPlannerCreativePackages = await api(`/api/wedding-planner/workspaces/${workspaceId}/creative-packages`);
+    state.selectedWeddingPlannerCreativeJobId = state.weddingPlannerCreativeJobs?.[0]?.creativeProductionJobId || null;
+    state.selectedWeddingPlannerCreativePackageId =
+      state.weddingPlannerCreativePackages?.versions?.find(x => x.status === "PROPOSED")?.creativePackageVersionId ||
+      state.weddingPlannerCreativePackages?.currentApprovedCreativePackageVersionId ||
+      state.weddingPlannerCreativePackages?.versions?.[0]?.creativePackageVersionId ||
+      null;
+    state.weddingPlannerSelectedVariantId = null;
     await mergeWeddingPlannerInterpreterRuns();
     await mergeWeddingPlannerWorkspaceRuns(workspaceId);
     await loadWeddingPlannerResearchAgentRuns();
     await loadWeddingPlannerWorkshopDetails();
+    await loadWeddingPlannerCreativeDetails();
   } catch (error) {
     toast(error.message, true);
     state.weddingPlannerSessions = [];
@@ -1575,6 +1689,14 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
     state.weddingPlannerWorkshopAgentRuns = [];
     state.weddingPlannerWorkshopPinnedColorDocument = null;
     state.weddingPlannerSelectedConceptId = null;
+    state.weddingPlannerCreativeJobs = [];
+    state.weddingPlannerCreativePackages = null;
+    state.selectedWeddingPlannerCreativeJobId = null;
+    state.selectedWeddingPlannerCreativePackageId = null;
+    state.weddingPlannerCreativeContributions = [];
+    state.weddingPlannerCreativeAssets = [];
+    state.weddingPlannerCreativeAgentRuns = [];
+    state.weddingPlannerSelectedVariantId = null;
   }
   renderWeddingPlanner();
 }
@@ -1936,6 +2058,347 @@ async function submitWeddingPlannerWorkshopDecision(form) {
       state.weddingPlannerConceptPackages = await api(`/api/wedding-planner/workspaces/${workspaceId}/concept-packages`);
       state.selectedWeddingPlannerConceptPackageId = result.conceptPackageVersionId || state.selectedWeddingPlannerConceptPackageId;
       await loadWeddingPlannerWorkshopDetails();
+    }
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+const CREATIVE_PACKAGE_DISCLAIMER_OPS =
+  "Approval of this package is draft creative approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, QA, or final production-artwork approval. It does not authorize Bliss matching or placement. Marketing copy is CREATIVE_NON_FACTUAL unless a factual claim exactly preserves a cited claim from the pinned selected concept using source IDs from the pinned approved research report. Brand DNA and Color Profile are creative constraints, not factual evidence. Draft PNG assets are provider-generated renditions for review only; Wedding Planner orchestrates providers and is not itself an image generator. Phase 5 concept contributions remain pinned provenance and are not re-approved here.";
+const SYNTHETIC_DEVELOPMENT_CREATIVE_PACKAGE = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE";
+const THIRTEEN_TO_SIX_EXPLANATION = "Thirteen logical roles map to 6 workers/runs, not 13 subscriptions";
+const CREATIVE_LOGICAL_ROLES_OPS = [
+  "CREATIVE_DIRECTOR", "CAMPAIGN_STRATEGIST", "AUDIENCE_STRATEGIST", "OFFER_STRATEGIST", "CHANNEL_STRATEGIST",
+  "VISUAL_DESIGNER", "LAYOUT_DESIGNER", "TYPOGRAPHY_DESIGNER", "IMAGE_PROMPT_DESIGNER",
+  "HEADLINE_SPECIALIST", "BODY_COPY_SPECIALIST", "CTA_SPECIALIST", "VARIANT_PRODUCER"
+];
+const CREATIVE_WORKER_PROFILES_OPS = [
+  "CREATIVE_DIRECTION_V1",
+  "STRATEGY_ADAPTATION_V1",
+  "VISUAL_SYSTEM_V1",
+  "IMAGE_DIRECTION_V1",
+  "COPY_SYSTEM_V1",
+  "VARIANT_PRODUCTION_V1"
+];
+const CREATIVE_FORMATS_OPS = ["STATIC_SOCIAL_SQUARE", "STATIC_SOCIAL_STORY", "STATIC_DISPLAY_BANNER", "EMAIL_HERO"];
+const GUID_PATTERN_OPS = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+function syncOpsCreativeRevisionFields() {
+  const kind = $("#wedding-planner-creative-job-kind")?.value || "INITIAL";
+  const fields = $("#wedding-planner-creative-revision-fields");
+  if (fields) fields.hidden = kind !== "REVISION";
+}
+
+function isValidGuidOps(value) {
+  return typeof value === "string" && GUID_PATTERN_OPS.test(value);
+}
+
+function safeCreativeAssetContentUrlOps(assetId) {
+  if (!isValidGuidOps(assetId)) return null;
+  return `/api/wedding-planner/creative-assets/${assetId}/content`;
+}
+
+function renderOpsSafeDraftPngPreview(assetId, altText) {
+  const src = safeCreativeAssetContentUrlOps(assetId);
+  if (!src) {
+    return `<div class="safety-note">Invalid or missing creative asset id — draft PNG preview withheld. Only same-origin /api/wedding-planner/creative-assets/{guid}/content is allowed.</div>`;
+  }
+  const alt = String(altText || "Draft creative PNG for review only").slice(0, 200);
+  return `<img class="creative-draft-png" src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async">`;
+}
+
+function parseWeddingPlannerCreativePackageDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+async function loadWeddingPlannerCreativeDetails() {
+  const packageId = state.selectedWeddingPlannerCreativePackageId;
+  if (!packageId) {
+    state.weddingPlannerCreativeContributions = [];
+    state.weddingPlannerCreativeAssets = [];
+    state.weddingPlannerCreativeAgentRuns = [];
+    return;
+  }
+  try {
+    const [contributions, assets, runs, packageDto] = await Promise.all([
+      api(`/api/wedding-planner/creative-packages/${packageId}/contributions`),
+      api(`/api/wedding-planner/creative-packages/${packageId}/assets`),
+      api(`/api/wedding-planner/creative-packages/${packageId}/agent-runs`),
+      api(`/api/wedding-planner/creative-packages/${packageId}`)
+    ]);
+    state.weddingPlannerCreativeContributions = Array.isArray(contributions) ? contributions : [];
+    state.weddingPlannerCreativeAssets = Array.isArray(assets) ? assets : [];
+    state.weddingPlannerCreativeAgentRuns = Array.isArray(runs) ? runs : [];
+    const versions = state.weddingPlannerCreativePackages?.versions || [];
+    const idx = versions.findIndex(x => x.creativePackageVersionId === packageId);
+    if (idx >= 0 && packageDto) versions[idx] = packageDto;
+  } catch {
+    state.weddingPlannerCreativeContributions = [];
+    state.weddingPlannerCreativeAssets = [];
+    state.weddingPlannerCreativeAgentRuns = [];
+  }
+}
+
+function syncOpsCreativeVariantRadios() {
+  const host = $("#wedding-planner-creative-variant-radios");
+  if (!host) return;
+  const versions = state.weddingPlannerCreativePackages?.versions || [];
+  const selected = versions.find(x => x.creativePackageVersionId === state.selectedWeddingPlannerCreativePackageId) || null;
+  const doc = parseWeddingPlannerCreativePackageDocument(selected?.documentJson);
+  const variants = Array.isArray(doc?.variants) ? doc.variants : [];
+  if (!variants.length) {
+    host.innerHTML = `<p class="safety-note">Variants load from the selected package documentJson.</p>`;
+    return;
+  }
+  host.innerHTML = variants.map(v =>
+    `<label class="checkbox-label"><input type="radio" name="selectedVariantId" value="${escapeHtml(v.id || "")}"> ${escapeHtml(v.id || "")} · ${escapeHtml(v.format || "")}</label>`
+  ).join("");
+}
+
+function renderWeddingPlannerCreativeInspect() {
+  const panel = $("#wedding-planner-creative-inspect");
+  if (!panel) return;
+  const versions = state.weddingPlannerCreativePackages?.versions || [];
+  const currentId = state.weddingPlannerCreativePackages?.currentApprovedCreativePackageVersionId || null;
+  const selected = versions.find(x => x.creativePackageVersionId === state.selectedWeddingPlannerCreativePackageId) || versions[0] || null;
+  const selectedJob = (state.weddingPlannerCreativeJobs || []).find(x => x.creativeProductionJobId === state.selectedWeddingPlannerCreativeJobId) || null;
+  if (!selected && !selectedJob) {
+    panel.innerHTML = emptyState("Select a creative-production job or creative package to inspect input SHA, provenance, documentJson, contributions, assets, and agent-run receipts.");
+    return;
+  }
+
+  const doc = parseWeddingPlannerCreativePackageDocument(selected?.documentJson);
+  const isCurrent = selected && (selected.creativePackageVersionId === currentId || selected.isCurrentApproved);
+  const isSuperseded = selected && selected.status === "SUPERSEDED";
+  const hasSynthetic = doc?.marker === SYNTHETIC_DEVELOPMENT_CREATIVE_PACKAGE
+    || JSON.stringify(doc || {}).includes(SYNTHETIC_DEVELOPMENT_CREATIVE_PACKAGE)
+    || String(selected?.summary || "").includes(SYNTHETIC_DEVELOPMENT_CREATIVE_PACKAGE);
+  const contributions = state.weddingPlannerCreativeContributions || [];
+  const assets = state.weddingPlannerCreativeAssets || [];
+  const runs = state.weddingPlannerCreativeAgentRuns || [];
+  const variants = Array.isArray(doc?.variants) ? doc.variants : [];
+  const snap = doc?.selectedConceptSnapshot;
+
+  const jobBlock = selectedJob ? `
+    <div class="detail-hero"><div class="detail-hero-top">${badge(selectedJob.status)}</div>
+      <h3>Creative-production job · ${escapeHtml(selectedJob.jobKind || "")}</h3>
+      <p>${escapeHtml(selectedJob.objective || "No objective")}</p>
+    </div>
+    <div class="metric-grid">
+      ${metric("Input SHA-256", selectedJob.inputSha256 || "—")}
+      ${metric("Selected concept", selectedJob.selectedConceptId || "—")}
+      ${metric("Concept package pin", selectedJob.approvedConceptPackageVersionId || "—")}
+      ${metric("Brand DNA pin", `${shortId(selectedJob.approvedBrandDnaVersionId || "")} v${selectedJob.approvedBrandDnaVersionNumber ?? "—"}`)}
+      ${metric("Color pin", `${shortId(selectedJob.approvedColorProfileVersionId || "")} v${selectedJob.approvedColorProfileVersionNumber ?? "—"}`)}
+      ${metric("Research pin", `${shortId(selectedJob.approvedResearchReportVersionId || "")} v${selectedJob.approvedResearchReportVersionNumber ?? "—"}`)}
+      ${metric("Formats", Array.isArray(selectedJob.formats) ? selectedJob.formats.join(", ") : "—")}
+      ${metric("Variant count", String(selectedJob.requestedVariantCount ?? "—"))}
+      ${metric("Parent revision", selectedJob.revisionParentCreativePackageVersionId || "—")}
+      ${metric("Asset provider", selectedJob.assetProviderKey || "—")}
+      ${metric("Asset adapter", selectedJob.assetProviderAdapterVersion || "—")}
+      ${metric("Asset cost USD", formatUsd(selectedJob.assetProviderEstimatedCostUsd))}
+      ${metric("Output package", selectedJob.outputCreativePackageVersionId || "—")}
+    </div>
+  ` : "";
+
+  const selectedVariantNote = state.weddingPlannerSelectedVariantId
+    ? metric("Selected variant (decision)", state.weddingPlannerSelectedVariantId)
+    : "";
+
+  const contributionRows = CREATIVE_LOGICAL_ROLES_OPS.map(role => {
+    const row = contributions.find(x => x.logicalRole === role);
+    const docRow = (doc?.contributions || []).find(x => x.logicalRole === role);
+    let summary = docRow?.summary || "";
+    if (row?.contributionJson) {
+      try {
+        const parsed = typeof row.contributionJson === "string" ? JSON.parse(row.contributionJson) : row.contributionJson;
+        if (parsed?.summary) summary = parsed.summary;
+      } catch { /* keep */ }
+    }
+    return `<div class="activity-item"><span class="activity-icon">◆</span><span><strong>${escapeHtml(role)}</strong><small>${escapeHtml(summary || "—")}<br>Producing run ${escapeHtml(row?.producingAgentRunId || "—")}</small></span></div>`;
+  }).join("");
+
+  const variantRows = variants.length
+    ? variants.map(v => {
+        const copy = v.copy || {};
+        const assetId = v.asset?.creativeAssetId || null;
+        return `<div class="activity-item"><span class="activity-icon">▣</span><span><strong>${escapeHtml(v.id || "—")} · ${escapeHtml(v.format || "—")}</strong><small>Canvas ${escapeHtml(String(v.canvas?.width ?? "—"))}×${escapeHtml(String(v.canvas?.height ?? "—"))}<br>Copy kind ${escapeHtml(copy.kind || "—")}<br>Headline: ${escapeHtml(copy.headline || "—")}<br>Body: ${escapeHtml(copy.body || "—")}<br>CTA: ${escapeHtml(copy.cta || "—")}<br>Palette: ${escapeHtml((v.paletteRoleRefs || []).join(", ") || "—")}<br>Image prompt: ${escapeHtml(v.imagePrompt || "—")}<br>Claims: ${escapeHtml(JSON.stringify(v.factualClaims || []))}<br>Asset ${escapeHtml(assetId || "—")}</small>${renderOpsSafeDraftPngPreview(assetId, `Draft PNG ${v.id || ""} review only`)}</span></div>`;
+      }).join("")
+    : emptyState("No variants in server documentJson.");
+
+  const assetRows = assets.length
+    ? assets.map(a => `<div class="activity-item"><span class="activity-icon">▤</span><span><strong>${escapeHtml(a.variantId || "—")} · ${escapeHtml(a.format || "—")}</strong><small>${escapeHtml(String(a.width))}×${escapeHtml(String(a.height))} · ${escapeHtml(a.contentType || "")} · ${escapeHtml(String(a.byteSize ?? "—"))} bytes<br>SHA ${escapeHtml(a.sha256 || "—")}<br>Provider ${escapeHtml(a.providerKey || "—")} · adapter ${escapeHtml(a.adapterVersion || "—")} · cost $${escapeHtml(formatUsd(a.estimatedCostUsd))}<br>Asset id ${escapeHtml(a.creativeAssetId || "—")}</small>${renderOpsSafeDraftPngPreview(a.creativeAssetId, `Draft PNG asset ${a.variantId || ""} review only`)}</span></div>`).join("")
+    : emptyState("No assets returned.");
+
+  const runRows = runs.length
+    ? runs.map(r => `<div class="activity-item"><span class="activity-icon">◇</span><span><strong>${escapeHtml(r.logicalRole || "—")} · ${escapeHtml(r.status || "—")}</strong><small>Profile ${escapeHtml(r.workerProfileVersion || "—")} · prompt ${escapeHtml(r.promptPackVersion || "—")}<br>Assigned ${escapeHtml(r.assignedRolesJson || "—")}<br>Tokens ${escapeHtml(String(r.promptTokens ?? "—"))}/${escapeHtml(String(r.completionTokens ?? "—"))}/${escapeHtml(String(r.totalTokens ?? "—"))} · $${escapeHtml(formatUsd(r.estimatedCostUsd))}<br>Provider ${escapeHtml(r.providerKey || "—")} · model ${escapeHtml(r.modelId || "—")}</small></span></div>`).join("")
+    : emptyState("No agent-run receipts.");
+
+  const snapBlock = snap
+    ? `<div class="activity-item"><span class="activity-icon">◎</span><span><strong>${escapeHtml(snap.id || "—")} · ${escapeHtml(snap.name || "—")}</strong><small>${escapeHtml(snap.rationale || "")}<br>Copy kind ${escapeHtml(snap.copy?.kind || "—")} · palette ${escapeHtml((snap.paletteRoleRefs || []).join(", ") || "—")}<br>Phase 5 provenance pinned — not re-approved here</small></span></div>`
+    : emptyState("No selectedConceptSnapshot in documentJson.");
+
+  panel.innerHTML = `
+    ${jobBlock}
+    ${selected ? `
+      <div class="detail-hero"><div class="detail-hero-top">${badge(selected.status)}${isCurrent ? badge("CURRENT") : ""}${isSuperseded ? badge("SUPERSEDED") : ""}</div>
+        <h3>Creative package v${escapeHtml(String(selected.versionNumber))}</h3>
+        <p>${escapeHtml(selected.summary || "No summary")}</p>
+      </div>
+      <div class="metric-grid">
+        ${metric("Schema", selected.schemaVersion || "—")}
+        ${metric("Job kind", selected.jobKind || "—")}
+        ${metric("Selected concept", selected.selectedConceptId || "—")}
+        ${metric("Concept package pin", selected.approvedConceptPackageVersionId || "—")}
+        ${metric("Brand DNA pin", `${shortId(selected.approvedBrandDnaVersionId || "")} v${selected.approvedBrandDnaVersionNumber ?? "—"}`)}
+        ${metric("Color pin", `${shortId(selected.approvedColorProfileVersionId || "")} v${selected.approvedColorProfileVersionNumber ?? "—"}`)}
+        ${metric("Research pin", `${shortId(selected.approvedResearchReportVersionId || "")} v${selected.approvedResearchReportVersionNumber ?? "—"}`)}
+        ${metric("Parent revision", selected.parentCreativePackageVersionId || "—")}
+        ${metric("Estimated total cost USD", formatUsd(selected.estimatedTotalCostUsd))}
+        ${metric("Estimated asset cost USD", formatUsd(selected.estimatedAssetCostUsd))}
+        ${metric("Current pointer", isCurrent ? "YES" : "NO")}
+        ${selectedVariantNote}
+      </div>
+      <div class="safety-note"><strong>Draft creative disclaimer (from documentJson).</strong> ${escapeHtml(doc?.disclaimer || CREATIVE_PACKAGE_DISCLAIMER_OPS)}</div>
+      ${hasSynthetic ? `<div class="safety-note creative-synthetic-warning"><strong>${escapeHtml(SYNTHETIC_DEVELOPMENT_CREATIVE_PACKAGE)}</strong> Local/synthetic creative output. Draft creative approval only — not final, campaign-ready, QA, legal, matching, accessibility, or compliance.</div>` : ""}
+      <div class="safety-note">${escapeHtml(THIRTEEN_TO_SIX_EXPLANATION)}. Profiles ${escapeHtml(CREATIVE_WORKER_PROFILES_OPS.join(", "))}. Showing ${runs.length} receipt(s) from /creative-packages/{id}/agent-runs. Asset provider is separate and non-AI. Draft PNG &lt;img&gt; only from same-origin creative-assets content.</div>
+      <h3>Selected concept snapshot (Phase 5 provenance)</h3>
+      ${snapBlock}
+      <h3>Variants (exact N)</h3>
+      ${variantRows}
+      <h3>Contributions (exactly 13)</h3>
+      ${contributionRows}
+      <h3>Assets (provider receipts)</h3>
+      ${assetRows}
+      <h3>Agent run receipts (exactly 6 workers)</h3>
+      ${runRows}
+    ` : emptyState("No creative package selected.")}
+  `;
+}
+
+async function submitWeddingPlannerCreativeJob(form) {
+  const value = name => form.elements[name]?.value?.trim?.() ?? String(form.elements[name]?.value || "").trim();
+  const jobKind = value("jobKind");
+  const formats = [...form.querySelectorAll('input[name="creativeFormat"]:checked')]
+    .map(input => String(input.value || "").trim())
+    .filter(Boolean);
+  const uniqueFormats = [...new Set(formats)];
+  const variantCount = Number(value("requestedVariantCount"));
+  if (!uniqueFormats.length || uniqueFormats.length > 4 || uniqueFormats.some(f => !CREATIVE_FORMATS_OPS.includes(f)) || uniqueFormats.length !== formats.length) {
+    toast("Select 1–4 unique Phase 5 formats.", true);
+    return;
+  }
+  if (!Number.isInteger(variantCount) || variantCount < 1 || variantCount > 4 || variantCount < uniqueFormats.length) {
+    toast("Requested variant count must be 1–4 and ≥ selected formats.", true);
+    return;
+  }
+  const payload = {
+    jobKind,
+    objective: value("objective"),
+    formats: uniqueFormats,
+    requestedVariantCount: variantCount,
+    sourceSystem: value("sourceSystem"),
+    idempotencyKey: value("idempotencyKey")
+  };
+  if (jobKind === "REVISION") {
+    const parent = value("revisionParentCreativePackageVersionId");
+    const notes = value("revisionNotes");
+    if (!parent || !GUID_PATTERN_OPS.test(parent)) {
+      toast("REVISION requires a parent creative package version id.", true);
+      return;
+    }
+    if (!notes) {
+      toast("REVISION requires non-empty revision notes.", true);
+      return;
+    }
+    payload.revisionParentCreativePackageVersionId = parent;
+    payload.revisionNotes = notes;
+  } else if (jobKind === "INITIAL") {
+    if (value("revisionParentCreativePackageVersionId") || value("revisionNotes")) {
+      toast("INITIAL forbids revision parent and revision notes.", true);
+      return;
+    }
+  } else {
+    toast("Job kind must be INITIAL or REVISION.", true);
+    return;
+  }
+  try {
+    const workspaceId = value("workspaceId");
+    const result = await api(`/api/wedding-planner/workspaces/${workspaceId}/creative-production-jobs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const replayNote = result.isReplay && result.status === "FAILED"
+      ? " (failed replay — not a retry)"
+      : result.isReplay ? " (replay)" : "";
+    toast(`Creative-production job ${result.status}${replayNote}`);
+    fillKey("#wedding-planner-creative-job-key");
+    state.selectedWeddingPlannerWorkspace = workspaceId;
+    state.selectedWeddingPlannerCreativeJobId = result.creativeProductionJobId;
+    if (result.outputCreativePackageVersionId) {
+      state.selectedWeddingPlannerCreativePackageId = result.outputCreativePackageVersionId;
+    }
+    state.weddingPlannerCreativeJobs = await api(`/api/wedding-planner/workspaces/${workspaceId}/creative-production-jobs`);
+    state.weddingPlannerCreativePackages = await api(`/api/wedding-planner/workspaces/${workspaceId}/creative-packages`);
+    await mergeWeddingPlannerWorkspaceRuns(workspaceId);
+    await loadWeddingPlannerCreativeDetails();
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function submitWeddingPlannerCreativeDecision(form) {
+  const value = name => form.elements[name].value.trim();
+  const decision = value("decision");
+  if (decision === "APPROVE" && form.elements.confirmApprove?.checked !== true) {
+    toast("Confirm the APPROVE checkbox before approving a creative package.", true);
+    return;
+  }
+  const selectedRadio = form.querySelector('input[name="selectedVariantId"]:checked');
+  const selectedVariantId = selectedRadio ? String(selectedRadio.value || "").trim() : "";
+  if (decision === "APPROVE") {
+    if (!selectedVariantId || !/^variant_[1-4]$/.test(selectedVariantId)) {
+      toast("APPROVE requires a radio-selected variant id (variant_1 .. variant_N).", true);
+      return;
+    }
+  }
+  if (decision === "REJECT" && selectedVariantId) {
+    toast("REJECT forbids variant selection. Clear the selected variant before rejecting.", true);
+    return;
+  }
+  const payload = {
+    decision,
+    rationale: value("rationale"),
+    sourceSystem: value("sourceSystem"),
+    idempotencyKey: value("idempotencyKey"),
+    selectedVariantId: decision === "APPROVE" ? selectedVariantId : null
+  };
+  try {
+    const result = await api(`/api/wedding-planner/creative-packages/${value("creativePackageVersionId")}/decisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    toast(`Creative package ${friendlyStatus(result.decision)} recorded${result.isReplay ? " (replay)" : ""} — draft creative approval only`);
+    form.elements.rationale.value = "";
+    if (form.elements.confirmApprove) form.elements.confirmApprove.checked = false;
+    form.querySelectorAll('input[name="selectedVariantId"]').forEach(input => { input.checked = false; });
+    fillKey("#wedding-planner-creative-decision-key");
+    state.weddingPlannerSelectedVariantId = result.selectedVariantId || null;
+    const workspaceId = result.workspaceId || state.selectedWeddingPlannerWorkspace;
+    if (workspaceId) {
+      state.weddingPlannerCreativePackages = await api(`/api/wedding-planner/workspaces/${workspaceId}/creative-packages`);
+      state.selectedWeddingPlannerCreativePackageId = result.creativePackageVersionId || state.selectedWeddingPlannerCreativePackageId;
+      await loadWeddingPlannerCreativeDetails();
     }
     renderWeddingPlanner();
   } catch (error) {

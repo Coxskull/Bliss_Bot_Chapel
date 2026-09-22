@@ -2,10 +2,13 @@ const SOURCE_SYSTEM = "PUBLIC_WEDDING_PLANNER";
 const COLOR_INTELLIGENCE_LABEL = "PHASE 3 · DETERMINISTIC COLOR INTELLIGENCE";
 const CURATOR_LABEL = "PHASE 4 · THE CURATOR";
 const WORKSHOP_LABEL = "PHASE 5 · CONCEPT / PROTOTYPE WORKSHOP";
+const CREATIVE_LABEL = "PHASE 6 · MATURE CREATIVE DEPARTMENT";
 const RESEARCH_DISCLAIMER =
   "Approval of this report is research approval only. It is not creative, campaign, claim, legal, matching, accessibility, or compliance approval. Source verification checks metadata and internal consistency only; live URL content is not fetched or certified.";
 const CONCEPT_PACKAGE_DISCLAIMER =
   "Approval of this package is concept-direction approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, asset, QA, or production-artwork approval. Marketing copy is CREATIVE_NON_FACTUAL unless a factual claim cites source IDs from the pinned approved research report. Brand DNA and Color Profile are creative constraints, not factual evidence. Prototypes are structured low-fi specs only; no images are generated.";
+const CREATIVE_PACKAGE_DISCLAIMER =
+  "Approval of this package is draft creative approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, QA, or final production-artwork approval. It does not authorize Bliss matching or placement. Marketing copy is CREATIVE_NON_FACTUAL unless a factual claim exactly preserves a cited claim from the pinned selected concept using source IDs from the pinned approved research report. Brand DNA and Color Profile are creative constraints, not factual evidence. Draft PNG assets are provider-generated renditions for review only; Wedding Planner orchestrates providers and is not itself an image generator. Phase 5 concept contributions remain pinned provenance and are not re-approved here.";
 const CURATOR_LOGICAL_ROLES = [
   "MARKET_LANDSCAPE_RESEARCHER",
   "AUDIENCE_CONTEXT_RESEARCHER",
@@ -38,13 +41,46 @@ const WORKSHOP_CHANNEL_FORMATS = [
   "STATIC_DISPLAY_BANNER",
   "EMAIL_HERO"
 ];
+const CREATIVE_LOGICAL_ROLES = [
+  "CREATIVE_DIRECTOR",
+  "CAMPAIGN_STRATEGIST",
+  "AUDIENCE_STRATEGIST",
+  "OFFER_STRATEGIST",
+  "CHANNEL_STRATEGIST",
+  "VISUAL_DESIGNER",
+  "LAYOUT_DESIGNER",
+  "TYPOGRAPHY_DESIGNER",
+  "IMAGE_PROMPT_DESIGNER",
+  "HEADLINE_SPECIALIST",
+  "BODY_COPY_SPECIALIST",
+  "CTA_SPECIALIST",
+  "VARIANT_PRODUCER"
+];
+const CREATIVE_WORKER_PROFILES = [
+  "CREATIVE_DIRECTION_V1",
+  "STRATEGY_ADAPTATION_V1",
+  "VISUAL_SYSTEM_V1",
+  "IMAGE_DIRECTION_V1",
+  "COPY_SYSTEM_V1",
+  "VARIANT_PRODUCTION_V1"
+];
+const CREATIVE_FORMATS = [
+  "STATIC_SOCIAL_SQUARE",
+  "STATIC_SOCIAL_STORY",
+  "STATIC_DISPLAY_BANNER",
+  "EMAIL_HERO"
+];
 const RESEARCH_JOB_STATUSES = ["RUNNING", "SUCCEEDED", "FAILED"];
 const RESEARCH_REPORT_STATUSES = ["PROPOSED", "APPROVED", "REJECTED", "SUPERSEDED", "CURRENT"];
 const EIGHT_TO_THREE_EXPLANATION =
   "Eight logical roles map to 3 workers/runs, not 8 subscriptions";
 const FOUR_TO_THREE_EXPLANATION =
   "Four logical roles map to 3 workers/runs, not 4 subscriptions";
+const THIRTEEN_TO_SIX_EXPLANATION =
+  "Thirteen logical roles map to 6 workers/runs, not 13 subscriptions";
 const SYNTHETIC_DEVELOPMENT_PROTOTYPE = "SYNTHETIC DEVELOPMENT PROTOTYPE";
+const SYNTHETIC_DEVELOPMENT_CREATIVE_PACKAGE = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE";
+const GUID_PATTERN = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 const ALLOWED_TEXT_REFS = ["copy.headline", "copy.body", "copy.cta"];
 const ALLOWED_PROTOTYPE_TEMPLATES = ["LOFI_STACK_V1", "LOFI_SPLIT_V1", "LOFI_BANNER_V1"];
 const ALLOWED_REGION_TYPES = ["HERO", "HEADER", "BODY", "HEADLINE", "SUBHEAD", "CTA", "FOOTER", "LOGO_SLOT"];
@@ -81,6 +117,14 @@ const state = {
   workshopAgentRuns: [],
   workshopSelectedConceptId: null,
   workshopPinnedColorDocument: null,
+  creativeJobs: [],
+  creativeJob: null,
+  creativePackages: null,
+  creativePackage: null,
+  creativeContributions: [],
+  creativeAssets: [],
+  creativeAgentRuns: [],
+  creativeSelectedVariantId: null,
   busy: false
 };
 
@@ -195,6 +239,50 @@ const workshopConceptSelect = document.querySelector("#workshop-concept-select")
 const workshopRationale = document.querySelector("#workshop-rationale");
 const workshopConfirmApprove = document.querySelector("#workshop-confirm-approve");
 
+const creativePrereq = document.querySelector("#creative-prereq-status");
+const creativeJobForm = document.querySelector("#creative-job-form");
+const creativeJobSubmit = document.querySelector("#creative-job-submit");
+const creativeRefreshLists = document.querySelector("#creative-refresh-lists");
+const creativeJobKind = document.querySelector("#creative-job-kind");
+const creativeObjective = document.querySelector("#creative-objective");
+const creativeFormatSelect = document.querySelector("#creative-format-select");
+const creativeVariantCount = document.querySelector("#creative-variant-count");
+const creativeRevisionFields = document.querySelector("#creative-revision-fields");
+const creativeRevisionParent = document.querySelector("#creative-revision-parent");
+const creativeRevisionNotes = document.querySelector("#creative-revision-notes");
+const creativeJobSelect = document.querySelector("#creative-job-select");
+const creativeJobMeta = document.querySelector("#creative-job-meta");
+const creativePackageSelect = document.querySelector("#creative-package-select");
+const creativeCurrentPointer = document.querySelector("#creative-current-pointer");
+const creativePackageView = document.querySelector("#creative-package-view");
+const creativePackageStatusLabel = document.querySelector("#creative-package-status-label");
+const creativePackageCurrentBadge = document.querySelector("#creative-package-current-badge");
+const creativePackageSupersededBadge = document.querySelector("#creative-package-superseded-badge");
+const creativePackageVersionNumber = document.querySelector("#creative-package-version-number");
+const creativePackageJobKind = document.querySelector("#creative-package-job-kind");
+const creativePackageSummaryText = document.querySelector("#creative-package-summary-text");
+const creativePackageSchema = document.querySelector("#creative-package-schema");
+const creativePackageSelectedConcept = document.querySelector("#creative-package-selected-concept");
+const creativePackageConceptPin = document.querySelector("#creative-package-concept-pin");
+const creativePackageProvenancePins = document.querySelector("#creative-package-provenance-pins");
+const creativePackageParent = document.querySelector("#creative-package-parent");
+const creativePackageAiCost = document.querySelector("#creative-package-ai-cost");
+const creativePackageAssetCost = document.querySelector("#creative-package-asset-cost");
+const creativeSelectedVariantLine = document.querySelector("#creative-selected-variant-line");
+const creativeSelectedVariantIdEl = document.querySelector("#creative-selected-variant-id");
+const creativeDisclaimerBlock = document.querySelector("#creative-disclaimer-block");
+const creativeDisclaimerText = document.querySelector("#creative-disclaimer-text");
+const creativeSyntheticWarning = document.querySelector("#creative-synthetic-warning");
+const creativeConceptSnapshot = document.querySelector("#creative-concept-snapshot");
+const creativeVariants = document.querySelector("#creative-variants");
+const creativeContributions = document.querySelector("#creative-contributions");
+const creativeAssets = document.querySelector("#creative-assets");
+const creativeAgentRuns = document.querySelector("#creative-agent-runs");
+const creativeDecisionForm = document.querySelector("#creative-decision-form");
+const creativeVariantSelect = document.querySelector("#creative-variant-select");
+const creativeRationale = document.querySelector("#creative-rationale");
+const creativeConfirmApprove = document.querySelector("#creative-confirm-approve");
+
 const colorFields = {
   primary: {
     picker: document.querySelector("#color-primary-picker"),
@@ -243,9 +331,11 @@ document.addEventListener("DOMContentLoaded", () => {
     setColorControlsEnabled(false);
     setCuratorControlsEnabled(false);
     setWorkshopControlsEnabled(false);
+    setCreativeControlsEnabled(false);
     renderColorPrerequisite();
     renderCuratorPrerequisite();
     renderWorkshopPrerequisite();
+    renderCreativePrerequisite();
   });
 });
 
@@ -357,6 +447,43 @@ function bindPlannerUi() {
     decideConceptPackage(decision).catch(error => setTurnStatus("error", error.message));
   });
 
+  creativeJobForm?.addEventListener("submit", event => {
+    event.preventDefault();
+    submitCreativeProductionJob().catch(error => setTurnStatus("error", error.message));
+  });
+
+  creativeRefreshLists?.addEventListener("click", () => {
+    refreshCreativeLists().catch(error => setTurnStatus("error", error.message));
+  });
+
+  creativeJobKind?.addEventListener("change", () => {
+    syncCreativeRevisionFields();
+  });
+
+  creativeJobSelect?.addEventListener("change", () => {
+    const id = creativeJobSelect.value;
+    const selected = (state.creativeJobs || []).find(x => x.creativeProductionJobId === id) || null;
+    state.creativeJob = selected;
+    renderCreativeJob(selected);
+  });
+
+  creativePackageSelect?.addEventListener("change", () => {
+    const id = creativePackageSelect.value;
+    const versions = state.creativePackages?.versions || [];
+    const selected = versions.find(x => x.creativePackageVersionId === id) || null;
+    state.creativePackage = selected;
+    state.creativeSelectedVariantId = null;
+    inspectCreativePackage(selected).catch(error => setTurnStatus("error", error.message));
+  });
+
+  creativeDecisionForm?.addEventListener("submit", event => {
+    event.preventDefault();
+    const submitter = event.submitter;
+    const decision = submitter?.dataset?.decision;
+    if (!decision) return;
+    decideCreativePackage(decision).catch(error => setTurnStatus("error", error.message));
+  });
+
   Object.values(colorFields).forEach(field => {
     field.picker?.addEventListener("input", () => {
       if (field.text) field.text.value = String(field.picker.value || "").toUpperCase();
@@ -396,10 +523,12 @@ async function bootstrapPlanner() {
     setColorControlsEnabled(false);
     setCuratorControlsEnabled(false);
     setWorkshopControlsEnabled(false);
+    setCreativeControlsEnabled(false);
     renderAuthGate(session);
     renderColorPrerequisite();
     renderCuratorPrerequisite();
     renderWorkshopPrerequisite();
+    renderCreativePrerequisite();
     return;
   }
 
@@ -416,6 +545,7 @@ async function bootstrapPlanner() {
   await loadColorProfiles();
   await refreshCuratorLists();
   await refreshWorkshopLists();
+  await refreshCreativeLists();
   setComposerEnabled(true);
   setBrandDnaControlsEnabled(true);
   renderColorPrerequisite();
@@ -424,6 +554,8 @@ async function bootstrapPlanner() {
   setCuratorControlsEnabled(canSubmitResearchJobs());
   renderWorkshopPrerequisite();
   setWorkshopControlsEnabled(canSubmitWorkshopJobs());
+  renderCreativePrerequisite();
+  setCreativeControlsEnabled(canSubmitCreativeJobs());
   setSessionStatus(
     "Live Concierge ready",
     "Messages are saved to your planning session. Planner replies come only from the server. Brand DNA stays PROPOSED until you approve or reject it."
@@ -509,6 +641,8 @@ async function loadBrandDna() {
   setCuratorControlsEnabled(canSubmitResearchJobs());
   renderWorkshopPrerequisite();
   setWorkshopControlsEnabled(canSubmitWorkshopJobs());
+  renderCreativePrerequisite();
+  setCreativeControlsEnabled(canSubmitCreativeJobs());
 }
 
 async function loadColorProfiles() {
@@ -528,6 +662,8 @@ async function loadColorProfiles() {
   renderCuratorPrerequisite();
   renderWorkshopPrerequisite();
   setWorkshopControlsEnabled(canSubmitWorkshopJobs());
+  renderCreativePrerequisite();
+  setCreativeControlsEnabled(canSubmitCreativeJobs());
 }
 
 function hasCurrentApprovedBrandDna() {
@@ -557,6 +693,18 @@ function canSubmitWorkshopJobs() {
     hasCurrentApprovedBrandDna() &&
     hasCurrentApprovedColorProfile() &&
     hasCurrentApprovedResearchReport()
+  );
+}
+
+function hasCurrentApprovedConceptPackage() {
+  return !!state.conceptPackages?.currentApprovedConceptPackageVersionId;
+}
+
+function canSubmitCreativeJobs() {
+  return (
+    state.liveChatEnabled &&
+    !!state.workspaceId &&
+    hasCurrentApprovedConceptPackage()
   );
 }
 
@@ -637,6 +785,36 @@ function renderWorkshopPrerequisite() {
 
   workshopPrereq.dataset.ready = "true";
   workshopPrereq.innerHTML = `<span>Prerequisites met · ${WORKSHOP_LABEL}</span><p>Authenticated writable advertiser with current-approved Brand DNA, Color Profile, and Research Report. ${escapeHtml(FOUR_TO_THREE_EXPLANATION)}. Concept direction only — no generated image/assets; not campaign-ready, QA, matching, or legal/claim approval. ${escapeHtml(SYNTHETIC_DEVELOPMENT_PROTOTYPE)} when Local path was used.</p>`;
+}
+
+function renderCreativePrerequisite() {
+  if (!creativePrereq) return;
+  if (!state.session) {
+    creativePrereq.dataset.ready = "false";
+    creativePrereq.innerHTML = `<span>Prerequisite check</span><p>Checking authentication…</p>`;
+    return;
+  }
+
+  if (!state.session.authenticationEnabled) {
+    creativePrereq.dataset.ready = "false";
+    creativePrereq.innerHTML = `<span>Authentication disabled</span><p>Creative Production stays disabled when authentication is not enabled. No development advertiser is bound automatically. Server requires a current-approved Phase 5 concept package with SelectedConceptId before creative-production jobs can start.</p>`;
+    return;
+  }
+
+  if (!state.liveChatEnabled) {
+    creativePrereq.dataset.ready = "false";
+    creativePrereq.innerHTML = `<span>Authenticated writable advertiser required</span><p>Creative-production submit stays disabled until an authenticated advertiser with write access is signed in. No random or test advertiser is bound automatically.</p>`;
+    return;
+  }
+
+  if (!hasCurrentApprovedConceptPackage()) {
+    creativePrereq.dataset.ready = "false";
+    creativePrereq.innerHTML = `<span>Missing creative-production prerequisites</span><p>Requires a current-approved Phase 5 concept package whose latest APPROVE carries a SelectedConceptId. Approve a concept package first. Server resolves selectedConceptId — clients cannot override concept selection. ${escapeHtml(THIRTEEN_TO_SIX_EXPLANATION)}. Phase 5 roles remain pinned provenance.</p>`;
+    return;
+  }
+
+  creativePrereq.dataset.ready = "true";
+  creativePrereq.innerHTML = `<span>Prerequisites met · ${CREATIVE_LABEL}</span><p>Authenticated writable advertiser with current-approved Phase 5 concept package. Server will resolve the latest SelectedConceptId. ${escapeHtml(THIRTEEN_TO_SIX_EXPLANATION)}, plus a separate non-AI asset provider. Phase 5 roles remain pinned provenance. Draft creative approval only — not final, campaign-ready, QA, legal, matching, accessibility, or compliance. ${escapeHtml(SYNTHETIC_DEVELOPMENT_CREATIVE_PACKAGE)} when Local path was used.</p>`;
 }
 
 async function submitTurn() {
@@ -892,6 +1070,8 @@ async function refreshCuratorLists() {
   await inspectResearchReport(selectedReport);
   renderWorkshopPrerequisite();
   setWorkshopControlsEnabled(canSubmitWorkshopJobs());
+  renderCreativePrerequisite();
+  setCreativeControlsEnabled(canSubmitCreativeJobs());
 }
 
 async function submitResearchJob() {
@@ -1593,6 +1773,8 @@ async function refreshWorkshopLists() {
   await inspectConceptPackage(selectedPackage);
   renderWorkshopPrerequisite();
   setWorkshopControlsEnabled(canSubmitWorkshopJobs());
+  renderCreativePrerequisite();
+  setCreativeControlsEnabled(canSubmitCreativeJobs());
 }
 
 async function submitWorkshopJob() {
@@ -2160,6 +2342,649 @@ function setWorkshopDecisionEnabled(enabled) {
     input.disabled = !enabled;
   });
   workshopDecisionForm?.querySelectorAll("button").forEach(button => {
+    button.disabled = !enabled;
+  });
+}
+
+async function refreshCreativeLists() {
+  if (!state.workspaceId) return;
+  const [jobs, packages] = await Promise.all([
+    api(`/api/wedding-planner/workspaces/${state.workspaceId}/creative-production-jobs`),
+    api(`/api/wedding-planner/workspaces/${state.workspaceId}/creative-packages`)
+  ]);
+  state.creativeJobs = Array.isArray(jobs) ? jobs : [];
+  state.creativePackages = packages;
+  const selectedJob =
+    state.creativeJobs.find(x => x.creativeProductionJobId === state.creativeJob?.creativeProductionJobId) ||
+    state.creativeJobs[0] ||
+    null;
+  state.creativeJob = selectedJob;
+  renderCreativeJobList(state.creativeJobs, selectedJob);
+  renderCreativeJob(selectedJob);
+
+  const versions = packages?.versions || [];
+  const selectedPackage =
+    versions.find(x => x.creativePackageVersionId === state.creativePackage?.creativePackageVersionId) ||
+    versions.find(x => x.status === "PROPOSED") ||
+    versions.find(x => x.creativePackageVersionId === packages.currentApprovedCreativePackageVersionId) ||
+    versions[0] ||
+    null;
+  state.creativePackage = selectedPackage;
+  renderCreativePackageList(packages, selectedPackage);
+  populateCreativeRevisionParents(packages, selectedPackage);
+  await inspectCreativePackage(selectedPackage);
+  renderCreativePrerequisite();
+  setCreativeControlsEnabled(canSubmitCreativeJobs());
+  syncCreativeRevisionFields();
+}
+
+function syncCreativeRevisionFields() {
+  const isRevision = String(creativeJobKind?.value || "") === "REVISION";
+  if (creativeRevisionFields) creativeRevisionFields.hidden = !isRevision;
+  if (creativeRevisionParent) {
+    creativeRevisionParent.disabled = !canSubmitCreativeJobs() || !isRevision;
+    creativeRevisionParent.required = isRevision;
+  }
+  if (creativeRevisionNotes) {
+    creativeRevisionNotes.disabled = !canSubmitCreativeJobs() || !isRevision;
+    creativeRevisionNotes.required = isRevision;
+  }
+}
+
+function populateCreativeRevisionParents(list, selected) {
+  if (!creativeRevisionParent) return;
+  const versions = list?.versions || [];
+  const currentValue = creativeRevisionParent.value || selected?.parentCreativePackageVersionId || "";
+  if (!versions.length) {
+    creativeRevisionParent.innerHTML = `<option value="">No parent packages available</option>`;
+    return;
+  }
+  creativeRevisionParent.innerHTML =
+    `<option value="">Select parent package</option>` +
+    versions.map(version => {
+      const markers = [version.status || "UNKNOWN"];
+      if (version.isCurrentApproved) markers.push("CURRENT");
+      return `<option value="${escapeHtml(version.creativePackageVersionId)}"${currentValue === version.creativePackageVersionId ? " selected" : ""}>v${escapeHtml(String(version.versionNumber))} · ${escapeHtml(markers.join(" · "))} · ${escapeHtml(version.selectedConceptId || "")}</option>`;
+    }).join("");
+}
+
+function selectedCreativeFormats() {
+  const boxes = creativeFormatSelect?.querySelectorAll('input[name="creativeFormat"]:checked') || [];
+  const values = [...boxes].map(input => String(input.value || "").trim()).filter(Boolean);
+  return [...new Set(values)];
+}
+
+async function submitCreativeProductionJob() {
+  if (!canSubmitCreativeJobs() || state.busy) return;
+  const jobKind = String(creativeJobKind?.value || "").trim();
+  const objective = String(creativeObjective?.value || "").trim();
+  const formats = selectedCreativeFormats();
+  const variantCount = Number(creativeVariantCount?.value);
+  const revisionParent = String(creativeRevisionParent?.value || "").trim() || null;
+  const revisionNotes = String(creativeRevisionNotes?.value || "").trim() || null;
+
+  if (jobKind !== "INITIAL" && jobKind !== "REVISION") {
+    setTurnStatus("error", "Job kind must be INITIAL or REVISION.");
+    return;
+  }
+  if (!objective) {
+    setTurnStatus("error", "Objective is required.");
+    return;
+  }
+  if (!formats.length || formats.length > 4 || formats.some(f => !CREATIVE_FORMATS.includes(f))) {
+    setTurnStatus("error", "Select 1–4 unique Phase 5 formats.");
+    return;
+  }
+  if (!Number.isInteger(variantCount) || variantCount < 1 || variantCount > 4 || variantCount < formats.length) {
+    setTurnStatus("error", "Requested variant count must be an integer 1–4 and ≥ selected formats.");
+    return;
+  }
+  if (jobKind === "INITIAL") {
+    if (revisionParent || revisionNotes) {
+      setTurnStatus("error", "INITIAL forbids revision parent and revision notes.");
+      return;
+    }
+  } else {
+    if (!revisionParent || !GUID_PATTERN.test(revisionParent)) {
+      setTurnStatus("error", "REVISION requires a parent creative package version id.");
+      return;
+    }
+    if (!revisionNotes) {
+      setTurnStatus("error", "REVISION requires non-empty revision notes.");
+      return;
+    }
+  }
+
+  const payload = {
+    jobKind,
+    objective,
+    formats,
+    requestedVariantCount: variantCount,
+    sourceSystem: SOURCE_SYSTEM,
+    idempotencyKey: `creative-${crypto.randomUUID()}`
+  };
+  if (jobKind === "REVISION") {
+    payload.revisionParentCreativePackageVersionId = revisionParent;
+    payload.revisionNotes = revisionNotes;
+  }
+
+  state.busy = true;
+  setCreativeControlsEnabled(false);
+  setTurnStatus("loading", "Submitting creative-production job…");
+  try {
+    const job = await api(`/api/wedding-planner/workspaces/${state.workspaceId}/creative-production-jobs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    await refreshCreativeLists();
+    state.creativeJob = job;
+    renderCreativeJobList(state.creativeJobs, job);
+    renderCreativeJob(job);
+    if (job.outputCreativePackageVersionId) {
+      const versions = state.creativePackages?.versions || [];
+      const pkg = versions.find(x => x.creativePackageVersionId === job.outputCreativePackageVersionId) || null;
+      if (pkg) {
+        state.creativePackage = pkg;
+        renderCreativePackageList(state.creativePackages, pkg);
+        await inspectCreativePackage(pkg);
+      }
+    }
+    setTurnStatus(job.isReplay ? "replay" : "loading", creativeJobStatusMessage(job));
+    if (!job.isReplay && job.status === "SUCCEEDED") {
+      setTimeout(() => clearTurnStatus(), 4200);
+    }
+  } finally {
+    state.busy = false;
+    setCreativeControlsEnabled(canSubmitCreativeJobs());
+  }
+}
+
+function creativeJobStatusMessage(job) {
+  if (job.isReplay && job.status === "FAILED") {
+    return "Replayed an existing FAILED creative-production job. The failed job was returned unchanged — this is not a retry and providers were not called again.";
+  }
+  if (job.isReplay && job.status === "SUCCEEDED") {
+    return "Replayed an existing SUCCEEDED creative-production job. Existing job and creative package linkage returned with no AI or asset-provider calls.";
+  }
+  if (job.isReplay) {
+    return `Replayed an existing creative-production job in status ${job.status}.`;
+  }
+  if (job.status === "FAILED") {
+    return `Creative-production job failed: ${job.errorMessage || job.errorCode || "unknown error"}. No creative package was created.`;
+  }
+  return `Creative-production job ${job.status}. ${THIRTEEN_TO_SIX_EXPLANATION}. Separate non-AI asset provider. Draft creative approval only.`;
+}
+
+async function decideCreativePackage(decision) {
+  if (!state.liveChatEnabled || !state.creativePackage || state.busy) return;
+  const rationale = String(creativeRationale?.value || "").trim();
+  if (!rationale) {
+    setTurnStatus("error", "A rationale is required for creative package decisions.");
+    return;
+  }
+  if (decision === "APPROVE" && !creativeConfirmApprove?.checked) {
+    setTurnStatus("error", "Confirm the APPROVE checkbox before approving a creative package.");
+    return;
+  }
+
+  const selectedRadio = creativeDecisionForm?.querySelector('input[name="selectedVariantId"]:checked');
+  const selectedVariantId = selectedRadio ? String(selectedRadio.value || "").trim() : "";
+
+  if (decision === "APPROVE") {
+    if (!selectedVariantId || !/^variant_[1-4]$/.test(selectedVariantId)) {
+      setTurnStatus("error", "APPROVE requires a radio-selected variant id (variant_1 .. variant_N).");
+      return;
+    }
+  }
+  if (decision === "REJECT" && selectedVariantId) {
+    setTurnStatus("error", "REJECT forbids variant selection. Clear the selected variant before rejecting.");
+    return;
+  }
+
+  const payload = {
+    decision,
+    rationale,
+    sourceSystem: SOURCE_SYSTEM,
+    idempotencyKey: `creative-decision-${crypto.randomUUID()}`
+  };
+  if (decision === "APPROVE") {
+    payload.selectedVariantId = selectedVariantId;
+  } else {
+    payload.selectedVariantId = null;
+  }
+
+  state.busy = true;
+  setCreativeDecisionEnabled(false);
+  setTurnStatus("loading", `Recording creative package ${decision} decision…`);
+  try {
+    const result = await api(`/api/wedding-planner/creative-packages/${state.creativePackage.creativePackageVersionId}/decisions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    state.creativeSelectedVariantId = result?.selectedVariantId || null;
+    await refreshCreativeLists();
+    if (result?.version) {
+      state.creativePackage = result.version;
+      renderCreativePackageList(state.creativePackages, result.version);
+      await inspectCreativePackage(result.version);
+    }
+    if (creativeRationale) creativeRationale.value = "";
+    if (creativeConfirmApprove) creativeConfirmApprove.checked = false;
+    clearCreativeVariantSelection();
+    setTurnStatus(
+      result?.isReplay ? "replay" : "loading",
+      result?.isReplay
+        ? `Replayed creative package ${decision} decision.`
+        : `${decision} recorded as draft creative approval only — not final, campaign-ready, QA, legal, matching, accessibility, or compliance.`
+    );
+    if (!result?.isReplay) {
+      setTimeout(() => clearTurnStatus(), 4200);
+    }
+  } finally {
+    state.busy = false;
+    setCreativeControlsEnabled(canSubmitCreativeJobs());
+  }
+}
+
+function renderCreativeJobList(jobs, selected) {
+  if (!creativeJobSelect) return;
+  if (!jobs.length) {
+    creativeJobSelect.innerHTML = `<option value="">No creative-production jobs yet</option>`;
+    creativeJobSelect.disabled = true;
+    return;
+  }
+  creativeJobSelect.disabled = false;
+  creativeJobSelect.innerHTML = jobs.map(job => {
+    const markers = [job.status || "UNKNOWN", job.jobKind || ""];
+    if (job.isReplay) markers.push("REPLAY");
+    return `<option value="${escapeHtml(job.creativeProductionJobId)}"${selected?.creativeProductionJobId === job.creativeProductionJobId ? " selected" : ""}>${escapeHtml(markers.filter(Boolean).join(" · "))} · ${escapeHtml(job.selectedConceptId || shortId(job.creativeProductionJobId))}</option>`;
+  }).join("");
+}
+
+function renderCreativeJob(job) {
+  if (!creativeJobMeta) return;
+  if (!job) {
+    creativeJobMeta.hidden = true;
+    creativeJobMeta.innerHTML = "";
+    return;
+  }
+  creativeJobMeta.hidden = false;
+  creativeJobMeta.dataset.status = job.status || "";
+  const formats = Array.isArray(job.formats) ? job.formats.join(", ") : "—";
+  creativeJobMeta.innerHTML = `
+    <p><strong>${escapeHtml(job.status || "UNKNOWN")}</strong>${job.isReplay ? " · replay" : ""} · ${escapeHtml(job.jobKind || "—")} · variants ${escapeHtml(String(job.requestedVariantCount ?? "—"))}</p>
+    <p>Objective: ${escapeHtml(job.objective || "—")}</p>
+    <p>Formats: <code>${escapeHtml(formats)}</code></p>
+    <p>Input SHA <code>${escapeHtml(job.inputSha256 || "—")}</code></p>
+    <p>Selected concept <code>${escapeHtml(job.selectedConceptId || "—")}</code> · concept package <code>${escapeHtml(shortId(job.approvedConceptPackageVersionId))}</code></p>
+    <p>Provenance Brand DNA v${escapeHtml(String(job.approvedBrandDnaVersionNumber ?? "—"))} <code>${escapeHtml(shortId(job.approvedBrandDnaVersionId))}</code>
+      · Color v${escapeHtml(String(job.approvedColorProfileVersionNumber ?? "—"))} <code>${escapeHtml(shortId(job.approvedColorProfileVersionId))}</code>
+      · Research v${escapeHtml(String(job.approvedResearchReportVersionNumber ?? "—"))} <code>${escapeHtml(shortId(job.approvedResearchReportVersionId))}</code></p>
+    <p>Parent revision <code>${escapeHtml(job.revisionParentCreativePackageVersionId || "—")}</code>${job.revisionNotes ? ` · notes: ${escapeHtml(job.revisionNotes)}` : ""}</p>
+    <p>Asset provider <code>${escapeHtml(job.assetProviderKey || "—")}</code> · adapter <code>${escapeHtml(job.assetProviderAdapterVersion || "—")}</code> · cost <code>${escapeHtml(formatCost(job.assetProviderEstimatedCostUsd))}</code></p>
+    <p>Package <code>${escapeHtml(job.outputCreativePackageVersionId || "—")}</code>${job.errorMessage ? ` · error: ${escapeHtml(job.errorMessage)}` : ""}</p>
+  `;
+}
+
+function renderCreativePackageList(list, selected) {
+  if (!creativePackageSelect) return;
+  const versions = list?.versions || [];
+  const currentId = list?.currentApprovedCreativePackageVersionId || null;
+  if (creativeCurrentPointer) {
+    creativeCurrentPointer.hidden = !currentId;
+  }
+  if (!versions.length) {
+    creativePackageSelect.innerHTML = `<option value="">No creative packages yet</option>`;
+    creativePackageSelect.disabled = true;
+    return;
+  }
+  creativePackageSelect.disabled = false;
+  creativePackageSelect.innerHTML = versions.map(version => {
+    const markers = [];
+    if (version.status) markers.push(version.status);
+    if (version.creativePackageVersionId === currentId || version.isCurrentApproved) markers.push("CURRENT");
+    return `<option value="${escapeHtml(version.creativePackageVersionId)}"${selected?.creativePackageVersionId === version.creativePackageVersionId ? " selected" : ""}>v${escapeHtml(String(version.versionNumber))} · ${escapeHtml(markers.join(" · "))}</option>`;
+  }).join("");
+}
+
+async function inspectCreativePackage(version) {
+  if (!creativePackageView) return;
+  if (!version) {
+    creativePackageView.hidden = true;
+    if (creativeDecisionForm) creativeDecisionForm.hidden = true;
+    state.creativeContributions = [];
+    state.creativeAssets = [];
+    state.creativeAgentRuns = [];
+    return;
+  }
+
+  creativePackageView.hidden = false;
+  const currentId = state.creativePackages?.currentApprovedCreativePackageVersionId || null;
+  const isCurrent = !!currentId && (currentId === version.creativePackageVersionId || version.isCurrentApproved === true);
+  const isSuperseded = String(version.status || "") === "SUPERSEDED";
+
+  if (creativePackageStatusLabel) {
+    creativePackageStatusLabel.textContent = version.status || "UNKNOWN";
+    creativePackageStatusLabel.dataset.status = version.status || "";
+  }
+  if (creativePackageCurrentBadge) creativePackageCurrentBadge.hidden = !isCurrent;
+  if (creativePackageSupersededBadge) creativePackageSupersededBadge.hidden = !isSuperseded;
+  if (creativePackageVersionNumber) creativePackageVersionNumber.textContent = String(version.versionNumber ?? "—");
+  if (creativePackageJobKind) creativePackageJobKind.textContent = version.jobKind || "—";
+  if (creativePackageSummaryText) creativePackageSummaryText.textContent = version.summary || "No summary returned by the server.";
+  if (creativePackageSchema) creativePackageSchema.textContent = version.schemaVersion || "—";
+  if (creativePackageSelectedConcept) creativePackageSelectedConcept.textContent = version.selectedConceptId || "—";
+  if (creativePackageConceptPin) creativePackageConceptPin.textContent = version.approvedConceptPackageVersionId || "—";
+  if (creativePackageProvenancePins) {
+    creativePackageProvenancePins.textContent =
+      `DNA ${shortId(version.approvedBrandDnaVersionId)} v${version.approvedBrandDnaVersionNumber ?? "—"} · ` +
+      `Color ${shortId(version.approvedColorProfileVersionId)} v${version.approvedColorProfileVersionNumber ?? "—"} · ` +
+      `Research ${shortId(version.approvedResearchReportVersionId)} v${version.approvedResearchReportVersionNumber ?? "—"}`;
+  }
+  if (creativePackageParent) creativePackageParent.textContent = version.parentCreativePackageVersionId || "—";
+  if (creativePackageAiCost) {
+    const total = version.estimatedTotalCostUsd;
+    const asset = version.estimatedAssetCostUsd;
+    const aiOnly = total != null && asset != null ? Number(total) - Number(asset) : total;
+    creativePackageAiCost.textContent = formatCost(aiOnly);
+  }
+  if (creativePackageAssetCost) creativePackageAssetCost.textContent = formatCost(version.estimatedAssetCostUsd);
+
+  if (creativeSelectedVariantLine && creativeSelectedVariantIdEl) {
+    const selectedId = state.creativeSelectedVariantId;
+    creativeSelectedVariantLine.hidden = !selectedId;
+    creativeSelectedVariantIdEl.textContent = selectedId || "—";
+  }
+
+  const document = parseCreativePackageDocument(version.documentJson);
+  renderCreativePackageDocument(document, version);
+
+  state.creativeContributions = [];
+  state.creativeAssets = [];
+  state.creativeAgentRuns = [];
+  try {
+    const [contributions, assets, runs] = await Promise.all([
+      api(`/api/wedding-planner/creative-packages/${version.creativePackageVersionId}/contributions`),
+      api(`/api/wedding-planner/creative-packages/${version.creativePackageVersionId}/assets`),
+      api(`/api/wedding-planner/creative-packages/${version.creativePackageVersionId}/agent-runs`)
+    ]);
+    state.creativeContributions = Array.isArray(contributions) ? contributions : [];
+    state.creativeAssets = Array.isArray(assets) ? assets : [];
+    state.creativeAgentRuns = Array.isArray(runs) ? runs : [];
+  } catch {
+    state.creativeContributions = [];
+    state.creativeAssets = [];
+    state.creativeAgentRuns = [];
+  }
+
+  renderCreativeConceptSnapshot(document);
+  renderCreativeVariants(document, state.creativeAssets);
+  renderCreativeContributions(state.creativeContributions, document);
+  renderCreativeAssets(state.creativeAssets);
+  renderCreativeAgentRuns(state.creativeAgentRuns);
+  syncCreativeVariantRadios(document);
+
+  const canDecide = state.liveChatEnabled && version.status === "PROPOSED";
+  if (creativeDecisionForm) creativeDecisionForm.hidden = !canDecide;
+  setCreativeDecisionEnabled(canDecide);
+}
+
+function parseCreativePackageDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+function renderCreativePackageDocument(document, version) {
+  const disclaimer = document?.disclaimer || CREATIVE_PACKAGE_DISCLAIMER;
+  if (creativeDisclaimerBlock && creativeDisclaimerText) {
+    creativeDisclaimerText.textContent = disclaimer;
+    creativeDisclaimerBlock.hidden = !disclaimer;
+  }
+
+  const marker = String(document?.marker || "");
+  const hasSynthetic =
+    marker === SYNTHETIC_DEVELOPMENT_CREATIVE_PACKAGE ||
+    creativeDocumentContainsSynthetic(document) ||
+    String(version?.summary || "").includes(SYNTHETIC_DEVELOPMENT_CREATIVE_PACKAGE);
+  if (creativeSyntheticWarning) {
+    creativeSyntheticWarning.hidden = !hasSynthetic;
+  }
+}
+
+function creativeDocumentContainsSynthetic(document) {
+  try {
+    return JSON.stringify(document || {}).includes(SYNTHETIC_DEVELOPMENT_CREATIVE_PACKAGE);
+  } catch {
+    return false;
+  }
+}
+
+function isValidGuidString(value) {
+  return typeof value === "string" && GUID_PATTERN.test(value);
+}
+
+function safeCreativeAssetContentUrl(assetId) {
+  if (!isValidGuidString(assetId)) return null;
+  return `/api/wedding-planner/creative-assets/${assetId}/content`;
+}
+
+function renderSafeDraftPngPreview(assetId, altText) {
+  const src = safeCreativeAssetContentUrl(assetId);
+  if (!src) {
+    return `<p class="seed-hint">Invalid or missing creative asset id — draft PNG preview withheld. Only same-origin /api/wedding-planner/creative-assets/{guid}/content is allowed.</p>`;
+  }
+  const alt = String(altText || "Draft creative PNG for review only").slice(0, 200);
+  return `<img class="creative-draft-png" src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async">`;
+}
+
+function renderCreativeConceptSnapshot(document) {
+  if (!creativeConceptSnapshot) return;
+  const snap = document?.selectedConceptSnapshot;
+  if (!snap || typeof snap !== "object") {
+    creativeConceptSnapshot.innerHTML = `<p class="seed-hint">No selectedConceptSnapshot in server documentJson.</p>`;
+    return;
+  }
+  const copy = snap.copy || {};
+  const claims = Array.isArray(snap.factualClaims) ? snap.factualClaims : [];
+  const paletteRefs = Array.isArray(snap.paletteRoleRefs) ? snap.paletteRoleRefs : [];
+  creativeConceptSnapshot.innerHTML = `
+    <div class="creative-concept-card">
+      <strong>${escapeHtml(snap.id || "—")} · ${escapeHtml(snap.name || "—")}</strong>
+      <span>Rationale: ${escapeHtml(snap.rationale || "—")}</span>
+      <span>Visual direction: ${escapeHtml(snap.visualDirection || "—")}</span>
+      <span>Palette role refs: <code>${escapeHtml(paletteRefs.join(", ") || "—")}</code></span>
+      <span>Copy kind <code>${escapeHtml(copy.kind || "—")}</code></span>
+      <span>Headline: ${escapeHtml(copy.headline || "—")}</span>
+      <span>Body: ${escapeHtml(copy.body || "—")}</span>
+      <span>CTA: ${escapeHtml(copy.cta || "—")}</span>
+      ${claims.length ? claims.map(claim => `
+        <div class="workshop-claim">
+          <strong>Preserved factual claim</strong>
+          <span>${escapeHtml(claim.statement || "—")}</span>
+          <span>Source IDs: <code>${escapeHtml((claim.sourceIds || []).join(", ") || "—")}</code></span>
+        </div>`).join("") : `<span>Factual claims: none</span>`}
+      <span class="seed-hint">Phase 5 concept provenance pinned — not re-approved here. Phase 5 prototypes remain placeholder-only (no &lt;img&gt;).</span>
+    </div>`;
+}
+
+function renderCreativeVariants(document, assets) {
+  if (!creativeVariants) return;
+  const variants = Array.isArray(document?.variants) ? document.variants : [];
+  if (!variants.length) {
+    creativeVariants.innerHTML = `<p class="seed-hint">No variants in server documentJson.</p>`;
+    return;
+  }
+  const assetById = new Map((assets || []).map(a => [a.creativeAssetId, a]));
+  creativeVariants.innerHTML = variants.map(variant => {
+    const copy = variant.copy || {};
+    const claims = Array.isArray(variant.factualClaims) ? variant.factualClaims : [];
+    const paletteRefs = Array.isArray(variant.paletteRoleRefs) ? variant.paletteRoleRefs : [];
+    const canvas = variant.canvas || {};
+    const assetRef = variant.asset || {};
+    const assetId = assetRef.creativeAssetId || null;
+    const assetDto = assetId ? assetById.get(assetId) : null;
+    const preview = renderSafeDraftPngPreview(
+      assetId,
+      `Draft PNG for ${variant.id || "variant"} · ${variant.format || "format"} · review only`
+    );
+    return `
+      <div class="creative-variant-card" data-variant-id="${escapeHtml(variant.id || "")}">
+        <strong>${escapeHtml(variant.id || "—")} · ${escapeHtml(variant.format || "—")}</strong>
+        <span>Canvas <code>${escapeHtml(String(canvas.width ?? "—"))}×${escapeHtml(String(canvas.height ?? "—"))}</code></span>
+        <span>Palette role refs: <code>${escapeHtml(paletteRefs.join(", ") || "—")}</code></span>
+        <span>Copy kind <code>${escapeHtml(copy.kind || "—")}</code></span>
+        <span>Headline: ${escapeHtml(copy.headline || "—")}</span>
+        <span>Body: ${escapeHtml(copy.body || "—")}</span>
+        <span>CTA: ${escapeHtml(copy.cta || "—")}</span>
+        <span>Image prompt: ${escapeHtml(variant.imagePrompt || "—")}</span>
+        ${claims.length ? claims.map(claim => `
+          <div class="workshop-claim">
+            <strong>Preserved factual claim</strong>
+            <span>${escapeHtml(claim.statement || "—")}</span>
+            <span>Source IDs: <code>${escapeHtml((claim.sourceIds || []).join(", ") || "—")}</code></span>
+          </div>`).join("") : `<span>Factual claims: none</span>`}
+        <span>Asset id <code>${escapeHtml(assetId || "—")}</code> · type <code>${escapeHtml(assetRef.contentType || assetDto?.contentType || "—")}</code> · bytes <code>${escapeHtml(String(assetRef.byteSize ?? assetDto?.byteSize ?? "—"))}</code> · sha <code>${escapeHtml(assetRef.sha256 || assetDto?.sha256 || "—")}</code></span>
+        ${preview}
+        <span class="seed-hint">Draft PNG for review only · same-origin content endpoint · not campaign-ready</span>
+      </div>`;
+  }).join("");
+}
+
+function renderCreativeContributions(contributions, document) {
+  if (!creativeContributions) return;
+  const fromApi = Array.isArray(contributions) ? contributions : [];
+  const fromDoc = Array.isArray(document?.contributions) ? document.contributions : [];
+  if (!fromApi.length && !fromDoc.length) {
+    creativeContributions.innerHTML = `<p class="seed-hint">No role contributions returned. Expected exactly 13 durable roles.</p>`;
+    return;
+  }
+
+  const ordered = CREATIVE_LOGICAL_ROLES.map(role => {
+    const apiRow = fromApi.find(x => x.logicalRole === role);
+    const docRow = fromDoc.find(x => x.logicalRole === role);
+    return { role, apiRow, docRow };
+  });
+
+  const recognized = ordered.filter(x => x.apiRow || x.docRow).length;
+  const countNote = recognized !== 13
+    ? `<p class="seed-hint">Expected exactly 13 role contributions; found ${escapeHtml(String(recognized))} recognized roles. No client invention.</p>`
+    : `<p class="seed-hint">${escapeHtml(THIRTEEN_TO_SIX_EXPLANATION)}. Showing exactly ${escapeHtml(String(recognized))} durable contributions.</p>`;
+
+  creativeContributions.innerHTML = countNote + ordered.map(({ role, apiRow, docRow }) => {
+    let summary = docRow?.summary || "";
+    if (apiRow?.contributionJson) {
+      try {
+        const parsed = typeof apiRow.contributionJson === "string"
+          ? JSON.parse(apiRow.contributionJson)
+          : apiRow.contributionJson;
+        if (parsed?.summary) summary = parsed.summary;
+      } catch {
+        /* keep document summary */
+      }
+    }
+    return `
+      <div class="creative-contribution-card">
+        <strong>${escapeHtml(role)}</strong>
+        <span>${escapeHtml(summary || "—")}</span>
+        <span>Producing run <code>${escapeHtml(apiRow?.producingAgentRunId || "—")}</code></span>
+      </div>`;
+  }).join("");
+}
+
+function renderCreativeAssets(assets) {
+  if (!creativeAssets) return;
+  if (!assets.length) {
+    creativeAssets.innerHTML = `<p class="seed-hint">No creative assets returned for this package.</p>`;
+    return;
+  }
+  creativeAssets.innerHTML = `
+    <p class="creative-roles-note">Asset provider is separate and non-AI. Receipts below are from /creative-packages/{id}/assets. Previews use only same-origin /creative-assets/{id}/content.</p>
+    ${assets.map(asset => `
+      <div class="creative-asset-card">
+        <strong>${escapeHtml(asset.variantId || "—")} · ${escapeHtml(asset.format || "—")}</strong>
+        <span>Canvas <code>${escapeHtml(String(asset.width ?? "—"))}×${escapeHtml(String(asset.height ?? "—"))}</code> · type <code>${escapeHtml(asset.contentType || "—")}</code> · bytes <code>${escapeHtml(String(asset.byteSize ?? "—"))}</code></span>
+        <span>SHA-256 <code>${escapeHtml(asset.sha256 || "—")}</code></span>
+        <span>Provider <code>${escapeHtml(asset.providerKey || "—")}</code> · adapter <code>${escapeHtml(asset.adapterVersion || "—")}</code> · request <code>${escapeHtml(asset.providerRequestId || "—")}</code></span>
+        <span>Estimated asset cost USD <code>${escapeHtml(formatCost(asset.estimatedCostUsd))}</code></span>
+        <span>Asset id <code>${escapeHtml(asset.creativeAssetId || "—")}</code></span>
+        ${renderSafeDraftPngPreview(asset.creativeAssetId, `Draft PNG asset ${asset.variantId || ""} for review only`)}
+      </div>`).join("")}
+  `;
+}
+
+function renderCreativeAgentRuns(runs) {
+  if (!creativeAgentRuns) return;
+  if (!runs.length) {
+    creativeAgentRuns.innerHTML = `<p class="seed-hint">No agent-run receipts returned for this package.</p>`;
+    return;
+  }
+  creativeAgentRuns.innerHTML = `
+    <p class="creative-roles-note">${escapeHtml(THIRTEEN_TO_SIX_EXPLANATION)}. Showing ${escapeHtml(String(runs.length))} receipt(s) from the package endpoint — exactly 6 workers expected, never 13 fake agent runs. Asset provider is separate.</p>
+    ${runs.map(run => `
+      <div class="creative-run-card">
+        <strong>${escapeHtml(run.logicalRole || "—")} · ${escapeHtml(run.status || "—")}</strong>
+        <span>Worker profile <code>${escapeHtml(run.workerProfileVersion || "—")}</code> · prompt <code>${escapeHtml(run.promptPackVersion || "—")}</code></span>
+        <span>Assigned roles <code>${escapeHtml(run.assignedRolesJson || "—")}</code></span>
+        <span>Tokens prompt/completion/total: ${escapeHtml(String(run.promptTokens ?? "—"))} / ${escapeHtml(String(run.completionTokens ?? "—"))} / ${escapeHtml(String(run.totalTokens ?? "—"))}</span>
+        <span>Estimated cost USD <code>${escapeHtml(formatCost(run.estimatedCostUsd))}</code> · provider <code>${escapeHtml(run.providerKey || "—")}</code> · model <code>${escapeHtml(run.modelId || "—")}</code></span>
+      </div>`).join("")}
+  `;
+}
+
+function syncCreativeVariantRadios(packageDocument) {
+  if (!creativeVariantSelect) return;
+  const variants = Array.isArray(packageDocument?.variants) ? packageDocument.variants : [];
+  const legend = `<legend>Selected variant * <em>required for APPROVE · forbidden for REJECT</em></legend>`;
+  if (!variants.length) {
+    creativeVariantSelect.innerHTML = `${legend}<p class="seed-hint">No variants available from documentJson.</p>`;
+    return;
+  }
+  creativeVariantSelect.innerHTML = legend + variants.map(variant => {
+    const id = String(variant.id || "");
+    return `<label><input type="radio" name="selectedVariantId" value="${escapeHtml(id)}" disabled> ${escapeHtml(id)} · ${escapeHtml(variant.format || "")}</label>`;
+  }).join("");
+}
+
+function clearCreativeVariantSelection() {
+  creativeDecisionForm?.querySelectorAll('input[name="selectedVariantId"]').forEach(input => {
+    input.checked = false;
+  });
+}
+
+function setCreativeControlsEnabled(enabled) {
+  if (creativeJobKind) creativeJobKind.disabled = !enabled;
+  if (creativeObjective) creativeObjective.disabled = !enabled;
+  if (creativeVariantCount) creativeVariantCount.disabled = !enabled;
+  creativeFormatSelect?.querySelectorAll('input[name="creativeFormat"]').forEach(input => {
+    input.disabled = !enabled;
+  });
+  syncCreativeRevisionFields();
+  if (creativeJobSubmit) creativeJobSubmit.disabled = !enabled;
+  if (creativeRefreshLists) creativeRefreshLists.disabled = !state.liveChatEnabled || !state.workspaceId;
+  if (creativeJobSelect) {
+    const hasJobs = (state.creativeJobs || []).length > 0;
+    creativeJobSelect.disabled = !state.liveChatEnabled || !hasJobs;
+  }
+  if (creativePackageSelect) {
+    const hasPackages = (state.creativePackages?.versions || []).length > 0;
+    creativePackageSelect.disabled = !state.liveChatEnabled || !hasPackages;
+  }
+  setCreativeDecisionEnabled(enabled && state.creativePackage?.status === "PROPOSED");
+}
+
+function setCreativeDecisionEnabled(enabled) {
+  if (creativeRationale) creativeRationale.disabled = !enabled;
+  if (creativeConfirmApprove) creativeConfirmApprove.disabled = !enabled;
+  creativeVariantSelect?.querySelectorAll('input[name="selectedVariantId"]').forEach(input => {
+    input.disabled = !enabled;
+  });
+  creativeDecisionForm?.querySelectorAll("button").forEach(button => {
     button.disabled = !enabled;
   });
 }

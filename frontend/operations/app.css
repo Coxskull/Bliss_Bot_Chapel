@@ -114,6 +114,18 @@ a { color: inherit; }
   padding: 4px;
   font-size: 9px;
 }
+.creative-draft-png {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-top: 8px;
+  border: 1px dashed #9bb4cc;
+  background: #f0f4f8;
+}
+.creative-synthetic-warning {
+  border-color: #c9a227 !important;
+  background: #fff8e0 !important;
+}
 .auth-gate-card { width: min(470px, 100%); padding: 45px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface); box-shadow: var(--shadow); text-align: center; }
 .auth-gate-card .brand-mark { margin: 0 auto 22px; }
 .auth-gate-card .brand-mark svg { stroke: var(--forest); }
