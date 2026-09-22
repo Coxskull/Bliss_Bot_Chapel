@@ -3333,6 +3333,7 @@ async function api(path, options = {}) {
     headers["X-CSRF-TOKEN"] = state.csrfToken;
   }
   const response = await fetch(path, {
+    cache: "no-store",
     ...options,
     headers,
     credentials: "same-origin"

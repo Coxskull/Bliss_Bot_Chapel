@@ -89,6 +89,7 @@ async function api(path, options = {}) {
     headers["X-CSRF-TOKEN"] = state.session.csrfToken;
   }
   const response = await fetch(`${base}${path}`, {
+    cache: "no-store",
     ...options,
     headers,
     credentials: "same-origin"

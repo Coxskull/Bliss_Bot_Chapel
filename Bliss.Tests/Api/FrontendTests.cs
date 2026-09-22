@@ -1005,6 +1005,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
             "These are human-supplied aggregate observations from the named source. Bliss did not collect or verify delivery events. The linked placement remains PLANNED and does not prove activation or delivery. Metrics show association only, not causation or incrementality. No event-level data, personal data, external URLs, or platform credentials are included. AI output is advisory and cannot change creative, campaign, placement, inventory, spend, or external systems.",
             script);
         Assert.Contains("X-CSRF-TOKEN", script);
+        Assert.Contains("cache: \"no-store\"", script);
 
         Assert.DoesNotContain("submitWeddingPlannerMeasurementLearningJob", script);
         Assert.DoesNotContain("submitWeddingPlannerMeasurementLearningDecision", script);
@@ -1066,6 +1067,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("/contributions", script);
         Assert.Contains("/agent-runs", script);
         Assert.Contains("headers: { \"Content-Type\": \"application/json\" }", script);
+        Assert.Contains("cache: \"no-store\"", script);
         Assert.Contains("form.hidden = true", script);
         Assert.Contains("attestationAcknowledged", script);
         Assert.Contains("HUMAN-SUPPLIED AGGREGATES", script);
