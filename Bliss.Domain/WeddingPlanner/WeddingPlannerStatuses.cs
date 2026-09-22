@@ -86,6 +86,17 @@ public static class WeddingPlannerAuditActions
     public const string CampaignReadinessPointerSet = "CAMPAIGN_READINESS_POINTER_SET";
     public const string CampaignReadinessPointerCleared = "CAMPAIGN_READINESS_POINTER_CLEARED";
     public const string CampaignReadinessRevoked = "CAMPAIGN_READINESS_REVOKED";
+    public const string MeasurementLearningJobStarted = "MEASUREMENT_LEARNING_JOB_STARTED";
+    public const string MeasurementLearningJobSucceeded = "MEASUREMENT_LEARNING_JOB_SUCCEEDED";
+    public const string MeasurementLearningJobFailed = "MEASUREMENT_LEARNING_JOB_FAILED";
+    public const string MeasurementLearningJobReplayed = "MEASUREMENT_LEARNING_JOB_REPLAYED";
+    public const string MeasurementLearningRulesFindingsRecorded = "MEASUREMENT_LEARNING_RULES_FINDINGS_RECORDED";
+    public const string MeasurementLearningReportProposed = "MEASUREMENT_LEARNING_REPORT_PROPOSED";
+    public const string MeasurementLearningReportAccepted = "MEASUREMENT_LEARNING_REPORT_ACCEPTED";
+    public const string MeasurementLearningReportRejected = "MEASUREMENT_LEARNING_REPORT_REJECTED";
+    public const string MeasurementLearningReportSuperseded = "MEASUREMENT_LEARNING_REPORT_SUPERSEDED";
+    public const string MeasurementLearningReportReplayed = "MEASUREMENT_LEARNING_REPORT_REPLAYED";
+    public const string MeasurementLearningPointerSet = "MEASUREMENT_LEARNING_POINTER_SET";
 }
 
 public static class WeddingPlannerOutcomes
@@ -128,6 +139,95 @@ public static class WeddingPlannerAgentRoles
     /// <summary>Phase 7 QA stage LogicalRole values (exactly 2 executable stages).</summary>
     public const string ChaperoneReview = "CHAPERONE_REVIEW";
     public const string QaInspection = "QA_INSPECTION";
+
+    /// <summary>Phase 9 Measurement / Learning stage LogicalRole values (exactly 2 executable stages).</summary>
+    public const string PerformanceAnalysis = "PERFORMANCE_ANALYSIS";
+    public const string LearningSynthesis = "LEARNING_SYNTHESIS";
+}
+
+/// <summary>Exactly three NEW durable Phase 9 intelligence roles (not agent-run identities).</summary>
+public static class WeddingPlannerMeasurementLearningLogicalRoles
+{
+    public const string PerformanceAnalyst = "PERFORMANCE_ANALYST";
+    public const string LearningSynthesizer = "LEARNING_SYNTHESIZER";
+    public const string OptimizationAdvisor = "OPTIMIZATION_ADVISOR";
+
+    public static readonly IReadOnlyList<string> AllInOrder =
+    [
+        PerformanceAnalyst,
+        LearningSynthesizer,
+        OptimizationAdvisor
+    ];
+}
+
+/// <summary>Exactly two executable Phase 9 Measurement / Learning worker profiles.</summary>
+public static class WeddingPlannerMeasurementLearningWorkerProfiles
+{
+    public const string PerformanceAnalysisV1 = "PERFORMANCE_ANALYSIS_V1";
+    public const string LearningSynthesisV1 = "LEARNING_SYNTHESIS_V1";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        PerformanceAnalysisV1,
+        LearningSynthesisV1
+    ];
+
+    public static IReadOnlyList<string> AssignedRoles(string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            PerformanceAnalysisV1 => [WeddingPlannerMeasurementLearningLogicalRoles.PerformanceAnalyst],
+            LearningSynthesisV1 =>
+            [
+                WeddingPlannerMeasurementLearningLogicalRoles.LearningSynthesizer,
+                WeddingPlannerMeasurementLearningLogicalRoles.OptimizationAdvisor
+            ],
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown measurement-learning worker profile.")
+        };
+
+    public static string StageLogicalRole(string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            PerformanceAnalysisV1 => WeddingPlannerAgentRoles.PerformanceAnalysis,
+            LearningSynthesisV1 => WeddingPlannerAgentRoles.LearningSynthesis,
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown measurement-learning worker profile.")
+        };
+
+    public static string PromptPack(string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            PerformanceAnalysisV1 => WeddingPlannerPromptPacks.PerformanceAnalysisV1,
+            LearningSynthesisV1 => WeddingPlannerPromptPacks.LearningSynthesisV1,
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown measurement-learning worker profile.")
+        };
+}
+
+/// <summary>
+/// Internal run/report idempotency suffixes. Public job keys must leave room for the longest suffix
+/// within the 128-character IdempotencyKey column.
+/// </summary>
+public static class WeddingPlannerMeasurementLearningIdempotency
+{
+    public const string PerformanceAnalysisStageSuffix = ":PERFORMANCE_ANALYSIS";
+    public const string LearningSynthesisStageSuffix = ":LEARNING_SYNTHESIS";
+    public const string ReportSuffix = ":REPORT";
+
+    /// <summary>Longest stage suffix length (<see cref="PerformanceAnalysisStageSuffix"/>).</summary>
+    public const int LongestSuffixLength = 21;
+
+    /// <summary>Max public measurement-learning-job IdempotencyKey length (128 − longest suffix).</summary>
+    public const int MaxJobIdempotencyKeyLength = 128 - LongestSuffixLength;
+
+    public static string StageKey(string jobKey, string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            WeddingPlannerMeasurementLearningWorkerProfiles.PerformanceAnalysisV1 =>
+                jobKey + PerformanceAnalysisStageSuffix,
+            WeddingPlannerMeasurementLearningWorkerProfiles.LearningSynthesisV1 =>
+                jobKey + LearningSynthesisStageSuffix,
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion))
+        };
+
+    public static string ReportKey(string jobKey) => jobKey + ReportSuffix;
 }
 
 /// <summary>Exactly three NEW durable Phase 7 control roles (not agent-run identities).</summary>
@@ -596,6 +696,8 @@ public static class WeddingPlannerPromptPacks
     public const string VariantProductionV1 = "wp-phase6.variant-production.v1";
     public const string ChaperoneReviewV1 = "wp-phase7.chaperone-review.v1";
     public const string QaInspectionV1 = "wp-phase7.qa-inspection.v1";
+    public const string PerformanceAnalysisV1 = "wp-phase9.performance-analysis.v1";
+    public const string LearningSynthesisV1 = "wp-phase9.learning-synthesis.v1";
 }
 
 public static class WeddingPlannerSchemaVersions
@@ -627,6 +729,11 @@ public static class WeddingPlannerSchemaVersions
     public const string QaReviewReportV1 = "qa-review-report.v1";
     public const string CampaignReadinessHandshakeV1 = "campaign-readiness-handshake.v1";
     public const string CampaignReadinessRulesV1 = "campaign-readiness-rules.v1";
+    public const string MeasurementLearningBriefV1 = "measurement-learning-brief.v1";
+    public const string MeasurementRulesV1 = "measurement-rules.v1";
+    public const string PerformanceAnalysisWorkerOutputV1 = "performance-analysis-worker-output.v1";
+    public const string LearningSynthesisWorkerOutputV1 = "learning-synthesis-worker-output.v1";
+    public const string MeasurementLearningReportV1 = "measurement-learning-report.v1";
 }
 
 public static class WeddingPlannerQaContractVersions
@@ -1200,4 +1307,103 @@ public static class WeddingPlannerCampaignReadinessDisclosures
         "Planned placement is not activation, delivery, publication, or payment.";
     public const string NotLegalMeasurementPayment =
         "This handshake is not legal, measurement, or payment approval.";
+}
+
+public static class WeddingPlannerMeasurementLearningJobStatuses
+{
+    public const string Running = "RUNNING";
+    public const string Succeeded = "SUCCEEDED";
+    public const string Failed = "FAILED";
+}
+
+public static class WeddingPlannerMeasurementLearningReportStatuses
+{
+    public const string Proposed = "PROPOSED";
+    public const string Accepted = "ACCEPTED";
+    public const string Rejected = "REJECTED";
+    public const string Superseded = "SUPERSEDED";
+}
+
+public static class WeddingPlannerMeasurementLearningDecisions
+{
+    public const string Accept = "ACCEPT";
+    public const string Reject = "REJECT";
+
+    public static readonly IReadOnlyList<string> All = [Accept, Reject];
+}
+
+public static class WeddingPlannerMeasurementLearningContributionSources
+{
+    public const string Ai = "AI";
+}
+
+public static class WeddingPlannerMeasurementLearningFindingSeverities
+{
+    public const string Pass = "PASS";
+    public const string Block = "BLOCK";
+}
+
+public static class WeddingPlannerMeasurementLearningRuleCodes
+{
+    public const string HandshakeScope = "ML_HANDSHAKE_SCOPE";
+    public const string HandshakePlacementLink = "ML_HANDSHAKE_PLACEMENT_LINK";
+    public const string PlacementStillPlanned = "ML_PLACEMENT_STILL_PLANNED";
+    public const string ObservationWindow = "ML_OBSERVATION_WINDOW";
+    public const string SourceAttested = "ML_SOURCE_ATTESTED";
+    public const string AggregateCounts = "ML_AGGREGATE_COUNTS";
+    public const string FinancialValues = "ML_FINANCIAL_VALUES";
+    public const string CurrencyCode = "ML_CURRENCY_CODE";
+    public const string NoEventLevelData = "ML_NO_EVENT_LEVEL_DATA";
+    public const string ProvenanceChain = "ML_PROVENANCE_CHAIN";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        HandshakeScope,
+        HandshakePlacementLink,
+        PlacementStillPlanned,
+        ObservationWindow,
+        SourceAttested,
+        AggregateCounts,
+        FinancialValues,
+        CurrencyCode,
+        NoEventLevelData,
+        ProvenanceChain
+    ];
+}
+
+public static class WeddingPlannerMeasurementLearningMarkers
+{
+    public const string SyntheticDevelopmentMeasurementLearning = "SYNTHETIC DEVELOPMENT MEASUREMENT LEARNING";
+}
+
+public static class WeddingPlannerMeasurementLearningLabels
+{
+    public const string HumanSuppliedAggregates = "HUMAN-SUPPLIED AGGREGATES";
+    public const string AssociationNotCausation = "ASSOCIATION — NOT CAUSATION";
+    public const string AdvisoryOnly = "ADVISORY ONLY";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        HumanSuppliedAggregates,
+        AssociationNotCausation,
+        AdvisoryOnly
+    ];
+}
+
+public static class WeddingPlannerMeasurementLearningAttestation
+{
+    public const string Text =
+        "These are human-supplied aggregate observations from the named source. Bliss did not collect or verify delivery events. The linked placement remains PLANNED and does not prove activation or delivery. Metrics show association only, not causation or incrementality. No event-level data, personal data, external URLs, or platform credentials are included. AI output is advisory and cannot change creative, campaign, placement, inventory, spend, or external systems.";
+}
+
+public static class WeddingPlannerMeasurementLearningReportDisclaimer
+{
+    public const string Text =
+        "This measurement-learning report is advisory only. Observed aggregates are human-supplied and unverified by Bliss. Derived metrics are deterministic arithmetic with null denominators when counts are zero. Descriptive patterns, hypotheses, and recommended future tests are association-only AI recommendations. They do not prove causation, guarantee outcomes, certify statistical significance, claim incrementality, activate campaigns, revise creative, change spend, reserve inventory, or write to external systems. The linked placement remains PLANNED and does not prove delivery.";
+}
+
+public static class WeddingPlannerMeasurementLearningContractVersions
+{
+    public const string MeasurementRulesV1 = "measurement-rules.v1";
+    public const string MeasurementLearningOrchestrationV1 = "wp-measurement-learning-orchestration.v1";
 }

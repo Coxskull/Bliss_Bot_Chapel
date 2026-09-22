@@ -314,9 +314,53 @@ public sealed class OpenAiCompatibleWeddingPlannerAiProvider : IWeddingPlannerAi
                 "Emit QA_INSPECTOR only with alignment notes, uncertainties, and proposedOutcome in PASS_RECOMMENDED|RETURN_FOR_REVISION|HUMAN_ESCALATION. rulesOverallSeverity must echo durable rules. When rules overallSeverity is BLOCK, proposedOutcome must not be PASS_RECOMMENDED. Never create Steward contributions, escalate cases, or receive image bytes.");
         }
 
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.PerformanceAnalysis, StringComparison.Ordinal))
+        {
+            return BuildMeasurementLearningInstruction(
+                request,
+                WeddingPlannerMeasurementLearningWorkerProfiles.PerformanceAnalysisV1,
+                WeddingPlannerSchemaVersions.PerformanceAnalysisWorkerOutputV1,
+                "Emit PERFORMANCE_ANALYST only with association-only descriptivePatterns, limitations, and dataGaps. Never claim causation, significance, delivery by Bliss, or mutate upstream records.");
+        }
+
+        if (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.LearningSynthesis, StringComparison.Ordinal))
+        {
+            return BuildMeasurementLearningInstruction(
+                request,
+                WeddingPlannerMeasurementLearningWorkerProfiles.LearningSynthesisV1,
+                WeddingPlannerSchemaVersions.LearningSynthesisWorkerOutputV1,
+                "Emit LEARNING_SYNTHESIZER and OPTIMIZATION_ADVISOR only. Hypotheses and recommendedFutureTests are advisory, association-only, and require human action. Never activate campaigns, revise creative, change spend, or claim causal certainty.");
+        }
+
         throw new WeddingPlannerAiProviderException(
             $"Unsupported Wedding Planner logical role '{SanitizeForError(request.LogicalRole)}'.",
             "PROVIDER_UNSUPPORTED_ROLE");
+    }
+
+    private static string BuildMeasurementLearningInstruction(
+        WeddingPlannerAiCompletionRequest request,
+        string expectedProfile,
+        string schemaVersion,
+        string stageRule)
+    {
+        var profile = string.IsNullOrWhiteSpace(request.WorkerProfileVersion)
+            ? expectedProfile
+            : request.WorkerProfileVersion.Trim();
+        var roles = request.AssignedRoles is { Count: > 0 }
+            ? request.AssignedRoles
+            : WeddingPlannerMeasurementLearningWorkerProfiles.AssignedRoles(expectedProfile);
+        var roleList = string.Join(", ", roles);
+
+        return
+            "You are a Wedding Planner Phase 9 measurement-learning stage worker. Emit a single JSON object for schema " +
+            schemaVersion + " with only the locked keys for that schema. Unknown fields are forbidden. Never include html, css, " +
+            "svg, script, src, url, href, base64, image bytes, event arrays, cookies, device identifiers, or credentials. Never claim " +
+            "causation, statistical significance, incrementality proof, delivery by Bliss, or autonomous application. Never mutate " +
+            "campaign, placement, creative, inventory, spend, or external systems. Placement remains PLANNED and is not delivery proof. " +
+            $"workerProfileVersion must be {profile}. contributions must include exactly these logicalRole values " +
+            $"and no others: {roleList}. " +
+            stageRule +
+            " Prompt pack: " + request.PromptPackVersion + ".";
     }
 
     private static string BuildQaInstruction(

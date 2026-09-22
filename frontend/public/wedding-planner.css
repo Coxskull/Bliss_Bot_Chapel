@@ -1833,3 +1833,173 @@ footer > a span { margin-left: 8px; }
   height: auto;
   display: block;
 }
+
+
+.measurement-learning-panel {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #d0d7e4;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.measurement-learning-heading p:first-child {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: .08em;
+  color: #6a758a;
+}
+.measurement-learning-heading h3 {
+  margin: 4px 0 8px;
+  font-size: 18px;
+  color: #1c2433;
+}
+.measurement-learning-copy {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #445066;
+}
+.measurement-learning-copy code { font-size: 10px; }
+.measurement-learning-prereq {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d0d7e4;
+  background: #f8fafc;
+}
+.measurement-learning-prereq[data-ready="true"] { border-color: #b7e0c6; background: #f3faf6; }
+.measurement-learning-prereq[data-ready="false"] { border-color: #f0d4a8; background: #fffaf0; }
+.measurement-learning-prereq span {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1c2433;
+  margin-bottom: 4px;
+}
+.measurement-learning-prereq p { margin: 0; font-size: 10px; line-height: 1.45; color: #445066; }
+.measurement-learning-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+}
+.measurement-learning-labels span {
+  display: inline-block;
+  padding: 4px 8px;
+  border: 1px solid #c5cddc;
+  border-radius: 4px;
+  background: #f3f6fb;
+  color: #1c2433;
+  font-size: 9px;
+  letter-spacing: .04em;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.measurement-learning-disclaimer-block,
+.measurement-learning-synthetic-warning,
+.measurement-learning-section,
+.measurement-learning-detail {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d0d7e4;
+  background: #fff;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.measurement-learning-detail { display: grid; gap: 12px; }
+.measurement-learning-disclaimer-block h4,
+.measurement-learning-section h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #1c2433;
+}
+.measurement-learning-disclaimer-block p,
+.measurement-learning-synthetic-warning {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #445066;
+}
+.measurement-learning-synthetic-warning {
+  border-color: #f0d4a8;
+  background: #fffaf0;
+}
+.measurement-learning-lists {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.measurement-learning-list-block label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1c2433;
+  margin-bottom: 6px;
+}
+.measurement-learning-list-block select,
+.measurement-learning-list-block button {
+  width: 100%;
+  box-sizing: border-box;
+}
+.measurement-learning-list-block button { margin-top: 8px; }
+.measurement-learning-current-pointer {
+  margin: 6px 0 0;
+  font-size: 10px;
+  color: #2f6b45;
+  font-weight: 600;
+}
+.measurement-learning-status-line {
+  font-size: 13px;
+  color: #1c2433;
+}
+.measurement-learning-meta-line {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #445066;
+}
+.measurement-learning-meta-line code { font-size: 9px; overflow-wrap: anywhere; }
+.measurement-learning-finding-card,
+.measurement-learning-decision-card,
+.measurement-learning-contribution-card,
+.measurement-learning-run-card,
+.measurement-learning-metric-row {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: #445066;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.measurement-learning-finding-card strong,
+.measurement-learning-decision-card strong,
+.measurement-learning-contribution-card strong,
+.measurement-learning-run-card strong {
+  color: #1c2433;
+  font-size: 12px;
+}
+.measurement-learning-json {
+  margin: 0;
+  padding: 10px;
+  max-height: 280px;
+  overflow: auto;
+  font-size: 10px;
+  line-height: 1.4;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.measurement-learning-authority-note {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #6a758a;
+}

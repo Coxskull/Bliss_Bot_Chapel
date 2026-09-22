@@ -35,6 +35,42 @@ const CAMPAIGN_READINESS_RULE_CODES = [
   "CR_SLOT_CONTENT",
   "CR_SYNTHETIC_ENVIRONMENT"
 ];
+
+const MEASUREMENT_LEARNING_LABEL = "PHASE 9 · MEASUREMENT / LEARNING";
+const MEASUREMENT_LEARNING_STATUSES = ["PROPOSED", "ACCEPTED", "REJECTED", "SUPERSEDED"];
+const MEASUREMENT_LEARNING_JOB_STATUSES = ["RUNNING", "SUCCEEDED", "FAILED"];
+const SYNTHETIC_DEVELOPMENT_MEASUREMENT_LEARNING = "SYNTHETIC DEVELOPMENT MEASUREMENT LEARNING";
+const MEASUREMENT_LEARNING_LABELS = [
+  "HUMAN-SUPPLIED AGGREGATES",
+  "ASSOCIATION — NOT CAUSATION",
+  "ADVISORY ONLY"
+];
+const MEASUREMENT_LEARNING_ATTESTATION =
+  "These are human-supplied aggregate observations from the named source. Bliss did not collect or verify delivery events. The linked placement remains PLANNED and does not prove activation or delivery. Metrics show association only, not causation or incrementality. No event-level data, personal data, external URLs, or platform credentials are included. AI output is advisory and cannot change creative, campaign, placement, inventory, spend, or external systems.";
+const MEASUREMENT_LEARNING_DISCLAIMER =
+  "This measurement-learning report is advisory only. Observed aggregates are human-supplied and unverified by Bliss. Derived metrics are deterministic arithmetic with null denominators when counts are zero. Descriptive patterns, hypotheses, and recommended future tests are association-only AI recommendations. They do not prove causation, guarantee outcomes, certify statistical significance, claim incrementality, activate campaigns, revise creative, change spend, reserve inventory, or write to external systems. The linked placement remains PLANNED and does not prove delivery.";
+const MEASUREMENT_LEARNING_RULE_CODES = [
+  "ML_HANDSHAKE_SCOPE",
+  "ML_HANDSHAKE_PLACEMENT_LINK",
+  "ML_PLACEMENT_STILL_PLANNED",
+  "ML_OBSERVATION_WINDOW",
+  "ML_SOURCE_ATTESTED",
+  "ML_AGGREGATE_COUNTS",
+  "ML_FINANCIAL_VALUES",
+  "ML_CURRENCY_CODE",
+  "ML_NO_EVENT_LEVEL_DATA",
+  "ML_PROVENANCE_CHAIN"
+];
+const MEASUREMENT_LEARNING_LOGICAL_ROLES = [
+  "PERFORMANCE_ANALYST",
+  "LEARNING_SYNTHESIZER",
+  "OPTIMIZATION_ADVISOR"
+];
+const MEASUREMENT_LEARNING_WORKER_PROFILES = [
+  "PERFORMANCE_ANALYSIS_V1",
+  "LEARNING_SYNTHESIS_V1"
+];
+
 const CURATOR_LOGICAL_ROLES = [
   "MARKET_LANDSCAPE_RESEARCHER",
   "AUDIENCE_CONTEXT_RESEARCHER",
@@ -188,6 +224,13 @@ const state = {
   campaignReadinessHandshakes: [],
   campaignReadinessHandshake: null,
   campaignReadinessDecisions: [],
+  measurementLearningJobs: [],
+  measurementLearningReports: null,
+  measurementLearningReport: null,
+  measurementLearningJob: null,
+  measurementLearningContributions: [],
+  measurementLearningAgentRuns: [],
+  measurementLearningDecisions: [],
   busy: false
 };
 
@@ -411,6 +454,40 @@ const campaignReadinessRulesFindings = document.querySelector("#campaign-readine
 const campaignReadinessDocumentJson = document.querySelector("#campaign-readiness-document-json");
 const campaignReadinessDecisionsEl = document.querySelector("#campaign-readiness-decisions");
 const campaignReadinessDisclaimerText = document.querySelector("#campaign-readiness-disclaimer-text");
+const measurementLearningStatusEl = document.querySelector("#measurement-learning-status");
+const measurementLearningSyntheticWarning = document.querySelector("#measurement-learning-synthetic-warning");
+const measurementLearningReportSelect = document.querySelector("#measurement-learning-report-select");
+const measurementLearningJobSelect = document.querySelector("#measurement-learning-job-select");
+const measurementLearningCurrentPointer = document.querySelector("#measurement-learning-current-pointer");
+const measurementLearningRefresh = document.querySelector("#measurement-learning-refresh");
+const measurementLearningDetail = document.querySelector("#measurement-learning-detail");
+const measurementLearningStatusLabel = document.querySelector("#measurement-learning-status-label");
+const measurementLearningCurrentBadge = document.querySelector("#measurement-learning-current-badge");
+const measurementLearningVersionNumber = document.querySelector("#measurement-learning-version-number");
+const measurementLearningSummaryText = document.querySelector("#measurement-learning-summary-text");
+const measurementLearningSchema = document.querySelector("#measurement-learning-schema");
+const measurementLearningJobPin = document.querySelector("#measurement-learning-job-pin");
+const measurementLearningHandshakePin = document.querySelector("#measurement-learning-handshake-pin");
+const measurementLearningHandshakeStatus = document.querySelector("#measurement-learning-handshake-status");
+const measurementLearningHandshakeWasCurrent = document.querySelector("#measurement-learning-handshake-was-current");
+const measurementLearningPlacement = document.querySelector("#measurement-learning-placement");
+const measurementLearningPlacementRun = document.querySelector("#measurement-learning-placement-run");
+const measurementLearningObservationWindow = document.querySelector("#measurement-learning-observation-window");
+const measurementLearningSourceLabel = document.querySelector("#measurement-learning-source-label");
+const measurementLearningObservationSource = document.querySelector("#measurement-learning-observation-source");
+const measurementLearningPerfRun = document.querySelector("#measurement-learning-perf-run");
+const measurementLearningSynthRun = document.querySelector("#measurement-learning-synth-run");
+const measurementLearningAggregates = document.querySelector("#measurement-learning-aggregates");
+const measurementLearningMetrics = document.querySelector("#measurement-learning-metrics");
+const measurementLearningAdvisory = document.querySelector("#measurement-learning-advisory");
+const measurementLearningRulesFindings = document.querySelector("#measurement-learning-rules-findings");
+const measurementLearningContributionsEl = document.querySelector("#measurement-learning-contributions");
+const measurementLearningAgentRunsEl = document.querySelector("#measurement-learning-agent-runs");
+const measurementLearningDocumentJson = document.querySelector("#measurement-learning-document-json");
+const measurementLearningDecisionsEl = document.querySelector("#measurement-learning-decisions");
+const measurementLearningJobDetail = document.querySelector("#measurement-learning-job-detail");
+const measurementLearningAttestationText = document.querySelector("#measurement-learning-attestation-text");
+const measurementLearningDisclaimerText = document.querySelector("#measurement-learning-disclaimer-text");
 
 const colorFields = {
   primary: {
@@ -652,6 +729,25 @@ function bindPlannerUi() {
     inspectCampaignReadinessHandshake(selected).catch(error => setTurnStatus("error", error.message));
   });
 
+  measurementLearningRefresh?.addEventListener("click", () => {
+    refreshMeasurementLearningLists().catch(error => setTurnStatus("error", error.message));
+  });
+
+  measurementLearningReportSelect?.addEventListener("change", () => {
+    const id = measurementLearningReportSelect.value;
+    const versions = state.measurementLearningReports?.versions || [];
+    const selected = versions.find(x => x.measurementLearningReportVersionId === id) || null;
+    state.measurementLearningReport = selected;
+    inspectMeasurementLearningReport(selected).catch(error => setTurnStatus("error", error.message));
+  });
+
+  measurementLearningJobSelect?.addEventListener("change", () => {
+    const id = measurementLearningJobSelect.value;
+    const selected = (state.measurementLearningJobs || []).find(x => x.measurementLearningJobId === id) || null;
+    state.measurementLearningJob = selected;
+    renderMeasurementLearningJobDetail(selected);
+  });
+
   Object.values(colorFields).forEach(field => {
     field.picker?.addEventListener("input", () => {
       if (field.text) field.text.value = String(field.picker.value || "").toUpperCase();
@@ -719,6 +815,7 @@ async function bootstrapPlanner() {
   await refreshCreativeLists();
   await refreshQaLists();
   await refreshCampaignReadinessLists();
+  await refreshMeasurementLearningLists();
   setComposerEnabled(true);
   setBrandDnaControlsEnabled(true);
   renderColorPrerequisite();
@@ -3236,6 +3333,7 @@ async function api(path, options = {}) {
     headers["X-CSRF-TOKEN"] = state.csrfToken;
   }
   const response = await fetch(path, {
+    cache: "no-store",
     ...options,
     headers,
     credentials: "same-origin"
@@ -3890,4 +3988,357 @@ function renderCampaignReadinessDecisions(decisions) {
       <span>Actor <code>${escapeHtml(d.actorLabel || d.actorType || "—")}</code> · source <code>${escapeHtml(d.sourceSystem || "—")}</code> · key <code>${escapeHtml(d.idempotencyKey || "—")}</code></span>
       <span>Occurred <code>${escapeHtml(d.occurredAt || "—")}</code>${d.isReplay ? " · replay" : ""}</span>
     </div>`).join("");
+}
+
+
+function parseMeasurementLearningDocument(documentJson) {
+  if (!documentJson) return null;
+  try {
+    return typeof documentJson === "string" ? JSON.parse(documentJson) : documentJson;
+  } catch {
+    return null;
+  }
+}
+
+function parseMeasurementLearningJson(raw) {
+  if (!raw) return null;
+  try {
+    return typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    return null;
+  }
+}
+
+function measurementLearningHasSyntheticMarker(report, doc) {
+  return doc?.marker === SYNTHETIC_DEVELOPMENT_MEASUREMENT_LEARNING
+    || JSON.stringify(doc || {}).includes(SYNTHETIC_DEVELOPMENT_MEASUREMENT_LEARNING)
+    || String(report?.summary || "").includes(SYNTHETIC_DEVELOPMENT_MEASUREMENT_LEARNING);
+}
+
+function setMeasurementLearningControlsEnabled(enabled) {
+  if (measurementLearningRefresh) measurementLearningRefresh.disabled = !enabled;
+  if (measurementLearningReportSelect) measurementLearningReportSelect.disabled = !enabled;
+  if (measurementLearningJobSelect) measurementLearningJobSelect.disabled = !enabled;
+}
+
+function renderMeasurementLearningStatus() {
+  if (!measurementLearningStatusEl) return;
+  if (measurementLearningAttestationText) {
+    measurementLearningAttestationText.textContent = MEASUREMENT_LEARNING_ATTESTATION;
+  }
+  if (measurementLearningDisclaimerText) {
+    measurementLearningDisclaimerText.textContent = MEASUREMENT_LEARNING_DISCLAIMER;
+  }
+  if (!state.session || !state.liveChatEnabled || !state.workspaceId) {
+    measurementLearningStatusEl.dataset.ready = "false";
+    measurementLearningStatusEl.innerHTML = `<span>Measurement-learning requires an authenticated advertiser workspace</span><p>${escapeHtml(MEASUREMENT_LEARNING_LABEL)}. Read-only jobs and reports load after workspace refresh. Statuses ${escapeHtml(MEASUREMENT_LEARNING_STATUSES.join(" · "))} · ${escapeHtml(MEASUREMENT_LEARNING_LABELS.join(" · "))} · 3 roles → 2 workers. No job create or ACCEPT/REJECT on this public surface.</p>`;
+    if (measurementLearningSyntheticWarning) measurementLearningSyntheticWarning.hidden = true;
+    return;
+  }
+  const reports = state.measurementLearningReports;
+  const versions = Array.isArray(reports?.versions) ? reports.versions : [];
+  const jobs = state.measurementLearningJobs || [];
+  const currentId = reports?.currentAcceptedMeasurementLearningReportVersionId || null;
+  measurementLearningStatusEl.dataset.ready = versions.length || jobs.length ? "true" : "false";
+  measurementLearningStatusEl.innerHTML = `<span>${escapeHtml(MEASUREMENT_LEARNING_LABEL)} · ${escapeHtml(String(versions.length))} report${versions.length === 1 ? "" : "s"} · ${escapeHtml(String(jobs.length))} job${jobs.length === 1 ? "" : "s"}</span><p>Current accepted pointer <code>${escapeHtml(currentId || "none")}</code>. ${escapeHtml(MEASUREMENT_LEARNING_LABELS.join(" · "))}. Placement remains PLANNED — not activation or delivery. Advertiser read-only — no aggregate form and no ACCEPT/REJECT.</p>`;
+  if (measurementLearningCurrentPointer) {
+    measurementLearningCurrentPointer.hidden = !currentId;
+  }
+  if (measurementLearningSyntheticWarning) {
+    const show = measurementLearningHasSyntheticMarker(
+      state.measurementLearningReport,
+      parseMeasurementLearningDocument(state.measurementLearningReport?.documentJson)
+    );
+    measurementLearningSyntheticWarning.hidden = !show;
+  }
+}
+
+async function refreshMeasurementLearningLists() {
+  if (!state.workspaceId) return;
+  try {
+    const [jobs, reports] = await Promise.all([
+      api(`/api/wedding-planner/workspaces/${state.workspaceId}/measurement-learning-jobs`),
+      api(`/api/wedding-planner/workspaces/${state.workspaceId}/measurement-learning-reports`)
+    ]);
+    state.measurementLearningJobs = Array.isArray(jobs) ? jobs : [];
+    state.measurementLearningReports = reports || { versions: [], currentAcceptedMeasurementLearningReportVersionId: null };
+    const versions = state.measurementLearningReports.versions || [];
+    const selected =
+      versions.find(x => x.measurementLearningReportVersionId === state.measurementLearningReport?.measurementLearningReportVersionId) ||
+      versions.find(x => x.isCurrentAccepted) ||
+      versions[0] ||
+      null;
+    state.measurementLearningReport = selected;
+    const selectedJob =
+      state.measurementLearningJobs.find(x => x.measurementLearningJobId === state.measurementLearningJob?.measurementLearningJobId) ||
+      (selected?.producingMeasurementLearningJobId
+        ? state.measurementLearningJobs.find(x => x.measurementLearningJobId === selected.producingMeasurementLearningJobId)
+        : null) ||
+      state.measurementLearningJobs[0] ||
+      null;
+    state.measurementLearningJob = selectedJob;
+    renderMeasurementLearningReportList(versions, selected);
+    renderMeasurementLearningJobList(state.measurementLearningJobs, selectedJob);
+    renderMeasurementLearningStatus();
+    setMeasurementLearningControlsEnabled(!!state.liveChatEnabled);
+    if (selected) {
+      await inspectMeasurementLearningReport(selected);
+    } else if (measurementLearningDetail) {
+      measurementLearningDetail.hidden = true;
+      state.measurementLearningContributions = [];
+      state.measurementLearningAgentRuns = [];
+      state.measurementLearningDecisions = [];
+      renderMeasurementLearningJobDetail(selectedJob);
+    }
+  } catch (error) {
+    state.measurementLearningJobs = [];
+    state.measurementLearningReports = null;
+    state.measurementLearningReport = null;
+    state.measurementLearningJob = null;
+    state.measurementLearningContributions = [];
+    state.measurementLearningAgentRuns = [];
+    state.measurementLearningDecisions = [];
+    renderMeasurementLearningStatus();
+    if (measurementLearningDetail) measurementLearningDetail.hidden = true;
+    throw error;
+  }
+}
+
+function renderMeasurementLearningReportList(versions, selected) {
+  if (!measurementLearningReportSelect) return;
+  if (!versions.length) {
+    measurementLearningReportSelect.innerHTML = `<option value="">No measurement-learning reports yet</option>`;
+    return;
+  }
+  measurementLearningReportSelect.innerHTML = versions.map(v => {
+    const markers = [v.status || "UNKNOWN"];
+    if (v.isCurrentAccepted) markers.push("CURRENT ACCEPTED");
+    const selectedAttr = selected && v.measurementLearningReportVersionId === selected.measurementLearningReportVersionId ? " selected" : "";
+    return `<option value="${escapeHtml(v.measurementLearningReportVersionId)}"${selectedAttr}>v${escapeHtml(String(v.versionNumber ?? "—"))} · ${escapeHtml(markers.join(" · "))}</option>`;
+  }).join("");
+}
+
+function renderMeasurementLearningJobList(jobs, selected) {
+  if (!measurementLearningJobSelect) return;
+  if (!jobs.length) {
+    measurementLearningJobSelect.innerHTML = `<option value="">No measurement-learning jobs yet</option>`;
+    return;
+  }
+  measurementLearningJobSelect.innerHTML = jobs.map(j => {
+    const selectedAttr = selected && j.measurementLearningJobId === selected.measurementLearningJobId ? " selected" : "";
+    return `<option value="${escapeHtml(j.measurementLearningJobId)}"${selectedAttr}>${escapeHtml(j.status || "UNKNOWN")} · ${escapeHtml(j.sourceLabel || shortId(j.measurementLearningJobId))}</option>`;
+  }).join("");
+}
+
+function formatMetricValue(value) {
+  if (value === null || value === undefined || value === "") return "null";
+  return String(value);
+}
+
+function renderMeasurementLearningAggregates(report, doc) {
+  if (!measurementLearningAggregates) return;
+  const obs = doc?.observedAggregates || {};
+  const impressions = report?.impressions ?? obs.impressions;
+  const clicks = report?.clicks ?? obs.clicks;
+  const conversions = report?.conversions ?? obs.conversions;
+  const spend = report?.spend ?? obs.spend;
+  const revenue = report?.revenue ?? obs.revenue;
+  const currency = report?.currencyCode || obs.currencyCode || "—";
+  measurementLearningAggregates.innerHTML = `
+    <div class="measurement-learning-metric-row"><strong>HUMAN-SUPPLIED AGGREGATES</strong><span>Impressions <code>${escapeHtml(formatMetricValue(impressions))}</code> · clicks <code>${escapeHtml(formatMetricValue(clicks))}</code> · conversions <code>${escapeHtml(formatMetricValue(conversions))}</code></span><span>Spend <code>${escapeHtml(formatMetricValue(spend))}</code> · revenue <code>${escapeHtml(formatMetricValue(revenue))}</code> · currency <code>${escapeHtml(currency)}</code></span><span>Not Bliss-collected delivery events. Placement remains PLANNED — not activation.</span></div>
+  `;
+}
+
+function renderMeasurementLearningMetrics(report, doc) {
+  if (!measurementLearningMetrics) return;
+  const metrics = parseMeasurementLearningJson(report?.metricsJson) || doc?.derivedMetrics || {};
+  measurementLearningMetrics.innerHTML = `
+    <div class="measurement-learning-metric-row"><strong>ASSOCIATION — NOT CAUSATION</strong><span>CTR <code>${escapeHtml(formatMetricValue(metrics.ctr))}</code> · conversion rate <code>${escapeHtml(formatMetricValue(metrics.conversionRate))}</code></span><span>CPM <code>${escapeHtml(formatMetricValue(metrics.cpm))}</code> · CPC <code>${escapeHtml(formatMetricValue(metrics.cpc))}</code> · CPA <code>${escapeHtml(formatMetricValue(metrics.cpa))}</code> · ROAS <code>${escapeHtml(formatMetricValue(metrics.roas))}</code></span><span>Zero denominators are null — never zero, infinity, or NaN. Deterministic server arithmetic only.</span></div>
+  `;
+}
+
+function renderListBlock(title, items) {
+  const list = Array.isArray(items) ? items : [];
+  if (!list.length) return `<p class="seed-hint">${escapeHtml(title)}: none recorded.</p>`;
+  return `<div class="measurement-learning-metric-row"><strong>${escapeHtml(title)}</strong>${list.map(x => `<span>${escapeHtml(typeof x === "string" ? x : JSON.stringify(x))}</span>`).join("")}</div>`;
+}
+
+function renderMeasurementLearningAdvisory(doc) {
+  if (!measurementLearningAdvisory) return;
+  measurementLearningAdvisory.innerHTML = `
+    <p class="measurement-learning-authority-note">ADVISORY ONLY · required language: association · observation · hypothesis · recommendation. Never proved / caused / delivered by Bliss.</p>
+    ${renderListBlock("Descriptive patterns", doc?.descriptivePatterns)}
+    ${renderListBlock("Limitations", doc?.limitations)}
+    ${renderListBlock("Data gaps", doc?.dataGaps)}
+    ${renderListBlock("Learning hypotheses", doc?.learningHypotheses)}
+    ${renderListBlock("Recommended future tests", doc?.recommendedFutureTests)}
+  `;
+}
+
+function renderMeasurementLearningRulesFindings(report, doc) {
+  if (!measurementLearningRulesFindings) return;
+  const rules = parseMeasurementLearningJson(report?.rulesFindingsJson) || doc?.rulesFindings || null;
+  if (!rules) {
+    measurementLearningRulesFindings.innerHTML = `<p class="seed-hint">No measurement-rules.v1 findings available yet.</p>`;
+    return;
+  }
+  const findings = Array.isArray(rules.findings) ? rules.findings : [];
+  measurementLearningRulesFindings.innerHTML = `
+    <p class="measurement-learning-authority-note">Rules schema <code>${escapeHtml(rules.schemaVersion || "measurement-rules.v1")}</code> · overall <code>${escapeHtml(rules.overallSeverity || "—")}</code>. Expected 10 ML_* codes (PASS/BLOCK only — no WARN).</p>
+    ${findings.length ? findings.map(finding => `
+      <div class="measurement-learning-finding-card">
+        <strong>${escapeHtml(finding.code || "—")} · ${escapeHtml(finding.severity || "—")}</strong>
+        <span>${escapeHtml(finding.message || "—")}</span>
+      </div>`).join("") : `<p class="seed-hint">Findings array empty — unexpected for measurement-rules.v1.</p>`}
+  `;
+}
+
+function renderMeasurementLearningContributions(contributions) {
+  if (!measurementLearningContributionsEl) return;
+  if (!contributions.length) {
+    measurementLearningContributionsEl.innerHTML = `<p class="seed-hint">No contributions loaded for this report.</p>`;
+    return;
+  }
+  measurementLearningContributionsEl.innerHTML = `
+    <p class="measurement-learning-authority-note">Exactly 3 logical roles · ${escapeHtml(MEASUREMENT_LEARNING_LOGICAL_ROLES.join(" · "))} · workers ${escapeHtml(MEASUREMENT_LEARNING_WORKER_PROFILES.join(" · "))}.</p>
+    ${contributions.map(c => `
+      <div class="measurement-learning-contribution-card">
+        <strong>${escapeHtml(c.logicalRole || "—")} · ${escapeHtml(c.contributionSource || "—")}</strong>
+        <span>Producing run <code>${escapeHtml(c.producingAgentRunId || "—")}</code> · contribution <code>${escapeHtml(c.contributionId || "—")}</code></span>
+        <pre class="measurement-learning-json">${escapeHtml(typeof c.contributionJson === "string" ? c.contributionJson : JSON.stringify(c.contributionJson || {}, null, 2))}</pre>
+      </div>`).join("")}
+  `;
+}
+
+function renderMeasurementLearningAgentRuns(runs) {
+  if (!measurementLearningAgentRunsEl) return;
+  if (!runs.length) {
+    measurementLearningAgentRunsEl.innerHTML = `<p class="seed-hint">No agent runs loaded for this report.</p>`;
+    return;
+  }
+  measurementLearningAgentRunsEl.innerHTML = `
+    <p class="measurement-learning-authority-note">Exactly 2 AI workers/runs — not 3 fake model calls.</p>
+    ${runs.map(run => `
+      <div class="measurement-learning-run-card">
+        <strong>${escapeHtml(run.logicalRole || run.workerProfileVersion || "—")} · ${escapeHtml(run.status || "—")}</strong>
+        <span>Worker profile <code>${escapeHtml(run.workerProfileVersion || "—")}</code> · prompt <code>${escapeHtml(run.promptPackVersion || "—")}</code></span>
+        <span>Assigned roles <code>${escapeHtml(run.assignedRolesJson || "—")}</code></span>
+        <span>Tokens prompt/completion/total: ${escapeHtml(String(run.promptTokens ?? "—"))} / ${escapeHtml(String(run.completionTokens ?? "—"))} / ${escapeHtml(String(run.totalTokens ?? "—"))}</span>
+        <span>Estimated cost USD <code>${escapeHtml(formatCost(run.estimatedCostUsd))}</code> · provider <code>${escapeHtml(run.providerKey || "—")}</code> · model <code>${escapeHtml(run.modelId || "—")}</code></span>
+      </div>`).join("")}
+  `;
+}
+
+function renderMeasurementLearningDecisions(decisions) {
+  if (!measurementLearningDecisionsEl) return;
+  if (!decisions.length) {
+    measurementLearningDecisionsEl.innerHTML = `<p class="seed-hint">No decisions loaded for this report. Public surface cannot ACCEPT or REJECT.</p>`;
+    return;
+  }
+  measurementLearningDecisionsEl.innerHTML = decisions.map(d => `
+    <div class="measurement-learning-decision-card">
+      <strong>${escapeHtml(d.decision || "—")}</strong>
+      <span>${escapeHtml(d.rationale || "—")}</span>
+      <span>Actor <code>${escapeHtml(d.actorLabel || d.actorType || "—")}</code> · source <code>${escapeHtml(d.sourceSystem || "—")}</code> · key <code>${escapeHtml(d.idempotencyKey || "—")}</code></span>
+      <span>Occurred <code>${escapeHtml(d.occurredAt || "—")}</code>${d.isReplay ? " · replay" : ""}</span>
+    </div>`).join("");
+}
+
+function renderMeasurementLearningJobDetail(job) {
+  if (!measurementLearningJobDetail) return;
+  if (!job) {
+    measurementLearningJobDetail.innerHTML = `<p class="seed-hint">No measurement-learning job selected.</p>`;
+    return;
+  }
+  measurementLearningJobDetail.innerHTML = `
+    <div class="measurement-learning-metric-row">
+      <strong>${escapeHtml(job.status || "—")}${job.isReplay ? " · replay" : ""}</strong>
+      <span>Job <code>${escapeHtml(job.measurementLearningJobId || "—")}</code> · handshake <code>${escapeHtml(job.campaignReadinessHandshakeVersionId || "—")}</code> · snapshot <code>${escapeHtml(job.handshakeStatusSnapshot || "—")}</code></span>
+      <span>Window <code>${escapeHtml(job.observationStart || "—")}</code> → <code>${escapeHtml(job.observationEnd || "—")}</code> · source <code>${escapeHtml(job.sourceLabel || "—")}</code></span>
+      <span>Aggregates impressions/clicks/conversions <code>${escapeHtml(formatMetricValue(job.impressions))}</code> / <code>${escapeHtml(formatMetricValue(job.clicks))}</code> / <code>${escapeHtml(formatMetricValue(job.conversions))}</code> · spend <code>${escapeHtml(formatMetricValue(job.spend))}</code> · revenue <code>${escapeHtml(formatMetricValue(job.revenue))}</code> · <code>${escapeHtml(job.currencyCode || "—")}</code></span>
+      <span>Output report <code>${escapeHtml(job.outputMeasurementLearningReportVersionId || "none")}</code> </span>
+      <span>PLANNED placement <code>${escapeHtml(job.campaignPlacementId || "—")}</code> · not activation or delivery. Error <code>${escapeHtml(job.errorCode || "none")}</code> ${escapeHtml(job.errorMessage || "")}</span>
+    </div>
+  `;
+}
+
+async function inspectMeasurementLearningReport(report) {
+  if (!measurementLearningDetail) return;
+  if (!report) {
+    measurementLearningDetail.hidden = true;
+    return;
+  }
+  let detail = report;
+  let contributions = [];
+  let runs = [];
+  let decisions = [];
+  try {
+    detail = await api(`/api/wedding-planner/measurement-learning-reports/${report.measurementLearningReportVersionId}`);
+    [contributions, runs, decisions] = await Promise.all([
+      api(`/api/wedding-planner/measurement-learning-reports/${report.measurementLearningReportVersionId}/contributions`),
+      api(`/api/wedding-planner/measurement-learning-reports/${report.measurementLearningReportVersionId}/agent-runs`),
+      api(`/api/wedding-planner/measurement-learning-reports/${report.measurementLearningReportVersionId}/decisions`)
+    ]);
+  } catch (error) {
+    setTurnStatus("error", error.message || "Failed to load measurement-learning report.");
+    measurementLearningDetail.hidden = true;
+    return;
+  }
+  state.measurementLearningReport = detail;
+  state.measurementLearningContributions = Array.isArray(contributions) ? contributions : [];
+  state.measurementLearningAgentRuns = Array.isArray(runs) ? runs : [];
+  state.measurementLearningDecisions = Array.isArray(decisions) ? decisions : [];
+  const doc = parseMeasurementLearningDocument(detail.documentJson);
+  measurementLearningDetail.hidden = false;
+  if (measurementLearningStatusLabel) measurementLearningStatusLabel.textContent = detail.status || "—";
+  if (measurementLearningCurrentBadge) measurementLearningCurrentBadge.hidden = !detail.isCurrentAccepted;
+  if (measurementLearningVersionNumber) measurementLearningVersionNumber.textContent = String(detail.versionNumber ?? "—");
+  if (measurementLearningSummaryText) measurementLearningSummaryText.textContent = detail.summary || "";
+  if (measurementLearningSchema) measurementLearningSchema.textContent = detail.schemaVersion || doc?.schemaVersion || "measurement-learning-report.v1";
+  if (measurementLearningJobPin) measurementLearningJobPin.textContent = detail.producingMeasurementLearningJobId || "—";
+  if (measurementLearningHandshakePin) measurementLearningHandshakePin.textContent = detail.campaignReadinessHandshakeVersionId || "—";
+  if (measurementLearningHandshakeStatus) measurementLearningHandshakeStatus.textContent = detail.handshakeStatusSnapshot || "—";
+  if (measurementLearningHandshakeWasCurrent) measurementLearningHandshakeWasCurrent.textContent = String(!!detail.handshakeWasCurrentAtJobStart);
+  if (measurementLearningPlacement) measurementLearningPlacement.textContent = detail.campaignPlacementId || "—";
+  if (measurementLearningPlacementRun) measurementLearningPlacementRun.textContent = detail.campaignPlacementRunId || "—";
+  if (measurementLearningObservationWindow) {
+    measurementLearningObservationWindow.textContent = `${detail.observationStart || "—"} → ${detail.observationEnd || "—"}`;
+  }
+  if (measurementLearningSourceLabel) measurementLearningSourceLabel.textContent = detail.sourceLabel || "—";
+  if (measurementLearningObservationSource) measurementLearningObservationSource.textContent = detail.observationSourceSystem || "—";
+  if (measurementLearningPerfRun) measurementLearningPerfRun.textContent = detail.performanceAnalysisAgentRunId || "—";
+  if (measurementLearningSynthRun) measurementLearningSynthRun.textContent = detail.learningSynthesisAgentRunId || "—";
+
+  if (measurementLearningSyntheticWarning) {
+    measurementLearningSyntheticWarning.hidden = !measurementLearningHasSyntheticMarker(detail, doc);
+  }
+
+  renderMeasurementLearningAggregates(detail, doc);
+  renderMeasurementLearningMetrics(detail, doc);
+  renderMeasurementLearningAdvisory(doc);
+  renderMeasurementLearningRulesFindings(detail, doc);
+  renderMeasurementLearningContributions(state.measurementLearningContributions);
+  renderMeasurementLearningAgentRuns(state.measurementLearningAgentRuns);
+  if (measurementLearningDocumentJson) {
+    try {
+      const pretty = typeof detail.documentJson === "string"
+        ? JSON.stringify(JSON.parse(detail.documentJson), null, 2)
+        : JSON.stringify(detail.documentJson || doc || {}, null, 2);
+      measurementLearningDocumentJson.textContent = pretty;
+    } catch {
+      measurementLearningDocumentJson.textContent = String(detail.documentJson || "");
+    }
+  }
+  renderMeasurementLearningDecisions(state.measurementLearningDecisions);
+
+  const job =
+    state.measurementLearningJobs.find(x => x.measurementLearningJobId === detail.producingMeasurementLearningJobId) ||
+    state.measurementLearningJob ||
+    null;
+  if (job) {
+    state.measurementLearningJob = job;
+    if (measurementLearningJobSelect) measurementLearningJobSelect.value = job.measurementLearningJobId;
+  }
+  renderMeasurementLearningJobDetail(job);
+  renderMeasurementLearningStatus();
 }

@@ -871,6 +871,127 @@
           </p>
         </div>
       </section>
+      <section class="measurement-learning-panel" id="measurement-learning-panel" aria-labelledby="measurement-learning-title">
+        <div class="measurement-learning-heading">
+          <p>PHASE 9 · MEASUREMENT / LEARNING</p>
+          <h3 id="measurement-learning-title">Measurement-learning reports <span class="record-tag">3→2 WORKERS</span></h3>
+          <p class="measurement-learning-copy">
+            Read-only advisory reports from human-supplied aggregate observations.
+            Exactly three logical roles map to two AI workers/runs:
+            <code>PERFORMANCE_ANALYSIS_V1</code> → <code>PERFORMANCE_ANALYST</code>;
+            <code>LEARNING_SYNTHESIS_V1</code> → <code>LEARNING_SYNTHESIZER</code>, <code>OPTIMIZATION_ADVISOR</code>.
+            Job create and ACCEPT/REJECT live only in Operations (operator/admin). This public surface never posts aggregates or decisions.
+          </p>
+        </div>
+
+        <p class="measurement-learning-labels" id="measurement-learning-labels">
+          <span>HUMAN-SUPPLIED AGGREGATES</span>
+          <span>ASSOCIATION — NOT CAUSATION</span>
+          <span>ADVISORY ONLY</span>
+        </p>
+
+        <div class="measurement-learning-disclaimer-block" id="measurement-learning-attestation-block">
+          <h4>Exact attestation</h4>
+          <p id="measurement-learning-attestation-text">These are human-supplied aggregate observations from the named source. Bliss did not collect or verify delivery events. The linked placement remains PLANNED and does not prove activation or delivery. Metrics show association only, not causation or incrementality. No event-level data, personal data, external URLs, or platform credentials are included. AI output is advisory and cannot change creative, campaign, placement, inventory, spend, or external systems.</p>
+        </div>
+
+        <div class="measurement-learning-disclaimer-block" id="measurement-learning-disclaimer-block">
+          <h4>Report disclaimer</h4>
+          <p id="measurement-learning-disclaimer-text">This measurement-learning report is advisory only. Observed aggregates are human-supplied and unverified by Bliss. Derived metrics are deterministic arithmetic with null denominators when counts are zero. Descriptive patterns, hypotheses, and recommended future tests are association-only AI recommendations. They do not prove causation, guarantee outcomes, certify statistical significance, claim incrementality, activate campaigns, revise creative, change spend, reserve inventory, or write to external systems. The linked placement remains PLANNED and does not prove delivery.</p>
+        </div>
+
+        <div class="measurement-learning-synthetic-warning" id="measurement-learning-synthetic-warning" hidden role="status">
+          <strong>SYNTHETIC DEVELOPMENT MEASUREMENT LEARNING</strong>
+          Local/synthetic measurement-learning path — advisory only; not production measurement or delivery proof.
+        </div>
+
+        <div class="measurement-learning-prereq" id="measurement-learning-status" role="status" data-ready="false">
+          <span>Loading measurement-learning reports…</span>
+          <p>Workspace refresh loads jobs and reports. Placement remains PLANNED — not activation or delivery.</p>
+        </div>
+
+        <div class="measurement-learning-lists">
+          <div class="measurement-learning-list-block">
+            <label for="measurement-learning-report-select">Report history <small>read-only</small></label>
+            <select id="measurement-learning-report-select" disabled>
+              <option value="">No reports yet</option>
+            </select>
+            <p class="measurement-learning-current-pointer" id="measurement-learning-current-pointer" hidden>CURRENT ACCEPTED measurement-learning report pointer is set for this workspace.</p>
+            <button type="button" id="measurement-learning-refresh" disabled>Refresh jobs &amp; reports</button>
+          </div>
+          <div class="measurement-learning-list-block">
+            <label for="measurement-learning-job-select">Job receipts <small>read-only</small></label>
+            <select id="measurement-learning-job-select" disabled>
+              <option value="">No jobs yet</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="measurement-learning-detail" id="measurement-learning-detail" hidden>
+          <div class="measurement-learning-status-line">
+            <span id="measurement-learning-status-label">—</span>
+            <span id="measurement-learning-current-badge" hidden>CURRENT ACCEPTED</span>
+            · version <strong id="measurement-learning-version-number">—</strong>
+          </div>
+          <p id="measurement-learning-summary-text"></p>
+          <p class="measurement-learning-meta-line">Schema <code id="measurement-learning-schema">—</code> · job <code id="measurement-learning-job-pin">—</code></p>
+          <p class="measurement-learning-meta-line">Handshake <code id="measurement-learning-handshake-pin">—</code> · snapshot <code id="measurement-learning-handshake-status">—</code> · wasCurrentAtJobStart <code id="measurement-learning-handshake-was-current">—</code></p>
+          <p class="measurement-learning-meta-line">Planned placement <code id="measurement-learning-placement">—</code> · placement run <code id="measurement-learning-placement-run">—</code> · PLANNED only — not delivery</p>
+          <p class="measurement-learning-meta-line">Observation <code id="measurement-learning-observation-window">—</code> · source <code id="measurement-learning-source-label">—</code> · system <code id="measurement-learning-observation-source">—</code></p>
+          <p class="measurement-learning-meta-line">Runs · PERFORMANCE_ANALYSIS <code id="measurement-learning-perf-run">—</code> · LEARNING_SYNTHESIS <code id="measurement-learning-synth-run">—</code></p>
+
+          <div class="measurement-learning-section" id="measurement-learning-aggregates-section">
+            <h4>Observed aggregates <small>HUMAN-SUPPLIED AGGREGATES</small></h4>
+            <div id="measurement-learning-aggregates"></div>
+          </div>
+
+          <div class="measurement-learning-section" id="measurement-learning-metrics-section">
+            <h4>Derived metrics <small>deterministic · null denominators · ASSOCIATION — NOT CAUSATION</small></h4>
+            <div id="measurement-learning-metrics"></div>
+          </div>
+
+          <div class="measurement-learning-section" id="measurement-learning-patterns-section">
+            <h4>Descriptive patterns · limitations · data gaps · hypotheses · recommended tests <small>ADVISORY ONLY</small></h4>
+            <div id="measurement-learning-advisory"></div>
+          </div>
+
+          <div class="measurement-learning-section" id="measurement-learning-rules-section">
+            <h4>measurement-rules.v1 · 10 PASS/BLOCK codes</h4>
+            <div id="measurement-learning-rules-findings"></div>
+          </div>
+
+          <div class="measurement-learning-section" id="measurement-learning-contributions-section">
+            <h4>Role contributions <small>exactly 3 · mapped to 2 runs</small></h4>
+            <div id="measurement-learning-contributions"></div>
+          </div>
+
+          <div class="measurement-learning-section" id="measurement-learning-runs-section">
+            <h4>Agent runs <small>exactly 2</small></h4>
+            <div id="measurement-learning-agent-runs"></div>
+          </div>
+
+          <div class="measurement-learning-section" id="measurement-learning-document-section">
+            <h4>Canonical DocumentJson</h4>
+            <pre class="measurement-learning-json" id="measurement-learning-document-json"></pre>
+          </div>
+
+          <div class="measurement-learning-section" id="measurement-learning-decisions-section">
+            <h4>Decisions</h4>
+            <div id="measurement-learning-decisions"></div>
+          </div>
+
+          <div class="measurement-learning-section" id="measurement-learning-job-detail-section">
+            <h4>Selected job receipt</h4>
+            <div id="measurement-learning-job-detail"></div>
+          </div>
+
+          <p class="measurement-learning-authority-note" id="measurement-learning-public-note">
+            No aggregate-entry form and no ACCEPT / REJECT controls on this public advertiser surface.
+            Operator/admin job create and decisions live in Operations only. Linked placement remains PLANNED and does not prove activation or delivery.
+          </p>
+        </div>
+      </section>
+
     </section>
 
     <section class="audience-panels">

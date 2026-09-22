@@ -142,10 +142,36 @@ rationale.
   AI/OCR, legal/accessibility certification, measurement, Alpha Auto, and
   n8n/GHL. Phase 7 does not auto-advance.
 
-## Later starting allocations
+## Phase 8 (implemented)
 
-- Phase 8: no new AI agents.
-- Phase 9: three intelligence roles on about 1–2 workers.
+- New logical AI roles: 0.
+- New executable AI workers: 0.
+- Deterministic Bliss handshake / campaign-readiness only.
+- Operator/admin alone may MARK_CAMPAIGN_READY / REVOKE_CAMPAIGN_READY.
+- Placement remains PLANNED — not activation or reservation.
+
+## Phase 9 (implemented)
+
+- New logical intelligence roles: exactly 3 —
+  `PERFORMANCE_ANALYST`, `LEARNING_SYNTHESIZER`, `OPTIMIZATION_ADVISOR`.
+- New executable worker profiles: exactly 2 per successful job.
+- Exact 3→2 mapping:
+  - `PERFORMANCE_ANALYSIS_V1` → `PERFORMANCE_ANALYST`
+  - `LEARNING_SYNTHESIS_V1` → `LEARNING_SYNTHESIZER`,
+    `OPTIMIZATION_ADVISOR`
+- Successful jobs create exactly 2 agent-run receipts and exactly 3
+  immutable role contributions; they do not create three fake model
+  calls.
+- Human-supplied aggregate observations only, with exact attestation.
+  Labels: `HUMAN-SUPPLIED AGGREGATES`, `ASSOCIATION — NOT CAUSATION`,
+  `ADVISORY ONLY`. Linked placement remains PLANNED and does not prove
+  delivery.
+- `measurement-rules.v1` runs before AI (10 PASS/BLOCK). Humans alone
+  ACCEPT/REJECT advisory reports (operator/admin). Recommendations
+  cannot activate, revise creative, change spend, or mutate Phase 1–8
+  artifacts.
+- Phase 9 is the final phase listed in Master Blueprint V1.1; it does
+  not invent a Phase 10.
 
 Any change from these starting allocations must record:
 

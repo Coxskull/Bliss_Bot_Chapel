@@ -1935,6 +1935,7 @@ public sealed class WeddingPlannerQaReviewOrchestrationService
             run.OutputConceptPackageVersionId,
             run.OutputCreativePackageVersionId,
             run.OutputQaReviewReportVersionId,
+            run.OutputMeasurementLearningReportVersionId,
             run.RequestId,
             run.ProviderRequestId,
             run.SourceSystem,

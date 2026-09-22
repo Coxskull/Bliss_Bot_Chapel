@@ -84,5 +84,10 @@ public sealed class WeddingPlannerAgentRunConfiguration : IEntityTypeConfigurati
             .WithMany()
             .HasForeignKey(x => x.OutputQaReviewReportVersionId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(x => x.OutputMeasurementLearningReportVersion)
+            .WithMany()
+            .HasForeignKey(x => x.OutputMeasurementLearningReportVersionId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
