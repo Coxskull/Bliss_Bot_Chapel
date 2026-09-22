@@ -10,6 +10,7 @@ public static class WeddingPlannerActorTypes
 {
     public const string Advertiser = "ADVERTISER";
     public const string Operator = "OPERATOR";
+    public const string Reviewer = "REVIEWER";
     public const string System = "SYSTEM";
     public const string Planner = "PLANNER";
 }
@@ -64,6 +65,19 @@ public static class WeddingPlannerAuditActions
     public const string CreativePackageSuperseded = "CREATIVE_PACKAGE_SUPERSEDED";
     public const string CreativePackageReplayed = "CREATIVE_PACKAGE_REPLAYED";
     public const string CreativeAssetContentRead = "CREATIVE_ASSET_CONTENT_READ";
+    public const string QaReviewJobStarted = "QA_REVIEW_JOB_STARTED";
+    public const string QaReviewJobSucceeded = "QA_REVIEW_JOB_SUCCEEDED";
+    public const string QaReviewJobFailed = "QA_REVIEW_JOB_FAILED";
+    public const string QaReviewJobReplayed = "QA_REVIEW_JOB_REPLAYED";
+    public const string QaRulesFindingsRecorded = "QA_RULES_FINDINGS_RECORDED";
+    public const string QaReviewReportProposed = "QA_REVIEW_REPORT_PROPOSED";
+    public const string QaReviewReportAccepted = "QA_REVIEW_REPORT_ACCEPTED";
+    public const string QaReviewReportReturned = "QA_REVIEW_REPORT_RETURNED";
+    public const string QaReviewReportEscalated = "QA_REVIEW_REPORT_ESCALATED";
+    public const string QaReviewReportAcceptedWithException = "QA_REVIEW_REPORT_ACCEPTED_WITH_EXCEPTION";
+    public const string QaReviewReportReplayed = "QA_REVIEW_REPORT_REPLAYED";
+    public const string QaEscalationCaseOpened = "QA_ESCALATION_CASE_OPENED";
+    public const string QaEscalationCaseResolved = "QA_ESCALATION_CASE_RESOLVED";
 }
 
 public static class WeddingPlannerOutcomes
@@ -102,6 +116,89 @@ public static class WeddingPlannerAgentRoles
     public const string ImageDirection = "IMAGE_DIRECTION";
     public const string CopySystem = "COPY_SYSTEM";
     public const string VariantProduction = "VARIANT_PRODUCTION";
+
+    /// <summary>Phase 7 QA stage LogicalRole values (exactly 2 executable stages).</summary>
+    public const string ChaperoneReview = "CHAPERONE_REVIEW";
+    public const string QaInspection = "QA_INSPECTION";
+}
+
+/// <summary>Exactly three NEW durable Phase 7 control roles (not agent-run identities).</summary>
+public static class WeddingPlannerQaLogicalRoles
+{
+    public const string CreativeChaperone = "CREATIVE_CHAPERONE";
+    public const string QaInspector = "QA_INSPECTOR";
+    public const string HumanEscalationSteward = "HUMAN_ESCALATION_STEWARD";
+
+    public static readonly IReadOnlyList<string> AllInOrder =
+    [
+        CreativeChaperone,
+        QaInspector,
+        HumanEscalationSteward
+    ];
+}
+
+/// <summary>Exactly two executable Phase 7 QA worker profiles.</summary>
+public static class WeddingPlannerQaWorkerProfiles
+{
+    public const string ChaperoneReviewV1 = "CHAPERONE_REVIEW_V1";
+    public const string QaInspectionV1 = "QA_INSPECTION_V1";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        ChaperoneReviewV1,
+        QaInspectionV1
+    ];
+
+    public static IReadOnlyList<string> AssignedRoles(string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            ChaperoneReviewV1 => [WeddingPlannerQaLogicalRoles.CreativeChaperone],
+            QaInspectionV1 => [WeddingPlannerQaLogicalRoles.QaInspector],
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown QA worker profile.")
+        };
+
+    public static string StageLogicalRole(string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            ChaperoneReviewV1 => WeddingPlannerAgentRoles.ChaperoneReview,
+            QaInspectionV1 => WeddingPlannerAgentRoles.QaInspection,
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown QA worker profile.")
+        };
+
+    public static string PromptPack(string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            ChaperoneReviewV1 => WeddingPlannerPromptPacks.ChaperoneReviewV1,
+            QaInspectionV1 => WeddingPlannerPromptPacks.QaInspectionV1,
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown QA worker profile.")
+        };
+}
+
+/// <summary>
+/// Internal run/report idempotency suffixes. Public job keys must leave room for the longest suffix
+/// within the 128-character IdempotencyKey column.
+/// </summary>
+public static class WeddingPlannerQaIdempotency
+{
+    public const string ChaperoneReviewStageSuffix = ":CHAPERONE_REVIEW";
+    public const string QaInspectionStageSuffix = ":QA_INSPECTION";
+    public const string ReportSuffix = ":REPORT";
+
+    /// <summary>Longest stage suffix length (<see cref="ChaperoneReviewStageSuffix"/>).</summary>
+    public const int LongestSuffixLength = 17;
+
+    /// <summary>Max public qa-review-job IdempotencyKey length (128 − longest suffix).</summary>
+    public const int MaxJobIdempotencyKeyLength = 128 - LongestSuffixLength;
+
+    public static string StageKey(string jobKey, string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            WeddingPlannerQaWorkerProfiles.ChaperoneReviewV1 => jobKey + ChaperoneReviewStageSuffix,
+            WeddingPlannerQaWorkerProfiles.QaInspectionV1 => jobKey + QaInspectionStageSuffix,
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion))
+        };
+
+    public static string ReportKey(string jobKey) => jobKey + ReportSuffix;
 }
 
 /// <summary>Exactly four durable Concept Workshop logical roles (not agent-run identities).</summary>
@@ -489,6 +586,8 @@ public static class WeddingPlannerPromptPacks
     public const string ImageDirectionV1 = "wp-phase6.image-direction.v1";
     public const string CopySystemV1 = "wp-phase6.copy-system.v1";
     public const string VariantProductionV1 = "wp-phase6.variant-production.v1";
+    public const string ChaperoneReviewV1 = "wp-phase7.chaperone-review.v1";
+    public const string QaInspectionV1 = "wp-phase7.qa-inspection.v1";
 }
 
 public static class WeddingPlannerSchemaVersions
@@ -513,6 +612,17 @@ public static class WeddingPlannerSchemaVersions
     public const string CopySystemWorkerOutputV1 = "copy-system-worker-output.v1";
     public const string VariantProductionWorkerOutputV1 = "variant-production-worker-output.v1";
     public const string CreativePackageV1 = "creative-package.v1";
+    public const string QaReviewBriefV1 = "qa-review-brief.v1";
+    public const string QaRulesV1 = "qa-rules.v1";
+    public const string ChaperoneReviewWorkerOutputV1 = "chaperone-review-worker-output.v1";
+    public const string QaInspectionWorkerOutputV1 = "qa-inspection-worker-output.v1";
+    public const string QaReviewReportV1 = "qa-review-report.v1";
+}
+
+public static class WeddingPlannerQaContractVersions
+{
+    public const string QaRulesV1 = "qa-rules.v1";
+    public const string QaOrchestrationV1 = "wp-qa-orchestration.v1";
 }
 
 public static class WeddingPlannerCreativeDepartmentContractVersions
@@ -819,4 +929,176 @@ public static class WeddingPlannerAiProviderKinds
 {
     public const string Local = "Local";
     public const string OpenAiCompatible = "OpenAiCompatible";
+}
+
+public static class WeddingPlannerQaReviewJobStatuses
+{
+    public const string Running = "RUNNING";
+    public const string Succeeded = "SUCCEEDED";
+    public const string Failed = "FAILED";
+}
+
+public static class WeddingPlannerQaReviewReportStatuses
+{
+    public const string Proposed = "PROPOSED";
+    public const string Accepted = "ACCEPTED";
+    public const string ReturnedForRevision = "RETURNED_FOR_REVISION";
+    public const string Escalated = "ESCALATED";
+    public const string AcceptedWithException = "ACCEPTED_WITH_EXCEPTION";
+}
+
+public static class WeddingPlannerQaReviewDecisions
+{
+    public const string Accept = "ACCEPT";
+    public const string ReturnForRevision = "RETURN_FOR_REVISION";
+    public const string Escalate = "ESCALATE";
+
+    public static readonly IReadOnlyList<string> All = [Accept, ReturnForRevision, Escalate];
+}
+
+public static class WeddingPlannerQaContributionSources
+{
+    public const string Ai = "AI";
+    public const string RulesHuman = "RULES_HUMAN";
+}
+
+public static class WeddingPlannerQaFindingSeverities
+{
+    public const string Pass = "PASS";
+    public const string Warn = "WARN";
+    public const string Block = "BLOCK";
+}
+
+public static class WeddingPlannerQaRuleCodes
+{
+    public const string CurrentPackagePin = "QA_CURRENT_PACKAGE_PIN";
+    public const string CurrentApproveDecision = "QA_CURRENT_APPROVE_DECISION";
+    public const string SchemaVersion = "QA_SCHEMA_VERSION";
+    public const string DisclaimerExact = "QA_DISCLAIMER_EXACT";
+    public const string ProvenanceChain = "QA_PROVENANCE_CHAIN";
+    public const string ContributionCount13 = "QA_CONTRIBUTION_COUNT_13";
+    public const string CreativeRuns6 = "QA_CREATIVE_RUNS_6";
+    public const string VariantRefs = "QA_VARIANT_REFS";
+    public const string ClaimPreservation = "QA_CLAIM_PRESERVATION";
+    public const string SelectedAssetMeta = "QA_SELECTED_ASSET_META";
+    public const string PngRevalidate = "QA_PNG_REVALIDATE";
+    public const string ForbiddenMarkupMedia = "QA_FORBIDDEN_MARKUP_MEDIA";
+    public const string CopyNonEmpty = "QA_COPY_NON_EMPTY";
+    public const string CopyLengthWarn = "QA_COPY_LENGTH_WARN";
+    public const string LocalSyntheticMarker = "QA_LOCAL_SYNTHETIC_MARKER";
+
+    public static readonly IReadOnlyList<string> BlockCodesAlways =
+    [
+        CurrentPackagePin,
+        CurrentApproveDecision,
+        SchemaVersion,
+        DisclaimerExact,
+        ProvenanceChain,
+        ContributionCount13,
+        CreativeRuns6,
+        VariantRefs,
+        ClaimPreservation,
+        SelectedAssetMeta,
+        PngRevalidate,
+        ForbiddenMarkupMedia,
+        CopyNonEmpty
+    ];
+}
+
+public static class WeddingPlannerQaFocusAreas
+{
+    public const string Copy = "COPY";
+    public const string Visual = "VISUAL";
+    public const string Provenance = "PROVENANCE";
+    public const string Claims = "CLAIMS";
+    public const string Format = "FORMAT";
+    public const string AssetIntegrity = "ASSET_INTEGRITY";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        Copy,
+        Visual,
+        Provenance,
+        Claims,
+        Format,
+        AssetIntegrity
+    ];
+}
+
+public static class WeddingPlannerQaProposedOutcomes
+{
+    public const string PassRecommended = "PASS_RECOMMENDED";
+    public const string ReturnForRevision = "RETURN_FOR_REVISION";
+    public const string HumanEscalation = "HUMAN_ESCALATION";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        PassRecommended,
+        ReturnForRevision,
+        HumanEscalation
+    ];
+}
+
+public static class WeddingPlannerQaProposedRoutings
+{
+    public const string HumanReview = "HUMAN_REVIEW";
+    public const string ReturnSuggested = "RETURN_SUGGESTED";
+    public const string EscalationSuggested = "ESCALATION_SUGGESTED";
+}
+
+public static class WeddingPlannerQaEscalationCategories
+{
+    public const string VisualUncertainty = "VISUAL_UNCERTAINTY";
+    public const string ClaimBoundary = "CLAIM_BOUNDARY";
+    public const string Provenance = "PROVENANCE";
+    public const string AssetIntegrity = "ASSET_INTEGRITY";
+    public const string CopyQuality = "COPY_QUALITY";
+    public const string PolicyOther = "POLICY_OTHER";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        VisualUncertainty,
+        ClaimBoundary,
+        Provenance,
+        AssetIntegrity,
+        CopyQuality,
+        PolicyOther
+    ];
+}
+
+public static class WeddingPlannerQaEscalationCaseStatuses
+{
+    public const string Open = "OPEN";
+    public const string Resolved = "RESOLVED";
+}
+
+public static class WeddingPlannerQaEscalationResolutions
+{
+    public const string ReturnForRevision = "RETURN_FOR_REVISION";
+    public const string WaiveAndAccept = "WAIVE_AND_ACCEPT";
+
+    public static readonly IReadOnlyList<string> All = [ReturnForRevision, WaiveAndAccept];
+}
+
+public static class WeddingPlannerQaMarkers
+{
+    public const string SyntheticDevelopmentQaReview = "SYNTHETIC DEVELOPMENT QA REVIEW";
+}
+
+public static class WeddingPlannerQaReviewReportDisclaimer
+{
+    public const string Text =
+        "Acceptance of this QA review report is control review only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, final production-artwork, or Bliss handshake approval. Deterministic rules check package, decision, variant, asset integrity, and provenance only; they do not certify semantic truth, visual safety, or campaign readiness. AI control roles never receive image bytes and cannot approve or waive. Humans must view the same-origin selected PNG before ACCEPT. The Human Escalation Steward is a rules-first human authority, not an AI worker. Phase 8 must independently define handshake and may distinguish clean acceptance from acceptance-with-exception.";
+}
+
+public static class WeddingPlannerQaRequiredHumanAuthority
+{
+    public const string AcceptRequiresReviewerOrAbove = "ACCEPT_REQUIRES_REVIEWER_OR_ABOVE";
+    public const string WaiveRequiresOperatorOrAdmin = "WAIVE_REQUIRES_OPERATOR_OR_ADMIN";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        AcceptRequiresReviewerOrAbove,
+        WaiveRequiresOperatorOrAdmin
+    ];
 }

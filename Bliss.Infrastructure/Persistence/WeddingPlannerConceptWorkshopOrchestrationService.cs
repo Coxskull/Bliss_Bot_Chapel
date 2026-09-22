@@ -1339,6 +1339,7 @@ public sealed class WeddingPlannerConceptWorkshopOrchestrationService
             run.OutputResearchReportVersionId,
             run.OutputConceptPackageVersionId,
             run.OutputCreativePackageVersionId,
+            run.OutputQaReviewReportVersionId,
             run.RequestId,
             run.ProviderRequestId,
             run.SourceSystem,
