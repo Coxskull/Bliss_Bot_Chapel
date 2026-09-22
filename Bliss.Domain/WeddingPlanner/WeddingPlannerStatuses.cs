@@ -51,6 +51,19 @@ public static class WeddingPlannerAuditActions
     public const string ConceptPackageRejected = "CONCEPT_PACKAGE_REJECTED";
     public const string ConceptPackageSuperseded = "CONCEPT_PACKAGE_SUPERSEDED";
     public const string ConceptPackageReplayed = "CONCEPT_PACKAGE_REPLAYED";
+    public const string CreativeProductionJobStarted = "CREATIVE_PRODUCTION_JOB_STARTED";
+    public const string CreativeProductionJobSucceeded = "CREATIVE_PRODUCTION_JOB_SUCCEEDED";
+    public const string CreativeProductionJobFailed = "CREATIVE_PRODUCTION_JOB_FAILED";
+    public const string CreativeProductionJobReplayed = "CREATIVE_PRODUCTION_JOB_REPLAYED";
+    public const string CreativeAssetProviderAttempted = "CREATIVE_ASSET_PROVIDER_ATTEMPTED";
+    public const string CreativeAssetProviderSucceeded = "CREATIVE_ASSET_PROVIDER_SUCCEEDED";
+    public const string CreativeAssetProviderFailed = "CREATIVE_ASSET_PROVIDER_FAILED";
+    public const string CreativePackageProposed = "CREATIVE_PACKAGE_PROPOSED";
+    public const string CreativePackageApproved = "CREATIVE_PACKAGE_APPROVED";
+    public const string CreativePackageRejected = "CREATIVE_PACKAGE_REJECTED";
+    public const string CreativePackageSuperseded = "CREATIVE_PACKAGE_SUPERSEDED";
+    public const string CreativePackageReplayed = "CREATIVE_PACKAGE_REPLAYED";
+    public const string CreativeAssetContentRead = "CREATIVE_ASSET_CONTENT_READ";
 }
 
 public static class WeddingPlannerOutcomes
@@ -81,6 +94,14 @@ public static class WeddingPlannerAgentRoles
     public const string ConceptStrategy = "CONCEPT_STRATEGY";
     public const string ConceptCreative = "CONCEPT_CREATIVE";
     public const string PrototypeProduction = "PROTOTYPE_PRODUCTION";
+
+    /// <summary>Phase 6 Creative Production stage LogicalRole values (exactly 6 executable stages).</summary>
+    public const string CreativeDirection = "CREATIVE_DIRECTION";
+    public const string StrategyAdaptation = "STRATEGY_ADAPTATION";
+    public const string VisualSystem = "VISUAL_SYSTEM";
+    public const string ImageDirection = "IMAGE_DIRECTION";
+    public const string CopySystem = "COPY_SYSTEM";
+    public const string VariantProduction = "VARIANT_PRODUCTION";
 }
 
 /// <summary>Exactly four durable Concept Workshop logical roles (not agent-run identities).</summary>
@@ -144,6 +165,152 @@ public static class WeddingPlannerConceptWorkshopWorkerProfiles
             PrototypeProductionV1 => WeddingPlannerPromptPacks.PrototypeProductionV1,
             _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown Concept Workshop worker profile.")
         };
+}
+
+/// <summary>Exactly thirteen NEW durable Creative Production logical roles (not agent-run identities).</summary>
+public static class WeddingPlannerCreativeDepartmentLogicalRoles
+{
+    public const string CreativeDirector = "CREATIVE_DIRECTOR";
+    public const string CampaignStrategist = "CAMPAIGN_STRATEGIST";
+    public const string AudienceStrategist = "AUDIENCE_STRATEGIST";
+    public const string OfferStrategist = "OFFER_STRATEGIST";
+    public const string ChannelStrategist = "CHANNEL_STRATEGIST";
+    public const string VisualDesigner = "VISUAL_DESIGNER";
+    public const string LayoutDesigner = "LAYOUT_DESIGNER";
+    public const string TypographyDesigner = "TYPOGRAPHY_DESIGNER";
+    public const string ImagePromptDesigner = "IMAGE_PROMPT_DESIGNER";
+    public const string HeadlineSpecialist = "HEADLINE_SPECIALIST";
+    public const string BodyCopySpecialist = "BODY_COPY_SPECIALIST";
+    public const string CtaSpecialist = "CTA_SPECIALIST";
+    public const string VariantProducer = "VARIANT_PRODUCER";
+
+    public static readonly IReadOnlyList<string> AllInOrder =
+    [
+        CreativeDirector,
+        CampaignStrategist,
+        AudienceStrategist,
+        OfferStrategist,
+        ChannelStrategist,
+        VisualDesigner,
+        LayoutDesigner,
+        TypographyDesigner,
+        ImagePromptDesigner,
+        HeadlineSpecialist,
+        BodyCopySpecialist,
+        CtaSpecialist,
+        VariantProducer
+    ];
+}
+
+/// <summary>Exactly six executable Creative Production worker profiles.</summary>
+public static class WeddingPlannerCreativeDepartmentWorkerProfiles
+{
+    public const string CreativeDirectionV1 = "CREATIVE_DIRECTION_V1";
+    public const string StrategyAdaptationV1 = "STRATEGY_ADAPTATION_V1";
+    public const string VisualSystemV1 = "VISUAL_SYSTEM_V1";
+    public const string ImageDirectionV1 = "IMAGE_DIRECTION_V1";
+    public const string CopySystemV1 = "COPY_SYSTEM_V1";
+    public const string VariantProductionV1 = "VARIANT_PRODUCTION_V1";
+
+    public static readonly IReadOnlyList<string> All =
+    [
+        CreativeDirectionV1,
+        StrategyAdaptationV1,
+        VisualSystemV1,
+        ImageDirectionV1,
+        CopySystemV1,
+        VariantProductionV1
+    ];
+
+    public static IReadOnlyList<string> AssignedRoles(string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            CreativeDirectionV1 =>
+            [
+                WeddingPlannerCreativeDepartmentLogicalRoles.CreativeDirector,
+                WeddingPlannerCreativeDepartmentLogicalRoles.CampaignStrategist
+            ],
+            StrategyAdaptationV1 =>
+            [
+                WeddingPlannerCreativeDepartmentLogicalRoles.AudienceStrategist,
+                WeddingPlannerCreativeDepartmentLogicalRoles.OfferStrategist,
+                WeddingPlannerCreativeDepartmentLogicalRoles.ChannelStrategist
+            ],
+            VisualSystemV1 =>
+            [
+                WeddingPlannerCreativeDepartmentLogicalRoles.VisualDesigner,
+                WeddingPlannerCreativeDepartmentLogicalRoles.LayoutDesigner,
+                WeddingPlannerCreativeDepartmentLogicalRoles.TypographyDesigner
+            ],
+            ImageDirectionV1 => [WeddingPlannerCreativeDepartmentLogicalRoles.ImagePromptDesigner],
+            CopySystemV1 =>
+            [
+                WeddingPlannerCreativeDepartmentLogicalRoles.HeadlineSpecialist,
+                WeddingPlannerCreativeDepartmentLogicalRoles.BodyCopySpecialist,
+                WeddingPlannerCreativeDepartmentLogicalRoles.CtaSpecialist
+            ],
+            VariantProductionV1 => [WeddingPlannerCreativeDepartmentLogicalRoles.VariantProducer],
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown Creative Department worker profile.")
+        };
+
+    public static string StageLogicalRole(string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            CreativeDirectionV1 => WeddingPlannerAgentRoles.CreativeDirection,
+            StrategyAdaptationV1 => WeddingPlannerAgentRoles.StrategyAdaptation,
+            VisualSystemV1 => WeddingPlannerAgentRoles.VisualSystem,
+            ImageDirectionV1 => WeddingPlannerAgentRoles.ImageDirection,
+            CopySystemV1 => WeddingPlannerAgentRoles.CopySystem,
+            VariantProductionV1 => WeddingPlannerAgentRoles.VariantProduction,
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown Creative Department worker profile.")
+        };
+
+    public static string PromptPack(string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            CreativeDirectionV1 => WeddingPlannerPromptPacks.CreativeDirectionV1,
+            StrategyAdaptationV1 => WeddingPlannerPromptPacks.StrategyAdaptationV1,
+            VisualSystemV1 => WeddingPlannerPromptPacks.VisualSystemV1,
+            ImageDirectionV1 => WeddingPlannerPromptPacks.ImageDirectionV1,
+            CopySystemV1 => WeddingPlannerPromptPacks.CopySystemV1,
+            VariantProductionV1 => WeddingPlannerPromptPacks.VariantProductionV1,
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion), workerProfileVersion, "Unknown Creative Department worker profile.")
+        };
+}
+
+/// <summary>
+/// Internal run/package idempotency suffixes. Public job keys must leave room for the longest suffix
+/// within the 128-character IdempotencyKey column.
+/// </summary>
+public static class WeddingPlannerCreativeDepartmentIdempotency
+{
+    public const string CreativeDirectionStageSuffix = ":CREATIVE_DIRECTION";
+    public const string StrategyAdaptationStageSuffix = ":STRATEGY_ADAPTATION";
+    public const string VisualSystemStageSuffix = ":VISUAL_SYSTEM";
+    public const string ImageDirectionStageSuffix = ":IMAGE_DIRECTION";
+    public const string CopySystemStageSuffix = ":COPY_SYSTEM";
+    public const string VariantProductionStageSuffix = ":VARIANT_PRODUCTION";
+    public const string PackageSuffix = ":PACKAGE";
+
+    /// <summary>Longest stage suffix length (<see cref="StrategyAdaptationStageSuffix"/>).</summary>
+    public const int LongestSuffixLength = 21;
+
+    /// <summary>Max public creative-production-job IdempotencyKey length (128 − longest suffix).</summary>
+    public const int MaxJobIdempotencyKeyLength = 128 - LongestSuffixLength;
+
+    public static string StageKey(string jobKey, string workerProfileVersion) =>
+        workerProfileVersion switch
+        {
+            WeddingPlannerCreativeDepartmentWorkerProfiles.CreativeDirectionV1 => jobKey + CreativeDirectionStageSuffix,
+            WeddingPlannerCreativeDepartmentWorkerProfiles.StrategyAdaptationV1 => jobKey + StrategyAdaptationStageSuffix,
+            WeddingPlannerCreativeDepartmentWorkerProfiles.VisualSystemV1 => jobKey + VisualSystemStageSuffix,
+            WeddingPlannerCreativeDepartmentWorkerProfiles.ImageDirectionV1 => jobKey + ImageDirectionStageSuffix,
+            WeddingPlannerCreativeDepartmentWorkerProfiles.CopySystemV1 => jobKey + CopySystemStageSuffix,
+            WeddingPlannerCreativeDepartmentWorkerProfiles.VariantProductionV1 => jobKey + VariantProductionStageSuffix,
+            _ => throw new ArgumentOutOfRangeException(nameof(workerProfileVersion))
+        };
+
+    public static string PackageKey(string jobKey) => jobKey + PackageSuffix;
 }
 
 /// <summary>
@@ -316,6 +483,12 @@ public static class WeddingPlannerPromptPacks
     public const string ConceptStrategyV1 = "wp-phase5.concept-strategy.v1";
     public const string ConceptCreativeV1 = "wp-phase5.concept-creative.v1";
     public const string PrototypeProductionV1 = "wp-phase5.prototype-production.v1";
+    public const string CreativeDirectionV1 = "wp-phase6.creative-direction.v1";
+    public const string StrategyAdaptationV1 = "wp-phase6.strategy-adaptation.v1";
+    public const string VisualSystemV1 = "wp-phase6.visual-system.v1";
+    public const string ImageDirectionV1 = "wp-phase6.image-direction.v1";
+    public const string CopySystemV1 = "wp-phase6.copy-system.v1";
+    public const string VariantProductionV1 = "wp-phase6.variant-production.v1";
 }
 
 public static class WeddingPlannerSchemaVersions
@@ -332,6 +505,20 @@ public static class WeddingPlannerSchemaVersions
     public const string PrototypeProductionWorkerOutputV1 = "prototype-production-worker-output.v1";
     public const string PrototypeSpecV1 = "prototype-spec.v1";
     public const string ConceptPackageV1 = "concept-package.v1";
+    public const string CreativeProductionBriefV1 = "creative-production-brief.v1";
+    public const string CreativeDirectionWorkerOutputV1 = "creative-direction-worker-output.v1";
+    public const string StrategyAdaptationWorkerOutputV1 = "strategy-adaptation-worker-output.v1";
+    public const string VisualSystemWorkerOutputV1 = "visual-system-worker-output.v1";
+    public const string ImageDirectionWorkerOutputV1 = "image-direction-worker-output.v1";
+    public const string CopySystemWorkerOutputV1 = "copy-system-worker-output.v1";
+    public const string VariantProductionWorkerOutputV1 = "variant-production-worker-output.v1";
+    public const string CreativePackageV1 = "creative-package.v1";
+}
+
+public static class WeddingPlannerCreativeDepartmentContractVersions
+{
+    public const string CreativeDepartmentOrchestrationV1 = "wp-creative-department-orchestration.v1";
+    public const string CreativeAssetProviderV1 = "wp-creative-asset-provider.v1";
 }
 
 public static class WeddingPlannerConceptWorkshopContractVersions
@@ -509,10 +696,80 @@ public static class WeddingPlannerConceptWorkshopMarkers
     public const string SyntheticDevelopmentPrototype = "SYNTHETIC DEVELOPMENT PROTOTYPE";
 }
 
+public static class WeddingPlannerCreativeDepartmentMarkers
+{
+    public const string SyntheticDevelopmentCreativePackage = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE";
+}
+
 public static class WeddingPlannerConceptPackageDisclaimer
 {
     public const string Text =
         "Approval of this package is concept-direction approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, asset, QA, or production-artwork approval. Marketing copy is CREATIVE_NON_FACTUAL unless a factual claim cites source IDs from the pinned approved research report. Brand DNA and Color Profile are creative constraints, not factual evidence. Prototypes are structured low-fi specs only; no images are generated.";
+}
+
+public static class WeddingPlannerCreativePackageDisclaimer
+{
+    public const string Text =
+        "Approval of this package is draft creative approval only. It is not research, claim, legal, matching, accessibility, compliance, campaign-ready, QA, or final production-artwork approval. It does not authorize Bliss matching or placement. Marketing copy is CREATIVE_NON_FACTUAL unless a factual claim exactly preserves a cited claim from the pinned selected concept using source IDs from the pinned approved research report. Brand DNA and Color Profile are creative constraints, not factual evidence. Draft PNG assets are provider-generated renditions for review only; Wedding Planner orchestrates providers and is not itself an image generator. Phase 5 concept contributions remain pinned provenance and are not re-approved here.";
+}
+
+public static class WeddingPlannerCreativeProductionJobKinds
+{
+    public const string Initial = "INITIAL";
+    public const string Revision = "REVISION";
+
+    public static readonly IReadOnlyList<string> All = [Initial, Revision];
+}
+
+public static class WeddingPlannerCreativeProductionJobStatuses
+{
+    public const string Running = "RUNNING";
+    public const string Succeeded = "SUCCEEDED";
+    public const string Failed = "FAILED";
+}
+
+public static class WeddingPlannerCreativePackageStatuses
+{
+    public const string Proposed = "PROPOSED";
+    public const string Approved = "APPROVED";
+    public const string Rejected = "REJECTED";
+    public const string Superseded = "SUPERSEDED";
+}
+
+public static class WeddingPlannerCreativePackageDecisions
+{
+    public const string Approve = "APPROVE";
+    public const string Reject = "REJECT";
+}
+
+public static class WeddingPlannerVariantIds
+{
+    public static IReadOnlyList<string> ForCount(int count)
+    {
+        if (count is < 1 or > 4)
+        {
+            throw new ArgumentOutOfRangeException(nameof(count), count, "Variant count must be 1–4.");
+        }
+
+        return Enumerable.Range(1, count).Select(i => $"variant_{i}").ToArray();
+    }
+}
+
+public static class WeddingPlannerCreativeAssetContentTypes
+{
+    public const string ImagePng = "image/png";
+}
+
+public static class WeddingPlannerCreativeAssetProviderKinds
+{
+    public const string Local = "Local";
+    public const string RemoteHttp = "RemoteHttp";
+}
+
+public static class WeddingPlannerCreativeAssetWorkers
+{
+    public const string LocalDeterministicV1 = "wp-creative-asset-local-deterministic.v1";
+    public const string RemoteHttpV1 = "wp-creative-asset-remote-http.v1";
 }
 
 public static class WeddingPlannerResearchProviderKinds

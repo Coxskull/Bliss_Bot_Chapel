@@ -1193,6 +1193,7 @@ public sealed class WeddingPlannerCuratorOrchestrationService
             run.AssignedRolesJson,
             run.OutputResearchReportVersionId,
             run.OutputConceptPackageVersionId,
+            run.OutputCreativePackageVersionId,
             run.RequestId,
             run.ProviderRequestId,
             run.SourceSystem,

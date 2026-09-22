@@ -67,8 +67,438 @@ public sealed class LocalDeterministicWeddingPlannerAiProvider : IWeddingPlanner
             return Task.FromResult(CompleteWorkshopStage(request));
         }
 
+        if (IsCreativeDepartmentStage(request))
+        {
+            return Task.FromResult(CompleteCreativeDepartmentStage(request));
+        }
+
         throw new InvalidOperationException(
             $"Unsupported Wedding Planner provider request for role '{request.LogicalRole}' / pack '{request.PromptPackVersion}' / format '{request.ResponseFormat}'.");
+    }
+
+    private static bool IsCreativeDepartmentStage(WeddingPlannerAiCompletionRequest request)
+    {
+        if (!string.Equals(request.ResponseFormat, WeddingPlannerResponseFormats.Json, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.CreativeDirection, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.CreativeDirectionV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerCreativeDepartmentWorkerProfiles.CreativeDirectionV1, StringComparison.Ordinal))
+            || (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.StrategyAdaptation, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.StrategyAdaptationV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerCreativeDepartmentWorkerProfiles.StrategyAdaptationV1, StringComparison.Ordinal))
+            || (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.VisualSystem, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.VisualSystemV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerCreativeDepartmentWorkerProfiles.VisualSystemV1, StringComparison.Ordinal))
+            || (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.ImageDirection, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.ImageDirectionV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerCreativeDepartmentWorkerProfiles.ImageDirectionV1, StringComparison.Ordinal))
+            || (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.CopySystem, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.CopySystemV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerCreativeDepartmentWorkerProfiles.CopySystemV1, StringComparison.Ordinal))
+            || (string.Equals(request.LogicalRole, WeddingPlannerAgentRoles.VariantProduction, StringComparison.Ordinal)
+                && string.Equals(request.PromptPackVersion, WeddingPlannerPromptPacks.VariantProductionV1, StringComparison.Ordinal)
+                && string.Equals(request.WorkerProfileVersion, WeddingPlannerCreativeDepartmentWorkerProfiles.VariantProductionV1, StringComparison.Ordinal));
+    }
+
+    private static WeddingPlannerAiCompletionResult CompleteCreativeDepartmentStage(WeddingPlannerAiCompletionRequest request)
+    {
+        var profile = request.WorkerProfileVersion
+            ?? throw new InvalidOperationException("Creative department stage requires WorkerProfileVersion.");
+        var assigned = request.AssignedRoles?.ToList()
+            ?? WeddingPlannerCreativeDepartmentWorkerProfiles.AssignedRoles(profile).ToList();
+        var expected = WeddingPlannerCreativeDepartmentWorkerProfiles.AssignedRoles(profile);
+        if (assigned.Count != expected.Count || !expected.All(assigned.Contains))
+        {
+            throw new InvalidOperationException("Creative department AssignedRoles must match the worker profile mapping.");
+        }
+
+        var context = string.Join("\n", request.Messages.Select(x => x.Body));
+        var selectedConceptId = ExtractSelectedConceptId(context);
+        var formats = ExtractFormats(context);
+        if (formats.Count == 0)
+        {
+            formats = [WeddingPlannerChannelFormats.StaticSocialSquare];
+        }
+
+        var variantCount = ExtractRequestedVariantCount(context, formats.Count);
+        var paletteRoles = ExtractPaletteRoles(context);
+        if (paletteRoles.Count == 0)
+        {
+            paletteRoles = ["primary", "secondary", "accent", "background"];
+        }
+
+        var preservedClaims = ExtractPreservedClaims(context);
+
+        var document = profile switch
+        {
+            WeddingPlannerCreativeDepartmentWorkerProfiles.CreativeDirectionV1 =>
+                BuildCreativeDirectionOutput(selectedConceptId),
+            WeddingPlannerCreativeDepartmentWorkerProfiles.StrategyAdaptationV1 =>
+                BuildStrategyAdaptationOutput(selectedConceptId, formats),
+            WeddingPlannerCreativeDepartmentWorkerProfiles.VisualSystemV1 =>
+                BuildVisualSystemOutput(selectedConceptId, paletteRoles),
+            WeddingPlannerCreativeDepartmentWorkerProfiles.ImageDirectionV1 =>
+                BuildImageDirectionOutput(selectedConceptId, variantCount),
+            WeddingPlannerCreativeDepartmentWorkerProfiles.CopySystemV1 =>
+                BuildCopySystemOutput(selectedConceptId, variantCount, preservedClaims),
+            WeddingPlannerCreativeDepartmentWorkerProfiles.VariantProductionV1 =>
+                BuildVariantProductionOutput(selectedConceptId, formats, variantCount, paletteRoles),
+            _ => throw new InvalidOperationException($"Unsupported creative department profile '{profile}'.")
+        };
+
+        return BuildResult(document.ToJsonString(NodeWriteOptions), request);
+    }
+
+    private static string ExtractSelectedConceptId(string context)
+    {
+        foreach (var id in WeddingPlannerConceptIds.All)
+        {
+            if (context.Contains($"\"selectedConceptId\":\"{id}\"", StringComparison.Ordinal)
+                || context.Contains($"selectedConceptId\": \"{id}\"", StringComparison.Ordinal)
+                || context.Contains($"SelectedConceptId: {id}", StringComparison.Ordinal))
+            {
+                return id;
+            }
+        }
+
+        return WeddingPlannerConceptIds.Concept1;
+    }
+
+    private static List<string> ExtractFormats(string context)
+    {
+        var formats = new List<string>();
+        foreach (var format in WeddingPlannerChannelFormats.All)
+        {
+            if (context.Contains(format, StringComparison.Ordinal))
+            {
+                formats.Add(format);
+            }
+        }
+
+        return formats;
+    }
+
+    private static int ExtractRequestedVariantCount(string context, int minFormats)
+    {
+        const string marker = "\"requestedVariantCount\":";
+        var idx = context.IndexOf(marker, StringComparison.Ordinal);
+        if (idx >= 0)
+        {
+            var slice = context[(idx + marker.Length)..];
+            var digits = new string(slice.TakeWhile(c => char.IsDigit(c) || char.IsWhiteSpace(c)).ToArray()).Trim();
+            if (int.TryParse(digits, out var n) && n is >= 1 and <= 4)
+            {
+                return Math.Max(n, minFormats);
+            }
+        }
+
+        return Math.Clamp(Math.Max(minFormats, 2), 1, 4);
+    }
+
+    private static List<(string Statement, List<string> SourceIds)> ExtractPreservedClaims(string context)
+    {
+        var claims = new List<(string, List<string>)>();
+        const string marker = "\"factualClaims\":";
+        var idx = context.IndexOf(marker, StringComparison.Ordinal);
+        if (idx < 0)
+        {
+            return claims;
+        }
+
+        // Local fixtures preserve at most one well-known claim when present in context.
+        if (context.Contains("Couples often research venues months ahead.", StringComparison.Ordinal))
+        {
+            var sourceIds = ExtractSourceIds(context);
+            if (sourceIds.Count == 0)
+            {
+                sourceIds = ["src_1"];
+            }
+
+            claims.Add(("Couples often research venues months ahead.", sourceIds.Take(1).ToList()));
+        }
+
+        return claims;
+    }
+
+    private static JsonObject BuildCreativeDirectionOutput(string selectedConceptId) =>
+        new()
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.CreativeDirectionWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerCreativeDepartmentWorkerProfiles.CreativeDirectionV1,
+            ["marker"] = WeddingPlannerCreativeDepartmentMarkers.SyntheticDevelopmentCreativePackage,
+            ["selectedConceptId"] = selectedConceptId,
+            ["contributions"] = new JsonArray(
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.CreativeDirector,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — north star for the selected concept.",
+                    ["direction"] = new JsonObject
+                    {
+                        ["northStar"] = "Quiet confidence rendered as draft production artwork.",
+                        ["principles"] = new JsonArray("generous negative space", "one focal CTA")
+                    }
+                },
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.CampaignStrategist,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — campaign framing without campaign ids.",
+                    ["framing"] = new JsonObject
+                    {
+                        ["objectiveEcho"] = "Advance the selected concept as draft creative for review.",
+                        ["formatPlanNotes"] = "Cover requested formats with consistent voice."
+                    }
+                })
+        };
+
+    private static JsonObject BuildStrategyAdaptationOutput(string selectedConceptId, IReadOnlyList<string> formats) =>
+        new()
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.StrategyAdaptationWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerCreativeDepartmentWorkerProfiles.StrategyAdaptationV1,
+            ["marker"] = WeddingPlannerCreativeDepartmentMarkers.SyntheticDevelopmentCreativePackage,
+            ["selectedConceptId"] = selectedConceptId,
+            ["contributions"] = new JsonArray(
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.AudienceStrategist,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — audience adaptation.",
+                    ["audienceAdaptation"] = new JsonObject
+                    {
+                        ["notes"] = "Speak to couples seeking calm, confident planning guidance."
+                    }
+                },
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.OfferStrategist,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — offer framing (non-factual).",
+                    ["offerFraming"] = new JsonObject
+                    {
+                        ["notes"] = "Frame the next planning step without inventing product facts."
+                    }
+                },
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.ChannelStrategist,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — channel/format adaptation.",
+                    ["channelAdaptation"] = new JsonObject
+                    {
+                        ["formats"] = new JsonArray(formats.Select(f => (JsonNode)f).ToArray())
+                    }
+                })
+        };
+
+    private static JsonObject BuildVisualSystemOutput(string selectedConceptId, IReadOnlyList<string> paletteRoles)
+    {
+        var refs = paletteRoles.Take(3).ToList();
+        if (refs.Count == 0)
+        {
+            refs = ["primary", "background", "accent"];
+        }
+
+        return new JsonObject
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.VisualSystemWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerCreativeDepartmentWorkerProfiles.VisualSystemV1,
+            ["marker"] = WeddingPlannerCreativeDepartmentMarkers.SyntheticDevelopmentCreativePackage,
+            ["selectedConceptId"] = selectedConceptId,
+            ["contributions"] = new JsonArray(
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.VisualDesigner,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — visual system.",
+                    ["visualSystem"] = new JsonObject
+                    {
+                        ["paletteRoleRefs"] = new JsonArray(refs.Select(r => (JsonNode)r).ToArray()),
+                        ["atmosphere"] = "Soft natural light with restrained contrast."
+                    }
+                },
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.LayoutDesigner,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — layout system.",
+                    ["layoutSystem"] = new JsonObject
+                    {
+                        ["geometryLanguage"] = "centered stack with CTA footer band"
+                    }
+                },
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.TypographyDesigner,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — typography system.",
+                    ["typographySystem"] = new JsonObject
+                    {
+                        ["headlineRole"] = "display",
+                        ["bodyRole"] = "text",
+                        ["ctaRole"] = "label"
+                    }
+                })
+        };
+    }
+
+    private static JsonObject BuildImageDirectionOutput(string selectedConceptId, int variantCount)
+    {
+        var prompts = new JsonArray();
+        for (var i = 1; i <= variantCount; i++)
+        {
+            prompts.Add(new JsonObject
+            {
+                ["variantId"] = $"variant_{i}",
+                ["prompt"] = i % 2 == 1
+                    ? "Soft natural light, empty ceremony atmosphere, no text in frame."
+                    : "Vertical soft gradient wash suggesting dusk reception.",
+                ["negativeConstraints"] = new JsonArray("no logos", "no readable signage", "no watermarks")
+            });
+        }
+
+        return new JsonObject
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.ImageDirectionWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerCreativeDepartmentWorkerProfiles.ImageDirectionV1,
+            ["marker"] = WeddingPlannerCreativeDepartmentMarkers.SyntheticDevelopmentCreativePackage,
+            ["selectedConceptId"] = selectedConceptId,
+            ["contributions"] = new JsonArray(new JsonObject
+            {
+                ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.ImagePromptDesigner,
+                ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — image prompts per variant.",
+                ["imagePrompts"] = prompts
+            })
+        };
+    }
+
+    private static JsonObject BuildCopySystemOutput(
+        string selectedConceptId,
+        int variantCount,
+        IReadOnlyList<(string Statement, List<string> SourceIds)> preservedClaims)
+    {
+        var headlines = new JsonArray();
+        var bodies = new JsonArray();
+        var ctas = new JsonArray();
+        for (var i = 1; i <= variantCount; i++)
+        {
+            var variantId = $"variant_{i}";
+            headlines.Add(new JsonObject
+            {
+                ["variantId"] = variantId,
+                ["text"] = i == 1 ? "Your day, thoughtfully planned." : "A calm next step."
+            });
+
+            var body = new JsonObject
+            {
+                ["variantId"] = variantId,
+                ["text"] = i == 1
+                    ? "A calm invitation to explore options together."
+                    : "Host with confidence and clarity."
+            };
+            if (i == 2 && preservedClaims.Count > 0)
+            {
+                var claim = preservedClaims[0];
+                body["factualClaims"] = new JsonArray(new JsonObject
+                {
+                    ["statement"] = claim.Statement,
+                    ["sourceIds"] = new JsonArray(claim.SourceIds.Select(s => (JsonNode)s).ToArray())
+                });
+            }
+            else
+            {
+                body["factualClaims"] = new JsonArray();
+            }
+
+            bodies.Add(body);
+            ctas.Add(new JsonObject
+            {
+                ["variantId"] = variantId,
+                ["text"] = i == 1 ? "Start planning" : "Continue"
+            });
+        }
+
+        return new JsonObject
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.CopySystemWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerCreativeDepartmentWorkerProfiles.CopySystemV1,
+            ["marker"] = WeddingPlannerCreativeDepartmentMarkers.SyntheticDevelopmentCreativePackage,
+            ["selectedConceptId"] = selectedConceptId,
+            ["contributions"] = new JsonArray(
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.HeadlineSpecialist,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — headlines per variant.",
+                    ["headlines"] = headlines
+                },
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.BodyCopySpecialist,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — body copy per variant.",
+                    ["bodies"] = bodies
+                },
+                new JsonObject
+                {
+                    ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.CtaSpecialist,
+                    ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — CTAs per variant.",
+                    ["ctas"] = ctas
+                })
+        };
+    }
+
+    private static JsonObject BuildVariantProductionOutput(
+        string selectedConceptId,
+        IReadOnlyList<string> formats,
+        int variantCount,
+        IReadOnlyList<string> paletteRoles)
+    {
+        var refs = paletteRoles.Take(3).ToList();
+        if (refs.Count == 0)
+        {
+            refs = ["primary", "background", "accent"];
+        }
+
+        var variants = new JsonArray();
+        for (var i = 1; i <= variantCount; i++)
+        {
+            var format = formats[(i - 1) % formats.Count];
+            // Ensure each brief format is used at least once by assigning sequentially first.
+            if (i <= formats.Count)
+            {
+                format = formats[i - 1];
+            }
+
+            var (width, height) = WeddingPlannerCreativeDepartmentValidation.CanvasForFormat(format);
+            var variantId = $"variant_{i}";
+            variants.Add(new JsonObject
+            {
+                ["id"] = variantId,
+                ["format"] = format,
+                ["canvas"] = new JsonObject { ["width"] = width, ["height"] = height },
+                ["refs"] = new JsonObject
+                {
+                    ["direction"] = "contributions.CREATIVE_DIRECTOR",
+                    ["visualSystem"] = "contributions.VISUAL_DESIGNER",
+                    ["layout"] = "contributions.LAYOUT_DESIGNER",
+                    ["typography"] = "contributions.TYPOGRAPHY_DESIGNER",
+                    ["imagePrompt"] = $"imagePrompts.{variantId}",
+                    ["headline"] = $"headlines.{variantId}",
+                    ["body"] = $"bodies.{variantId}",
+                    ["cta"] = $"ctas.{variantId}"
+                },
+                ["paletteRoleRefs"] = new JsonArray(refs.Select(r => (JsonNode)r).ToArray())
+            });
+        }
+
+        return new JsonObject
+        {
+            ["schemaVersion"] = WeddingPlannerSchemaVersions.VariantProductionWorkerOutputV1,
+            ["workerProfileVersion"] = WeddingPlannerCreativeDepartmentWorkerProfiles.VariantProductionV1,
+            ["marker"] = WeddingPlannerCreativeDepartmentMarkers.SyntheticDevelopmentCreativePackage,
+            ["selectedConceptId"] = selectedConceptId,
+            ["contributions"] = new JsonArray(new JsonObject
+            {
+                ["logicalRole"] = WeddingPlannerCreativeDepartmentLogicalRoles.VariantProducer,
+                ["summary"] = "SYNTHETIC DEVELOPMENT CREATIVE PACKAGE — production specs for requested variants.",
+                ["variants"] = variants
+            })
+        };
     }
 
     private static bool IsWorkshopStage(WeddingPlannerAiCompletionRequest request)

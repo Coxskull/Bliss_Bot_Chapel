@@ -49,5 +49,7 @@ public sealed class ApiSurfaceTests
         Assert.Contains("agent-runs/{agentRunId:guid}", weddingPlanner.Methods);
         Assert.Contains("workspaces/{workspaceId:guid}/brand-dna", weddingPlanner.Methods);
         Assert.Contains("brand-dna/{brandDnaVersionId:guid}", weddingPlanner.Methods);
+        Assert.Contains("workspaces/{workspaceId:guid}/creative-production-jobs", weddingPlanner.Methods);
+        Assert.Contains("creative-assets/{creativeAssetId:guid}/content", weddingPlanner.Methods);
     }
 }

@@ -23,6 +23,7 @@ public class WeddingPlannerAgentRun
     public string? AssignedRolesJson { get; set; }
     public Guid? OutputResearchReportVersionId { get; set; }
     public Guid? OutputConceptPackageVersionId { get; set; }
+    public Guid? OutputCreativePackageVersionId { get; set; }
     public string? RequestId { get; set; }
     public string? ProviderRequestId { get; set; }
     public string SourceSystem { get; set; } = string.Empty;
@@ -46,4 +47,5 @@ public class WeddingPlannerAgentRun
     public WeddingPlannerBrandDnaVersion? OutputBrandDnaVersion { get; set; }
     public WeddingPlannerResearchReportVersion? OutputResearchReportVersion { get; set; }
     public WeddingPlannerConceptPackageVersion? OutputConceptPackageVersion { get; set; }
+    public WeddingPlannerCreativePackageVersion? OutputCreativePackageVersion { get; set; }
 }

@@ -34,6 +34,9 @@ var weddingPlannerAi = builder.Configuration
 var weddingPlannerResearch = builder.Configuration
     .GetSection(WeddingPlannerResearchOptions.SectionName)
     .Get<WeddingPlannerResearchOptions>() ?? new WeddingPlannerResearchOptions();
+var weddingPlannerCreativeAsset = builder.Configuration
+    .GetSection(WeddingPlannerCreativeAssetOptions.SectionName)
+    .Get<WeddingPlannerCreativeAssetOptions>() ?? new WeddingPlannerCreativeAssetOptions();
 
 if (!authentication.Enabled && !builder.Environment.IsDevelopment())
 {
@@ -79,6 +82,18 @@ if ((!builder.Environment.IsDevelopment() || weddingPlannerResearch.RequireRemot
         "WeddingPlannerResearch:Provider must be RemoteHttp outside Development "
         + "(or when RequireRemoteResearchProvider is enabled). "
         + "The Local provider is a deterministic development/test worker, not a production research provider.");
+}
+
+if ((!builder.Environment.IsDevelopment() || weddingPlannerCreativeAsset.RequireRemoteCreativeAssetProvider)
+    && !string.Equals(
+        weddingPlannerCreativeAsset.Provider,
+        WeddingPlannerCreativeAssetProviderKinds.RemoteHttp,
+        StringComparison.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException(
+        "WeddingPlannerCreativeAsset:Provider must be RemoteHttp outside Development "
+        + "(or when RequireRemoteCreativeAssetProvider is enabled). "
+        + "The Local provider is a deterministic development/test worker, not a production creative asset provider.");
 }
 
 if (runtime.WriteRateLimitPermitLimit <= 0

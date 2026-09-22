@@ -68,4 +68,15 @@ public sealed class EntityDefaultTests
         Assert.Null(new WeddingPlannerWorkspace().CurrentApprovedConceptPackageVersionId);
         Assert.Null(new WeddingPlannerAgentRun().OutputConceptPackageVersionId);
     }
+
+    [Fact]
+    public void Wedding_planner_phase6_defaults_are_proposed_and_running()
+    {
+        Assert.Equal("RUNNING", new WeddingPlannerCreativeProductionJob().Status);
+        Assert.Equal("PROPOSED", new WeddingPlannerCreativePackageVersion().Status);
+        Assert.Equal("creative-package.v1", new WeddingPlannerCreativePackageVersion().SchemaVersion);
+        Assert.Equal("image/png", new WeddingPlannerCreativeAsset().ContentType);
+        Assert.Null(new WeddingPlannerWorkspace().CurrentApprovedCreativePackageVersionId);
+        Assert.Null(new WeddingPlannerAgentRun().OutputCreativePackageVersionId);
+    }
 }

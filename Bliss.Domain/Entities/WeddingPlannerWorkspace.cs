@@ -14,6 +14,7 @@ public class WeddingPlannerWorkspace
     public Guid? CurrentApprovedColorProfileVersionId { get; set; }
     public Guid? CurrentApprovedResearchReportVersionId { get; set; }
     public Guid? CurrentApprovedConceptPackageVersionId { get; set; }
+    public Guid? CurrentApprovedCreativePackageVersionId { get; set; }
     public string SourceSystem { get; set; } = string.Empty;
     public string IdempotencyKey { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
@@ -24,6 +25,7 @@ public class WeddingPlannerWorkspace
     public WeddingPlannerColorProfileVersion? CurrentApprovedColorProfileVersion { get; set; }
     public WeddingPlannerResearchReportVersion? CurrentApprovedResearchReportVersion { get; set; }
     public WeddingPlannerConceptPackageVersion? CurrentApprovedConceptPackageVersion { get; set; }
+    public WeddingPlannerCreativePackageVersion? CurrentApprovedCreativePackageVersion { get; set; }
     public ICollection<WeddingPlannerPlanningSession> Sessions { get; set; } = new List<WeddingPlannerPlanningSession>();
     public ICollection<WeddingPlannerAuditEvent> AuditEvents { get; set; } = new List<WeddingPlannerAuditEvent>();
     public ICollection<WeddingPlannerAgentRun> AgentRuns { get; set; } = new List<WeddingPlannerAgentRun>();
@@ -39,4 +41,9 @@ public class WeddingPlannerWorkspace
     public ICollection<WeddingPlannerConceptPackageVersion> ConceptPackageVersions { get; set; } = new List<WeddingPlannerConceptPackageVersion>();
     public ICollection<WeddingPlannerConceptRoleContribution> ConceptRoleContributions { get; set; } = new List<WeddingPlannerConceptRoleContribution>();
     public ICollection<WeddingPlannerConceptPackageDecision> ConceptPackageDecisions { get; set; } = new List<WeddingPlannerConceptPackageDecision>();
+    public ICollection<WeddingPlannerCreativeProductionJob> CreativeProductionJobs { get; set; } = new List<WeddingPlannerCreativeProductionJob>();
+    public ICollection<WeddingPlannerCreativePackageVersion> CreativePackageVersions { get; set; } = new List<WeddingPlannerCreativePackageVersion>();
+    public ICollection<WeddingPlannerCreativeRoleContribution> CreativeRoleContributions { get; set; } = new List<WeddingPlannerCreativeRoleContribution>();
+    public ICollection<WeddingPlannerCreativeAsset> CreativeAssets { get; set; } = new List<WeddingPlannerCreativeAsset>();
+    public ICollection<WeddingPlannerCreativePackageDecision> CreativePackageDecisions { get; set; } = new List<WeddingPlannerCreativePackageDecision>();
 }
