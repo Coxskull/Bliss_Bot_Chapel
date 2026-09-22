@@ -122,7 +122,8 @@ a { color: inherit; }
 .status-bar { height: 7px; overflow: hidden; border-radius: 20px; background: #e5e9e5; }
 .status-bar span { display: block; height: 100%; min-width: 3px; border-radius: inherit; transition: width .5s ease; }
 .activity-list { padding: 0 23px 17px; }
-.activity-item { width: 100%; display: grid; grid-template-columns: 34px 1fr auto; gap: 11px; align-items: center; padding: 13px 0; border: 0; border-top: 1px solid #e6ebe7; color: var(--ink); background: transparent; text-align: left; }
+.activity-item { width: 100%; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 11px; align-items: center; padding: 13px 0; border: 0; border-top: 1px solid #e6ebe7; color: var(--ink); background: transparent; text-align: left; }
+.activity-item > span { min-width: 0; overflow-wrap: anywhere; }
 .activity-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: #296f53; background: #ddf2e7; font-size: 12px; }
 .activity-item strong, .activity-item small { display: block; }
 .activity-item strong { font-size: 11px; }

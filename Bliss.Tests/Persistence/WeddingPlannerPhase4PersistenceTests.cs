@@ -272,17 +272,17 @@ public sealed class WeddingPlannerPhase4PersistenceTests
                 .GetValue(new WeddingPlannerResearchJob()));
 
         var report = db.Model.FindEntityType(typeof(WeddingPlannerResearchReportVersion));
-        Assert.True(report!.GetIndexes().Any(i =>
+        Assert.Contains(report!.GetIndexes(), i =>
             i.IsUnique
             && i.Properties.Any(p => p.Name == nameof(WeddingPlannerResearchReportVersion.SourceSystem))
-            && i.Properties.Any(p => p.Name == nameof(WeddingPlannerResearchReportVersion.IdempotencyKey))));
+            && i.Properties.Any(p => p.Name == nameof(WeddingPlannerResearchReportVersion.IdempotencyKey)));
 
         var contribution = db.Model.FindEntityType(typeof(WeddingPlannerResearchRoleContribution));
-        Assert.True(contribution!.GetIndexes().Any(i =>
+        Assert.Contains(contribution!.GetIndexes(), i =>
             i.IsUnique
             && i.Properties.Count == 2
             && i.Properties[0].Name == nameof(WeddingPlannerResearchRoleContribution.ResearchReportVersionId)
-            && i.Properties[1].Name == nameof(WeddingPlannerResearchRoleContribution.LogicalRole)));
+            && i.Properties[1].Name == nameof(WeddingPlannerResearchRoleContribution.LogicalRole));
 
         var workspace = db.Model.FindEntityType(typeof(WeddingPlannerWorkspace));
         var pointerFk = workspace!.GetForeignKeys()

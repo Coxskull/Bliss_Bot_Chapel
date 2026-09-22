@@ -225,7 +225,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Last verification", body);
         Assert.Contains("Recent verifications", body);
         Assert.Contains("Wedding Planner", body);
-        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, and Color Intelligence", body);
+        Assert.Contains("Advertiser workspace, Concierge, Brand DNA, Color Intelligence, and Curator research", body);
         Assert.Contains("Concierge + Brand DNA Interpreter runs", body);
         Assert.Contains("Create Brand DNA proposal", body);
         Assert.Contains("Approve or reject Brand DNA", body);
@@ -282,6 +282,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("submitWeddingPlannerResearchJob", script);
         Assert.Contains("submitWeddingPlannerResearchDecision", script);
         Assert.Contains("renderWeddingPlannerResearchInspect", script);
+        Assert.Contains("Wedding Planner Phase 4", script);
         Assert.Contains("parseWeddingPlannerResearchDocument", script);
         Assert.Contains("Eight logical roles map to 3 workers/runs, not 8 subscriptions", script);
         Assert.Contains("SYNTHETIC", script);
@@ -310,6 +311,8 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
 
         var styles = await (await client.GetAsync("/operations/app.css")).Content.ReadAsStringAsync();
         Assert.Contains("[hidden]", styles);
+        Assert.Contains("grid-template-columns: 34px minmax(0, 1fr) auto", styles);
+        Assert.Contains("overflow-wrap: anywhere", styles);
     }
 
     [Theory]
