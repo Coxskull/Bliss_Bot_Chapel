@@ -68,7 +68,9 @@ Bliss tests. The browser is not the owner.
 The root route is now the public advertiser/creator **Alpha Bliss Chapel**
 experience and follows the supplied visual direction:
 
-- immersive chapel hero
+- the supplied Alpha Bliss Chapel key artwork as the hero, shown whole
+  rather than re-created in markup, with a blurred copy of the same art
+  filling the surrounding space
 - advertiser and creator entry points
 - the Wedding Planner introduction and service list
 - conversation preview with disabled composer
