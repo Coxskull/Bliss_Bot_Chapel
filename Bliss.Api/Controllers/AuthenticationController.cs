@@ -41,6 +41,7 @@ public sealed class AuthenticationController(
             authenticated,
             authenticated ? ResolveDisplayName(User) : null,
             authenticated ? ResolveEmail(User) : null,
+            ResolveAdvertiserId(User),
             roles,
             BlissAuthorization.CanWrite(User, options),
             BlissAuthorization.CanReview(User, options),
@@ -80,6 +81,17 @@ public sealed class AuthenticationController(
         ?? ResolveEmail(user)
         ?? user.FindFirst("sub")?.Value;
 
+    private Guid? ResolveAdvertiserId(ClaimsPrincipal user)
+    {
+        if (!options.Enabled)
+        {
+            return null;
+        }
+
+        var value = user.FindFirst(options.AdvertiserIdClaimType)?.Value;
+        return Guid.TryParse(value, out var parsed) && parsed != Guid.Empty ? parsed : null;
+    }
+
     private static string? ResolveEmail(ClaimsPrincipal user) =>
         user.FindFirst(ClaimTypes.Email)?.Value
         ?? user.FindFirst("email")?.Value;
@@ -91,6 +103,7 @@ public sealed record SessionDto(
     bool IsAuthenticated,
     string? DisplayName,
     string? Email,
+    Guid? AdvertiserId,
     IReadOnlyList<string> Roles,
     bool CanWrite,
     bool CanReview,

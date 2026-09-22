@@ -42,5 +42,6 @@ public sealed class ApiSurfaceTests
         Assert.Contains("api/auth", prefixes);
         Assert.Contains("api/runtime", prefixes);
         Assert.Contains("api/audit", prefixes);
+        Assert.Contains("api/wedding-planner", prefixes);
     }
 }

@@ -19,6 +19,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<MatchFormationService>();
         services.AddScoped<MatchReviewService>();
         services.AddScoped<CampaignPlacementService>();
+        services.AddScoped<WeddingPlannerService>();
+        services.AddScoped<WeddingPlannerDataSeeder>();
         return services;
     }
 

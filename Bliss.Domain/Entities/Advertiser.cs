@@ -11,4 +11,5 @@ public class Advertiser
 
     public ICollection<AdvertiserProgram> Programs { get; set; } = new List<AdvertiserProgram>();
     public ICollection<NetworkAccess> NetworkAccesses { get; set; } = new List<NetworkAccess>();
+    public ICollection<WeddingPlannerWorkspace> WeddingPlannerWorkspaces { get; set; } = new List<WeddingPlannerWorkspace>();
 }

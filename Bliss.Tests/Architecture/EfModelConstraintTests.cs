@@ -71,6 +71,13 @@ public sealed class EfModelConstraintTests
         Assert.Contains("CampaignPlacementRun.AdvertiserOpportunityId", restrictKeys);
         Assert.Contains("CampaignPlacementRun.ContentItemId", restrictKeys);
         Assert.Contains("CampaignPlacementRun.AdInventorySlotId", restrictKeys);
+        Assert.Contains("WeddingPlannerWorkspace.AdvertiserId", restrictKeys);
+        Assert.Contains("WeddingPlannerPlanningSession.WorkspaceId", restrictKeys);
+        Assert.Contains("WeddingPlannerPlanningSession.AdvertiserId", restrictKeys);
+        Assert.Contains("WeddingPlannerConversationMessage.SessionId", restrictKeys);
+        Assert.Contains("WeddingPlannerConversationMessage.WorkspaceId", restrictKeys);
+        Assert.Contains("WeddingPlannerConversationMessage.AdvertiserId", restrictKeys);
+        Assert.Contains("WeddingPlannerAuditEvent.AdvertiserId", restrictKeys);
     }
 
     [Fact]
@@ -178,6 +185,19 @@ public sealed class EfModelConstraintTests
     }
 
     [Fact]
+    public void Wedding_planner_workspace_advertiser_id_is_unique()
+    {
+        using var db = TestDb.CreateContext();
+        var entity = db.Model.FindEntityType(typeof(WeddingPlannerWorkspace));
+        Assert.NotNull(entity);
+
+        var uniqueAdvertiser = entity!.GetIndexes().Single(i =>
+            i.IsUnique && i.Properties.Count == 1
+            && i.Properties[0].Name == nameof(WeddingPlannerWorkspace.AdvertiserId));
+        Assert.True(uniqueAdvertiser.IsUnique);
+    }
+
+    [Fact]
     public void Female_percentage_is_nullable()
     {
         using var db = TestDb.CreateContext();
@@ -244,6 +264,10 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(CampaignPlacementRun), nameof(CampaignPlacementRun.AdvertiserOpportunityId));
         AssertIndex(db, typeof(CampaignPlacementRun), nameof(CampaignPlacementRun.ContentItemId));
         AssertIndex(db, typeof(CampaignPlacementRun), nameof(CampaignPlacementRun.AdInventorySlotId));
+        AssertIndex(db, typeof(WeddingPlannerWorkspace), nameof(WeddingPlannerWorkspace.AdvertiserId));
+        AssertIndex(db, typeof(WeddingPlannerPlanningSession), nameof(WeddingPlannerPlanningSession.WorkspaceId));
+        AssertIndex(db, typeof(WeddingPlannerConversationMessage), nameof(WeddingPlannerConversationMessage.SessionId));
+        AssertIndex(db, typeof(WeddingPlannerAuditEvent), nameof(WeddingPlannerAuditEvent.AdvertiserId));
     }
 
     private static void AssertIndex(BlissDbContext db, Type type, string propertyName)

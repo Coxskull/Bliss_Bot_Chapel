@@ -40,4 +40,13 @@ public sealed class EntityDefaultTests
     {
         Assert.Equal("UNKNOWN", new DataProvenance().ConfidenceLevel);
     }
+
+    [Fact]
+    public void Wedding_planner_workspace_defaults_to_primary_and_active()
+    {
+        var workspace = new WeddingPlannerWorkspace();
+        Assert.True(workspace.IsPrimary);
+        Assert.Equal("ACTIVE", workspace.Status);
+        Assert.Equal("OPEN", new WeddingPlannerPlanningSession().Status);
+    }
 }

@@ -136,3 +136,6 @@ Phase 18 last verification contract: `docs/bliss/PHASE-18-ENGINEERING-CONTRACT.m
 Phase 18 last verification evidence: `docs/bliss/PHASE-18-EVIDENCE.md`.
 Phase 19 verification history contract: `docs/bliss/PHASE-19-ENGINEERING-CONTRACT.md`.
 Phase 19 verification history evidence: `docs/bliss/PHASE-19-EVIDENCE.md`.
+
+Wedding Planner Phase 1 foundation contract: `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md`.
+Wedding Planner master blueprint v1.1: `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md`.

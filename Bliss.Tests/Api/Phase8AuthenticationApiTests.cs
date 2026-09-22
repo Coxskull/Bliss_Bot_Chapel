@@ -174,6 +174,11 @@ public sealed class TestAuthenticationHandler(
                 .Select(role => new Claim(ClaimTypes.Role, role)));
         }
 
+        if (Request.Headers.TryGetValue("X-Test-Advertiser-Id", out var advertiserId))
+        {
+            claims.Add(new Claim("advertiser_id", advertiserId.ToString()));
+        }
+
         var identity = new ClaimsIdentity(claims, SchemeName, "name", ClaimTypes.Role);
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName);
         return Task.FromResult(AuthenticateResult.Success(ticket));

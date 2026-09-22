@@ -73,6 +73,7 @@ builder.Services.AddSingleton(authentication);
 builder.Services.AddSingleton(runtime);
 builder.Services.AddSingleton<OperationalEventStore>();
 builder.Services.AddScoped<OperatorIdentity>();
+builder.Services.AddScoped<WeddingPlannerAccess>();
 builder.Services.AddProblemDetails();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -245,7 +246,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "Bliss Bot Chapel API",
         Version = "v1",
-        Description = "Standalone Bliss API: controlled ingestion, matching, human review, and campaign placement planning."
+        Description = "Standalone Bliss API: controlled ingestion, matching, human review, campaign placement planning, and Wedding Planner foundation."
     });
 });
 
@@ -309,6 +310,8 @@ if (app.Environment.IsDevelopment())
                 await phase2.SeedAsync();
                 var phase3 = scope.ServiceProvider.GetRequiredService<Phase3DataSeeder>();
                 await phase3.SeedAsync();
+                var weddingPlanner = scope.ServiceProvider.GetRequiredService<WeddingPlannerDataSeeder>();
+                await weddingPlanner.SeedAsync();
             }
         }
         catch (Exception ex)

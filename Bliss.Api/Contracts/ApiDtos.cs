@@ -474,3 +474,71 @@ public sealed record CampaignBindingQueueItemDto(
     int ContentItemCount,
     DateTime CreatedAt);
 
+public sealed record OpenWeddingPlannerWorkspaceRequest(
+    Guid AdvertiserId,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record CreateWeddingPlannerSessionRequest(
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record AppendWeddingPlannerMessageRequest(
+    string ActorType,
+    string Body,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerWorkspaceDto(
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    string AdvertiserName,
+    bool IsPrimary,
+    string Status,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    bool IsReplay);
+
+public sealed record WeddingPlannerSessionDto(
+    Guid SessionId,
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    string Status,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    int MessageCount,
+    bool IsReplay);
+
+public sealed record WeddingPlannerMessageDto(
+    Guid MessageId,
+    Guid SessionId,
+    Guid WorkspaceId,
+    Guid AdvertiserId,
+    int SequenceNumber,
+    string ActorType,
+    string ActorLabel,
+    string Body,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime CreatedAt,
+    bool IsReplay);
+
+public sealed record WeddingPlannerAuditEventDto(
+    Guid Id,
+    Guid AdvertiserId,
+    Guid? WorkspaceId,
+    Guid? SessionId,
+    Guid? MessageId,
+    string Action,
+    string ActorType,
+    string ActorLabel,
+    string Outcome,
+    string? RequestId,
+    string? Detail,
+    DateTime OccurredAt);
+
+

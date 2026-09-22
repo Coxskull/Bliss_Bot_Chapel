@@ -29,6 +29,7 @@
         <p class="nav-heading">Work queues</p>
         <a class="nav-item" href="#/review" data-view="review"><span class="nav-icon" aria-hidden="true">☑</span><span>Review</span><span class="nav-count attention" id="nav-review-count">—</span></a>
         <a class="nav-item" href="#/placement" data-view="placement"><span class="nav-icon" aria-hidden="true">▣</span><span>Placement</span><span class="nav-count" id="nav-placement-count">—</span></a>
+        <a class="nav-item" href="#/wedding-planner" data-view="wedding-planner"><span class="nav-icon" aria-hidden="true">💒</span><span>Wedding Planner</span><span class="nav-count" id="nav-wedding-planner-count">—</span></a>
         <p class="nav-heading">Directory</p>
         <a class="nav-item" href="#/partners" data-view="partners"><span class="nav-icon" aria-hidden="true">△</span><span>Partners</span></a>
         <a class="nav-item" href="#/inventory" data-view="inventory"><span class="nav-icon" aria-hidden="true">▦</span><span>Inventory</span></a>
@@ -158,6 +159,51 @@
                 <div class="form-actions"><small>The selected slot remains available after planning.</small><button class="primary-button" type="submit" id="placement-submit">Plan placement <span>→</span></button></div>
               </form>
               <section class="panel ledger-panel"><div class="panel-header"><div><p class="eyebrow">RECENT</p><h3>Placement ledger</h3></div></div><div id="placement-list" class="activity-list"></div></section>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-wedding-planner" aria-labelledby="wedding-planner-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">WEDDING PLANNER FOUNDATION</p>
+              <h2 id="wedding-planner-title">Advertiser workspace and session ledger</h2>
+              <p>Open the primary workspace, resume planning sessions, and append durable human messages. Phase 1 does not invoke AI, Color Intelligence, Curator, or campaign placement.</p>
+            </div>
+          </div>
+          <div class="safety-note"><strong>Infrastructure only.</strong> Ownership is enforced by the API. The browser never becomes the authority, and there is no Wedding Planner chatbot in this phase.</div>
+          <div class="workflow-layout">
+            <section>
+              <div class="queue-list" id="wedding-planner-workspace-list"></div>
+            </section>
+            <div>
+              <form class="panel workflow-form" id="wedding-planner-open-form">
+                <div class="panel-header"><div><p class="eyebrow">WORKSPACE</p><h3>Open primary workspace</h3></div><span class="record-tag">NO AI</span></div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Advertiser *</span><select name="advertiserId" id="wedding-planner-advertiser" required></select></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-workspace-key" readonly required><button type="button" id="regenerate-wedding-planner-workspace-key" aria-label="Generate a new workspace idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>A second open returns the same durable primary workspace.</small><button class="primary-button" type="submit">Open workspace <span>→</span></button></div>
+              </form>
+              <form class="panel workflow-form" id="wedding-planner-session-form">
+                <div class="panel-header"><div><p class="eyebrow">SESSION</p><h3>Create or resume a session</h3></div></div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Workspace *</span><select name="workspaceId" id="wedding-planner-workspace" required></select></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-session-key" readonly required><button type="button" id="regenerate-wedding-planner-session-key" aria-label="Generate a new session idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><button class="secondary-button" type="submit">Create session</button></div>
+              </form>
+              <form class="panel workflow-form" id="wedding-planner-message-form">
+                <div class="panel-header"><div><p class="eyebrow">DURABLE MESSAGE</p><h3>Append a human message</h3></div></div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Session *</span><select name="sessionId" id="wedding-planner-session" required></select></label>
+                  <label><span>Actor *</span><select name="actorType" required><option value="OPERATOR">Operator</option><option value="ADVERTISER">Advertiser</option><option value="SYSTEM">System</option></select></label>
+                  <label class="span-two"><span>Message *</span><textarea name="body" maxlength="8000" required placeholder="Durable note. This is not an AI reply."></textarea></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-message-key" readonly required><button type="button" id="regenerate-wedding-planner-message-key" aria-label="Generate a new message idempotency key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><button class="primary-button" type="submit">Append message <span>→</span></button></div>
+              </form>
+              <section class="panel ledger-panel"><div class="panel-header"><div><p class="eyebrow">RESUME</p><h3>Session messages</h3></div></div><div id="wedding-planner-message-list" class="activity-list"></div></section>
             </div>
           </div>
         </section>

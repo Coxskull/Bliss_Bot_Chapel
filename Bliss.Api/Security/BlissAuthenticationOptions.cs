@@ -14,4 +14,6 @@ public sealed class BlissAuthenticationOptions
     public string OperatorRole { get; set; } = "bliss.operator";
     public string ReviewerRole { get; set; } = "bliss.reviewer";
     public string AdminRole { get; set; } = "bliss.admin";
+    public string AdvertiserRole { get; set; } = "bliss.advertiser";
+    public string AdvertiserIdClaimType { get; set; } = "advertiser_id";
 }
