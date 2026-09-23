@@ -1,8 +1,9 @@
 # Economics Engine — Integration Points
 
 This module is a **callee**. Other Bliss Chapel systems keep their
-authority. Economics Phase 8 implements only the controlled Wedding
-Planner recommendation handshake; later call sites remain gated.
+authority. Economics Phase 8 implements the controlled Wedding Planner
+recommendation handshake, and Phase 9 appends measured historical
+economics without changing upstream authority.
 
 ## Callers (future)
 
@@ -24,7 +25,7 @@ Economics reads; it does not become source of truth for these records.
 | `Advertiser`, `AdvertiserProgram`, `AdvertiserOpportunity` | Category, market country, campaign objective context. Opportunity `CommissionPercentage` / `FixedFee` are **not** inventory rates |
 | `BlissMatch`, score components, eligibility | Compatibility and demographic-match signals. Matching remains scoring authority |
 | `Campaign`, `CampaignPlacement` | What inventory was planned or purchased |
-| Measurement (future) | Actual impressions, views, engagement, conversions |
+| Measurement | Actual impressions, views, engagement, conversions; Phase 9 stores nullable append-only snapshots |
 | `DataProvenance` | Existing field-level source/confidence for creator demographics |
 
 ## Explicit non-integrations
@@ -51,9 +52,9 @@ Economics reads; it does not become source of truth for these records.
    recalculate the numbers.
 7. Advertiser approval, then Alpha approval where required.
 8. Existing Bliss campaign-placement workflow proceeds.
-9. Measurement and settlement later write `HistoricalPlacementEconomics`
-   / `CampaignPerformanceEconomics` without mutating the original
-   recommendation.
+9. Measurement writes `HistoricalPlacementEconomics` /
+   `CampaignPerformanceEconomics` without mutating the original
+   recommendation. Settlement remains separate later work.
 
 ## Data-flow boundary
 
@@ -90,3 +91,6 @@ Matching ──compatibility──► Inventory
 - Architecture tests constrain Economics and Wedding Planner writes to
   accepted phase contracts and fail if default compensation shares are
   compiled in.
+- Phase 9 snapshots accepted commercial actuals and measurements for
+  analysis only; they do not update pricing rules or create settlement
+  obligations.

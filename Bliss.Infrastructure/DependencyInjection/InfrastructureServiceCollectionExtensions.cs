@@ -31,6 +31,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<EconomicsPhase6DataSeeder>();
         services.AddScoped<CompensationIllustrationService>();
         services.AddScoped<EconomicsResearchService>();
+        services.AddScoped<HistoricalEconomicsService>();
         return services;
     }
 

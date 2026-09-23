@@ -1,0 +1,14 @@
+Command:
+dotnet test BlissBotChapel.sln --no-restore
+
+Result:
+Passed!  - Failed: 0, Passed: 172, Skipped: 0, Total: 172
+
+Focused Phase 9 verification:
+dotnet test Bliss.Tests/Bliss.Tests.csproj --no-restore --filter 'FullyQualifiedName~EconomicsPhase9|FullyQualifiedName~FrontendTests|FullyQualifiedName~EfModelConstraintTests|FullyQualifiedName~EconomicsBoundaryTests'
+
+Result:
+Passed!  - Failed: 0, Passed: 33, Skipped: 0, Total: 33
+
+Live PostgreSQL readiness:
+Healthy — database connection succeeded.

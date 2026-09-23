@@ -347,6 +347,43 @@
             <div class="form-actions"><small>Acceptance appends an observation; it never overwrites or upgrades to VERIFIED.</small><button class="primary-button" type="submit">Record review <span>→</span></button></div>
           </form>
           <div id="economics-research-result"></div>
+          <form class="panel workflow-form" id="economics-historical-placement-form">
+            <div class="panel-header"><div><p class="eyebrow">PHASE 9 · ALPHA ACTUALS</p><h3>Append placement economics</h3></div><span class="record-tag">NOT SETTLEMENT</span></div>
+            <div class="safety-note"><strong>Historical learning is append-only.</strong> Link a planned placement to its accepted quote and record measured delivery. .NET snapshots external benchmarks versus Alpha actuals without changing recommendations, quotes, placements, or money owed.</div>
+            <div class="form-grid">
+              <label class="span-two"><span>Planned placement *</span><select name="campaignPlacementId" id="history-placement" required></select></label>
+              <label class="span-two"><span>Accepted quote line *</span><select name="quoteLineItemId" id="history-quote-line" required></select></label>
+              <label class="span-two"><span>Compensation illustration</span><select name="compensationIllustrationId" id="history-compensation"><option value="">No illustration snapshot</option></select></label>
+              <label><span>Actual impressions</span><input name="actualImpressions" type="number" min="0" value="50000"></label>
+              <label><span>Actual views</span><input name="actualViews" type="number" min="0" value="43000"></label>
+              <label><span>Actual listens</span><input name="actualListens" type="number" min="0" placeholder="Unknown"></label>
+              <label><span>Actual engagements</span><input name="actualEngagements" type="number" min="0" value="3500"></label>
+              <label><span>Actual conversions</span><input name="actualConversions" type="number" min="0" value="120"></label>
+              <label><span>Measurement as of *</span><input name="measurementAsOf" id="history-measurement-at" type="datetime-local" required></label>
+              <label class="span-two"><span>Notes</span><input name="notes" maxlength="2000" value="Operator-recorded delivery actuals; analytical evidence only"></label>
+              <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_MEASUREMENT" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="history-placement-idempotency" readonly required><button type="button" id="regenerate-history-placement-key" aria-label="Generate a new placement history key">↻</button></div></label></div></details>
+            </div>
+            <div class="form-actions"><small>Corrections append a new linked row; unknown metrics remain unknown.</small><button class="primary-button" type="submit">Append actuals <span>→</span></button></div>
+          </form>
+          <form class="panel workflow-form" id="economics-campaign-performance-form">
+            <div class="panel-header"><div><p class="eyebrow">PHASE 9 · CAMPAIGN SNAPSHOT</p><h3>Append campaign performance</h3></div><span class="record-tag">ANALYTICS ONLY</span></div>
+            <div class="form-grid">
+              <label class="span-two"><span>Campaign *</span><select name="campaignId" id="history-campaign" required></select></label>
+              <label><span>Actual impressions</span><input name="actualImpressions" type="number" min="0" value="50000"></label>
+              <label><span>Actual views</span><input name="actualViews" type="number" min="0" value="43000"></label>
+              <label><span>Actual listens</span><input name="actualListens" type="number" min="0" placeholder="Unknown"></label>
+              <label><span>Actual engagements</span><input name="actualEngagements" type="number" min="0" value="3500"></label>
+              <label><span>Engagement rate</span><input name="engagementRate" type="number" min="0" max="1" step=".0001" value=".07"></label>
+              <label><span>Conversions</span><input name="conversions" type="number" min="0" value="120"></label>
+              <label><span>Conversion value</span><input name="conversionValue" type="number" min="0" step=".01" value="1800"></label>
+              <label><span>Conversion currency</span><input name="conversionValueCurrencyCode" maxlength="8" value="PHP"></label>
+              <label><span>Measurement as of *</span><input name="measurementAsOf" id="history-campaign-measurement-at" type="datetime-local" required></label>
+              <label class="span-two"><span>Notes</span><input name="notes" maxlength="2000" value="Campaign-level performance snapshot"></label>
+              <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_MEASUREMENT" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="history-campaign-idempotency" readonly required><button type="button" id="regenerate-history-campaign-key" aria-label="Generate a new campaign performance key">↻</button></div></label></div></details>
+            </div>
+            <div class="form-actions"><small>Snapshots current Alpha placement economics; no automatic pricing feedback.</small><button class="primary-button" type="submit">Append performance <span>→</span></button></div>
+          </form>
+          <div id="economics-history-result"></div>
           <div class="stat-grid">
             <article class="stat-card"><span class="stat-top"><span class="stat-icon mint">◎</span><span class="trend">DATA</span></span><strong id="economics-market-count">—</strong><span>Geographic markets</span><small>Country and metro are rows</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon blue">◇</span><span class="trend">VOCABULARY</span></span><strong id="economics-model-count">—</strong><span>Pricing models</span><small>No rates are stored here</small></article>
@@ -357,6 +394,7 @@
             <article class="stat-card"><span class="stat-top"><span class="stat-icon sage">▣</span><span class="trend">VERSIONED</span></span><strong id="economics-quote-count">—</strong><span>Commercial quotes</span><small>Human approvals and outcomes</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon gold">%</span><span class="trend">ILLUSTRATIVE</span></span><strong id="economics-compensation-count">—</strong><span>Compensation illustrations</span><small>Never settlement or payout</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon blue">⌕</span><span class="trend">HUMAN GATED</span></span><strong id="economics-research-count">—</strong><span>Research runs</span><small>Staged before durable truth</small></article>
+            <article class="stat-card"><span class="stat-top"><span class="stat-icon mint">↺</span><span class="trend">ALPHA ACTUALS</span></span><strong id="economics-history-count">—</strong><span>Historical snapshots</span><small>Append-only learning evidence</small></article>
           </div>
           <div class="tab-row" id="economics-tabs" role="tablist">
             <button class="tab-button active" data-economics-tab="markets" role="tab" aria-selected="true">Markets</button>
@@ -374,6 +412,8 @@
             <button class="tab-button" data-economics-tab="compensation-illustrations" role="tab" aria-selected="false">Compensation illustrations</button>
             <button class="tab-button" data-economics-tab="research-runs" role="tab" aria-selected="false">Research runs</button>
             <button class="tab-button" data-economics-tab="research-candidates" role="tab" aria-selected="false">Research candidates</button>
+            <button class="tab-button" data-economics-tab="historical-placements" role="tab" aria-selected="false">Placement actuals</button>
+            <button class="tab-button" data-economics-tab="campaign-performance" role="tab" aria-selected="false">Campaign performance</button>
           </div>
           <div class="panel table-panel"><div class="table-wrap" id="economics-content"></div></div>
         </section>

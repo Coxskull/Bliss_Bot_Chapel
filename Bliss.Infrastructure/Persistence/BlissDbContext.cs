@@ -72,6 +72,10 @@ public class BlissDbContext : DbContext
     public DbSet<EconomicsResearchRun> EconomicsResearchRuns => Set<EconomicsResearchRun>();
     public DbSet<EconomicsResearchCandidate> EconomicsResearchCandidates => Set<EconomicsResearchCandidate>();
     public DbSet<EconomicsResearchReviewDecision> EconomicsResearchReviewDecisions => Set<EconomicsResearchReviewDecision>();
+    public DbSet<HistoricalPlacementEconomics> HistoricalPlacementEconomics =>
+        Set<HistoricalPlacementEconomics>();
+    public DbSet<CampaignPerformanceEconomics> CampaignPerformanceEconomics =>
+        Set<CampaignPerformanceEconomics>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

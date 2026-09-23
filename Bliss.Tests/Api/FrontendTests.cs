@@ -71,6 +71,11 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Wedding Planner never invents prices", body);
         Assert.Contains("Stage n8n / AI candidate", body);
         Assert.Contains("Review staged candidate", body);
+        Assert.Contains("Append placement economics", body);
+        Assert.Contains("Append campaign performance", body);
+        Assert.Contains("Placement actuals", body);
+        Assert.Contains("Campaign performance", body);
+        Assert.Contains("no automatic pricing feedback", body);
         Assert.Contains("AI research is never silent truth", body);
         Assert.Contains("Audience snapshots", body);
         Assert.Contains("Performance snapshots", body);
@@ -115,6 +120,10 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("/api/economics/compensation-illustrations", script);
         Assert.Contains("/api/economics/research-runs", script);
         Assert.Contains("/api/economics/research-candidates/", script);
+        Assert.Contains("/api/economics/historical-placements", script);
+        Assert.Contains("/api/economics/campaign-performance", script);
+        Assert.Contains("supersedesHistoricalPlacementEconomicsId:null", script);
+        Assert.Contains("supersedesCampaignPerformanceEconomicsId:null", script);
         Assert.Contains("The browser never becomes the authority", body);
         Assert.DoesNotContain("TEST ENVIRONMENT", body);
         Assert.DoesNotContain("TEST_OPERATOR", body);

@@ -22,6 +22,7 @@ public sealed class EconomicsController : ControllerBase
     private readonly QuoteService _quotes;
     private readonly CompensationIllustrationService _compensation;
     private readonly EconomicsResearchService _research;
+    private readonly HistoricalEconomicsService _history;
     private readonly OperatorIdentity _operatorIdentity;
 
     public EconomicsController(
@@ -30,6 +31,7 @@ public sealed class EconomicsController : ControllerBase
         QuoteService quotes,
         CompensationIllustrationService compensation,
         EconomicsResearchService research,
+        HistoricalEconomicsService history,
         OperatorIdentity operatorIdentity)
     {
         _db = db;
@@ -37,6 +39,7 @@ public sealed class EconomicsController : ControllerBase
         _quotes = quotes;
         _compensation = compensation;
         _research = research;
+        _history = history;
         _operatorIdentity = operatorIdentity;
     }
 
@@ -648,6 +651,122 @@ public sealed class EconomicsController : ControllerBase
         }
     }
 
+    [HttpGet("historical-placements")]
+    public async Task<ActionResult<IReadOnlyList<HistoricalPlacementEconomicsDto>>>
+        GetHistoricalPlacements(CancellationToken cancellationToken)
+    {
+        var items = await _history.PlacementGraph()
+            .OrderByDescending(x => x.RecordedAt)
+            .ToListAsync(cancellationToken);
+        return Ok(items.Select(x => ToDto(x, false)).ToList());
+    }
+
+    [HttpGet("historical-placements/{id:guid}")]
+    public async Task<ActionResult<HistoricalPlacementEconomicsDto>>
+        GetHistoricalPlacement(Guid id, CancellationToken cancellationToken)
+    {
+        var item = await _history.PlacementGraph()
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return item is null ? NotFound() : Ok(ToDto(item, false));
+    }
+
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("historical-placements")]
+    public async Task<ActionResult<HistoricalPlacementEconomicsDto>>
+        RecordHistoricalPlacement(
+            RecordHistoricalPlacementEconomicsRequest request,
+            CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _history.RecordPlacementAsync(
+                new RecordHistoricalPlacementEconomicsCommand(
+                    request.CampaignPlacementId,
+                    request.QuoteOutcomeId,
+                    request.QuoteLineItemId,
+                    request.CompensationIllustrationId,
+                    request.SupersedesHistoricalPlacementEconomicsId,
+                    request.ContractedLineAmount,
+                    request.ActualImpressions,
+                    request.ActualViews,
+                    request.ActualListens,
+                    request.ActualEngagements,
+                    request.ActualConversions,
+                    request.MeasurementAsOf,
+                    request.Notes,
+                    request.SourceSystem,
+                    request.IdempotencyKey),
+                cancellationToken);
+            var dto = ToDto(result.Record, result.IsReplay);
+            return result.IsReplay
+                ? Ok(dto)
+                : CreatedAtAction(nameof(GetHistoricalPlacement), new { id = dto.Id }, dto);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("campaign-performance")]
+    public async Task<ActionResult<IReadOnlyList<CampaignPerformanceEconomicsDto>>>
+        GetCampaignPerformance(CancellationToken cancellationToken)
+    {
+        var items = await _history.CampaignGraph()
+            .OrderByDescending(x => x.RecordedAt)
+            .ToListAsync(cancellationToken);
+        return Ok(items.Select(x => ToDto(x, false)).ToList());
+    }
+
+    [HttpGet("campaign-performance/{id:guid}")]
+    public async Task<ActionResult<CampaignPerformanceEconomicsDto>>
+        GetCampaignPerformanceRecord(Guid id, CancellationToken cancellationToken)
+    {
+        var item = await _history.CampaignGraph()
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return item is null ? NotFound() : Ok(ToDto(item, false));
+    }
+
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("campaign-performance")]
+    public async Task<ActionResult<CampaignPerformanceEconomicsDto>>
+        RecordCampaignPerformance(
+            RecordCampaignPerformanceEconomicsRequest request,
+            CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _history.RecordCampaignAsync(
+                new RecordCampaignPerformanceEconomicsCommand(
+                    request.CampaignId,
+                    request.SupersedesCampaignPerformanceEconomicsId,
+                    request.ActualImpressions,
+                    request.ActualViews,
+                    request.ActualListens,
+                    request.ActualEngagements,
+                    request.EngagementRate,
+                    request.Conversions,
+                    request.ConversionValue,
+                    request.ConversionValueCurrencyCode,
+                    request.MeasurementAsOf,
+                    request.Notes,
+                    request.SourceSystem,
+                    request.IdempotencyKey),
+                cancellationToken);
+            var dto = ToDto(result.Record, result.IsReplay);
+            return result.IsReplay
+                ? Ok(dto)
+                : CreatedAtAction(
+                    nameof(GetCampaignPerformanceRecord), new { id = dto.Id }, dto);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     private static IQueryable<MarketBenchmarkObservationDto> ProjectObservations(
         IQueryable<MarketBenchmarkObservation> query) =>
         query.Select(x => new MarketBenchmarkObservationDto(
@@ -935,5 +1054,78 @@ public sealed class EconomicsController : ControllerBase
                         .ToList()))
                 .ToList(),
             actionId,
+            isReplay);
+
+    private static HistoricalPlacementEconomicsDto ToDto(
+        HistoricalPlacementEconomics x,
+        bool isReplay) =>
+        new(
+            x.Id,
+            x.CampaignPlacementId,
+            x.CampaignPlacement.CampaignId,
+            x.CampaignPlacement.Campaign.Name,
+            x.QuoteVersionId,
+            x.QuoteOutcomeId,
+            x.QuoteLineItemId,
+            x.RateRecommendationId,
+            x.CompensationIllustrationId,
+            x.SupersedesHistoricalPlacementEconomicsId,
+            x.CampaignPlacement.AdInventorySlot.SlotType,
+            x.RateRecommendation.PricingModel.Code,
+            x.QuotedAmount,
+            x.ContractedAmount,
+            x.CurrencyCode,
+            x.ActualImpressions,
+            x.ActualViews,
+            x.ActualListens,
+            x.ActualEngagements,
+            x.ActualConversions,
+            x.RecommendationLow,
+            x.RecommendationTarget,
+            x.RecommendationHigh,
+            x.ExternalBenchmarkLow,
+            x.ExternalBenchmarkHigh,
+            x.EffectiveCpm,
+            x.EffectiveCpv,
+            x.ContractedVsRecommendationTargetPercentage,
+            x.ContractedVsExternalMidpointPercentage,
+            x.AlphaCompensationAmount,
+            x.CreatorCompensationAmount,
+            x.OtherCompensationAmount,
+            x.MeasurementAsOf,
+            x.Notes,
+            x.InputSnapshotJson,
+            x.SourceSystem,
+            x.IdempotencyKey,
+            x.RecordedAt,
+            isReplay);
+
+    private static CampaignPerformanceEconomicsDto ToDto(
+        CampaignPerformanceEconomics x,
+        bool isReplay) =>
+        new(
+            x.Id,
+            x.CampaignId,
+            x.Campaign.Name,
+            x.SupersedesCampaignPerformanceEconomicsId,
+            x.ActualImpressions,
+            x.ActualViews,
+            x.ActualListens,
+            x.ActualEngagements,
+            x.EngagementRate,
+            x.Conversions,
+            x.ConversionValue,
+            x.ConversionValueCurrencyCode,
+            x.AlphaPlacementCount,
+            x.AlphaContractedAmount,
+            x.AlphaContractedCurrencyCode,
+            x.EffectiveCpm,
+            x.EffectiveCpv,
+            x.MeasurementAsOf,
+            x.Notes,
+            x.InputSnapshotJson,
+            x.SourceSystem,
+            x.IdempotencyKey,
+            x.RecordedAt,
             isReplay);
 }

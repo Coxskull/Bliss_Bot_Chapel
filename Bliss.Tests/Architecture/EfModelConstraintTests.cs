@@ -133,6 +133,19 @@ public sealed class EfModelConstraintTests
         Assert.Contains("WeddingPlannerEconomicsRequest.GeographicMarketId", restrictKeys);
         Assert.Contains("WeddingPlannerEconomicsRequest.PricingModelId", restrictKeys);
         Assert.Contains("WeddingPlannerEconomicsRequest.RateRecommendationId", restrictKeys);
+        Assert.Contains("HistoricalPlacementEconomics.CampaignPlacementId", restrictKeys);
+        Assert.Contains("HistoricalPlacementEconomics.QuoteVersionId", restrictKeys);
+        Assert.Contains("HistoricalPlacementEconomics.QuoteOutcomeId", restrictKeys);
+        Assert.Contains("HistoricalPlacementEconomics.QuoteLineItemId", restrictKeys);
+        Assert.Contains("HistoricalPlacementEconomics.RateRecommendationId", restrictKeys);
+        Assert.Contains("HistoricalPlacementEconomics.CompensationIllustrationId", restrictKeys);
+        Assert.Contains(
+            "HistoricalPlacementEconomics.SupersedesHistoricalPlacementEconomicsId",
+            restrictKeys);
+        Assert.Contains("CampaignPerformanceEconomics.CampaignId", restrictKeys);
+        Assert.Contains(
+            "CampaignPerformanceEconomics.SupersedesCampaignPerformanceEconomicsId",
+            restrictKeys);
     }
 
     [Fact]
@@ -364,6 +377,10 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(WeddingPlannerEconomicsRequest), nameof(WeddingPlannerEconomicsRequest.GeographicMarketId));
         AssertIndex(db, typeof(WeddingPlannerEconomicsRequest), nameof(WeddingPlannerEconomicsRequest.PricingModelId));
         AssertIndex(db, typeof(WeddingPlannerEconomicsRequest), nameof(WeddingPlannerEconomicsRequest.RateRecommendationId));
+        AssertIndex(db, typeof(HistoricalPlacementEconomics), nameof(HistoricalPlacementEconomics.CampaignPlacementId));
+        AssertIndex(db, typeof(HistoricalPlacementEconomics), nameof(HistoricalPlacementEconomics.QuoteOutcomeId));
+        AssertIndex(db, typeof(HistoricalPlacementEconomics), nameof(HistoricalPlacementEconomics.RateRecommendationId));
+        AssertIndex(db, typeof(CampaignPerformanceEconomics), nameof(CampaignPerformanceEconomics.CampaignId));
         AssertIndex(db, typeof(RateRecommendation), nameof(RateRecommendation.CreatorId));
         AssertIndex(db, typeof(RateRecommendation), nameof(RateRecommendation.AdInventorySlotId));
         AssertIndex(db, typeof(RateRecommendation), nameof(RateRecommendation.GeographicMarketId));

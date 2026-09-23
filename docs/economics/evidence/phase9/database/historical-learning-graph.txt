@@ -1,0 +1,17 @@
+PostgreSQL database: bliss_economics_phase1
+Migration: 20260923115315_EconomicsPhase9HistoricalLearning
+
+Historical placement graph:
+Id                                   Contracted  Currency  Impressions  Effective CPM  vs recommendation  vs external midpoint  recommendation range  quote status  placement status
+20060fa8-bbdb-4ada-8716-a7152dd4d115 215.00      PHP       50000        4.300000       -11.157025%         -2.272727%            198/242/286 PHP      ACCEPTED      CREATED
+
+Campaign performance snapshot:
+Id                                   Impressions  Alpha placements  Alpha contracted  Effective CPM  Effective CPV
+da32ccaf-7737-40d1-9ef2-2fa56b9b77fa 50000        1                 215.00 PHP        4.300000       0.005000
+
+Boundary verification:
+- The source recommendation remains 198/242/286 PHP.
+- The source quote remains ACCEPTED.
+- The source placement remains CREATED.
+- No public table name contains settlement, payable, or payment.
+- HistoricalPlacementEconomics and CampaignPerformanceEconomics are appended records.
