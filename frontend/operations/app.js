@@ -23,7 +23,7 @@ const state = {
   economicsAudienceSnapshots: [], economicsPerformanceSnapshots: [],
   economicsMarketProfiles: [], economicsIndustryProfiles: [],
   economicsInventoryBenchmarks: [], economicsExchangeRates: [],
-  economicsPricingRules: [], economicsRecommendations: [],
+  economicsPricingRules: [], economicsRecommendations: [], economicsQuotes: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "", economicsSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations", economicsTab: "markets",
   selectedReview: null, selectedPlacement: null,
@@ -42,6 +42,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   generatePlacementIdempotencyKey();
   generateWeddingPlannerKeys();
   fillKey("#economics-idempotency");
+  fillKey("#quote-idempotency");
+  fillKey("#quote-action-idempotency");
   route();
   await loadSession();
   syncOperatorUi();
@@ -126,7 +128,8 @@ async function loadDashboard() {
       api("/api/economics/inventory-benchmarks").catch(() => []),
       api("/api/economics/exchange-rates").catch(() => []),
       api("/api/economics/pricing-rule-versions").catch(() => []),
-      api("/api/economics/recommendations").catch(() => [])
+      api("/api/economics/recommendations").catch(() => []),
+      api("/api/economics/quotes").catch(() => [])
     ]);
     const [
       matches, creators, advertisers, programs, opportunities, content, campaigns,
@@ -136,7 +139,7 @@ async function loadDashboard() {
       economicsSources, economicsObservations, economicsAudienceSnapshots,
       economicsPerformanceSnapshots, economicsMarketProfiles, economicsIndustryProfiles,
       economicsInventoryBenchmarks, economicsExchangeRates, economicsPricingRules,
-      economicsRecommendations
+      economicsRecommendations, economicsQuotes
     ] = values;
     const [contentDetails, ruleDetails] = await Promise.all([
       Promise.all(content.map(item => api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] })))),
@@ -151,7 +154,7 @@ async function loadDashboard() {
       economicsAudienceSnapshots, economicsPerformanceSnapshots,
       economicsMarketProfiles, economicsIndustryProfiles,
       economicsInventoryBenchmarks, economicsExchangeRates, economicsPricingRules,
-      economicsRecommendations, loaded: true
+      economicsRecommendations, economicsQuotes, loaded: true
     });
     state.selectedReview = reviewQueue.some(x => x.blissMatchId === state.selectedReview)
       ? state.selectedReview : reviewQueue[0]?.blissMatchId || null;
@@ -371,6 +374,7 @@ function renderEconomics() {
     state.economicsMarketProfiles.length + state.economicsIndustryProfiles.length
     + state.economicsInventoryBenchmarks.length + state.economicsExchangeRates.length;
   $("#economics-recommendation-count").textContent = state.economicsRecommendations.length;
+  $("#economics-quote-count").textContent = state.economicsQuotes.length;
 
   const creatorSelect = $("#economics-creator");
   const slotSelect = $("#economics-slot");
@@ -404,6 +408,41 @@ function renderEconomics() {
       </div>
       <p><strong>${escapeHtml(latestRecommendation.pricingModelCode)}</strong> · ${escapeHtml(latestRecommendation.marketCode)} · ${latestRecommendation.durationSeconds ?? "UNKNOWN"} seconds · rule ${code(latestRecommendation.pricingRuleVersion)}</p>
       <div class="slot-row">${latestRecommendation.factors.map(x => `<span class="slot-tag">${escapeHtml(x.label)} × ${x.adjustmentMultiplier ?? "—"}</span>`).join("")}</div>
+    </section>` : "";
+
+  const quoteRecommendation = $("#quote-recommendation");
+  const selectedQuoteRecommendation = quoteRecommendation.value;
+  quoteRecommendation.innerHTML = state.economicsRecommendations.map(x =>
+    `<option value="${x.id}">${escapeHtml(x.creatorName)} · ${escapeHtml(friendlyStatus(x.inventorySlotType))} · ${x.rangeLow}/${x.rangeTarget}/${x.rangeHigh} ${escapeHtml(x.currencyCode)}</option>`).join("");
+  if ([...quoteRecommendation.options].some(x => x.value === selectedQuoteRecommendation)) {
+    quoteRecommendation.value = selectedQuoteRecommendation;
+  }
+  const quoteOpportunity = $("#quote-opportunity");
+  const selectedOpportunity = quoteOpportunity.value;
+  quoteOpportunity.innerHTML = `<option value="">No opportunity</option>${state.opportunities.map(x =>
+    `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join("")}`;
+  if ([...quoteOpportunity.options].some(x => x.value === selectedOpportunity)) {
+    quoteOpportunity.value = selectedOpportunity;
+  }
+  const selectedRecommendation = state.economicsRecommendations.find(x => x.id === quoteRecommendation.value);
+  if (!$("#quote-amount").value && selectedRecommendation) {
+    $("#quote-amount").value = selectedRecommendation.rangeTarget;
+  }
+
+  const latestQuote = state.economicsQuotes[0];
+  const currentQuoteVersion = latestQuote?.versions.find(
+    x => x.versionNumber === latestQuote.currentVersionNumber);
+  $("#economics-quote-action-form").hidden = !latestQuote;
+  $("#economics-quote-result").innerHTML = latestQuote && currentQuoteVersion ? `
+    <section class="panel">
+      <div class="panel-header"><div><p class="eyebrow">LATEST COMMERCIAL QUOTE</p><h3>Version ${latestQuote.currentVersionNumber} · ${currentQuoteVersion.totalAmount} ${escapeHtml(latestQuote.currencyCode)}</h3></div>${badge(latestQuote.status)}</div>
+      <div class="stat-grid">
+        <article class="stat-card"><strong>${currentQuoteVersion.totalAmount} ${escapeHtml(latestQuote.currencyCode)}</strong><span>Explicit quote</span><small>Commercial amount</small></article>
+        <article class="stat-card"><strong>${currentQuoteVersion.lineItems[0]?.recommendationLow ?? "—"} / ${currentQuoteVersion.lineItems[0]?.recommendationTarget ?? "—"} / ${currentQuoteVersion.lineItems[0]?.recommendationHigh ?? "—"}</strong><span>Linked recommendation</span><small>Market-value range remains separate</small></article>
+        <article class="stat-card"><strong>${latestQuote.versions.length}</strong><span>Immutable versions</span><small>${latestQuote.approvalDecisions.length} approval decisions</small></article>
+        <article class="stat-card"><strong>${latestQuote.outcomes.length}</strong><span>Advertiser outcomes</span><small>No compensation or settlement</small></article>
+      </div>
+      <p><strong>${escapeHtml(latestQuote.requestedBy)}</strong> · ${escapeHtml(currentQuoteVersion.revisionReason)} · version id ${code(shortId(currentQuoteVersion.id))}</p>
     </section>` : "";
 
   const term = state.economicsSearch.toLowerCase();
@@ -503,7 +542,7 @@ function renderEconomics() {
       formatDate(x.retrievedAt),
       `${escapeHtml(x.researchSourceName || "Unknown source")}<br>${badge(x.verificationStatus)} ${badge(x.confidenceLevel)}`
     ]);
-  } else {
+  } else if (state.economicsTab === "recommendations") {
     headers = ["Created", "Creator / inventory", "Range", "Basis / market", "Confidence", "Factors / sources"];
     rows = state.economicsRecommendations.filter(x => auditHaystack(x).includes(term)).map(x => [
       formatDate(x.createdAt),
@@ -513,6 +552,20 @@ function renderEconomics() {
       badge(x.confidenceLevel),
       `${x.factors.length} factors · ${x.sources.length} source set<br><small>${escapeHtml(x.idempotencyKey)}</small>`
     ]);
+  } else {
+    headers = ["Updated", "Quote / status", "Current version", "Commercial amount", "Recommendation", "Approvals / outcomes"];
+    rows = state.economicsQuotes.filter(x => auditHaystack(x).includes(term)).map(x => {
+      const version = x.versions.find(v => v.versionNumber === x.currentVersionNumber);
+      const line = version?.lineItems[0];
+      return [
+        formatDate(x.updatedAt),
+        `${code(shortId(x.id))}<br>${badge(x.status)}`,
+        `<strong>Version ${x.currentVersionNumber}</strong><br>${x.versions.length} immutable version${x.versions.length === 1 ? "" : "s"}`,
+        `<strong>${version?.totalAmount ?? "—"} ${escapeHtml(x.currencyCode)}</strong><br><small>explicit quote—not settlement</small>`,
+        line ? `${line.recommendationLow} / ${line.recommendationTarget} / ${line.recommendationHigh} ${escapeHtml(line.currencyCode)}<br><small>${code(shortId(line.rateRecommendationId))}</small>` : "—",
+        `${x.approvalDecisions.length} decisions · ${x.outcomes.length} outcomes<br><small>${escapeHtml(version?.revisionReason || "—")}</small>`
+      ];
+    });
   }
   $("#economics-content").innerHTML = rows.length
     ? `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>`
@@ -909,6 +962,89 @@ async function submitEconomicsRecommendation(form) {
   finally{submit.disabled=false;submit.innerHTML=`Generate range <span>→</span>`;}
 }
 
+async function submitEconomicsQuote(form) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+  const submit=form.querySelector('button[type="submit"]'),data=new FormData(form),value=name=>String(data.get(name)||"").trim();
+  submit.disabled=true;submit.textContent="Creating draft…";
+  try {
+    const result=await api("/api/economics/quotes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      advertiserOpportunityId:value("advertiserOpportunityId")||null,
+      requestedBy:value("requestedBy"),
+      revisionReason:value("revisionReason"),
+      lineItems:[{
+        rateRecommendationId:value("rateRecommendationId"),
+        description:value("description"),
+        quantity:1,
+        unitAmount:Number(value("unitAmount"))
+      }],
+      sourceSystem:value("sourceSystem"),
+      idempotencyKey:value("idempotencyKey")
+    })});
+    toast(`Draft quote version ${result.currentVersionNumber} created${result.isReplay?" (replay)":""}`);
+    fillKey("#quote-idempotency");
+    state.economicsQuotes=await api("/api/economics/quotes");
+    state.economicsTab="quotes";
+    renderEconomics();
+  } catch(error){toast(error.message,true);}
+  finally{submit.disabled=false;submit.innerHTML=`Create draft quote <span>→</span>`;}
+}
+
+async function submitEconomicsQuoteAction(form) {
+  const data=new FormData(form),value=name=>String(data.get(name)||"").trim();
+  const quote=state.economicsQuotes[0];
+  const version=quote?.versions.find(x=>x.versionNumber===quote.currentVersionNumber);
+  if (!quote || !version) {
+    toast("No current quote version is available.", true);
+    return;
+  }
+  const action=value("action");
+  if ((action==="APPROVED"||action==="REJECTED") && !state.session.canReview) {
+    toast("Your account does not have reviewer permission.", true);
+    return;
+  }
+  if (!["APPROVED","REJECTED"].includes(action) && !state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+  const submit=form.querySelector('button[type="submit"]');
+  submit.disabled=true;submit.textContent="Recording…";
+  try {
+    const shared={
+      quoteVersionId:version.id,
+      rationale:value("rationale"),
+      sourceSystem:value("sourceSystem"),
+      idempotencyKey:value("idempotencyKey")
+    };
+    let result;
+    if (action==="APPROVED"||action==="REJECTED") {
+      result=await api(`/api/economics/quotes/${quote.id}/approvals`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        ...shared,decision:action,reviewerLabel:value("actorLabel")
+      })});
+    } else {
+      const currentLine=version.lineItems[0];
+      const negotiatedAmount=value("negotiatedAmount");
+      result=await api(`/api/economics/quotes/${quote.id}/outcomes`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+        ...shared,response:action,actorLabel:value("actorLabel"),
+        negotiatedLineItems:action==="NEGOTIATED"?[{
+          rateRecommendationId:currentLine.rateRecommendationId,
+          description:currentLine.description,
+          quantity:1,
+          unitAmount:Number(negotiatedAmount)
+        }]:null
+      })});
+    }
+    toast(`${friendlyStatus(action)} recorded${result.isReplay?" (replay)":""}`);
+    fillKey("#quote-action-idempotency");
+    state.economicsQuotes=await api("/api/economics/quotes");
+    state.economicsTab="quotes";
+    renderEconomics();
+  } catch(error){toast(error.message,true);}
+  finally{submit.disabled=false;submit.innerHTML=`Record action <span>→</span>`;}
+}
+
 async function openCreator(id) {
   openDrawer("CREATOR PROFILE","Loading creator…",skeleton());
   try {
@@ -1053,6 +1189,8 @@ function bindActions() {
   $("#review-form").addEventListener("submit",event=>{event.preventDefault();submitReview(event.currentTarget);});
   $("#placement-form").addEventListener("submit",event=>{event.preventDefault();submitPlacement(event.currentTarget);});
   $("#economics-recommendation-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsRecommendation(event.currentTarget);});
+  $("#economics-quote-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsQuote(event.currentTarget);});
+  $("#economics-quote-action-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsQuoteAction(event.currentTarget);});
   $("#wedding-planner-open-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerWorkspace(event.currentTarget);});
   $("#wedding-planner-session-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerSession(event.currentTarget);});
   $("#wedding-planner-message-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerMessage(event.currentTarget);});
@@ -1062,6 +1200,12 @@ function bindActions() {
   $("#regenerate-wedding-planner-session-key").addEventListener("click",()=>fillKey("#wedding-planner-session-key"));
   $("#regenerate-wedding-planner-message-key").addEventListener("click",()=>fillKey("#wedding-planner-message-key"));
   $("#regenerate-economics-key").addEventListener("click",()=>fillKey("#economics-idempotency"));
+  $("#regenerate-quote-key").addEventListener("click",()=>fillKey("#quote-idempotency"));
+  $("#regenerate-quote-action-key").addEventListener("click",()=>fillKey("#quote-action-idempotency"));
+  $("#quote-recommendation").addEventListener("change",event=>{
+    const recommendation=state.economicsRecommendations.find(x=>x.id===event.target.value);
+    if(recommendation)$("#quote-amount").value=recommendation.rangeTarget;
+  });
   $("#placement-match").addEventListener("change",event=>{state.selectedPlacement=event.target.value;renderPlacements();});
   $("#placement-content").addEventListener("change",updatePlacementSlots);
   $("#review-match").addEventListener("change",event=>{state.selectedReview=event.target.value;renderReviews();});

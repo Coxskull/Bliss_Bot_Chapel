@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Bliss.Api.Controllers;
 
 /// <summary>
-/// Read-only Economics Phase 1 reference data. This controller does not calculate rates.
+/// Economics reference data, deterministic recommendations, and human-controlled quotes.
 /// </summary>
 [ApiController]
 [Route("api/economics")]
@@ -19,11 +19,19 @@ public sealed class EconomicsController : ControllerBase
 {
     private readonly BlissDbContext _db;
     private readonly RateRecommendationService _recommendations;
+    private readonly QuoteService _quotes;
+    private readonly OperatorIdentity _operatorIdentity;
 
-    public EconomicsController(BlissDbContext db, RateRecommendationService recommendations)
+    public EconomicsController(
+        BlissDbContext db,
+        RateRecommendationService recommendations,
+        QuoteService quotes,
+        OperatorIdentity operatorIdentity)
     {
         _db = db;
         _recommendations = recommendations;
+        _quotes = quotes;
+        _operatorIdentity = operatorIdentity;
     }
 
     [HttpGet("markets")]
@@ -317,6 +325,134 @@ public sealed class EconomicsController : ControllerBase
             : CreatedAtAction(nameof(GetRecommendation), new { id = dto.Id }, dto);
     }
 
+    [HttpGet("quotes")]
+    public async Task<ActionResult<IReadOnlyList<QuoteDto>>> GetQuotes(
+        CancellationToken cancellationToken)
+    {
+        var items = await _quotes.QuoteGraph()
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+        return Ok(items.Select(x => ToDto(x, Guid.Empty, null, false)).ToList());
+    }
+
+    [HttpGet("quotes/{id:guid}")]
+    public async Task<ActionResult<QuoteDto>> GetQuote(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var item = await _quotes.QuoteGraph()
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return item is null
+            ? NotFound()
+            : Ok(ToDto(item, Guid.Empty, null, false));
+    }
+
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("quotes")]
+    public async Task<ActionResult<QuoteDto>> CreateQuote(
+        CreateQuoteRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _quotes.CreateAsync(new CreateQuoteCommand(
+                request.AdvertiserOpportunityId,
+                _operatorIdentity.ResolveLabel(User, request.RequestedBy),
+                request.RevisionReason,
+                (request.LineItems ?? []).Select(ToCommand).ToList(),
+                request.SourceSystem,
+                request.IdempotencyKey), cancellationToken);
+            var dto = ToDto(result.Quote, result.ActionId, result.NewQuoteVersionId, result.IsReplay);
+            return result.IsReplay
+                ? Ok(dto)
+                : CreatedAtAction(nameof(GetQuote), new { id = dto.Id }, dto);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("quotes/{id:guid}/versions")]
+    public async Task<ActionResult<QuoteDto>> ReviseQuote(
+        Guid id,
+        ReviseQuoteRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _quotes.ReviseAsync(new ReviseQuoteCommand(
+                id,
+                _operatorIdentity.ResolveLabel(User, request.CreatedBy),
+                request.RevisionReason,
+                (request.LineItems ?? []).Select(ToCommand).ToList(),
+                request.SourceSystem,
+                request.IdempotencyKey), cancellationToken);
+            return Ok(ToDto(
+                result.Quote, result.ActionId, result.NewQuoteVersionId, result.IsReplay));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [Authorize(Policy = BlissAuthorization.ReviewPolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("quotes/{id:guid}/approvals")]
+    public async Task<ActionResult<QuoteDto>> DecideQuoteApproval(
+        Guid id,
+        DecideQuoteApprovalRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _quotes.DecideApprovalAsync(new DecideQuoteApprovalCommand(
+                id,
+                request.QuoteVersionId,
+                request.Decision,
+                _operatorIdentity.ResolveLabel(User, request.ReviewerLabel),
+                request.Rationale,
+                request.SourceSystem,
+                request.IdempotencyKey), cancellationToken);
+            return Ok(ToDto(result.Quote, result.ActionId, null, result.IsReplay));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("quotes/{id:guid}/outcomes")]
+    public async Task<ActionResult<QuoteDto>> RecordQuoteOutcome(
+        Guid id,
+        RecordQuoteOutcomeRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _quotes.RecordOutcomeAsync(new RecordQuoteOutcomeCommand(
+                id,
+                request.QuoteVersionId,
+                request.Response,
+                _operatorIdentity.ResolveLabel(User, request.ActorLabel),
+                request.Rationale,
+                request.NegotiatedLineItems?.Select(ToCommand).ToList(),
+                request.SourceSystem,
+                request.IdempotencyKey), cancellationToken);
+            return Ok(ToDto(
+                result.Quote, result.ActionId, result.NewQuoteVersionId, result.IsReplay));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     private static IQueryable<MarketBenchmarkObservationDto> ProjectObservations(
         IQueryable<MarketBenchmarkObservation> query) =>
         query.Select(x => new MarketBenchmarkObservationDto(
@@ -463,5 +599,66 @@ public sealed class EconomicsController : ControllerBase
                 s.ResearchSourceId, s.ResearchSource?.Name,
                 s.InventoryRateBenchmarkId, s.CreatorAudienceSnapshotId,
                 s.CreatorPerformanceSnapshotId, s.Role)).ToList(),
+            isReplay);
+
+    private static QuoteLineCommand ToCommand(QuoteLineRequest request) =>
+        new(
+            request.RateRecommendationId,
+            request.Description,
+            request.Quantity,
+            request.UnitAmount);
+
+    private static QuoteDto ToDto(
+        Quote quote,
+        Guid actionId,
+        Guid? newQuoteVersionId,
+        bool isReplay) =>
+        new(
+            quote.Id,
+            quote.AdvertiserOpportunityId,
+            quote.AdvertiserOpportunity?.Name,
+            quote.CurrencyCode,
+            quote.Status,
+            quote.CurrentVersionNumber,
+            quote.RequestedBy,
+            quote.CreatedAt,
+            quote.UpdatedAt,
+            quote.Versions.OrderByDescending(x => x.VersionNumber)
+                .Select(version => new QuoteVersionDto(
+                    version.Id,
+                    version.ParentVersionId,
+                    version.VersionNumber,
+                    version.CurrencyCode,
+                    version.SubtotalAmount,
+                    version.TotalAmount,
+                    version.RevisionReason,
+                    version.CreatedBy,
+                    version.CreatedAt,
+                    version.LineItems.OrderBy(x => x.SortOrder)
+                        .Select(line => new QuoteLineItemDto(
+                            line.Id,
+                            line.RateRecommendationId,
+                            line.Description,
+                            line.Quantity,
+                            line.UnitAmount,
+                            line.LineAmount,
+                            line.CurrencyCode,
+                            line.RecommendationLow,
+                            line.RecommendationTarget,
+                            line.RecommendationHigh))
+                        .ToList()))
+                .ToList(),
+            quote.ApprovalDecisions.OrderByDescending(x => x.CreatedAt)
+                .Select(x => new QuoteApprovalDecisionDto(
+                    x.Id, x.QuoteVersionId, x.Decision, x.ReviewerLabel,
+                    x.Rationale, x.CreatedAt))
+                .ToList(),
+            quote.Outcomes.OrderByDescending(x => x.CreatedAt)
+                .Select(x => new QuoteOutcomeDto(
+                    x.Id, x.QuoteVersionId, x.NewQuoteVersionId, x.Response,
+                    x.Amount, x.CurrencyCode, x.ActorLabel, x.Rationale, x.CreatedAt))
+                .ToList(),
+            actionId,
+            newQuoteVersionId,
             isReplay);
 }

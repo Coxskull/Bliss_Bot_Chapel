@@ -41,6 +41,21 @@ public static class QuoteOutcomeResponses
     public const string Negotiated = "NEGOTIATED";
 }
 
+public static class QuoteStatuses
+{
+    public const string Draft = "DRAFT";
+    public const string Approved = "APPROVED";
+    public const string Rejected = "REJECTED";
+    public const string Accepted = "ACCEPTED";
+    public const string Declined = "DECLINED";
+}
+
+public static class QuoteApprovalDecisions
+{
+    public const string Approved = "APPROVED";
+    public const string Rejected = "REJECTED";
+}
+
 public static class CompensationParticipantRoles
 {
     public const string Alpha = "ALPHA";

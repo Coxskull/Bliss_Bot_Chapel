@@ -233,7 +233,7 @@
             <div><p class="eyebrow">RATE INTELLIGENCE</p><h2 id="economics-title">Economics reference data</h2><p>Inspect market geography, pricing vocabulary, and benchmark provenance without changing matching or placement.</p></div>
             <div class="section-actions"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="economics-search" type="search" placeholder="Search economics data" aria-label="Search economics data"></div></div>
           </div>
-          <div class="safety-note"><strong>Phase 4 recommends ranges—not quotes.</strong> Market, creator, inventory, and FX records are versioned inputs. Synthetic TEST results require human review and never define compensation or settlement.</div>
+          <div class="safety-note"><strong>Phase 5 keeps recommendation, quote, approval, and outcome separate.</strong> Every commercial version is immutable, requires explicit human action, and never defines compensation or settlement.</div>
           <form class="panel workflow-form" id="economics-recommendation-form">
             <div class="panel-header"><div><p class="eyebrow">PHASE 4 · DETERMINISTIC</p><h3>Generate explainable range</h3></div><span class="record-tag">NOT A QUOTE</span></div>
             <div class="safety-note"><strong>Range intelligence only.</strong> .NET applies the persisted pricing-rule version. The result requires human review and cannot contract, place, or settle inventory.</div>
@@ -250,6 +250,30 @@
             <div class="form-actions"><small>Uses structured Phase 1–3 inputs and records all factors/sources.</small><button class="primary-button" type="submit">Generate range <span>→</span></button></div>
           </form>
           <div id="economics-recommendation-result"></div>
+          <form class="panel workflow-form" id="economics-quote-form">
+            <div class="panel-header"><div><p class="eyebrow">PHASE 5 · COMMERCIAL HISTORY</p><h3>Create explicit draft quote</h3></div><span class="record-tag">HUMAN CONTROLLED</span></div>
+            <div class="safety-note"><strong>The recommendation is not the quote.</strong> Enter the amount Alpha intends to offer. This creates a draft version only; it does not approve, contract, place, compensate, or settle.</div>
+            <div class="form-grid">
+              <label class="span-two"><span>Rate recommendation *</span><select name="rateRecommendationId" id="quote-recommendation" required></select></label>
+              <label><span>Advertiser opportunity</span><select name="advertiserOpportunityId" id="quote-opportunity"><option value="">No opportunity</option></select></label>
+              <label><span>Explicit quote amount *</span><input name="unitAmount" id="quote-amount" type="number" min="0" step=".01" required></label>
+              <label class="span-two"><span>Line description *</span><input name="description" value="Mid-roll advertising inventory" maxlength="500" required></label>
+              <label class="span-two"><span>Commercial rationale *</span><input name="revisionReason" value="Initial operator-prepared offer from explainable recommendation" maxlength="1000" required></label>
+              <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Requested by *</span><input name="requestedBy" value="OPERATOR" maxlength="128" required></label><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label class="span-two"><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="quote-idempotency" readonly required><button type="button" id="regenerate-quote-key" aria-label="Generate a new quote key">↻</button></div></label></div></details>
+            </div>
+            <div class="form-actions"><small>Quoted amount is stored beside—not over—the recommendation range.</small><button class="primary-button" type="submit">Create draft quote <span>→</span></button></div>
+          </form>
+          <div id="economics-quote-result"></div>
+          <form class="panel workflow-form" id="economics-quote-action-form" hidden>
+            <div class="panel-header"><div><p class="eyebrow">EXACT VERSION CONTROL</p><h3>Record human decision or advertiser response</h3></div><span class="record-tag">AUDITED</span></div>
+            <div class="form-grid">
+              <label><span>Action *</span><select name="action" id="quote-action"><option value="APPROVED">Human approve</option><option value="REJECTED">Human reject</option><option value="ACCEPTED">Advertiser accepted</option><option value="DECLINED">Advertiser declined</option><option value="NEGOTIATED">Advertiser negotiated</option></select></label>
+              <label><span>Negotiated amount</span><input name="negotiatedAmount" id="quote-negotiated-amount" type="number" min="0" step=".01" placeholder="Required for negotiation"></label>
+              <label class="span-two"><span>Rationale *</span><input name="rationale" value="Explicit human-reviewed commercial decision" maxlength="2000" required></label>
+              <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Actor *</span><input name="actorLabel" value="REVIEWER" maxlength="128" required></label><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label class="span-two"><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="quote-action-idempotency" readonly required><button type="button" id="regenerate-quote-action-key" aria-label="Generate a new quote action key">↻</button></div></label></div></details>
+            </div>
+            <div class="form-actions"><small>Actions always target the currently displayed immutable version.</small><button class="primary-button" type="submit">Record action <span>→</span></button></div>
+          </form>
           <div class="stat-grid">
             <article class="stat-card"><span class="stat-top"><span class="stat-icon mint">◎</span><span class="trend">DATA</span></span><strong id="economics-market-count">—</strong><span>Geographic markets</span><small>Country and metro are rows</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon blue">◇</span><span class="trend">VOCABULARY</span></span><strong id="economics-model-count">—</strong><span>Pricing models</span><small>No rates are stored here</small></article>
@@ -257,6 +281,7 @@
             <article class="stat-card"><span class="stat-top"><span class="stat-icon sage">◉</span><span class="trend">INPUTS</span></span><strong id="economics-snapshot-count">—</strong><span>Creator snapshots</span><small>Audience and performance history</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon blue">△</span><span class="trend">CONTEXT</span></span><strong id="economics-context-count">—</strong><span>Economic context records</span><small>Profiles, benchmarks, and FX</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon gold">◇</span><span class="trend">EXPLAINABLE</span></span><strong id="economics-recommendation-count">—</strong><span>Rate recommendations</span><small>Ranges, factors, and sources</small></article>
+            <article class="stat-card"><span class="stat-top"><span class="stat-icon sage">▣</span><span class="trend">VERSIONED</span></span><strong id="economics-quote-count">—</strong><span>Commercial quotes</span><small>Human approvals and outcomes</small></article>
           </div>
           <div class="tab-row" id="economics-tabs" role="tablist">
             <button class="tab-button active" data-economics-tab="markets" role="tab" aria-selected="true">Markets</button>
@@ -269,6 +294,7 @@
             <button class="tab-button" data-economics-tab="inventory-benchmarks" role="tab" aria-selected="false">Inventory benchmarks</button>
             <button class="tab-button" data-economics-tab="exchange-rates" role="tab" aria-selected="false">FX observations</button>
             <button class="tab-button" data-economics-tab="recommendations" role="tab" aria-selected="false">Recommendations</button>
+            <button class="tab-button" data-economics-tab="quotes" role="tab" aria-selected="false">Quotes</button>
           </div>
           <div class="panel table-panel"><div class="table-wrap" id="economics-content"></div></div>
         </section>

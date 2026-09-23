@@ -1,0 +1,78 @@
+{
+  "id": "4f7e3e38-6cd4-4fdf-ae41-9f59e7834a58",
+  "advertiserOpportunityId": "55555555-5555-5555-5555-555555555551",
+  "advertiserOpportunityName": "Opportunity A - Morning Tonic",
+  "currencyCode": "PHP",
+  "status": "ACCEPTED",
+  "currentVersionNumber": 2,
+  "requestedBy": "PHASE5_OPERATOR",
+  "versions": [
+    {
+      "id": "3542778e-4194-4b65-b2f6-63cd5d93dc22",
+      "parentVersionId": "c0fed0d0-0cf8-46f9-92c6-e44c251e7aeb",
+      "versionNumber": 2,
+      "totalAmount": 215.00,
+      "currencyCode": "PHP",
+      "revisionReason": "Advertiser negotiation: Advertiser countered at 215 PHP",
+      "createdBy": "PHASE5_ADVERTISER",
+      "lineItems": [
+        {
+          "rateRecommendationId": "407b9033-03f1-43d3-b918-47d54ef0ea02",
+          "unitAmount": 215.00,
+          "lineAmount": 215.00,
+          "recommendationLow": 198.00,
+          "recommendationTarget": 242.00,
+          "recommendationHigh": 286.00
+        }
+      ]
+    },
+    {
+      "id": "c0fed0d0-0cf8-46f9-92c6-e44c251e7aeb",
+      "versionNumber": 1,
+      "totalAmount": 225.00,
+      "currencyCode": "PHP",
+      "revisionReason": "Initial human-prepared offer from Phase 4 recommendation",
+      "createdBy": "PHASE5_OPERATOR",
+      "lineItems": [
+        {
+          "rateRecommendationId": "407b9033-03f1-43d3-b918-47d54ef0ea02",
+          "unitAmount": 225.00,
+          "lineAmount": 225.00,
+          "recommendationLow": 198.00,
+          "recommendationTarget": 242.00,
+          "recommendationHigh": 286.00
+        }
+      ]
+    }
+  ],
+  "approvalDecisions": [
+    {
+      "quoteVersionId": "3542778e-4194-4b65-b2f6-63cd5d93dc22",
+      "decision": "APPROVED",
+      "reviewerLabel": "PHASE5_REVIEWER",
+      "rationale": "Human separately approved negotiated version 2"
+    },
+    {
+      "quoteVersionId": "c0fed0d0-0cf8-46f9-92c6-e44c251e7aeb",
+      "decision": "APPROVED",
+      "reviewerLabel": "PHASE5_REVIEWER",
+      "rationale": "Human reviewed recommendation provenance and explicit commercial amount"
+    }
+  ],
+  "outcomes": [
+    {
+      "quoteVersionId": "3542778e-4194-4b65-b2f6-63cd5d93dc22",
+      "response": "ACCEPTED",
+      "amount": 215.00,
+      "actorLabel": "PHASE5_ADVERTISER"
+    },
+    {
+      "quoteVersionId": "c0fed0d0-0cf8-46f9-92c6-e44c251e7aeb",
+      "newQuoteVersionId": "3542778e-4194-4b65-b2f6-63cd5d93dc22",
+      "response": "NEGOTIATED",
+      "amount": 215.00,
+      "actorLabel": "PHASE5_ADVERTISER"
+    }
+  ],
+  "isReplay": false
+}

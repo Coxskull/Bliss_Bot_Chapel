@@ -1,0 +1,44 @@
+Live PostgreSQL database: bliss_economics_phase1
+Migration: 20260923064840_EconomicsPhase5Quotes
+
+Quote
+-----
+Id                   | 4f7e3e38-6cd4-4fdf-ae41-9f59e7834a58
+Status               | ACCEPTED
+CurrencyCode         | PHP
+CurrentVersionNumber | 2
+VersionCount         | 2
+ApprovalCount        | 2
+OutcomeCount         | 2
+
+Versions and recommendation snapshots
+-------------------------------------
+VersionNumber        | 1
+Id                   | c0fed0d0-0cf8-46f9-92c6-e44c251e7aeb
+ParentVersionId      |
+TotalAmount          | 225.00
+RevisionReason       | Initial human-prepared offer from Phase 4 recommendation
+UnitAmount           | 225.00
+RecommendationLow    | 198.00
+RecommendationTarget | 242.00
+RecommendationHigh   | 286.00
+
+VersionNumber        | 2
+Id                   | 3542778e-4194-4b65-b2f6-63cd5d93dc22
+ParentVersionId      | c0fed0d0-0cf8-46f9-92c6-e44c251e7aeb
+TotalAmount          | 215.00
+RevisionReason       | Advertiser negotiation: Advertiser countered at 215 PHP
+UnitAmount           | 215.00
+RecommendationLow    | 198.00
+RecommendationTarget | 242.00
+RecommendationHigh   | 286.00
+
+Human approvals
+---------------
+Version 1 | APPROVED | PHASE5_REVIEWER | Human reviewed recommendation provenance and explicit commercial amount
+Version 2 | APPROVED | PHASE5_REVIEWER | Human separately approved negotiated version 2
+
+Advertiser outcomes
+-------------------
+Version 1 | NEGOTIATED | 215.00 PHP | New version 2 | PHASE5_ADVERTISER
+Version 2 | ACCEPTED   | 215.00 PHP |               | PHASE5_ADVERTISER

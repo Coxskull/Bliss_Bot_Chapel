@@ -102,6 +102,16 @@ public sealed class EfModelConstraintTests
         Assert.Contains("RateRecommendationFactor.RateRecommendationId", restrictKeys);
         Assert.Contains("RateRecommendationSource.RateRecommendationId", restrictKeys);
         Assert.Contains("RateRecommendationSource.ResearchSourceId", restrictKeys);
+        Assert.Contains("Quote.AdvertiserOpportunityId", restrictKeys);
+        Assert.Contains("QuoteVersion.QuoteId", restrictKeys);
+        Assert.Contains("QuoteVersion.ParentVersionId", restrictKeys);
+        Assert.Contains("QuoteLineItem.QuoteVersionId", restrictKeys);
+        Assert.Contains("QuoteLineItem.RateRecommendationId", restrictKeys);
+        Assert.Contains("QuoteApprovalDecision.QuoteId", restrictKeys);
+        Assert.Contains("QuoteApprovalDecision.QuoteVersionId", restrictKeys);
+        Assert.Contains("QuoteOutcome.QuoteId", restrictKeys);
+        Assert.Contains("QuoteOutcome.QuoteVersionId", restrictKeys);
+        Assert.Contains("QuoteOutcome.NewQuoteVersionId", restrictKeys);
     }
 
     [Fact]
@@ -313,6 +323,12 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(RateRecommendation), nameof(RateRecommendation.PricingRuleVersionId));
         AssertIndex(db, typeof(RateRecommendationFactor), nameof(RateRecommendationFactor.RateRecommendationId));
         AssertIndex(db, typeof(RateRecommendationSource), nameof(RateRecommendationSource.RateRecommendationId));
+        AssertIndex(db, typeof(Quote), nameof(Quote.AdvertiserOpportunityId));
+        AssertIndex(db, typeof(QuoteVersion), nameof(QuoteVersion.QuoteId));
+        AssertIndex(db, typeof(QuoteLineItem), nameof(QuoteLineItem.QuoteVersionId));
+        AssertIndex(db, typeof(QuoteLineItem), nameof(QuoteLineItem.RateRecommendationId));
+        AssertIndex(db, typeof(QuoteApprovalDecision), nameof(QuoteApprovalDecision.QuoteVersionId));
+        AssertIndex(db, typeof(QuoteOutcome), nameof(QuoteOutcome.QuoteVersionId));
     }
 
     private static void AssertIndex(BlissDbContext db, Type type, string propertyName)
