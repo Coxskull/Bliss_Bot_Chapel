@@ -313,9 +313,10 @@ market rates and must not be read as the Economics Engine.
 
 ## API status
 
-Economics Phases 1–6 implement reference data, versioned economic
+Economics Phases 1–7 implement reference data, versioned economic
 inputs, deterministic recommendations, human-controlled commercial
-history, and non-settlement compensation illustrations:
+history, non-settlement compensation illustrations, and human-gated
+public-research orchestration:
 
 - `GET /api/economics/markets`
 - `GET /api/economics/pricing-models`
@@ -341,6 +342,11 @@ history, and non-settlement compensation illustrations:
 - `GET /api/economics/compensation-illustrations`
 - `GET /api/economics/compensation-illustrations/{id}`
 - `POST /api/economics/compensation-illustrations`
+- `GET /api/economics/research-runs`
+- `GET /api/economics/research-runs/{id}`
+- `POST /api/economics/research-runs`
+- `POST /api/economics/research-runs/{id}/candidates`
+- `POST /api/economics/research-candidates/{id}/review`
 
 Wedding Planner must call .NET. It must not call an LLM for a price.
 
@@ -358,8 +364,9 @@ Wedding Planner must call .NET. It must not call an LLM for a price.
 | Economics Phase 3 | Market/industry profiles, inventory benchmarks, and FX implemented and accepted. |
 | Economics Phase 4 | Deterministic recommendations implemented and accepted. |
 | Economics Phase 5 | Versioned quotes, approvals, and outcomes implemented and accepted. |
-| Economics Phase 6 | Versioned compensation policies and non-settlement illustrations implemented; pending owner acceptance. |
-| Economics Phases 7–9 | Individually gated by `PHASE-ROADMAP.md`; not authorized. |
+| Economics Phase 6 | Versioned compensation policies and non-settlement illustrations implemented and accepted. |
+| Economics Phase 7 | Public-research queue, candidate staging, and human promotion implemented; pending owner acceptance. |
+| Economics Phases 8–9 | Individually gated by `PHASE-ROADMAP.md`; not authorized. |
 | Media ledger / payouts | Separate later work. Reads contracted amounts; does not price inventory. |
 
 Do not auto-advance this module into the current Wedding Planner

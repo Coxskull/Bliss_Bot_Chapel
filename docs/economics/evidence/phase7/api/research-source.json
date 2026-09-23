@@ -1,0 +1,8 @@
+{
+  "id": "b5d0b2db-eb7d-44f7-971d-4d1dbcfff8da",
+  "name": "World Bank Open Data",
+  "sourceUrl": "https://api.worldbank.org/v2/country/PHL/indicator/NY.GDP.PCAP.CD?format=json&per_page=5",
+  "sourceType": "PUBLIC_API",
+  "isApproved": false,
+  "createdAt": "2026-09-23T10:05:54.255606Z"
+}
