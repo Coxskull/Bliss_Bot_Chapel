@@ -94,6 +94,14 @@ public sealed class EfModelConstraintTests
         Assert.Contains("InventoryRateBenchmark.PricingModelId", restrictKeys);
         Assert.Contains("InventoryRateBenchmark.ResearchSourceId", restrictKeys);
         Assert.Contains("ExchangeRateObservation.ResearchSourceId", restrictKeys);
+        Assert.Contains("RateRecommendation.CreatorId", restrictKeys);
+        Assert.Contains("RateRecommendation.AdInventorySlotId", restrictKeys);
+        Assert.Contains("RateRecommendation.GeographicMarketId", restrictKeys);
+        Assert.Contains("RateRecommendation.PricingModelId", restrictKeys);
+        Assert.Contains("RateRecommendation.PricingRuleVersionId", restrictKeys);
+        Assert.Contains("RateRecommendationFactor.RateRecommendationId", restrictKeys);
+        Assert.Contains("RateRecommendationSource.RateRecommendationId", restrictKeys);
+        Assert.Contains("RateRecommendationSource.ResearchSourceId", restrictKeys);
     }
 
     [Fact]
@@ -298,6 +306,13 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(WeddingPlannerPlanningSession), nameof(WeddingPlannerPlanningSession.WorkspaceId));
         AssertIndex(db, typeof(WeddingPlannerConversationMessage), nameof(WeddingPlannerConversationMessage.SessionId));
         AssertIndex(db, typeof(WeddingPlannerAuditEvent), nameof(WeddingPlannerAuditEvent.AdvertiserId));
+        AssertIndex(db, typeof(RateRecommendation), nameof(RateRecommendation.CreatorId));
+        AssertIndex(db, typeof(RateRecommendation), nameof(RateRecommendation.AdInventorySlotId));
+        AssertIndex(db, typeof(RateRecommendation), nameof(RateRecommendation.GeographicMarketId));
+        AssertIndex(db, typeof(RateRecommendation), nameof(RateRecommendation.PricingModelId));
+        AssertIndex(db, typeof(RateRecommendation), nameof(RateRecommendation.PricingRuleVersionId));
+        AssertIndex(db, typeof(RateRecommendationFactor), nameof(RateRecommendationFactor.RateRecommendationId));
+        AssertIndex(db, typeof(RateRecommendationSource), nameof(RateRecommendationSource.RateRecommendationId));
     }
 
     private static void AssertIndex(BlissDbContext db, Type type, string propertyName)

@@ -54,6 +54,10 @@ public class BlissDbContext : DbContext
     public DbSet<IndustryEconomicProfile> IndustryEconomicProfiles => Set<IndustryEconomicProfile>();
     public DbSet<InventoryRateBenchmark> InventoryRateBenchmarks => Set<InventoryRateBenchmark>();
     public DbSet<ExchangeRateObservation> ExchangeRateObservations => Set<ExchangeRateObservation>();
+    public DbSet<PricingRuleVersion> PricingRuleVersions => Set<PricingRuleVersion>();
+    public DbSet<RateRecommendation> RateRecommendations => Set<RateRecommendation>();
+    public DbSet<RateRecommendationFactor> RateRecommendationFactors => Set<RateRecommendationFactor>();
+    public DbSet<RateRecommendationSource> RateRecommendationSources => Set<RateRecommendationSource>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

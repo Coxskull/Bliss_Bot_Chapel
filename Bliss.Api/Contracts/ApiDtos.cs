@@ -701,4 +701,72 @@ public sealed record ExchangeRateObservationDto(
     string? Notes,
     DateTime CreatedAt);
 
+public sealed record PricingRuleVersionDto(
+    Guid Id,
+    string Version,
+    string Name,
+    string DocumentJson,
+    bool IsActive,
+    DateTime CreatedAt);
+
+public sealed record GenerateRateRecommendationRequest(
+    Guid CreatorId,
+    Guid AdInventorySlotId,
+    Guid GeographicMarketId,
+    string PricingModelCode,
+    int? DurationSeconds,
+    Guid? AdvertiserOpportunityId,
+    Guid? BlissMatchId,
+    string? IndustryCategory,
+    string? CampaignObjective,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record RateRecommendationFactorDto(
+    string FactorCode,
+    string Label,
+    decimal? NumericValue,
+    decimal? AdjustmentMultiplier,
+    string Rationale,
+    int SortOrder);
+
+public sealed record RateRecommendationSourceDto(
+    Guid? ResearchSourceId,
+    string? ResearchSourceName,
+    Guid? InventoryRateBenchmarkId,
+    Guid? CreatorAudienceSnapshotId,
+    Guid? CreatorPerformanceSnapshotId,
+    string Role);
+
+public sealed record RateRecommendationDto(
+    Guid Id,
+    Guid CreatorId,
+    string CreatorName,
+    Guid? ContentItemId,
+    Guid? AdInventorySlotId,
+    string? InventorySlotType,
+    Guid GeographicMarketId,
+    string MarketCode,
+    Guid PricingModelId,
+    string PricingModelCode,
+    Guid PricingRuleVersionId,
+    string PricingRuleVersion,
+    string? IndustryCategory,
+    string? CampaignObjective,
+    int? DurationSeconds,
+    string CurrencyCode,
+    decimal RangeLow,
+    decimal RangeTarget,
+    decimal RangeHigh,
+    int? EstimatedImpressions,
+    string ConfidenceLevel,
+    DateTime? BenchmarkAsOf,
+    string InputSnapshotJson,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime CreatedAt,
+    IReadOnlyList<RateRecommendationFactorDto> Factors,
+    IReadOnlyList<RateRecommendationSourceDto> Sources,
+    bool IsReplay);
+
 

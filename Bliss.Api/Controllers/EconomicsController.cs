@@ -1,7 +1,11 @@
 using Bliss.Api.Contracts;
+using Bliss.Api.Runtime;
+using Bliss.Api.Security;
 using Bliss.Domain.Entities;
 using Bliss.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bliss.Api.Controllers;
@@ -14,10 +18,12 @@ namespace Bliss.Api.Controllers;
 public sealed class EconomicsController : ControllerBase
 {
     private readonly BlissDbContext _db;
+    private readonly RateRecommendationService _recommendations;
 
-    public EconomicsController(BlissDbContext db)
+    public EconomicsController(BlissDbContext db, RateRecommendationService recommendations)
     {
         _db = db;
+        _recommendations = recommendations;
     }
 
     [HttpGet("markets")]
@@ -249,6 +255,68 @@ public sealed class EconomicsController : ControllerBase
         return item is null ? NotFound() : Ok(item);
     }
 
+    [HttpGet("pricing-rule-versions")]
+    public async Task<ActionResult<IReadOnlyList<PricingRuleVersionDto>>> GetPricingRuleVersions(
+        CancellationToken cancellationToken) =>
+        Ok(await _db.PricingRuleVersions.AsNoTracking()
+            .OrderByDescending(x => x.CreatedAt)
+            .Select(x => new PricingRuleVersionDto(
+                x.Id, x.Version, x.Name, x.DocumentJson, x.IsActive, x.CreatedAt))
+            .ToListAsync(cancellationToken));
+
+    [HttpGet("recommendations")]
+    public async Task<ActionResult<IReadOnlyList<RateRecommendationDto>>> GetRecommendations(
+        CancellationToken cancellationToken)
+    {
+        var items = await _recommendations.RecommendationGraph()
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+        return Ok(items.Select(x => ToDto(x, false)).ToList());
+    }
+
+    [HttpGet("recommendations/{id:guid}")]
+    public async Task<ActionResult<RateRecommendationDto>> GetRecommendation(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var item = await _recommendations.RecommendationGraph()
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return item is null ? NotFound() : Ok(ToDto(item, false));
+    }
+
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("recommendations")]
+    public async Task<ActionResult<RateRecommendationDto>> GenerateRecommendation(
+        GenerateRateRecommendationRequest request,
+        CancellationToken cancellationToken)
+    {
+        RateRecommendationResult result;
+        try
+        {
+            result = await _recommendations.GenerateAsync(new GenerateRateRecommendationCommand(
+                request.CreatorId,
+                request.AdInventorySlotId,
+                request.GeographicMarketId,
+                request.PricingModelCode,
+                request.DurationSeconds,
+                request.AdvertiserOpportunityId,
+                request.BlissMatchId,
+                request.IndustryCategory,
+                request.CampaignObjective,
+                request.SourceSystem,
+                request.IdempotencyKey), cancellationToken);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+
+        var dto = ToDto(result.Recommendation, result.IsReplay);
+        return result.IsReplay
+            ? Ok(dto)
+            : CreatedAtAction(nameof(GetRecommendation), new { id = dto.Id }, dto);
+    }
+
     private static IQueryable<MarketBenchmarkObservationDto> ProjectObservations(
         IQueryable<MarketBenchmarkObservation> query) =>
         query.Select(x => new MarketBenchmarkObservationDto(
@@ -358,4 +426,42 @@ public sealed class EconomicsController : ControllerBase
             x.BaseCurrencyCode, x.QuoteCurrencyCode, x.Rate,
             x.ObservedAt, x.RetrievedAt, x.ConfidenceLevel, x.VerificationStatus,
             x.Notes, x.CreatedAt));
+
+    private static RateRecommendationDto ToDto(RateRecommendation x, bool isReplay) =>
+        new(
+            x.Id,
+            x.CreatorId,
+            x.Creator.Name,
+            x.ContentItemId,
+            x.AdInventorySlotId,
+            x.AdInventorySlot?.SlotType,
+            x.GeographicMarketId,
+            x.GeographicMarket.MarketCode,
+            x.PricingModelId,
+            x.PricingModel.Code,
+            x.PricingRuleVersionId,
+            x.PricingRuleVersion.Version,
+            x.IndustryCategory,
+            x.CampaignObjective,
+            x.DurationSeconds,
+            x.CurrencyCode,
+            x.RangeLow,
+            x.RangeTarget,
+            x.RangeHigh,
+            x.EstimatedImpressions,
+            x.ConfidenceLevel,
+            x.BenchmarkAsOf,
+            x.InputSnapshotJson,
+            x.SourceSystem,
+            x.IdempotencyKey,
+            x.CreatedAt,
+            x.Factors.OrderBy(f => f.SortOrder)
+                .Select(f => new RateRecommendationFactorDto(
+                    f.FactorCode, f.Label, f.NumericValue, f.AdjustmentMultiplier,
+                    f.Rationale, f.SortOrder)).ToList(),
+            x.Sources.Select(s => new RateRecommendationSourceDto(
+                s.ResearchSourceId, s.ResearchSource?.Name,
+                s.InventoryRateBenchmarkId, s.CreatorAudienceSnapshotId,
+                s.CreatorPerformanceSnapshotId, s.Role)).ToList(),
+            isReplay);
 }
