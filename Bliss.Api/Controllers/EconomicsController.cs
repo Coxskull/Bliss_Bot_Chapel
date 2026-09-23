@@ -99,8 +99,7 @@ public sealed class EconomicsController : ControllerBase
             query = query.Where(x => x.Metric == metric);
         }
 
-        return Ok(await ProjectObservations(query)
-            .OrderByDescending(x => x.RetrievedAt)
+        return Ok(await ProjectObservations(query.OrderByDescending(x => x.RetrievedAt))
             .ToListAsync(cancellationToken));
     }
 
