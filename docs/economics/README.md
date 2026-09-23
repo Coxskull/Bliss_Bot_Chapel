@@ -1,6 +1,6 @@
 # Bliss Economics & Rate Intelligence Engine™
 
-**Status:** separate bounded context. Economics Phases 1–3 are
+**Status:** separate bounded context. Economics Phases 1–4 are
 implemented; later phases remain gated. It does not alter Bliss Phases 1–19 or
 Wedding Planner Phases 1–9.
 
@@ -22,14 +22,16 @@ creator/advertiser databases.
 | `PHASE-2-EVIDENCE.md` | Phase 2 tests, API/database snapshots, and walkthrough |
 | `PHASE-3-ENGINEERING-CONTRACT.md` | Market, industry, inventory, and FX scope |
 | `PHASE-3-EVIDENCE.md` | Phase 3 tests, API/database snapshots, and walkthrough |
+| `PHASE-4-ENGINEERING-CONTRACT.md` | Deterministic rate recommendation scope |
+| `PHASE-4-EVIDENCE.md` | Phase 4 tests, API/database snapshots, and walkthrough |
 | `FUTURE-ENGINEERING-CONTRACT.md` | Original reserved contract; superseded for Phase 1 |
 | `../sql/future-economics-schema.sql` | PostgreSQL/Supabase-capable schema. **Do not apply** until a future contract is accepted |
 
 ## Current-phase rule
 
-Phase 1 authorizes only reference-data EF tables, GET APIs, and
-read-only operator visibility. Do not implement recommendation APIs,
-n8n research jobs, AI rate generation, quote workflows, or later tables
+Phase 4 authorizes deterministic, versioned, explainable rate ranges and
+one controlled recommendation write API. Do not implement n8n research
+jobs, AI rate generation, quote workflows, compensation, or later tables
 until their phase contract is issued and accepted.
 
 Wedding Planner Phase 1 remains workspace / session / message / audit

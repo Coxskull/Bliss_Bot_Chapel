@@ -1,0 +1,10 @@
+{
+  "id": "407b9033-03f1-43d3-b918-47d54ef0ea02",
+  "sourceSystem": "PHASE4_EVIDENCE",
+  "idempotencyKey": "phase4-live-range-v1",
+  "rangeLow": 198.00,
+  "rangeTarget": 242.00,
+  "rangeHigh": 286.00,
+  "currencyCode": "PHP",
+  "isReplay": true
+}
