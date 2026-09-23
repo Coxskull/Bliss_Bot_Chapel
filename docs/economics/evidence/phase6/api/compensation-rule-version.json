@@ -1,0 +1,31 @@
+{
+  "id": "ec000012-0000-0000-0000-000000000001",
+  "version": "economics-compensation/1.0.0-test",
+  "name": "TEST three-part percentage illustration",
+  "documentJson": "{\"method\":\"PERCENTAGE\",\"purpose\":\"TEST_ONLY\",\"createsSettlement\":false,\"note\":\"Configurable evidence policy; not a universal split.\"}",
+  "isActive": true,
+  "effectiveAt": "2026-09-23T08:00:00Z",
+  "allocations": [
+    {
+      "id": "ec000013-0000-0000-0000-000000000001",
+      "participantRole": "ALPHA",
+      "participantLabel": "Alpha platform illustration",
+      "percentage": 18.000000,
+      "sortOrder": 1
+    },
+    {
+      "id": "ec000013-0000-0000-0000-000000000002",
+      "participantRole": "CREATOR",
+      "participantLabel": "Creator illustration",
+      "percentage": 72.000000,
+      "sortOrder": 2
+    },
+    {
+      "id": "ec000013-0000-0000-0000-000000000003",
+      "participantRole": "OTHER_AUTHORIZED",
+      "participantLabel": "Other authorized participant illustration",
+      "percentage": 10.000000,
+      "sortOrder": 3
+    }
+  ]
+}

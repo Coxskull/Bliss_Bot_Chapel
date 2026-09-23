@@ -1,0 +1,11 @@
+Command:
+dotnet test Bliss.Tests/Bliss.Tests.csproj --verbosity minimal
+
+Projects:
+Bliss.Domain -> Bliss.Domain/bin/Debug/net8.0/Bliss.Domain.dll
+Bliss.Infrastructure -> Bliss.Infrastructure/bin/Debug/net8.0/Bliss.Infrastructure.dll
+Bliss.Api -> Bliss.Api/bin/Debug/net8.0/Bliss.Api.dll
+Bliss.Tests -> Bliss.Tests/bin/Debug/net8.0/Bliss.Tests.dll
+
+Result:
+Passed! - Failed: 0, Passed: 148, Skipped: 0, Total: 148, Duration: 4 s

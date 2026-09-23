@@ -1,0 +1,8 @@
+{
+  "id": "4b50b964-6948-4255-8d8a-69f4011a9ebe",
+  "grossAmount": 215.00,
+  "currencyCode": "PHP",
+  "compensationRuleVersion": "economics-compensation/1.0.0-test",
+  "idempotencyKey": "phase6-live-illustration-v1",
+  "isReplay": true
+}

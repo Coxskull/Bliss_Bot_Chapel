@@ -313,9 +313,9 @@ market rates and must not be read as the Economics Engine.
 
 ## API status
 
-Economics Phases 1–5 implement reference data, versioned economic
-inputs, deterministic recommendations, and human-controlled commercial
-history:
+Economics Phases 1–6 implement reference data, versioned economic
+inputs, deterministic recommendations, human-controlled commercial
+history, and non-settlement compensation illustrations:
 
 - `GET /api/economics/markets`
 - `GET /api/economics/pricing-models`
@@ -337,6 +337,10 @@ history:
 - `POST /api/economics/quotes/{id}/versions`
 - `POST /api/economics/quotes/{id}/approvals`
 - `POST /api/economics/quotes/{id}/outcomes`
+- `GET /api/economics/compensation-rule-versions`
+- `GET /api/economics/compensation-illustrations`
+- `GET /api/economics/compensation-illustrations/{id}`
+- `POST /api/economics/compensation-illustrations`
 
 Wedding Planner must call .NET. It must not call an LLM for a price.
 
@@ -353,8 +357,9 @@ Wedding Planner must call .NET. It must not call an LLM for a price.
 | Economics Phase 2 | Creator audience/performance snapshots implemented and accepted. |
 | Economics Phase 3 | Market/industry profiles, inventory benchmarks, and FX implemented and accepted. |
 | Economics Phase 4 | Deterministic recommendations implemented and accepted. |
-| Economics Phase 5 | Versioned quotes, approvals, and outcomes implemented; pending owner acceptance. |
-| Economics Phases 6–9 | Individually gated by `PHASE-ROADMAP.md`; not authorized. |
+| Economics Phase 5 | Versioned quotes, approvals, and outcomes implemented and accepted. |
+| Economics Phase 6 | Versioned compensation policies and non-settlement illustrations implemented; pending owner acceptance. |
+| Economics Phases 7–9 | Individually gated by `PHASE-ROADMAP.md`; not authorized. |
 | Media ledger / payouts | Separate later work. Reads contracted amounts; does not price inventory. |
 
 Do not auto-advance this module into the current Wedding Planner
