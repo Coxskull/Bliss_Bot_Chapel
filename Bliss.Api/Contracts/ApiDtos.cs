@@ -917,4 +917,86 @@ public sealed record CompensationIllustrationDto(
     IReadOnlyList<CompensationIllustrationLineDto> Lines,
     bool IsReplay);
 
+public sealed record QueueEconomicsResearchRequest(
+    Guid GeographicMarketId,
+    string Metric,
+    string? IndustryCategory,
+    string? Platform,
+    string? InventorySlotType,
+    string ResearchQuestion,
+    string RequestedBy,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record StageEconomicsResearchCandidateRequest(
+    decimal? NumericValue,
+    decimal? RangeLow,
+    decimal? RangeHigh,
+    string? CurrencyCode,
+    string SourceName,
+    string SourceUrl,
+    string SourceType,
+    DateOnly? PublicationDate,
+    DateTime RetrievedAt,
+    string ConfidenceLevel,
+    string VerificationStatus,
+    string ExtractionModel,
+    string RawPayloadJson,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record ReviewEconomicsResearchCandidateRequest(
+    string Decision,
+    string ReviewerLabel,
+    string Rationale,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record EconomicsResearchReviewDecisionDto(
+    Guid Id,
+    Guid? MarketBenchmarkObservationId,
+    string Decision,
+    string ReviewerLabel,
+    string Rationale,
+    DateTime CreatedAt);
+
+public sealed record EconomicsResearchCandidateDto(
+    Guid Id,
+    decimal? NumericValue,
+    decimal? RangeLow,
+    decimal? RangeHigh,
+    string? CurrencyCode,
+    string SourceName,
+    string SourceUrl,
+    string SourceType,
+    DateOnly? PublicationDate,
+    DateTime RetrievedAt,
+    string ConfidenceLevel,
+    string VerificationStatus,
+    string ExtractionModel,
+    string RawPayloadJson,
+    string Status,
+    Guid? PromotedObservationId,
+    DateTime CreatedAt,
+    IReadOnlyList<EconomicsResearchReviewDecisionDto> ReviewDecisions);
+
+public sealed record EconomicsResearchRunDto(
+    Guid Id,
+    Guid GeographicMarketId,
+    string MarketCode,
+    string Metric,
+    string? IndustryCategory,
+    string? Platform,
+    string? InventorySlotType,
+    string ResearchQuestion,
+    string Status,
+    string RequestedBy,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    IReadOnlyList<EconomicsResearchCandidateDto> Candidates,
+    Guid ActionId,
+    bool IsReplay);
+
 

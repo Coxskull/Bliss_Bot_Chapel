@@ -1,0 +1,26 @@
+[
+  {
+    "operation": "queue replay",
+    "id": "b0a6b077-ba5e-4848-ab02-23dd871f6bd2",
+    "status": "COMPLETED",
+    "actionId": "b0a6b077-ba5e-4848-ab02-23dd871f6bd2",
+    "isReplay": true
+  },
+  {
+    "operation": "candidate replay",
+    "id": "b0a6b077-ba5e-4848-ab02-23dd871f6bd2",
+    "status": "COMPLETED",
+    "actionId": "d1106062-357a-4a57-af38-5e3e33ce2823",
+    "isReplay": true,
+    "candidateCount": 1
+  },
+  {
+    "operation": "review replay",
+    "id": "b0a6b077-ba5e-4848-ab02-23dd871f6bd2",
+    "status": "COMPLETED",
+    "actionId": "df4ebbca-d68a-4f38-89dd-65994949e0b7",
+    "isReplay": true,
+    "observationId": "facee366-4cff-45af-a828-34c2a6279732",
+    "reviewCount": 1
+  }
+]

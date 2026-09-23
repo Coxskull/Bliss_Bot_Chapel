@@ -25,6 +25,7 @@ const state = {
   economicsInventoryBenchmarks: [], economicsExchangeRates: [],
   economicsPricingRules: [], economicsRecommendations: [], economicsQuotes: [],
   economicsCompensationRules: [], economicsCompensationIllustrations: [],
+  economicsResearchRuns: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "", economicsSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations", economicsTab: "markets",
   selectedReview: null, selectedPlacement: null,
@@ -46,6 +47,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   fillKey("#quote-idempotency");
   fillKey("#quote-action-idempotency");
   fillKey("#compensation-idempotency");
+  fillKey("#research-run-idempotency");
+  fillKey("#research-candidate-idempotency");
+  fillKey("#research-review-idempotency");
   route();
   await loadSession();
   syncOperatorUi();
@@ -133,7 +137,8 @@ async function loadDashboard() {
       api("/api/economics/recommendations").catch(() => []),
       api("/api/economics/quotes").catch(() => []),
       api("/api/economics/compensation-rule-versions").catch(() => []),
-      api("/api/economics/compensation-illustrations").catch(() => [])
+      api("/api/economics/compensation-illustrations").catch(() => []),
+      api("/api/economics/research-runs").catch(() => [])
     ]);
     const [
       matches, creators, advertisers, programs, opportunities, content, campaigns,
@@ -144,7 +149,7 @@ async function loadDashboard() {
       economicsPerformanceSnapshots, economicsMarketProfiles, economicsIndustryProfiles,
       economicsInventoryBenchmarks, economicsExchangeRates, economicsPricingRules,
       economicsRecommendations, economicsQuotes, economicsCompensationRules,
-      economicsCompensationIllustrations
+      economicsCompensationIllustrations, economicsResearchRuns
     ] = values;
     const [contentDetails, ruleDetails] = await Promise.all([
       Promise.all(content.map(item => api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] })))),
@@ -160,7 +165,7 @@ async function loadDashboard() {
       economicsMarketProfiles, economicsIndustryProfiles,
       economicsInventoryBenchmarks, economicsExchangeRates, economicsPricingRules,
       economicsRecommendations, economicsQuotes, economicsCompensationRules,
-      economicsCompensationIllustrations, loaded: true
+      economicsCompensationIllustrations, economicsResearchRuns, loaded: true
     });
     state.selectedReview = reviewQueue.some(x => x.blissMatchId === state.selectedReview)
       ? state.selectedReview : reviewQueue[0]?.blissMatchId || null;
@@ -383,6 +388,7 @@ function renderEconomics() {
   $("#economics-quote-count").textContent = state.economicsQuotes.length;
   $("#economics-compensation-count").textContent =
     state.economicsCompensationIllustrations.length;
+  $("#economics-research-count").textContent = state.economicsResearchRuns.length;
 
   const creatorSelect = $("#economics-creator");
   const slotSelect = $("#economics-slot");
@@ -482,6 +488,46 @@ function renderEconomics() {
       <div class="panel-header"><div><p class="eyebrow">LATEST COMPENSATION ILLUSTRATION</p><h3>${latestIllustration.grossAmount} ${escapeHtml(latestIllustration.currencyCode)} gross · ${escapeHtml(latestIllustration.compensationRuleVersion)}</h3></div><span class="record-tag">NOT SETTLEMENT</span></div>
       <div class="stat-grid">${latestIllustration.lines.map(x=>`<article class="stat-card"><strong>${x.amount} ${escapeHtml(latestIllustration.currencyCode)}</strong><span>${escapeHtml(friendlyStatus(x.participantRole))}</span><small>${x.percentage}% · ${escapeHtml(x.participantLabel)}</small></article>`).join("")}</div>
       <p><strong>Allocation total ${latestIllustration.lines.reduce((sum,x)=>sum+Number(x.amount),0).toFixed(2)} ${escapeHtml(latestIllustration.currencyCode)}</strong> · illustration only · quote version ${latestIllustration.quoteVersionNumber}</p>
+    </section>` : "";
+
+  const researchMarket = $("#research-market");
+  const selectedResearchMarket = researchMarket.value;
+  researchMarket.innerHTML = state.economicsMarkets.map(x =>
+    `<option value="${x.id}">${escapeHtml(x.marketCode)} · ${escapeHtml(x.cityName || x.countryCode)}</option>`).join("");
+  if ([...researchMarket.options].some(x => x.value === selectedResearchMarket)) {
+    researchMarket.value = selectedResearchMarket;
+  } else {
+    const manila = [...researchMarket.options].find(x => x.textContent.startsWith("PH-MNL"));
+    if (manila) researchMarket.value = manila.value;
+  }
+  const stageableRuns = state.economicsResearchRuns.filter(
+    x => x.status === "QUEUED" || x.status === "AWAITING_REVIEW");
+  const candidateRun = $("#research-candidate-run");
+  candidateRun.innerHTML = stageableRuns.map(x =>
+    `<option value="${x.id}">${escapeHtml(x.marketCode)} · ${escapeHtml(x.metric)} · ${escapeHtml(x.status)}</option>`).join("");
+  $("#economics-research-candidate-form").hidden = stageableRuns.length === 0;
+  const stagedCandidates = state.economicsResearchRuns.flatMap(run =>
+    run.candidates.filter(candidate => candidate.status === "STAGED")
+      .map(candidate => ({ run, candidate })));
+  const reviewCandidate = $("#research-review-candidate");
+  reviewCandidate.innerHTML = stagedCandidates.map(({run,candidate}) =>
+    `<option value="${candidate.id}">${escapeHtml(run.marketCode)} · ${escapeHtml(run.metric)} · ${escapeHtml(candidate.sourceName)}</option>`).join("");
+  $("#economics-research-review-form").hidden = stagedCandidates.length === 0;
+  if (!$("#research-retrieved-at").value) {
+    $("#research-retrieved-at").value = new Date().toISOString().slice(0,16);
+  }
+  const latestResearch = state.economicsResearchRuns[0];
+  const latestCandidate = latestResearch?.candidates.at(-1);
+  $("#economics-research-result").innerHTML = latestResearch ? `
+    <section class="panel">
+      <div class="panel-header"><div><p class="eyebrow">LATEST RESEARCH RUN</p><h3>${escapeHtml(latestResearch.marketCode)} · ${escapeHtml(latestResearch.metric)}</h3></div>${badge(latestResearch.status)}</div>
+      <p>${escapeHtml(latestResearch.researchQuestion)}</p>
+      <div class="stat-grid">
+        <article class="stat-card"><strong>${latestResearch.candidates.length}</strong><span>Staged candidates</span><small>n8n / AI output is not truth</small></article>
+        <article class="stat-card"><strong>${latestCandidate ? friendlyStatus(latestCandidate.status) : "QUEUED"}</strong><span>Latest candidate</span><small>${latestCandidate ? escapeHtml(latestCandidate.verificationStatus) : "Awaiting orchestration"}</small></article>
+        <article class="stat-card"><strong>${latestCandidate?.promotedObservationId ? "APPENDED" : "NONE"}</strong><span>Durable observation</span><small>No silent promotion</small></article>
+      </div>
+      ${latestCandidate ? `<p><strong>${escapeHtml(latestCandidate.sourceName)}</strong> · ${escapeHtml(latestCandidate.sourceUrl)} · ${badge(latestCandidate.confidenceLevel)} ${badge(latestCandidate.verificationStatus)}</p>` : ""}
     </section>` : "";
 
   const term = state.economicsSearch.toLowerCase();
@@ -614,7 +660,7 @@ function renderEconomics() {
       badge(x.isActive ? "ACTIVE" : "INACTIVE"),
       `<strong>ILLUSTRATION ONLY</strong><br><small>No settlement authority</small>`
     ]);
-  } else {
+  } else if (state.economicsTab === "compensation-illustrations") {
     headers = ["Created", "Quote / version", "Gross amount", "Policy", "Participant allocations", "Boundary"];
     rows = state.economicsCompensationIllustrations.filter(x => auditHaystack(x).includes(term)).map(x => [
       formatDate(x.createdAt),
@@ -624,6 +670,34 @@ function renderEconomics() {
       x.lines.map(line=>`${escapeHtml(friendlyStatus(line.participantRole))}: ${line.amount} ${escapeHtml(x.currencyCode)} (${line.percentage}%)`).join("<br>"),
       `<strong>NOT SETTLEMENT</strong><br><small>${escapeHtml(x.idempotencyKey)}</small>`
     ]);
+  } else if (state.economicsTab === "research-runs") {
+    headers = ["Created", "Market / metric", "Question", "Status", "Candidates", "Authority"];
+    rows = state.economicsResearchRuns.filter(x => auditHaystack(x).includes(term)).map(x => [
+      formatDate(x.createdAt),
+      `${code(x.marketCode)}<br><strong>${escapeHtml(x.metric)}</strong>`,
+      escapeHtml(x.researchQuestion),
+      badge(x.status),
+      `${x.candidates.length} candidate${x.candidates.length === 1 ? "" : "s"}<br><small>${escapeHtml(x.requestedBy)}</small>`,
+      `<strong>.NET + HUMAN</strong><br><small>n8n orchestrates only</small>`
+    ]);
+  } else {
+    headers = ["Created", "Run / source", "Candidate value", "AI classification", "Human gate", "Observation"];
+    rows = state.economicsResearchRuns.flatMap(run => run.candidates.map(candidate => ({run,candidate})))
+      .filter(x => auditHaystack(x).includes(term))
+      .map(({run,candidate}) => {
+        const review = candidate.reviewDecisions[0];
+        const value = candidate.numericValue ?? `${candidate.rangeLow ?? "?"}–${candidate.rangeHigh ?? "?"}`;
+        return [
+          formatDate(candidate.createdAt),
+          `${code(shortId(run.id))}<br><strong>${escapeHtml(candidate.sourceName)}</strong><br><small>${escapeHtml(candidate.sourceUrl)}</small>`,
+          `<strong>${escapeHtml(String(value))} ${escapeHtml(candidate.currencyCode || "")}</strong><br>${escapeHtml(run.metric)}`,
+          `${badge(candidate.verificationStatus)} ${badge(candidate.confidenceLevel)}<br><small>${escapeHtml(candidate.extractionModel)}</small>`,
+          `${badge(candidate.status)}<br><small>${review ? `${escapeHtml(review.reviewerLabel)} · ${escapeHtml(review.decision)}` : "Awaiting human review"}</small>`,
+          candidate.promotedObservationId
+            ? `${code(shortId(candidate.promotedObservationId))}<br><small>append-only</small>`
+            : "None"
+        ];
+      });
   }
   $("#economics-content").innerHTML = rows.length
     ? `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>`
@@ -1129,6 +1203,95 @@ async function submitCompensationIllustration(form) {
   finally{submit.disabled=false;submit.innerHTML=`Generate illustration <span>→</span>`;}
 }
 
+async function submitEconomicsResearchRun(form) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+  const submit=form.querySelector('button[type="submit"]'),data=new FormData(form),value=name=>String(data.get(name)||"").trim();
+  submit.disabled=true;submit.textContent="Queueing…";
+  try {
+    const result=await api("/api/economics/research-runs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      geographicMarketId:value("geographicMarketId"),
+      metric:value("metric"),
+      industryCategory:value("industryCategory")||null,
+      platform:value("platform")||null,
+      inventorySlotType:null,
+      researchQuestion:value("researchQuestion"),
+      requestedBy:value("requestedBy"),
+      sourceSystem:value("sourceSystem"),
+      idempotencyKey:value("idempotencyKey")
+    })});
+    toast(`Research run queued${result.isReplay?" (replay)":""}`);
+    fillKey("#research-run-idempotency");
+    state.economicsResearchRuns=await api("/api/economics/research-runs");
+    state.economicsTab="research-runs";
+    renderEconomics();
+  } catch(error){toast(error.message,true);}
+  finally{submit.disabled=false;submit.innerHTML=`Queue research <span>→</span>`;}
+}
+
+async function submitEconomicsResearchCandidate(form) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+  const submit=form.querySelector('button[type="submit"]'),data=new FormData(form),value=name=>String(data.get(name)||"").trim();
+  submit.disabled=true;submit.textContent="Staging…";
+  try {
+    const runId=value("researchRunId");
+    const result=await api(`/api/economics/research-runs/${runId}/candidates`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      numericValue:Number(value("numericValue")),
+      rangeLow:null,
+      rangeHigh:null,
+      currencyCode:value("currencyCode")||null,
+      sourceName:value("sourceName"),
+      sourceUrl:value("sourceUrl"),
+      sourceType:value("sourceType"),
+      publicationDate:value("publicationDate")||null,
+      retrievedAt:new Date(value("retrievedAt")).toISOString(),
+      confidenceLevel:value("confidenceLevel"),
+      verificationStatus:value("verificationStatus"),
+      extractionModel:value("extractionModel"),
+      rawPayloadJson:value("rawPayloadJson"),
+      sourceSystem:value("sourceSystem"),
+      idempotencyKey:value("idempotencyKey")
+    })});
+    toast(`Candidate staged—not truth${result.isReplay?" (replay)":""}`);
+    fillKey("#research-candidate-idempotency");
+    state.economicsResearchRuns=await api("/api/economics/research-runs");
+    state.economicsTab="research-candidates";
+    renderEconomics();
+  } catch(error){toast(error.message,true);}
+  finally{submit.disabled=false;submit.innerHTML=`Stage candidate <span>→</span>`;}
+}
+
+async function submitEconomicsResearchReview(form) {
+  if (!state.session.canReview) {
+    toast("Your account does not have reviewer permission.", true);
+    return;
+  }
+  const submit=form.querySelector('button[type="submit"]'),data=new FormData(form),value=name=>String(data.get(name)||"").trim();
+  submit.disabled=true;submit.textContent="Recording…";
+  try {
+    const candidateId=value("candidateId");
+    const result=await api(`/api/economics/research-candidates/${candidateId}/review`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      decision:value("decision"),
+      reviewerLabel:value("reviewerLabel"),
+      rationale:value("rationale"),
+      sourceSystem:value("sourceSystem"),
+      idempotencyKey:value("idempotencyKey")
+    })});
+    toast(`Research candidate ${friendlyStatus(value("decision"))}${result.isReplay?" (replay)":""}`);
+    fillKey("#research-review-idempotency");
+    state.economicsResearchRuns=await api("/api/economics/research-runs");
+    state.economicsObservations=await api("/api/economics/observations");
+    state.economicsTab="research-candidates";
+    renderEconomics();
+  } catch(error){toast(error.message,true);}
+  finally{submit.disabled=false;submit.innerHTML=`Record review <span>→</span>`;}
+}
+
 async function openCreator(id) {
   openDrawer("CREATOR PROFILE","Loading creator…",skeleton());
   try {
@@ -1276,6 +1439,9 @@ function bindActions() {
   $("#economics-quote-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsQuote(event.currentTarget);});
   $("#economics-quote-action-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsQuoteAction(event.currentTarget);});
   $("#economics-compensation-form").addEventListener("submit",event=>{event.preventDefault();submitCompensationIllustration(event.currentTarget);});
+  $("#economics-research-run-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsResearchRun(event.currentTarget);});
+  $("#economics-research-candidate-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsResearchCandidate(event.currentTarget);});
+  $("#economics-research-review-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsResearchReview(event.currentTarget);});
   $("#wedding-planner-open-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerWorkspace(event.currentTarget);});
   $("#wedding-planner-session-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerSession(event.currentTarget);});
   $("#wedding-planner-message-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerMessage(event.currentTarget);});
@@ -1288,6 +1454,9 @@ function bindActions() {
   $("#regenerate-quote-key").addEventListener("click",()=>fillKey("#quote-idempotency"));
   $("#regenerate-quote-action-key").addEventListener("click",()=>fillKey("#quote-action-idempotency"));
   $("#regenerate-compensation-key").addEventListener("click",()=>fillKey("#compensation-idempotency"));
+  $("#regenerate-research-run-key").addEventListener("click",()=>fillKey("#research-run-idempotency"));
+  $("#regenerate-research-candidate-key").addEventListener("click",()=>fillKey("#research-candidate-idempotency"));
+  $("#regenerate-research-review-key").addEventListener("click",()=>fillKey("#research-review-idempotency"));
   $("#quote-recommendation").addEventListener("change",event=>{
     const recommendation=state.economicsRecommendations.find(x=>x.id===event.target.value);
     if(recommendation)$("#quote-amount").value=recommendation.rangeTarget;

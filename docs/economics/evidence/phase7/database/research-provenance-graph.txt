@@ -1,0 +1,30 @@
+Live PostgreSQL verification
+Database: bliss_economics_phase1
+Migration: 20260923100111_EconomicsPhase7ResearchOrchestration
+
+run_id                   | b0a6b077-ba5e-4848-ab02-23dd871f6bd2
+market                   | PH-MNL
+metric                   | GDP_PER_CAPITA_CURRENT_USD
+run_status               | COMPLETED
+candidate_id             | d1106062-357a-4a57-af38-5e3e33ce2823
+candidate_value          | 4170.723473
+currency                 | USD
+confidence               | MEDIUM
+verification             | ESTIMATED
+candidate_status         | PROMOTED
+extraction_model         | CURSOR_WEB_EXTRACTION_EVIDENCE_V1
+review_decision          | ACCEPT
+reviewer                 | Phase 7 human evidence reviewer
+observation_id           | facee366-4cff-45af-a828-34c2a6279732
+observation_value        | 4170.723473
+observation_verification | ESTIMATED
+source_name              | World Bank Open Data
+source_url               | https://api.worldbank.org/v2/country/PHL/indicator/NY.GDP.PCAP.CD?format=json&per_page=5
+source_approved          | false
+
+candidate_count            | 1
+review_count               | 1
+appended_observation_count | 1
+
+All Phase 7 foreign keys use ON DELETE RESTRICT. SourceSystem +
+IdempotencyKey is unique for runs, candidates, and review decisions.

@@ -1,0 +1,16 @@
+{
+  "id": "b0a6b077-ba5e-4848-ab02-23dd871f6bd2",
+  "geographicMarketId": "ec000001-0000-0000-0000-000000000001",
+  "marketCode": "PH-MNL",
+  "metric": "GDP_PER_CAPITA_CURRENT_USD",
+  "researchQuestion": "What is the latest published Philippines GDP per capita in current US dollars for Manila market economic context?",
+  "status": "QUEUED",
+  "requestedBy": "Phase 7 evidence operator",
+  "sourceSystem": "PHASE7_LIVE_EVIDENCE",
+  "idempotencyKey": "phase7-world-bank-phl-gdp-2025-run",
+  "createdAt": "2026-09-23T10:05:40.780846Z",
+  "updatedAt": "2026-09-23T10:05:40.780846Z",
+  "candidates": [],
+  "actionId": "b0a6b077-ba5e-4848-ab02-23dd871f6bd2",
+  "isReplay": false
+}

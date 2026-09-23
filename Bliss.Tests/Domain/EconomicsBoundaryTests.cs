@@ -60,7 +60,7 @@ public sealed class EconomicsBoundaryTests
             .ToDictionary(
                 method => method.Name,
                 method => method.GetCustomAttribute<HttpPostAttribute>()?.Template);
-        Assert.Equal(6, posts.Count);
+        Assert.Equal(9, posts.Count);
         Assert.Equal("recommendations", posts["GenerateRecommendation"]);
         Assert.Equal("quotes", posts["CreateQuote"]);
         Assert.Equal("quotes/{id:guid}/versions", posts["ReviseQuote"]);
@@ -69,6 +69,13 @@ public sealed class EconomicsBoundaryTests
         Assert.Equal(
             "compensation-illustrations",
             posts["GenerateCompensationIllustration"]);
+        Assert.Equal("research-runs", posts["QueueResearchRun"]);
+        Assert.Equal(
+            "research-runs/{id:guid}/candidates",
+            posts["StageResearchCandidate"]);
+        Assert.Equal(
+            "research-candidates/{id:guid}/review",
+            posts["ReviewResearchCandidate"]);
         Assert.All(methods.Where(method => posts.ContainsKey(method.Name)), method =>
             Assert.NotNull(method.GetCustomAttribute<
                 Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()));

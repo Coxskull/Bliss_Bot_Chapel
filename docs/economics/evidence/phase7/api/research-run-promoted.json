@@ -1,0 +1,42 @@
+{
+  "id": "b0a6b077-ba5e-4848-ab02-23dd871f6bd2",
+  "geographicMarketId": "ec000001-0000-0000-0000-000000000001",
+  "marketCode": "PH-MNL",
+  "metric": "GDP_PER_CAPITA_CURRENT_USD",
+  "researchQuestion": "What is the latest published Philippines GDP per capita in current US dollars for Manila market economic context?",
+  "status": "COMPLETED",
+  "requestedBy": "Phase 7 evidence operator",
+  "sourceSystem": "PHASE7_LIVE_EVIDENCE",
+  "idempotencyKey": "phase7-world-bank-phl-gdp-2025-run",
+  "createdAt": "2026-09-23T10:05:40.780846Z",
+  "updatedAt": "2026-09-23T10:05:54.283741Z",
+  "candidates": [
+    {
+      "id": "d1106062-357a-4a57-af38-5e3e33ce2823",
+      "numericValue": 4170.723473,
+      "currencyCode": "USD",
+      "sourceName": "World Bank Open Data",
+      "sourceUrl": "https://api.worldbank.org/v2/country/PHL/indicator/NY.GDP.PCAP.CD?format=json&per_page=5",
+      "sourceType": "PUBLIC_API",
+      "publicationDate": "2025-12-31",
+      "retrievedAt": "2026-09-23T10:04:00Z",
+      "confidenceLevel": "MEDIUM",
+      "verificationStatus": "ESTIMATED",
+      "extractionModel": "CURSOR_WEB_EXTRACTION_EVIDENCE_V1",
+      "status": "PROMOTED",
+      "promotedObservationId": "facee366-4cff-45af-a828-34c2a6279732",
+      "reviewDecisions": [
+        {
+          "id": "df4ebbca-d68a-4f38-89dd-65994949e0b7",
+          "marketBenchmarkObservationId": "facee366-4cff-45af-a828-34c2a6279732",
+          "decision": "ACCEPT",
+          "reviewerLabel": "Phase 7 human evidence reviewer",
+          "rationale": "Accepted as an ESTIMATED macroeconomic context observation after checking the World Bank public API payload, 2025 period, value, and source URL. This is not an advertising rate and is not VERIFIED.",
+          "createdAt": "2026-09-23T10:05:54.283741Z"
+        }
+      ]
+    }
+  ],
+  "actionId": "00000000-0000-0000-0000-000000000000",
+  "isReplay": false
+}

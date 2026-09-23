@@ -1,0 +1,27 @@
+{
+  "id": "b0a6b077-ba5e-4848-ab02-23dd871f6bd2",
+  "marketCode": "PH-MNL",
+  "metric": "GDP_PER_CAPITA_CURRENT_USD",
+  "status": "AWAITING_REVIEW",
+  "candidates": [
+    {
+      "id": "d1106062-357a-4a57-af38-5e3e33ce2823",
+      "numericValue": 4170.72347271451,
+      "currencyCode": "USD",
+      "sourceName": "World Bank Open Data",
+      "sourceUrl": "https://api.worldbank.org/v2/country/PHL/indicator/NY.GDP.PCAP.CD?format=json&per_page=5",
+      "sourceType": "PUBLIC_API",
+      "publicationDate": "2025-12-31",
+      "retrievedAt": "2026-09-23T10:04:00Z",
+      "confidenceLevel": "MEDIUM",
+      "verificationStatus": "ESTIMATED",
+      "extractionModel": "CURSOR_WEB_EXTRACTION_EVIDENCE_V1",
+      "rawPayloadJson": "{\"indicator\":\"NY.GDP.PCAP.CD\",\"country\":\"Philippines\",\"date\":\"2025\",\"value\":4170.72347271451,\"lastupdated\":\"2026-07-13\"}",
+      "status": "STAGED",
+      "createdAt": "2026-09-23T10:05:48.8403268Z",
+      "reviewDecisions": []
+    }
+  ],
+  "actionId": "d1106062-357a-4a57-af38-5e3e33ce2823",
+  "isReplay": false
+}

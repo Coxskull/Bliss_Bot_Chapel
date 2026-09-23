@@ -62,3 +62,23 @@ public static class CompensationParticipantRoles
     public const string Creator = "CREATOR";
     public const string OtherAuthorized = "OTHER_AUTHORIZED";
 }
+
+public static class EconomicsResearchRunStatuses
+{
+    public const string Queued = "QUEUED";
+    public const string AwaitingReview = "AWAITING_REVIEW";
+    public const string Completed = "COMPLETED";
+}
+
+public static class EconomicsResearchCandidateStatuses
+{
+    public const string Staged = "STAGED";
+    public const string Promoted = "PROMOTED";
+    public const string Rejected = "REJECTED";
+}
+
+public static class EconomicsResearchReviewDecisions
+{
+    public const string Accept = "ACCEPT";
+    public const string Reject = "REJECT";
+}

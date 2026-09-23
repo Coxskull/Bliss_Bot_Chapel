@@ -21,6 +21,7 @@ public sealed class EconomicsController : ControllerBase
     private readonly RateRecommendationService _recommendations;
     private readonly QuoteService _quotes;
     private readonly CompensationIllustrationService _compensation;
+    private readonly EconomicsResearchService _research;
     private readonly OperatorIdentity _operatorIdentity;
 
     public EconomicsController(
@@ -28,12 +29,14 @@ public sealed class EconomicsController : ControllerBase
         RateRecommendationService recommendations,
         QuoteService quotes,
         CompensationIllustrationService compensation,
+        EconomicsResearchService research,
         OperatorIdentity operatorIdentity)
     {
         _db = db;
         _recommendations = recommendations;
         _quotes = quotes;
         _compensation = compensation;
+        _research = research;
         _operatorIdentity = operatorIdentity;
     }
 
@@ -528,6 +531,123 @@ public sealed class EconomicsController : ControllerBase
         }
     }
 
+    [HttpGet("research-runs")]
+    public async Task<ActionResult<IReadOnlyList<EconomicsResearchRunDto>>>
+        GetResearchRuns(string? status, CancellationToken cancellationToken)
+    {
+        var query = _research.ResearchGraph();
+        if (!string.IsNullOrWhiteSpace(status))
+        {
+            query = query.Where(x => x.Status == status.ToUpperInvariant());
+        }
+        var items = await query.OrderByDescending(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+        return Ok(items.Select(x => ToDto(x, Guid.Empty, false)).ToList());
+    }
+
+    [HttpGet("research-runs/{id:guid}")]
+    public async Task<ActionResult<EconomicsResearchRunDto>> GetResearchRun(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var item = await _research.ResearchGraph()
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return item is null ? NotFound() : Ok(ToDto(item, Guid.Empty, false));
+    }
+
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("research-runs")]
+    public async Task<ActionResult<EconomicsResearchRunDto>> QueueResearchRun(
+        QueueEconomicsResearchRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _research.QueueAsync(new QueueEconomicsResearchCommand(
+                request.GeographicMarketId,
+                request.Metric,
+                request.IndustryCategory,
+                request.Platform,
+                request.InventorySlotType,
+                request.ResearchQuestion,
+                _operatorIdentity.ResolveLabel(User, request.RequestedBy),
+                request.SourceSystem,
+                request.IdempotencyKey), cancellationToken);
+            var dto = ToDto(result.Run, result.ActionId, result.IsReplay);
+            return result.IsReplay
+                ? Ok(dto)
+                : CreatedAtAction(nameof(GetResearchRun), new { id = dto.Id }, dto);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("research-runs/{id:guid}/candidates")]
+    public async Task<ActionResult<EconomicsResearchRunDto>> StageResearchCandidate(
+        Guid id,
+        StageEconomicsResearchCandidateRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _research.StageCandidateAsync(
+                new StageEconomicsResearchCandidateCommand(
+                    id,
+                    request.NumericValue,
+                    request.RangeLow,
+                    request.RangeHigh,
+                    request.CurrencyCode,
+                    request.SourceName,
+                    request.SourceUrl,
+                    request.SourceType,
+                    request.PublicationDate,
+                    request.RetrievedAt,
+                    request.ConfidenceLevel,
+                    request.VerificationStatus,
+                    request.ExtractionModel,
+                    request.RawPayloadJson,
+                    request.SourceSystem,
+                    request.IdempotencyKey),
+                cancellationToken);
+            return Ok(ToDto(result.Run, result.ActionId, result.IsReplay));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [Authorize(Policy = BlissAuthorization.ReviewPolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("research-candidates/{id:guid}/review")]
+    public async Task<ActionResult<EconomicsResearchRunDto>> ReviewResearchCandidate(
+        Guid id,
+        ReviewEconomicsResearchCandidateRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _research.ReviewCandidateAsync(
+                new ReviewEconomicsResearchCandidateCommand(
+                    id,
+                    request.Decision,
+                    _operatorIdentity.ResolveLabel(User, request.ReviewerLabel),
+                    request.Rationale,
+                    request.SourceSystem,
+                    request.IdempotencyKey),
+                cancellationToken);
+            return Ok(ToDto(result.Run, result.ActionId, result.IsReplay));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     private static IQueryable<MarketBenchmarkObservationDto> ProjectObservations(
         IQueryable<MarketBenchmarkObservation> query) =>
         query.Select(x => new MarketBenchmarkObservationDto(
@@ -764,5 +884,56 @@ public sealed class EconomicsController : ControllerBase
                     x.Amount,
                     x.SortOrder))
                 .ToList(),
+            isReplay);
+
+    private static EconomicsResearchRunDto ToDto(
+        EconomicsResearchRun run,
+        Guid actionId,
+        bool isReplay) =>
+        new(
+            run.Id,
+            run.GeographicMarketId,
+            run.GeographicMarket.MarketCode,
+            run.Metric,
+            run.IndustryCategory,
+            run.Platform,
+            run.InventorySlotType,
+            run.ResearchQuestion,
+            run.Status,
+            run.RequestedBy,
+            run.SourceSystem,
+            run.IdempotencyKey,
+            run.CreatedAt,
+            run.UpdatedAt,
+            run.Candidates.OrderBy(x => x.CreatedAt)
+                .Select(candidate => new EconomicsResearchCandidateDto(
+                    candidate.Id,
+                    candidate.NumericValue,
+                    candidate.RangeLow,
+                    candidate.RangeHigh,
+                    candidate.CurrencyCode,
+                    candidate.SourceName,
+                    candidate.SourceUrl,
+                    candidate.SourceType,
+                    candidate.PublicationDate,
+                    candidate.RetrievedAt,
+                    candidate.ConfidenceLevel,
+                    candidate.VerificationStatus,
+                    candidate.ExtractionModel,
+                    candidate.RawPayloadJson,
+                    candidate.Status,
+                    candidate.PromotedObservationId,
+                    candidate.CreatedAt,
+                    candidate.ReviewDecisions.OrderBy(x => x.CreatedAt)
+                        .Select(review => new EconomicsResearchReviewDecisionDto(
+                            review.Id,
+                            review.MarketBenchmarkObservationId,
+                            review.Decision,
+                            review.ReviewerLabel,
+                            review.Rationale,
+                            review.CreatedAt))
+                        .ToList()))
+                .ToList(),
+            actionId,
             isReplay);
 }
