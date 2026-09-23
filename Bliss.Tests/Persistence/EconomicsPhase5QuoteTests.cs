@@ -35,8 +35,9 @@ public sealed class EconomicsPhase5QuoteTests
         await using var db = TestDb.CreateContext();
         var recommendationId = await SeedAndRecommendAsync(db, "phase5-negotiate-rec");
         var service = new QuoteService(db);
-        var created = await service.CreateAsync(
-            CreateCommand(recommendationId, "phase5-negotiate-create", 225m));
+        var createCommand = CreateCommand(
+            recommendationId, "phase5-negotiate-create", 225m);
+        var created = await service.CreateAsync(createCommand);
         var quoteId = created.Quote.Id;
         var version1 = created.NewQuoteVersionId!.Value;
 
@@ -76,6 +77,10 @@ public sealed class EconomicsPhase5QuoteTests
         Assert.Equal(2, accepted.Quote.Outcomes.Count);
         Assert.Equal(215m, accepted.Quote.Outcomes
             .Single(x => x.Response == QuoteOutcomeResponses.Accepted).Amount);
+
+        var createReplay = await service.CreateAsync(createCommand);
+        Assert.True(createReplay.IsReplay);
+        Assert.Equal(version1, createReplay.NewQuoteVersionId);
     }
 
     [Fact]

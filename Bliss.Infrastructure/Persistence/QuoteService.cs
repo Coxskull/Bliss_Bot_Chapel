@@ -76,8 +76,12 @@ public sealed class QuoteService
                 cancellationToken);
         if (replay is not null)
         {
-            var loaded = await LoadAsync(replay.Id, cancellationToken);
-            return new(loaded, replay.Id, CurrentVersion(loaded).Id, true);
+            var originalVersionId = await _db.QuoteVersions.AsNoTracking()
+                .Where(x => x.SourceSystem == source && x.IdempotencyKey == key)
+                .Select(x => x.Id)
+                .SingleAsync(cancellationToken);
+            return new(await LoadAsync(replay.Id, cancellationToken),
+                replay.Id, originalVersionId, true);
         }
 
         if (command.AdvertiserOpportunityId.HasValue
