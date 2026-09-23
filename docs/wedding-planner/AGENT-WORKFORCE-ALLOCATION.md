@@ -173,6 +173,17 @@ rationale.
 - Phase 9 is the final phase listed in Master Blueprint V1.1; it does
   not invent a Phase 10.
 
+## Later non-phase modules (not Wedding Planner workforce)
+
+- Bliss Economics & Rate Intelligence Engine is a **separate** Bliss
+  Chapel bounded context. See
+  `docs/bliss-economics/FUTURE-BOUNDED-CONTEXT.md`.
+- Wedding Planner may later **ask** that engine for explainable rate
+  ranges. Concierge, Curator, creative, QA, handshake, and Phase 9
+  learning workers must not become pricing authorities.
+- Compensation splits (including any historical 20/80 example) are not
+  Wedding Planner constants.
+
 Any change from these starting allocations must record:
 
 current recommendation → proposed change → engineering reason →

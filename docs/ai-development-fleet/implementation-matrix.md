@@ -88,6 +88,14 @@ One ContentItem many slots: **YES** (tested). One campaign many placements: **YE
 
 Impressions, views, clicks, conversions, sales, revenue, completion, renewal, refund, chargeback, complaint, provider event, tracking event, measurement source/timestamp: **MISSING** in Bliss. Alpha Auto dashboards use order/ops stats, not ad measurement.
 
+Wedding Planner Phase 9 stores **human-attested aggregate observations** and advisory learning only. It is **not** delivery telemetry and **not** a rate engine. See `docs/wedding-planner/PHASE-9-ENGINEERING-CONTRACT.md`.
+
+## Economics & rate intelligence gap (Bliss)
+
+Market-specific inventory valuation, provenance-backed benchmarks, explainable rate ranges, quotes, and versioned compensation rules: **MISSING** as a bounded module. Documented for later implementation in `docs/bliss-economics/FUTURE-BOUNDED-CONTEXT.md`.
+
+Do **not** hard-code city prices, dollars-per-minute, or 20/80 splits in matching or Wedding Planner. Matching remains compatibility; Wedding Planner may later call economics; placement remains `PLANNED` until a later activation contract.
+
 ## Financial engine gap (Bliss)
 
 Transaction, ledger entry, advertiser payment, affiliate revenue, creator earnings/payable, Alpha revenue, processor fee, payout, refund, chargeback, FX, settlement, reconciliation, external provider IDs linked to BlissMatch: **MISSING**.

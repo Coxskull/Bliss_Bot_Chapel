@@ -173,3 +173,4 @@ Wedding Planner Phase 9 contract: `docs/wedding-planner/PHASE-9-ENGINEERING-CONT
 Wedding Planner Phase 9 evidence: `docs/wedding-planner/PHASE-9-EVIDENCE.md`.
 Wedding Planner agent workforce allocation: `docs/wedding-planner/AGENT-WORKFORCE-ALLOCATION.md`.
 Wedding Planner master blueprint v1.1: `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md`.
+Bliss Economics & Rate Intelligence Engine (future bounded context): `docs/bliss-economics/FUTURE-BOUNDED-CONTEXT.md`.
