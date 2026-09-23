@@ -7,6 +7,11 @@ public class CampaignPlacement
     public Guid ContentItemId { get; set; }
     public Guid AdInventorySlotId { get; set; }
     public Guid? BlissMatchId { get; set; }
+
+    /// <summary>
+    /// Placement planning status. Contracted rates, quotes, and compensation
+    /// belong to the future Economics and ledger contexts, not this row.
+    /// </summary>
     public string Status { get; set; } = "CREATED";
     public DateTime? StartAt { get; set; }
     public DateTime? EndAt { get; set; }

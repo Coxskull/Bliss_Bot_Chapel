@@ -21,6 +21,8 @@ flowchart TD
   FF[C: Fishing Fleet]
   HUM[C: Human review]
   CAMP[C: Campaign engine extension]
+  ECO[D: Economics and Rate Intelligence]
+  WP[C: Wedding Planner - current sequence]
   DEL[C: Ad delivery runtime]
   MEAS[C: Measurement]
   LED[C: Media financial ledger]
@@ -36,11 +38,17 @@ flowchart TD
   CHAP --> HUM
   OFF --> HUM
   HUM --> CAMP
+  HUM --> WP
   CAMP --> DEL
+  WP -.->|later asks for quotes| ECO
+  CAMP --> ECO
   DEL --> MEAS
   MEAS --> LED
+  MEAS --> ECO
   LED --> PAY
+  LED --> ECO
   CAMP --> N8N
+  ECO --> N8N
 ```
 
 ## Component list
@@ -57,9 +65,11 @@ flowchart TD
 | Fishing Fleet | C | Identity + provenance contracts | Global, not per-country tables |
 | Human review | C | Match + eligibility outputs | |
 | Campaign FKs to Match | C | Product decision | Additive migration |
+| Wedding Planner Phases 1–9 | C | Accepted WP contracts | Must not invent prices |
+| Economics & Rate Intelligence | D | Matching + inventory + later WP quote need | Separate bounded context; reserved schema only today |
 | Ad delivery | C | Slots + placements | Not the Auto website |
-| Measurement | C | Placement IDs | |
-| Media ledger | C | Measurement + finance design | **Not** Auto order ledger |
+| Measurement | C | Placement IDs | Feeds historical economics later |
+| Media ledger | C | Measurement + finance design | **Not** Auto order ledger; separate from market-value calc |
 | Wise/PayPal live money | E | Legal, KYC, ledger | |
 | Affiliate network live APIs | E / D | Contracts | |
 | n8n | D | Stable APIs | Unknown hosted workflows |
@@ -80,3 +90,4 @@ flowchart TD
 3. Phase 2 contract → test data  
 4. Chaperone then Officiant (or parallel **after** shared RuleVersion contract)  
 5. Campaign/delivery/measurement/ledger
+6. Economics & Rate Intelligence (after current Wedding Planner sequence, or when a dedicated quote contract is issued)

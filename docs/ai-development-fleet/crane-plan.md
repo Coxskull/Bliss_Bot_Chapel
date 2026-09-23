@@ -139,9 +139,20 @@ Do **not** in parallel: live payments, auth redesign, dropping tables, merging A
 | MERGE ORDER | Ledger last; payouts E-blocked |
 | ACCEPTANCE | Provider adapters; Alpha ledger owns meaning |
 
+## CRANE 9 — Economics & Rate Intelligence (later)
+
+| Field | Content |
+| --- | --- |
+| MISSION | Market-aware inventory quotes; not matching; not ledger |
+| DEPENDENCIES | Compatible inventory + WP quote need; measurement for learning |
+| SECURITY | Provenance; no AI-invented rates as truth |
+| PARALLEL | Docs and vocabulary now; engine after current WP sequence |
+| MERGE ORDER | After WP Phases 1–9 unless a dedicated quote contract is issued |
+| ACCEPTANCE | Ranges + confidence + sources; no universal CPM; no compiled 20/80 |
+
 ## Merge order (summary)
 
-0 (ops) → 1 (tests) → 2 (data, contracted) → 3 (rules doc) → 4/5 (engines) → 6 (fleet) → 7 (campaign) → 8 (delivery/measure/ledger)
+0 (ops) → 1 (tests) → 2 (data, contracted) → 3 (rules doc) → 4/5 (engines) → 6 (fleet) → 7 (campaign) → 8 (delivery/measure/ledger) → 9 (economics)
 
 ---
 

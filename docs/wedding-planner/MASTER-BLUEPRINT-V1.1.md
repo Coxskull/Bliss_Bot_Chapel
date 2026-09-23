@@ -109,6 +109,13 @@ approved.
 Phase 8 handshake is campaign-ready creative + approved Bliss match +
 compatible inventory → planned placement.
 
+Wedding Planner must not invent advertising prices. Rate ranges, quotes,
+and compensation illustrations are owned by the future Bliss Economics
+& Rate Intelligence Engine (`docs/economics/`). When quotes are in
+scope, Wedding Planner asks that .NET service after matching identifies
+compatible inventory. That engine is not part of Wedding Planner
+Phases 1–9 and must not be implemented inside the current WP sequence.
+
 ## Critical phase rule
 
 Each phase: engineering contract → implementation → automated tests →
@@ -118,4 +125,5 @@ evidence → review → acceptance. Do not auto-advance.
 
 Phase 2 conversation AI, Color Intelligence, Curator, concepts,
 multi-agent department, chaperone/QA AI, Bliss handshake, measurement
-learning, GHL coupling, n8n authority, and Alpha Auto.
+learning, GHL coupling, n8n authority, Alpha Auto, and the Economics
+& Rate Intelligence Engine (separate future bounded context).

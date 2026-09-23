@@ -6,6 +6,10 @@ public class Creator
     public string Name { get; set; } = string.Empty;
     public string? CountryCode { get; set; }
     public string? PrimaryLanguage { get; set; }
+    /// <summary>
+    /// Coarse audience size when known. Not a rate and not a linear multiplier
+    /// for the future Economics engine.
+    /// </summary>
     public int? AudienceSize { get; set; }
 
     /// <summary>

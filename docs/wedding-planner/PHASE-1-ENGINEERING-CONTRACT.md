@@ -104,6 +104,8 @@ not fabricate AI responses or imply that a provider is active.
 - Campaign-ready state machine and Bliss handshake
 - GHL, n8n, Alpha Auto
 - Changes to deterministic scoring, review authority, or placement arithmetic
+- Economics & Rate Intelligence (quotes, CPMs, compensation). Wedding Planner
+  must not invent prices; that engine is a later bounded context.
 
 ## Tests
 

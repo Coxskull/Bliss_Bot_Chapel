@@ -10,8 +10,17 @@ public class AdvertiserOpportunity
     public string? Description { get; set; }
     public string? MarketCountryCode { get; set; }
     public string? Language { get; set; }
+    /// <summary>
+    /// Affiliate-opportunity commercial term. Not inventory market value and not
+    /// an Economics Engine rate. Compensation splits are versioned elsewhere.
+    /// </summary>
     public decimal? CommissionPercentage { get; set; }
+
+    /// <summary>
+    /// Affiliate-opportunity commercial term. Not a creator inventory quote.
+    /// </summary>
     public decimal? FixedFee { get; set; }
+
     public string? CommissionType { get; set; }
     public string? ExternalOpportunityId { get; set; }
     public string Status { get; set; } = "ACTIVE";
