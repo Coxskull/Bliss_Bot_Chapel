@@ -325,6 +325,8 @@ if (app.Environment.IsDevelopment())
                 await weddingPlanner.SeedAsync();
                 var economics = scope.ServiceProvider.GetRequiredService<EconomicsDataSeeder>();
                 await economics.SeedAsync();
+                var economicsPhase2 = scope.ServiceProvider.GetRequiredService<EconomicsPhase2DataSeeder>();
+                await economicsPhase2.SeedAsync();
             }
         }
         catch (Exception ex)
