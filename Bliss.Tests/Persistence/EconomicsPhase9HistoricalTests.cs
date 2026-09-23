@@ -96,6 +96,45 @@ public sealed class EconomicsPhase9HistoricalTests
     }
 
     [Fact]
+    public async Task Campaign_rollup_uses_latest_measurement_per_placement()
+    {
+        await using var db = TestDb.CreateContext();
+        var fixture = await EconomicsPhase9TestData.SeedAsync(db, "latest");
+        var service = new HistoricalEconomicsService(db);
+        await service.RecordPlacementAsync(
+            PlacementCommand(fixture, "earlier") with
+            {
+                MeasurementAsOf = DateTime.UtcNow.AddHours(-2)
+            });
+        await service.RecordPlacementAsync(
+            PlacementCommand(fixture, "later") with
+            {
+                MeasurementAsOf = DateTime.UtcNow.AddHours(-1),
+                ActualImpressions = 55_000
+            });
+
+        var campaign = await service.RecordCampaignAsync(new(
+            fixture.CampaignId,
+            null,
+            55_000,
+            43_000,
+            null,
+            3_500,
+            0.07m,
+            120,
+            1_800m,
+            "PHP",
+            DateTime.UtcNow.AddMinutes(-30),
+            "TEST latest placement rollup",
+            "PHASE9_TEST",
+            "campaign-latest"));
+
+        Assert.Equal(2, await db.HistoricalPlacementEconomics.CountAsync());
+        Assert.Equal(1, campaign.Record.AlphaPlacementCount);
+        Assert.Equal(215m, campaign.Record.AlphaContractedAmount);
+    }
+
+    [Fact]
     public async Task Invalid_relationships_and_measurements_are_rejected()
     {
         await using var db = TestDb.CreateContext();

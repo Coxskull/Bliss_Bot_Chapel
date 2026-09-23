@@ -352,6 +352,11 @@ public sealed class HistoricalEconomicsService
             .ToHashSet();
         var currentPlacementHistory = history
             .Where(x => !supersededIds.Contains(x.Id))
+            .GroupBy(x => x.CampaignPlacementId)
+            .Select(group => group
+                .OrderByDescending(x => x.MeasurementAsOf)
+                .ThenByDescending(x => x.RecordedAt)
+                .First())
             .ToList();
         var currencies = currentPlacementHistory
             .Select(x => x.CurrencyCode)
