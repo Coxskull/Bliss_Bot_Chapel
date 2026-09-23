@@ -1,0 +1,16 @@
+[
+  {
+    "scenario": "match is not approved",
+    "httpStatus": 400,
+    "response": {
+      "error": "Wedding Planner can request Economics only for an APPROVED Bliss match."
+    }
+  },
+  {
+    "scenario": "inventory belongs to another creator",
+    "httpStatus": 400,
+    "response": {
+      "error": "Inventory does not belong to the creator in the approved match."
+    }
+  }
+]

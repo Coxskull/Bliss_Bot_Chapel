@@ -1,0 +1,15 @@
+{
+  "id": "b52927e0-97c2-4e8c-899c-473ee282057f",
+  "status": "RECOMMENDATION_READY",
+  "isReplay": true,
+  "recommendationId": "519ae899-64d1-48f7-8b98-577ae204f490",
+  "range": [
+    198.00,
+    242.00,
+    286.00
+  ],
+  "pricingModel": "CPM",
+  "confidence": "MEDIUM",
+  "factorCount": 5,
+  "sourceCount": 1
+}
