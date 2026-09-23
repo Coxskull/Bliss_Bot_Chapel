@@ -41,7 +41,7 @@ flowchart TB
 | Bliss Bot Chapel | Phase 1 **schema + read API + tests** | Chaperone, Officiant, write workflows |
 | Human control | MISSING in Bliss; Alpha Auto has role-verification for **auto** users | Media review queue |
 | Campaign Engine | Campaign + Placement **rows** | No match reference, approval, dates, creatives |
-| Economics & Rate Intelligence | Phases 1–2 market/creator input tables + GET-only operator view | No recommendation engine or quotes; see `docs/economics/` |
+| Economics & Rate Intelligence | Phases 1–3 market/creator/inventory/FX inputs + GET-only operator view | No recommendation engine or quotes; see `docs/economics/` |
 | Wedding Planner | Phase 1 workspace/session/message | Must ask Economics for prices later; must not invent rates |
 | Ad Delivery | Slot types including overlays/sponsored as **constants** | No renderer/runtime |
 | Measurement | MISSING | Entire subsystem |

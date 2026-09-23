@@ -1,0 +1,18 @@
+ MarketCode | Version | PurchasingPowerIndex | CompetitionLevel |      EffectiveAt       |      SupersededAt      
+------------+---------+----------------------+------------------+------------------------+------------------------
+ PH-MNL     |       1 |            91.000000 | MEDIUM           | 2026-08-01 00:00:00+00 | 2026-09-01 00:00:00+00
+ PH-MNL     |       2 |            94.000000 | HIGH             | 2026-09-01 00:00:00+00 | 
+(2 rows)
+
+ InventorySlotType | DurationSecondsLow | DurationSecondsHigh |  RangeLow  | RangeHigh  | CurrencyCode 
+-------------------+--------------------+---------------------+------------+------------+--------------
+ MID_ROLL          |                 30 |                  60 | 180.000000 | 260.000000 | PHP
+ SPONSORED_SEGMENT |                300 |                 600 | 420.000000 | 680.000000 | PHP
+(2 rows)
+
+ BaseCurrencyCode | QuoteCurrencyCode |    Rate     |       ObservedAt       | VerificationStatus 
+------------------+-------------------+-------------+------------------------+--------------------
+ USD              | PHP               | 58.20000000 | 2026-08-01 00:00:00+00 | ESTIMATED
+ USD              | PHP               | 58.50000000 | 2026-09-01 00:00:00+00 | ESTIMATED
+(2 rows)
+

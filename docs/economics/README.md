@@ -1,6 +1,6 @@
 # Bliss Economics & Rate Intelligence Engine™
 
-**Status:** separate bounded context. Economics Phases 1–2 are
+**Status:** separate bounded context. Economics Phases 1–3 are
 implemented; later phases remain gated. It does not alter Bliss Phases 1–19 or
 Wedding Planner Phases 1–9.
 
@@ -20,6 +20,8 @@ creator/advertiser databases.
 | `PHASE-1-EVIDENCE.md` | Phase 1 tests, API/database snapshots, and walkthrough |
 | `PHASE-2-ENGINEERING-CONTRACT.md` | Creator audience/performance snapshot scope |
 | `PHASE-2-EVIDENCE.md` | Phase 2 tests, API/database snapshots, and walkthrough |
+| `PHASE-3-ENGINEERING-CONTRACT.md` | Market, industry, inventory, and FX scope |
+| `PHASE-3-EVIDENCE.md` | Phase 3 tests, API/database snapshots, and walkthrough |
 | `FUTURE-ENGINEERING-CONTRACT.md` | Original reserved contract; superseded for Phase 1 |
 | `../sql/future-economics-schema.sql` | PostgreSQL/Supabase-capable schema. **Do not apply** until a future contract is accepted |
 
