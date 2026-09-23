@@ -34,8 +34,9 @@ Bliss Bot Chapel Phase 1 is a standalone ASP.NET Core monolith. It establishes t
 | CampaignPlacement | CampaignPlacements | Many per content item |
 | MatchEvaluationRun | MatchEvaluationRuns | Optional Phase 3 prep, not an engine |
 
-Economics, quotes, and compensation rules are **not** Phase 1 entities.
-See `docs/economics/` for the reserved future bounded context.
+Economics, quotes, and compensation rules are **not** Bliss Phase 1
+entities. The separate Economics bounded context now has its own Phase 1
+reference-data foundation; see `docs/economics/`.
 
 ## Core graphs
 

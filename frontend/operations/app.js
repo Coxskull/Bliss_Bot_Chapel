@@ -19,8 +19,9 @@ const state = {
   weddingPlannerWorkspaces: [], weddingPlannerSessions: [], weddingPlannerMessages: [],
   selectedWeddingPlannerWorkspace: null, selectedWeddingPlannerSession: null,
   affiliateNetworks: [], networkAccesses: [], programAccesses: [],
-  matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "",
-  partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations",
+  economicsMarkets: [], economicsModels: [], economicsSources: [], economicsObservations: [],
+  matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "", economicsSearch: "",
+  partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations", economicsTab: "markets",
   selectedReview: null, selectedPlacement: null,
   runtime: null,
   lastRequestId: null
@@ -108,13 +109,18 @@ async function loadDashboard() {
       api("/api/campaign-bindings/queue"), api("/api/data-provenances"),
       api("/api/affiliate-networks"), api("/api/network-accesses"),
       api("/api/program-accesses"), api("/api/runtime/status").catch(() => null),
-      api("/api/wedding-planner/workspaces").catch(() => [])
+      api("/api/wedding-planner/workspaces").catch(() => []),
+      api("/api/economics/markets").catch(() => []),
+      api("/api/economics/pricing-models").catch(() => []),
+      api("/api/economics/research-sources").catch(() => []),
+      api("/api/economics/observations").catch(() => [])
     ]);
     const [
       matches, creators, advertisers, programs, opportunities, content, campaigns,
       ruleVersions, runs, ingestions, formations, reviews, placements, reviewQueue,
       placementQueue, provenances, affiliateNetworks, networkAccesses, programAccesses,
-      runtime, weddingPlannerWorkspaces
+      runtime, weddingPlannerWorkspaces, economicsMarkets, economicsModels,
+      economicsSources, economicsObservations
     ] = values;
     const [contentDetails, ruleDetails] = await Promise.all([
       Promise.all(content.map(item => api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] })))),
@@ -124,7 +130,8 @@ async function loadDashboard() {
       matches, creators, advertisers, programs, opportunities, content, contentDetails,
       campaigns, ruleVersions: ruleDetails, runs, ingestions, formations, reviews,
       placements, reviewQueue, placementQueue, provenances, affiliateNetworks,
-      networkAccesses, programAccesses, runtime, weddingPlannerWorkspaces, loaded: true
+      networkAccesses, programAccesses, runtime, weddingPlannerWorkspaces,
+      economicsMarkets, economicsModels, economicsSources, economicsObservations, loaded: true
     });
     state.selectedReview = reviewQueue.some(x => x.blissMatchId === state.selectedReview)
       ? state.selectedReview : reviewQueue[0]?.blissMatchId || null;
@@ -163,6 +170,7 @@ function renderAll() {
   renderPlacements();
   renderPartners();
   renderInventory();
+  renderEconomics();
   renderAudit();
   renderRuntimeStatus();
   renderWeddingPlanner();
@@ -326,6 +334,57 @@ function renderInventory() {
       return `<article class="campaign-card"><span class="status-badge ${statusClass(campaign.status)}">${friendlyStatus(campaign.status)}</span><h3>${escapeHtml(campaign.name)}</h3><p>${escapeHtml(opportunity?.name || "No opportunity bound")} · created ${formatDate(campaign.createdAt)}</p><button class="small-button" data-campaign-id="${campaign.id}">View placements</button></article>`;
     }).join("") : emptyState("No campaigns found.")}</div>`;
   }
+}
+
+function renderEconomics() {
+  $$("#economics-tabs .tab-button").forEach(button => {
+    const active = button.dataset.economicsTab === state.economicsTab;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  $("#economics-market-count").textContent = state.economicsMarkets.length;
+  $("#economics-model-count").textContent = state.economicsModels.length;
+  $("#economics-observation-count").textContent = state.economicsObservations.length;
+
+  const term = state.economicsSearch.toLowerCase();
+  let headers = [], rows = [];
+  if (state.economicsTab === "markets") {
+    headers = ["Market", "Country", "City / metro", "Currency", "Status"];
+    rows = state.economicsMarkets
+      .filter(x => auditHaystack(x).includes(term))
+      .map(x => [
+        code(x.marketCode),
+        escapeHtml(x.countryCode),
+        escapeHtml([x.cityName, x.metroName].filter(Boolean).join(" · ") || "Country-wide"),
+        code(x.currencyCode),
+        badge(x.isActive ? "ACTIVE" : "INACTIVE")
+      ]);
+  } else if (state.economicsTab === "models") {
+    headers = ["Code", "Pricing basis", "Description", "Status"];
+    rows = state.economicsModels
+      .filter(x => auditHaystack(x).includes(term))
+      .map(x => [code(x.code), `<strong>${escapeHtml(x.name)}</strong>`, escapeHtml(x.description || "—"), badge(x.isActive ? "ACTIVE" : "INACTIVE")]);
+  } else {
+    const sources = new Map(state.economicsSources.map(x => [x.id, x]));
+    headers = ["Market", "Metric / value", "Provenance", "Verification", "Confidence", "Retrieved"];
+    rows = state.economicsObservations
+      .filter(x => auditHaystack(x).includes(term))
+      .map(x => {
+        const source = sources.get(x.researchSourceId);
+        const value = x.numericValue ?? (x.rangeLow != null || x.rangeHigh != null ? `${x.rangeLow ?? "?"}–${x.rangeHigh ?? "?"}` : "UNKNOWN");
+        return [
+          code(x.marketCode || "UNKNOWN"),
+          `<strong>${escapeHtml(friendlyStatus(x.metric))}</strong><br>${escapeHtml(String(value))} ${escapeHtml(x.currencyCode || "")}`,
+          `${escapeHtml(x.researchSourceName || source?.name || "Unknown source")}<br><small>${escapeHtml(source?.sourceType || "UNSPECIFIED")}</small>`,
+          badge(x.verificationStatus),
+          badge(x.confidenceLevel),
+          formatDate(x.retrievedAt)
+        ];
+      });
+  }
+  $("#economics-content").innerHTML = rows.length
+    ? `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>`
+    : emptyState(`No ${state.economicsTab} records found.`);
 }
 
 function renderAudit() {
@@ -782,11 +841,11 @@ function bindNavigation() {
 }
 function route() {
   const parts=(location.hash.replace(/^#\/?/,"")||"overview").split("/").filter(Boolean);
-  const valid=["overview","creators","matches","review","placement","wedding-planner","partners","inventory","audit","status"];
+  const valid=["overview","creators","matches","review","placement","wedding-planner","partners","inventory","economics","audit","status"];
   const view=valid.includes(parts[0])?parts[0]:"overview";
   $$(".view").forEach(x=>x.classList.toggle("active",x.id===`view-${view}`));
   $$(".nav-item[data-view]").forEach(x=>{const active=x.dataset.view===view;x.classList.toggle("active",active);if(active)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});
-  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner foundation",partners:"Partner directory",inventory:"Inventory and campaigns",audit:"Operations audit",status:"Workspace status"};
+  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner foundation",partners:"Partner directory",inventory:"Inventory and campaigns",economics:"Economics reference data",audit:"Operations audit",status:"Workspace status"};
   $("#page-title").textContent=titles[view];
   toggleMobileNav(false);
   if(!state.loaded)return;
@@ -849,10 +908,12 @@ function bindActions() {
   $("#match-search").addEventListener("input",event=>{state.matchSearch=event.target.value;renderMatches();});
   $("#creator-search").addEventListener("input",event=>{state.creatorSearch=event.target.value;renderCreators();});
   $("#audit-search").addEventListener("input",event=>{state.auditSearch=event.target.value;renderAudit();});
+  $("#economics-search").addEventListener("input",event=>{state.economicsSearch=event.target.value;renderEconomics();});
   $("#match-filters").addEventListener("click",event=>{const button=event.target.closest("[data-status]");if(!button)return;state.matchFilter=button.dataset.status;$$(".filter-chip",$("#match-filters")).forEach(x=>{const active=x===button;x.classList.toggle("active",active);x.setAttribute("aria-pressed",String(active));});renderMatches();});
   $("#partner-tabs").addEventListener("click",event=>{const button=event.target.closest("[data-partner-tab]");if(!button)return;state.partnerTab=button.dataset.partnerTab;renderPartners();});
   $("#inventory-tabs").addEventListener("click",event=>{const button=event.target.closest("[data-inventory-tab]");if(!button)return;state.inventoryTab=button.dataset.inventoryTab;renderInventory();});
   $("#audit-tabs").addEventListener("click",event=>{const button=event.target.closest("[data-audit-tab]");if(!button)return;state.auditTab=button.dataset.auditTab;renderAudit();});
+  $("#economics-tabs").addEventListener("click",event=>{const button=event.target.closest("[data-economics-tab]");if(!button)return;state.economicsTab=button.dataset.economicsTab;renderEconomics();});
   document.addEventListener("click",handleDocumentClick);
   document.addEventListener("keydown",handleKeydown);
 }

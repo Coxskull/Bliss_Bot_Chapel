@@ -44,6 +44,11 @@ public class BlissDbContext : DbContext
     public DbSet<WeddingPlannerConversationMessage> WeddingPlannerConversationMessages => Set<WeddingPlannerConversationMessage>();
     public DbSet<WeddingPlannerAuditEvent> WeddingPlannerAuditEvents => Set<WeddingPlannerAuditEvent>();
 
+    public DbSet<GeographicMarket> GeographicMarkets => Set<GeographicMarket>();
+    public DbSet<PricingModel> PricingModels => Set<PricingModel>();
+    public DbSet<ResearchSource> ResearchSources => Set<ResearchSource>();
+    public DbSet<MarketBenchmarkObservation> MarketBenchmarkObservations => Set<MarketBenchmarkObservation>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BlissDbContext).Assembly);

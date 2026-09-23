@@ -1,0 +1,72 @@
+[
+    {
+        "id": "ec000004-0000-0000-0000-000000000007",
+        "code": "CPA",
+        "name": "Cost per acquisition",
+        "description": "Performance-based acquisition pricing.",
+        "isActive": true
+    },
+    {
+        "id": "ec000004-0000-0000-0000-000000000008",
+        "code": "CPL",
+        "name": "Cost per lead",
+        "description": "Performance-based qualified-lead pricing.",
+        "isActive": true
+    },
+    {
+        "id": "ec000004-0000-0000-0000-000000000001",
+        "code": "CPM",
+        "name": "Cost per 1,000 impressions",
+        "description": "Exposure-priced inventory.",
+        "isActive": true
+    },
+    {
+        "id": "ec000004-0000-0000-0000-000000000009",
+        "code": "CPS",
+        "name": "Cost per sale",
+        "description": "Performance-based sale pricing.",
+        "isActive": true
+    },
+    {
+        "id": "ec000004-0000-0000-0000-000000000002",
+        "code": "CPV",
+        "name": "Cost per view",
+        "description": "Verified-view pricing where applicable.",
+        "isActive": true
+    },
+    {
+        "id": "ec000004-0000-0000-0000-000000000004",
+        "code": "FIXED_CAMPAIGN",
+        "name": "Fixed campaign",
+        "description": "Fixed amount for a campaign scope.",
+        "isActive": true
+    },
+    {
+        "id": "ec000004-0000-0000-0000-000000000003",
+        "code": "FLAT_PLACEMENT",
+        "name": "Flat placement",
+        "description": "Fixed amount for one placement.",
+        "isActive": true
+    },
+    {
+        "id": "ec000004-0000-0000-0000-000000000006",
+        "code": "HOST_READ",
+        "name": "Host-read / integrated",
+        "description": "Creator-integrated message or segment.",
+        "isActive": true
+    },
+    {
+        "id": "ec000004-0000-0000-0000-000000000010",
+        "code": "HYBRID",
+        "name": "Hybrid",
+        "description": "A versioned combination of pricing bases.",
+        "isActive": true
+    },
+    {
+        "id": "ec000004-0000-0000-0000-000000000005",
+        "code": "SPONSORSHIP",
+        "name": "Sponsorship",
+        "description": "Sponsorship package pricing.",
+        "isActive": true
+    }
+]

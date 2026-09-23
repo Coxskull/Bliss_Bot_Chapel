@@ -311,16 +311,21 @@ Existing `AdvertiserOpportunity.CommissionPercentage` / `FixedFee` are
 **affiliate-opportunity commercial terms**. They are not inventory
 market rates and must not be read as the Economics Engine.
 
-## Reserved API (not implemented)
+## API status
 
-Conceptual surface for a future contract:
+Economics Phase 1 implements GET-only reference data:
+
+- `GET /api/economics/markets`
+- `GET /api/economics/pricing-models`
+- `GET /api/economics/research-sources`
+- `GET /api/economics/observations`
+
+Reserved for later accepted contracts:
 
 - `POST /api/economics/recommendations`
 - `GET /api/economics/recommendations/{id}`
 - `POST /api/economics/quotes`
 - `GET /api/economics/quotes/{id}`
-- `GET /api/economics/markets`
-- `GET /api/economics/observations`
 
 Wedding Planner must call .NET. It must not call an LLM for a price.
 
@@ -333,7 +338,8 @@ Wedding Planner must call .NET. It must not call an LLM for a price.
 | Wedding Planner Phases 2–7 | Conversation, creative, QA. Must not invent rates. |
 | Wedding Planner Phase 8 handshake | Creative + approved match + compatible inventory → planned placement. Must **ask** Economics when quotes are in scope; Phase 8 is not rewritten now. |
 | Wedding Planner Phase 9 | Measurement/learning. Consumes historical economics; does not own pricing rules. |
-| Economics Phase 1+ | **Future** contract after current WP sequence unless product later inserts a dedicated quote phase. |
+| Economics Phase 1 | Reference-data foundation implemented; pending owner acceptance. |
+| Economics Phases 2–9 | Individually gated by `PHASE-ROADMAP.md`; not authorized. |
 | Media ledger / payouts | Separate later work. Reads contracted amounts; does not price inventory. |
 
 Do not auto-advance this module into the current Wedding Planner

@@ -78,6 +78,22 @@ public sealed class EfModelConstraintTests
         Assert.Contains("WeddingPlannerConversationMessage.WorkspaceId", restrictKeys);
         Assert.Contains("WeddingPlannerConversationMessage.AdvertiserId", restrictKeys);
         Assert.Contains("WeddingPlannerAuditEvent.AdvertiserId", restrictKeys);
+        Assert.Contains("MarketBenchmarkObservation.GeographicMarketId", restrictKeys);
+        Assert.Contains("MarketBenchmarkObservation.ResearchSourceId", restrictKeys);
+    }
+
+    [Fact]
+    public void Economics_catalog_natural_keys_are_unique()
+    {
+        using var db = TestDb.CreateContext();
+
+        var marketCode = db.Model.FindEntityType(typeof(GeographicMarket))!.GetIndexes()
+            .Single(x => x.Properties.Select(p => p.Name).SequenceEqual(new[] { nameof(GeographicMarket.MarketCode) }));
+        var pricingCode = db.Model.FindEntityType(typeof(PricingModel))!.GetIndexes()
+            .Single(x => x.Properties.Select(p => p.Name).SequenceEqual(new[] { nameof(PricingModel.Code) }));
+
+        Assert.True(marketCode.IsUnique);
+        Assert.True(pricingCode.IsUnique);
     }
 
     [Fact]

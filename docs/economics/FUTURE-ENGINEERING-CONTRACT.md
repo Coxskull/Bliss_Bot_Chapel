@@ -1,8 +1,8 @@
 # Economics & Rate Intelligence — Future Engineering Contract (reserved)
 
-**Authorization:** not issued. This document is a placeholder so the
-first real implementation contract does not have to rediscover the
-requirement.
+**Status:** superseded for Phase 1 by
+`PHASE-1-ENGINEERING-CONTRACT.md`. It remains a requirements source for
+later phases, which are not yet authorized.
 
 Do not implement this contract as part of Wedding Planner Phase 1–9 or
 Bliss matching follow-on work unless a later accepted contract explicitly

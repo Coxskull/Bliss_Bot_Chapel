@@ -49,14 +49,22 @@ public sealed class EconomicsBoundaryTests
     }
 
     [Fact]
-    public void Economics_http_api_is_not_implemented_in_the_current_phase()
+    public void Economics_phase1_http_api_is_read_only()
     {
-        var prefixes = typeof(CreatorsController).Assembly.GetTypes()
-            .Where(t => t.IsDefined(typeof(ApiControllerAttribute)))
-            .Select(t => t.GetCustomAttribute<RouteAttribute>()?.Template)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var controller = typeof(EconomicsController);
+        Assert.Equal("api/economics", controller.GetCustomAttribute<RouteAttribute>()?.Template);
 
-        Assert.DoesNotContain("api/economics", prefixes);
-        Assert.DoesNotContain(prefixes, p => p is not null && p.StartsWith("api/economics", StringComparison.OrdinalIgnoreCase));
+        var methods = controller.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
+        Assert.All(methods, method =>
+        {
+            Assert.Null(method.GetCustomAttribute<HttpPostAttribute>());
+            Assert.Null(method.GetCustomAttribute<HttpPutAttribute>());
+            Assert.Null(method.GetCustomAttribute<HttpPatchAttribute>());
+            Assert.Null(method.GetCustomAttribute<HttpDeleteAttribute>());
+        });
+        Assert.DoesNotContain(methods, method =>
+            method.Name.Contains("Recommend", StringComparison.OrdinalIgnoreCase)
+            || method.Name.Contains("Quote", StringComparison.OrdinalIgnoreCase)
+            || method.Name.Contains("Calculate", StringComparison.OrdinalIgnoreCase));
     }
 }
