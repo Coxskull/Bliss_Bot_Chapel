@@ -49,7 +49,7 @@ public sealed class EconomicsBoundaryTests
     }
 
     [Fact]
-    public void Economics_http_api_exposes_only_controlled_recommendation_and_quote_writes()
+    public void Economics_http_api_exposes_only_controlled_phase4_to_phase6_writes()
     {
         var controller = typeof(EconomicsController);
         Assert.Equal("api/economics", controller.GetCustomAttribute<RouteAttribute>()?.Template);
@@ -81,7 +81,8 @@ public sealed class EconomicsBoundaryTests
         });
         Assert.DoesNotContain(methods, method =>
             method.Name.Contains("Calculate", StringComparison.OrdinalIgnoreCase)
-            || method.Name.Contains("Compensation", StringComparison.OrdinalIgnoreCase)
-            || method.Name.Contains("Settlement", StringComparison.OrdinalIgnoreCase));
+            || method.Name.Contains("Settlement", StringComparison.OrdinalIgnoreCase)
+            || method.Name.Contains("Payout", StringComparison.OrdinalIgnoreCase)
+            || method.Name.Contains("Payment", StringComparison.OrdinalIgnoreCase));
     }
 }
