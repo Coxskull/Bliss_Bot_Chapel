@@ -20,4 +20,6 @@ public class CampaignPlacement
     public ContentItem ContentItem { get; set; } = null!;
     public AdInventorySlot AdInventorySlot { get; set; } = null!;
     public BlissMatch? BlissMatch { get; set; }
+    public ICollection<HistoricalPlacementEconomics> EconomicsHistory { get; set; } =
+        new List<HistoricalPlacementEconomics>();
 }

@@ -49,7 +49,7 @@ public sealed class EconomicsBoundaryTests
     }
 
     [Fact]
-    public void Economics_http_api_exposes_only_controlled_phase4_to_phase6_writes()
+    public void Economics_http_api_exposes_only_controlled_append_only_writes()
     {
         var controller = typeof(EconomicsController);
         Assert.Equal("api/economics", controller.GetCustomAttribute<RouteAttribute>()?.Template);
@@ -60,7 +60,7 @@ public sealed class EconomicsBoundaryTests
             .ToDictionary(
                 method => method.Name,
                 method => method.GetCustomAttribute<HttpPostAttribute>()?.Template);
-        Assert.Equal(9, posts.Count);
+        Assert.Equal(11, posts.Count);
         Assert.Equal("recommendations", posts["GenerateRecommendation"]);
         Assert.Equal("quotes", posts["CreateQuote"]);
         Assert.Equal("quotes/{id:guid}/versions", posts["ReviseQuote"]);
@@ -76,6 +76,12 @@ public sealed class EconomicsBoundaryTests
         Assert.Equal(
             "research-candidates/{id:guid}/review",
             posts["ReviewResearchCandidate"]);
+        Assert.Equal(
+            "historical-placements",
+            posts["RecordHistoricalPlacement"]);
+        Assert.Equal(
+            "campaign-performance",
+            posts["RecordCampaignPerformance"]);
         Assert.All(methods.Where(method => posts.ContainsKey(method.Name)), method =>
             Assert.NotNull(method.GetCustomAttribute<
                 Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()));

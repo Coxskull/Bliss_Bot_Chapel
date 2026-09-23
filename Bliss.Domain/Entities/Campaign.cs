@@ -13,4 +13,6 @@ public class Campaign
 
     public AdvertiserOpportunity? AdvertiserOpportunity { get; set; }
     public ICollection<CampaignPlacement> Placements { get; set; } = new List<CampaignPlacement>();
+    public ICollection<CampaignPerformanceEconomics> PerformanceEconomics { get; set; } =
+        new List<CampaignPerformanceEconomics>();
 }

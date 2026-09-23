@@ -27,6 +27,7 @@ const state = {
   economicsPricingRules: [], economicsRecommendations: [], economicsQuotes: [],
   economicsCompensationRules: [], economicsCompensationIllustrations: [],
   economicsResearchRuns: [],
+  economicsHistoricalPlacements: [], economicsCampaignPerformance: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "", economicsSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations", economicsTab: "markets",
   selectedReview: null, selectedPlacement: null,
@@ -52,6 +53,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   fillKey("#research-candidate-idempotency");
   fillKey("#research-review-idempotency");
   fillKey("#wedding-planner-economics-key");
+  fillKey("#history-placement-idempotency");
+  fillKey("#history-campaign-idempotency");
   route();
   await loadSession();
   syncOperatorUi();
@@ -140,7 +143,9 @@ async function loadDashboard() {
       api("/api/economics/quotes").catch(() => []),
       api("/api/economics/compensation-rule-versions").catch(() => []),
       api("/api/economics/compensation-illustrations").catch(() => []),
-      api("/api/economics/research-runs").catch(() => [])
+      api("/api/economics/research-runs").catch(() => []),
+      api("/api/economics/historical-placements").catch(() => []),
+      api("/api/economics/campaign-performance").catch(() => [])
     ]);
     const [
       matches, creators, advertisers, programs, opportunities, content, campaigns,
@@ -151,7 +156,8 @@ async function loadDashboard() {
       economicsPerformanceSnapshots, economicsMarketProfiles, economicsIndustryProfiles,
       economicsInventoryBenchmarks, economicsExchangeRates, economicsPricingRules,
       economicsRecommendations, economicsQuotes, economicsCompensationRules,
-      economicsCompensationIllustrations, economicsResearchRuns
+      economicsCompensationIllustrations, economicsResearchRuns,
+      economicsHistoricalPlacements, economicsCampaignPerformance
     ] = values;
     const [contentDetails, ruleDetails] = await Promise.all([
       Promise.all(content.map(item => api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] })))),
@@ -167,7 +173,8 @@ async function loadDashboard() {
       economicsMarketProfiles, economicsIndustryProfiles,
       economicsInventoryBenchmarks, economicsExchangeRates, economicsPricingRules,
       economicsRecommendations, economicsQuotes, economicsCompensationRules,
-      economicsCompensationIllustrations, economicsResearchRuns, loaded: true
+      economicsCompensationIllustrations, economicsResearchRuns,
+      economicsHistoricalPlacements, economicsCampaignPerformance, loaded: true
     });
     state.selectedReview = reviewQueue.some(x => x.blissMatchId === state.selectedReview)
       ? state.selectedReview : reviewQueue[0]?.blissMatchId || null;
@@ -412,6 +419,8 @@ function renderEconomics() {
   $("#economics-compensation-count").textContent =
     state.economicsCompensationIllustrations.length;
   $("#economics-research-count").textContent = state.economicsResearchRuns.length;
+  $("#economics-history-count").textContent =
+    state.economicsHistoricalPlacements.length + state.economicsCampaignPerformance.length;
 
   const creatorSelect = $("#economics-creator");
   const slotSelect = $("#economics-slot");
@@ -551,6 +560,65 @@ function renderEconomics() {
         <article class="stat-card"><strong>${latestCandidate?.promotedObservationId ? "APPENDED" : "NONE"}</strong><span>Durable observation</span><small>No silent promotion</small></article>
       </div>
       ${latestCandidate ? `<p><strong>${escapeHtml(latestCandidate.sourceName)}</strong> · ${escapeHtml(latestCandidate.sourceUrl)} · ${badge(latestCandidate.confidenceLevel)} ${badge(latestCandidate.verificationStatus)}</p>` : ""}
+    </section>` : "";
+
+  const historyPlacement = $("#history-placement");
+  const selectedHistoryPlacement = historyPlacement.value;
+  historyPlacement.innerHTML = state.placements.map(x =>
+    `<option value="${x.campaignPlacementId}">${escapeHtml(campaignById(x.campaignId)?.name || shortId(x.campaignId))} · ${escapeHtml(creatorById(x.creatorId)?.name || shortId(x.creatorId))} · ${code(shortId(x.campaignPlacementId))}</option>`).join("");
+  if ([...historyPlacement.options].some(x => x.value === selectedHistoryPlacement)) {
+    historyPlacement.value = selectedHistoryPlacement;
+  }
+
+  const acceptedQuoteLines = state.economicsQuotes.flatMap(quote => {
+    const acceptedOutcomes = quote.outcomes.filter(x => x.response === "ACCEPTED");
+    return acceptedOutcomes.flatMap(outcome => {
+      const version = quote.versions.find(x => x.id === outcome.quoteVersionId);
+      return (version?.lineItems || []).map(line => ({ quote, outcome, version, line }));
+    });
+  });
+  const historyQuoteLine = $("#history-quote-line");
+  const selectedHistoryQuoteLine = historyQuoteLine.value;
+  historyQuoteLine.innerHTML = acceptedQuoteLines.length
+    ? acceptedQuoteLines.map(({quote,outcome,version,line}) =>
+      `<option value="${outcome.id}|${line.id}">${code(shortId(quote.id))} · v${version.versionNumber} · ${escapeHtml(line.description)} · ${line.lineAmount} ${escapeHtml(line.currencyCode)}</option>`).join("")
+    : `<option value="">No accepted quote lines</option>`;
+  if ([...historyQuoteLine.options].some(x => x.value === selectedHistoryQuoteLine)) {
+    historyQuoteLine.value = selectedHistoryQuoteLine;
+  }
+
+  const historyCompensation = $("#history-compensation");
+  const selectedHistoryCompensation = historyCompensation.value;
+  historyCompensation.innerHTML = `<option value="">No illustration snapshot</option>${state.economicsCompensationIllustrations.map(x =>
+    `<option value="${x.id}">${code(shortId(x.quoteId))} · ${x.grossAmount} ${escapeHtml(x.currencyCode)} · ${escapeHtml(x.compensationRuleVersion)}</option>`).join("")}`;
+  if ([...historyCompensation.options].some(x => x.value === selectedHistoryCompensation)) {
+    historyCompensation.value = selectedHistoryCompensation;
+  }
+
+  const historyCampaign = $("#history-campaign");
+  const selectedHistoryCampaign = historyCampaign.value;
+  historyCampaign.innerHTML = state.campaigns.map(x =>
+    `<option value="${x.id}">${escapeHtml(x.name)} · ${escapeHtml(friendlyStatus(x.status))}</option>`).join("");
+  if ([...historyCampaign.options].some(x => x.value === selectedHistoryCampaign)) {
+    historyCampaign.value = selectedHistoryCampaign;
+  }
+  const measurementNow = new Date().toISOString().slice(0,16);
+  if (!$("#history-measurement-at").value) $("#history-measurement-at").value = measurementNow;
+  if (!$("#history-campaign-measurement-at").value) {
+    $("#history-campaign-measurement-at").value = measurementNow;
+  }
+
+  const latestPlacementHistory = state.economicsHistoricalPlacements[0];
+  $("#economics-history-result").innerHTML = latestPlacementHistory ? `
+    <section class="panel">
+      <div class="panel-header"><div><p class="eyebrow">LATEST ALPHA ACTUAL</p><h3>${escapeHtml(latestPlacementHistory.campaignName)} · ${escapeHtml(friendlyStatus(latestPlacementHistory.inventorySlotType))}</h3></div><span class="record-tag">ANALYTICS ONLY</span></div>
+      <div class="stat-grid">
+        <article class="stat-card"><strong>${latestPlacementHistory.contractedAmount} ${escapeHtml(latestPlacementHistory.currencyCode)}</strong><span>Contracted amount</span><small>Commercial outcome snapshot</small></article>
+        <article class="stat-card"><strong>${latestPlacementHistory.effectiveCpm ?? "UNKNOWN"}</strong><span>Effective CPM</span><small>Only when impressions are known</small></article>
+        <article class="stat-card"><strong>${latestPlacementHistory.contractedVsRecommendationTargetPercentage == null ? "UNKNOWN" : `${latestPlacementHistory.contractedVsRecommendationTargetPercentage}%`}</strong><span>vs recommendation</span><small>Target ${latestPlacementHistory.recommendationTarget} ${escapeHtml(latestPlacementHistory.currencyCode)}</small></article>
+        <article class="stat-card"><strong>${latestPlacementHistory.contractedVsExternalMidpointPercentage == null ? "UNKNOWN" : `${latestPlacementHistory.contractedVsExternalMidpointPercentage}%`}</strong><span>vs external midpoint</span><small>${latestPlacementHistory.externalBenchmarkLow ?? "?"}–${latestPlacementHistory.externalBenchmarkHigh ?? "?"} ${escapeHtml(latestPlacementHistory.currencyCode)}</small></article>
+      </div>
+      <p><strong>${Number(latestPlacementHistory.actualImpressions ?? 0).toLocaleString()} measured impressions</strong> · recorded ${formatDate(latestPlacementHistory.recordedAt)} · recommendation and source records remain unchanged</p>
     </section>` : "";
 
   const term = state.economicsSearch.toLowerCase();
@@ -703,7 +771,7 @@ function renderEconomics() {
       `${x.candidates.length} candidate${x.candidates.length === 1 ? "" : "s"}<br><small>${escapeHtml(x.requestedBy)}</small>`,
       `<strong>.NET + HUMAN</strong><br><small>n8n orchestrates only</small>`
     ]);
-  } else {
+  } else if (state.economicsTab === "research-candidates") {
     headers = ["Created", "Run / source", "Candidate value", "AI classification", "Human gate", "Observation"];
     rows = state.economicsResearchRuns.flatMap(run => run.candidates.map(candidate => ({run,candidate})))
       .filter(x => auditHaystack(x).includes(term))
@@ -721,6 +789,26 @@ function renderEconomics() {
             : "None"
         ];
       });
+  } else if (state.economicsTab === "historical-placements") {
+    headers = ["Recorded", "Campaign / inventory", "Commercial actual", "Measured delivery", "External vs Alpha", "Audit"];
+    rows = state.economicsHistoricalPlacements.filter(x => auditHaystack(x).includes(term)).map(x => [
+      `${formatDate(x.recordedAt)}<br><small>Measured ${formatDate(x.measurementAsOf)}</small>`,
+      `<strong>${escapeHtml(x.campaignName)}</strong><br>${escapeHtml(friendlyStatus(x.inventorySlotType))} · ${code(x.pricingModelCode)}`,
+      `<strong>${x.contractedAmount} ${escapeHtml(x.currencyCode)}</strong><br><small>Quoted ${x.quotedAmount} · recommendation ${x.recommendationLow}/${x.recommendationTarget}/${x.recommendationHigh}</small>`,
+      `Impressions ${x.actualImpressions == null ? "UNKNOWN" : Number(x.actualImpressions).toLocaleString()}<br>Views ${x.actualViews == null ? "UNKNOWN" : Number(x.actualViews).toLocaleString()}<br><small>CPM ${x.effectiveCpm ?? "UNKNOWN"} · CPV ${x.effectiveCpv ?? "UNKNOWN"}</small>`,
+      `Recommendation ${x.contractedVsRecommendationTargetPercentage == null ? "UNKNOWN" : `${x.contractedVsRecommendationTargetPercentage}%`}<br>External midpoint ${x.contractedVsExternalMidpointPercentage == null ? "UNKNOWN" : `${x.contractedVsExternalMidpointPercentage}%`}`,
+      `${x.supersedesHistoricalPlacementEconomicsId ? `Corrects ${code(shortId(x.supersedesHistoricalPlacementEconomicsId))}` : "Original snapshot"}<br><small>${escapeHtml(x.idempotencyKey)}</small>`
+    ]);
+  } else if (state.economicsTab === "campaign-performance") {
+    headers = ["Recorded", "Campaign", "Campaign actuals", "Alpha economics snapshot", "Effectiveness", "Audit"];
+    rows = state.economicsCampaignPerformance.filter(x => auditHaystack(x).includes(term)).map(x => [
+      `${formatDate(x.recordedAt)}<br><small>Measured ${formatDate(x.measurementAsOf)}</small>`,
+      `<strong>${escapeHtml(x.campaignName)}</strong><br>${code(shortId(x.campaignId))}`,
+      `Impressions ${x.actualImpressions == null ? "UNKNOWN" : Number(x.actualImpressions).toLocaleString()}<br>Views ${x.actualViews == null ? "UNKNOWN" : Number(x.actualViews).toLocaleString()}<br>Conversions ${x.conversions == null ? "UNKNOWN" : Number(x.conversions).toLocaleString()}`,
+      `<strong>${x.alphaContractedAmount ?? "UNKNOWN"} ${escapeHtml(x.alphaContractedCurrencyCode || "")}</strong><br><small>${x.alphaPlacementCount} current placement snapshot${x.alphaPlacementCount === 1 ? "" : "s"}</small>`,
+      `Effective CPM ${x.effectiveCpm ?? "UNKNOWN"}<br>Effective CPV ${x.effectiveCpv ?? "UNKNOWN"}<br><small>Engagement ${x.engagementRate == null ? "UNKNOWN" : `${(x.engagementRate * 100).toFixed(2)}%`}</small>`,
+      `${x.supersedesCampaignPerformanceEconomicsId ? `Corrects ${code(shortId(x.supersedesCampaignPerformanceEconomicsId))}` : "Original snapshot"}<br><small>${escapeHtml(x.idempotencyKey)}</small>`
+    ]);
   }
   $("#economics-content").innerHTML = rows.length
     ? `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>`
@@ -1315,6 +1403,76 @@ async function submitEconomicsResearchReview(form) {
   finally{submit.disabled=false;submit.innerHTML=`Record review <span>→</span>`;}
 }
 
+async function submitHistoricalPlacementEconomics(form) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+  const submit=form.querySelector('button[type="submit"]'),data=new FormData(form),value=name=>String(data.get(name)||"").trim();
+  const nullableNumber=name=>value(name)===""?null:Number(value(name));
+  const [quoteOutcomeId,quoteLineItemId]=value("quoteLineItemId").split("|");
+  submit.disabled=true;submit.textContent="Appending…";
+  try {
+    const result=await api("/api/economics/historical-placements",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      campaignPlacementId:value("campaignPlacementId"),
+      quoteOutcomeId,
+      quoteLineItemId,
+      compensationIllustrationId:value("compensationIllustrationId")||null,
+      supersedesHistoricalPlacementEconomicsId:null,
+      contractedLineAmount:null,
+      actualImpressions:nullableNumber("actualImpressions"),
+      actualViews:nullableNumber("actualViews"),
+      actualListens:nullableNumber("actualListens"),
+      actualEngagements:nullableNumber("actualEngagements"),
+      actualConversions:nullableNumber("actualConversions"),
+      measurementAsOf:new Date(value("measurementAsOf")).toISOString(),
+      notes:value("notes")||null,
+      sourceSystem:value("sourceSystem"),
+      idempotencyKey:value("idempotencyKey")
+    })});
+    toast(`Placement economics appended${result.isReplay?" (replay)":""}`);
+    fillKey("#history-placement-idempotency");
+    state.economicsHistoricalPlacements=await api("/api/economics/historical-placements");
+    state.economicsTab="historical-placements";
+    renderEconomics();
+  } catch(error){toast(error.message,true);}
+  finally{submit.disabled=false;submit.innerHTML=`Append actuals <span>→</span>`;}
+}
+
+async function submitCampaignPerformanceEconomics(form) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+  const submit=form.querySelector('button[type="submit"]'),data=new FormData(form),value=name=>String(data.get(name)||"").trim();
+  const nullableNumber=name=>value(name)===""?null:Number(value(name));
+  submit.disabled=true;submit.textContent="Appending…";
+  try {
+    const result=await api("/api/economics/campaign-performance",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      campaignId:value("campaignId"),
+      supersedesCampaignPerformanceEconomicsId:null,
+      actualImpressions:nullableNumber("actualImpressions"),
+      actualViews:nullableNumber("actualViews"),
+      actualListens:nullableNumber("actualListens"),
+      actualEngagements:nullableNumber("actualEngagements"),
+      engagementRate:nullableNumber("engagementRate"),
+      conversions:nullableNumber("conversions"),
+      conversionValue:nullableNumber("conversionValue"),
+      conversionValueCurrencyCode:value("conversionValueCurrencyCode")||null,
+      measurementAsOf:new Date(value("measurementAsOf")).toISOString(),
+      notes:value("notes")||null,
+      sourceSystem:value("sourceSystem"),
+      idempotencyKey:value("idempotencyKey")
+    })});
+    toast(`Campaign performance appended${result.isReplay?" (replay)":""}`);
+    fillKey("#history-campaign-idempotency");
+    state.economicsCampaignPerformance=await api("/api/economics/campaign-performance");
+    state.economicsTab="campaign-performance";
+    renderEconomics();
+  } catch(error){toast(error.message,true);}
+  finally{submit.disabled=false;submit.innerHTML=`Append performance <span>→</span>`;}
+}
+
 async function openCreator(id) {
   openDrawer("CREATOR PROFILE","Loading creator…",skeleton());
   try {
@@ -1465,6 +1623,8 @@ function bindActions() {
   $("#economics-research-run-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsResearchRun(event.currentTarget);});
   $("#economics-research-candidate-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsResearchCandidate(event.currentTarget);});
   $("#economics-research-review-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsResearchReview(event.currentTarget);});
+  $("#economics-historical-placement-form").addEventListener("submit",event=>{event.preventDefault();submitHistoricalPlacementEconomics(event.currentTarget);});
+  $("#economics-campaign-performance-form").addEventListener("submit",event=>{event.preventDefault();submitCampaignPerformanceEconomics(event.currentTarget);});
   $("#wedding-planner-open-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerWorkspace(event.currentTarget);});
   $("#wedding-planner-session-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerSession(event.currentTarget);});
   $("#wedding-planner-message-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerMessage(event.currentTarget);});
@@ -1482,6 +1642,8 @@ function bindActions() {
   $("#regenerate-research-run-key").addEventListener("click",()=>fillKey("#research-run-idempotency"));
   $("#regenerate-research-candidate-key").addEventListener("click",()=>fillKey("#research-candidate-idempotency"));
   $("#regenerate-research-review-key").addEventListener("click",()=>fillKey("#research-review-idempotency"));
+  $("#regenerate-history-placement-key").addEventListener("click",()=>fillKey("#history-placement-idempotency"));
+  $("#regenerate-history-campaign-key").addEventListener("click",()=>fillKey("#history-campaign-idempotency"));
   $("#quote-recommendation").addEventListener("change",event=>{
     const recommendation=state.economicsRecommendations.find(x=>x.id===event.target.value);
     if(recommendation)$("#quote-amount").value=recommendation.rangeTarget;
