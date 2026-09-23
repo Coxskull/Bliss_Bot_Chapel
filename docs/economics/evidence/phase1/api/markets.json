@@ -1,0 +1,62 @@
+[
+    {
+        "id": "ec000001-0000-0000-0000-000000000002",
+        "countryCode": "CO",
+        "cityName": "Medell\u00edn",
+        "metroName": "Valle de Aburr\u00e1",
+        "marketCode": "CO-MDE",
+        "currencyCode": "COP",
+        "isActive": true,
+        "createdAt": "2026-09-23T00:00:00Z"
+    },
+    {
+        "id": "ec000001-0000-0000-0000-000000000004",
+        "countryCode": "DO",
+        "cityName": "Santo Domingo",
+        "metroName": "Greater Santo Domingo",
+        "marketCode": "DO-SDQ",
+        "currencyCode": "DOP",
+        "isActive": true,
+        "createdAt": "2026-09-23T00:00:00Z"
+    },
+    {
+        "id": "ec000001-0000-0000-0000-000000000006",
+        "countryCode": "ID",
+        "cityName": "Jakarta",
+        "metroName": "Jabodetabek",
+        "marketCode": "ID-JKT",
+        "currencyCode": "IDR",
+        "isActive": true,
+        "createdAt": "2026-09-23T00:00:00Z"
+    },
+    {
+        "id": "ec000001-0000-0000-0000-000000000005",
+        "countryCode": "MY",
+        "cityName": "Kuala Lumpur",
+        "metroName": "Klang Valley",
+        "marketCode": "MY-KUL",
+        "currencyCode": "MYR",
+        "isActive": true,
+        "createdAt": "2026-09-23T00:00:00Z"
+    },
+    {
+        "id": "ec000001-0000-0000-0000-000000000003",
+        "countryCode": "PA",
+        "cityName": "Panama City",
+        "metroName": "Panama Metro",
+        "marketCode": "PA-PTY",
+        "currencyCode": "PAB",
+        "isActive": true,
+        "createdAt": "2026-09-23T00:00:00Z"
+    },
+    {
+        "id": "ec000001-0000-0000-0000-000000000001",
+        "countryCode": "PH",
+        "cityName": "Manila",
+        "metroName": "Metro Manila",
+        "marketCode": "PH-MNL",
+        "currencyCode": "PHP",
+        "isActive": true,
+        "createdAt": "2026-09-23T00:00:00Z"
+    }
+]

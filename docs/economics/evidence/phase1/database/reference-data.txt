@@ -1,0 +1,34 @@
+ MarketCode | CountryCode |   CityName    | CurrencyCode 
+------------+-------------+---------------+--------------
+ CO-MDE     | CO          | Medellín      | COP
+ DO-SDQ     | DO          | Santo Domingo | DOP
+ ID-JKT     | ID          | Jakarta       | IDR
+ MY-KUL     | MY          | Kuala Lumpur  | MYR
+ PA-PTY     | PA          | Panama City   | PAB
+ PH-MNL     | PH          | Manila        | PHP
+(6 rows)
+
+      Code      |            Name            
+----------------+----------------------------
+ CPA            | Cost per acquisition
+ CPL            | Cost per lead
+ CPM            | Cost per 1,000 impressions
+ CPS            | Cost per sale
+ CPV            | Cost per view
+ FIXED_CAMPAIGN | Fixed campaign
+ FLAT_PLACEMENT | Flat placement
+ HOST_READ      | Host-read / integrated
+ HYBRID         | Hybrid
+ SPONSORSHIP    | Sponsorship
+(10 rows)
+
+           Metric           | VerificationStatus | ConfidenceLevel |            source             
+----------------------------+--------------------+-----------------+-------------------------------
+ TEST_DIGITAL_AD_COST_INDEX | ESTIMATED          | LOW             | TEST Synthetic Market Fixture
+ TEST_DIGITAL_AD_COST_INDEX | ESTIMATED          | LOW             | TEST Synthetic Market Fixture
+ TEST_DIGITAL_AD_COST_INDEX | ESTIMATED          | LOW             | TEST Synthetic Market Fixture
+ TEST_DIGITAL_AD_COST_INDEX | ESTIMATED          | LOW             | TEST Synthetic Market Fixture
+ TEST_DIGITAL_AD_COST_INDEX | ESTIMATED          | LOW             | TEST Synthetic Market Fixture
+ TEST_DIGITAL_AD_COST_INDEX | ESTIMATED          | LOW             | TEST Synthetic Market Fixture
+(6 rows)
+

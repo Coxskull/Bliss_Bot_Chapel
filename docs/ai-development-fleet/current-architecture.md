@@ -48,7 +48,10 @@ Bliss.Tests (InMemory architecture proofs)
 
 There is **no** Fishing Fleet, Officiant scorer, Chaperone engine, Ad delivery runtime, measurement pipeline, financial ledger, or Economics rate engine in Bliss.
 
-Economics is a **documented future bounded context** (`docs/economics/`): vocabulary constants exist; PostgreSQL tables are reserved and **not** migrated.
+Economics is a **separate bounded context** (`docs/economics/`). Phase 1
+now persists geographic markets, pricing models, research sources, and
+benchmark observations and exposes GET-only operator visibility. Rate
+recommendations, quotes, and later Economics phases remain unimplemented.
 
 `MatchEvaluationRun` is an empty-capable table for later history. It does **not** run algorithms.
 
@@ -91,7 +94,7 @@ All Bliss domain PKs are `uuid`. Delete behavior on major FKs: `ON DELETE RESTRI
 | MatchEvaluationRun | YES | `MatchEvaluationRuns` | `Id` | `CreatorId`, `RuleVersionId` | Unused by API/seeder | 🟡 DECLARED | Untested usage | Not an engine |
 | Tracking | NO | — | — | — | — | ❌ | — | |
 | Transaction / Ledger / Payable / Alpha Revenue | NO in Bliss | Alpha Auto has order finance | — | — | — | ❌ Bliss / 🟡 Auto | Auto untested | Different product |
-| Economics / rate intelligence | VOCABULARY ONLY | `Bliss.Domain.Economics` + reserved SQL | — | Future FKs to Creator/Slot/Match | ❌ engine | Architecture tests | Do not apply schema yet |
+| Economics / rate intelligence | PHASE 1 REFERENCE DATA | Four EF tables + `api/economics` GETs | uuid | Observation → market/source | 🟡 no engine | Persistence/API/UI tests | Recommendations and quotes absent |
 
 ## Bliss Phase 1 concept audit (re-verified in source, not from prior chat)
 

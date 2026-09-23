@@ -28,7 +28,7 @@ COMPLETE requires evidence. Subjective guesses are not used.
 | AD-DELIVERY | Bliss | Production delivery | SlotType strings | 🟡 schema / ❌ runtime | PRE/MID/POST/LOWER_THIRD only | Slot persist | High if demo=prod | Placements | Do not treat website demo as engine |
 | MEASURE | Alpha/Bliss | Impressions/clicks/etc | — | ❌ | No tables | — | — | Placement IDs | New |
 | FIN-BLISS | Bliss | Media ledger | — | ❌ | — | — | 🔴 | Measurement | Separate from Auto finance |
-| ECO-BLISS | Bliss | Inventory rate intelligence | Vocabulary + reserved SQL | 🟡 docs | `docs/economics/` | `EconomicsBoundaryTests` | Med if faked | After WP current sequence | Do not hard-code CPM or 20/80 |
+| ECO-BLISS | Bliss | Inventory rate intelligence | Phase 1 reference data + GET UI | 🟡 foundation | `docs/economics/PHASE-1-EVIDENCE.md` | Persistence/API/UI tests | Med if faked | Later phases gated | Do not hard-code CPM or 20/80 |
 | FIN-AUTO | Alpha Auto | Order payments/settlements | Many tables + providers | 🟡 | Code present; 🧪 none; 🔐 leaks | None | 🔴 | Rotate secrets first | Do not reuse as media ledger |
 | AUTH-BLISS | Bliss | AuthN/Z | `UseAuthorization` only | ❌ | Program.cs | None | 🔐 later | Product decision | Not Phase 1 |
 | N8N | All | Orchestration | — | ❌ | Zero n8n workflow files in these repos | — | — | APIs | Do not put truth in n8n |
@@ -91,11 +91,15 @@ Impressions, views, clicks, conversions, sales, revenue, completion, renewal, re
 
 ## Economics & Rate Intelligence gap (Bliss)
 
-Future bounded context. **Do not implement in current Wedding Planner phases.**
+Separate bounded context. **Do not implement inside Wedding Planner phases.**
 
-Documented: architecture, integration points, reserved PostgreSQL schema, pricing-model vocabulary.
+IMPLEMENTED Phase 1: EF entities/migration for geographic markets,
+pricing models, research sources, and benchmark observations; GET-only
+API; read-only operator visibility; PostgreSQL evidence.
 
-MISSING: EF entities/migrations, recommendation engine, quotes, market observations, n8n research jobs, AI extraction with provenance writes.
+MISSING (later gated phases): recommendation engine, quotes,
+creator/audience snapshots, market/industry profiles, compensation
+rules, n8n research jobs, and AI extraction with provenance writes.
 
 Must not: universal Alpha price, dollars-per-minute as the product, hard-coded launch-city rate cards, compiled 20/80 compensation, AI-invented rates without observations.
 

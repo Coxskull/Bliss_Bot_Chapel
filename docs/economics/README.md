@@ -17,6 +17,7 @@ creator/advertiser databases.
 | `INTEGRATION-POINTS.md` | Who may call the engine, and who must not invent prices |
 | `PHASE-ROADMAP.md` | Independent Economics phase sequence and gates |
 | `PHASE-1-ENGINEERING-CONTRACT.md` | Authorized reference-data foundation |
+| `PHASE-1-EVIDENCE.md` | Phase 1 tests, API/database snapshots, and walkthrough |
 | `FUTURE-ENGINEERING-CONTRACT.md` | Original reserved contract; superseded for Phase 1 |
 | `../sql/future-economics-schema.sql` | PostgreSQL/Supabase-capable schema. **Do not apply** until a future contract is accepted |
 

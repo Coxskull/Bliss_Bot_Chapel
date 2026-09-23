@@ -66,7 +66,7 @@ flowchart TD
 | Human review | C | Match + eligibility outputs | |
 | Campaign FKs to Match | C | Product decision | Additive migration |
 | Wedding Planner Phases 1–9 | C | Accepted WP contracts | Must not invent prices |
-| Economics & Rate Intelligence | D | Matching + inventory + later WP quote need | Separate bounded context; reserved schema only today |
+| Economics & Rate Intelligence | D | Phase 1 reference foundation exists; engine needs matching + inventory + later WP quote need | Separate bounded context; later phases gated |
 | Ad delivery | C | Slots + placements | Not the Auto website |
 | Measurement | C | Placement IDs | Feeds historical economics later |
 | Media ledger | C | Measurement + finance design | **Not** Auto order ledger; separate from market-value calc |
