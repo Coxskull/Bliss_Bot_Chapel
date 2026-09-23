@@ -167,9 +167,9 @@
         <section class="view" id="view-wedding-planner" aria-labelledby="wedding-planner-title">
           <div class="section-intro">
             <div>
-              <p class="eyebrow">WEDDING PLANNER FOUNDATION</p>
-              <h2 id="wedding-planner-title">Advertiser workspace and session ledger</h2>
-              <p>Open the primary workspace, resume planning sessions, and append durable human messages. Phase 1 does not invoke AI, Color Intelligence, Curator, or campaign placement.</p>
+              <p class="eyebrow">WEDDING PLANNER + ECONOMICS</p>
+              <h2 id="wedding-planner-title">Advertiser planning and rate-intelligence handshake</h2>
+              <p>Resume advertiser-owned sessions and ask the .NET Economics Engine for explainable ranges on approved, compatible inventory.</p>
             </div>
           </div>
           <div class="safety-note"><strong>Infrastructure only.</strong> Ownership is enforced by the API. The browser never becomes the authority, and there is no Wedding Planner chatbot in this phase.</div>
@@ -205,6 +205,24 @@
                 <div class="form-actions"><button class="primary-button" type="submit">Append message <span>→</span></button></div>
               </form>
               <section class="panel ledger-panel"><div class="panel-header"><div><p class="eyebrow">RESUME</p><h3>Session messages</h3></div></div><div id="wedding-planner-message-list" class="activity-list"></div></section>
+              <form class="panel workflow-form" id="wedding-planner-economics-form">
+                <div class="panel-header"><div><p class="eyebrow">ECONOMICS PHASE 8 · CONTROLLED HANDSHAKE</p><h3>Ask Economics for a rate range</h3></div><span class="record-tag">NOT A QUOTE</span></div>
+                <div class="safety-note"><strong>Wedding Planner never invents prices.</strong> This request requires an approved Bliss match and compatible available inventory, then delegates all calculation to the versioned .NET Economics Engine. It does not approve, place, compensate, or settle.</div>
+                <div class="form-grid">
+                  <label class="span-two"><span>Planning session *</span><select name="sessionId" id="wedding-planner-economics-session" required></select></label>
+                  <label class="span-two"><span>Approved Bliss match *</span><select name="blissMatchId" id="wedding-planner-economics-match" required></select></label>
+                  <label class="span-two"><span>Compatible available inventory *</span><select name="adInventorySlotId" id="wedding-planner-economics-slot" required></select></label>
+                  <label><span>Market *</span><select name="geographicMarketId" id="wedding-planner-economics-market" required></select></label>
+                  <label><span>Pricing basis *</span><select name="pricingModelCode" id="wedding-planner-economics-model" required></select></label>
+                  <label><span>Duration (seconds)</span><input name="durationSeconds" type="number" min="1" placeholder="Use slot duration"></label>
+                  <label><span>Industry category</span><input name="industryCategory" maxlength="128" placeholder="Use opportunity category"></label>
+                  <label class="span-two"><span>Campaign objective</span><input name="campaignObjective" maxlength="256" value="Reach women 18–34 in Manila"></label>
+                  <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="WEDDING_PLANNER" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="wedding-planner-economics-key" readonly required><button type="button" id="regenerate-wedding-planner-economics-key" aria-label="Generate a new economics handshake key">↻</button></div></label></div></details>
+                </div>
+                <div class="form-actions"><small>The returned range remains an immutable recommendation, not a commercial quote.</small><button class="primary-button" type="submit">Ask Economics <span>→</span></button></div>
+              </form>
+              <div id="wedding-planner-economics-result"></div>
+              <section class="panel ledger-panel"><div class="panel-header"><div><p class="eyebrow">PRESENTATION LEDGER</p><h3>Session rate intelligence</h3></div><span class="record-tag">ECONOMICS AUTHORITY</span></div><div id="wedding-planner-economics-list" class="activity-list"></div></section>
             </div>
           </div>
         </section>

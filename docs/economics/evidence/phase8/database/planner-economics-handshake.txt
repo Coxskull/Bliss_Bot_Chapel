@@ -1,0 +1,39 @@
+Live PostgreSQL verification
+Database: bliss_economics_phase1
+Migration: 20260923104329_EconomicsPhase8WeddingPlannerHandshake
+
+request_id        | b52927e0-97c2-4e8c-899c-473ee282057f
+advertiser        | Harbor Audio Labs
+session_id        | c0e35be7-b408-4635-9728-1d06a6d16a2c
+match_status      | APPROVED
+content           | Chapel Conversations Episode 1
+inventory         | MID_ROLL
+market            | PH-MNL
+pricing_basis     | CPM
+handshake_status  | RECOMMENDATION_READY
+recommendation_id | 519ae899-64d1-48f7-8b98-577ae204f490
+range_low         | 198.00
+range_target      | 242.00
+range_high        | 286.00
+currency          | PHP
+confidence        | MEDIUM
+pricing_rule      | economics-rate/1.0.0
+requested_by      | DEV_OPERATOR
+
+handshake_count      | 1
+recommendation_count | 1
+quote_count          | 0
+placement_count      | 0
+compensation_count   | 0
+
+Append-only audit:
+
+action      | ECONOMICS_RECOMMENDATION_REQUESTED
+actor_type  | OPERATOR
+actor_label | DEV_OPERATOR
+outcome     | RECOMMENDATION_READY
+detail      | Economics request b52927e0-97c2-4e8c-899c-473ee282057f; recommendation 519ae899-64d1-48f7-8b98-577ae204f490.
+
+All Phase 8 foreign keys use ON DELETE RESTRICT. SourceSystem +
+IdempotencyKey is unique for handshake requests, and each recommendation
+can be linked by at most one handshake request.

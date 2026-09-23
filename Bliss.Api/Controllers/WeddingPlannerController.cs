@@ -1,6 +1,7 @@
 using Bliss.Api.Contracts;
 using Bliss.Api.Runtime;
 using Bliss.Api.Security;
+using Bliss.Domain.Entities;
 using Bliss.Domain.WeddingPlanner;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +14,7 @@ namespace Bliss.Api.Controllers;
 [Route("api/wedding-planner")]
 public sealed class WeddingPlannerController(
     WeddingPlannerService weddingPlanner,
+    WeddingPlannerEconomicsHandshakeService economicsHandshake,
     WeddingPlannerAccess access) : ControllerBase
 {
     [HttpGet("workspaces")]
@@ -210,6 +212,79 @@ public sealed class WeddingPlannerController(
         });
     }
 
+    [HttpGet("sessions/{sessionId:guid}/economics/recommendations")]
+    public async Task<ActionResult> ListEconomicsRecommendations(
+        Guid sessionId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var items = await economicsHandshake.ListAsync(
+                sessionId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(items.Select(ToEconomicsDto).ToList());
+        });
+    }
+
+    [HttpGet("economics/recommendations/{requestId:guid}")]
+    public async Task<ActionResult> GetEconomicsRecommendation(
+        Guid requestId,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = access.Resolve(User);
+            var result = await economicsHandshake.GetAsync(
+                requestId,
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                cancellationToken);
+            return Ok(ToEconomicsDto(result));
+        });
+    }
+
+    [Authorize]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("sessions/{sessionId:guid}/economics/recommendations")]
+    public async Task<ActionResult> RequestEconomicsRecommendation(
+        Guid sessionId,
+        RequestWeddingPlannerEconomicsRecommendationRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await ExecuteAsync(async () =>
+        {
+            var actor = RequireWrite();
+            var result = await economicsHandshake.RequestAsync(
+                sessionId,
+                new RequestWeddingPlannerRecommendationCommand(
+                    request.BlissMatchId,
+                    request.AdInventorySlotId,
+                    request.GeographicMarketId,
+                    request.PricingModelCode,
+                    request.DurationSeconds,
+                    request.IndustryCategory,
+                    request.CampaignObjective,
+                    actor.ActorLabel,
+                    request.SourceSystem,
+                    request.IdempotencyKey),
+                actor.IsChapelStaff,
+                actor.BoundAdvertiserId,
+                actor.ActorType,
+                actor.ActorLabel,
+                RequestCorrelation.Resolve(HttpContext),
+                cancellationToken);
+            var dto = ToEconomicsDto(result);
+            return result.IsReplay
+                ? Ok(dto)
+                : Created(
+                    $"/api/wedding-planner/economics/recommendations/{dto.Id}",
+                    dto);
+        });
+    }
+
     [HttpGet("workspaces/{workspaceId:guid}/audit")]
     public async Task<ActionResult> ListAudit(
         Guid workspaceId,
@@ -313,4 +388,73 @@ public sealed class WeddingPlannerController(
             result.IdempotencyKey,
             result.CreatedAt,
             result.IsReplay);
+
+    private static WeddingPlannerEconomicsRequestDto ToEconomicsDto(
+        WeddingPlannerEconomicsRequestResult result)
+    {
+        var request = result.Request;
+        return new(
+            request.Id,
+            request.WorkspaceId,
+            request.SessionId,
+            request.AdvertiserId,
+            request.BlissMatchId,
+            request.AdInventorySlotId,
+            request.GeographicMarketId,
+            request.PricingModelId,
+            request.Status,
+            request.RequestedBy,
+            request.SourceSystem,
+            request.IdempotencyKey,
+            request.CreatedAt,
+            ToRecommendationDto(request.RateRecommendation),
+            result.IsReplay);
+    }
+
+    private static RateRecommendationDto ToRecommendationDto(RateRecommendation x) =>
+        new(
+            x.Id,
+            x.CreatorId,
+            x.Creator.Name,
+            x.ContentItemId,
+            x.AdInventorySlotId,
+            x.AdInventorySlot?.SlotType,
+            x.GeographicMarketId,
+            x.GeographicMarket.MarketCode,
+            x.PricingModelId,
+            x.PricingModel.Code,
+            x.PricingRuleVersionId,
+            x.PricingRuleVersion.Version,
+            x.IndustryCategory,
+            x.CampaignObjective,
+            x.DurationSeconds,
+            x.CurrencyCode,
+            x.RangeLow,
+            x.RangeTarget,
+            x.RangeHigh,
+            x.EstimatedImpressions,
+            x.ConfidenceLevel,
+            x.BenchmarkAsOf,
+            x.InputSnapshotJson,
+            x.SourceSystem,
+            x.IdempotencyKey,
+            x.CreatedAt,
+            x.Factors.OrderBy(f => f.SortOrder)
+                .Select(f => new RateRecommendationFactorDto(
+                    f.FactorCode,
+                    f.Label,
+                    f.NumericValue,
+                    f.AdjustmentMultiplier,
+                    f.Rationale,
+                    f.SortOrder))
+                .ToList(),
+            x.Sources.Select(s => new RateRecommendationSourceDto(
+                s.ResearchSourceId,
+                s.ResearchSource?.Name,
+                s.InventoryRateBenchmarkId,
+                s.CreatorAudienceSnapshotId,
+                s.CreatorPerformanceSnapshotId,
+                s.Role))
+                .ToList(),
+            false);
 }

@@ -55,7 +55,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Last verification", body);
         Assert.Contains("Recent verifications", body);
         Assert.Contains("Wedding Planner", body);
-        Assert.Contains("Advertiser workspace and session ledger", body);
+        Assert.Contains("Advertiser planning and rate-intelligence handshake", body);
         Assert.Contains("Economics reference data", body);
         Assert.Contains("Phase 7 stages public research before it can become durable economics evidence", body);
         Assert.Contains("Generate explainable range", body);
@@ -67,6 +67,8 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Compensation illustrations", body);
         Assert.Contains("NOT SETTLEMENT", body);
         Assert.Contains("Queue bounded research", body);
+        Assert.Contains("Ask Economics for a rate range", body);
+        Assert.Contains("Wedding Planner never invents prices", body);
         Assert.Contains("Stage n8n / AI candidate", body);
         Assert.Contains("Review staged candidate", body);
         Assert.Contains("AI research is never silent truth", body);
@@ -93,6 +95,8 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("bliss-verify-", script);
         Assert.Contains("event.detail", script);
         Assert.Contains("/api/wedding-planner/workspaces", script);
+        Assert.Contains("/economics/recommendations", script);
+        Assert.Contains("Economics recommendation ready—not a quote", script);
         Assert.Contains("/api/economics/markets", script);
         Assert.Contains("/api/economics/pricing-models", script);
         Assert.Contains("/api/economics/observations", script);
@@ -111,7 +115,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("/api/economics/compensation-illustrations", script);
         Assert.Contains("/api/economics/research-runs", script);
         Assert.Contains("/api/economics/research-candidates/", script);
-        Assert.Contains("Phase 1 does not invoke AI", body);
+        Assert.Contains("The browser never becomes the authority", body);
         Assert.DoesNotContain("TEST ENVIRONMENT", body);
         Assert.DoesNotContain("TEST_OPERATOR", body);
     }

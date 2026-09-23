@@ -1,8 +1,8 @@
 # Economics Engine — Integration Points
 
 This module is a **callee**. Other Bliss Chapel systems keep their
-authority. None of these call sites are implemented in the current
-phase.
+authority. Economics Phase 8 implements only the controlled Wedding
+Planner recommendation handshake; later call sites remain gated.
 
 ## Callers (future)
 
@@ -32,7 +32,7 @@ Economics reads; it does not become source of truth for these records.
 | System | Rule |
 | --- | --- |
 | Deterministic matching | Must not call Economics. Compatibility ≠ price |
-| Wedding Planner Phase 1 | Workspace/session/message only. No rate calls |
+| Wedding Planner Phase 1 foundation | Workspace/session/message ownership remains unchanged. Economics Phase 8 adds a separate, tenant-owned recommendation link |
 | n8n | May fetch public research into staging payloads. .NET writes observations. n8n is not the rate database |
 | AI providers | May extract candidate benchmarks. Status stays `ESTIMATED` or `INFERRED` until a human or approved verifier marks `VERIFIED` |
 | Alpha Auto order ledger | Forbidden. Different product and bounded context |
@@ -87,5 +87,6 @@ Matching ──compatibility──► Inventory
 - `AdvertiserOpportunity` commission/fee fields are documented as
   affiliate terms, not inventory market value.
 - Reserved SQL is not applied (`docs/sql/future-economics-schema.sql`).
-- Architecture tests fail if an Economics HTTP API appears before a
-  future contract, or if default compensation shares are compiled in.
+- Architecture tests constrain Economics and Wedding Planner writes to
+  accepted phase contracts and fail if default compensation shares are
+  compiled in.
