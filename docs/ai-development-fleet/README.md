@@ -24,6 +24,7 @@ Production-style credentials were found **committed** in Alpha Auto repositories
 | 7 | Campaign engine gap | `implementation-matrix.md` § Campaign |
 | 8 | Ad delivery gap | `implementation-matrix.md` § Ad Delivery |
 | 9 | Measurement gap | `implementation-matrix.md` § Measurement |
+| 9b | Economics & rate intelligence (future) | `implementation-matrix.md` § Economics; `docs/bliss-economics/FUTURE-BOUNDED-CONTEXT.md` |
 | 10 | Financial engine gap | `implementation-matrix.md` § Financial |
 | 11 | Security findings | `security-findings.md` |
 | 12 | n8n findings | `implementation-matrix.md` § n8n |

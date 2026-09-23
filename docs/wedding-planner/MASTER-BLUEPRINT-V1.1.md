@@ -118,4 +118,10 @@ evidence → review → acceptance. Do not auto-advance.
 
 Phase 2 conversation AI, Color Intelligence, Curator, concepts,
 multi-agent department, chaperone/QA AI, Bliss handshake, measurement
-learning, GHL coupling, n8n authority, and Alpha Auto.
+learning, GHL coupling, n8n authority, Alpha Auto, and advertising
+pricing / quotes.
+
+Wedding Planner must not invent inventory prices. Market value, quotes,
+and compensation belong to a separate future Bliss Chapel module:
+`docs/bliss-economics/FUTURE-BOUNDED-CONTEXT.md`. That module is not a
+Wedding Planner phase and must not interrupt Phases 1–9.

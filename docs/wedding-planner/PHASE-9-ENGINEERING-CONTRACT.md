@@ -35,7 +35,9 @@ deliver, publish, reserve inventory, or measure it. Phase 9 therefore:
 - never claims causal attribution, statistical significance, incrementality,
   legal compliance, or platform reconciliation;
 - produces recommendations only; it cannot revise creative, activate a
-  campaign, change spend, reserve inventory, or write to external systems.
+  campaign, change spend, reserve inventory, or write to external systems;
+- does not invent inventory prices, quotes, or compensation splits (see
+  `docs/bliss-economics/FUTURE-BOUNDED-CONTEXT.md`).
 
 ## Authority
 

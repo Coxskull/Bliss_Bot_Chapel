@@ -21,6 +21,7 @@ flowchart TD
   FF[C: Fishing Fleet]
   HUM[C: Human review]
   CAMP[C: Campaign engine extension]
+  ECO[D: Economics and rate intelligence]
   DEL[C: Ad delivery runtime]
   MEAS[C: Measurement]
   LED[C: Media financial ledger]
@@ -36,9 +37,12 @@ flowchart TD
   CHAP --> HUM
   OFF --> HUM
   HUM --> CAMP
+  CAMP --> ECO
   CAMP --> DEL
   DEL --> MEAS
   MEAS --> LED
+  MEAS --> ECO
+  LED --> ECO
   LED --> PAY
   CAMP --> N8N
 ```
@@ -57,6 +61,7 @@ flowchart TD
 | Fishing Fleet | C | Identity + provenance contracts | Global, not per-country tables |
 | Human review | C | Match + eligibility outputs | |
 | Campaign FKs to Match | C | Product decision | Additive migration |
+| Economics & rate intelligence | D | Campaign + market data + later measurement/ledger | Separate bounded context; WP asks, does not price. See `docs/bliss-economics/FUTURE-BOUNDED-CONTEXT.md` |
 | Ad delivery | C | Slots + placements | Not the Auto website |
 | Measurement | C | Placement IDs | |
 | Media ledger | C | Measurement + finance design | **Not** Auto order ledger |

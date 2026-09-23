@@ -112,3 +112,10 @@ Indexes: FKs indexed; CreatorId and ContentItemId **not unique**. Delete: Restri
 ## Alpha Auto finance (do not treat as Bliss ledger)
 
 Exists in `alpha-backend`: `payments`, `order_financials`, `settlement_queue`, `tax_ledger_entries`, `supplier_payouts`, `driver_payouts`, `entrepreneur_earnings`. Bound to **auto parts orders**, not Bliss matches.
+
+## Economics & rate intelligence (not implemented)
+
+There is no Bliss pricing, quote, or market-benchmark module in the current
+code. Matching, Wedding Planner Phases 1–9, and campaign `PLANNED` binds
+must not invent rates. The future bounded context is documented at
+`docs/bliss-economics/FUTURE-BOUNDED-CONTEXT.md`.
