@@ -1,0 +1,10 @@
+[
+  {
+    "id": "ec000011-0000-0000-0000-000000000001",
+    "version": "economics-rate/1.0.0",
+    "name": "Deterministic bootstrap range v1",
+    "documentJson": "{\"Reach100kPlusMultiplier\": 1.30, \"Reach10kTo49kMultiplier\": 1.00, \"Reach50kTo99kMultiplier\": 1.15, \"ReachBelow10kMultiplier\": 0.80, \"Engagement7PercentPlusMultiplier\": 1.10, \"Engagement4To699PercentMultiplier\": 1.00, \"EngagementBelow4PercentMultiplier\": 0.90}",
+    "isActive": true,
+    "createdAt": "2026-09-23T03:00:00Z"
+  }
+]

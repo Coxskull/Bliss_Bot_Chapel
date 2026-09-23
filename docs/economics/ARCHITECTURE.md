@@ -313,17 +313,26 @@ market rates and must not be read as the Economics Engine.
 
 ## API status
 
-Economics Phase 1 implements GET-only reference data:
+Economics Phases 1–4 implement reference data, versioned economic
+inputs, and controlled deterministic recommendations:
 
 - `GET /api/economics/markets`
 - `GET /api/economics/pricing-models`
 - `GET /api/economics/research-sources`
 - `GET /api/economics/observations`
+- `GET /api/economics/audience-snapshots`
+- `GET /api/economics/performance-snapshots`
+- `GET /api/economics/market-profiles`
+- `GET /api/economics/industry-profiles`
+- `GET /api/economics/inventory-benchmarks`
+- `GET /api/economics/exchange-rates`
+- `GET /api/economics/pricing-rule-versions`
+- `POST /api/economics/recommendations`
+- `GET /api/economics/recommendations`
+- `GET /api/economics/recommendations/{id}`
 
 Reserved for later accepted contracts:
 
-- `POST /api/economics/recommendations`
-- `GET /api/economics/recommendations/{id}`
 - `POST /api/economics/quotes`
 - `GET /api/economics/quotes/{id}`
 
@@ -340,8 +349,9 @@ Wedding Planner must call .NET. It must not call an LLM for a price.
 | Wedding Planner Phase 9 | Measurement/learning. Consumes historical economics; does not own pricing rules. |
 | Economics Phase 1 | Reference-data foundation implemented and accepted. |
 | Economics Phase 2 | Creator audience/performance snapshots implemented and accepted. |
-| Economics Phase 3 | Market/industry profiles, inventory benchmarks, and FX implemented; pending owner acceptance. |
-| Economics Phases 4–9 | Individually gated by `PHASE-ROADMAP.md`; not authorized. |
+| Economics Phase 3 | Market/industry profiles, inventory benchmarks, and FX implemented and accepted. |
+| Economics Phase 4 | Deterministic recommendations implemented; pending owner acceptance. |
+| Economics Phases 5–9 | Individually gated by `PHASE-ROADMAP.md`; not authorized. |
 | Media ledger / payouts | Separate later work. Reads contracted amounts; does not price inventory. |
 
 Do not auto-advance this module into the current Wedding Planner

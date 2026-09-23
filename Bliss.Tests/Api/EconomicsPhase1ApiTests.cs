@@ -48,15 +48,13 @@ public sealed class EconomicsPhase1ApiTests : IClassFixture<BlissApiFactory>
     }
 
     [Fact]
-    public async Task Economics_phase1_does_not_expose_write_or_quote_endpoints()
+    public async Task Economics_reference_routes_do_not_expose_generic_writes_or_quotes()
     {
         var client = _factory.CreateClient();
         using var body = new StringContent("{}", Encoding.UTF8, "application/json");
 
         Assert.Equal(HttpStatusCode.MethodNotAllowed,
             (await client.PostAsync("/api/economics/observations", body)).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound,
-            (await client.PostAsync("/api/economics/recommendations", body)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound,
             (await client.PostAsync("/api/economics/quotes", body)).StatusCode);
     }

@@ -23,6 +23,7 @@ const state = {
   economicsAudienceSnapshots: [], economicsPerformanceSnapshots: [],
   economicsMarketProfiles: [], economicsIndustryProfiles: [],
   economicsInventoryBenchmarks: [], economicsExchangeRates: [],
+  economicsPricingRules: [], economicsRecommendations: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "", economicsSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations", economicsTab: "markets",
   selectedReview: null, selectedPlacement: null,
@@ -40,6 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   generateReviewIdempotencyKey();
   generatePlacementIdempotencyKey();
   generateWeddingPlannerKeys();
+  fillKey("#economics-idempotency");
   route();
   await loadSession();
   syncOperatorUi();
@@ -122,7 +124,9 @@ async function loadDashboard() {
       api("/api/economics/market-profiles").catch(() => []),
       api("/api/economics/industry-profiles").catch(() => []),
       api("/api/economics/inventory-benchmarks").catch(() => []),
-      api("/api/economics/exchange-rates").catch(() => [])
+      api("/api/economics/exchange-rates").catch(() => []),
+      api("/api/economics/pricing-rule-versions").catch(() => []),
+      api("/api/economics/recommendations").catch(() => [])
     ]);
     const [
       matches, creators, advertisers, programs, opportunities, content, campaigns,
@@ -131,7 +135,8 @@ async function loadDashboard() {
       runtime, weddingPlannerWorkspaces, economicsMarkets, economicsModels,
       economicsSources, economicsObservations, economicsAudienceSnapshots,
       economicsPerformanceSnapshots, economicsMarketProfiles, economicsIndustryProfiles,
-      economicsInventoryBenchmarks, economicsExchangeRates
+      economicsInventoryBenchmarks, economicsExchangeRates, economicsPricingRules,
+      economicsRecommendations
     ] = values;
     const [contentDetails, ruleDetails] = await Promise.all([
       Promise.all(content.map(item => api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] })))),
@@ -145,7 +150,8 @@ async function loadDashboard() {
       economicsMarkets, economicsModels, economicsSources, economicsObservations,
       economicsAudienceSnapshots, economicsPerformanceSnapshots,
       economicsMarketProfiles, economicsIndustryProfiles,
-      economicsInventoryBenchmarks, economicsExchangeRates, loaded: true
+      economicsInventoryBenchmarks, economicsExchangeRates, economicsPricingRules,
+      economicsRecommendations, loaded: true
     });
     state.selectedReview = reviewQueue.some(x => x.blissMatchId === state.selectedReview)
       ? state.selectedReview : reviewQueue[0]?.blissMatchId || null;
@@ -364,6 +370,41 @@ function renderEconomics() {
   $("#economics-context-count").textContent =
     state.economicsMarketProfiles.length + state.economicsIndustryProfiles.length
     + state.economicsInventoryBenchmarks.length + state.economicsExchangeRates.length;
+  $("#economics-recommendation-count").textContent = state.economicsRecommendations.length;
+
+  const creatorSelect = $("#economics-creator");
+  const slotSelect = $("#economics-slot");
+  const marketSelect = $("#economics-market");
+  const modelSelect = $("#economics-pricing-model");
+  const selectedCreator = creatorSelect.value;
+  const selectedSlot = slotSelect.value;
+  const selectedMarket = marketSelect.value;
+  const selectedModel = modelSelect.value;
+  creatorSelect.innerHTML = state.creators.map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join("");
+  slotSelect.innerHTML = state.contentDetails.flatMap(item =>
+    (item.adInventorySlots || []).map(slot =>
+      `<option value="${slot.id}">${escapeHtml(creatorById(item.creatorId)?.name || "Unknown")} · ${escapeHtml(friendlyStatus(slot.slotType))} · ${slot.durationSeconds ?? "?"}s</option>`)).join("");
+  marketSelect.innerHTML = state.economicsMarkets.map(x => `<option value="${x.id}">${escapeHtml(x.marketCode)} · ${escapeHtml(x.cityName || x.countryCode)}</option>`).join("");
+  modelSelect.innerHTML = state.economicsModels.map(x => `<option value="${x.code}">${escapeHtml(x.code)} · ${escapeHtml(x.name)}</option>`).join("");
+  if ([...creatorSelect.options].some(x => x.value === selectedCreator)) creatorSelect.value = selectedCreator;
+  if ([...slotSelect.options].some(x => x.value === selectedSlot)) slotSelect.value = selectedSlot;
+  if ([...marketSelect.options].some(x => x.value === selectedMarket)) marketSelect.value = selectedMarket;
+  if ([...modelSelect.options].some(x => x.value === selectedModel)) modelSelect.value = selectedModel;
+  else if ([...modelSelect.options].some(x => x.value === "CPM")) modelSelect.value = "CPM";
+
+  const latestRecommendation = state.economicsRecommendations[0];
+  $("#economics-recommendation-result").innerHTML = latestRecommendation ? `
+    <section class="panel">
+      <div class="panel-header"><div><p class="eyebrow">LATEST RANGE</p><h3>${escapeHtml(latestRecommendation.creatorName)} · ${escapeHtml(friendlyStatus(latestRecommendation.inventorySlotType))}</h3></div>${badge(latestRecommendation.confidenceLevel)}</div>
+      <div class="stat-grid">
+        <article class="stat-card"><strong>${latestRecommendation.rangeLow} ${escapeHtml(latestRecommendation.currencyCode)}</strong><span>Low</span></article>
+        <article class="stat-card"><strong>${latestRecommendation.rangeTarget} ${escapeHtml(latestRecommendation.currencyCode)}</strong><span>Target</span></article>
+        <article class="stat-card"><strong>${latestRecommendation.rangeHigh} ${escapeHtml(latestRecommendation.currencyCode)}</strong><span>High</span></article>
+        <article class="stat-card"><strong>${Number(latestRecommendation.estimatedImpressions || 0).toLocaleString()}</strong><span>Estimated impressions</span></article>
+      </div>
+      <p><strong>${escapeHtml(latestRecommendation.pricingModelCode)}</strong> · ${escapeHtml(latestRecommendation.marketCode)} · ${latestRecommendation.durationSeconds ?? "UNKNOWN"} seconds · rule ${code(latestRecommendation.pricingRuleVersion)}</p>
+      <div class="slot-row">${latestRecommendation.factors.map(x => `<span class="slot-tag">${escapeHtml(x.label)} × ${x.adjustmentMultiplier ?? "—"}</span>`).join("")}</div>
+    </section>` : "";
 
   const term = state.economicsSearch.toLowerCase();
   let headers = [], rows = [];
@@ -453,7 +494,7 @@ function renderEconomics() {
       formatDate(x.effectiveAt),
       `${escapeHtml(x.researchSourceName || "Unknown source")}<br>${badge(x.verificationStatus)} ${badge(x.confidenceLevel)}`
     ]);
-  } else {
+  } else if (state.economicsTab === "exchange-rates") {
     headers = ["Currency pair", "Observed", "Synthetic rate", "Retrieved", "Provenance"];
     rows = state.economicsExchangeRates.filter(x => auditHaystack(x).includes(term)).map(x => [
       `${code(x.baseCurrencyCode)} → ${code(x.quoteCurrencyCode)}`,
@@ -461,6 +502,16 @@ function renderEconomics() {
       `<strong>${x.rate}</strong><br><small>TEST fixture—not for settlement</small>`,
       formatDate(x.retrievedAt),
       `${escapeHtml(x.researchSourceName || "Unknown source")}<br>${badge(x.verificationStatus)} ${badge(x.confidenceLevel)}`
+    ]);
+  } else {
+    headers = ["Created", "Creator / inventory", "Range", "Basis / market", "Confidence", "Factors / sources"];
+    rows = state.economicsRecommendations.filter(x => auditHaystack(x).includes(term)).map(x => [
+      formatDate(x.createdAt),
+      `<strong>${escapeHtml(x.creatorName)}</strong><br>${escapeHtml(friendlyStatus(x.inventorySlotType))} · ${x.durationSeconds ?? "?"}s`,
+      `<strong>${x.rangeLow} / ${x.rangeTarget} / ${x.rangeHigh} ${escapeHtml(x.currencyCode)}</strong><br>${Number(x.estimatedImpressions || 0).toLocaleString()} estimated impressions`,
+      `${code(x.pricingModelCode)} · ${code(x.marketCode)}<br>Rule ${code(x.pricingRuleVersion)}`,
+      badge(x.confidenceLevel),
+      `${x.factors.length} factors · ${x.sources.length} source set<br><small>${escapeHtml(x.idempotencyKey)}</small>`
     ]);
   }
   $("#economics-content").innerHTML = rows.length
@@ -830,6 +881,34 @@ async function submitPlacement(form) {
   finally{submit.disabled=false;submit.innerHTML=`Plan placement <span>→</span>`;}
 }
 
+async function submitEconomicsRecommendation(form) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+  const submit=form.querySelector('button[type="submit"]'),data=new FormData(form),value=name=>String(data.get(name)||"").trim();
+  submit.disabled=true;submit.textContent="Generating…";
+  try {
+    const result=await api("/api/economics/recommendations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      creatorId:value("creatorId"),
+      adInventorySlotId:value("adInventorySlotId"),
+      geographicMarketId:value("geographicMarketId"),
+      pricingModelCode:value("pricingModelCode"),
+      durationSeconds:value("durationSeconds")?Number(value("durationSeconds")):null,
+      industryCategory:value("industryCategory")||null,
+      campaignObjective:value("campaignObjective")||null,
+      sourceSystem:value("sourceSystem"),
+      idempotencyKey:value("idempotencyKey")
+    })});
+    toast(`Recommendation generated${result.isReplay?" (replay)":""}`);
+    fillKey("#economics-idempotency");
+    state.economicsRecommendations=await api("/api/economics/recommendations");
+    state.economicsTab="recommendations";
+    renderEconomics();
+  } catch(error){toast(error.message,true);}
+  finally{submit.disabled=false;submit.innerHTML=`Generate range <span>→</span>`;}
+}
+
 async function openCreator(id) {
   openDrawer("CREATOR PROFILE","Loading creator…",skeleton());
   try {
@@ -973,6 +1052,7 @@ function bindActions() {
   $("#workflow-form").addEventListener("submit",event=>{event.preventDefault();submitWorkflow(event.currentTarget);});
   $("#review-form").addEventListener("submit",event=>{event.preventDefault();submitReview(event.currentTarget);});
   $("#placement-form").addEventListener("submit",event=>{event.preventDefault();submitPlacement(event.currentTarget);});
+  $("#economics-recommendation-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsRecommendation(event.currentTarget);});
   $("#wedding-planner-open-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerWorkspace(event.currentTarget);});
   $("#wedding-planner-session-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerSession(event.currentTarget);});
   $("#wedding-planner-message-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerMessage(event.currentTarget);});
@@ -981,6 +1061,7 @@ function bindActions() {
   $("#regenerate-wedding-planner-workspace-key").addEventListener("click",()=>fillKey("#wedding-planner-workspace-key"));
   $("#regenerate-wedding-planner-session-key").addEventListener("click",()=>fillKey("#wedding-planner-session-key"));
   $("#regenerate-wedding-planner-message-key").addEventListener("click",()=>fillKey("#wedding-planner-message-key"));
+  $("#regenerate-economics-key").addEventListener("click",()=>fillKey("#economics-idempotency"));
   $("#placement-match").addEventListener("change",event=>{state.selectedPlacement=event.target.value;renderPlacements();});
   $("#placement-content").addEventListener("change",updatePlacementSlots);
   $("#review-match").addEventListener("change",event=>{state.selectedReview=event.target.value;renderReviews();});

@@ -1,0 +1,34 @@
+Live PostgreSQL database: bliss_economics_phase1
+Migration: 20260923061423_EconomicsPhase4Recommendations
+
+RateRecommendation
+------------------
+Id                   | 407b9033-03f1-43d3-b918-47d54ef0ea02
+RangeLow             | 198.00
+RangeTarget          | 242.00
+RangeHigh            | 286.00
+CurrencyCode         | PHP
+EstimatedImpressions | 42000
+ConfidenceLevel      | MEDIUM
+BenchmarkAsOf        | 2026-09-01 00:00:00+00
+SourceSystem         | PHASE4_EVIDENCE
+IdempotencyKey       | phase4-live-range-v1
+RuleVersion          | economics-rate/1.0.0
+FactorCount          | 5
+SourceCount          | 1
+
+Factors
+-------
+1 | BASE_BENCHMARK  | 180.000000   | 1.000000 | 180–260 PHP; benchmark ec000009-0000-0000-0000-000000000001.
+2 | AVERAGE_VIEWS  | 42000.000000 | 1.000000 | 42000 average views from snapshot ec000006-0000-0000-0000-000000000002.
+3 | ENGAGEMENT_RATE| 0.074000     | 1.100000 | 0.074 engagement from snapshot ec000006-0000-0000-0000-000000000002.
+4 | DURATION_BAND  | 60.000000    | 1.000000 | 60 seconds matched benchmark band 30–60; no per-minute multiplication.
+5 | MARKET         |              | 1.000000 | PH-MNL market benchmark selected.
+
+Sources
+-------
+ResearchSourceId             | ec000002-0000-0000-0000-000000000001
+InventoryRateBenchmarkId     | ec000009-0000-0000-0000-000000000001
+CreatorAudienceSnapshotId    | ec000005-0000-0000-0000-000000000002
+CreatorPerformanceSnapshotId | ec000006-0000-0000-0000-000000000002
+Role                         | MATERIAL_INPUTS
