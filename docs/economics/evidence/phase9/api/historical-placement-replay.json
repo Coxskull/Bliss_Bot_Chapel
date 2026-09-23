@@ -1,0 +1,8 @@
+{
+  "httpStatus": 200,
+  "id": "20060fa8-bbdb-4ada-8716-a7152dd4d115",
+  "sourceSystem": "PHASE9_EVIDENCE",
+  "idempotencyKey": "phase9-placement-live-v1",
+  "isReplay": true,
+  "assertion": "The duplicate request returned the original immutable row."
+}

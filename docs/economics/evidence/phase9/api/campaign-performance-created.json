@@ -1,0 +1,23 @@
+{
+  "httpStatus": 201,
+  "id": "da32ccaf-7737-40d1-9ef2-2fa56b9b77fa",
+  "campaignId": "dddddddd-dddd-dddd-dddd-ddddddddddd1",
+  "campaignName": "Phase 1 Foundation Campaign",
+  "actualImpressions": 50000,
+  "actualViews": 43000,
+  "actualEngagements": 3500,
+  "engagementRate": 0.07,
+  "conversions": 120,
+  "conversionValue": 1800,
+  "conversionValueCurrencyCode": "PHP",
+  "alphaPlacementCount": 1,
+  "alphaContractedAmount": 215.00,
+  "alphaContractedCurrencyCode": "PHP",
+  "effectiveCpm": 4.30,
+  "effectiveCpv": 0.005,
+  "measurementAsOf": "2026-09-23T12:00:00Z",
+  "sourceSystem": "PHASE9_EVIDENCE",
+  "idempotencyKey": "phase9-campaign-live-v1",
+  "recordedAt": "2026-09-23T12:01:03.7945326Z",
+  "isReplay": false
+}

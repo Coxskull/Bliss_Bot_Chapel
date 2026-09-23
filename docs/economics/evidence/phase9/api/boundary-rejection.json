@@ -1,0 +1,16 @@
+{
+  "httpStatus": 400,
+  "request": {
+    "campaignId": "dddddddd-dddd-dddd-dddd-ddddddddddd1",
+    "actualImpressions": null,
+    "actualViews": null,
+    "actualListens": null,
+    "actualEngagements": null,
+    "conversions": null,
+    "sourceSystem": "PHASE9_EVIDENCE",
+    "idempotencyKey": "phase9-invalid-empty-v1"
+  },
+  "response": {
+    "error": "At least one actual measurement is required."
+  }
+}

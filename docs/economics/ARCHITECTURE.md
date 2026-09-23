@@ -351,6 +351,12 @@ handshake:
 - `GET /api/wedding-planner/sessions/{sessionId}/economics/recommendations`
 - `GET /api/wedding-planner/economics/recommendations/{requestId}`
 - `POST /api/wedding-planner/sessions/{sessionId}/economics/recommendations`
+- `GET /api/economics/historical-placements`
+- `GET /api/economics/historical-placements/{id}`
+- `POST /api/economics/historical-placements`
+- `GET /api/economics/campaign-performance`
+- `GET /api/economics/campaign-performance/{id}`
+- `POST /api/economics/campaign-performance`
 
 Wedding Planner must call .NET. It must not call an LLM for a price.
 
@@ -370,8 +376,8 @@ Wedding Planner must call .NET. It must not call an LLM for a price.
 | Economics Phase 5 | Versioned quotes, approvals, and outcomes implemented and accepted. |
 | Economics Phase 6 | Versioned compensation policies and non-settlement illustrations implemented and accepted. |
 | Economics Phase 7 | Public-research queue, candidate staging, and human promotion implemented and accepted. |
-| Economics Phase 8 | Wedding Planner-to-Economics recommendation handshake implemented; pending owner acceptance. |
-| Economics Phase 9 | Historical learning remains gated by `PHASE-ROADMAP.md`; not authorized. |
+| Economics Phase 8 | Wedding Planner-to-Economics recommendation handshake implemented and accepted. |
+| Economics Phase 9 | Append-only placement actuals, campaign performance, and external-versus-Alpha comparisons implemented; pending owner acceptance. |
 | Media ledger / payouts | Separate later work. Reads contracted amounts; does not price inventory. |
 
 Do not auto-advance this module into the current Wedding Planner
