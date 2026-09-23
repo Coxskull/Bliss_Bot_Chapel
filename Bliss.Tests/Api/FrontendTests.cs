@@ -57,7 +57,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Wedding Planner", body);
         Assert.Contains("Advertiser workspace and session ledger", body);
         Assert.Contains("Economics reference data", body);
-        Assert.Contains("Phase 4 recommends ranges, not quotes", body);
+        Assert.Contains("Phase 4 recommends ranges—not quotes", body);
         Assert.Contains("Generate explainable range", body);
         Assert.Contains("Rate recommendations", body);
         Assert.Contains("Audience snapshots", body);
