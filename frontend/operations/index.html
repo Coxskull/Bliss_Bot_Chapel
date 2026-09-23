@@ -233,7 +233,7 @@
             <div><p class="eyebrow">RATE INTELLIGENCE</p><h2 id="economics-title">Economics reference data</h2><p>Inspect market geography, pricing vocabulary, and benchmark provenance without changing matching or placement.</p></div>
             <div class="section-actions"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="economics-search" type="search" placeholder="Search economics data" aria-label="Search economics data"></div></div>
           </div>
-          <div class="safety-note"><strong>Phase 6 keeps market value, commercial quote, compensation illustration, and settlement separate.</strong> Allocation policy is versioned data. An illustration creates no payable, payout, transfer, invoice, or ledger entry.</div>
+          <div class="safety-note"><strong>Phase 7 stages public research before it can become durable economics evidence.</strong> n8n fetches and retries, AI extracts candidate fields, .NET validates, and a human decides. AI research is never silent truth.</div>
           <form class="panel workflow-form" id="economics-recommendation-form">
             <div class="panel-header"><div><p class="eyebrow">PHASE 4 · DETERMINISTIC</p><h3>Generate explainable range</h3></div><span class="record-tag">NOT A QUOTE</span></div>
             <div class="safety-note"><strong>Range intelligence only.</strong> .NET applies the persisted pricing-rule version. The result requires human review and cannot contract, place, or settle inventory.</div>
@@ -285,6 +285,50 @@
             <div class="form-actions"><small>Configured shares—not a universal 20/80 rule.</small><button class="primary-button" type="submit">Generate illustration <span>→</span></button></div>
           </form>
           <div id="economics-compensation-result"></div>
+          <form class="panel workflow-form" id="economics-research-run-form">
+            <div class="panel-header"><div><p class="eyebrow">PHASE 7 · PUBLIC RESEARCH</p><h3>Queue bounded research</h3></div><span class="record-tag">N8N ORCHESTRATION</span></div>
+            <div class="safety-note"><strong>No autonomous API crawling.</strong> This stores a bounded job for the disabled-by-default n8n template. Approved provider endpoints and credentials are configured outside git.</div>
+            <div class="form-grid">
+              <label><span>Market *</span><select name="geographicMarketId" id="research-market" required></select></label>
+              <label><span>Metric *</span><input name="metric" value="GDP_PER_CAPITA_CURRENT_USD" maxlength="64" required></label>
+              <label><span>Industry category</span><input name="industryCategory" value="WOMENS_FOOTWEAR" maxlength="128"></label>
+              <label><span>Platform</span><input name="platform" value="DIGITAL" maxlength="64"></label>
+              <label class="span-two"><span>Research question *</span><input name="researchQuestion" value="What recent public economic indicator provides context for Manila advertising economics?" maxlength="2000" required></label>
+              <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Requested by *</span><input name="requestedBy" value="RESEARCH_OPERATOR" maxlength="128" required></label><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label class="span-two"><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="research-run-idempotency" readonly required><button type="button" id="regenerate-research-run-key" aria-label="Generate a new research run key">↻</button></div></label></div></details>
+            </div>
+            <div class="form-actions"><small>Creates a durable QUEUED run; it does not fetch or publish data.</small><button class="primary-button" type="submit">Queue research <span>→</span></button></div>
+          </form>
+          <form class="panel workflow-form" id="economics-research-candidate-form" hidden>
+            <div class="panel-header"><div><p class="eyebrow">UNTRUSTED EXTRACTION STAGING</p><h3>Stage n8n / AI candidate</h3></div><span class="record-tag">NOT TRUTH</span></div>
+            <div class="form-grid">
+              <label class="span-two"><span>Research run *</span><select name="researchRunId" id="research-candidate-run" required></select></label>
+              <label><span>Numeric value *</span><input name="numericValue" type="number" step=".000001" required></label>
+              <label><span>Currency</span><input name="currencyCode" value="USD" maxlength="8"></label>
+              <label><span>Public source name *</span><input name="sourceName" value="World Bank Open Data API" maxlength="256" required></label>
+              <label><span>Source type *</span><input name="sourceType" value="PUBLIC_API" maxlength="64" required></label>
+              <label class="span-two"><span>HTTPS source URL *</span><input name="sourceUrl" type="url" placeholder="https://api.worldbank.org/..." maxlength="2048" required></label>
+              <label><span>Publication date</span><input name="publicationDate" type="date"></label>
+              <label><span>Retrieved at *</span><input name="retrievedAt" id="research-retrieved-at" type="datetime-local" required></label>
+              <label><span>Confidence *</span><select name="confidenceLevel"><option>MEDIUM</option><option>LOW</option><option>UNKNOWN</option></select></label>
+              <label><span>Verification *</span><select name="verificationStatus"><option>ESTIMATED</option><option>INFERRED</option><option>UNKNOWN</option></select></label>
+              <label class="span-two"><span>Extraction model *</span><input name="extractionModel" value="TEST_STRUCTURED_EXTRACTION_V1" maxlength="128" required></label>
+              <label class="span-two"><span>Raw extraction JSON *</span><textarea name="rawPayloadJson" rows="3" required>{"evidence":"Enter exact provider payload excerpt","aiRole":"extraction only"}</textarea></label>
+              <details class="advanced-fields span-two"><summary>Callback metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="N8N_RESEARCH" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="research-candidate-idempotency" readonly required><button type="button" id="regenerate-research-candidate-key" aria-label="Generate a new candidate key">↻</button></div></label></div></details>
+            </div>
+            <div class="form-actions"><small>VERIFIED and HIGH are rejected by .NET.</small><button class="primary-button" type="submit">Stage candidate <span>→</span></button></div>
+          </form>
+          <form class="panel workflow-form" id="economics-research-review-form" hidden>
+            <div class="panel-header"><div><p class="eyebrow">HUMAN PROVENANCE GATE</p><h3>Review staged candidate</h3></div><span class="record-tag">EXPLICIT DECISION</span></div>
+            <div class="form-grid">
+              <label class="span-two"><span>Staged candidate *</span><select name="candidateId" id="research-review-candidate" required></select></label>
+              <label><span>Decision *</span><select name="decision"><option value="ACCEPT">Accept into observations</option><option value="REJECT">Reject candidate</option></select></label>
+              <label><span>Reviewer *</span><input name="reviewerLabel" value="RESEARCH_REVIEWER" maxlength="128" required></label>
+              <label class="span-two"><span>Rationale *</span><input name="rationale" value="Source and extracted value reviewed; retain non-VERIFIED status" maxlength="2000" required></label>
+              <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="research-review-idempotency" readonly required><button type="button" id="regenerate-research-review-key" aria-label="Generate a new research review key">↻</button></div></label></div></details>
+            </div>
+            <div class="form-actions"><small>Acceptance appends an observation; it never overwrites or upgrades to VERIFIED.</small><button class="primary-button" type="submit">Record review <span>→</span></button></div>
+          </form>
+          <div id="economics-research-result"></div>
           <div class="stat-grid">
             <article class="stat-card"><span class="stat-top"><span class="stat-icon mint">◎</span><span class="trend">DATA</span></span><strong id="economics-market-count">—</strong><span>Geographic markets</span><small>Country and metro are rows</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon blue">◇</span><span class="trend">VOCABULARY</span></span><strong id="economics-model-count">—</strong><span>Pricing models</span><small>No rates are stored here</small></article>
@@ -294,6 +338,7 @@
             <article class="stat-card"><span class="stat-top"><span class="stat-icon gold">◇</span><span class="trend">EXPLAINABLE</span></span><strong id="economics-recommendation-count">—</strong><span>Rate recommendations</span><small>Ranges, factors, and sources</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon sage">▣</span><span class="trend">VERSIONED</span></span><strong id="economics-quote-count">—</strong><span>Commercial quotes</span><small>Human approvals and outcomes</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon gold">%</span><span class="trend">ILLUSTRATIVE</span></span><strong id="economics-compensation-count">—</strong><span>Compensation illustrations</span><small>Never settlement or payout</small></article>
+            <article class="stat-card"><span class="stat-top"><span class="stat-icon blue">⌕</span><span class="trend">HUMAN GATED</span></span><strong id="economics-research-count">—</strong><span>Research runs</span><small>Staged before durable truth</small></article>
           </div>
           <div class="tab-row" id="economics-tabs" role="tablist">
             <button class="tab-button active" data-economics-tab="markets" role="tab" aria-selected="true">Markets</button>
@@ -309,6 +354,8 @@
             <button class="tab-button" data-economics-tab="quotes" role="tab" aria-selected="false">Quotes</button>
             <button class="tab-button" data-economics-tab="compensation-rules" role="tab" aria-selected="false">Compensation policies</button>
             <button class="tab-button" data-economics-tab="compensation-illustrations" role="tab" aria-selected="false">Compensation illustrations</button>
+            <button class="tab-button" data-economics-tab="research-runs" role="tab" aria-selected="false">Research runs</button>
+            <button class="tab-button" data-economics-tab="research-candidates" role="tab" aria-selected="false">Research candidates</button>
           </div>
           <div class="panel table-panel"><div class="table-wrap" id="economics-content"></div></div>
         </section>

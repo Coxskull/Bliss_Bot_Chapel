@@ -57,7 +57,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Wedding Planner", body);
         Assert.Contains("Advertiser workspace and session ledger", body);
         Assert.Contains("Economics reference data", body);
-        Assert.Contains("Phase 6 keeps market value, commercial quote, compensation illustration, and settlement separate", body);
+        Assert.Contains("Phase 7 stages public research before it can become durable economics evidence", body);
         Assert.Contains("Generate explainable range", body);
         Assert.Contains("Create explicit draft quote", body);
         Assert.Contains("Record human decision or advertiser response", body);
@@ -66,6 +66,10 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Illustrate configurable participant allocations", body);
         Assert.Contains("Compensation illustrations", body);
         Assert.Contains("NOT SETTLEMENT", body);
+        Assert.Contains("Queue bounded research", body);
+        Assert.Contains("Stage n8n / AI candidate", body);
+        Assert.Contains("Review staged candidate", body);
+        Assert.Contains("AI research is never silent truth", body);
         Assert.Contains("Audience snapshots", body);
         Assert.Contains("Performance snapshots", body);
         Assert.Contains("Market profiles", body);
@@ -105,6 +109,8 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("/outcomes", script);
         Assert.Contains("/api/economics/compensation-rule-versions", script);
         Assert.Contains("/api/economics/compensation-illustrations", script);
+        Assert.Contains("/api/economics/research-runs", script);
+        Assert.Contains("/api/economics/research-candidates/", script);
         Assert.Contains("Phase 1 does not invoke AI", body);
         Assert.DoesNotContain("TEST ENVIRONMENT", body);
         Assert.DoesNotContain("TEST_OPERATOR", body);

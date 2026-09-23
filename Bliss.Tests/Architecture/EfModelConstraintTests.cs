@@ -119,6 +119,12 @@ public sealed class EfModelConstraintTests
         Assert.Contains("CompensationIllustration.CompensationRuleVersionId", restrictKeys);
         Assert.Contains("CompensationIllustrationLine.CompensationIllustrationId", restrictKeys);
         Assert.Contains("CompensationIllustrationLine.CompensationRuleAllocationId", restrictKeys);
+        Assert.Contains("EconomicsResearchRun.GeographicMarketId", restrictKeys);
+        Assert.Contains("EconomicsResearchCandidate.EconomicsResearchRunId", restrictKeys);
+        Assert.Contains("EconomicsResearchCandidate.GeographicMarketId", restrictKeys);
+        Assert.Contains("EconomicsResearchCandidate.PromotedObservationId", restrictKeys);
+        Assert.Contains("EconomicsResearchReviewDecision.EconomicsResearchCandidateId", restrictKeys);
+        Assert.Contains("EconomicsResearchReviewDecision.MarketBenchmarkObservationId", restrictKeys);
     }
 
     [Fact]
@@ -342,6 +348,10 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(CompensationIllustration), nameof(CompensationIllustration.QuoteOutcomeId));
         AssertIndex(db, typeof(CompensationIllustration), nameof(CompensationIllustration.CompensationRuleVersionId));
         AssertIndex(db, typeof(CompensationIllustrationLine), nameof(CompensationIllustrationLine.CompensationIllustrationId));
+        AssertIndex(db, typeof(EconomicsResearchRun), nameof(EconomicsResearchRun.GeographicMarketId));
+        AssertIndex(db, typeof(EconomicsResearchCandidate), nameof(EconomicsResearchCandidate.EconomicsResearchRunId));
+        AssertIndex(db, typeof(EconomicsResearchCandidate), nameof(EconomicsResearchCandidate.GeographicMarketId));
+        AssertIndex(db, typeof(EconomicsResearchReviewDecision), nameof(EconomicsResearchReviewDecision.EconomicsResearchCandidateId));
     }
 
     private static void AssertIndex(BlissDbContext db, Type type, string propertyName)

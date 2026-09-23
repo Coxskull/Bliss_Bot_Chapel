@@ -1,0 +1,167 @@
+{
+  "name": "Bliss Economics - Public Research Staging (Template)",
+  "active": false,
+  "versionId": "ec000014-0000-0000-0000-000000000001",
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "nodes": [
+    {
+      "id": "note-boundary",
+      "name": "Architecture boundary",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-700, -260],
+      "parameters": {
+        "width": 540,
+        "height": 220,
+        "content": "## Candidate staging only\nn8n fetches and retries. AI extracts candidate fields. The .NET API validates and PostgreSQL stores durable state. This workflow never writes the database, verifies a benchmark, calculates a rate, creates a quote, or settles money."
+      }
+    },
+    {
+      "id": "webhook",
+      "name": "Receive bounded research run",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-640, 60],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bliss-economics-research-job",
+        "responseMode": "lastNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "validate-run-id",
+      "name": "Validate run id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-400, 60],
+      "parameters": {
+        "jsCode": "const runId = String($json.body?.runId || '').trim();\nif (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(runId)) throw new Error('A valid bounded runId is required.');\nreturn [{ json: { runId } }];"
+      }
+    },
+    {
+      "id": "load-run",
+      "name": "Load run context from .NET",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-150, 60],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.BLISS_API_BASE + '/api/economics/research-runs/' + $json.runId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURE_IN_N8N",
+          "name": "Bliss service credential"
+        }
+      }
+    },
+    {
+      "id": "approved-research",
+      "name": "Call approved research endpoint",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [100, 60],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APPROVED_RESEARCH_ENDPOINT }}",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ marketCode: $json.marketCode, metric: $json.metric, researchQuestion: $json.researchQuestion, industryCategory: $json.industryCategory, platform: $json.platform, inventorySlotType: $json.inventorySlotType }) }}",
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
+      "id": "ai-extraction",
+      "name": "Call approved AI extractor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [350, 60],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.APPROVED_AI_EXTRACTION_ENDPOINT }}",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ schema: 'bliss-economics-candidate-v1', instruction: 'Extract candidate fields only. Never mark VERIFIED or HIGH.', researchPayload: $json }) }}",
+        "options": {
+          "timeout": 60000
+        }
+      }
+    },
+    {
+      "id": "constrain-candidate",
+      "name": "Constrain untrusted candidate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 60],
+      "parameters": {
+        "jsCode": "const x = $json;\nif (String(x.verificationStatus || '').toUpperCase() === 'VERIFIED') throw new Error('AI cannot submit VERIFIED.');\nif (String(x.confidenceLevel || '').toUpperCase() === 'HIGH') throw new Error('AI cannot submit HIGH confidence.');\nreturn [{ json: {\n  numericValue: x.numericValue ?? null,\n  rangeLow: x.rangeLow ?? null,\n  rangeHigh: x.rangeHigh ?? null,\n  currencyCode: x.currencyCode ?? null,\n  sourceName: x.sourceName,\n  sourceUrl: x.sourceUrl,\n  sourceType: x.sourceType || 'PUBLIC_WEB',\n  publicationDate: x.publicationDate ?? null,\n  retrievedAt: x.retrievedAt || new Date().toISOString(),\n  confidenceLevel: String(x.confidenceLevel || 'UNKNOWN').toUpperCase(),\n  verificationStatus: String(x.verificationStatus || 'INFERRED').toUpperCase(),\n  extractionModel: x.extractionModel || 'CONFIGURE_MODEL_ID',\n  rawPayloadJson: JSON.stringify(x.rawPayload ?? x),\n  sourceSystem: 'N8N_RESEARCH',\n  idempotencyKey: x.idempotencyKey || `n8n-${$execution.id}`\n} }];"
+      }
+    },
+    {
+      "id": "stage-candidate",
+      "name": "Stage candidate through .NET",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [850, 60],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BLISS_API_BASE + '/api/economics/research-runs/' + $('Validate run id').item.json.runId + '/candidates' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "CONFIGURE_IN_N8N",
+          "name": "Bliss service credential"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Receive bounded research run": {
+      "main": [[{ "node": "Validate run id", "type": "main", "index": 0 }]]
+    },
+    "Validate run id": {
+      "main": [[{ "node": "Load run context from .NET", "type": "main", "index": 0 }]]
+    },
+    "Load run context from .NET": {
+      "main": [[{ "node": "Call approved research endpoint", "type": "main", "index": 0 }]]
+    },
+    "Call approved research endpoint": {
+      "main": [[{ "node": "Call approved AI extractor", "type": "main", "index": 0 }]]
+    },
+    "Call approved AI extractor": {
+      "main": [[{ "node": "Constrain untrusted candidate", "type": "main", "index": 0 }]]
+    },
+    "Constrain untrusted candidate": {
+      "main": [[{ "node": "Stage candidate through .NET", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "purpose": "Candidate staging only; no durable truth in n8n"
+  },
+  "tags": []
+}

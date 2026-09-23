@@ -67,6 +67,9 @@ public class BlissDbContext : DbContext
     public DbSet<CompensationRuleAllocation> CompensationRuleAllocations => Set<CompensationRuleAllocation>();
     public DbSet<CompensationIllustration> CompensationIllustrations => Set<CompensationIllustration>();
     public DbSet<CompensationIllustrationLine> CompensationIllustrationLines => Set<CompensationIllustrationLine>();
+    public DbSet<EconomicsResearchRun> EconomicsResearchRuns => Set<EconomicsResearchRun>();
+    public DbSet<EconomicsResearchCandidate> EconomicsResearchCandidates => Set<EconomicsResearchCandidate>();
+    public DbSet<EconomicsResearchReviewDecision> EconomicsResearchReviewDecisions => Set<EconomicsResearchReviewDecision>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
