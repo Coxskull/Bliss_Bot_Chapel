@@ -24,6 +24,7 @@ const state = {
   economicsMarketProfiles: [], economicsIndustryProfiles: [],
   economicsInventoryBenchmarks: [], economicsExchangeRates: [],
   economicsPricingRules: [], economicsRecommendations: [], economicsQuotes: [],
+  economicsCompensationRules: [], economicsCompensationIllustrations: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "", economicsSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations", economicsTab: "markets",
   selectedReview: null, selectedPlacement: null,
@@ -44,6 +45,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   fillKey("#economics-idempotency");
   fillKey("#quote-idempotency");
   fillKey("#quote-action-idempotency");
+  fillKey("#compensation-idempotency");
   route();
   await loadSession();
   syncOperatorUi();
@@ -129,7 +131,9 @@ async function loadDashboard() {
       api("/api/economics/exchange-rates").catch(() => []),
       api("/api/economics/pricing-rule-versions").catch(() => []),
       api("/api/economics/recommendations").catch(() => []),
-      api("/api/economics/quotes").catch(() => [])
+      api("/api/economics/quotes").catch(() => []),
+      api("/api/economics/compensation-rule-versions").catch(() => []),
+      api("/api/economics/compensation-illustrations").catch(() => [])
     ]);
     const [
       matches, creators, advertisers, programs, opportunities, content, campaigns,
@@ -139,7 +143,8 @@ async function loadDashboard() {
       economicsSources, economicsObservations, economicsAudienceSnapshots,
       economicsPerformanceSnapshots, economicsMarketProfiles, economicsIndustryProfiles,
       economicsInventoryBenchmarks, economicsExchangeRates, economicsPricingRules,
-      economicsRecommendations, economicsQuotes
+      economicsRecommendations, economicsQuotes, economicsCompensationRules,
+      economicsCompensationIllustrations
     ] = values;
     const [contentDetails, ruleDetails] = await Promise.all([
       Promise.all(content.map(item => api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] })))),
@@ -154,7 +159,8 @@ async function loadDashboard() {
       economicsAudienceSnapshots, economicsPerformanceSnapshots,
       economicsMarketProfiles, economicsIndustryProfiles,
       economicsInventoryBenchmarks, economicsExchangeRates, economicsPricingRules,
-      economicsRecommendations, economicsQuotes, loaded: true
+      economicsRecommendations, economicsQuotes, economicsCompensationRules,
+      economicsCompensationIllustrations, loaded: true
     });
     state.selectedReview = reviewQueue.some(x => x.blissMatchId === state.selectedReview)
       ? state.selectedReview : reviewQueue[0]?.blissMatchId || null;
@@ -375,6 +381,8 @@ function renderEconomics() {
     + state.economicsInventoryBenchmarks.length + state.economicsExchangeRates.length;
   $("#economics-recommendation-count").textContent = state.economicsRecommendations.length;
   $("#economics-quote-count").textContent = state.economicsQuotes.length;
+  $("#economics-compensation-count").textContent =
+    state.economicsCompensationIllustrations.length;
 
   const creatorSelect = $("#economics-creator");
   const slotSelect = $("#economics-slot");
@@ -443,6 +451,37 @@ function renderEconomics() {
         <article class="stat-card"><strong>${latestQuote.outcomes.length}</strong><span>Advertiser outcomes</span><small>No compensation or settlement</small></article>
       </div>
       <p><strong>${escapeHtml(latestQuote.requestedBy)}</strong> · ${escapeHtml(currentQuoteVersion.revisionReason)} · version id ${code(shortId(currentQuoteVersion.id))}</p>
+    </section>` : "";
+
+  const compensationQuote = $("#compensation-quote-version");
+  const selectedCompensationQuote = compensationQuote.value;
+  const acceptedQuoteOptions = state.economicsQuotes
+    .filter(x => x.status === "ACCEPTED")
+    .map(x => {
+      const version = x.versions.find(v => v.versionNumber === x.currentVersionNumber);
+      return version
+        ? `<option value="${x.id}|${version.id}">${shortId(x.id)} · version ${version.versionNumber} · ${version.totalAmount} ${escapeHtml(x.currencyCode)}</option>`
+        : "";
+    }).join("");
+  compensationQuote.innerHTML = acceptedQuoteOptions || `<option value="">No accepted quote versions</option>`;
+  if ([...compensationQuote.options].some(x => x.value === selectedCompensationQuote)) {
+    compensationQuote.value = selectedCompensationQuote;
+  }
+  const compensationRule = $("#compensation-rule-version");
+  const selectedCompensationRule = compensationRule.value;
+  compensationRule.innerHTML = state.economicsCompensationRules
+    .filter(x => x.isActive)
+    .map(x => `<option value="${x.id}">${escapeHtml(x.version)} · ${x.allocations.map(a=>`${a.participantRole} ${a.percentage}%`).join(" / ")}</option>`)
+    .join("");
+  if ([...compensationRule.options].some(x => x.value === selectedCompensationRule)) {
+    compensationRule.value = selectedCompensationRule;
+  }
+  const latestIllustration = state.economicsCompensationIllustrations[0];
+  $("#economics-compensation-result").innerHTML = latestIllustration ? `
+    <section class="panel">
+      <div class="panel-header"><div><p class="eyebrow">LATEST COMPENSATION ILLUSTRATION</p><h3>${latestIllustration.grossAmount} ${escapeHtml(latestIllustration.currencyCode)} gross · ${escapeHtml(latestIllustration.compensationRuleVersion)}</h3></div><span class="record-tag">NOT SETTLEMENT</span></div>
+      <div class="stat-grid">${latestIllustration.lines.map(x=>`<article class="stat-card"><strong>${x.amount} ${escapeHtml(latestIllustration.currencyCode)}</strong><span>${escapeHtml(friendlyStatus(x.participantRole))}</span><small>${x.percentage}% · ${escapeHtml(x.participantLabel)}</small></article>`).join("")}</div>
+      <p><strong>Allocation total ${latestIllustration.lines.reduce((sum,x)=>sum+Number(x.amount),0).toFixed(2)} ${escapeHtml(latestIllustration.currencyCode)}</strong> · illustration only · quote version ${latestIllustration.quoteVersionNumber}</p>
     </section>` : "";
 
   const term = state.economicsSearch.toLowerCase();
@@ -552,7 +591,7 @@ function renderEconomics() {
       badge(x.confidenceLevel),
       `${x.factors.length} factors · ${x.sources.length} source set<br><small>${escapeHtml(x.idempotencyKey)}</small>`
     ]);
-  } else {
+  } else if (state.economicsTab === "quotes") {
     headers = ["Updated", "Quote / status", "Current version", "Commercial amount", "Recommendation", "Approvals / outcomes"];
     rows = state.economicsQuotes.filter(x => auditHaystack(x).includes(term)).map(x => {
       const version = x.versions.find(v => v.versionNumber === x.currentVersionNumber);
@@ -566,6 +605,25 @@ function renderEconomics() {
         `${x.approvalDecisions.length} decisions · ${x.outcomes.length} outcomes<br><small>${escapeHtml(version?.revisionReason || "—")}</small>`
       ];
     });
+  } else if (state.economicsTab === "compensation-rules") {
+    headers = ["Policy version", "Effective", "Allocations", "Status", "Boundary"];
+    rows = state.economicsCompensationRules.filter(x => auditHaystack(x).includes(term)).map(x => [
+      `<strong>${escapeHtml(x.version)}</strong><br>${escapeHtml(x.name)}`,
+      formatDate(x.effectiveAt),
+      x.allocations.map(a=>`${escapeHtml(friendlyStatus(a.participantRole))} ${a.percentage}%`).join("<br>"),
+      badge(x.isActive ? "ACTIVE" : "INACTIVE"),
+      `<strong>ILLUSTRATION ONLY</strong><br><small>No settlement authority</small>`
+    ]);
+  } else {
+    headers = ["Created", "Quote / version", "Gross amount", "Policy", "Participant allocations", "Boundary"];
+    rows = state.economicsCompensationIllustrations.filter(x => auditHaystack(x).includes(term)).map(x => [
+      formatDate(x.createdAt),
+      `${code(shortId(x.quoteId))}<br>Version ${x.quoteVersionNumber}`,
+      `<strong>${x.grossAmount} ${escapeHtml(x.currencyCode)}</strong><br><small>accepted commercial amount</small>`,
+      code(x.compensationRuleVersion),
+      x.lines.map(line=>`${escapeHtml(friendlyStatus(line.participantRole))}: ${line.amount} ${escapeHtml(x.currencyCode)} (${line.percentage}%)`).join("<br>"),
+      `<strong>NOT SETTLEMENT</strong><br><small>${escapeHtml(x.idempotencyKey)}</small>`
+    ]);
   }
   $("#economics-content").innerHTML = rows.length
     ? `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>`
@@ -1045,6 +1103,32 @@ async function submitEconomicsQuoteAction(form) {
   finally{submit.disabled=false;submit.innerHTML=`Record action <span>→</span>`;}
 }
 
+async function submitCompensationIllustration(form) {
+  if (!state.session.canWrite) {
+    toast("Your account does not have operator permission.", true);
+    return;
+  }
+  const submit=form.querySelector('button[type="submit"]'),data=new FormData(form),value=name=>String(data.get(name)||"").trim();
+  const [quoteId,quoteVersionId]=value("quoteVersion").split("|");
+  submit.disabled=true;submit.textContent="Illustrating…";
+  try {
+    const result=await api("/api/economics/compensation-illustrations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+      quoteId,
+      quoteVersionId,
+      compensationRuleVersionId:value("compensationRuleVersionId"),
+      sourceSystem:value("sourceSystem"),
+      idempotencyKey:value("idempotencyKey")
+    })});
+    toast(`Compensation illustration generated${result.isReplay?" (replay)":""}`);
+    fillKey("#compensation-idempotency");
+    state.economicsCompensationIllustrations=
+      await api("/api/economics/compensation-illustrations");
+    state.economicsTab="compensation-illustrations";
+    renderEconomics();
+  } catch(error){toast(error.message,true);}
+  finally{submit.disabled=false;submit.innerHTML=`Generate illustration <span>→</span>`;}
+}
+
 async function openCreator(id) {
   openDrawer("CREATOR PROFILE","Loading creator…",skeleton());
   try {
@@ -1191,6 +1275,7 @@ function bindActions() {
   $("#economics-recommendation-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsRecommendation(event.currentTarget);});
   $("#economics-quote-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsQuote(event.currentTarget);});
   $("#economics-quote-action-form").addEventListener("submit",event=>{event.preventDefault();submitEconomicsQuoteAction(event.currentTarget);});
+  $("#economics-compensation-form").addEventListener("submit",event=>{event.preventDefault();submitCompensationIllustration(event.currentTarget);});
   $("#wedding-planner-open-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerWorkspace(event.currentTarget);});
   $("#wedding-planner-session-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerSession(event.currentTarget);});
   $("#wedding-planner-message-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerMessage(event.currentTarget);});
@@ -1202,6 +1287,7 @@ function bindActions() {
   $("#regenerate-economics-key").addEventListener("click",()=>fillKey("#economics-idempotency"));
   $("#regenerate-quote-key").addEventListener("click",()=>fillKey("#quote-idempotency"));
   $("#regenerate-quote-action-key").addEventListener("click",()=>fillKey("#quote-action-idempotency"));
+  $("#regenerate-compensation-key").addEventListener("click",()=>fillKey("#compensation-idempotency"));
   $("#quote-recommendation").addEventListener("change",event=>{
     const recommendation=state.economicsRecommendations.find(x=>x.id===event.target.value);
     if(recommendation)$("#quote-amount").value=recommendation.rangeTarget;

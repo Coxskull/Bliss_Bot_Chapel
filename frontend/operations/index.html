@@ -233,7 +233,7 @@
             <div><p class="eyebrow">RATE INTELLIGENCE</p><h2 id="economics-title">Economics reference data</h2><p>Inspect market geography, pricing vocabulary, and benchmark provenance without changing matching or placement.</p></div>
             <div class="section-actions"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="economics-search" type="search" placeholder="Search economics data" aria-label="Search economics data"></div></div>
           </div>
-          <div class="safety-note"><strong>Phase 5 keeps recommendation, quote, approval, and outcome separate.</strong> Every commercial version is immutable, requires explicit human action, and never defines compensation or settlement.</div>
+          <div class="safety-note"><strong>Phase 6 keeps market value, commercial quote, compensation illustration, and settlement separate.</strong> Allocation policy is versioned data. An illustration creates no payable, payout, transfer, invoice, or ledger entry.</div>
           <form class="panel workflow-form" id="economics-recommendation-form">
             <div class="panel-header"><div><p class="eyebrow">PHASE 4 · DETERMINISTIC</p><h3>Generate explainable range</h3></div><span class="record-tag">NOT A QUOTE</span></div>
             <div class="safety-note"><strong>Range intelligence only.</strong> .NET applies the persisted pricing-rule version. The result requires human review and cannot contract, place, or settle inventory.</div>
@@ -274,6 +274,17 @@
             </div>
             <div class="form-actions"><small>Actions always target the currently displayed immutable version.</small><button class="primary-button" type="submit">Record action <span>→</span></button></div>
           </form>
+          <form class="panel workflow-form" id="economics-compensation-form">
+            <div class="panel-header"><div><p class="eyebrow">PHASE 6 · POLICY ILLUSTRATION</p><h3>Illustrate configurable participant allocations</h3></div><span class="record-tag">NOT SETTLEMENT</span></div>
+            <div class="safety-note"><strong>Accepted commercial amount only.</strong> .NET applies the exact persisted policy version. The result is immutable evidence, not money owed or paid.</div>
+            <div class="form-grid">
+              <label class="span-two"><span>Accepted quote and version *</span><select name="quoteVersion" id="compensation-quote-version" required></select></label>
+              <label class="span-two"><span>Compensation policy *</span><select name="compensationRuleVersionId" id="compensation-rule-version" required></select></label>
+              <details class="advanced-fields span-two"><summary>Audit metadata</summary><div class="form-grid compact"><label><span>Source system *</span><input name="sourceSystem" value="OPERATOR_CONSOLE" maxlength="64" required></label><label><span>Idempotency key *</span><div class="input-action"><input name="idempotencyKey" id="compensation-idempotency" readonly required><button type="button" id="regenerate-compensation-key" aria-label="Generate a new compensation illustration key">↻</button></div></label></div></details>
+            </div>
+            <div class="form-actions"><small>Configured shares—not a universal 20/80 rule.</small><button class="primary-button" type="submit">Generate illustration <span>→</span></button></div>
+          </form>
+          <div id="economics-compensation-result"></div>
           <div class="stat-grid">
             <article class="stat-card"><span class="stat-top"><span class="stat-icon mint">◎</span><span class="trend">DATA</span></span><strong id="economics-market-count">—</strong><span>Geographic markets</span><small>Country and metro are rows</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon blue">◇</span><span class="trend">VOCABULARY</span></span><strong id="economics-model-count">—</strong><span>Pricing models</span><small>No rates are stored here</small></article>
@@ -282,6 +293,7 @@
             <article class="stat-card"><span class="stat-top"><span class="stat-icon blue">△</span><span class="trend">CONTEXT</span></span><strong id="economics-context-count">—</strong><span>Economic context records</span><small>Profiles, benchmarks, and FX</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon gold">◇</span><span class="trend">EXPLAINABLE</span></span><strong id="economics-recommendation-count">—</strong><span>Rate recommendations</span><small>Ranges, factors, and sources</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon sage">▣</span><span class="trend">VERSIONED</span></span><strong id="economics-quote-count">—</strong><span>Commercial quotes</span><small>Human approvals and outcomes</small></article>
+            <article class="stat-card"><span class="stat-top"><span class="stat-icon gold">%</span><span class="trend">ILLUSTRATIVE</span></span><strong id="economics-compensation-count">—</strong><span>Compensation illustrations</span><small>Never settlement or payout</small></article>
           </div>
           <div class="tab-row" id="economics-tabs" role="tablist">
             <button class="tab-button active" data-economics-tab="markets" role="tab" aria-selected="true">Markets</button>
@@ -295,6 +307,8 @@
             <button class="tab-button" data-economics-tab="exchange-rates" role="tab" aria-selected="false">FX observations</button>
             <button class="tab-button" data-economics-tab="recommendations" role="tab" aria-selected="false">Recommendations</button>
             <button class="tab-button" data-economics-tab="quotes" role="tab" aria-selected="false">Quotes</button>
+            <button class="tab-button" data-economics-tab="compensation-rules" role="tab" aria-selected="false">Compensation policies</button>
+            <button class="tab-button" data-economics-tab="compensation-illustrations" role="tab" aria-selected="false">Compensation illustrations</button>
           </div>
           <div class="panel table-panel"><div class="table-wrap" id="economics-content"></div></div>
         </section>
