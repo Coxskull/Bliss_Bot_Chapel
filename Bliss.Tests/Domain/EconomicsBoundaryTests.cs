@@ -77,7 +77,8 @@ public sealed class EconomicsBoundaryTests
             Assert.Null(method.GetCustomAttribute<HttpDeleteAttribute>());
         });
         Assert.DoesNotContain(methods, method =>
-            method.Name.Contains("Quote", StringComparison.OrdinalIgnoreCase)
-            || method.Name.Contains("Calculate", StringComparison.OrdinalIgnoreCase));
+            method.Name.Contains("Calculate", StringComparison.OrdinalIgnoreCase)
+            || method.Name.Contains("Compensation", StringComparison.OrdinalIgnoreCase)
+            || method.Name.Contains("Settlement", StringComparison.OrdinalIgnoreCase));
     }
 }

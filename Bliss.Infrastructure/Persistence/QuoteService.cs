@@ -155,7 +155,7 @@ public sealed class QuoteService
             source,
             key,
             DateTime.UtcNow);
-        quote.Versions.Add(version);
+        _db.QuoteVersions.Add(version);
         quote.CurrentVersionNumber = version.VersionNumber;
         quote.Status = QuoteStatuses.Draft;
         quote.UpdatedAt = version.CreatedAt;
@@ -283,7 +283,7 @@ public sealed class QuoteService
                 source,
                 key,
                 now);
-            quote.Versions.Add(negotiatedVersion);
+            _db.QuoteVersions.Add(negotiatedVersion);
             quote.CurrentVersionNumber = negotiatedVersion.VersionNumber;
             quote.Status = QuoteStatuses.Draft;
             amount = negotiatedVersion.TotalAmount;

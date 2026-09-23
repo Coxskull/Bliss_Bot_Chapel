@@ -56,6 +56,6 @@ public sealed class EconomicsPhase1ApiTests : IClassFixture<BlissApiFactory>
         Assert.Equal(HttpStatusCode.MethodNotAllowed,
             (await client.PostAsync("/api/economics/observations", body)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound,
-            (await client.PostAsync("/api/economics/quotes", body)).StatusCode);
+            (await client.PostAsync("/api/economics/calculations", body)).StatusCode);
     }
 }
