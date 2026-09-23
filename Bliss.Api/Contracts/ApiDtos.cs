@@ -769,4 +769,102 @@ public sealed record RateRecommendationDto(
     IReadOnlyList<RateRecommendationSourceDto> Sources,
     bool IsReplay);
 
+public sealed record QuoteLineRequest(
+    Guid RateRecommendationId,
+    string Description,
+    decimal Quantity,
+    decimal UnitAmount);
+
+public sealed record CreateQuoteRequest(
+    Guid? AdvertiserOpportunityId,
+    string RequestedBy,
+    string RevisionReason,
+    IReadOnlyList<QuoteLineRequest> LineItems,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record ReviseQuoteRequest(
+    string CreatedBy,
+    string RevisionReason,
+    IReadOnlyList<QuoteLineRequest> LineItems,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record DecideQuoteApprovalRequest(
+    Guid QuoteVersionId,
+    string Decision,
+    string ReviewerLabel,
+    string Rationale,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record RecordQuoteOutcomeRequest(
+    Guid QuoteVersionId,
+    string Response,
+    string ActorLabel,
+    string Rationale,
+    IReadOnlyList<QuoteLineRequest>? NegotiatedLineItems,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record QuoteLineItemDto(
+    Guid Id,
+    Guid RateRecommendationId,
+    string Description,
+    decimal Quantity,
+    decimal UnitAmount,
+    decimal LineAmount,
+    string CurrencyCode,
+    decimal RecommendationLow,
+    decimal RecommendationTarget,
+    decimal RecommendationHigh);
+
+public sealed record QuoteVersionDto(
+    Guid Id,
+    Guid? ParentVersionId,
+    int VersionNumber,
+    string CurrencyCode,
+    decimal SubtotalAmount,
+    decimal TotalAmount,
+    string RevisionReason,
+    string CreatedBy,
+    DateTime CreatedAt,
+    IReadOnlyList<QuoteLineItemDto> LineItems);
+
+public sealed record QuoteApprovalDecisionDto(
+    Guid Id,
+    Guid QuoteVersionId,
+    string Decision,
+    string ReviewerLabel,
+    string Rationale,
+    DateTime CreatedAt);
+
+public sealed record QuoteOutcomeDto(
+    Guid Id,
+    Guid QuoteVersionId,
+    Guid? NewQuoteVersionId,
+    string Response,
+    decimal? Amount,
+    string CurrencyCode,
+    string ActorLabel,
+    string Rationale,
+    DateTime CreatedAt);
+
+public sealed record QuoteDto(
+    Guid Id,
+    Guid? AdvertiserOpportunityId,
+    string? AdvertiserOpportunityName,
+    string CurrencyCode,
+    string Status,
+    int CurrentVersionNumber,
+    string RequestedBy,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    IReadOnlyList<QuoteVersionDto> Versions,
+    IReadOnlyList<QuoteApprovalDecisionDto> ApprovalDecisions,
+    IReadOnlyList<QuoteOutcomeDto> Outcomes,
+    Guid ActionId,
+    Guid? NewQuoteVersionId,
+    bool IsReplay);
+
 

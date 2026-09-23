@@ -26,6 +26,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<EconomicsPhase3DataSeeder>();
         services.AddScoped<EconomicsPhase4DataSeeder>();
         services.AddScoped<RateRecommendationService>();
+        services.AddScoped<QuoteService>();
         return services;
     }
 

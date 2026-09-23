@@ -58,6 +58,11 @@ public class BlissDbContext : DbContext
     public DbSet<RateRecommendation> RateRecommendations => Set<RateRecommendation>();
     public DbSet<RateRecommendationFactor> RateRecommendationFactors => Set<RateRecommendationFactor>();
     public DbSet<RateRecommendationSource> RateRecommendationSources => Set<RateRecommendationSource>();
+    public DbSet<Quote> Quotes => Set<Quote>();
+    public DbSet<QuoteVersion> QuoteVersions => Set<QuoteVersion>();
+    public DbSet<QuoteLineItem> QuoteLineItems => Set<QuoteLineItem>();
+    public DbSet<QuoteApprovalDecision> QuoteApprovalDecisions => Set<QuoteApprovalDecision>();
+    public DbSet<QuoteOutcome> QuoteOutcomes => Set<QuoteOutcome>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -49,17 +49,26 @@ public sealed class EconomicsBoundaryTests
     }
 
     [Fact]
-    public void Economics_http_api_exposes_only_the_controlled_phase4_write()
+    public void Economics_http_api_exposes_only_controlled_recommendation_and_quote_writes()
     {
         var controller = typeof(EconomicsController);
         Assert.Equal("api/economics", controller.GetCustomAttribute<RouteAttribute>()?.Template);
 
         var methods = controller.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
-        var post = Assert.Single(methods.Where(method =>
-            method.GetCustomAttribute<HttpPostAttribute>() is not null));
-        Assert.Equal("GenerateRecommendation", post.Name);
-        Assert.Equal("recommendations", post.GetCustomAttribute<HttpPostAttribute>()?.Template);
-        Assert.NotNull(post.GetCustomAttribute<Microsoft.AspNetCore.Authorization.AuthorizeAttribute>());
+        var posts = methods.Where(method =>
+                method.GetCustomAttribute<HttpPostAttribute>() is not null)
+            .ToDictionary(
+                method => method.Name,
+                method => method.GetCustomAttribute<HttpPostAttribute>()?.Template);
+        Assert.Equal(5, posts.Count);
+        Assert.Equal("recommendations", posts["GenerateRecommendation"]);
+        Assert.Equal("quotes", posts["CreateQuote"]);
+        Assert.Equal("quotes/{id:guid}/versions", posts["ReviseQuote"]);
+        Assert.Equal("quotes/{id:guid}/approvals", posts["DecideQuoteApproval"]);
+        Assert.Equal("quotes/{id:guid}/outcomes", posts["RecordQuoteOutcome"]);
+        Assert.All(methods.Where(method => posts.ContainsKey(method.Name)), method =>
+            Assert.NotNull(method.GetCustomAttribute<
+                Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()));
 
         Assert.All(methods, method =>
         {
