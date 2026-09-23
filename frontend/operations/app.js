@@ -173,6 +173,27 @@ async function loadDashboard() {
       ? state.selectedReview : reviewQueue[0]?.blissMatchId || null;
     state.selectedPlacement = placementQueue.some(x => x.blissMatchId === state.selectedPlacement)
       ? state.selectedPlacement : placementQueue[0]?.blissMatchId || null;
+    state.selectedWeddingPlannerWorkspace =
+      weddingPlannerWorkspaces.some(x =>
+        x.workspaceId === state.selectedWeddingPlannerWorkspace)
+        ? state.selectedWeddingPlannerWorkspace
+        : weddingPlannerWorkspaces[0]?.workspaceId || null;
+    if (state.selectedWeddingPlannerWorkspace) {
+      state.weddingPlannerSessions = await api(
+        `/api/wedding-planner/workspaces/${state.selectedWeddingPlannerWorkspace}/sessions`);
+      state.selectedWeddingPlannerSession =
+        state.weddingPlannerSessions.some(x =>
+          x.sessionId === state.selectedWeddingPlannerSession)
+          ? state.selectedWeddingPlannerSession
+          : state.weddingPlannerSessions[0]?.sessionId || null;
+      if (state.selectedWeddingPlannerSession) {
+        [state.weddingPlannerMessages, state.weddingPlannerEconomicsRequests] =
+          await Promise.all([
+            api(`/api/wedding-planner/sessions/${state.selectedWeddingPlannerSession}/messages`),
+            api(`/api/wedding-planner/sessions/${state.selectedWeddingPlannerSession}/economics/recommendations`)
+          ]);
+      }
+    }
     renderAll();
     route();
     setConnection("online");
@@ -1467,6 +1488,7 @@ function bindActions() {
   });
   $("#wedding-planner-session").addEventListener("change",event=>selectWeddingPlannerSession(event.target.value));
   $("#wedding-planner-economics-session").addEventListener("change",event=>selectWeddingPlannerSession(event.target.value));
+  $("#wedding-planner-workspace").addEventListener("change",event=>selectWeddingPlannerWorkspace(event.target.value));
   $("#wedding-planner-economics-match").addEventListener("change",updateWeddingPlannerEconomicsInventory);
   $("#placement-match").addEventListener("change",event=>{state.selectedPlacement=event.target.value;renderPlacements();});
   $("#placement-content").addEventListener("change",updatePlacementSlots);
@@ -1635,6 +1657,9 @@ function renderWeddingPlanner() {
   advertiserSelect.innerHTML = state.advertisers.map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join("");
   workspaceSelect.innerHTML = state.weddingPlannerWorkspaces.map(x => `<option value="${x.workspaceId}">${escapeHtml(x.advertiserName)}</option>`).join("");
   if (state.selectedWeddingPlannerWorkspace) workspaceSelect.value = state.selectedWeddingPlannerWorkspace;
+  if (!state.selectedWeddingPlannerWorkspace && workspaceSelect.value) {
+    state.selectedWeddingPlannerWorkspace = workspaceSelect.value;
+  }
   sessionSelect.innerHTML = state.weddingPlannerSessions.map(x => `<option value="${x.sessionId}">${x.sessionId.slice(0, 8)} · ${x.messageCount} messages</option>`).join("");
   if (state.selectedWeddingPlannerSession) sessionSelect.value = state.selectedWeddingPlannerSession;
   economicsSessionSelect.innerHTML = state.weddingPlannerSessions.map(x => `<option value="${x.sessionId}">${x.sessionId.slice(0, 8)} · advertiser-owned session</option>`).join("");
@@ -1648,7 +1673,8 @@ function renderWeddingPlanner() {
     ? state.weddingPlannerMessages.map(x => `<div class="activity-item"><span class="activity-icon">${x.sequenceNumber}</span><span><strong>${escapeHtml(x.actorType)}</strong><small>${escapeHtml(x.body)}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></div>`).join("")
     : emptyState("Select a session to resume durable messages.");
   const workspace = state.weddingPlannerWorkspaces.find(x =>
-    x.workspaceId === state.selectedWeddingPlannerWorkspace);
+    x.workspaceId === state.selectedWeddingPlannerWorkspace)
+    || state.weddingPlannerWorkspaces[0];
   const programIds = new Set(state.programs
     .filter(x => x.advertiserId === workspace?.advertiserId)
     .map(x => x.id));
@@ -1662,12 +1688,19 @@ function renderWeddingPlanner() {
     ? approvedMatches.map(x => `<option value="${x.id}">${escapeHtml(creatorById(x.creatorId)?.name || shortId(x.creatorId))} · ${escapeHtml(opportunityById(x.advertiserOpportunityId)?.name || shortId(x.advertiserOpportunityId))}</option>`).join("")
     : `<option value="">No approved matches for this advertiser</option>`;
   const marketSelect = $("#wedding-planner-economics-market");
+  const selectedMarket = marketSelect.value;
   marketSelect.innerHTML = state.economicsMarkets.map(x =>
     `<option value="${x.id}">${escapeHtml(x.marketCode)} · ${escapeHtml(x.cityName || x.countryCode)}</option>`).join("");
-  const manila = [...marketSelect.options].find(x => x.textContent.startsWith("PH-MNL"));
-  if (manila && !marketSelect.value) marketSelect.value = manila.value;
-  $("#wedding-planner-economics-model").innerHTML = state.economicsModels.map(x =>
+  const preferredMarket = [...marketSelect.options].find(x => x.value === selectedMarket)
+    || [...marketSelect.options].find(x => x.textContent.startsWith("PH-MNL"));
+  if (preferredMarket) marketSelect.value = preferredMarket.value;
+  const modelSelect = $("#wedding-planner-economics-model");
+  const selectedModel = modelSelect.value;
+  modelSelect.innerHTML = state.economicsModels.map(x =>
     `<option value="${x.code}">${escapeHtml(x.code)} · ${escapeHtml(x.name)}</option>`).join("");
+  const preferredModel = [...modelSelect.options].find(x => x.value === selectedModel)
+    || [...modelSelect.options].find(x => x.value === "CPM");
+  if (preferredModel) modelSelect.value = preferredModel.value;
   updateWeddingPlannerEconomicsInventory();
   const latestRequest = state.weddingPlannerEconomicsRequests[0];
   $("#wedding-planner-economics-result").innerHTML = latestRequest
