@@ -80,6 +80,12 @@ public sealed class EfModelConstraintTests
         Assert.Contains("WeddingPlannerAuditEvent.AdvertiserId", restrictKeys);
         Assert.Contains("MarketBenchmarkObservation.GeographicMarketId", restrictKeys);
         Assert.Contains("MarketBenchmarkObservation.ResearchSourceId", restrictKeys);
+        Assert.Contains("CreatorAudienceSnapshot.CreatorId", restrictKeys);
+        Assert.Contains("CreatorAudienceSnapshot.GeographicMarketId", restrictKeys);
+        Assert.Contains("CreatorAudienceSnapshot.ResearchSourceId", restrictKeys);
+        Assert.Contains("CreatorPerformanceSnapshot.CreatorId", restrictKeys);
+        Assert.Contains("CreatorPerformanceSnapshot.ContentItemId", restrictKeys);
+        Assert.Contains("CreatorPerformanceSnapshot.ResearchSourceId", restrictKeys);
     }
 
     [Fact]

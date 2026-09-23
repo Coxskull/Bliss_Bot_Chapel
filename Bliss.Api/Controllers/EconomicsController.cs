@@ -113,6 +113,56 @@ public sealed class EconomicsController : ControllerBase
         return item is null ? NotFound() : Ok(item);
     }
 
+    [HttpGet("audience-snapshots")]
+    public async Task<ActionResult<IReadOnlyList<CreatorAudienceSnapshotDto>>> GetAudienceSnapshots(
+        Guid? creatorId, CancellationToken cancellationToken)
+    {
+        var query = _db.CreatorAudienceSnapshots.AsNoTracking().AsQueryable();
+        if (creatorId.HasValue)
+        {
+            query = query.Where(x => x.CreatorId == creatorId);
+        }
+
+        return Ok(await ProjectAudienceSnapshots(
+                query.OrderByDescending(x => x.CapturedAt))
+            .ToListAsync(cancellationToken));
+    }
+
+    [HttpGet("audience-snapshots/{id:guid}")]
+    public async Task<ActionResult<CreatorAudienceSnapshotDto>> GetAudienceSnapshot(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var item = await ProjectAudienceSnapshots(
+                _db.CreatorAudienceSnapshots.AsNoTracking().Where(x => x.Id == id))
+            .FirstOrDefaultAsync(cancellationToken);
+        return item is null ? NotFound() : Ok(item);
+    }
+
+    [HttpGet("performance-snapshots")]
+    public async Task<ActionResult<IReadOnlyList<CreatorPerformanceSnapshotDto>>> GetPerformanceSnapshots(
+        Guid? creatorId, CancellationToken cancellationToken)
+    {
+        var query = _db.CreatorPerformanceSnapshots.AsNoTracking().AsQueryable();
+        if (creatorId.HasValue)
+        {
+            query = query.Where(x => x.CreatorId == creatorId);
+        }
+
+        return Ok(await ProjectPerformanceSnapshots(
+                query.OrderByDescending(x => x.CapturedAt))
+            .ToListAsync(cancellationToken));
+    }
+
+    [HttpGet("performance-snapshots/{id:guid}")]
+    public async Task<ActionResult<CreatorPerformanceSnapshotDto>> GetPerformanceSnapshot(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var item = await ProjectPerformanceSnapshots(
+                _db.CreatorPerformanceSnapshots.AsNoTracking().Where(x => x.Id == id))
+            .FirstOrDefaultAsync(cancellationToken);
+        return item is null ? NotFound() : Ok(item);
+    }
+
     private static IQueryable<MarketBenchmarkObservationDto> ProjectObservations(
         IQueryable<MarketBenchmarkObservation> query) =>
         query.Select(x => new MarketBenchmarkObservationDto(
@@ -135,5 +185,51 @@ public sealed class EconomicsController : ControllerBase
             x.ConfidenceLevel,
             x.VerificationStatus,
             x.Notes,
+            x.CreatedAt));
+
+    private static IQueryable<CreatorAudienceSnapshotDto> ProjectAudienceSnapshots(
+        IQueryable<CreatorAudienceSnapshot> query) =>
+        query.Select(x => new CreatorAudienceSnapshotDto(
+            x.Id,
+            x.CreatorId,
+            x.Creator.Name,
+            x.GeographicMarketId,
+            x.GeographicMarket == null ? null : x.GeographicMarket.MarketCode,
+            x.ResearchSourceId,
+            x.ResearchSource == null ? null : x.ResearchSource.Name,
+            x.CapturedAt,
+            x.Subscribers,
+            x.FemalePercentage,
+            x.MalePercentage,
+            x.PrimaryAgeRange,
+            x.PrimaryGeography,
+            x.Language,
+            x.ConfidenceLevel,
+            x.VerificationStatus,
+            x.CreatedAt));
+
+    private static IQueryable<CreatorPerformanceSnapshotDto> ProjectPerformanceSnapshots(
+        IQueryable<CreatorPerformanceSnapshot> query) =>
+        query.Select(x => new CreatorPerformanceSnapshotDto(
+            x.Id,
+            x.CreatorId,
+            x.Creator.Name,
+            x.ContentItemId,
+            x.ContentItem == null ? null : x.ContentItem.Title,
+            x.ResearchSourceId,
+            x.ResearchSource == null ? null : x.ResearchSource.Name,
+            x.CapturedAt,
+            x.AverageViews,
+            x.DailyViews,
+            x.WeeklyViews,
+            x.MonthlyViews,
+            x.HistoricalReach,
+            x.EngagementRate,
+            x.RetentionRate,
+            x.PublishingFrequencyPerWeek,
+            x.Platform,
+            x.ContentFormat,
+            x.ConfidenceLevel,
+            x.VerificationStatus,
             x.CreatedAt));
 }

@@ -233,16 +233,19 @@
             <div><p class="eyebrow">RATE INTELLIGENCE</p><h2 id="economics-title">Economics reference data</h2><p>Inspect market geography, pricing vocabulary, and benchmark provenance without changing matching or placement.</p></div>
             <div class="section-actions"><div class="search-wrap"><span aria-hidden="true">⌕</span><input id="economics-search" type="search" placeholder="Search economics data" aria-label="Search economics data"></div></div>
           </div>
-          <div class="safety-note"><strong>No rate engine in Phase 1.</strong> These append-only observations are fictional reference fixtures with provenance. This workspace does not calculate rates, produce quotes, or define compensation splits.</div>
+          <div class="safety-note"><strong>No rate engine in Phases 1–2.</strong> Market and creator snapshots are append-only inputs with provenance—not prices. This workspace does not calculate rates, produce quotes, or define compensation splits.</div>
           <div class="stat-grid">
             <article class="stat-card"><span class="stat-top"><span class="stat-icon mint">◎</span><span class="trend">DATA</span></span><strong id="economics-market-count">—</strong><span>Geographic markets</span><small>Country and metro are rows</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon blue">◇</span><span class="trend">VOCABULARY</span></span><strong id="economics-model-count">—</strong><span>Pricing models</span><small>No rates are stored here</small></article>
             <article class="stat-card"><span class="stat-top"><span class="stat-icon gold">≡</span><span class="trend">PROVENANCE</span></span><strong id="economics-observation-count">—</strong><span>Benchmark observations</span><small>History is not overwritten</small></article>
+            <article class="stat-card"><span class="stat-top"><span class="stat-icon sage">◉</span><span class="trend">INPUTS</span></span><strong id="economics-snapshot-count">—</strong><span>Creator snapshots</span><small>Audience and performance history</small></article>
           </div>
           <div class="tab-row" id="economics-tabs" role="tablist">
             <button class="tab-button active" data-economics-tab="markets" role="tab" aria-selected="true">Markets</button>
             <button class="tab-button" data-economics-tab="models" role="tab" aria-selected="false">Pricing models</button>
             <button class="tab-button" data-economics-tab="observations" role="tab" aria-selected="false">Observations &amp; sources</button>
+            <button class="tab-button" data-economics-tab="audience" role="tab" aria-selected="false">Audience snapshots</button>
+            <button class="tab-button" data-economics-tab="performance" role="tab" aria-selected="false">Performance snapshots</button>
           </div>
           <div class="panel table-panel"><div class="table-wrap" id="economics-content"></div></div>
         </section>

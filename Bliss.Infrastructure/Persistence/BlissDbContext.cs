@@ -48,6 +48,8 @@ public class BlissDbContext : DbContext
     public DbSet<PricingModel> PricingModels => Set<PricingModel>();
     public DbSet<ResearchSource> ResearchSources => Set<ResearchSource>();
     public DbSet<MarketBenchmarkObservation> MarketBenchmarkObservations => Set<MarketBenchmarkObservation>();
+    public DbSet<CreatorAudienceSnapshot> CreatorAudienceSnapshots => Set<CreatorAudienceSnapshot>();
+    public DbSet<CreatorPerformanceSnapshot> CreatorPerformanceSnapshots => Set<CreatorPerformanceSnapshot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

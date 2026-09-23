@@ -1,0 +1,39 @@
+[
+    {
+        "id": "ec000005-0000-0000-0000-000000000002",
+        "creatorId": "11111111-1111-1111-1111-111111111111",
+        "creatorName": "Test Creator",
+        "geographicMarketId": "ec000001-0000-0000-0000-000000000001",
+        "marketCode": "PH-MNL",
+        "researchSourceId": "ec000002-0000-0000-0000-000000000001",
+        "researchSourceName": "TEST Synthetic Market Fixture",
+        "capturedAt": "2026-09-01T00:00:00Z",
+        "subscribers": 42000,
+        "femalePercentage": 68.0,
+        "primaryAgeRange": "18-34",
+        "primaryGeography": "Metro Manila",
+        "language": "English / Tagalog",
+        "confidenceLevel": "MEDIUM",
+        "verificationStatus": "ESTIMATED",
+        "createdAt": "2026-09-23T01:00:00Z"
+    },
+    {
+        "id": "ec000005-0000-0000-0000-000000000001",
+        "creatorId": "11111111-1111-1111-1111-111111111111",
+        "creatorName": "Test Creator",
+        "geographicMarketId": "ec000001-0000-0000-0000-000000000001",
+        "marketCode": "PH-MNL",
+        "researchSourceId": "ec000002-0000-0000-0000-000000000001",
+        "researchSourceName": "TEST Synthetic Market Fixture",
+        "capturedAt": "2026-08-01T00:00:00Z",
+        "subscribers": 38500,
+        "femalePercentage": 64.0,
+        "malePercentage": 34.0,
+        "primaryAgeRange": "18-34",
+        "primaryGeography": "Metro Manila",
+        "language": "English / Tagalog",
+        "confidenceLevel": "LOW",
+        "verificationStatus": "ESTIMATED",
+        "createdAt": "2026-09-23T01:00:00Z"
+    }
+]

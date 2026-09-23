@@ -20,6 +20,7 @@ const state = {
   selectedWeddingPlannerWorkspace: null, selectedWeddingPlannerSession: null,
   affiliateNetworks: [], networkAccesses: [], programAccesses: [],
   economicsMarkets: [], economicsModels: [], economicsSources: [], economicsObservations: [],
+  economicsAudienceSnapshots: [], economicsPerformanceSnapshots: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "", economicsSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations", economicsTab: "markets",
   selectedReview: null, selectedPlacement: null,
@@ -113,14 +114,17 @@ async function loadDashboard() {
       api("/api/economics/markets").catch(() => []),
       api("/api/economics/pricing-models").catch(() => []),
       api("/api/economics/research-sources").catch(() => []),
-      api("/api/economics/observations").catch(() => [])
+      api("/api/economics/observations").catch(() => []),
+      api("/api/economics/audience-snapshots").catch(() => []),
+      api("/api/economics/performance-snapshots").catch(() => [])
     ]);
     const [
       matches, creators, advertisers, programs, opportunities, content, campaigns,
       ruleVersions, runs, ingestions, formations, reviews, placements, reviewQueue,
       placementQueue, provenances, affiliateNetworks, networkAccesses, programAccesses,
       runtime, weddingPlannerWorkspaces, economicsMarkets, economicsModels,
-      economicsSources, economicsObservations
+      economicsSources, economicsObservations, economicsAudienceSnapshots,
+      economicsPerformanceSnapshots
     ] = values;
     const [contentDetails, ruleDetails] = await Promise.all([
       Promise.all(content.map(item => api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] })))),
@@ -131,7 +135,8 @@ async function loadDashboard() {
       campaigns, ruleVersions: ruleDetails, runs, ingestions, formations, reviews,
       placements, reviewQueue, placementQueue, provenances, affiliateNetworks,
       networkAccesses, programAccesses, runtime, weddingPlannerWorkspaces,
-      economicsMarkets, economicsModels, economicsSources, economicsObservations, loaded: true
+      economicsMarkets, economicsModels, economicsSources, economicsObservations,
+      economicsAudienceSnapshots, economicsPerformanceSnapshots, loaded: true
     });
     state.selectedReview = reviewQueue.some(x => x.blissMatchId === state.selectedReview)
       ? state.selectedReview : reviewQueue[0]?.blissMatchId || null;
@@ -345,6 +350,8 @@ function renderEconomics() {
   $("#economics-market-count").textContent = state.economicsMarkets.length;
   $("#economics-model-count").textContent = state.economicsModels.length;
   $("#economics-observation-count").textContent = state.economicsObservations.length;
+  $("#economics-snapshot-count").textContent =
+    state.economicsAudienceSnapshots.length + state.economicsPerformanceSnapshots.length;
 
   const term = state.economicsSearch.toLowerCase();
   let headers = [], rows = [];
@@ -364,7 +371,7 @@ function renderEconomics() {
     rows = state.economicsModels
       .filter(x => auditHaystack(x).includes(term))
       .map(x => [code(x.code), `<strong>${escapeHtml(x.name)}</strong>`, escapeHtml(x.description || "—"), badge(x.isActive ? "ACTIVE" : "INACTIVE")]);
-  } else {
+  } else if (state.economicsTab === "observations") {
     const sources = new Map(state.economicsSources.map(x => [x.id, x]));
     headers = ["Market", "Metric / value", "Provenance", "Verification", "Confidence", "Retrieved"];
     rows = state.economicsObservations
@@ -381,6 +388,30 @@ function renderEconomics() {
           formatDate(x.retrievedAt)
         ];
       });
+  } else if (state.economicsTab === "audience") {
+    headers = ["Creator", "Captured", "Audience", "Demographics", "Market / language", "Provenance"];
+    rows = state.economicsAudienceSnapshots
+      .filter(x => auditHaystack(x).includes(term))
+      .map(x => [
+        `<strong>${escapeHtml(x.creatorName)}</strong><br>${code(shortId(x.creatorId))}`,
+        formatDate(x.capturedAt),
+        x.subscribers == null ? "UNKNOWN" : Number(x.subscribers).toLocaleString(),
+        `Women ${x.femalePercentage == null ? "UNKNOWN" : `${x.femalePercentage}%`}<br>Men ${x.malePercentage == null ? "UNKNOWN" : `${x.malePercentage}%`}<br>${escapeHtml(x.primaryAgeRange || "Age unknown")}`,
+        `${code(x.marketCode || "UNKNOWN")}<br>${escapeHtml(x.primaryGeography || "Geography unknown")} · ${escapeHtml(x.language || "Language unknown")}`,
+        `${escapeHtml(x.researchSourceName || "Unknown source")}<br>${badge(x.verificationStatus)} ${badge(x.confidenceLevel)}`
+      ]);
+  } else {
+    headers = ["Creator / content", "Captured", "Reach", "Engagement", "Format", "Provenance"];
+    rows = state.economicsPerformanceSnapshots
+      .filter(x => auditHaystack(x).includes(term))
+      .map(x => [
+        `<strong>${escapeHtml(x.creatorName)}</strong><br>${escapeHtml(x.contentTitle || "Creator-wide snapshot")}`,
+        formatDate(x.capturedAt),
+        `Average ${x.averageViews == null ? "UNKNOWN" : Number(x.averageViews).toLocaleString()}<br>Monthly ${x.monthlyViews == null ? "UNKNOWN" : Number(x.monthlyViews).toLocaleString()}<br>Historical ${x.historicalReach == null ? "UNKNOWN" : Number(x.historicalReach).toLocaleString()}`,
+        `Rate ${x.engagementRate == null ? "UNKNOWN" : `${(x.engagementRate * 100).toFixed(1)}%`}<br>Retention ${x.retentionRate == null ? "UNKNOWN" : `${(x.retentionRate * 100).toFixed(1)}%`}`,
+        `${code(x.platform || "UNKNOWN")}<br>${escapeHtml(x.contentFormat || "Format unknown")} · ${x.publishingFrequencyPerWeek ?? "?"}/week`,
+        `${escapeHtml(x.researchSourceName || "Unknown source")}<br>${badge(x.verificationStatus)} ${badge(x.confidenceLevel)}`
+      ]);
   }
   $("#economics-content").innerHTML = rows.length
     ? `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>`

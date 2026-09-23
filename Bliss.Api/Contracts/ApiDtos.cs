@@ -588,4 +588,46 @@ public sealed record MarketBenchmarkObservationDto(
     string? Notes,
     DateTime CreatedAt);
 
+public sealed record CreatorAudienceSnapshotDto(
+    Guid Id,
+    Guid CreatorId,
+    string CreatorName,
+    Guid? GeographicMarketId,
+    string? MarketCode,
+    Guid? ResearchSourceId,
+    string? ResearchSourceName,
+    DateTime CapturedAt,
+    int? Subscribers,
+    decimal? FemalePercentage,
+    decimal? MalePercentage,
+    string? PrimaryAgeRange,
+    string? PrimaryGeography,
+    string? Language,
+    string ConfidenceLevel,
+    string VerificationStatus,
+    DateTime CreatedAt);
+
+public sealed record CreatorPerformanceSnapshotDto(
+    Guid Id,
+    Guid CreatorId,
+    string CreatorName,
+    Guid? ContentItemId,
+    string? ContentTitle,
+    Guid? ResearchSourceId,
+    string? ResearchSourceName,
+    DateTime CapturedAt,
+    int? AverageViews,
+    int? DailyViews,
+    int? WeeklyViews,
+    int? MonthlyViews,
+    int? HistoricalReach,
+    decimal? EngagementRate,
+    decimal? RetentionRate,
+    decimal? PublishingFrequencyPerWeek,
+    string? Platform,
+    string? ContentFormat,
+    string ConfidenceLevel,
+    string VerificationStatus,
+    DateTime CreatedAt);
+
 
