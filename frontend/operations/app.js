@@ -13,7 +13,7 @@ const state = {
   },
   loaded: false,
   matches: [], creators: [], advertisers: [], programs: [], opportunities: [],
-  content: [], contentDetails: [], campaigns: [], ruleVersions: [],
+  content: [], contentDetails: [], campaigns: [], campaignDetails: [], ruleVersions: [],
   runs: [], ingestions: [], formations: [], reviews: [], placements: [],
   reviewQueue: [], placementQueue: [], provenances: [],
   weddingPlannerWorkspaces: [], weddingPlannerSessions: [], weddingPlannerMessages: [],
@@ -159,13 +159,14 @@ async function loadDashboard() {
       economicsCompensationIllustrations, economicsResearchRuns,
       economicsHistoricalPlacements, economicsCampaignPerformance
     ] = values;
-    const [contentDetails, ruleDetails] = await Promise.all([
+    const [contentDetails, ruleDetails, campaignDetails] = await Promise.all([
       Promise.all(content.map(item => api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] })))),
-      Promise.all(ruleVersions.map(rule => api(`/api/rule-versions/${rule.id}`).catch(() => rule)))
+      Promise.all(ruleVersions.map(rule => api(`/api/rule-versions/${rule.id}`).catch(() => rule))),
+      Promise.all(campaigns.map(campaign => api(`/api/campaigns/${campaign.id}`).catch(() => ({ ...campaign, placements: [] }))))
     ]);
     Object.assign(state, {
       matches, creators, advertisers, programs, opportunities, content, contentDetails,
-      campaigns, ruleVersions: ruleDetails, runs, ingestions, formations, reviews,
+      campaigns, campaignDetails, ruleVersions: ruleDetails, runs, ingestions, formations, reviews,
       placements, reviewQueue, placementQueue, provenances, affiliateNetworks,
       networkAccesses, programAccesses, runtime, weddingPlannerWorkspaces,
       economicsMarkets, economicsModels, economicsSources, economicsObservations,
@@ -564,8 +565,14 @@ function renderEconomics() {
 
   const historyPlacement = $("#history-placement");
   const selectedHistoryPlacement = historyPlacement.value;
-  historyPlacement.innerHTML = state.placements.map(x =>
-    `<option value="${x.campaignPlacementId}">${escapeHtml(campaignById(x.campaignId)?.name || shortId(x.campaignId))} · ${escapeHtml(creatorById(x.creatorId)?.name || shortId(x.creatorId))} · ${code(shortId(x.campaignPlacementId))}</option>`).join("");
+  const campaignPlacements = state.campaignDetails.flatMap(campaign =>
+    (campaign.placements || []).map(placement => ({ campaign, placement })));
+  historyPlacement.innerHTML = campaignPlacements.length
+    ? campaignPlacements.map(({campaign,placement}) => {
+      const content = state.content.find(x => x.id === placement.contentItemId);
+      return `<option value="${placement.id}">${escapeHtml(campaign.name)} · ${escapeHtml(creatorById(content?.creatorId)?.name || "Unknown creator")} · ${escapeHtml(friendlyStatus(placement.status))}</option>`;
+    }).join("")
+    : `<option value="">No planned placements</option>`;
   if ([...historyPlacement.options].some(x => x.value === selectedHistoryPlacement)) {
     historyPlacement.value = selectedHistoryPlacement;
   }
