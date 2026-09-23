@@ -43,6 +43,8 @@ public class BlissDbContext : DbContext
     public DbSet<WeddingPlannerPlanningSession> WeddingPlannerPlanningSessions => Set<WeddingPlannerPlanningSession>();
     public DbSet<WeddingPlannerConversationMessage> WeddingPlannerConversationMessages => Set<WeddingPlannerConversationMessage>();
     public DbSet<WeddingPlannerAuditEvent> WeddingPlannerAuditEvents => Set<WeddingPlannerAuditEvent>();
+    public DbSet<WeddingPlannerEconomicsRequest> WeddingPlannerEconomicsRequests =>
+        Set<WeddingPlannerEconomicsRequest>();
 
     public DbSet<GeographicMarket> GeographicMarkets => Set<GeographicMarket>();
     public DbSet<PricingModel> PricingModels => Set<PricingModel>();

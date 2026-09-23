@@ -541,6 +541,34 @@ public sealed record WeddingPlannerAuditEventDto(
     string? Detail,
     DateTime OccurredAt);
 
+public sealed record RequestWeddingPlannerEconomicsRecommendationRequest(
+    Guid BlissMatchId,
+    Guid AdInventorySlotId,
+    Guid GeographicMarketId,
+    string PricingModelCode,
+    int? DurationSeconds,
+    string? IndustryCategory,
+    string? CampaignObjective,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record WeddingPlannerEconomicsRequestDto(
+    Guid Id,
+    Guid WorkspaceId,
+    Guid SessionId,
+    Guid AdvertiserId,
+    Guid BlissMatchId,
+    Guid AdInventorySlotId,
+    Guid GeographicMarketId,
+    Guid PricingModelId,
+    string Status,
+    string RequestedBy,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime CreatedAt,
+    RateRecommendationDto Recommendation,
+    bool IsReplay);
+
 public sealed record GeographicMarketDto(
     Guid Id,
     string CountryCode,

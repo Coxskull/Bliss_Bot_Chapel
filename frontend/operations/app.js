@@ -17,6 +17,7 @@ const state = {
   runs: [], ingestions: [], formations: [], reviews: [], placements: [],
   reviewQueue: [], placementQueue: [], provenances: [],
   weddingPlannerWorkspaces: [], weddingPlannerSessions: [], weddingPlannerMessages: [],
+  weddingPlannerEconomicsRequests: [],
   selectedWeddingPlannerWorkspace: null, selectedWeddingPlannerSession: null,
   affiliateNetworks: [], networkAccesses: [], programAccesses: [],
   economicsMarkets: [], economicsModels: [], economicsSources: [], economicsObservations: [],
@@ -50,6 +51,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   fillKey("#research-run-idempotency");
   fillKey("#research-candidate-idempotency");
   fillKey("#research-review-idempotency");
+  fillKey("#wedding-planner-economics-key");
   route();
   await loadSession();
   syncOperatorUi();
@@ -1445,11 +1447,13 @@ function bindActions() {
   $("#wedding-planner-open-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerWorkspace(event.currentTarget);});
   $("#wedding-planner-session-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerSession(event.currentTarget);});
   $("#wedding-planner-message-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerMessage(event.currentTarget);});
+  $("#wedding-planner-economics-form").addEventListener("submit",event=>{event.preventDefault();submitWeddingPlannerEconomics(event.currentTarget);});
   $("#regenerate-review-key").addEventListener("click",generateReviewIdempotencyKey);
   $("#regenerate-placement-key").addEventListener("click",generatePlacementIdempotencyKey);
   $("#regenerate-wedding-planner-workspace-key").addEventListener("click",()=>fillKey("#wedding-planner-workspace-key"));
   $("#regenerate-wedding-planner-session-key").addEventListener("click",()=>fillKey("#wedding-planner-session-key"));
   $("#regenerate-wedding-planner-message-key").addEventListener("click",()=>fillKey("#wedding-planner-message-key"));
+  $("#regenerate-wedding-planner-economics-key").addEventListener("click",()=>fillKey("#wedding-planner-economics-key"));
   $("#regenerate-economics-key").addEventListener("click",()=>fillKey("#economics-idempotency"));
   $("#regenerate-quote-key").addEventListener("click",()=>fillKey("#quote-idempotency"));
   $("#regenerate-quote-action-key").addEventListener("click",()=>fillKey("#quote-action-idempotency"));
@@ -1461,6 +1465,9 @@ function bindActions() {
     const recommendation=state.economicsRecommendations.find(x=>x.id===event.target.value);
     if(recommendation)$("#quote-amount").value=recommendation.rangeTarget;
   });
+  $("#wedding-planner-session").addEventListener("change",event=>selectWeddingPlannerSession(event.target.value));
+  $("#wedding-planner-economics-session").addEventListener("change",event=>selectWeddingPlannerSession(event.target.value));
+  $("#wedding-planner-economics-match").addEventListener("change",updateWeddingPlannerEconomicsInventory);
   $("#placement-match").addEventListener("change",event=>{state.selectedPlacement=event.target.value;renderPlacements();});
   $("#placement-content").addEventListener("change",updatePlacementSlots);
   $("#review-match").addEventListener("change",event=>{state.selectedReview=event.target.value;renderReviews();});
@@ -1617,18 +1624,21 @@ function skeleton(){return `<div class="activity-skeleton"></div><div class="act
 function generateReviewIdempotencyKey(){const field=$("#review-idempotency");if(field)field.value=`manual-${crypto.randomUUID()}`;}
 function generatePlacementIdempotencyKey(){const field=$("#placement-idempotency");if(field)field.value=`manual-${crypto.randomUUID()}`;}
 function fillKey(selector){const field=$(selector);if(field)field.value=`manual-${crypto.randomUUID()}`;}
-function generateWeddingPlannerKeys(){fillKey("#wedding-planner-workspace-key");fillKey("#wedding-planner-session-key");fillKey("#wedding-planner-message-key");}
+function generateWeddingPlannerKeys(){fillKey("#wedding-planner-workspace-key");fillKey("#wedding-planner-session-key");fillKey("#wedding-planner-message-key");fillKey("#wedding-planner-economics-key");}
 
 function renderWeddingPlanner() {
   const advertiserSelect = $("#wedding-planner-advertiser");
   const workspaceSelect = $("#wedding-planner-workspace");
   const sessionSelect = $("#wedding-planner-session");
+  const economicsSessionSelect = $("#wedding-planner-economics-session");
   if (!advertiserSelect) return;
   advertiserSelect.innerHTML = state.advertisers.map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`).join("");
   workspaceSelect.innerHTML = state.weddingPlannerWorkspaces.map(x => `<option value="${x.workspaceId}">${escapeHtml(x.advertiserName)}</option>`).join("");
   if (state.selectedWeddingPlannerWorkspace) workspaceSelect.value = state.selectedWeddingPlannerWorkspace;
   sessionSelect.innerHTML = state.weddingPlannerSessions.map(x => `<option value="${x.sessionId}">${x.sessionId.slice(0, 8)} · ${x.messageCount} messages</option>`).join("");
   if (state.selectedWeddingPlannerSession) sessionSelect.value = state.selectedWeddingPlannerSession;
+  economicsSessionSelect.innerHTML = state.weddingPlannerSessions.map(x => `<option value="${x.sessionId}">${x.sessionId.slice(0, 8)} · advertiser-owned session</option>`).join("");
+  if (state.selectedWeddingPlannerSession) economicsSessionSelect.value = state.selectedWeddingPlannerSession;
   const list = $("#wedding-planner-workspace-list");
   list.innerHTML = state.weddingPlannerWorkspaces.length
     ? state.weddingPlannerWorkspaces.map(x => `<button class="activity-item" data-wedding-workspace="${x.workspaceId}"><span class="activity-icon">💒</span><span><strong>${escapeHtml(x.advertiserName)}</strong><small>${escapeHtml(x.status)} · primary workspace</small></span><span class="activity-time">${relativeTime(x.updatedAt)}</span></button>`).join("")
@@ -1637,6 +1647,67 @@ function renderWeddingPlanner() {
   messages.innerHTML = state.weddingPlannerMessages.length
     ? state.weddingPlannerMessages.map(x => `<div class="activity-item"><span class="activity-icon">${x.sequenceNumber}</span><span><strong>${escapeHtml(x.actorType)}</strong><small>${escapeHtml(x.body)}</small></span><span class="activity-time">${relativeTime(x.createdAt)}</span></div>`).join("")
     : emptyState("Select a session to resume durable messages.");
+  const workspace = state.weddingPlannerWorkspaces.find(x =>
+    x.workspaceId === state.selectedWeddingPlannerWorkspace);
+  const programIds = new Set(state.programs
+    .filter(x => x.advertiserId === workspace?.advertiserId)
+    .map(x => x.id));
+  const opportunityIds = new Set(state.opportunities
+    .filter(x => programIds.has(x.advertiserProgramId))
+    .map(x => x.id));
+  const approvedMatches = state.matches.filter(x =>
+    x.status === "APPROVED" && opportunityIds.has(x.advertiserOpportunityId));
+  const matchSelect = $("#wedding-planner-economics-match");
+  matchSelect.innerHTML = approvedMatches.length
+    ? approvedMatches.map(x => `<option value="${x.id}">${escapeHtml(creatorById(x.creatorId)?.name || shortId(x.creatorId))} · ${escapeHtml(opportunityById(x.advertiserOpportunityId)?.name || shortId(x.advertiserOpportunityId))}</option>`).join("")
+    : `<option value="">No approved matches for this advertiser</option>`;
+  const marketSelect = $("#wedding-planner-economics-market");
+  marketSelect.innerHTML = state.economicsMarkets.map(x =>
+    `<option value="${x.id}">${escapeHtml(x.marketCode)} · ${escapeHtml(x.cityName || x.countryCode)}</option>`).join("");
+  const manila = [...marketSelect.options].find(x => x.textContent.startsWith("PH-MNL"));
+  if (manila && !marketSelect.value) marketSelect.value = manila.value;
+  $("#wedding-planner-economics-model").innerHTML = state.economicsModels.map(x =>
+    `<option value="${x.code}">${escapeHtml(x.code)} · ${escapeHtml(x.name)}</option>`).join("");
+  updateWeddingPlannerEconomicsInventory();
+  const latestRequest = state.weddingPlannerEconomicsRequests[0];
+  $("#wedding-planner-economics-result").innerHTML = latestRequest
+    ? renderWeddingPlannerEconomicsResult(latestRequest)
+    : "";
+  $("#wedding-planner-economics-list").innerHTML = state.weddingPlannerEconomicsRequests.length
+    ? state.weddingPlannerEconomicsRequests.map(x => `<div class="activity-item"><span class="activity-icon">◈</span><span><strong>${escapeHtml(x.recommendation.creatorName)} · ${escapeHtml(x.recommendation.pricingModelCode)}</strong><small>${x.recommendation.rangeLow}–${x.recommendation.rangeHigh} ${escapeHtml(x.recommendation.currencyCode)} · ${escapeHtml(x.recommendation.pricingRuleVersion)} · not a quote</small></span><span>${badge(x.status)}</span></div>`).join("")
+    : emptyState("No Economics recommendations are linked to this session.");
+}
+
+function updateWeddingPlannerEconomicsInventory() {
+  const match = state.matches.find(x =>
+    x.id === $("#wedding-planner-economics-match")?.value);
+  const slotSelect = $("#wedding-planner-economics-slot");
+  if (!slotSelect) return;
+  const content = match
+    ? state.contentDetails.filter(x => x.creatorId === match.creatorId)
+    : [];
+  const slots = content.flatMap(item =>
+    (item.adInventorySlots || [])
+      .filter(slot => slot.isAvailable)
+      .map(slot => ({ item, slot })));
+  slotSelect.innerHTML = slots.length
+    ? slots.map(({item,slot}) => `<option value="${slot.id}">${escapeHtml(item.title)} · ${escapeHtml(friendlyStatus(slot.slotType))} · ${slot.durationSeconds ?? "unknown"}s</option>`).join("")
+    : `<option value="">No compatible available inventory</option>`;
+}
+
+function renderWeddingPlannerEconomicsResult(request) {
+  const recommendation = request.recommendation;
+  return `<section class="panel recommendation-result">
+    <div class="panel-header"><div><p class="eyebrow">ECONOMICS RESPONSE · PRESENTATION ONLY</p><h3>${escapeHtml(recommendation.creatorName)} · ${escapeHtml(recommendation.marketCode)}</h3></div>${badge(request.status)}</div>
+    <div class="stat-grid">
+      <article class="stat-card"><strong>${recommendation.rangeLow} ${escapeHtml(recommendation.currencyCode)}</strong><span>Low</span><small>Persisted range</small></article>
+      <article class="stat-card"><strong>${recommendation.rangeTarget} ${escapeHtml(recommendation.currencyCode)}</strong><span>Target</span><small>Economics output—not Planner math</small></article>
+      <article class="stat-card"><strong>${recommendation.rangeHigh} ${escapeHtml(recommendation.currencyCode)}</strong><span>High</span><small>Not an approved quote</small></article>
+      <article class="stat-card"><strong>${escapeHtml(friendlyStatus(recommendation.confidenceLevel))}</strong><span>Confidence</span><small>${escapeHtml(recommendation.pricingModelCode)} · ${escapeHtml(recommendation.pricingRuleVersion)}</small></article>
+    </div>
+    <div class="detail-section"><h4>Explainable factors</h4><div class="check-list">${recommendation.factors.map(x => `<div class="check-item"><div><strong>${escapeHtml(x.label)}</strong><small>${escapeHtml(x.rationale)}</small></div><code>${x.adjustmentMultiplier}×</code></div>`).join("")}</div></div>
+    <p class="result-note"><strong>${recommendation.sources.length} linked source set</strong> · recommendation ${shortId(recommendation.id)} · human-controlled quote workflow remains separate.</p>
+  </section>`;
 }
 
 async function selectWeddingPlannerWorkspace(workspaceId) {
@@ -1645,14 +1716,35 @@ async function selectWeddingPlannerWorkspace(workspaceId) {
     state.weddingPlannerSessions = await api(`/api/wedding-planner/workspaces/${workspaceId}/sessions`);
     state.selectedWeddingPlannerSession = state.weddingPlannerSessions[0]?.sessionId || null;
     if (state.selectedWeddingPlannerSession) {
-      state.weddingPlannerMessages = await api(`/api/wedding-planner/sessions/${state.selectedWeddingPlannerSession}/messages`);
+      [state.weddingPlannerMessages, state.weddingPlannerEconomicsRequests] = await Promise.all([
+        api(`/api/wedding-planner/sessions/${state.selectedWeddingPlannerSession}/messages`),
+        api(`/api/wedding-planner/sessions/${state.selectedWeddingPlannerSession}/economics/recommendations`)
+      ]);
     } else {
       state.weddingPlannerMessages = [];
+      state.weddingPlannerEconomicsRequests = [];
     }
   } catch (error) {
     toast(error.message, true);
     state.weddingPlannerSessions = [];
     state.weddingPlannerMessages = [];
+    state.weddingPlannerEconomicsRequests = [];
+  }
+  renderWeddingPlanner();
+}
+
+async function selectWeddingPlannerSession(sessionId) {
+  state.selectedWeddingPlannerSession = sessionId;
+  try {
+    [state.weddingPlannerMessages, state.weddingPlannerEconomicsRequests] =
+      await Promise.all([
+        api(`/api/wedding-planner/sessions/${sessionId}/messages`),
+        api(`/api/wedding-planner/sessions/${sessionId}/economics/recommendations`)
+      ]);
+  } catch (error) {
+    toast(error.message, true);
+    state.weddingPlannerMessages = [];
+    state.weddingPlannerEconomicsRequests = [];
   }
   renderWeddingPlanner();
 }
@@ -1696,6 +1788,7 @@ async function submitWeddingPlannerSession(form) {
     state.selectedWeddingPlannerSession = result.sessionId;
     state.weddingPlannerSessions = await api(`/api/wedding-planner/workspaces/${result.workspaceId}/sessions`);
     state.weddingPlannerMessages = await api(`/api/wedding-planner/sessions/${result.sessionId}/messages`);
+    state.weddingPlannerEconomicsRequests = await api(`/api/wedding-planner/sessions/${result.sessionId}/economics/recommendations`);
     renderWeddingPlanner();
   } catch (error) {
     toast(error.message, true);
@@ -1723,6 +1816,48 @@ async function submitWeddingPlannerMessage(form) {
     renderWeddingPlanner();
   } catch (error) {
     toast(error.message, true);
+  }
+}
+
+async function submitWeddingPlannerEconomics(form) {
+  const value = name => form.elements[name].value.trim();
+  const submit = form.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  submit.textContent = "Asking Economics…";
+  try {
+    const sessionId = value("sessionId");
+    const result = await api(
+      `/api/wedding-planner/sessions/${sessionId}/economics/recommendations`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blissMatchId: value("blissMatchId"),
+          adInventorySlotId: value("adInventorySlotId"),
+          geographicMarketId: value("geographicMarketId"),
+          pricingModelCode: value("pricingModelCode"),
+          durationSeconds: value("durationSeconds")
+            ? Number(value("durationSeconds"))
+            : null,
+          industryCategory: value("industryCategory") || null,
+          campaignObjective: value("campaignObjective") || null,
+          sourceSystem: value("sourceSystem"),
+          idempotencyKey: value("idempotencyKey")
+        })
+      });
+    toast(result.isReplay
+      ? "Economics recommendation replayed"
+      : "Economics recommendation ready—not a quote");
+    fillKey("#wedding-planner-economics-key");
+    state.selectedWeddingPlannerSession = sessionId;
+    state.weddingPlannerEconomicsRequests = await api(
+      `/api/wedding-planner/sessions/${sessionId}/economics/recommendations`);
+    renderWeddingPlanner();
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    submit.disabled = false;
+    submit.innerHTML = `Ask Economics <span>→</span>`;
   }
 }
 function prettyJson(value){try{return escapeHtml(JSON.stringify(typeof value==="string"?JSON.parse(value):value,null,2));}catch{return escapeHtml(value||"No snapshot");}}

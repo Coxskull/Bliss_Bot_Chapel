@@ -125,6 +125,14 @@ public sealed class EfModelConstraintTests
         Assert.Contains("EconomicsResearchCandidate.PromotedObservationId", restrictKeys);
         Assert.Contains("EconomicsResearchReviewDecision.EconomicsResearchCandidateId", restrictKeys);
         Assert.Contains("EconomicsResearchReviewDecision.MarketBenchmarkObservationId", restrictKeys);
+        Assert.Contains("WeddingPlannerEconomicsRequest.WorkspaceId", restrictKeys);
+        Assert.Contains("WeddingPlannerEconomicsRequest.SessionId", restrictKeys);
+        Assert.Contains("WeddingPlannerEconomicsRequest.AdvertiserId", restrictKeys);
+        Assert.Contains("WeddingPlannerEconomicsRequest.BlissMatchId", restrictKeys);
+        Assert.Contains("WeddingPlannerEconomicsRequest.AdInventorySlotId", restrictKeys);
+        Assert.Contains("WeddingPlannerEconomicsRequest.GeographicMarketId", restrictKeys);
+        Assert.Contains("WeddingPlannerEconomicsRequest.PricingModelId", restrictKeys);
+        Assert.Contains("WeddingPlannerEconomicsRequest.RateRecommendationId", restrictKeys);
     }
 
     [Fact]
@@ -259,6 +267,25 @@ public sealed class EfModelConstraintTests
     }
 
     [Fact]
+    public void Wedding_planner_economics_handshake_has_unique_idempotency_and_recommendation()
+    {
+        using var db = TestDb.CreateContext();
+        var entity = db.Model.FindEntityType(typeof(WeddingPlannerEconomicsRequest));
+        Assert.NotNull(entity);
+
+        Assert.True(entity!.GetIndexes().Single(i =>
+            i.Properties.Select(p => p.Name).SequenceEqual(new[]
+            {
+                nameof(WeddingPlannerEconomicsRequest.SourceSystem),
+                nameof(WeddingPlannerEconomicsRequest.IdempotencyKey)
+            })).IsUnique);
+        Assert.True(entity.GetIndexes().Single(i =>
+            i.Properties.Count == 1
+            && i.Properties[0].Name
+                == nameof(WeddingPlannerEconomicsRequest.RateRecommendationId)).IsUnique);
+    }
+
+    [Fact]
     public void Female_percentage_is_nullable()
     {
         using var db = TestDb.CreateContext();
@@ -329,6 +356,14 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(WeddingPlannerPlanningSession), nameof(WeddingPlannerPlanningSession.WorkspaceId));
         AssertIndex(db, typeof(WeddingPlannerConversationMessage), nameof(WeddingPlannerConversationMessage.SessionId));
         AssertIndex(db, typeof(WeddingPlannerAuditEvent), nameof(WeddingPlannerAuditEvent.AdvertiserId));
+        AssertIndex(db, typeof(WeddingPlannerEconomicsRequest), nameof(WeddingPlannerEconomicsRequest.WorkspaceId));
+        AssertIndex(db, typeof(WeddingPlannerEconomicsRequest), nameof(WeddingPlannerEconomicsRequest.SessionId));
+        AssertIndex(db, typeof(WeddingPlannerEconomicsRequest), nameof(WeddingPlannerEconomicsRequest.AdvertiserId));
+        AssertIndex(db, typeof(WeddingPlannerEconomicsRequest), nameof(WeddingPlannerEconomicsRequest.BlissMatchId));
+        AssertIndex(db, typeof(WeddingPlannerEconomicsRequest), nameof(WeddingPlannerEconomicsRequest.AdInventorySlotId));
+        AssertIndex(db, typeof(WeddingPlannerEconomicsRequest), nameof(WeddingPlannerEconomicsRequest.GeographicMarketId));
+        AssertIndex(db, typeof(WeddingPlannerEconomicsRequest), nameof(WeddingPlannerEconomicsRequest.PricingModelId));
+        AssertIndex(db, typeof(WeddingPlannerEconomicsRequest), nameof(WeddingPlannerEconomicsRequest.RateRecommendationId));
         AssertIndex(db, typeof(RateRecommendation), nameof(RateRecommendation.CreatorId));
         AssertIndex(db, typeof(RateRecommendation), nameof(RateRecommendation.AdInventorySlotId));
         AssertIndex(db, typeof(RateRecommendation), nameof(RateRecommendation.GeographicMarketId));

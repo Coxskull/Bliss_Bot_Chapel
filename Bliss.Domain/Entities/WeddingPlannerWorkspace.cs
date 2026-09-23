@@ -18,4 +18,6 @@ public class WeddingPlannerWorkspace
     public Advertiser Advertiser { get; set; } = null!;
     public ICollection<WeddingPlannerPlanningSession> Sessions { get; set; } = new List<WeddingPlannerPlanningSession>();
     public ICollection<WeddingPlannerAuditEvent> AuditEvents { get; set; } = new List<WeddingPlannerAuditEvent>();
+    public ICollection<WeddingPlannerEconomicsRequest> EconomicsRequests { get; set; } =
+        new List<WeddingPlannerEconomicsRequest>();
 }
