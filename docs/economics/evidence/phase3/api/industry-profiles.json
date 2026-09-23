@@ -1,0 +1,19 @@
+[
+    {
+        "id": "ec000008-0000-0000-0000-000000000001",
+        "geographicMarketId": "ec000001-0000-0000-0000-000000000001",
+        "marketCode": "PH-MNL",
+        "researchSourceId": "ec000002-0000-0000-0000-000000000001",
+        "researchSourceName": "TEST Synthetic Market Fixture",
+        "category": "WOMENS_FOOTWEAR",
+        "version": 1,
+        "acquisitionCostLow": 480.0,
+        "acquisitionCostHigh": 900.0,
+        "currencyCode": "PHP",
+        "notes": "Synthetic TEST acquisition-cost range; not an advertiser quote.",
+        "confidenceLevel": "LOW",
+        "verificationStatus": "ESTIMATED",
+        "effectiveAt": "2026-09-01T00:00:00Z",
+        "createdAt": "2026-09-23T02:00:00Z"
+    }
+]

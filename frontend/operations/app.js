@@ -21,6 +21,8 @@ const state = {
   affiliateNetworks: [], networkAccesses: [], programAccesses: [],
   economicsMarkets: [], economicsModels: [], economicsSources: [], economicsObservations: [],
   economicsAudienceSnapshots: [], economicsPerformanceSnapshots: [],
+  economicsMarketProfiles: [], economicsIndustryProfiles: [],
+  economicsInventoryBenchmarks: [], economicsExchangeRates: [],
   matchFilter: "ALL", matchSearch: "", creatorSearch: "", auditSearch: "", economicsSearch: "",
   partnerTab: "advertisers", inventoryTab: "content", auditTab: "evaluations", economicsTab: "markets",
   selectedReview: null, selectedPlacement: null,
@@ -116,7 +118,11 @@ async function loadDashboard() {
       api("/api/economics/research-sources").catch(() => []),
       api("/api/economics/observations").catch(() => []),
       api("/api/economics/audience-snapshots").catch(() => []),
-      api("/api/economics/performance-snapshots").catch(() => [])
+      api("/api/economics/performance-snapshots").catch(() => []),
+      api("/api/economics/market-profiles").catch(() => []),
+      api("/api/economics/industry-profiles").catch(() => []),
+      api("/api/economics/inventory-benchmarks").catch(() => []),
+      api("/api/economics/exchange-rates").catch(() => [])
     ]);
     const [
       matches, creators, advertisers, programs, opportunities, content, campaigns,
@@ -124,7 +130,8 @@ async function loadDashboard() {
       placementQueue, provenances, affiliateNetworks, networkAccesses, programAccesses,
       runtime, weddingPlannerWorkspaces, economicsMarkets, economicsModels,
       economicsSources, economicsObservations, economicsAudienceSnapshots,
-      economicsPerformanceSnapshots
+      economicsPerformanceSnapshots, economicsMarketProfiles, economicsIndustryProfiles,
+      economicsInventoryBenchmarks, economicsExchangeRates
     ] = values;
     const [contentDetails, ruleDetails] = await Promise.all([
       Promise.all(content.map(item => api(`/api/content-items/${item.id}`).catch(() => ({ ...item, adInventorySlots: [] })))),
@@ -136,7 +143,9 @@ async function loadDashboard() {
       placements, reviewQueue, placementQueue, provenances, affiliateNetworks,
       networkAccesses, programAccesses, runtime, weddingPlannerWorkspaces,
       economicsMarkets, economicsModels, economicsSources, economicsObservations,
-      economicsAudienceSnapshots, economicsPerformanceSnapshots, loaded: true
+      economicsAudienceSnapshots, economicsPerformanceSnapshots,
+      economicsMarketProfiles, economicsIndustryProfiles,
+      economicsInventoryBenchmarks, economicsExchangeRates, loaded: true
     });
     state.selectedReview = reviewQueue.some(x => x.blissMatchId === state.selectedReview)
       ? state.selectedReview : reviewQueue[0]?.blissMatchId || null;
@@ -352,6 +361,9 @@ function renderEconomics() {
   $("#economics-observation-count").textContent = state.economicsObservations.length;
   $("#economics-snapshot-count").textContent =
     state.economicsAudienceSnapshots.length + state.economicsPerformanceSnapshots.length;
+  $("#economics-context-count").textContent =
+    state.economicsMarketProfiles.length + state.economicsIndustryProfiles.length
+    + state.economicsInventoryBenchmarks.length + state.economicsExchangeRates.length;
 
   const term = state.economicsSearch.toLowerCase();
   let headers = [], rows = [];
@@ -400,7 +412,7 @@ function renderEconomics() {
         `${code(x.marketCode || "UNKNOWN")}<br>${escapeHtml(x.primaryGeography || "Geography unknown")} · ${escapeHtml(x.language || "Language unknown")}`,
         `${escapeHtml(x.researchSourceName || "Unknown source")}<br>${badge(x.verificationStatus)} ${badge(x.confidenceLevel)}`
       ]);
-  } else {
+  } else if (state.economicsTab === "performance") {
     headers = ["Creator / content", "Captured", "Reach", "Engagement", "Format", "Provenance"];
     rows = state.economicsPerformanceSnapshots
       .filter(x => auditHaystack(x).includes(term))
@@ -412,6 +424,44 @@ function renderEconomics() {
         `${code(x.platform || "UNKNOWN")}<br>${escapeHtml(x.contentFormat || "Format unknown")} · ${x.publishingFrequencyPerWeek ?? "?"}/week`,
         `${escapeHtml(x.researchSourceName || "Unknown source")}<br>${badge(x.verificationStatus)} ${badge(x.confidenceLevel)}`
       ]);
+  } else if (state.economicsTab === "market-profiles") {
+    headers = ["Market / version", "Effective", "Purchasing power", "Competition", "Scarcity", "Provenance"];
+    rows = state.economicsMarketProfiles.filter(x => auditHaystack(x).includes(term)).map(x => [
+      `${code(x.marketCode)}<br><strong>Version ${x.version}</strong>`,
+      `${formatDate(x.effectiveAt)}<br>${x.supersededAt ? `Superseded ${formatDate(x.supersededAt)}` : "Current"}`,
+      x.purchasingPowerIndex ?? "UNKNOWN",
+      badge(x.competitionLevel || "UNKNOWN"),
+      badge(x.audienceScarcityLevel || "UNKNOWN"),
+      `${escapeHtml(x.researchSourceName || "Unknown source")}<br>${badge(x.verificationStatus)} ${badge(x.confidenceLevel)}`
+    ]);
+  } else if (state.economicsTab === "industry-profiles") {
+    headers = ["Category / version", "Market", "Acquisition context", "Effective", "Provenance"];
+    rows = state.economicsIndustryProfiles.filter(x => auditHaystack(x).includes(term)).map(x => [
+      `<strong>${escapeHtml(friendlyStatus(x.category))}</strong><br>Version ${x.version}`,
+      code(x.marketCode || "GLOBAL"),
+      `${x.acquisitionCostLow ?? "?"}–${x.acquisitionCostHigh ?? "?"} ${escapeHtml(x.currencyCode || "")}<br><small>TEST context—not a quote</small>`,
+      formatDate(x.effectiveAt),
+      `${escapeHtml(x.researchSourceName || "Unknown source")}<br>${badge(x.verificationStatus)} ${badge(x.confidenceLevel)}`
+    ]);
+  } else if (state.economicsTab === "inventory-benchmarks") {
+    headers = ["Inventory", "Market / basis", "Duration band", "Synthetic range", "Effective", "Provenance"];
+    rows = state.economicsInventoryBenchmarks.filter(x => auditHaystack(x).includes(term)).map(x => [
+      `<strong>${escapeHtml(friendlyStatus(x.inventorySlotType))}</strong><br>${code(x.platform || "UNKNOWN")} · ${escapeHtml(x.contentFormat || "Unknown format")}`,
+      `${code(x.marketCode || "GLOBAL")} · ${code(x.pricingModelCode)}`,
+      `${x.durationSecondsLow ?? "?"}–${x.durationSecondsHigh ?? "?"} seconds<br><small>Variable, not a multiplier</small>`,
+      `${x.rangeLow ?? "?"}–${x.rangeHigh ?? "?"} ${escapeHtml(x.currencyCode)}<br><small>TEST fixture—not an Alpha rate</small>`,
+      formatDate(x.effectiveAt),
+      `${escapeHtml(x.researchSourceName || "Unknown source")}<br>${badge(x.verificationStatus)} ${badge(x.confidenceLevel)}`
+    ]);
+  } else {
+    headers = ["Currency pair", "Observed", "Synthetic rate", "Retrieved", "Provenance"];
+    rows = state.economicsExchangeRates.filter(x => auditHaystack(x).includes(term)).map(x => [
+      `${code(x.baseCurrencyCode)} → ${code(x.quoteCurrencyCode)}`,
+      formatDate(x.observedAt),
+      `<strong>${x.rate}</strong><br><small>TEST fixture—not for settlement</small>`,
+      formatDate(x.retrievedAt),
+      `${escapeHtml(x.researchSourceName || "Unknown source")}<br>${badge(x.verificationStatus)} ${badge(x.confidenceLevel)}`
+    ]);
   }
   $("#economics-content").innerHTML = rows.length
     ? `<table><thead><tr>${headers.map(x=>`<th>${x}</th>`).join("")}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(cell=>`<td>${cell}</td>`).join("")}</tr>`).join("")}</tbody></table>`

@@ -339,8 +339,9 @@ Wedding Planner must call .NET. It must not call an LLM for a price.
 | Wedding Planner Phase 8 handshake | Creative + approved match + compatible inventory → planned placement. Must **ask** Economics when quotes are in scope; Phase 8 is not rewritten now. |
 | Wedding Planner Phase 9 | Measurement/learning. Consumes historical economics; does not own pricing rules. |
 | Economics Phase 1 | Reference-data foundation implemented and accepted. |
-| Economics Phase 2 | Creator audience/performance snapshots implemented; pending owner acceptance. |
-| Economics Phases 3–9 | Individually gated by `PHASE-ROADMAP.md`; not authorized. |
+| Economics Phase 2 | Creator audience/performance snapshots implemented and accepted. |
+| Economics Phase 3 | Market/industry profiles, inventory benchmarks, and FX implemented; pending owner acceptance. |
+| Economics Phases 4–9 | Individually gated by `PHASE-ROADMAP.md`; not authorized. |
 | Media ledger / payouts | Separate later work. Reads contracted amounts; does not price inventory. |
 
 Do not auto-advance this module into the current Wedding Planner

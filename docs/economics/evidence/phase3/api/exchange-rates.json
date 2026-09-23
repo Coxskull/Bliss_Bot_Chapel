@@ -1,0 +1,30 @@
+[
+    {
+        "id": "ec000010-0000-0000-0000-000000000002",
+        "researchSourceId": "ec000002-0000-0000-0000-000000000001",
+        "researchSourceName": "TEST Synthetic Market Fixture",
+        "baseCurrencyCode": "USD",
+        "quoteCurrencyCode": "PHP",
+        "rate": 58.5,
+        "observedAt": "2026-09-01T00:00:00Z",
+        "retrievedAt": "2026-09-23T02:00:00Z",
+        "confidenceLevel": "LOW",
+        "verificationStatus": "ESTIMATED",
+        "notes": "Synthetic TEST FX observation; not suitable for settlement.",
+        "createdAt": "2026-09-23T02:00:00Z"
+    },
+    {
+        "id": "ec000010-0000-0000-0000-000000000001",
+        "researchSourceId": "ec000002-0000-0000-0000-000000000001",
+        "researchSourceName": "TEST Synthetic Market Fixture",
+        "baseCurrencyCode": "USD",
+        "quoteCurrencyCode": "PHP",
+        "rate": 58.2,
+        "observedAt": "2026-08-01T00:00:00Z",
+        "retrievedAt": "2026-09-23T02:00:00Z",
+        "confidenceLevel": "LOW",
+        "verificationStatus": "ESTIMATED",
+        "notes": "Synthetic TEST FX observation; not suitable for settlement.",
+        "createdAt": "2026-09-23T02:00:00Z"
+    }
+]

@@ -57,9 +57,13 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Wedding Planner", body);
         Assert.Contains("Advertiser workspace and session ledger", body);
         Assert.Contains("Economics reference data", body);
-        Assert.Contains("No rate engine in Phases 1–2", body);
+        Assert.Contains("No rate engine in Phases 1–3", body);
         Assert.Contains("Audience snapshots", body);
         Assert.Contains("Performance snapshots", body);
+        Assert.Contains("Market profiles", body);
+        Assert.Contains("Industry profiles", body);
+        Assert.Contains("Inventory benchmarks", body);
+        Assert.Contains("FX observations", body);
         Assert.Contains("Export ledger", body);
         Assert.Contains("Verify pack", body);
         Assert.Contains("app.js", body);
@@ -82,6 +86,10 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("/api/economics/observations", script);
         Assert.Contains("/api/economics/audience-snapshots", script);
         Assert.Contains("/api/economics/performance-snapshots", script);
+        Assert.Contains("/api/economics/market-profiles", script);
+        Assert.Contains("/api/economics/industry-profiles", script);
+        Assert.Contains("/api/economics/inventory-benchmarks", script);
+        Assert.Contains("/api/economics/exchange-rates", script);
         Assert.Contains("Phase 1 does not invoke AI", body);
         Assert.DoesNotContain("TEST ENVIRONMENT", body);
         Assert.DoesNotContain("TEST_OPERATOR", body);
