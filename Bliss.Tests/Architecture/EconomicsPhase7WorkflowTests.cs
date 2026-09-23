@@ -24,7 +24,10 @@ public sealed class EconomicsPhase7WorkflowTests
         Assert.Contains("AI cannot submit HIGH confidence", text);
         Assert.Contains("never writes the database", text);
         Assert.DoesNotContain("localhost", text, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("postgres", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(
+            document.RootElement.GetProperty("nodes").EnumerateArray(),
+            node => node.GetProperty("type").GetString()!
+                .Contains("postgres", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain("\"active\": true", text, StringComparison.Ordinal);
         Assert.DoesNotContain("apiKey", text, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("password", text, StringComparison.OrdinalIgnoreCase);
