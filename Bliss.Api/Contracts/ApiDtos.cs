@@ -541,4 +541,51 @@ public sealed record WeddingPlannerAuditEventDto(
     string? Detail,
     DateTime OccurredAt);
 
+public sealed record GeographicMarketDto(
+    Guid Id,
+    string CountryCode,
+    string? CityName,
+    string? MetroName,
+    string MarketCode,
+    string CurrencyCode,
+    bool IsActive,
+    DateTime CreatedAt);
+
+public sealed record PricingModelDto(
+    Guid Id,
+    string Code,
+    string Name,
+    string? Description,
+    bool IsActive);
+
+public sealed record ResearchSourceDto(
+    Guid Id,
+    string Name,
+    string? SourceUrl,
+    string SourceType,
+    bool IsApproved,
+    DateTime CreatedAt);
+
+public sealed record MarketBenchmarkObservationDto(
+    Guid Id,
+    Guid? ResearchSourceId,
+    string? ResearchSourceName,
+    string? ResearchSourceUrl,
+    Guid? GeographicMarketId,
+    string? MarketCode,
+    string? IndustryCategory,
+    string? Platform,
+    string? InventorySlotType,
+    string Metric,
+    decimal? NumericValue,
+    decimal? RangeLow,
+    decimal? RangeHigh,
+    string? CurrencyCode,
+    DateOnly? PublicationDate,
+    DateTime RetrievedAt,
+    string ConfidenceLevel,
+    string VerificationStatus,
+    string? Notes,
+    DateTime CreatedAt);
+
 
