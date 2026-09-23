@@ -28,5 +28,6 @@ Phase 1 must prove the following requirement IDs.
 - n8n and live affiliate/ad APIs
 - Tracking, ledger, payouts, payments
 - Wedding Planner / production automation
+- Economics & Rate Intelligence Engine (inventory quotes, market CPMs, compensation rules)
 - Advanced authentication
 - Automatic campaign placement

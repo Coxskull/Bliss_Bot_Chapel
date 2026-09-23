@@ -28,6 +28,7 @@ COMPLETE requires evidence. Subjective guesses are not used.
 | AD-DELIVERY | Bliss | Production delivery | SlotType strings | 🟡 schema / ❌ runtime | PRE/MID/POST/LOWER_THIRD only | Slot persist | High if demo=prod | Placements | Do not treat website demo as engine |
 | MEASURE | Alpha/Bliss | Impressions/clicks/etc | — | ❌ | No tables | — | — | Placement IDs | New |
 | FIN-BLISS | Bliss | Media ledger | — | ❌ | — | — | 🔴 | Measurement | Separate from Auto finance |
+| ECO-BLISS | Bliss | Inventory rate intelligence | Vocabulary + reserved SQL | 🟡 docs | `docs/economics/` | `EconomicsBoundaryTests` | Med if faked | After WP current sequence | Do not hard-code CPM or 20/80 |
 | FIN-AUTO | Alpha Auto | Order payments/settlements | Many tables + providers | 🟡 | Code present; 🧪 none; 🔐 leaks | None | 🔴 | Rotate secrets first | Do not reuse as media ledger |
 | AUTH-BLISS | Bliss | AuthN/Z | `UseAuthorization` only | ❌ | Program.cs | None | 🔐 later | Product decision | Not Phase 1 |
 | N8N | All | Orchestration | — | ❌ | Zero n8n workflow files in these repos | — | — | APIs | Do not put truth in n8n |
@@ -80,13 +81,25 @@ Do **not** create a second campaign model. Extend `Campaign`/`CampaignPlacement`
 | Slot type | Status |
 | --- | --- |
 | PRE_ROLL, MID_ROLL, POST_ROLL, LOWER_THIRD | Constants + seed + tests |
-| PERIMETER_OVERLAY, CORNER_OVERLAY, ROTATING_OVERLAY, SPONSORED_SEGMENT | MISSING constants |
+| PERIMETER_OVERLAY, CORNER_OVERLAY, ROTATING_OVERLAY, SPONSORED_SEGMENT | Constants exist; not all seeded |
 
 One ContentItem many slots: **YES** (tested). One campaign many placements: **YES** (tested). Multiple advertisers on different slots: **architecturally possible** (no unique advertiser-on-content constraint). Placement history: **rows persist**; no versioning table. **No production delivery infrastructure.** Alpha Auto UI is not an ad renderer.
 
 ## Measurement gap
 
 Impressions, views, clicks, conversions, sales, revenue, completion, renewal, refund, chargeback, complaint, provider event, tracking event, measurement source/timestamp: **MISSING** in Bliss. Alpha Auto dashboards use order/ops stats, not ad measurement.
+
+## Economics & Rate Intelligence gap (Bliss)
+
+Future bounded context. **Do not implement in current Wedding Planner phases.**
+
+Documented: architecture, integration points, reserved PostgreSQL schema, pricing-model vocabulary.
+
+MISSING: EF entities/migrations, recommendation engine, quotes, market observations, n8n research jobs, AI extraction with provenance writes.
+
+Must not: universal Alpha price, dollars-per-minute as the product, hard-coded launch-city rate cards, compiled 20/80 compensation, AI-invented rates without observations.
+
+Market value stays separate from media ledger settlement.
 
 ## Financial engine gap (Bliss)
 

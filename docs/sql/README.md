@@ -7,6 +7,7 @@ Use these scripts only on a dedicated Bliss PostgreSQL database. Do not run them
 | `bliss-supabase-full.sql` | Phases 1–7 schema + fictional TEST seed. Paste into Supabase SQL Editor. |
 | `bliss-supabase-schema.sql` | Schema only (idempotent EF migrations). |
 | `bliss-supabase-seed.sql` | Fictional TEST rows only. Run after schema. |
+| `future-economics-schema.sql` | Reserved Economics & Rate Intelligence tables. **Do not run** until a future economics contract is accepted. Not part of `bliss-supabase-full.sql`. |
 
 Both schema and seed are safe to re-run: schema checks `__EFMigrationsHistory`; seed uses `ON CONFLICT ("Id") DO NOTHING`.
 
