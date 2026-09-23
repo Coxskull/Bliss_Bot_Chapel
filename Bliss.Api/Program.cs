@@ -327,6 +327,8 @@ if (app.Environment.IsDevelopment())
                 await economics.SeedAsync();
                 var economicsPhase2 = scope.ServiceProvider.GetRequiredService<EconomicsPhase2DataSeeder>();
                 await economicsPhase2.SeedAsync();
+                var economicsPhase3 = scope.ServiceProvider.GetRequiredService<EconomicsPhase3DataSeeder>();
+                await economicsPhase3.SeedAsync();
             }
         }
         catch (Exception ex)

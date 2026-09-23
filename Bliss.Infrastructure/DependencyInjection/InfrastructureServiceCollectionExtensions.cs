@@ -23,6 +23,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<WeddingPlannerDataSeeder>();
         services.AddScoped<EconomicsDataSeeder>();
         services.AddScoped<EconomicsPhase2DataSeeder>();
+        services.AddScoped<EconomicsPhase3DataSeeder>();
         return services;
     }
 

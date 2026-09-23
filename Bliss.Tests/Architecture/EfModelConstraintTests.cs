@@ -86,6 +86,14 @@ public sealed class EfModelConstraintTests
         Assert.Contains("CreatorPerformanceSnapshot.CreatorId", restrictKeys);
         Assert.Contains("CreatorPerformanceSnapshot.ContentItemId", restrictKeys);
         Assert.Contains("CreatorPerformanceSnapshot.ResearchSourceId", restrictKeys);
+        Assert.Contains("MarketEconomicProfile.GeographicMarketId", restrictKeys);
+        Assert.Contains("MarketEconomicProfile.ResearchSourceId", restrictKeys);
+        Assert.Contains("IndustryEconomicProfile.GeographicMarketId", restrictKeys);
+        Assert.Contains("IndustryEconomicProfile.ResearchSourceId", restrictKeys);
+        Assert.Contains("InventoryRateBenchmark.GeographicMarketId", restrictKeys);
+        Assert.Contains("InventoryRateBenchmark.PricingModelId", restrictKeys);
+        Assert.Contains("InventoryRateBenchmark.ResearchSourceId", restrictKeys);
+        Assert.Contains("ExchangeRateObservation.ResearchSourceId", restrictKeys);
     }
 
     [Fact]

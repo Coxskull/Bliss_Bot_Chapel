@@ -630,4 +630,75 @@ public sealed record CreatorPerformanceSnapshotDto(
     string VerificationStatus,
     DateTime CreatedAt);
 
+public sealed record MarketEconomicProfileDto(
+    Guid Id,
+    Guid GeographicMarketId,
+    string MarketCode,
+    Guid? ResearchSourceId,
+    string? ResearchSourceName,
+    int Version,
+    decimal? PurchasingPowerIndex,
+    string? CompetitionLevel,
+    string? AudienceScarcityLevel,
+    string? Notes,
+    string ConfidenceLevel,
+    string VerificationStatus,
+    DateTime EffectiveAt,
+    DateTime? SupersededAt,
+    DateTime CreatedAt);
+
+public sealed record IndustryEconomicProfileDto(
+    Guid Id,
+    Guid? GeographicMarketId,
+    string? MarketCode,
+    Guid? ResearchSourceId,
+    string? ResearchSourceName,
+    string Category,
+    int Version,
+    decimal? AcquisitionCostLow,
+    decimal? AcquisitionCostHigh,
+    string? CurrencyCode,
+    string? Notes,
+    string ConfidenceLevel,
+    string VerificationStatus,
+    DateTime EffectiveAt,
+    DateTime? SupersededAt,
+    DateTime CreatedAt);
+
+public sealed record InventoryRateBenchmarkDto(
+    Guid Id,
+    Guid? GeographicMarketId,
+    string? MarketCode,
+    Guid PricingModelId,
+    string PricingModelCode,
+    Guid? ResearchSourceId,
+    string? ResearchSourceName,
+    string InventorySlotType,
+    string? Platform,
+    string? ContentFormat,
+    int? DurationSecondsLow,
+    int? DurationSecondsHigh,
+    decimal? RangeLow,
+    decimal? RangeHigh,
+    string CurrencyCode,
+    string ConfidenceLevel,
+    string VerificationStatus,
+    DateTime EffectiveAt,
+    DateTime? SupersededAt,
+    DateTime CreatedAt);
+
+public sealed record ExchangeRateObservationDto(
+    Guid Id,
+    Guid? ResearchSourceId,
+    string? ResearchSourceName,
+    string BaseCurrencyCode,
+    string QuoteCurrencyCode,
+    decimal Rate,
+    DateTime ObservedAt,
+    DateTime RetrievedAt,
+    string ConfidenceLevel,
+    string VerificationStatus,
+    string? Notes,
+    DateTime CreatedAt);
+
 

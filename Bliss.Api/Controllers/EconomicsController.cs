@@ -163,6 +163,92 @@ public sealed class EconomicsController : ControllerBase
         return item is null ? NotFound() : Ok(item);
     }
 
+    [HttpGet("market-profiles")]
+    public async Task<ActionResult<IReadOnlyList<MarketEconomicProfileDto>>> GetMarketProfiles(
+        Guid? marketId, CancellationToken cancellationToken)
+    {
+        var query = _db.MarketEconomicProfiles.AsNoTracking().AsQueryable();
+        if (marketId.HasValue) query = query.Where(x => x.GeographicMarketId == marketId);
+        return Ok(await ProjectMarketProfiles(query
+                .OrderBy(x => x.GeographicMarket.MarketCode).ThenByDescending(x => x.Version))
+            .ToListAsync(cancellationToken));
+    }
+
+    [HttpGet("market-profiles/{id:guid}")]
+    public async Task<ActionResult<MarketEconomicProfileDto>> GetMarketProfile(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var item = await ProjectMarketProfiles(_db.MarketEconomicProfiles.AsNoTracking()
+                .Where(x => x.Id == id))
+            .FirstOrDefaultAsync(cancellationToken);
+        return item is null ? NotFound() : Ok(item);
+    }
+
+    [HttpGet("industry-profiles")]
+    public async Task<ActionResult<IReadOnlyList<IndustryEconomicProfileDto>>> GetIndustryProfiles(
+        Guid? marketId, string? category, CancellationToken cancellationToken)
+    {
+        var query = _db.IndustryEconomicProfiles.AsNoTracking().AsQueryable();
+        if (marketId.HasValue) query = query.Where(x => x.GeographicMarketId == marketId);
+        if (!string.IsNullOrWhiteSpace(category)) query = query.Where(x => x.Category == category);
+        return Ok(await ProjectIndustryProfiles(query
+                .OrderBy(x => x.Category).ThenByDescending(x => x.Version))
+            .ToListAsync(cancellationToken));
+    }
+
+    [HttpGet("industry-profiles/{id:guid}")]
+    public async Task<ActionResult<IndustryEconomicProfileDto>> GetIndustryProfile(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var item = await ProjectIndustryProfiles(_db.IndustryEconomicProfiles.AsNoTracking()
+                .Where(x => x.Id == id))
+            .FirstOrDefaultAsync(cancellationToken);
+        return item is null ? NotFound() : Ok(item);
+    }
+
+    [HttpGet("inventory-benchmarks")]
+    public async Task<ActionResult<IReadOnlyList<InventoryRateBenchmarkDto>>> GetInventoryBenchmarks(
+        Guid? marketId, CancellationToken cancellationToken)
+    {
+        var query = _db.InventoryRateBenchmarks.AsNoTracking().AsQueryable();
+        if (marketId.HasValue) query = query.Where(x => x.GeographicMarketId == marketId);
+        return Ok(await ProjectInventoryBenchmarks(query.OrderByDescending(x => x.EffectiveAt))
+            .ToListAsync(cancellationToken));
+    }
+
+    [HttpGet("inventory-benchmarks/{id:guid}")]
+    public async Task<ActionResult<InventoryRateBenchmarkDto>> GetInventoryBenchmark(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var item = await ProjectInventoryBenchmarks(_db.InventoryRateBenchmarks.AsNoTracking()
+                .Where(x => x.Id == id))
+            .FirstOrDefaultAsync(cancellationToken);
+        return item is null ? NotFound() : Ok(item);
+    }
+
+    [HttpGet("exchange-rates")]
+    public async Task<ActionResult<IReadOnlyList<ExchangeRateObservationDto>>> GetExchangeRates(
+        string? baseCurrency, string? quoteCurrency, CancellationToken cancellationToken)
+    {
+        var query = _db.ExchangeRateObservations.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(baseCurrency))
+            query = query.Where(x => x.BaseCurrencyCode == baseCurrency);
+        if (!string.IsNullOrWhiteSpace(quoteCurrency))
+            query = query.Where(x => x.QuoteCurrencyCode == quoteCurrency);
+        return Ok(await ProjectExchangeRates(query.OrderByDescending(x => x.ObservedAt))
+            .ToListAsync(cancellationToken));
+    }
+
+    [HttpGet("exchange-rates/{id:guid}")]
+    public async Task<ActionResult<ExchangeRateObservationDto>> GetExchangeRate(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var item = await ProjectExchangeRates(_db.ExchangeRateObservations.AsNoTracking()
+                .Where(x => x.Id == id))
+            .FirstOrDefaultAsync(cancellationToken);
+        return item is null ? NotFound() : Ok(item);
+    }
+
     private static IQueryable<MarketBenchmarkObservationDto> ProjectObservations(
         IQueryable<MarketBenchmarkObservation> query) =>
         query.Select(x => new MarketBenchmarkObservationDto(
@@ -232,4 +318,44 @@ public sealed class EconomicsController : ControllerBase
             x.ConfidenceLevel,
             x.VerificationStatus,
             x.CreatedAt));
+
+    private static IQueryable<MarketEconomicProfileDto> ProjectMarketProfiles(
+        IQueryable<MarketEconomicProfile> query) =>
+        query.Select(x => new MarketEconomicProfileDto(
+            x.Id, x.GeographicMarketId, x.GeographicMarket.MarketCode,
+            x.ResearchSourceId, x.ResearchSource == null ? null : x.ResearchSource.Name,
+            x.Version, x.PurchasingPowerIndex, x.CompetitionLevel, x.AudienceScarcityLevel,
+            x.Notes, x.ConfidenceLevel, x.VerificationStatus, x.EffectiveAt,
+            x.SupersededAt, x.CreatedAt));
+
+    private static IQueryable<IndustryEconomicProfileDto> ProjectIndustryProfiles(
+        IQueryable<IndustryEconomicProfile> query) =>
+        query.Select(x => new IndustryEconomicProfileDto(
+            x.Id, x.GeographicMarketId,
+            x.GeographicMarket == null ? null : x.GeographicMarket.MarketCode,
+            x.ResearchSourceId, x.ResearchSource == null ? null : x.ResearchSource.Name,
+            x.Category, x.Version, x.AcquisitionCostLow, x.AcquisitionCostHigh,
+            x.CurrencyCode, x.Notes, x.ConfidenceLevel, x.VerificationStatus,
+            x.EffectiveAt, x.SupersededAt, x.CreatedAt));
+
+    private static IQueryable<InventoryRateBenchmarkDto> ProjectInventoryBenchmarks(
+        IQueryable<InventoryRateBenchmark> query) =>
+        query.Select(x => new InventoryRateBenchmarkDto(
+            x.Id, x.GeographicMarketId,
+            x.GeographicMarket == null ? null : x.GeographicMarket.MarketCode,
+            x.PricingModelId, x.PricingModel.Code,
+            x.ResearchSourceId, x.ResearchSource == null ? null : x.ResearchSource.Name,
+            x.InventorySlotType, x.Platform, x.ContentFormat,
+            x.DurationSecondsLow, x.DurationSecondsHigh, x.RangeLow, x.RangeHigh,
+            x.CurrencyCode, x.ConfidenceLevel, x.VerificationStatus,
+            x.EffectiveAt, x.SupersededAt, x.CreatedAt));
+
+    private static IQueryable<ExchangeRateObservationDto> ProjectExchangeRates(
+        IQueryable<ExchangeRateObservation> query) =>
+        query.Select(x => new ExchangeRateObservationDto(
+            x.Id, x.ResearchSourceId,
+            x.ResearchSource == null ? null : x.ResearchSource.Name,
+            x.BaseCurrencyCode, x.QuoteCurrencyCode, x.Rate,
+            x.ObservedAt, x.RetrievedAt, x.ConfidenceLevel, x.VerificationStatus,
+            x.Notes, x.CreatedAt));
 }
