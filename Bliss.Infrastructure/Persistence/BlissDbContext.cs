@@ -63,6 +63,10 @@ public class BlissDbContext : DbContext
     public DbSet<QuoteLineItem> QuoteLineItems => Set<QuoteLineItem>();
     public DbSet<QuoteApprovalDecision> QuoteApprovalDecisions => Set<QuoteApprovalDecision>();
     public DbSet<QuoteOutcome> QuoteOutcomes => Set<QuoteOutcome>();
+    public DbSet<CompensationRuleVersion> CompensationRuleVersions => Set<CompensationRuleVersion>();
+    public DbSet<CompensationRuleAllocation> CompensationRuleAllocations => Set<CompensationRuleAllocation>();
+    public DbSet<CompensationIllustration> CompensationIllustrations => Set<CompensationIllustration>();
+    public DbSet<CompensationIllustrationLine> CompensationIllustrationLines => Set<CompensationIllustrationLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

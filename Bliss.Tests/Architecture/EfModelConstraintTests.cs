@@ -112,6 +112,13 @@ public sealed class EfModelConstraintTests
         Assert.Contains("QuoteOutcome.QuoteId", restrictKeys);
         Assert.Contains("QuoteOutcome.QuoteVersionId", restrictKeys);
         Assert.Contains("QuoteOutcome.NewQuoteVersionId", restrictKeys);
+        Assert.Contains("CompensationRuleAllocation.CompensationRuleVersionId", restrictKeys);
+        Assert.Contains("CompensationIllustration.QuoteId", restrictKeys);
+        Assert.Contains("CompensationIllustration.QuoteVersionId", restrictKeys);
+        Assert.Contains("CompensationIllustration.QuoteOutcomeId", restrictKeys);
+        Assert.Contains("CompensationIllustration.CompensationRuleVersionId", restrictKeys);
+        Assert.Contains("CompensationIllustrationLine.CompensationIllustrationId", restrictKeys);
+        Assert.Contains("CompensationIllustrationLine.CompensationRuleAllocationId", restrictKeys);
     }
 
     [Fact]
@@ -329,6 +336,12 @@ public sealed class EfModelConstraintTests
         AssertIndex(db, typeof(QuoteLineItem), nameof(QuoteLineItem.RateRecommendationId));
         AssertIndex(db, typeof(QuoteApprovalDecision), nameof(QuoteApprovalDecision.QuoteVersionId));
         AssertIndex(db, typeof(QuoteOutcome), nameof(QuoteOutcome.QuoteVersionId));
+        AssertIndex(db, typeof(CompensationRuleAllocation), nameof(CompensationRuleAllocation.CompensationRuleVersionId));
+        AssertIndex(db, typeof(CompensationIllustration), nameof(CompensationIllustration.QuoteId));
+        AssertIndex(db, typeof(CompensationIllustration), nameof(CompensationIllustration.QuoteVersionId));
+        AssertIndex(db, typeof(CompensationIllustration), nameof(CompensationIllustration.QuoteOutcomeId));
+        AssertIndex(db, typeof(CompensationIllustration), nameof(CompensationIllustration.CompensationRuleVersionId));
+        AssertIndex(db, typeof(CompensationIllustrationLine), nameof(CompensationIllustrationLine.CompensationIllustrationId));
     }
 
     private static void AssertIndex(BlissDbContext db, Type type, string propertyName)

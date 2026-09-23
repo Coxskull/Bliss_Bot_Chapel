@@ -867,4 +867,54 @@ public sealed record QuoteDto(
     Guid? NewQuoteVersionId,
     bool IsReplay);
 
+public sealed record CompensationRuleAllocationDto(
+    Guid Id,
+    string ParticipantRole,
+    string ParticipantLabel,
+    decimal Percentage,
+    int SortOrder);
+
+public sealed record CompensationRuleVersionDto(
+    Guid Id,
+    string Version,
+    string Name,
+    string DocumentJson,
+    bool IsActive,
+    DateTime EffectiveAt,
+    DateTime CreatedAt,
+    IReadOnlyList<CompensationRuleAllocationDto> Allocations);
+
+public sealed record GenerateCompensationIllustrationRequest(
+    Guid QuoteId,
+    Guid QuoteVersionId,
+    Guid CompensationRuleVersionId,
+    string SourceSystem,
+    string IdempotencyKey);
+
+public sealed record CompensationIllustrationLineDto(
+    Guid Id,
+    Guid CompensationRuleAllocationId,
+    string ParticipantRole,
+    string ParticipantLabel,
+    decimal Percentage,
+    decimal Amount,
+    int SortOrder);
+
+public sealed record CompensationIllustrationDto(
+    Guid Id,
+    Guid QuoteId,
+    Guid QuoteVersionId,
+    int QuoteVersionNumber,
+    Guid QuoteOutcomeId,
+    Guid CompensationRuleVersionId,
+    string CompensationRuleVersion,
+    decimal GrossAmount,
+    string CurrencyCode,
+    string InputSnapshotJson,
+    string SourceSystem,
+    string IdempotencyKey,
+    DateTime CreatedAt,
+    IReadOnlyList<CompensationIllustrationLineDto> Lines,
+    bool IsReplay);
+
 

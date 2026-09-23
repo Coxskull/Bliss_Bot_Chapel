@@ -49,7 +49,7 @@ public sealed class EconomicsBoundaryTests
     }
 
     [Fact]
-    public void Economics_http_api_exposes_only_controlled_recommendation_and_quote_writes()
+    public void Economics_http_api_exposes_only_controlled_phase4_to_phase6_writes()
     {
         var controller = typeof(EconomicsController);
         Assert.Equal("api/economics", controller.GetCustomAttribute<RouteAttribute>()?.Template);
@@ -60,12 +60,15 @@ public sealed class EconomicsBoundaryTests
             .ToDictionary(
                 method => method.Name,
                 method => method.GetCustomAttribute<HttpPostAttribute>()?.Template);
-        Assert.Equal(5, posts.Count);
+        Assert.Equal(6, posts.Count);
         Assert.Equal("recommendations", posts["GenerateRecommendation"]);
         Assert.Equal("quotes", posts["CreateQuote"]);
         Assert.Equal("quotes/{id:guid}/versions", posts["ReviseQuote"]);
         Assert.Equal("quotes/{id:guid}/approvals", posts["DecideQuoteApproval"]);
         Assert.Equal("quotes/{id:guid}/outcomes", posts["RecordQuoteOutcome"]);
+        Assert.Equal(
+            "compensation-illustrations",
+            posts["GenerateCompensationIllustration"]);
         Assert.All(methods.Where(method => posts.ContainsKey(method.Name)), method =>
             Assert.NotNull(method.GetCustomAttribute<
                 Microsoft.AspNetCore.Authorization.AuthorizeAttribute>()));
@@ -78,7 +81,8 @@ public sealed class EconomicsBoundaryTests
         });
         Assert.DoesNotContain(methods, method =>
             method.Name.Contains("Calculate", StringComparison.OrdinalIgnoreCase)
-            || method.Name.Contains("Compensation", StringComparison.OrdinalIgnoreCase)
-            || method.Name.Contains("Settlement", StringComparison.OrdinalIgnoreCase));
+            || method.Name.Contains("Settlement", StringComparison.OrdinalIgnoreCase)
+            || method.Name.Contains("Payout", StringComparison.OrdinalIgnoreCase)
+            || method.Name.Contains("Payment", StringComparison.OrdinalIgnoreCase));
     }
 }

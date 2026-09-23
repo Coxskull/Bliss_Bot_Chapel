@@ -1,0 +1,27 @@
+Live PostgreSQL database: bliss_economics_phase1
+Migration: 20260923084506_EconomicsPhase6Compensation
+
+CompensationIllustration
+------------------------
+Id                        | 4b50b964-6948-4255-8d8a-69f4011a9ebe
+QuoteId                   | 4f7e3e38-6cd4-4fdf-ae41-9f59e7834a58
+QuoteVersionId            | 3542778e-4194-4b65-b2f6-63cd5d93dc22
+QuoteOutcomeId            | 07c6f099-9ad5-4929-97ce-a8a4b5acbec5
+CompensationRuleVersionId | ec000012-0000-0000-0000-000000000001
+Version                   | economics-compensation/1.0.0-test
+GrossAmount               | 215.00
+CurrencyCode              | PHP
+SourceSystem              | PHASE6_EVIDENCE
+IdempotencyKey            | phase6-live-illustration-v1
+LineCount                 | 3
+AllocationTotal           | 215.00
+PercentageTotal           | 100.000000
+
+Illustration lines
+------------------
+1 | ALPHA            | Alpha platform illustration            | 18.000000% |  38.70 PHP
+2 | CREATOR          | Creator illustration                   | 72.000000% | 154.80 PHP
+3 | OTHER_AUTHORIZED | Other authorized participant illustration | 10.000000% | 21.50 PHP
+
+These rows are immutable illustrations. They are not settlement,
+payable, payout, transfer, invoice, wallet, or ledger records.

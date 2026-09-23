@@ -20,17 +20,20 @@ public sealed class EconomicsController : ControllerBase
     private readonly BlissDbContext _db;
     private readonly RateRecommendationService _recommendations;
     private readonly QuoteService _quotes;
+    private readonly CompensationIllustrationService _compensation;
     private readonly OperatorIdentity _operatorIdentity;
 
     public EconomicsController(
         BlissDbContext db,
         RateRecommendationService recommendations,
         QuoteService quotes,
+        CompensationIllustrationService compensation,
         OperatorIdentity operatorIdentity)
     {
         _db = db;
         _recommendations = recommendations;
         _quotes = quotes;
+        _compensation = compensation;
         _operatorIdentity = operatorIdentity;
     }
 
@@ -453,6 +456,78 @@ public sealed class EconomicsController : ControllerBase
         }
     }
 
+    [HttpGet("compensation-rule-versions")]
+    public async Task<ActionResult<IReadOnlyList<CompensationRuleVersionDto>>>
+        GetCompensationRuleVersions(CancellationToken cancellationToken)
+    {
+        var items = await _db.CompensationRuleVersions.AsNoTracking()
+            .Include(x => x.Allocations)
+            .OrderByDescending(x => x.EffectiveAt)
+            .ToListAsync(cancellationToken);
+        return Ok(items.Select(x => new CompensationRuleVersionDto(
+            x.Id,
+            x.Version,
+            x.Name,
+            x.DocumentJson,
+            x.IsActive,
+            x.EffectiveAt,
+            x.CreatedAt,
+            x.Allocations.OrderBy(a => a.SortOrder)
+                .Select(a => new CompensationRuleAllocationDto(
+                    a.Id, a.ParticipantRole, a.ParticipantLabel,
+                    a.Percentage, a.SortOrder))
+                .ToList())).ToList());
+    }
+
+    [HttpGet("compensation-illustrations")]
+    public async Task<ActionResult<IReadOnlyList<CompensationIllustrationDto>>>
+        GetCompensationIllustrations(CancellationToken cancellationToken)
+    {
+        var items = await _compensation.IllustrationGraph()
+            .OrderByDescending(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+        return Ok(items.Select(x => ToDto(x, false)).ToList());
+    }
+
+    [HttpGet("compensation-illustrations/{id:guid}")]
+    public async Task<ActionResult<CompensationIllustrationDto>>
+        GetCompensationIllustration(Guid id, CancellationToken cancellationToken)
+    {
+        var item = await _compensation.IllustrationGraph()
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return item is null ? NotFound() : Ok(ToDto(item, false));
+    }
+
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [HttpPost("compensation-illustrations")]
+    public async Task<ActionResult<CompensationIllustrationDto>>
+        GenerateCompensationIllustration(
+            GenerateCompensationIllustrationRequest request,
+            CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _compensation.GenerateAsync(
+                new GenerateCompensationIllustrationCommand(
+                    request.QuoteId,
+                    request.QuoteVersionId,
+                    request.CompensationRuleVersionId,
+                    request.SourceSystem,
+                    request.IdempotencyKey),
+                cancellationToken);
+            var dto = ToDto(result.Illustration, result.IsReplay);
+            return result.IsReplay
+                ? Ok(dto)
+                : CreatedAtAction(
+                    nameof(GetCompensationIllustration), new { id = dto.Id }, dto);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     private static IQueryable<MarketBenchmarkObservationDto> ProjectObservations(
         IQueryable<MarketBenchmarkObservation> query) =>
         query.Select(x => new MarketBenchmarkObservationDto(
@@ -660,5 +735,34 @@ public sealed class EconomicsController : ControllerBase
                 .ToList(),
             actionId,
             newQuoteVersionId,
+            isReplay);
+
+    private static CompensationIllustrationDto ToDto(
+        CompensationIllustration illustration,
+        bool isReplay) =>
+        new(
+            illustration.Id,
+            illustration.QuoteId,
+            illustration.QuoteVersionId,
+            illustration.QuoteVersion.VersionNumber,
+            illustration.QuoteOutcomeId,
+            illustration.CompensationRuleVersionId,
+            illustration.CompensationRuleVersion.Version,
+            illustration.GrossAmount,
+            illustration.CurrencyCode,
+            illustration.InputSnapshotJson,
+            illustration.SourceSystem,
+            illustration.IdempotencyKey,
+            illustration.CreatedAt,
+            illustration.Lines.OrderBy(x => x.SortOrder)
+                .Select(x => new CompensationIllustrationLineDto(
+                    x.Id,
+                    x.CompensationRuleAllocationId,
+                    x.ParticipantRole,
+                    x.ParticipantLabel,
+                    x.Percentage,
+                    x.Amount,
+                    x.SortOrder))
+                .ToList(),
             isReplay);
 }
