@@ -56,6 +56,10 @@ if (runtime.WriteRateLimitPermitLimit <= 0
     throw new InvalidOperationException("Runtime rate-limit values must be positive.");
 }
 
+var posture = ProductionPostureEvaluator.Evaluate(
+    ProductionPostureEvaluator.CreateInput(builder.Environment, builder.Configuration, authentication, runtime));
+ProductionPostureEvaluator.Ensure(posture);
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -72,6 +76,7 @@ builder.Services.AddDbContext<BlissDbContext>(options =>
 builder.Services.AddBlissInfrastructure(builder.Configuration);
 builder.Services.AddSingleton(authentication);
 builder.Services.AddSingleton(runtime);
+builder.Services.AddSingleton(posture);
 builder.Services.AddSingleton<OperationalEventStore>();
 builder.Services.AddScoped<OperatorIdentity>();
 builder.Services.AddScoped<WeddingPlannerAccess>();
@@ -100,6 +105,14 @@ if (!string.IsNullOrWhiteSpace(runtime.DataProtectionKeysPath))
 {
     var keyDirectory = Directory.CreateDirectory(runtime.DataProtectionKeysPath);
     dataProtection.PersistKeysToFileSystem(keyDirectory);
+}
+
+if (!string.IsNullOrWhiteSpace(runtime.DataProtectionCertificatePath))
+{
+    dataProtection.ProtectKeysWithCertificate(
+        DataProtectionCertificateLoader.Load(
+            runtime.DataProtectionCertificatePath,
+            runtime.DataProtectionCertificatePassword));
 }
 builder.Services
     .AddHealthChecks()
@@ -196,6 +209,16 @@ var authenticationBuilder = builder.Services
             context.Response.Redirect(context.RedirectUri);
             return Task.CompletedTask;
         };
+        options.Events.OnSigningIn = context =>
+        {
+            if (context.Principal?.Identity is System.Security.Claims.ClaimsIdentity identity)
+            {
+                context.Principal = new System.Security.Claims.ClaimsPrincipal(
+                    OidcRoleClaimMapper.Align(identity, authentication.NameClaimType, authentication.RoleClaimType));
+            }
+
+            return Task.CompletedTask;
+        };
     });
 
 if (authentication.Enabled)
@@ -219,6 +242,7 @@ if (authentication.Enabled)
             NameClaimType = authentication.NameClaimType,
             RoleClaimType = authentication.RoleClaimType
         };
+        OidcRoleClaimMapper.Configure(options, authentication);
     });
 }
 
@@ -264,6 +288,10 @@ app.Use(async (context, next) =>
         return Task.CompletedTask;
     });
     await next();
+});
+app.Use(async (context, next) =>
+{
+    await RequestCompletionLog.InvokeAsync(context, app.Logger, next);
 });
 
 if (!app.Environment.IsDevelopment())
@@ -409,6 +437,9 @@ app.MapHealthChecks(
             Predicate = registration => registration.Tags.Contains("ready"),
             ResponseWriter = HealthCheckResponseWriter.WriteAsync
         })
+    .AllowAnonymous()
+    .DisableRateLimiting();
+app.MapGet("/health/posture", (ProductionPostureReport report) => Results.Json(report.Document))
     .AllowAnonymous()
     .DisableRateLimiting();
 app.MapGet(

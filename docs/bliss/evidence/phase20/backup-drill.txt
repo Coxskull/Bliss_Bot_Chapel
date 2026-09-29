@@ -1,0 +1,3 @@
+CREATE TABLE
+INSERT 0 1
+Backup drill restored marker marker-20260929T040401Z-6156.

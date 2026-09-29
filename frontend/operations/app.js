@@ -859,10 +859,42 @@ function healthClass(status) {
   return "health-unhealthy";
 }
 
+function postureValue(enabled) {
+  return enabled ? "Yes" : "No";
+}
+
+function renderDeploymentPosture(posture) {
+  const host = $("#runtime-posture");
+  if (!host) return;
+  if (!posture) {
+    host.innerHTML = emptyState("Production posture is unavailable.");
+    return;
+  }
+  const rows = [
+    ["Production gates", posture.productionGatesApplied ? "Applied" : "Not applied"],
+    ["Keys encrypted at rest", postureValue(posture.keysEncryptedAtRest)],
+    ["Hosted database", postureValue(posture.hostedDatabaseConfigured)],
+    ["Database TLS", postureValue(posture.databaseTransportEncrypted)],
+    ["Server certificate verified", postureValue(posture.databaseServerCertificateVerified)],
+    ["Identity provider HTTPS", postureValue(posture.identityProviderHttps)],
+    ["Role claims distinct", postureValue(posture.roleClaimsDistinct)],
+    ["Deployment proxy", postureValue(posture.knownProxiesConfigured)],
+    ["Backup declared", posture.backupDeclared ? `${posture.backupProvider} · ${posture.backupSchedule} · ${posture.backupRetentionDays} days` : "No"],
+    ["Secrets outside appsettings", postureValue(posture.secretMaterialExternal)]
+  ];
+  const roles = (posture.configuredRoles || []).map(role => `<code>${escapeHtml(role)}</code>`).join(", ");
+  const claim = posture.roleClaimType ? `<code>${escapeHtml(posture.roleClaimType)}</code>` : "not set";
+  const note = posture.productionGatesApplied
+    ? "These gates were satisfied when the process started. This screen does not show connection strings, client secrets, or certificate passwords."
+    : "This process is not enforcing the hosted production gates. A passing local session is not a production deployment.";
+  host.innerHTML = `${rows.map(([label, value]) => `<p><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></p>`).join("")}<p><strong>Role claim</strong><span>${claim}${roles ? ` · ${roles}` : ""}</span></p><p>${escapeHtml(note)}</p>`;
+}
+
 function renderRuntimeStatus() {
   const runtime = state.runtime;
   if (!runtime) {
     $("#runtime-health-cards").innerHTML = emptyState("Runtime status is unavailable.");
+    $("#runtime-posture").innerHTML = emptyState("Production posture is unavailable.");
     $("#runtime-correlation").innerHTML = emptyState("No request identifier yet.");
     $("#runtime-limits").innerHTML = emptyState("Throttle policy is unavailable.");
     $("#runtime-last-verification").innerHTML = emptyState("No verification receipt yet.");
@@ -876,6 +908,7 @@ function renderRuntimeStatus() {
     ["Authentication", runtime.authenticationEnabled ? "Enabled" : "Development open", runtime.environment],
     ["Key ring", runtime.persistentKeysConfigured ? "Configured" : "Ephemeral", "Data Protection"]
   ].map(([label, status, detail]) => `<article class="stat-card"><span class="stat-top"><span class="health-pill ${healthClass(status)}">${escapeHtml(friendlyStatus(status))}</span><span class="trend">${escapeHtml(label.toUpperCase())}</span></span><strong>${escapeHtml(friendlyStatus(status))}</strong><span>${escapeHtml(label)}</span><small>${escapeHtml(detail)}</small></article>`).join("");
+  renderDeploymentPosture(runtime.productionPosture);
   $("#runtime-correlation").innerHTML = `<p><strong>Last request</strong><span class="request-id">${escapeHtml(runtime.lastRequestId || state.lastRequestId || "None yet")}</span></p><p>Every API response includes <code>X-Request-Id</code>. Incoming identifiers are accepted only when they are valid GUIDs.</p>`;
   $("#runtime-limits").innerHTML = `<p><strong>${runtime.writeRateLimitPermitLimit} writes / ${runtime.rateLimitWindowSeconds}s</strong>Controlled POST endpoints share this quota.</p><p><strong>${runtime.authenticationRateLimitPermitLimit} login starts / ${runtime.rateLimitWindowSeconds}s</strong>OIDC challenge initiation is separately limited.</p>`;
   const last = runtime.lastVerification;

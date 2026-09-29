@@ -22,8 +22,7 @@ public sealed class DatabaseReadinessHealthCheck(
         catch (Exception exception)
         {
             return HealthCheckResult.Unhealthy(
-                "Database readiness check failed.",
-                exception);
+                $"Database readiness check failed ({exception.GetType().Name}).");
         }
     }
 }
