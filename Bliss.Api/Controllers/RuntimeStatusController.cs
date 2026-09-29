@@ -14,7 +14,8 @@ public sealed class RuntimeStatusController(
     BlissAuthenticationOptions authentication,
     BlissRuntimeOptions runtime,
     OperationalEventStore events,
-    HealthCheckService healthChecks) : ControllerBase
+    HealthCheckService healthChecks,
+    ProductionPostureReport posture) : ControllerBase
 {
     [HttpGet("status")]
     public async Task<ActionResult<RuntimeStatusDto>> GetStatus(CancellationToken cancellationToken)
@@ -45,7 +46,8 @@ public sealed class RuntimeStatusController(
                 entry.RequestId,
                 entry.Detail)).ToList(),
             events.LastVerification,
-            events.RecentVerifications()));
+            events.RecentVerifications(),
+            posture.Document));
     }
 
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
@@ -67,7 +69,8 @@ public sealed record RuntimeStatusDto(
     string? LastRequestId,
     IReadOnlyList<RuntimeEventDto> RecentEvents,
     ExportVerificationDto? LastVerification = null,
-    IReadOnlyList<ExportVerificationDto>? RecentVerifications = null);
+    IReadOnlyList<ExportVerificationDto>? RecentVerifications = null,
+    ProductionPostureDocument? ProductionPosture = null);
 
 public sealed record RuntimeEventDto(
     DateTime OccurredAt,

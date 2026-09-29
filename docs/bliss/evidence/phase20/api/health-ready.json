@@ -1,0 +1,1 @@
+{"status":"Unhealthy","durationMilliseconds":750.67,"checks":{"database":{"status":"Unhealthy","description":"Database connection failed."}}}

@@ -39,17 +39,39 @@ export Authentication__Authority="https://identity.example.com"
 export Authentication__ClientId="bliss-chapel"
 export Authentication__ClientSecret="<OIDC_CLIENT_SECRET>"
 export Runtime__DataProtectionKeysPath="/var/lib/bliss/data-protection"
+export Runtime__DataProtectionCertificatePath="/var/lib/bliss/data-protection.pfx"
+export Runtime__DataProtectionCertificatePassword="<DATA_PROTECTION_CERTIFICATE_PASSWORD>"
+export Runtime__KnownProxies__0="10.0.0.10"
+export Runtime__Backup__Provider="platform-managed"
+export Runtime__Backup__Schedule="daily"
+export Runtime__Backup__RetentionDays="14"
 ```
 
 Configure identity-provider role claims for `bliss.viewer`, `bliss.operator`,
-`bliss.reviewer`, or `bliss.admin`. The client secret belongs in a deployment
-secret store, never in `appsettings.json` or browser code. Development mode keeps
-authentication explicitly disabled by default for local tests.
+`bliss.reviewer`, `bliss.admin`, or `bliss.advertiser`. Put the role values in
+the ID token or the userinfo response under the configured role claim (`roles`
+by default). The client secret and data-protection certificate password belong
+in a deployment secret store, never in `appsettings.json` or browser code.
+Development mode keeps authentication explicitly disabled by default for local
+tests and does not apply the hosted production gates.
+
+Outside Development the process refuses to start unless the database host is
+non-loopback, SSL Mode is `Require`, `VerifyCA`, or `VerifyFull`, the identity
+authority is HTTPS and non-loopback, a deployment proxy is listed, backup
+provider/schedule/retention are declared, and the data-protection key ring is
+persisted and encrypted with the configured PKCS#12 certificate. `SSL Mode=Require`
+encrypts the connection without verifying the server certificate. `VerifyCA` or
+`VerifyFull` is what posture reports as server-certificate verification.
 
 The Data Protection path must be a persistent, access-controlled volume shared
-by every API replica. Configure deployment-owned reverse-proxy addresses through
-`Runtime__KnownProxies__0`, `Runtime__KnownProxies__1`, and so on. Runtime health
-probes are available at `/health/live` and `/health/ready`.
+by every API replica. The certificate and its password must be supplied by the
+platform secret store. Configure deployment-owned reverse-proxy addresses
+through `Runtime__KnownProxies__0`, `Runtime__KnownProxies__1`, and so on.
+Runtime probes are `/health/live`, `/health/ready`, and `/health/posture`.
+Posture reports gate state only. It does not return secrets. A local backup
+procedure drill lives at `scripts/postgres-backup-restore-drill.sh` and refuses
+to run unless `BLISS_BACKUP_DRILL=1`, `BLISS_BACKUP_DRILL_TARGET=local`, and
+`PGHOST` is loopback.
 
 ### Supabase PostgreSQL
 
@@ -138,6 +160,8 @@ Phase 18 last verification contract: `docs/bliss/PHASE-18-ENGINEERING-CONTRACT.m
 Phase 18 last verification evidence: `docs/bliss/PHASE-18-EVIDENCE.md`.
 Phase 19 verification history contract: `docs/bliss/PHASE-19-ENGINEERING-CONTRACT.md`.
 Phase 19 verification history evidence: `docs/bliss/PHASE-19-EVIDENCE.md`.
+Phase 20 production posture contract: `docs/bliss/PHASE-20-ENGINEERING-CONTRACT.md`.
+Phase 20 production posture evidence: `docs/bliss/PHASE-20-EVIDENCE.md`.
 
 Wedding Planner Phase 1 foundation contract: `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md`.
 Wedding Planner master blueprint v1.1: `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md`.

@@ -52,6 +52,7 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Placement work queue", body);
         Assert.Contains("Continue with SSO", body);
         Assert.Contains("Workspace status", body);
+        Assert.Contains("Deployment posture", body);
         Assert.Contains("Last verification", body);
         Assert.Contains("Recent verifications", body);
         Assert.Contains("Wedding Planner", body);
