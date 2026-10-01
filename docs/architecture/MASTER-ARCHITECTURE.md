@@ -63,6 +63,28 @@ Private Creative Factory, Autonomous Demo Lab, Media Fuel Gauge,
 Intelligence Cache, Reusable Creative Component Library, Factory Budget
 Controller, and the Subscription & Infrastructure Ledger.
 
+### Operating split
+
+The person who supplies media and the bots do different jobs. The
+finished artifact is one private message and one landing page. The
+reference picture is ABC Pharmacy in Panama City:
+`PROSPECT-DEMONSTRATION-EXAMPLE.md`.
+
+| Work | Who |
+| --- | --- |
+| Select podcast or similar video across cities, cultures, and countries, cut about 15 seconds, and upload the slice | Human source-media producer |
+| Find a real local business, such as a pharmacy, restaurant, car dealer, coffee shop, real estate office, law firm, or grocery store | Bots |
+| Identify the likely advertising decision-maker and a verified business contact | Bots |
+| Produce the overlay and composite it onto the uploaded slice, with a real QR and the required disclosure | Bots for the overlay creative; deterministic software for the composite |
+| Publish one private landing page that plays those videos and shows the work | Bots |
+| Send that page to the business and continue the conversation with the decision-maker | Bots, inside communication policy. Humans close |
+
+The human does not research the prospect, draw the overlay, build the
+page, or send the outreach. The bots do not treat an unapproved copy of
+someone else's podcast as qualified media. Variety of city, culture,
+and country is required. Provenance and the duplicate rules still
+apply.
+
 Alpha should eventually be able to discover advertisers and creators,
 identify the advertising decision-maker, find a verified public business
 contact route, preserve evidence and confidence, research markets, score
@@ -178,12 +200,12 @@ a reasonable ability to purchase advertising, and a plausible benefit
 from creator or social exposure.
 
 Examples: dental offices, medical offices and clinics, pharmacies,
-restaurants and restaurant groups, coffee shops, shopping centers and
-malls, new- and used-car dealerships, motorcycle and moped dealerships,
-auto-parts businesses, tire and service centers, real-estate companies,
-gyms, beauty and aesthetic clinics, optical stores, furniture and
-appliance retailers, hotels, vocational schools, and local financial or
-insurance businesses.
+restaurants and restaurant groups, coffee shops, grocery stores, car
+dealers, motorcycle and moped dealerships, auto-parts businesses, tire
+and service centers, real-estate offices, law firms, shopping centers
+and malls, gyms, beauty and aesthetic clinics, optical stores, furniture
+and appliance retailers, hotels, vocational schools, and local financial
+or insurance businesses.
 
 Huge multinationals are not the default target. Informal street
 vendors, hobby sellers, and businesses without an identifiable
@@ -319,7 +341,11 @@ enrichment only when that chain justifies it.
 | 5 | Qualified commercial opportunity; human escalation where configured |
 
 Do not automatically create four expensive demonstrations for every
-cold prospect.
+cold prospect. The reference sales room shows four concept cards so the
+page shape is clear. The first send can carry one strong card.
+Additional cards wait for engagement or enough opportunity value.
+Compositing an already-created overlay onto a slice is software and is
+not the expensive step.
 
 ## 10. Prospect state machine
 
@@ -337,8 +363,11 @@ software.
 
 ## 11. Source Media Library
 
-The Source Media Library is a core production input. The preferred
-reusable component is about 15 seconds.
+The Source Media Library is a core production input. The human
+producer fills it. The preferred reusable component is about 15 seconds
+from podcast or similar video, varied by city, culture, and country.
+The bots do not invent that footage. They select an approved slice and
+put the prospect's overlay on it.
 
 Metadata to preserve: source media id, country, market, language or
 context, content category, duration, orientation, resolution, host
@@ -536,7 +565,9 @@ ad creative → source-media selection → deterministic video composition
 Router → verified or appropriate business contact.
 
 One strong initial demonstration may be sufficient. Further
-demonstrations are triggered by engagement and opportunity value.
+demonstrations are triggered by engagement and opportunity value. The
+ABC Pharmacy reference shows the page the prospect actually receives:
+`PROSPECT-DEMONSTRATION-EXAMPLE.md`.
 
 Dynamic Personalized Landing Page Engine:
 
@@ -767,6 +798,11 @@ Cost engineering:
   selective.
 
 ## 25. Final acquisition flow
+
+The human upload happens before this flow needs footage. The bots then
+select that slice. They do not ask the producer to cut a new clip for
+each pharmacy, restaurant, dealer, coffee shop, real estate office, law
+firm, or grocery store.
 
 Business found → opportunity scored → buying role identified →
 decision-maker searched → person and role verified where possible →

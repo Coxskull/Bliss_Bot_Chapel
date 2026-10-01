@@ -27,6 +27,7 @@ only through its own Engineering Contract
 | Question | Document that governs |
 | --- | --- |
 | Long-term acquisition, media, cost, and factory shape | `MASTER-ARCHITECTURE.md` |
+| What the prospect receives, and who makes the slice versus the overlay | `PROSPECT-DEMONSTRATION-EXAMPLE.md` |
 | What Alpha already pays for, and whether a new subscription is allowed | `SUBSCRIPTION-LEDGER.md` |
 | What a future contract must contain before code is written | `ENGINEERING-CONTRACT-RULE.md` |
 | Which future contracts exist, and that none are open | `FUTURE-CONTRACTS.md` |

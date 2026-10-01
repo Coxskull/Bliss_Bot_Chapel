@@ -20,13 +20,13 @@ of this list is not permission to start.
 | Fishing Fleet advertiser discovery | Inexpensive discovery of established local and regional businesses | Budget policy if the discovery path spends money. Public-source research otherwise |
 | Opportunity Intelligence Engine | Light research, score, priority, production-investment decision | Advertiser discovery. Separate from decision-maker confidence |
 | Decision-Maker & Contact Intelligence | Buying role, evidence, confidence, freshness, contact fallback, provider abstraction | A discovered and scored business. Enrichment spend only after the ledger review |
-| Alpha Source Media Library | Qualified reusable clips and metadata | None for the catalog itself |
+| Alpha Source Media Library | Qualified reusable clips of about 15 seconds, uploaded by the human producer across cities, cultures, and countries | None for the catalog itself. See `PROSPECT-DEMONSTRATION-EXAMPLE.md` |
 | Source Media Integrity Engine | Fingerprints and duplicate rules | Lands with the library. A library that counts duplicates is not acceptable |
 | Media Supply & Productivity Control | Quota, replacement, Daily Operations, Mission Control fuel gauge, market coverage | Library + integrity. System evidence, not self-certification |
-| Deterministic Video Composition Engine | .NET + FFmpeg composite, real QR, automated disclosure, mechanical QA | Approved source media and reusable components. Zero AI calls for QR and routine overlay |
-| Prospect Demonstration Engine | One strong demonstration per eligible prospect; further spots only on engagement | Opportunity score, source media, composition, cache |
-| Dynamic Prospect Sales Room | One application, many prospect pages, Interactive AI Sales Room | Verified prospect facts. Pricing calls Economics; it does not invent prices |
-| Alpha Communication Router | Policy, eligibility, channel adapter | A contact tier and suppression rules. No send without eligibility |
+| Deterministic Video Composition Engine | .NET + FFmpeg composite of a bot-produced overlay onto the uploaded slice, real QR, automated disclosure, mechanical QA | Approved source media and reusable components. Zero AI calls for QR and routine overlay |
+| Prospect Demonstration Engine | One strong demonstration per eligible prospect; further concept cards only on engagement | Opportunity score, source media, composition, cache. The ABC Pharmacy page is the artifact shape |
+| Dynamic Prospect Sales Room | One application, many prospect pages, including the private four-card layout in the reference example | Verified prospect facts. Pricing calls Economics; it does not invent prices |
+| Alpha Communication Router | Policy, eligibility, channel adapter. The reference send is the private demonstration message | A contact tier and suppression rules. No send without eligibility |
 | Unified Conversation Ledger | One relationship history across channels | Router, or at least a channel that writes here |
 | Prospect Engagement Brain | Signal measurement and the decisions those signals unlock | Pages and outreach events to measure |
 | AI Business Development | Approved conversation and qualification | Ledger, policy, and human escalation. Cannot set `WON` |
