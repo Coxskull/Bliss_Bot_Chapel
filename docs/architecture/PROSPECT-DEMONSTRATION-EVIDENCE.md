@@ -17,6 +17,12 @@ or change Bliss matching.
   invent a person or a price, and escalates a request for a human.
 - Delivery status stays `NOT_SENT`. No mailbox is contacted.
 
+## PDF report
+
+`docs/architecture/evidence/Alpha-Prospect-Demonstration-Report.pdf`
+
+The report includes the library, the unsent message, the landing page, the composited frame, the QR code, the recorded conversation, and the test result.
+
 ## Automated verification
 
 ```bash
