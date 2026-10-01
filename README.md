@@ -166,3 +166,6 @@ Phase 20 production posture evidence: `docs/bliss/PHASE-20-EVIDENCE.md`.
 Wedding Planner Phase 1 foundation contract: `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md`.
 Wedding Planner master blueprint v1.1: `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md`.
 Economics & Rate Intelligence (Phases 1–9): `docs/economics/ARCHITECTURE.md`.
+
+Long-term Wedding Planner, Fishing Fleet, and Autonomous Demo Factory
+reference (not an implementation authorization): `docs/architecture/README.md`.

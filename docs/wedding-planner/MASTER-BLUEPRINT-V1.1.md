@@ -1,5 +1,13 @@
 # Wedding Planner™ Master Blueprint — Version 1.1
 
+Long-term acquisition, source-media, cost, and factory behavior is now
+governed by `docs/architecture/MASTER-ARCHITECTURE.md`. That reference
+does not authorize implementation and does not replace this note for
+the Wedding Planner module already started. Where they disagree about
+future creative consolidation, media reuse, or cost, the architecture
+reference governs the next contract. Accepted Phase 1 behavior stays
+in `PHASE-1-ENGINEERING-CONTRACT.md`.
+
 Authoritative product and workforce architecture for Bliss Chapel's
 AI-assisted advertiser creative and campaign planning workspace.
 

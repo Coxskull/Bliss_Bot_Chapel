@@ -45,3 +45,7 @@ pricing feedback, settlement, payable, invoice, or payout behavior.
 
 Wedding Planner Phase 1 remains workspace / session / message / audit
 infrastructure only.
+
+Long-term acquisition architecture, including the rule that Wedding
+Planner must not invent prices, lives in `docs/architecture/`. That
+folder does not open a new Economics phase.
