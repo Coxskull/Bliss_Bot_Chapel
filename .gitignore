@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# Local demonstration renders and uploaded source slices
+App_Data/
+
 # User-specific files
 *.rsuser
 *.suo

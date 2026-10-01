@@ -1,6 +1,7 @@
 using System.Net;
 using System.Threading.RateLimiting;
 using System.Text.Json.Serialization;
+using Bliss.Api.Demonstrations;
 using Bliss.Api.Runtime;
 using Bliss.Api.Security;
 using Microsoft.Extensions.FileProviders;
@@ -74,6 +75,9 @@ builder.Services.AddDbContext<BlissDbContext>(options =>
 });
 
 builder.Services.AddBlissInfrastructure(builder.Configuration);
+builder.Services.AddSingleton<ProspectDemonstrationStore>();
+builder.Services.AddSingleton<DemonstrationVideoStudio>();
+builder.Services.AddSingleton<ProspectDemonstrationService>();
 builder.Services.AddSingleton(authentication);
 builder.Services.AddSingleton(runtime);
 builder.Services.AddSingleton(posture);
