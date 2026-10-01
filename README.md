@@ -170,3 +170,4 @@ Economics & Rate Intelligence (Phases 1–9): `docs/economics/ARCHITECTURE.md`.
 Long-term Wedding Planner, Fishing Fleet, and Autonomous Demo Factory
 reference (not an implementation authorization): `docs/architecture/README.md`.
 Prospect-facing example (ABC Pharmacy, Panama City): `docs/architecture/PROSPECT-DEMONSTRATION-EXAMPLE.md`.
+Working source-media library and private demonstration: `/source-media/index.html`. Evidence: `docs/architecture/PROSPECT-DEMONSTRATION-EVIDENCE.md`.

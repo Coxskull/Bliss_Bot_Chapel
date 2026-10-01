@@ -14,6 +14,9 @@ public sealed class BlissApiFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
+        builder.UseSetting(
+            "Demonstrations:Root",
+            Path.Combine(Path.GetTempPath(), "bliss-demonstrations", _dbName));
         builder.ConfigureServices(services =>
         {
             var toRemove = services.Where(d =>

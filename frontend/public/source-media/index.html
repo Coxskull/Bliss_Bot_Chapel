@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alpha Source Media Library</title>
+  <link rel="stylesheet" href="/demonstrations/alpha-demo.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><span class="mark">A</span><span><strong>ALPHA</strong><small>SOURCE MEDIA</small></span></a>
+    <a href="/">Bliss Chapel</a>
+  </header>
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <p class="status">MEDIA FUEL</p>
+        <h1>Source slices</h1>
+        <p>Upload about 15 seconds of video Alpha is allowed to use. The library counts a clip only when it is unique, usable, and qualified. Bots reuse that slice. They do not ask for a new cut for every prospect.</p>
+      </div>
+    </section>
+    <section class="meter" id="meter"></section>
+    <section class="tools">
+      <button id="create" type="button">Create original 15-second Panama City slice</button>
+      <button id="again" class="secondary" type="button">Submit the same picture again</button>
+      <button id="produce" type="button">Produce ABC Pharmacy demonstration</button>
+    </section>
+    <p id="notice"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>File</th><th>Market</th><th>Seconds</th><th>Status</th><th>Quota</th><th>Provenance</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </main>
+  <script src="/source-media/source-media.js" defer></script>
+</body>
+</html>
