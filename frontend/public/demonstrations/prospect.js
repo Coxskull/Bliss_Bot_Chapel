@@ -25,12 +25,15 @@ function render(page) {
   lead.textContent = "Your community is listening. This private page shows how an approved 15-second source slice can carry an advertisement for " + page.businessName + ".";
   context.textContent = page.market + "  |  " + page.niche + "  |  Real Audiences";
   facts.replaceChildren();
-  [
+  const factRows = [
     ["Decision maker", page.decisionMakerStatus],
     ["Contact tier", page.contactTier],
     ["Delivery", page.delivery],
     ["Buying roles", page.buyingRoles.join(", ")]
-  ].forEach(([label, value]) => {
+  ];
+  if (page.opportunityScore) factRows.push(["Opportunity score", String(page.opportunityScore)]);
+  if (page.publicSourceUrl) factRows.push(["Public source", page.publicSourceUrl]);
+  factRows.forEach(([label, value]) => {
     const block = document.createElement("div");
     const strong = document.createElement("strong");
     strong.textContent = value;

@@ -41,6 +41,68 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
     public ActionResult BuyingRoles([FromQuery] string niche) =>
         Ok(new { niche, roles = BuyingRoleCatalog.RolesFor(niche) });
 
+    [HttpGet("catalog")]
+    [AllowAnonymous]
+    public ActionResult Catalog() =>
+        Ok(new
+        {
+            niches = BuyingRoleCatalog.Niches.OrderBy(x => x),
+            markets = InitialMarkets.All.Select(x => new { city = x.City, country = x.Country, language = x.Language })
+        });
+
+    [HttpPost("discover")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult Discover([FromBody] DiscoverRequest request)
+    {
+        try
+        {
+            var prospect = demonstrations.Discover(
+                request.Niche ?? string.Empty,
+                request.Market ?? string.Empty,
+                request.BusinessName ?? string.Empty,
+                request.PublicSourceUrl ?? string.Empty);
+            return Ok(DetailDto(prospect));
+        }
+        catch (DiscoveryRejectedException ex)
+        {
+            return BadRequest(new
+            {
+                error = ex.Message,
+                score = ex.Result.Score,
+                passesInitialScreen = false,
+                reasons = ex.Result.Reasons
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("{slug}/produce")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> ProduceDiscovered(
+        string slug,
+        [FromBody] ProduceRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var demonstration = await demonstrations.ProduceDiscoveredAsync(
+                slug,
+                $"{Request.Scheme}://{Request.Host}",
+                request.SourceClipId,
+                cancellationToken);
+            return Ok(DetailDto(demonstration));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     [HttpPost("source-media")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
@@ -178,7 +240,11 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
     {
         demonstration.Slug,
         demonstration.BusinessName,
+        demonstration.Niche,
         demonstration.Market,
+        demonstration.OpportunityScore,
+        demonstration.ProspectState,
+        demonstration.DecisionMakerStatus,
         conceptCount = demonstration.Concepts.Count,
         pageUrl = "/demonstrations/" + demonstration.Slug,
         outreachUrl = "/outreach/" + demonstration.Slug
@@ -197,6 +263,10 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         demonstration.ContactTier,
         demonstration.ContactRoute,
         demonstration.Disclosure,
+        demonstration.PublicSourceUrl,
+        demonstration.OpportunityScore,
+        demonstration.ProspectState,
+        demonstration.BusinessIdentity,
         demonstration.Illustrative,
         demonstration.HumanEscalation,
         demonstration.LastSignal,
@@ -227,6 +297,7 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
     };
 }
 
+public sealed record DiscoverRequest(string? Niche, string? Market, string? BusinessName, string? PublicSourceUrl);
 public sealed record StudioSliceRequest(string? Market, string? Country, int Seconds);
 public sealed record ProduceRequest(Guid? SourceClipId, int? ConceptCount);
 public sealed record VisitorMessageRequest(string Text);

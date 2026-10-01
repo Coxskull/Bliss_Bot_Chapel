@@ -1,6 +1,10 @@
 const meter = document.querySelector("#meter");
 const rows = document.querySelector("#rows");
 const notice = document.querySelector("#notice");
+const discovery = document.querySelector("#discovery");
+const prospects = document.querySelector("#prospects");
+const nicheSelect = document.querySelector("#niche");
+const marketSelect = document.querySelector("#market");
 let latestQualified = null;
 let latestFile = null;
 
@@ -44,6 +48,28 @@ function render(library) {
       cell(clip.provenance)
     );
     rows.append(row);
+  });
+  prospects.replaceChildren();
+  library.demonstrations.forEach(item => {
+    const row = document.createElement("tr");
+    const action = document.createElement("td");
+    if (item.opportunityScore === 100 && item.slug !== "abc-pharmacy") {
+      const produce = document.createElement("button");
+      produce.type = "button";
+      produce.textContent = item.conceptCount > 0 ? "Open demonstration" : "Produce one demonstration";
+      produce.addEventListener("click", () => produceProspect(item));
+      action.append(produce);
+    }
+    row.append(
+      cell(item.businessName),
+      cell(item.niche || ""),
+      cell(item.market),
+      cell(String(item.opportunityScore ?? "")),
+      cell(item.prospectState || ""),
+      cell(item.decisionMakerStatus || ""),
+      action
+    );
+    prospects.append(row);
   });
 }
 
@@ -94,6 +120,47 @@ document.querySelector("#again").addEventListener("click", async () => {
   }
 });
 
+async function produceProspect(item) {
+  if (item.conceptCount > 0) {
+    location.href = item.outreachUrl;
+    return;
+  }
+  discovery.textContent = "Compositing one overlay onto a qualified slice…";
+  try {
+    const page = await postJson("/api/demonstrations/" + item.slug + "/produce", {
+      sourceClipId: latestQualified
+    });
+    discovery.textContent = page.businessName + " demonstration ready. Delivery is " + page.delivery + ". Decision maker " + page.decisionMakerStatus + ".";
+    const open = document.createElement("a");
+    open.href = page.subject ? "/outreach/" + page.slug : item.outreachUrl;
+    open.href = "/outreach/" + page.slug;
+    open.textContent = " Open the private message";
+    discovery.append(open);
+    await load();
+  } catch (error) {
+    discovery.textContent = error.message;
+  }
+}
+
+document.querySelector("#discover").addEventListener("submit", async event => {
+  event.preventDefault();
+  discovery.textContent = "Scoring the prospect…";
+  try {
+    const page = await postJson("/api/demonstrations/discover", {
+      niche: nicheSelect.value,
+      market: marketSelect.value,
+      businessName: document.querySelector("#businessName").value,
+      publicSourceUrl: document.querySelector("#sourceUrl").value
+    });
+    discovery.textContent = page.businessName + " scored " + page.opportunityScore
+      + ". Buying roles: " + page.buyingRoles.join(", ")
+      + ". Decision maker " + page.decisionMakerStatus + ". Delivery " + page.delivery + ".";
+    await load();
+  } catch (error) {
+    discovery.textContent = error.message;
+  }
+});
+
 document.querySelector("#produce").addEventListener("click", async () => {
   notice.textContent = "Compositing overlays, QR codes, and disclosure…";
   try {
@@ -111,4 +178,23 @@ document.querySelector("#produce").addEventListener("click", async () => {
   }
 });
 
-load();
+async function loadCatalog() {
+  const response = await fetch("/api/demonstrations/catalog");
+  const catalog = await response.json();
+  catalog.niches.forEach(niche => {
+    const option = document.createElement("option");
+    option.value = niche;
+    option.textContent = niche;
+    if (niche === "restaurant") option.selected = true;
+    nicheSelect.append(option);
+  });
+  catalog.markets.forEach(market => {
+    const option = document.createElement("option");
+    option.value = market.city;
+    option.textContent = market.city + ", " + market.country;
+    if (market.city === "Panama City") option.selected = true;
+    marketSelect.append(option);
+  });
+}
+
+loadCatalog().then(load);

@@ -89,13 +89,17 @@ button.secondary { background: transparent; border: 1px solid var(--line); }
 .email p { line-height: 1.5; }
 .email .cta { display: inline-block; background: var(--blue); color: white; text-decoration: none; padding: 12px 16px; border-radius: 10px; }
 .email .fine { color: #526277; font-size: 13px; border-top: 1px solid #d5deea; padding-top: 12px; }
-.tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.tools, .discover { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.discover { display: grid; grid-template-columns: 1fr 1fr; }
+.discover label { display: grid; gap: 4px; color: var(--muted); font-size: 13px; }
+.discover select, .discover input { width: 100%; border-radius: 12px; border: 1px solid var(--line); background: #0b1726; color: var(--ink); padding: 10px 12px; }
+.discover button { justify-self: start; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); font-size: 14px; }
 .meter { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 12px; margin: 12px 0; }
 .warn { color: #ffb4a8; }
 .ok { color: #b6f3cc; }
 @media (max-width: 900px) {
-  .hero, .grid, .layout, .facts, .benefits, .meter { grid-template-columns: 1fr; }
+  .hero, .grid, .layout, .facts, .benefits, .meter, .discover { grid-template-columns: 1fr; }
   .badge { justify-self: start; }
 }
