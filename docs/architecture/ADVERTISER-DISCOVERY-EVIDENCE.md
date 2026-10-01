@@ -31,6 +31,12 @@ Result: **213 passed, 0 failed, 0 skipped**.
 The new proofs are `OpportunityScreenTests` and
 `ProspectDiscoveryApiTests`. The previous demonstration tests remain green.
 
+The same path was exercised in the browser: an empty source is blocked,
+Casa Verde at `https://example.com/casa-verde` scores 100, one Table
+Concept is prepared, the message stays `NOT_SENT`, and the page refuses
+to verify a person or invent a price. The discovery form and the
+demonstration page remain readable at a phone width.
+
 ## Limits
 
 The screen does not search the internet. The operator supplies the name
