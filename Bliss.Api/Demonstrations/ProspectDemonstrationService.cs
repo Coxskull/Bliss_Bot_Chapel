@@ -74,7 +74,13 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             var qrPath = store.RenderPath(qrName);
             var videoPath = store.RenderPath(videoName);
             await File.WriteAllBytesAsync(qrPath, studio.CreateQrPng(destination), cancellationToken);
-            await studio.CompositeAsync(store.ClipPath(clip), qrPath, videoPath, concept, cancellationToken);
+            await studio.CompositeAsync(
+                store.ClipPath(clip),
+                qrPath,
+                videoPath,
+                concept,
+                demonstration.BusinessName,
+                cancellationToken);
             demonstration.Concepts.Add(new ConceptRecord
             {
                 Id = concept.Id,

@@ -57,9 +57,9 @@ public sealed class DemonstrationVideoStudio
         await File.WriteAllTextAsync(marketFile, market, cancellationToken);
         await File.WriteAllTextAsync(countryFile, country + " · source slice", cancellationToken);
         var filter =
-            $"[0:v]drawtext=fontfile={Font}:textfile={marketFile}:fontsize=62:fontcolor=white:x=(w-text_w)/2:y=250,"
-            + $"drawtext=fontfile={Font}:textfile={countryFile}:fontsize=28:fontcolor=0xD5E4F7:x=(w-text_w)/2:y=340,"
-            + "drawbox=x=180:y=430:w=920:h=10:color=0x2F6FED:t=fill[v]";
+            $"[0:v]drawtext=fontfile={Font}:textfile={marketFile}:fontsize=52:fontcolor=white:x=64:y=250,"
+            + $"drawtext=fontfile={Font}:textfile={countryFile}:fontsize=26:fontcolor=0xD5E4F7:x=64:y=330,"
+            + "drawbox=x=64:y=400:w=520:h=10:color=0x2F6FED:t=fill[v]";
         await RunAsync(
             "ffmpeg",
             [
@@ -90,14 +90,17 @@ public sealed class DemonstrationVideoStudio
         string qrPath,
         string outputPath,
         OverlayConcept concept,
+        string businessName,
         CancellationToken cancellationToken)
     {
         var directory = Path.GetDirectoryName(outputPath)!;
         var stem = Path.Combine(directory, concept.Id + "-" + Guid.NewGuid().ToString("N"));
+        var brand = stem + ".b.txt";
         var headline = stem + ".h.txt";
         var subhead = stem + ".s.txt";
         var detail = stem + ".d.txt";
         var cta = stem + ".c.txt";
+        await File.WriteAllTextAsync(brand, businessName, cancellationToken);
         await File.WriteAllTextAsync(headline, concept.Headline, cancellationToken);
         await File.WriteAllTextAsync(subhead, concept.Subhead, cancellationToken);
         await File.WriteAllTextAsync(detail, concept.Detail, cancellationToken);
@@ -105,14 +108,15 @@ public sealed class DemonstrationVideoStudio
         var accent = concept.AccentHex;
         var filter =
             "[0:v]scale=1280:720,setsar=1[base];"
-            + "[base]drawbox=x=742:y=28:w=508:h=664:color=white@0.95:t=fill[card];"
-            + $"[card]drawbox=x=742:y=28:w=18:h=664:color=0x{accent}:t=fill[bar];"
-            + $"[bar]drawtext=fontfile={Font}:textfile={headline}:fontsize=40:fontcolor=0x0C3F86:x=786:y=78[h];"
-            + $"[h]drawtext=fontfile={Font}:textfile={subhead}:fontsize=28:fontcolor=0x16324F:x=786:y=150[s];"
-            + $"[s]drawtext=fontfile={Font}:textfile={detail}:fontsize=22:fontcolor=0x3D5166:x=786:y=230[d];"
-            + $"[d]drawtext=fontfile={Font}:textfile={cta}:fontsize=26:fontcolor=0x0E7A45:x=786:y=560[t];"
-            + "[1:v]scale=168:168[qr];"
-            + "[t][qr]overlay=1020:430[out]";
+            + "[base]drawbox=x=760:y=36:w=484:h=648:color=white@0.96:t=fill[card];"
+            + $"[card]drawbox=x=760:y=36:w=16:h=648:color=0x{accent}:t=fill[bar];"
+            + $"[bar]drawtext=fontfile={Font}:textfile={brand}:fontsize=22:fontcolor=0x{accent}:x=796:y=64[b];"
+            + $"[b]drawtext=fontfile={Font}:textfile={headline}:fontsize=36:fontcolor=0x0C3F86:x=796:y=110[h];"
+            + $"[h]drawtext=fontfile={Font}:textfile={subhead}:fontsize=26:fontcolor=0x16324F:x=796:y=168[s];"
+            + $"[s]drawtext=fontfile={Font}:textfile={detail}:fontsize=20:fontcolor=0x3D5166:x=796:y=230[d];"
+            + $"[d]drawtext=fontfile={Font}:textfile={cta}:fontsize=24:fontcolor=0x0E7A45:x=796:y=560[t];"
+            + "[1:v]scale=150:150[qr];"
+            + "[t][qr]overlay=1048:470[out]";
         await RunAsync(
             "ffmpeg",
             [
