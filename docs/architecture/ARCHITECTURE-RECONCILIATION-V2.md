@@ -56,7 +56,7 @@ is not this program and stays stopped on its own security finding.
   demonstration.
 - Eligible delivery. Phase 9 records several contact roads and a
   suppression flag. A public road stays ineligible until Phase 16.
-- A batch manifest and deterministic factory QA beyond the current tests.
+- Acquisition events. Phase 11 records a factory batch: deterministic checks, asset counts, zero model calls, and no invented price.
 - An acquisition event ledger of observable behavior.
 - An authority envelope that lets Ask Alpha negotiate without a second
   pricing engine.
