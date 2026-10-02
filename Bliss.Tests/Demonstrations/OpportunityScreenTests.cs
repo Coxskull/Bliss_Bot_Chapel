@@ -15,9 +15,25 @@ public sealed class OpportunityScreenTests
 
         Assert.Equal(100, result.Score);
         Assert.True(result.PassesInitialScreen);
+        Assert.True(result.PreservesBusiness);
         Assert.Equal("es", result.Language);
         Assert.Equal("Panama", result.Country);
         Assert.Empty(result.Reasons);
+    }
+
+    [Fact]
+    public void A_named_public_business_outside_the_initial_markets_is_preserved()
+    {
+        var result = OpportunityScreen.Evaluate(
+            "restaurant",
+            "Quito",
+            "Puerto Azul",
+            "https://example.com/puerto-azul");
+
+        Assert.Equal(75, result.Score);
+        Assert.False(result.PassesInitialScreen);
+        Assert.True(result.PreservesBusiness);
+        Assert.Contains(result.Reasons, reason => reason.Contains("outside the initial six cities"));
     }
 
     [Fact]
@@ -26,6 +42,7 @@ public sealed class OpportunityScreenTests
         var result = OpportunityScreen.Evaluate("restaurant", "Panama City", "", "");
 
         Assert.False(result.PassesInitialScreen);
+        Assert.False(result.PreservesBusiness);
         Assert.Contains(result.Reasons, reason => reason.Contains("will not invent"));
         Assert.Contains(result.Reasons, reason => reason.Contains("public http"));
     }

@@ -316,7 +316,9 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         demonstration.Market,
         demonstration.Country,
         demonstration.Language,
-        buyingRoles = BuyingRoleCatalog.RolesFor(demonstration.Niche),
+        buyingRoles = BuyingRoleCatalog.Niches.Contains(demonstration.Niche, StringComparer.OrdinalIgnoreCase)
+            ? BuyingRoleCatalog.RolesFor(demonstration.Niche)
+            : Array.Empty<string>(),
         demonstration.DecisionMakerStatus,
         demonstration.DecisionMakerName,
         demonstration.DecisionMakerRole,
@@ -340,7 +342,9 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         demonstration.HumanEscalation,
         demonstration.LastSignal,
         delivery = "NOT_SENT",
-        subject = presentation.PersonalizationAllowed
+        subject = demonstration.ProspectState == "PRESERVED"
+            ? $"{demonstration.BusinessName} is preserved. No demonstration was manufactured and nothing was sent."
+            : presentation.PersonalizationAllowed
             ? $"For {demonstration.DecisionMakerName}: see how {demonstration.BusinessName} could reach more customers in {demonstration.Market}"
             : $"See how {demonstration.BusinessName} could reach more customers in {demonstration.Market}",
         concepts = demonstration.Concepts.Select(concept => new

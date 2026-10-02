@@ -36,6 +36,7 @@ only through its own Engineering Contract
 | What the prospect receives, and who makes the slice versus the overlay | `PROSPECT-DEMONSTRATION-EXAMPLE.md` |
 | What the discovery screen records before one demonstration | `ADVERTISER-DISCOVERY-EVIDENCE.md` |
 | What public evidence can raise decision-maker confidence | `DECISION-MAKER-EVIDENCE.md` |
+| What happens to a legitimate business that scores below 100 | `PRESERVED-BUSINESS-EVIDENCE.md` |
 | What Alpha already pays for, and whether a new subscription is allowed | `SUBSCRIPTION-LEDGER.md` |
 | What a future contract must contain before code is written | `ENGINEERING-CONTRACT-RULE.md` |
 | Which future contracts exist, and that none are open | `FUTURE-CONTRACTS.md` |

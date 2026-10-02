@@ -65,11 +65,11 @@ is not this program and stays stopped on its own security finding.
 
 ### Conflicts to resolve before building past them
 
-1. **Big net versus the score-100 gate.** Today a failed discovery is
-   rejected and not stored. The blueprint says a legitimate business
-   stays even when the road is poor. Phase 8 stores the business and
-   withholds the demonstration. It does not lower the bar for making a
-   video.
+1. **Big net versus the score-100 gate.** Resolved in Phase 8. A named
+   business with a public source URL is stored when the road scores
+   below 100. The demonstration, the decision-maker record, and any
+   send stay withheld until the road scores 100. A missing name or a
+   missing public URL is still rejected and not stored.
 2. **Permanent composite versus just-in-time overlay.** Replacing the
    working FFmpeg composite before a recipe page passes the same QR,
    disclosure, and QA checks would throw away a verified proof. Phase 10
@@ -130,8 +130,8 @@ commercial commitment.
 ## Required changes when each phase starts
 
 Schema, API, queue, isolation, and provider work belong to the phase
-that needs them. Phase 8 needs a prospect state for a business with no
-recipe. Phase 9 needs route rows and a suppression flag. Phase 10 needs
+that needs them. Phase 8 records `PRESERVED` for a business with no
+demonstration. Phase 9 needs route rows and a suppression flag. Phase 10 needs
 a recipe version and a player. Phase 13 needs conversation state that
 cannot see another prospect. Phase 14 needs a read from Economics.
 Phase 16 needs an adapter only after eligibility exists. Phase 17 needs

@@ -91,7 +91,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
     public DemonstrationRecord Discover(string niche, string market, string businessName, string sourceUrl)
     {
         var screen = OpportunityScreen.Evaluate(niche, market, businessName, sourceUrl);
-        if (!screen.PassesInitialScreen)
+        if (!screen.PreservesBusiness)
         {
             throw new DiscoveryRejectedException(screen);
         }
@@ -108,22 +108,26 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             return existing;
         }
 
+        var trimmedName = businessName.Trim();
+        var trimmedMarket = string.IsNullOrWhiteSpace(market) ? "Outside the initial markets" : market.Trim();
+        var knownNiche = BuyingRoleCatalog.Niches.Contains(niche.Trim(), StringComparer.OrdinalIgnoreCase);
+        var preserved = !screen.PassesInitialScreen;
         var record = new DemonstrationRecord
         {
             Slug = slug,
-            BusinessName = businessName.Trim(),
+            BusinessName = trimmedName,
             Niche = niche.Trim(),
-            Market = market.Trim(),
+            Market = trimmedMarket,
             Country = screen.Country,
             Language = screen.Language,
-            BuyingRoles = string.Join(", ", BuyingRoleCatalog.RolesFor(niche)),
+            BuyingRoles = knownNiche ? string.Join(", ", BuyingRoleCatalog.RolesFor(niche)) : string.Empty,
             DecisionMakerStatus = ReferenceProspect.DecisionMakerStatus,
             ContactTier = ReferenceProspect.ContactTier,
             ContactRoute = ReferenceProspect.ContactRoute,
-            Disclosure = NicheOverlay.Disclosure(businessName.Trim()),
+            Disclosure = NicheOverlay.Disclosure(trimmedName),
             PublicSourceUrl = sourceUrl.Trim(),
             OpportunityScore = screen.Score,
-            ProspectState = "OPPORTUNITY_SCORED",
+            ProspectState = preserved ? "PRESERVED" : "OPPORTUNITY_SCORED",
             BusinessIdentity = "PUBLIC_SOURCE_RECORDED",
             Illustrative = true,
             CreatedAt = DateTime.UtcNow,
@@ -132,10 +136,13 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
                 new ChatRecord
                 {
                     Role = "ASSISTANT",
-                    Text = "Hello. This is a private demonstration for " + businessName.Trim()
-                        + " in " + market.Trim()
-                        + ". I can explain the concept and how Alpha works. No named decision-maker is verified, so I will not use a personal name.",
-                    Signal = "INTRODUCED",
+                    Text = preserved
+                        ? trimmedName + " is preserved. The road score is " + screen.Score
+                            + ". No demonstration was manufactured. Nothing is sent."
+                        : "Hello. This is a private demonstration for " + trimmedName
+                            + " in " + trimmedMarket
+                            + ". I can explain the concept and how Alpha works. No named decision-maker is verified, so I will not use a personal name.",
+                    Signal = preserved ? "PRESERVED" : "INTRODUCED",
                     At = DateTime.UtcNow
                 }
             ]
@@ -149,7 +156,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
         if (current.OpportunityScore != 100)
         {
-            throw new InvalidOperationException("Score the opportunity before recording a decision-maker.");
+            throw new InvalidOperationException("A decision-maker is recorded only after the road scores 100. Nothing is sent.");
         }
 
         var assessment = DecisionMakerEvidence.Evaluate(current.Niche, input);
@@ -210,7 +217,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
         if (current.OpportunityScore != 100)
         {
-            throw new InvalidOperationException("The opportunity has not passed initial screening.");
+            throw new InvalidOperationException("The road score is below 100. The business is preserved and no demonstration is manufactured.");
         }
 
         var library = store.Read();

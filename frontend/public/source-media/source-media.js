@@ -64,6 +64,8 @@ function render(library) {
       produce.textContent = item.conceptCount > 0 ? "Open demonstration" : "Produce one demonstration";
       produce.addEventListener("click", () => produceProspect(item));
       action.append(produce);
+    } else if (item.prospectState === "PRESERVED") {
+      action.textContent = "No demonstration";
     }
     row.append(
       cell(item.businessName),
@@ -163,18 +165,27 @@ document.querySelector("#discover").addEventListener("submit", async event => {
   event.preventDefault();
   discovery.textContent = "Scoring the prospect…";
   try {
+    const market = marketSelect.value === "__outside__"
+      ? document.querySelector("#outsideMarket").value
+      : marketSelect.value;
     const page = await postJson("/api/demonstrations/discover", {
       niche: nicheSelect.value,
-      market: marketSelect.value,
+      market,
       businessName: document.querySelector("#businessName").value,
       publicSourceUrl: document.querySelector("#sourceUrl").value
     });
+    const preserved = page.prospectState === "PRESERVED";
     discovery.textContent = page.businessName + " scored " + page.opportunityScore
-      + ". Buying roles: " + page.buyingRoles.join(", ")
-      + ". Decision maker " + page.decisionMakerStatus + ". Delivery " + page.delivery + ".";
+      + ". State " + page.prospectState + "."
+      + (preserved
+        ? " No demonstration was manufactured."
+        : " Buying roles: " + page.buyingRoles.join(", ") + ".")
+      + " Decision maker " + page.decisionMakerStatus + ". Delivery " + page.delivery + ".";
+    discovery.scrollIntoView({ block: "center" });
     await load();
   } catch (error) {
     discovery.textContent = error.message;
+    discovery.scrollIntoView({ block: "center" });
   }
 });
 
@@ -205,6 +216,10 @@ async function loadCatalog() {
     if (niche === "restaurant") option.selected = true;
     nicheSelect.append(option);
   });
+  const other = document.createElement("option");
+  other.value = "other";
+  other.textContent = "Other local business";
+  nicheSelect.append(other);
   catalog.markets.forEach(market => {
     const option = document.createElement("option");
     option.value = market.city;
@@ -212,7 +227,17 @@ async function loadCatalog() {
     if (market.city === "Panama City") option.selected = true;
     marketSelect.append(option);
   });
+  const outside = document.createElement("option");
+  outside.value = "__outside__";
+  outside.textContent = "Outside the initial markets";
+  marketSelect.append(outside);
 }
+
+marketSelect.addEventListener("change", () => {
+  const outside = marketSelect.value === "__outside__";
+  document.querySelector("#outsideMarketLabel").hidden = !outside;
+  document.querySelector("#outsideMarket").required = outside;
+});
 
 async function loadRoles() {
   const selected = evidenceProspect.selectedOptions[0];

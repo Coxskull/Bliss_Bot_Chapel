@@ -19,13 +19,28 @@ function bubble(role, text) {
 }
 
 function render(page) {
-  document.title = page.businessName + " · Alpha demonstration";
+  const preserved = page.prospectState === "PRESERVED";
+  document.title = preserved
+    ? page.businessName + " · preserved"
+    : page.businessName + " · Alpha demonstration";
   business.textContent = page.businessName;
-  promise.textContent = "Get More Customers in " + page.market + " with Podcast Advertising";
-  lead.textContent = page.personalizationAllowed && page.decisionMakerName
+  const status = document.querySelector("#pageStatus");
+  const benefits = document.querySelector("#pageBenefits");
+  if (status) status.textContent = preserved ? "PRESERVED · NOTHING SENT" : "PRIVATE ADVERTISING DEMONSTRATION";
+  if (benefits) benefits.hidden = preserved;
+  const badge = document.querySelector(".badge");
+  if (badge) badge.hidden = preserved;
+  promise.textContent = preserved
+    ? "No demonstration was manufactured"
+    : "Get More Customers in " + page.market + " with Podcast Advertising";
+  lead.textContent = preserved
+    ? page.businessName + " is preserved. The road score is " + page.opportunityScore + ". No demonstration was manufactured. Nothing was sent. Delivery is " + page.delivery + "."
+    : page.personalizationAllowed && page.decisionMakerName
     ? "This private page records " + page.decisionMakerName + ", " + page.decisionMakerRole + ", from a public source. Confidence is " + page.decisionMakerStatus + ". Delivery is " + page.delivery + "."
     : "Your community is listening. This private page shows how an approved 15-second source slice can carry an advertisement for " + page.businessName + ".";
-  context.textContent = page.market + "  |  " + page.niche + "  |  Real Audiences";
+  context.textContent = preserved
+    ? page.market + "  |  " + (page.niche || "local business") + "  |  Nothing was sent"
+    : page.market + "  |  " + page.niche + "  |  Real Audiences";
   facts.replaceChildren();
   const factRows = [
     ["Decision maker", page.decisionMakerStatus],
