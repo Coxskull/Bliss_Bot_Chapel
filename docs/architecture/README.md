@@ -3,10 +3,13 @@
 **Status:** architectural reference only. Not an Engineering Contract.
 Not authorization to build the systems named here.
 
-This folder records the updated cost-engineered Alpha architecture for
-Wedding Planner, Fishing Fleet, and the Autonomous Demo Factory. It
-supersedes earlier combined acquisition blueprints for **future**
-contracts.
+Blueprint v2 is the consolidated future-engineering reference.
+`ARCHITECTURE-RECONCILIATION-V2.md` challenges it.
+`PHASE-TRACKER.md` is where the program stands. The visible board is
+`/acquisition/index.html`.
+
+The earlier cost-engineered reference remains in `MASTER-ARCHITECTURE.md`
+for the media, disclosure, and cost rules already used by Phases 4–7.
 
 ## What this folder does not do
 
@@ -26,7 +29,10 @@ only through its own Engineering Contract
 
 | Question | Document that governs |
 | --- | --- |
-| Long-term acquisition, media, cost, and factory shape | `MASTER-ARCHITECTURE.md` |
+| Consolidated v2 voyage and the rules that govern future phases | `MASTER-ARCHITECTURE-V2.md` |
+| What already exists, what conflicts, and what not to rebuild | `ARCHITECTURE-RECONCILIATION-V2.md` |
+| Which acquisition phase is verified, next, or future | `PHASE-TRACKER.md` |
+| Long-term media, cost, and factory rules already in use | `MASTER-ARCHITECTURE.md` |
 | What the prospect receives, and who makes the slice versus the overlay | `PROSPECT-DEMONSTRATION-EXAMPLE.md` |
 | What the discovery screen records before one demonstration | `ADVERTISER-DISCOVERY-EVIDENCE.md` |
 | What public evidence can raise decision-maker confidence | `DECISION-MAKER-EVIDENCE.md` |

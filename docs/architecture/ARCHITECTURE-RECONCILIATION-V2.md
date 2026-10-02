@@ -1,0 +1,147 @@
+# Architecture reconciliation — v2
+
+**Status:** engineering assessment. It challenges
+`MASTER-ARCHITECTURE-V2.md`. It does not authorize the unbuilt phases.
+
+The program remains a future engineering program. Reconciliation is
+recorded. The v2 amendments are not verified as a completed platform.
+
+## Challenge
+
+The blueprint is right about the commercial voyage and right to warn
+against a service per idea. Several sections still describe a second
+copy of a machine Alpha already has, or a scale target that would be
+unsafe to treat as a design requirement today.
+
+### Already solved, so do not rebuild
+
+| Capability | Where it already lives |
+| --- | --- |
+| Creator and advertiser matching | Bliss Phases 1–20. `DeterministicRuleEvaluator` remains the matching authority. |
+| Hosted fail-closed posture | Bliss Phase 20. That evidence does not declare the hosted deployment finished. |
+| Markets, audience snapshots, inventory benchmarks, deterministic rate ranges | Economics Phases 1–4. |
+| Quote versions and negotiation history | Economics Phase 5. |
+| Compensation illustrations | Economics Phase 6. |
+| Public-research provenance | Economics Phase 7. The workflow may stage research. .NET still validates it. |
+| Planner asks Economics instead of inventing a price | Economics Phase 8. |
+| Append-only performance history | Economics Phase 9. Automatic repricing, settlement, and payout are not authorized. Phase 9 is pending owner acceptance. |
+| Advertiser workspace, session, message, and audit | Wedding Planner Phase 1. Zero AI workers. |
+| Operator identity, roles, and audit visibility | Existing Bliss API and operations console. |
+| Source slice, duplicate rule, quota, and fuel | Verified demonstration library. |
+| Software overlay, QR, disclosure, and unsent preview | Verified demonstration path. |
+| Score before one cold demonstration | Verified discovery screen. |
+| Public evidence before a personal name | Verified decision-maker screen. |
+| Provider-neutral sign-in | Existing OIDC. Development remains the anonymous local path. |
+
+Alpha Auto is a separate product. The AI Development Fleet Mission 002
+is not this program and stays stopped on its own security finding.
+
+### Partial, so extend
+
+- The demonstration is one application with prospect data, but it still
+  flattens a permanent MP4 per concept. That was the correct cheap proof.
+  It is not yet a recipe runtime.
+- The conversation is one Ask Alpha surface with deterministic answers.
+  It is not a queued multi-tenant conversation platform.
+- Economics can recommend and record negotiation history. Ask Alpha does
+  not yet read those results, and it correctly refuses to invent a price.
+- The operations console can show Bliss, Wedding Planner, and Economics.
+  It is not yet a spend and pause control for acquisition.
+- The prospect store is durable for a local library. It is a file, not
+  the PostgreSQL system of record.
+
+### Genuinely missing
+
+- A preserved business that is legitimate and still not worth a
+  demonstration.
+- Several contact roads on one business, with eligibility separate from
+  discovery.
+- A batch manifest and deterministic factory QA beyond the current tests.
+- An acquisition event ledger of observable behavior.
+- An authority envelope that lets Ask Alpha negotiate without a second
+  pricing engine.
+- A laboratory of persona scenarios for conversation changes.
+- Measured scale. None of the 100, 1,000, or 10,000 targets has been run.
+
+### Conflicts to resolve before building past them
+
+1. **Big net versus the score-100 gate.** Today a failed discovery is
+   rejected and not stored. The blueprint says a legitimate business
+   stays even when the road is poor. Phase 8 stores the business and
+   withholds the demonstration. It does not lower the bar for making a
+   video.
+2. **Permanent composite versus just-in-time overlay.** Replacing the
+   working FFmpeg composite before a recipe page passes the same QR,
+   disclosure, and QA checks would throw away a verified proof. Phase 10
+   has to beat the current composite, not delete it first.
+3. **Ask for the sale versus authority.** Positive advocacy can be added
+   without removing the disclosure or the unverified-person rule.
+   A binding price, a reservation, and a won state wait for Economics
+   and the authority envelope. Words and system state have to agree, so
+   Ask Alpha cannot announce a package the database did not accept.
+4. **Do not self-gate versus required truth.** The not-sponsored
+   disclosure, the unsent status, and the refusal to invent a person or
+   a price stay. Those are integrity checks, not voluntary objections.
+5. **Research and grooming versus production.** An external page is
+   untrusted input. A weekly essay is not a deployment. Mission Control
+   does not appear by creating another repository or another console.
+
+### Duplicative, expensive, or overbuilt if taken literally
+
+- A negotiation service beside Economics Phase 5.
+- A commercial-memory database beside PostgreSQL.
+- A route-graph application beside prospect fields and a delivery policy.
+- Seven grooming models, a permanent research agent, and an evaluator on
+  every routine message.
+- Premium enrichment before public data is insufficient.
+- A permanent MP4 and a generated design for every prospect.
+- A 10,000-conversation platform before one eligible send exists.
+- A new subscription for any of the above.
+
+### Unsafe if started in the wrong order
+
+- Sending because a public page or a WhatsApp number exists.
+- Letting a model remember another prospect's budget, route, or price.
+- Graduating a friendlier sales voice that can invent scarcity or skip
+  the creator floor.
+- Claiming the 15-minute or cost target before a measured batch.
+
+### Scale
+
+The file-backed library is the correct proof store and the wrong
+10,000-prospect store. PostgreSQL promotion is a phase of its own,
+using the existing Bliss database, before any scale ladder.
+
+## Simplest architecture that keeps the capability
+
+One ASP.NET application. One PostgreSQL database when the prospect
+library leaves files. One demonstration page that resolves a versioned
+recipe. One Ask Alpha endpoint with gears behind it. Economics is the
+only price authority. Bliss remains the only matching authority.
+Wedding Planner remains the campaign workspace and stays asleep until
+the commercial state calls it. n8n may orchestrate a job and may not
+own the record. No new subscription.
+
+Spend deterministic software and reusable media before engagement.
+Spend a stronger answer only after a person asks something the cheap
+path cannot resolve. Spend campaign intelligence after a real
+commercial commitment.
+
+## Required changes when each phase starts
+
+Schema, API, queue, isolation, and provider work belong to the phase
+that needs them. Phase 8 needs a prospect state for a business with no
+recipe. Phase 9 needs route rows and a suppression flag. Phase 10 needs
+a recipe version and a player. Phase 13 needs conversation state that
+cannot see another prospect. Phase 14 needs a read from Economics.
+Phase 16 needs an adapter only after eligibility exists. Phase 17 needs
+the PostgreSQL tables. None of those tables are created by this
+reconciliation.
+
+## Acceptance
+
+A phase is verified only with the tests, regression, and walkthrough
+that phase names. The program stays open until its own phases are
+verified. This assessment is complete as a reconciliation. It is not
+the factory, Ask Alpha at scale, negotiation, the laboratory, grooming,
+Mission Control, or commercial memory.
