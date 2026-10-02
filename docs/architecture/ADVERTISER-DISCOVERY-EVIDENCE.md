@@ -37,6 +37,14 @@ Concept is prepared, the message stays `NOT_SENT`, and the page refuses
 to verify a person or invent a price. The discovery form and the
 demonstration page remain readable at a phone width.
 
+## PDF report
+
+`docs/architecture/evidence/Alpha-Advertiser-Discovery-Report.pdf`
+
+The seven-page report records the deterministic score, contract
+boundary, discovery screen, unsent message preview, one-concept page,
+guarded conversation, automated verification, and known limits.
+
 ## Limits
 
 The screen does not search the internet. The operator supplies the name
