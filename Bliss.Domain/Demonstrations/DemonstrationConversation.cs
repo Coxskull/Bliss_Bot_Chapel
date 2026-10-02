@@ -70,6 +70,15 @@ public static class DemonstrationConversation
                 false);
         }
 
+        if (ContainsAny(normalized, "email", "e-mail", "whatsapp", "send this", "send it", "message them", "text them"))
+        {
+            var suppressed = facts.Suppressed ? " The prospect is suppressed." : "";
+            return new ConversationTurn(
+                "A public road is not permission to send." + suppressed + " Delivery remains NOT_SENT.",
+                "ROUTE_NOT_PERMISSION",
+                false);
+        }
+
         if (ContainsAny(normalized, "how", "work", "alpha", "what is this", "podcast"))
         {
             return new ConversationTurn(
@@ -127,4 +136,5 @@ public sealed record ProspectFacts(
     string DecisionMakerRole = "",
     string Confidence = "UNVERIFIED",
     bool PersonalizationAllowed = false,
-    string Freshness = "UNRECORDED");
+    string Freshness = "UNRECORDED",
+    bool Suppressed = false);

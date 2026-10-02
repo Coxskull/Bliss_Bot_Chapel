@@ -15,14 +15,24 @@ async function load() {
   const page = await response.json();
   document.title = page.subject;
   subject.textContent = "Subject: " + page.subject;
-  if (page.prospectState === "PRESERVED") {
+  if (page.suppressed || page.prospectState === "PRESERVED") {
     const tagline = document.querySelector("#tagline");
     const followup = document.querySelector("#followup");
-    if (tagline) tagline.textContent = "Preserved. No demonstration was manufactured.";
-    if (followup) followup.textContent = "Nothing was sent. A demonstration waits until the road scores 100.";
-    body.textContent = page.businessName + " is preserved. The road score is " + page.opportunityScore
-      + ". No demonstration was manufactured and nothing was sent.";
-    open.textContent = "Open the preserved record";
+    const roads = page.contactRoads && page.contactRoads.length
+      ? " Public roads: " + page.contactRoads.map(road => road.kind + " " + road.value + " (" + road.state + ")").join("; ")
+        + ". A public road is not permission to send."
+      : "";
+    const suppressed = page.suppressed ? " The prospect is suppressed. " + page.suppressionReason + "." : "";
+    if (tagline) tagline.textContent = page.suppressed
+      ? "Suppressed. Nothing is sent."
+      : "Preserved. No demonstration was manufactured.";
+    if (followup) followup.textContent = "Nothing was sent. A public road is not permission to send.";
+    body.textContent = (page.prospectState === "PRESERVED"
+      ? page.businessName + " is preserved. The road score is " + page.opportunityScore
+        + ". No demonstration was manufactured and nothing was sent."
+      : page.businessName + " remains unsent.")
+      + roads + suppressed;
+    open.textContent = page.prospectState === "PRESERVED" ? "Open the preserved record" : "Open the record";
     open.href = "/demonstrations/" + page.slug;
     fine.textContent = "This record is kept for " + page.businessName
       + ". Delivery status: " + page.delivery + ". " + page.disclosure;

@@ -119,6 +119,49 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         }
     }
 
+    [HttpPost("{slug}/contact-roads")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult RecordContactRoad(string slug, [FromBody] ContactRoadRequest request)
+    {
+        try
+        {
+            var body = request ?? new ContactRoadRequest(null, null, null);
+            var prospect = demonstrations.RecordContactRoad(slug, body.Kind ?? string.Empty, body.Value ?? string.Empty, body.SourceUrl ?? string.Empty);
+            return Ok(DetailDto(prospect));
+        }
+        catch (ContactRoadRejectedException ex)
+        {
+            return BadRequest(new
+            {
+                error = ex.Message,
+                accepted = false,
+                outreachEligible = false,
+                reasons = ex.Result.Reasons
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPost("{slug}/suppression")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult Suppress(string slug, [FromBody] SuppressionRequest request)
+    {
+        try
+        {
+            var prospect = demonstrations.Suppress(slug, request?.Reason ?? string.Empty);
+            return Ok(DetailDto(prospect));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message, outreachEligible = false });
+        }
+    }
+
     [HttpPost("{slug}/produce")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
@@ -295,6 +338,9 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
             demonstration.ContactTier,
             freshness = presentation.Freshness,
             personalizationAllowed = presentation.PersonalizationAllowed,
+            roadCount = demonstration.ContactRoads.Count,
+            suppressed = demonstration.Suppressed,
+            outreachEligible = false,
             conceptCount = demonstration.Concepts.Count,
             pageUrl = "/demonstrations/" + demonstration.Slug,
             outreachUrl = "/outreach/" + demonstration.Slug
@@ -341,6 +387,20 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         demonstration.Illustrative,
         demonstration.HumanEscalation,
         demonstration.LastSignal,
+        demonstration.Suppressed,
+        demonstration.SuppressionReason,
+        outreachEligible = false,
+        contactRoads = demonstration.ContactRoads.Select(road => new
+        {
+            road.Id,
+            road.Kind,
+            road.Value,
+            road.SourceUrl,
+            road.State,
+            outreachEligible = false,
+            permission = ContactRoads.NotPermission,
+            road.RecordedAt
+        }),
         delivery = "NOT_SENT",
         subject = demonstration.ProspectState == "PRESERVED"
             ? $"{demonstration.BusinessName} is preserved. No demonstration was manufactured and nothing was sent."
@@ -374,6 +434,8 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
 }
 
 public sealed record DiscoverRequest(string? Niche, string? Market, string? BusinessName, string? PublicSourceUrl);
+public sealed record ContactRoadRequest(string? Kind, string? Value, string? SourceUrl);
+public sealed record SuppressionRequest(string? Reason);
 public sealed record DecisionMakerRequest(
     string? PersonName,
     string? Role,

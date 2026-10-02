@@ -208,6 +208,76 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         return current;
     }
 
+    public DemonstrationRecord RecordContactRoad(string slug, string kind, string value, string sourceUrl)
+    {
+        var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
+        var assessment = ContactRoads.Accept(kind, value, sourceUrl, current.Suppressed);
+        if (!assessment.Accepted)
+        {
+            throw new ContactRoadRejectedException(assessment);
+        }
+
+        var existing = current.ContactRoads.FirstOrDefault(road =>
+            string.Equals(road.Kind, assessment.Kind, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(road.Value, assessment.Value, StringComparison.OrdinalIgnoreCase));
+        if (existing is not null)
+        {
+            return current;
+        }
+
+        current.ContactRoads.Add(new ContactRoadRecord
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Kind = assessment.Kind,
+            Value = assessment.Value,
+            SourceUrl = assessment.SourceUrl,
+            State = assessment.State,
+            OutreachEligible = false,
+            RecordedAt = DateTime.UtcNow
+        });
+        current.Messages.Add(new ChatRecord
+        {
+            Role = "ASSISTANT",
+            Text = "Recorded a public " + assessment.Kind + " road for " + current.BusinessName
+                + ". State is " + assessment.State + ". " + ContactRoads.NotPermission
+                + " Delivery remains NOT_SENT.",
+            Signal = "ROAD_RECORDED",
+            At = DateTime.UtcNow
+        });
+        Save(slug, current);
+        return current;
+    }
+
+    public DemonstrationRecord Suppress(string slug, string reason)
+    {
+        var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
+        var error = ContactRoads.SuppressionError(reason);
+        if (error is not null)
+        {
+            throw new InvalidOperationException(error);
+        }
+
+        var trimmed = reason.Trim();
+        var sentence = trimmed.EndsWith('.') ? trimmed : trimmed + ".";
+        current.Suppressed = true;
+        current.SuppressionReason = trimmed;
+        foreach (var road in current.ContactRoads)
+        {
+            road.State = "SUPPRESSED";
+            road.OutreachEligible = false;
+        }
+
+        current.Messages.Add(new ChatRecord
+        {
+            Role = "ASSISTANT",
+            Text = current.BusinessName + " is suppressed. " + sentence + " Nothing is sent.",
+            Signal = "SUPPRESSED",
+            At = DateTime.UtcNow
+        });
+        Save(slug, current);
+        return current;
+    }
+
     public async Task<DemonstrationRecord> ProduceDiscoveredAsync(
         string slug,
         string publicBaseUrl,
@@ -252,6 +322,22 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
     public DemonstrationRecord? Find(string slug) =>
         store.Read().Demonstrations.FirstOrDefault(x => x.Slug == slug);
 
+    private void Save(string slug, DemonstrationRecord current)
+    {
+        store.Update(document =>
+        {
+            var index = document.Demonstrations.FindIndex(x => x.Slug == slug);
+            if (index < 0)
+            {
+                document.Demonstrations.Add(current);
+            }
+            else
+            {
+                document.Demonstrations[index] = current;
+            }
+        });
+    }
+
     public string? RenderFile(string slug, string conceptId, bool qr)
     {
         var concept = Find(slug)?.Concepts.FirstOrDefault(x => x.Id == conceptId);
@@ -284,7 +370,8 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             demonstration.DecisionMakerRole,
             string.IsNullOrWhiteSpace(demonstration.DecisionMakerStatus) ? "UNVERIFIED" : demonstration.DecisionMakerStatus,
             presentation.PersonalizationAllowed,
-            presentation.Freshness);
+            presentation.Freshness,
+            demonstration.Suppressed);
         var turn = DemonstrationConversation.Reply(facts, message);
         var visitor = new ChatRecord
         {
@@ -417,6 +504,17 @@ public sealed class DecisionMakerRejectedException : InvalidOperationException
     }
 
     public DecisionMakerAssessment Result { get; }
+}
+
+public sealed class ContactRoadRejectedException : InvalidOperationException
+{
+    public ContactRoadRejectedException(ContactRoadAssessment result)
+        : base(string.Join(" ", result.Reasons))
+    {
+        Result = result;
+    }
+
+    public ContactRoadAssessment Result { get; }
 }
 
 public sealed class DiscoveryRejectedException : InvalidOperationException
