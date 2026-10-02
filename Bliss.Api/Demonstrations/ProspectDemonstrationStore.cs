@@ -41,6 +41,17 @@ public sealed class ChatRecord
     public DateTime At { get; set; }
 }
 
+public sealed class ContactRoadRecord
+{
+    public string Id { get; set; } = string.Empty;
+    public string Kind { get; set; } = string.Empty;
+    public string Value { get; set; } = string.Empty;
+    public string SourceUrl { get; set; } = string.Empty;
+    public string State { get; set; } = string.Empty;
+    public bool OutreachEligible { get; set; }
+    public DateTime RecordedAt { get; set; }
+}
+
 public sealed class DemonstrationRecord
 {
     public string Slug { get; set; } = string.Empty;
@@ -74,6 +85,9 @@ public sealed class DemonstrationRecord
     public bool Illustrative { get; set; }
     public bool HumanEscalation { get; set; }
     public string LastSignal { get; set; } = string.Empty;
+    public bool Suppressed { get; set; }
+    public string SuppressionReason { get; set; } = string.Empty;
+    public List<ContactRoadRecord> ContactRoads { get; set; } = [];
     public List<ConceptRecord> Concepts { get; set; } = [];
     public List<ChatRecord> Messages { get; set; } = [];
     public DateTime CreatedAt { get; set; }

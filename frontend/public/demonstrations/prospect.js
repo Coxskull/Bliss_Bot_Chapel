@@ -26,18 +26,35 @@ function render(page) {
   business.textContent = page.businessName;
   const status = document.querySelector("#pageStatus");
   const benefits = document.querySelector("#pageBenefits");
-  if (status) status.textContent = preserved ? "PRESERVED · NOTHING SENT" : "PRIVATE ADVERTISING DEMONSTRATION";
-  if (benefits) benefits.style.display = preserved ? "none" : "";
+  if (status) {
+    status.textContent = page.suppressed
+      ? "SUPPRESSED · NOTHING SENT"
+      : preserved
+        ? "PRESERVED · NOTHING SENT"
+        : "PRIVATE ADVERTISING DEMONSTRATION";
+  }
+  if (benefits) benefits.style.display = preserved || page.suppressed ? "none" : "";
   const badge = document.querySelector(".badge");
-  if (badge) badge.style.display = preserved ? "none" : "";
-  promise.textContent = preserved
-    ? "No demonstration was manufactured"
-    : "Get More Customers in " + page.market + " with Podcast Advertising";
-  lead.textContent = preserved
-    ? page.businessName + " is preserved. The road score is " + page.opportunityScore + ". No demonstration was manufactured. Nothing was sent. Delivery is " + page.delivery + "."
+  if (badge) badge.style.display = preserved || page.suppressed ? "none" : "";
+  promise.textContent = page.suppressed
+    ? "Nothing is sent"
+    : preserved
+      ? "No demonstration was manufactured"
+      : "Get More Customers in " + page.market + " with Podcast Advertising";
+  const roadLine = page.contactRoads && page.contactRoads.length
+    ? " Public roads stay ineligible. A public road is not permission to send."
+    : "";
+  const suppressedLine = page.suppressed
+    ? " " + page.businessName + " is suppressed. " + page.suppressionReason + "."
+    : "";
+  lead.textContent = page.suppressed
+    ? page.businessName + " is suppressed. " + page.suppressionReason + ". A public road is not permission to send. Delivery is " + page.delivery + "."
+    : preserved
+    ? page.businessName + " is preserved. The road score is " + page.opportunityScore + ". No demonstration was manufactured. Nothing was sent. Delivery is " + page.delivery + "." + roadLine
     : page.personalizationAllowed && page.decisionMakerName
     ? "This private page records " + page.decisionMakerName + ", " + page.decisionMakerRole + ", from a public source. Confidence is " + page.decisionMakerStatus + ". Delivery is " + page.delivery + "."
-    : "Your community is listening. This private page shows how an approved 15-second source slice can carry an advertisement for " + page.businessName + ".";
+    : "Your community is listening. This private page shows how an approved 15-second source slice can carry an advertisement for " + page.businessName + "."
+      + roadLine + suppressedLine;
   context.textContent = preserved
     ? page.market + "  |  " + (page.niche || "local business") + "  |  Nothing was sent"
     : page.market + "  |  " + page.niche + "  |  Real Audiences";
@@ -52,6 +69,11 @@ function render(page) {
   if (page.personalizationAllowed && page.decisionMakerName) factRows.push(["Public name", page.decisionMakerName + ", " + page.decisionMakerRole]);
   if (page.opportunityScore) factRows.push(["Opportunity score", String(page.opportunityScore)]);
   if (page.publicSourceUrl) factRows.push(["Public source", page.publicSourceUrl]);
+  if (page.contactRoads && page.contactRoads.length) {
+    factRows.push(["Public roads", page.contactRoads.map(road => road.kind + " " + road.value + " (" + road.state + ")").join("; ")]);
+    factRows.push(["Outreach", "Not eligible"]);
+  }
+  if (page.suppressed) factRows.push(["Suppression", page.suppressionReason]);
   factRows.forEach(([label, value]) => {
     const block = document.createElement("div");
     const strong = document.createElement("strong");

@@ -54,8 +54,8 @@ is not this program and stays stopped on its own security finding.
 
 - A preserved business that is legitimate and still not worth a
   demonstration.
-- Several contact roads on one business, with eligibility separate from
-  discovery.
+- Eligible delivery. Phase 9 records several contact roads and a
+  suppression flag. A public road stays ineligible until Phase 16.
 - A batch manifest and deterministic factory QA beyond the current tests.
 - An acquisition event ledger of observable behavior.
 - An authority envelope that lets Ask Alpha negotiate without a second
@@ -131,7 +131,7 @@ commercial commitment.
 
 Schema, API, queue, isolation, and provider work belong to the phase
 that needs them. Phase 8 records `PRESERVED` for a business with no
-demonstration. Phase 9 needs route rows and a suppression flag. Phase 10 needs
+demonstration. Phase 9 records route rows and a suppression flag. A public road stays ineligible to send. Phase 10 needs
 a recipe version and a player. Phase 13 needs conversation state that
 cannot see another prospect. Phase 14 needs a read from Economics.
 Phase 16 needs an adapter only after eligibility exists. Phase 17 needs

@@ -5,6 +5,8 @@ const discovery = document.querySelector("#discovery");
 const evidenceNotice = document.querySelector("#evidenceNotice");
 const evidenceProspect = document.querySelector("#evidenceProspect");
 const evidenceRole = document.querySelector("#evidenceRole");
+const roadNotice = document.querySelector("#roadNotice");
+const roadProspect = document.querySelector("#roadProspect");
 const prospects = document.querySelector("#prospects");
 const nicheSelect = document.querySelector("#niche");
 const marketSelect = document.querySelector("#market");
@@ -54,7 +56,9 @@ function render(library) {
   });
   prospects.replaceChildren();
   const selectedProspect = evidenceProspect.value;
+  const selectedRoad = roadProspect.value;
   evidenceProspect.replaceChildren();
+  roadProspect.replaceChildren();
   library.demonstrations.forEach(item => {
     const row = document.createElement("tr");
     const action = document.createElement("td");
@@ -74,6 +78,7 @@ function render(library) {
       cell(String(item.opportunityScore ?? "")),
       cell(item.prospectState || ""),
       cell(item.decisionMakerStatus || ""),
+      cell(item.suppressed ? "Suppressed" : String(item.roadCount || 0)),
       action
     );
     prospects.append(row);
@@ -85,6 +90,11 @@ function render(library) {
       option.dataset.niche = item.niche;
       evidenceProspect.append(option);
     }
+    const roadOption = document.createElement("option");
+    roadOption.value = item.slug;
+    roadOption.textContent = item.businessName + " · " + (item.prospectState || "recorded");
+    roadOption.selected = item.slug === selectedRoad;
+    roadProspect.append(roadOption);
   });
   if (!selectedProspect && evidenceProspect.options.length > 0) {
     evidenceProspect.selectedIndex = evidenceProspect.options.length - 1;
@@ -282,6 +292,57 @@ document.querySelector("#evidence").addEventListener("submit", async event => {
   } catch (error) {
     evidenceNotice.textContent = error.message;
     evidenceNotice.scrollIntoView({ block: "center" });
+  }
+});
+
+document.querySelector("#roads").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!roadProspect.value) {
+    roadNotice.textContent = "Record a prospect before recording a road.";
+    roadNotice.scrollIntoView({ block: "center" });
+    return;
+  }
+  roadNotice.textContent = "Recording the public road…";
+  try {
+    const page = await postJson("/api/demonstrations/" + roadProspect.value + "/contact-roads", {
+      kind: document.querySelector("#roadKind").value,
+      value: document.querySelector("#roadValue").value,
+      sourceUrl: document.querySelector("#roadSource").value
+    });
+    const latest = page.contactRoads[page.contactRoads.length - 1];
+    roadNotice.textContent = page.businessName + " roads " + page.contactRoads.length
+      + ". State " + latest.state
+      + ". Outreach eligible " + page.outreachEligible
+      + ". Delivery " + page.delivery
+      + ". A public road is not permission to send.";
+    roadNotice.scrollIntoView({ block: "center" });
+    await load();
+  } catch (error) {
+    roadNotice.textContent = error.message;
+    roadNotice.scrollIntoView({ block: "center" });
+  }
+});
+
+document.querySelector("#suppress").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!roadProspect.value) {
+    roadNotice.textContent = "Record a prospect before suppression.";
+    roadNotice.scrollIntoView({ block: "center" });
+    return;
+  }
+  roadNotice.textContent = "Recording suppression…";
+  try {
+    const page = await postJson("/api/demonstrations/" + roadProspect.value + "/suppression", {
+      reason: document.querySelector("#suppressionReason").value
+    });
+    roadNotice.textContent = page.businessName + " is suppressed. " + page.suppressionReason
+      + ". Outreach eligible " + page.outreachEligible
+      + ". Delivery " + page.delivery + ".";
+    roadNotice.scrollIntoView({ block: "center" });
+    await load();
+  } catch (error) {
+    roadNotice.textContent = error.message;
+    roadNotice.scrollIntoView({ block: "center" });
   }
 });
 
