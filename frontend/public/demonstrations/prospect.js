@@ -22,7 +22,9 @@ function render(page) {
   document.title = page.businessName + " · Alpha demonstration";
   business.textContent = page.businessName;
   promise.textContent = "Get More Customers in " + page.market + " with Podcast Advertising";
-  lead.textContent = "Your community is listening. This private page shows how an approved 15-second source slice can carry an advertisement for " + page.businessName + ".";
+  lead.textContent = page.personalizationAllowed && page.decisionMakerName
+    ? "This private page records " + page.decisionMakerName + ", " + page.decisionMakerRole + ", from a public source. Confidence is " + page.decisionMakerStatus + ". Delivery is " + page.delivery + "."
+    : "Your community is listening. This private page shows how an approved 15-second source slice can carry an advertisement for " + page.businessName + ".";
   context.textContent = page.market + "  |  " + page.niche + "  |  Real Audiences";
   facts.replaceChildren();
   const factRows = [
@@ -31,6 +33,8 @@ function render(page) {
     ["Delivery", page.delivery],
     ["Buying roles", page.buyingRoles.join(", ")]
   ];
+  if (page.freshness && page.freshness !== "UNRECORDED") factRows.push(["Freshness", page.freshness]);
+  if (page.personalizationAllowed && page.decisionMakerName) factRows.push(["Public name", page.decisionMakerName + ", " + page.decisionMakerRole]);
   if (page.opportunityScore) factRows.push(["Opportunity score", String(page.opportunityScore)]);
   if (page.publicSourceUrl) factRows.push(["Public source", page.publicSourceUrl]);
   factRows.forEach(([label, value]) => {

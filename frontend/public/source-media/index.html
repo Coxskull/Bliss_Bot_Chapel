@@ -57,6 +57,52 @@
         <tbody id="prospects"></tbody>
       </table>
     </div>
+    <section class="hero">
+      <div>
+        <p class="status">DECISION-MAKER EVIDENCE</p>
+        <h2>Record a person only from a public source</h2>
+        <p>A name without a public page is not stored. Official evidence plus a corroborating professional page can raise confidence. A company contact is the fallback when no direct mailbox is public. The person stays off the page until confidence supports it. Nothing is sent.</p>
+      </div>
+    </section>
+    <form id="evidence" class="discover">
+      <label>Scored prospect<select id="evidenceProspect" name="prospect"></select></label>
+      <label>Buying role<select id="evidenceRole" name="role"></select></label>
+      <label>Person name<input id="personName" name="personName" type="text" placeholder="Name copied from the public page"></label>
+      <label>Evidence kind
+        <select id="evidenceKind" name="evidenceKind">
+          <option value="team_page">Team page</option>
+          <option value="official_website">Official website</option>
+          <option value="press_release">Press release</option>
+          <option value="company_announcement">Company announcement</option>
+          <option value="professional_profile">Professional profile</option>
+          <option value="directory">Directory</option>
+          <option value="business_news">Business news</option>
+        </select>
+      </label>
+      <label>Evidence URL<input id="evidenceUrl" name="evidenceUrl" type="url" placeholder="https://"></label>
+      <label>Corroborating kind
+        <select id="corroboratingKind" name="corroboratingKind">
+          <option value="professional_profile">Professional profile</option>
+          <option value="official_website">Official website</option>
+          <option value="team_page">Team page</option>
+          <option value="">None</option>
+        </select>
+      </label>
+      <label>Corroborating URL<input id="corroboratingUrl" name="corroboratingUrl" type="url" placeholder="https://"></label>
+      <label>Contact type
+        <select id="contactKind" name="contactKind">
+          <option value="company_marketing">Company marketing contact</option>
+          <option value="general_company">General company contact</option>
+          <option value="named_business_email">Direct business email</option>
+          <option value="published_messaging">Published business messaging</option>
+          <option value="none">No contact on the page</option>
+        </select>
+      </label>
+      <label>Contact value<input id="contactValue" name="contactValue" type="text" placeholder="Copied from the public page"></label>
+      <label>Contact source URL<input id="contactSourceUrl" name="contactSourceUrl" type="url" placeholder="https://"></label>
+      <button type="submit">Record public evidence</button>
+    </form>
+    <p id="evidenceNotice"></p>
   </main>
   <script src="/source-media/source-media.js" defer></script>
 </body>

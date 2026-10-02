@@ -80,6 +80,45 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         }
     }
 
+    [HttpPost("{slug}/decision-maker")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult RecordDecisionMaker(string slug, [FromBody] DecisionMakerRequest request)
+    {
+        try
+        {
+            var now = DateTime.UtcNow;
+            var body = request ?? new DecisionMakerRequest(null, null, null, null, null, null, null, null, null);
+            var prospect = demonstrations.RecordDecisionMaker(slug, new DecisionMakerInput(
+                body.PersonName,
+                body.Role,
+                body.EvidenceKind,
+                body.EvidenceUrl,
+                body.CorroboratingKind,
+                body.CorroboratingUrl,
+                body.ContactKind,
+                body.ContactValue,
+                body.ContactSourceUrl,
+                now,
+                now));
+            return Ok(DetailDto(prospect));
+        }
+        catch (DecisionMakerRejectedException ex)
+        {
+            return BadRequest(new
+            {
+                error = ex.Message,
+                confidence = "UNVERIFIED",
+                accepted = false,
+                reasons = ex.Result.Reasons
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     [HttpPost("{slug}/produce")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
@@ -236,22 +275,41 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         clip.AddedAt
     };
 
-    private static object SummaryDto(DemonstrationRecord demonstration) => new
+    private static object SummaryDto(DemonstrationRecord demonstration)
     {
-        demonstration.Slug,
-        demonstration.BusinessName,
-        demonstration.Niche,
-        demonstration.Market,
-        demonstration.OpportunityScore,
-        demonstration.ProspectState,
-        demonstration.DecisionMakerStatus,
-        conceptCount = demonstration.Concepts.Count,
-        pageUrl = "/demonstrations/" + demonstration.Slug,
-        outreachUrl = "/outreach/" + demonstration.Slug
-    };
+        var presentation = DecisionMakerEvidence.Present(
+            demonstration.DecisionMakerStatus,
+            demonstration.DecisionMakerName,
+            demonstration.LastVerifiedAt,
+            DateTime.UtcNow);
+        return new
+        {
+            demonstration.Slug,
+            demonstration.BusinessName,
+            demonstration.Niche,
+            demonstration.Market,
+            demonstration.OpportunityScore,
+            demonstration.ProspectState,
+            demonstration.DecisionMakerStatus,
+            demonstration.DecisionMakerName,
+            demonstration.ContactTier,
+            freshness = presentation.Freshness,
+            personalizationAllowed = presentation.PersonalizationAllowed,
+            conceptCount = demonstration.Concepts.Count,
+            pageUrl = "/demonstrations/" + demonstration.Slug,
+            outreachUrl = "/outreach/" + demonstration.Slug
+        };
+    }
 
-    private static object DetailDto(DemonstrationRecord demonstration) => new
+    private static object DetailDto(DemonstrationRecord demonstration)
     {
+        var presentation = DecisionMakerEvidence.Present(
+            demonstration.DecisionMakerStatus,
+            demonstration.DecisionMakerName,
+            demonstration.LastVerifiedAt,
+            DateTime.UtcNow);
+        return new
+        {
         demonstration.Slug,
         demonstration.BusinessName,
         demonstration.Niche,
@@ -260,8 +318,19 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         demonstration.Language,
         buyingRoles = BuyingRoleCatalog.RolesFor(demonstration.Niche),
         demonstration.DecisionMakerStatus,
+        demonstration.DecisionMakerName,
+        demonstration.DecisionMakerRole,
+        freshness = presentation.Freshness,
+        personalizationAllowed = presentation.PersonalizationAllowed,
+        demonstration.EvidenceKind,
+        demonstration.EvidenceSourceUrl,
+        demonstration.CorroboratingSourceUrl,
         demonstration.ContactTier,
         demonstration.ContactRoute,
+        demonstration.ContactType,
+        demonstration.ContactValue,
+        demonstration.ContactSourceUrl,
+        demonstration.ContactVerification,
         demonstration.Disclosure,
         demonstration.PublicSourceUrl,
         demonstration.OpportunityScore,
@@ -271,7 +340,9 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         demonstration.HumanEscalation,
         demonstration.LastSignal,
         delivery = "NOT_SENT",
-        subject = $"See how {demonstration.BusinessName} could reach more customers in {demonstration.Market}",
+        subject = presentation.PersonalizationAllowed
+            ? $"For {demonstration.DecisionMakerName}: see how {demonstration.BusinessName} could reach more customers in {demonstration.Market}"
+            : $"See how {demonstration.BusinessName} could reach more customers in {demonstration.Market}",
         concepts = demonstration.Concepts.Select(concept => new
         {
             concept.Id,
@@ -286,7 +357,8 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
             qrUrl = $"/api/demonstrations/{demonstration.Slug}/concepts/{concept.Id}/qr"
         }),
         messages = demonstration.Messages.Select(MessageDto)
-    };
+        };
+    }
 
     private static object MessageDto(ChatRecord message) => new
     {
@@ -298,6 +370,16 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
 }
 
 public sealed record DiscoverRequest(string? Niche, string? Market, string? BusinessName, string? PublicSourceUrl);
+public sealed record DecisionMakerRequest(
+    string? PersonName,
+    string? Role,
+    string? EvidenceKind,
+    string? EvidenceUrl,
+    string? CorroboratingKind,
+    string? CorroboratingUrl,
+    string? ContactKind,
+    string? ContactValue,
+    string? ContactSourceUrl);
 public sealed record StudioSliceRequest(string? Market, string? Country, int Seconds);
 public sealed record ProduceRequest(Guid? SourceClipId, int? ConceptCount);
 public sealed record VisitorMessageRequest(string Text);

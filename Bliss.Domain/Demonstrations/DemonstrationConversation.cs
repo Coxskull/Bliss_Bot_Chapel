@@ -26,6 +26,33 @@ public static class DemonstrationConversation
 
         if (ContainsAny(normalized, "who is", "decision", "manager", "director", "owner name", "contact person"))
         {
+            if (facts.Freshness == "STALE")
+            {
+                return new ConversationTurn(
+                    $"{facts.BusinessName} has a decision-maker record that is stale and needs reverification. "
+                    + "I will not address anyone by a personal name. Outreach delivery is not authorized.",
+                    "DECISION_MAKER_QUESTION",
+                    false);
+            }
+
+            if (facts.PersonalizationAllowed && !string.IsNullOrWhiteSpace(facts.DecisionMakerName))
+            {
+                return new ConversationTurn(
+                    $"The recorded public name for {facts.BusinessName} is {facts.DecisionMakerName}, {facts.DecisionMakerRole}. "
+                    + $"Confidence is {facts.Confidence}. The current contact route is {facts.ContactTier}: {facts.ContactRoute}",
+                    "DECISION_MAKER_QUESTION",
+                    false);
+            }
+
+            if (facts.Confidence == "LOW")
+            {
+                return new ConversationTurn(
+                    $"{facts.BusinessName} has an uncertain person on file. The evidence is not strong enough to use a personal name. "
+                    + $"The current contact route is {facts.ContactTier}: {facts.ContactRoute}",
+                    "DECISION_MAKER_QUESTION",
+                    false);
+            }
+
             return new ConversationTurn(
                 $"{facts.BusinessName} is the prospect. The likely buying roles are {string.Join(", ", facts.BuyingRoles)}. "
                 + "A named decision-maker is not verified, so I will not address anyone by a personal name. "
@@ -95,4 +122,9 @@ public sealed record ProspectFacts(
     string ContactTier,
     string ContactRoute,
     IReadOnlyList<string> BuyingRoles,
-    IReadOnlyList<string> ConceptNames);
+    IReadOnlyList<string> ConceptNames,
+    string DecisionMakerName = "",
+    string DecisionMakerRole = "",
+    string Confidence = "UNVERIFIED",
+    bool PersonalizationAllowed = false,
+    string Freshness = "UNRECORDED");

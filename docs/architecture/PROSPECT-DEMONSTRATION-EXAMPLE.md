@@ -118,3 +118,8 @@ A bounded operator screen can record a business name only with a public
 source URL and can prepare one demonstration after the opportunity
 score passes. See `ADVERTISER-DISCOVERY-EVIDENCE.md`. That screen is not
 a crawler and it does not send the message.
+
+A later screen can record a person or a company contact only from a
+public source. Confidence and the contact tier follow that evidence.
+A stale record is not treated as current, and delivery stays unsent.
+See `DECISION-MAKER-EVIDENCE.md`.
