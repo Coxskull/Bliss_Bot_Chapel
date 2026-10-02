@@ -10,6 +10,9 @@ const evidenceRole = document.querySelector("#evidenceRole");
 const roadNotice = document.querySelector("#roadNotice");
 const roadProspect = document.querySelector("#roadProspect");
 const prospects = document.querySelector("#prospects");
+const eventNotice = document.querySelector("#eventNotice");
+const eventProspect = document.querySelector("#eventProspect");
+const eventList = document.querySelector("#eventList");
 const nicheSelect = document.querySelector("#niche");
 const marketSelect = document.querySelector("#market");
 let latestQualified = null;
@@ -59,8 +62,10 @@ function render(library) {
   prospects.replaceChildren();
   const selectedProspect = evidenceProspect.value;
   const selectedRoad = roadProspect.value;
+  const selectedEvent = eventProspect.value;
   evidenceProspect.replaceChildren();
   roadProspect.replaceChildren();
+  eventProspect.replaceChildren();
   library.demonstrations.forEach(item => {
     const row = document.createElement("tr");
     const action = document.createElement("td");
@@ -97,11 +102,22 @@ function render(library) {
     roadOption.textContent = item.businessName + " · " + (item.prospectState || "recorded");
     roadOption.selected = item.slug === selectedRoad;
     roadProspect.append(roadOption);
+    const eventOption = document.createElement("option");
+    eventOption.value = item.slug;
+    eventOption.textContent = item.businessName + " · " + (item.prospectState || "recorded");
+    eventOption.selected = item.slug === selectedEvent;
+    eventProspect.append(eventOption);
   });
   if (!selectedProspect && evidenceProspect.options.length > 0) {
     evidenceProspect.selectedIndex = evidenceProspect.options.length - 1;
   }
+  if (!selectedEvent && eventProspect.options.length > 0) {
+    const mesa = [...eventProspect.options].find(option => option.value === "mesa-norte");
+    if (mesa) mesa.selected = true;
+    else eventProspect.selectedIndex = eventProspect.options.length - 1;
+  }
   loadRoles();
+  loadEvents();
 }
 
 async function load() {
@@ -349,6 +365,53 @@ document.querySelector("#suppress").addEventListener("submit", async event => {
   } catch (error) {
     roadNotice.textContent = error.message;
     roadNotice.scrollIntoView({ block: "center" });
+  }
+});
+
+async function loadEvents() {
+  const slug = eventProspect.value;
+  eventList.replaceChildren();
+  if (!slug) return;
+  const response = await fetch("/api/demonstrations/" + slug);
+  if (!response.ok) return;
+  const page = await response.json();
+  (page.events || []).forEach(item => {
+    const line = document.createElement("li");
+    line.textContent = item.kind + ". " + item.observation + " AI calls " + item.aiCalls + ". Delivery " + item.delivery + ".";
+    eventList.append(line);
+  });
+}
+
+eventProspect.addEventListener("change", () => {
+  eventNotice.textContent = "";
+  loadEvents();
+});
+
+document.querySelector("#events").addEventListener("submit", async event => {
+  event.preventDefault();
+  const slug = eventProspect.value;
+  if (!slug) {
+    eventNotice.textContent = "Record a prospect before recording an event.";
+    return;
+  }
+  eventNotice.textContent = "Recording the event…";
+  try {
+    const page = await postJson("/api/demonstrations/" + slug + "/events", {
+      kind: document.querySelector("#eventKind").value
+    });
+    eventNotice.textContent = page.kind + ". " + page.observation
+      + " AI calls " + page.aiCalls + ". Delivery " + page.delivery + ".";
+    eventList.replaceChildren();
+    (page.events || []).forEach(item => {
+      const line = document.createElement("li");
+      line.textContent = item.kind + ". " + item.observation + " AI calls " + item.aiCalls + ". Delivery NOT_SENT.";
+      eventList.append(line);
+    });
+    eventNotice.scrollIntoView({ block: "center" });
+  } catch (error) {
+    eventNotice.textContent = error.message;
+    eventNotice.scrollIntoView({ block: "center" });
+    await loadEvents();
   }
 });
 

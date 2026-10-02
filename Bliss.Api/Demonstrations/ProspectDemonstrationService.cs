@@ -135,6 +135,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             Signal = "INTRODUCED",
             At = DateTime.UtcNow
         });
+        demonstration.Events.Add(EventRecord(AcquisitionEvents.Accept("DEMONSTRATION_PREPARED", null)));
 
         store.Update(document =>
         {
@@ -187,6 +188,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             BusinessIdentity = "PUBLIC_SOURCE_RECORDED",
             Illustrative = true,
             CreatedAt = DateTime.UtcNow,
+            Events = [EventRecord(AcquisitionEvents.Accept("PROSPECT_RECORDED", null))],
             Messages =
             [
                 new ChatRecord
@@ -249,6 +251,8 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             Signal = "EVIDENCE_RECORDED",
             At = DateTime.UtcNow
         });
+        current.Events ??= [];
+        current.Events.Add(EventRecord(AcquisitionEvents.Accept("DECISION_MAKER_RECORDED", null)));
         store.Update(document =>
         {
             var index = document.Demonstrations.FindIndex(x => x.Slug == slug);
@@ -300,6 +304,8 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             Signal = "ROAD_RECORDED",
             At = DateTime.UtcNow
         });
+        current.Events ??= [];
+        current.Events.Add(EventRecord(AcquisitionEvents.Accept("CONTACT_ROAD_RECORDED", null)));
         Save(slug, current);
         return current;
     }
@@ -330,6 +336,8 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             Signal = "SUPPRESSED",
             At = DateTime.UtcNow
         });
+        current.Events ??= [];
+        current.Events.Add(EventRecord(AcquisitionEvents.Accept("SUPPRESSED", null)));
         Save(slug, current);
         return current;
     }
@@ -360,6 +368,8 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         current.Concepts.Clear();
         await AddConceptAsync(current, concept, clip, publicBaseUrl, cancellationToken);
         current.ProspectState = "DEMONSTRATION_PREPARED";
+        current.Events ??= [];
+        current.Events.Add(EventRecord(AcquisitionEvents.Accept("DEMONSTRATION_PREPARED", null)));
         store.Update(document =>
         {
             var index = document.Demonstrations.FindIndex(x => x.Slug == slug);
@@ -375,8 +385,32 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         return current;
     }
 
+    public DemonstrationRecord RecordEvent(string slug, string kind, string? watcher)
+    {
+        var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
+        var accepted = AcquisitionEvents.Accept(kind, watcher);
+        if (!accepted.Accepted)
+        {
+            throw new InvalidOperationException(accepted.Error);
+        }
+
+        current.Events ??= [];
+        current.Events.Add(EventRecord(accepted));
+        Save(slug, current);
+        return current;
+    }
+
     public DemonstrationRecord? Find(string slug) =>
         store.Read().Demonstrations.FirstOrDefault(x => x.Slug == slug);
+
+    private static AcquisitionEventRecord EventRecord(AcquisitionEventResult accepted) => new()
+    {
+        Id = Guid.NewGuid().ToString("N"),
+        Kind = accepted.Kind,
+        Observation = accepted.Observation,
+        OccurredAt = DateTime.UtcNow,
+        AiCalls = accepted.AiCalls
+    };
 
     private void Save(string slug, DemonstrationRecord current)
     {
@@ -491,6 +525,8 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             current.Messages.Add(assistant);
             current.LastSignal = turn.Signal;
             current.HumanEscalation = current.HumanEscalation || turn.HumanEscalation;
+            current.Events ??= [];
+            current.Events.Add(EventRecord(AcquisitionEvents.Accept("MESSAGE_RECEIVED", null)));
         });
         return assistant;
     }

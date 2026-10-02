@@ -57,7 +57,7 @@ is not this program and stays stopped on its own security finding.
 - Eligible delivery. Phase 9 records several contact roads and a
   suppression flag. A public road stays ineligible until Phase 16.
 - Acquisition events. Phase 11 records a factory batch: deterministic checks, asset counts, zero model calls, and no invented price.
-- An acquisition event ledger of observable behavior.
+- One Ask Alpha voice. Phase 12 records an observable event and refuses an opinion, a named watcher, and a delivery claim.
 - An authority envelope that lets Ask Alpha negotiate without a second
   pricing engine.
 - A laboratory of persona scenarios for conversation changes.
@@ -132,7 +132,7 @@ commercial commitment.
 
 Schema, API, queue, isolation, and provider work belong to the phase
 that needs them. Phase 8 records `PRESERVED` for a business with no
-demonstration. Phase 9 records route rows and a suppression flag. A public road stays ineligible to send. Phase 10 records recipe `overlay-1` and a player. The permanent composite remains. Phase 13 needs conversation state that
+demonstration. Phase 9 records route rows and a suppression flag. A public road stays ineligible to send. Phase 10 records recipe `overlay-1` and a player. The permanent composite remains. Phase 12 appends observable events on the prospect record. An opinion and a delivery claim are refused. Phase 13 needs conversation state that
 cannot see another prospect. Phase 14 needs a read from Economics.
 Phase 16 needs an adapter only after eligibility exists. Phase 17 needs
 the PostgreSQL tables. None of those tables are created by this

@@ -93,7 +93,17 @@ public sealed class DemonstrationRecord
     public List<ContactRoadRecord> ContactRoads { get; set; } = [];
     public List<ConceptRecord> Concepts { get; set; } = [];
     public List<ChatRecord> Messages { get; set; } = [];
+    public List<AcquisitionEventRecord> Events { get; set; } = [];
     public DateTime CreatedAt { get; set; }
+}
+
+public sealed class AcquisitionEventRecord
+{
+    public string Id { get; set; } = string.Empty;
+    public string Kind { get; set; } = string.Empty;
+    public string Observation { get; set; } = string.Empty;
+    public DateTime OccurredAt { get; set; }
+    public int AiCalls { get; set; }
 }
 
 public sealed class FactoryBatchRecord
