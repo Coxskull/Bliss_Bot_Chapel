@@ -30,5 +30,17 @@ The new proofs are `FactoryBatchTests` and `FactoryBatchApiTests`.
 
 ## Browser path
 
-On Source Media, run factory QA. The notice names the status, the
-counts, AI calls 0, the cost line, and delivery `NOT_SENT`.
+On Source Media, run factory QA. The live library returns status
+`EXCEPTIONS`. Prospects 4. Preserved 1. Suppressed 1. Demonstrations 3.
+Concepts 6. Checks passed 20. Exceptions 5. AI calls 0. The cost line
+records no dollar amount and names Economics as the only price
+authority. Delivery is `NOT_SENT`.
+
+The five exceptions are the concepts produced before recipe `overlay-1`:
+ABC Pharmacy family-health, convenience, wellness, and neighborhood,
+and Casa Verde table. Puerto Azul stays `PRESERVED` in Quito, suppressed,
+with no demonstration. Mesa Norte stays `DEMONSTRATION_PREPARED` on
+`overlay-1`. Nothing is sent.
+
+ABC Pharmacy, Casa Verde, Puerto Azul, Mesa Norte, and `example.com`
+are fixtures. They are not claims about real businesses or people.
