@@ -258,6 +258,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         }
 
         var trimmed = reason.Trim();
+        var sentence = trimmed.EndsWith('.') ? trimmed : trimmed + ".";
         current.Suppressed = true;
         current.SuppressionReason = trimmed;
         foreach (var road in current.ContactRoads)
@@ -269,7 +270,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         current.Messages.Add(new ChatRecord
         {
             Role = "ASSISTANT",
-            Text = current.BusinessName + " is suppressed. " + trimmed + " Nothing is sent.",
+            Text = current.BusinessName + " is suppressed. " + sentence + " Nothing is sent.",
             Signal = "SUPPRESSED",
             At = DateTime.UtcNow
         });

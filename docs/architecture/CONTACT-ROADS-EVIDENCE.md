@@ -42,3 +42,7 @@ On Source Media, record the Puerto Azul marketing road and the
 messaging road, then suppress the prospect. The notice says outreach is
 not eligible and delivery is `NOT_SENT`. The preserved page and the
 preview repeat that a public road is not permission to send.
+
+The screen recording is
+`puerto_azul_roads_suppressed_nothing_sent.mp4`. The PDF report is
+`evidence/Alpha-Contact-Roads-Report.pdf`.
