@@ -70,10 +70,11 @@ is not this program and stays stopped on its own security finding.
    below 100. The demonstration, the decision-maker record, and any
    send stay withheld until the road scores 100. A missing name or a
    missing public URL is still rejected and not stored.
-2. **Permanent composite versus just-in-time overlay.** Replacing the
-   working FFmpeg composite before a recipe page passes the same QR,
-   disclosure, and QA checks would throw away a verified proof. Phase 10
-   has to beat the current composite, not delete it first.
+2. **Permanent composite versus just-in-time overlay.** Phase 10 stores
+   recipe `overlay-1` and plays it on the approved source slice. QA
+   matches the prospect-page QR and the not-sponsored disclosure. The
+   permanent MP4 is still written. Retirement waits until the player is
+   the only served picture.
 3. **Ask for the sale versus authority.** Positive advocacy can be added
    without removing the disclosure or the unverified-person rule.
    A binding price, a reservation, and a won state wait for Economics
@@ -131,8 +132,7 @@ commercial commitment.
 
 Schema, API, queue, isolation, and provider work belong to the phase
 that needs them. Phase 8 records `PRESERVED` for a business with no
-demonstration. Phase 9 records route rows and a suppression flag. A public road stays ineligible to send. Phase 10 needs
-a recipe version and a player. Phase 13 needs conversation state that
+demonstration. Phase 9 records route rows and a suppression flag. A public road stays ineligible to send. Phase 10 records recipe `overlay-1` and a player. The permanent composite remains. Phase 13 needs conversation state that
 cannot see another prospect. Phase 14 needs a read from Economics.
 Phase 16 needs an adapter only after eligibility exists. Phase 17 needs
 the PostgreSQL tables. None of those tables are created by this

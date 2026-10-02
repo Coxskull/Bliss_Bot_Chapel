@@ -89,18 +89,53 @@ function render(page) {
     card.className = "card";
     const title = document.createElement("h3");
     title.textContent = (index + 1) + ". " + concept.name;
-    const video = document.createElement("video");
-    video.controls = true;
-    video.playsInline = true;
-    video.preload = "metadata";
-    video.src = concept.videoUrl;
     const caption = document.createElement("p");
-    caption.textContent = concept.headline + " " + concept.subhead + " · " + concept.callToAction;
+    caption.textContent = concept.recipeVersion
+      ? "Recipe " + concept.recipeVersion + " · QA " + concept.qaStatus + " · QR " + concept.qrDestination
+      : concept.headline + " " + concept.subhead + " · " + concept.callToAction;
     const qr = document.createElement("img");
     qr.className = "qr";
     qr.alt = "QR code for " + concept.name;
     qr.src = concept.qrUrl;
-    card.append(title, video, caption, qr);
+    if (concept.recipeVersion && concept.sourceUrl) {
+      const player = document.createElement("div");
+      player.className = "player";
+      const source = document.createElement("video");
+      source.controls = true;
+      source.playsInline = true;
+      source.preload = "metadata";
+      source.src = concept.sourceUrl;
+      const overlay = document.createElement("aside");
+      overlay.className = "overlay-card";
+      if (concept.accentHex) overlay.style.borderLeftColor = "#" + concept.accentHex;
+      const brand = document.createElement("b");
+      brand.textContent = page.businessName;
+      const headline = document.createElement("strong");
+      headline.textContent = concept.headline;
+      const subhead = document.createElement("span");
+      subhead.textContent = concept.subhead;
+      const detail = document.createElement("small");
+      detail.textContent = concept.detail;
+      const cta = document.createElement("em");
+      cta.textContent = concept.callToAction;
+      overlay.append(brand, headline, subhead, detail, cta, qr);
+      player.append(source, overlay);
+      const flatLabel = document.createElement("p");
+      flatLabel.textContent = "Flattened composite remains";
+      const flat = document.createElement("video");
+      flat.controls = true;
+      flat.playsInline = true;
+      flat.preload = "metadata";
+      flat.src = concept.videoUrl;
+      card.append(title, player, caption, flatLabel, flat);
+    } else {
+      const video = document.createElement("video");
+      video.controls = true;
+      video.playsInline = true;
+      video.preload = "metadata";
+      video.src = concept.videoUrl;
+      card.append(title, video, caption, qr);
+    }
     concepts.append(card);
   });
   disclosure.textContent = page.disclosure + " " + page.contactRoute;

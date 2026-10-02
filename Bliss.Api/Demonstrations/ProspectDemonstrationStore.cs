@@ -31,6 +31,9 @@ public sealed class ConceptRecord
     public string QrFileName { get; set; } = string.Empty;
     public string QrDestination { get; set; } = string.Empty;
     public Guid SourceClipId { get; set; }
+    public string RecipeVersion { get; set; } = string.Empty;
+    public string QaStatus { get; set; } = string.Empty;
+    public string AccentHex { get; set; } = string.Empty;
 }
 
 public sealed class ChatRecord

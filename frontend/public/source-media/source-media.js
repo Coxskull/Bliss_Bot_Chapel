@@ -159,7 +159,11 @@ async function produceProspect(item) {
     const page = await postJson("/api/demonstrations/" + item.slug + "/produce", {
       sourceClipId: latestQualified
     });
-    discovery.textContent = page.businessName + " demonstration ready. Delivery is " + page.delivery + ". Decision maker " + page.decisionMakerStatus + ".";
+    const recipe = page.concepts && page.concepts[0];
+    discovery.textContent = page.businessName + " demonstration ready. Recipe "
+      + (recipe && recipe.recipeVersion ? recipe.recipeVersion : "unversioned")
+      + " QA " + (recipe && recipe.qaStatus ? recipe.qaStatus : "unrecorded")
+      + ". The flattened composite remains. Delivery is " + page.delivery + ".";
     const open = document.createElement("a");
     open.href = page.subject ? "/outreach/" + page.slug : item.outreachUrl;
     open.href = "/outreach/" + page.slug;
