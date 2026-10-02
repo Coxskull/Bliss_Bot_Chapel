@@ -39,3 +39,6 @@ On Source Media, score Mesa Norte and produce one demonstration. The
 notice names recipe `overlay-1`, QA `PASSED`, and the remaining
 flattened composite. The demonstration page shows the just-in-time card
 on the source slice, the QR, the disclosure, and the flattened file.
+
+The screen recording is `mesa_norte_recipe_overlay_qa_passed.mp4`.
+The PDF report is `evidence/Alpha-Recipe-Runtime-Report.pdf`.
