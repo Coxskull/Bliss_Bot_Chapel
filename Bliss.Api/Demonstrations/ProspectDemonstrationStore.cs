@@ -54,6 +54,10 @@ public sealed class DemonstrationRecord
     public string ContactTier { get; set; } = string.Empty;
     public string ContactRoute { get; set; } = string.Empty;
     public string Disclosure { get; set; } = string.Empty;
+    public string PublicSourceUrl { get; set; } = string.Empty;
+    public int OpportunityScore { get; set; }
+    public string ProspectState { get; set; } = string.Empty;
+    public string BusinessIdentity { get; set; } = string.Empty;
     public bool Illustrative { get; set; }
     public bool HumanEscalation { get; set; }
     public string LastSignal { get; set; } = string.Empty;

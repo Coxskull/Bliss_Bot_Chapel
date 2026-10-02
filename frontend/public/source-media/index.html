@@ -34,6 +34,29 @@
         <tbody id="rows"></tbody>
       </table>
     </div>
+    <section class="hero">
+      <div>
+        <p class="status">ADVERTISER DISCOVERY</p>
+        <h2>Score a prospect before a demonstration</h2>
+        <p>Choose a niche and an initial market. Record the business name and the public page where it was found. Alpha names the likely buying role and leaves the person unverified. One demonstration is allowed only after the screen passes. Nothing is sent.</p>
+      </div>
+    </section>
+    <form id="discover" class="discover">
+      <label>Niche<select id="niche" name="niche"></select></label>
+      <label>Market<select id="market" name="market"></select></label>
+      <label>Business name<input id="businessName" name="businessName" type="text" required placeholder="Name from the public page"></label>
+      <label>Public source URL<input id="sourceUrl" name="sourceUrl" type="url" required placeholder="https://"></label>
+      <button type="submit">Score and record the prospect</button>
+    </form>
+    <p id="discovery"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Business</th><th>Niche</th><th>Market</th><th>Score</th><th>State</th><th>Decision maker</th><th></th></tr>
+        </thead>
+        <tbody id="prospects"></tbody>
+      </table>
+    </div>
   </main>
   <script src="/source-media/source-media.js" defer></script>
 </body>

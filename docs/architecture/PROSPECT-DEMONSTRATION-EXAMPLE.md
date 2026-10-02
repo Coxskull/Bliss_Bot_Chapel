@@ -113,3 +113,8 @@ business before contact verification and outreach eligibility, inventing
 ABC Pharmacy's staff, or starting the factory before Bliss reaches its
 required acceptance point. The contracts that eventually implement this
 picture are still the unopened items in `FUTURE-CONTRACTS.md`.
+
+A bounded operator screen can record a business name only with a public
+source URL and can prepare one demonstration after the opportunity
+score passes. See `ADVERTISER-DISCOVERY-EVIDENCE.md`. That screen is not
+a crawler and it does not send the message.

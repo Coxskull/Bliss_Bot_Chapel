@@ -68,32 +68,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         var demonstration = NewReferenceRecord();
         foreach (var concept in selected)
         {
-            var destination = publicBaseUrl.TrimEnd('/') + "/demonstrations/" + ReferenceProspect.Slug;
-            var qrName = ReferenceProspect.Slug + "-" + concept.Id + ".png";
-            var videoName = ReferenceProspect.Slug + "-" + concept.Id + ".mp4";
-            var qrPath = store.RenderPath(qrName);
-            var videoPath = store.RenderPath(videoName);
-            await File.WriteAllBytesAsync(qrPath, studio.CreateQrPng(destination), cancellationToken);
-            await studio.CompositeAsync(
-                store.ClipPath(clip),
-                qrPath,
-                videoPath,
-                concept,
-                demonstration.BusinessName,
-                cancellationToken);
-            demonstration.Concepts.Add(new ConceptRecord
-            {
-                Id = concept.Id,
-                Name = concept.Name,
-                Headline = concept.Headline,
-                Subhead = concept.Subhead,
-                Detail = concept.Detail,
-                CallToAction = concept.CallToAction,
-                VideoFileName = videoName,
-                QrFileName = qrName,
-                QrDestination = destination,
-                SourceClipId = clip.Id
-            });
+            await AddConceptAsync(demonstration, concept, clip, publicBaseUrl, cancellationToken);
         }
 
         demonstration.Messages.Add(new ChatRecord
@@ -111,6 +86,103 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             document.Demonstrations.Add(demonstration);
         });
         return demonstration;
+    }
+
+    public DemonstrationRecord Discover(string niche, string market, string businessName, string sourceUrl)
+    {
+        var screen = OpportunityScreen.Evaluate(niche, market, businessName, sourceUrl);
+        if (!screen.PassesInitialScreen)
+        {
+            throw new DiscoveryRejectedException(screen);
+        }
+
+        var slug = OpportunityScreen.Slug(businessName);
+        if (slug.Length < 3)
+        {
+            throw new InvalidOperationException("The business name does not produce a usable prospect id.");
+        }
+
+        var existing = store.Read().Demonstrations.FirstOrDefault(x => x.Slug == slug);
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var record = new DemonstrationRecord
+        {
+            Slug = slug,
+            BusinessName = businessName.Trim(),
+            Niche = niche.Trim(),
+            Market = market.Trim(),
+            Country = screen.Country,
+            Language = screen.Language,
+            BuyingRoles = string.Join(", ", BuyingRoleCatalog.RolesFor(niche)),
+            DecisionMakerStatus = ReferenceProspect.DecisionMakerStatus,
+            ContactTier = ReferenceProspect.ContactTier,
+            ContactRoute = ReferenceProspect.ContactRoute,
+            Disclosure = NicheOverlay.Disclosure(businessName.Trim()),
+            PublicSourceUrl = sourceUrl.Trim(),
+            OpportunityScore = screen.Score,
+            ProspectState = "OPPORTUNITY_SCORED",
+            BusinessIdentity = "PUBLIC_SOURCE_RECORDED",
+            Illustrative = true,
+            CreatedAt = DateTime.UtcNow,
+            Messages =
+            [
+                new ChatRecord
+                {
+                    Role = "ASSISTANT",
+                    Text = "Hello. This is a private demonstration for " + businessName.Trim()
+                        + " in " + market.Trim()
+                        + ". I can explain the concept and how Alpha works. No named decision-maker is verified, so I will not use a personal name.",
+                    Signal = "INTRODUCED",
+                    At = DateTime.UtcNow
+                }
+            ]
+        };
+        store.Update(document => document.Demonstrations.Add(record));
+        return record;
+    }
+
+    public async Task<DemonstrationRecord> ProduceDiscoveredAsync(
+        string slug,
+        string publicBaseUrl,
+        Guid? sourceClipId,
+        CancellationToken cancellationToken)
+    {
+        var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
+        if (current.OpportunityScore != 100)
+        {
+            throw new InvalidOperationException("The opportunity has not passed initial screening.");
+        }
+
+        var library = store.Read();
+        var clip = sourceClipId is Guid id
+            ? library.Clips.FirstOrDefault(x => x.Id == id)
+            : library.Clips.LastOrDefault(x => x.Status == SourceMediaStatus.Qualified && x.Market == current.Market)
+                ?? library.Clips.LastOrDefault(x => x.Status == SourceMediaStatus.Qualified);
+        if (clip is null || clip.Status != SourceMediaStatus.Qualified)
+        {
+            throw new InvalidOperationException("A qualified source slice is required before an overlay can be made.");
+        }
+
+        var concept = NicheOverlay.One(current.Niche, current.Language, current.Market);
+        current.Concepts.Clear();
+        await AddConceptAsync(current, concept, clip, publicBaseUrl, cancellationToken);
+        current.ProspectState = "DEMONSTRATION_PREPARED";
+        store.Update(document =>
+        {
+            var index = document.Demonstrations.FindIndex(x => x.Slug == slug);
+            if (index < 0)
+            {
+                document.Demonstrations.Add(current);
+            }
+            else
+            {
+                document.Demonstrations[index] = current;
+            }
+        });
+        return current;
     }
 
     public DemonstrationRecord? Find(string slug) =>
@@ -163,6 +235,39 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             current.HumanEscalation = current.HumanEscalation || turn.HumanEscalation;
         });
         return assistant;
+    }
+
+    private async Task AddConceptAsync(
+        DemonstrationRecord demonstration,
+        OverlayConcept concept,
+        SourceClipRecord clip,
+        string publicBaseUrl,
+        CancellationToken cancellationToken)
+    {
+        var destination = publicBaseUrl.TrimEnd('/') + "/demonstrations/" + demonstration.Slug;
+        var qrName = demonstration.Slug + "-" + concept.Id + ".png";
+        var videoName = demonstration.Slug + "-" + concept.Id + ".mp4";
+        await File.WriteAllBytesAsync(store.RenderPath(qrName), studio.CreateQrPng(destination), cancellationToken);
+        await studio.CompositeAsync(
+            store.ClipPath(clip),
+            store.RenderPath(qrName),
+            store.RenderPath(videoName),
+            concept,
+            demonstration.BusinessName,
+            cancellationToken);
+        demonstration.Concepts.Add(new ConceptRecord
+        {
+            Id = concept.Id,
+            Name = concept.Name,
+            Headline = concept.Headline,
+            Subhead = concept.Subhead,
+            Detail = concept.Detail,
+            CallToAction = concept.CallToAction,
+            VideoFileName = videoName,
+            QrFileName = qrName,
+            QrDestination = destination,
+            SourceClipId = clip.Id
+        });
     }
 
     private async Task<SourceClipRecord> ClassifyFileAsync(
@@ -227,4 +332,15 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         Illustrative = true,
         CreatedAt = DateTime.UtcNow
     };
+}
+
+public sealed class DiscoveryRejectedException : InvalidOperationException
+{
+    public DiscoveryRejectedException(OpportunityResult result)
+        : base(string.Join(" ", result.Reasons))
+    {
+        Result = result;
+    }
+
+    public OpportunityResult Result { get; }
 }
