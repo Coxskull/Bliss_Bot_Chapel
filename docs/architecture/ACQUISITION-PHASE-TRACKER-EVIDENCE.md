@@ -17,6 +17,9 @@ any later infrastructure amendment.
 - Four conflicts stay open: the score gate, the permanent composite,
   selling ahead of authority, and required disclosures.
 
+The board remains readable at a 390-pixel width. The heading, the
+current-position panel, and the phase rows wrap.
+
 ## Documents
 
 - `MASTER-ARCHITECTURE-V2.md`
