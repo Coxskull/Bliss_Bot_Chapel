@@ -2,6 +2,9 @@ const meter = document.querySelector("#meter");
 const rows = document.querySelector("#rows");
 const notice = document.querySelector("#notice");
 const discovery = document.querySelector("#discovery");
+const evidenceNotice = document.querySelector("#evidenceNotice");
+const evidenceProspect = document.querySelector("#evidenceProspect");
+const evidenceRole = document.querySelector("#evidenceRole");
 const prospects = document.querySelector("#prospects");
 const nicheSelect = document.querySelector("#niche");
 const marketSelect = document.querySelector("#market");
@@ -50,6 +53,8 @@ function render(library) {
     rows.append(row);
   });
   prospects.replaceChildren();
+  const selectedProspect = evidenceProspect.value;
+  evidenceProspect.replaceChildren();
   library.demonstrations.forEach(item => {
     const row = document.createElement("tr");
     const action = document.createElement("td");
@@ -70,7 +75,19 @@ function render(library) {
       action
     );
     prospects.append(row);
+    if (item.opportunityScore === 100) {
+      const option = document.createElement("option");
+      option.value = item.slug;
+      option.textContent = item.businessName + " · " + item.niche;
+      option.selected = item.slug === selectedProspect;
+      option.dataset.niche = item.niche;
+      evidenceProspect.append(option);
+    }
   });
+  if (!selectedProspect && evidenceProspect.options.length > 0) {
+    evidenceProspect.selectedIndex = evidenceProspect.options.length - 1;
+  }
+  loadRoles();
 }
 
 async function load() {
@@ -196,5 +213,51 @@ async function loadCatalog() {
     marketSelect.append(option);
   });
 }
+
+async function loadRoles() {
+  const selected = evidenceProspect.selectedOptions[0];
+  evidenceRole.replaceChildren();
+  if (!selected) return;
+  const response = await fetch("/api/demonstrations/buying-roles?niche=" + encodeURIComponent(selected.dataset.niche || ""));
+  const payload = await response.json();
+  payload.roles.forEach(role => {
+    const option = document.createElement("option");
+    option.value = role;
+    option.textContent = role;
+    evidenceRole.append(option);
+  });
+}
+
+evidenceProspect.addEventListener("change", loadRoles);
+
+document.querySelector("#evidence").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!evidenceProspect.value) {
+    evidenceNotice.textContent = "Score a prospect before recording a person.";
+    return;
+  }
+  evidenceNotice.textContent = "Checking the public evidence…";
+  try {
+    const page = await postJson("/api/demonstrations/" + evidenceProspect.value + "/decision-maker", {
+      personName: document.querySelector("#personName").value,
+      role: evidenceRole.value,
+      evidenceKind: document.querySelector("#evidenceKind").value,
+      evidenceUrl: document.querySelector("#evidenceUrl").value,
+      corroboratingKind: document.querySelector("#corroboratingKind").value,
+      corroboratingUrl: document.querySelector("#corroboratingUrl").value,
+      contactKind: document.querySelector("#contactKind").value,
+      contactValue: document.querySelector("#contactValue").value,
+      contactSourceUrl: document.querySelector("#contactSourceUrl").value
+    });
+    evidenceNotice.textContent = page.businessName + " confidence " + page.decisionMakerStatus
+      + " · " + page.contactTier + " · freshness " + page.freshness
+      + " · delivery " + page.delivery + ".";
+    evidenceNotice.scrollIntoView({ block: "center" });
+    await load();
+  } catch (error) {
+    evidenceNotice.textContent = error.message;
+    evidenceNotice.scrollIntoView({ block: "center" });
+  }
+});
 
 loadCatalog().then(load);

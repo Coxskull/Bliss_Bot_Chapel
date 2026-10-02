@@ -51,8 +51,21 @@ public sealed class DemonstrationRecord
     public string Language { get; set; } = string.Empty;
     public string BuyingRoles { get; set; } = string.Empty;
     public string DecisionMakerStatus { get; set; } = string.Empty;
+    public string DecisionMakerName { get; set; } = string.Empty;
+    public string DecisionMakerRole { get; set; } = string.Empty;
+    public string EvidenceKind { get; set; } = string.Empty;
+    public string EvidenceSourceUrl { get; set; } = string.Empty;
+    public string CorroboratingKind { get; set; } = string.Empty;
+    public string CorroboratingSourceUrl { get; set; } = string.Empty;
     public string ContactTier { get; set; } = string.Empty;
     public string ContactRoute { get; set; } = string.Empty;
+    public string ContactType { get; set; } = string.Empty;
+    public string ContactValue { get; set; } = string.Empty;
+    public string ContactSourceUrl { get; set; } = string.Empty;
+    public string ContactVerification { get; set; } = string.Empty;
+    public string FreshnessStatus { get; set; } = "UNRECORDED";
+    public DateTime? LastVerifiedAt { get; set; }
+    public bool PersonalizationAllowed { get; set; }
     public string Disclosure { get; set; } = string.Empty;
     public string PublicSourceUrl { get; set; } = string.Empty;
     public int OpportunityScore { get; set; }

@@ -144,6 +144,63 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         return record;
     }
 
+    public DemonstrationRecord RecordDecisionMaker(string slug, DecisionMakerInput input)
+    {
+        var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
+        if (current.OpportunityScore != 100)
+        {
+            throw new InvalidOperationException("Score the opportunity before recording a decision-maker.");
+        }
+
+        var assessment = DecisionMakerEvidence.Evaluate(current.Niche, input);
+        if (!assessment.Accepted)
+        {
+            throw new DecisionMakerRejectedException(assessment);
+        }
+
+        current.DecisionMakerName = assessment.PersonName;
+        current.DecisionMakerRole = assessment.Role;
+        current.DecisionMakerStatus = assessment.Confidence;
+        current.EvidenceKind = assessment.EvidenceKind;
+        current.EvidenceSourceUrl = assessment.EvidenceSourceUrl;
+        current.CorroboratingKind = assessment.CorroboratingKind;
+        current.CorroboratingSourceUrl = assessment.CorroboratingSourceUrl;
+        current.ContactTier = assessment.ContactTier;
+        current.ContactRoute = assessment.ContactRoute;
+        current.ContactType = assessment.ContactType;
+        current.ContactValue = assessment.ContactValue;
+        current.ContactSourceUrl = assessment.ContactSourceUrl;
+        current.ContactVerification = assessment.ContactVerification;
+        current.FreshnessStatus = assessment.Freshness;
+        current.LastVerifiedAt = input.VerifiedAt;
+        current.PersonalizationAllowed = assessment.PersonalizationAllowed;
+        current.Messages.Add(new ChatRecord
+        {
+            Role = "ASSISTANT",
+            Text = assessment.PersonalizationAllowed
+                ? "Updated evidence: the recorded public name is " + assessment.PersonName
+                    + ", " + assessment.Role + ". Confidence is " + assessment.Confidence
+                    + ". Delivery remains NOT_SENT."
+                : "Updated evidence: confidence is " + assessment.Confidence
+                    + ". A personal name is not used. Delivery remains NOT_SENT.",
+            Signal = "EVIDENCE_RECORDED",
+            At = DateTime.UtcNow
+        });
+        store.Update(document =>
+        {
+            var index = document.Demonstrations.FindIndex(x => x.Slug == slug);
+            if (index < 0)
+            {
+                document.Demonstrations.Add(current);
+            }
+            else
+            {
+                document.Demonstrations[index] = current;
+            }
+        });
+        return current;
+    }
+
     public async Task<DemonstrationRecord> ProduceDiscoveredAsync(
         string slug,
         string publicBaseUrl,
@@ -205,12 +262,22 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
     public ChatRecord Converse(string slug, string message)
     {
         var demonstration = Find(slug) ?? throw new InvalidOperationException("Demonstration not found.");
+        var presentation = DecisionMakerEvidence.Present(
+            demonstration.DecisionMakerStatus,
+            demonstration.DecisionMakerName,
+            demonstration.LastVerifiedAt,
+            DateTime.UtcNow);
         var facts = new ProspectFacts(
             demonstration.BusinessName,
             demonstration.ContactTier,
             demonstration.ContactRoute,
             BuyingRoleCatalog.RolesFor(demonstration.Niche),
-            demonstration.Concepts.Select(x => x.Name).ToArray());
+            demonstration.Concepts.Select(x => x.Name).ToArray(),
+            demonstration.DecisionMakerName,
+            demonstration.DecisionMakerRole,
+            string.IsNullOrWhiteSpace(demonstration.DecisionMakerStatus) ? "UNVERIFIED" : demonstration.DecisionMakerStatus,
+            presentation.PersonalizationAllowed,
+            presentation.Freshness);
         var turn = DemonstrationConversation.Reply(facts, message);
         var visitor = new ChatRecord
         {
@@ -332,6 +399,17 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         Illustrative = true,
         CreatedAt = DateTime.UtcNow
     };
+}
+
+public sealed class DecisionMakerRejectedException : InvalidOperationException
+{
+    public DecisionMakerRejectedException(DecisionMakerAssessment result)
+        : base(string.Join(" ", result.Reasons))
+    {
+        Result = result;
+    }
+
+    public DecisionMakerAssessment Result { get; }
 }
 
 public sealed class DiscoveryRejectedException : InvalidOperationException
