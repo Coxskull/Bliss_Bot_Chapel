@@ -352,6 +352,30 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         return path.StartsWith(root, StringComparison.Ordinal) && File.Exists(path) ? path : null;
     }
 
+    public string? SourceFile(string slug, string conceptId)
+    {
+        var concept = Find(slug)?.Concepts.FirstOrDefault(x => x.Id == conceptId);
+        if (concept is null || concept.SourceClipId == Guid.Empty)
+        {
+            return null;
+        }
+
+        var clip = store.Read().Clips.FirstOrDefault(x => x.Id == concept.SourceClipId);
+        if (clip is null)
+        {
+            return null;
+        }
+
+        var path = Path.GetFullPath(store.ClipPath(clip));
+        var root = Path.GetFullPath(store.ClipsDirectory);
+        if (!root.EndsWith(Path.DirectorySeparatorChar))
+        {
+            root += Path.DirectorySeparatorChar;
+        }
+
+        return path.StartsWith(root, StringComparison.Ordinal) && File.Exists(path) ? path : null;
+    }
+
     public ChatRecord Converse(string slug, string message)
     {
         var demonstration = Find(slug) ?? throw new InvalidOperationException("Demonstration not found.");
@@ -406,6 +430,23 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         CancellationToken cancellationToken)
     {
         var destination = publicBaseUrl.TrimEnd('/') + "/demonstrations/" + demonstration.Slug;
+        var recipe = RecipeRuntime.Compose(
+            demonstration.Slug,
+            demonstration.BusinessName,
+            demonstration.Market,
+            demonstration.Language,
+            demonstration.Disclosure,
+            destination,
+            clip.Id,
+            concept,
+            demonstration.DecisionMakerName);
+        var qa = RecipeRuntime.Check(recipe);
+        if (qa.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "The recipe failed QA. The permanent composite was not written. " + string.Join(" ", qa));
+        }
+
         var qrName = demonstration.Slug + "-" + concept.Id + ".png";
         var videoName = demonstration.Slug + "-" + concept.Id + ".mp4";
         await File.WriteAllBytesAsync(store.RenderPath(qrName), studio.CreateQrPng(destination), cancellationToken);
@@ -427,7 +468,10 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             VideoFileName = videoName,
             QrFileName = qrName,
             QrDestination = destination,
-            SourceClipId = clip.Id
+            SourceClipId = clip.Id,
+            RecipeVersion = recipe.Version,
+            QaStatus = "PASSED",
+            AccentHex = concept.AccentHex
         });
     }
 

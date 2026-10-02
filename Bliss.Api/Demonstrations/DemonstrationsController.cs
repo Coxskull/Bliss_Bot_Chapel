@@ -269,6 +269,14 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         return path is null ? NotFound() : PhysicalFile(path, "video/mp4", enableRangeProcessing: true);
     }
 
+    [HttpGet("{slug}/concepts/{conceptId}/source")]
+    [AllowAnonymous]
+    public ActionResult Source(string slug, string conceptId)
+    {
+        var path = demonstrations.SourceFile(slug, conceptId);
+        return path is null ? NotFound() : PhysicalFile(path, "video/mp4", enableRangeProcessing: true);
+    }
+
     [HttpGet("{slug}/concepts/{conceptId}/qr")]
     [AllowAnonymous]
     public ActionResult Qr(string slug, string conceptId)
@@ -417,7 +425,11 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
             concept.CallToAction,
             concept.QrDestination,
             concept.SourceClipId,
+            concept.RecipeVersion,
+            concept.QaStatus,
+            concept.AccentHex,
             videoUrl = $"/api/demonstrations/{demonstration.Slug}/concepts/{concept.Id}/video",
+            sourceUrl = $"/api/demonstrations/{demonstration.Slug}/concepts/{concept.Id}/source",
             qrUrl = $"/api/demonstrations/{demonstration.Slug}/concepts/{concept.Id}/qr"
         }),
         messages = demonstration.Messages.Select(MessageDto)

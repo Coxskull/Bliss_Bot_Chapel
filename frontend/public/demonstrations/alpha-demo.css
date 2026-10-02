@@ -56,6 +56,18 @@ button, input, textarea { font: inherit; }
 .card { padding: 12px; }
 .card h3 { margin: 4px 6px 10px; font-size: 16px; }
 video { width: 100%; border-radius: 12px; background: #000; display: block; }
+.player { position: relative; }
+.overlay-card {
+  position: absolute; right: 3%; top: 8%; width: 34%;
+  background: rgba(255, 255, 255, 0.96); color: #16324f;
+  border-radius: 10px; padding: 10px 12px; border-left: 8px solid #8A3B12;
+  display: grid; gap: 4px;
+}
+.overlay-card b { color: #8A3B12; font-size: 13px; }
+.overlay-card strong { color: #0c3f86; font-size: 20px; line-height: 1.1; }
+.overlay-card small, .overlay-card span { color: #3d5166; }
+.overlay-card em { color: #0e7a45; font-style: normal; font-weight: 700; }
+.overlay-card .qr { width: 72px; margin: 4px 0 0; }
 .qr { width: 96px; height: auto; margin: 8px 6px; background: white; padding: 6px; border-radius: 8px; }
 .card p { margin: 8px 6px 4px; color: var(--muted); }
 .facts, .benefits { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 8px 0 18px; }
@@ -101,5 +113,6 @@ th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line
 .ok { color: #b6f3cc; }
 @media (max-width: 900px) {
   .hero, .grid, .layout, .facts, .benefits, .meter, .discover { grid-template-columns: 1fr; }
+  .overlay-card { position: static; width: auto; margin-top: 8px; }
   .badge { justify-self: start; }
 }
