@@ -35,6 +35,16 @@ Result: **223 passed, 0 failed, 0 skipped**.
 The new proofs are `DecisionMakerEvidenceTests` and
 `DecisionMakerEvidenceApiTests`.
 
+The browser path refused Ana Ruiz with no evidence URL, then recorded a
+team page, a professional profile, and a company marketing contact.
+Casa Verde became `MEDIUM`, `TIER_2`, and `CURRENT`. The preview and the
+page used that public name. Delivery stayed `NOT_SENT`, and the page
+refused to invent a price.
+
+## PDF report
+
+`docs/architecture/evidence/Alpha-Decision-Maker-Evidence-Report.pdf`
+
 ## Limits
 
 The operator supplies the evidence. Alpha does not search the web or

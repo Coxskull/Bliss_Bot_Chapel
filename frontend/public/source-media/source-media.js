@@ -252,9 +252,11 @@ document.querySelector("#evidence").addEventListener("submit", async event => {
     evidenceNotice.textContent = page.businessName + " confidence " + page.decisionMakerStatus
       + " · " + page.contactTier + " · freshness " + page.freshness
       + " · delivery " + page.delivery + ".";
+    evidenceNotice.scrollIntoView({ block: "center" });
     await load();
   } catch (error) {
     evidenceNotice.textContent = error.message;
+    evidenceNotice.scrollIntoView({ block: "center" });
   }
 });
 
