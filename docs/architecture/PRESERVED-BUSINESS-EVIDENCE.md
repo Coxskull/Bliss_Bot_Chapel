@@ -48,3 +48,7 @@ score Puerto Azul. The notice names the score, the preserved state, and
 `NOT_SENT`. The prospect row has no produce button. The preserved page
 and the preview repeat that nothing was manufactured and nothing was
 sent.
+
+The screen recording is
+`puerto_azul_preserved_score_75_nothing_sent.mp4`. The PDF report is
+`evidence/Alpha-Preserved-Business-Report.pdf`.

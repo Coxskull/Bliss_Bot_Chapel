@@ -27,9 +27,9 @@ function render(page) {
   const status = document.querySelector("#pageStatus");
   const benefits = document.querySelector("#pageBenefits");
   if (status) status.textContent = preserved ? "PRESERVED · NOTHING SENT" : "PRIVATE ADVERTISING DEMONSTRATION";
-  if (benefits) benefits.hidden = preserved;
+  if (benefits) benefits.style.display = preserved ? "none" : "";
   const badge = document.querySelector(".badge");
-  if (badge) badge.hidden = preserved;
+  if (badge) badge.style.display = preserved ? "none" : "";
   promise.textContent = preserved
     ? "No demonstration was manufactured"
     : "Get More Customers in " + page.market + " with Podcast Advertising";
