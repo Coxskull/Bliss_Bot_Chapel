@@ -23,7 +23,8 @@ public sealed record OpportunityResult(
     bool PassesInitialScreen,
     string Language,
     string Country,
-    IReadOnlyList<string> Reasons);
+    IReadOnlyList<string> Reasons,
+    bool PreservesBusiness);
 
 public static class OpportunityScreen
 {
@@ -75,7 +76,8 @@ public static class OpportunityScreen
             score == 100,
             city?.Language ?? "en",
             city?.Country ?? string.Empty,
-            reasons);
+            reasons,
+            name.Length >= 3 && IsPublicSource(sourceUrl));
     }
 
     public static bool IsPublicSource(string sourceUrl)
