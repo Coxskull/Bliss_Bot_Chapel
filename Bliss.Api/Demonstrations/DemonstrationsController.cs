@@ -11,6 +11,15 @@ namespace Bliss.Api.Demonstrations;
 [Route("api/demonstrations")]
 public sealed class DemonstrationsController(ProspectDemonstrationService demonstrations) : ControllerBase
 {
+    [HttpPost("factory-batch")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult RunFactoryBatch()
+    {
+        var batch = demonstrations.RunFactoryBatch();
+        return Ok(BatchDto(batch));
+    }
+
     [HttpGet("library")]
     [AllowAnonymous]
     public ActionResult Library()
@@ -310,6 +319,27 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
             messages = current.Messages.Select(MessageDto)
         });
     }
+
+    private static object BatchDto(FactoryBatchRecord batch) => new
+    {
+        batch.Id,
+        batch.StartedAt,
+        batch.FinishedAt,
+        batch.ElapsedMilliseconds,
+        batch.Status,
+        batch.ProspectCount,
+        batch.PreservedCount,
+        batch.SuppressedCount,
+        batch.DemonstrationCount,
+        batch.ConceptCount,
+        batch.QualifiedClipCount,
+        batch.ChecksPassed,
+        batch.ExceptionCount,
+        batch.AiCalls,
+        batch.Cost,
+        delivery = "NOT_SENT",
+        batch.Exceptions
+    };
 
     private static object ClipDto(SourceClipRecord clip) => new
     {

@@ -6,6 +6,62 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
 {
     public LibraryDocument Library() => store.Read();
 
+    public FactoryBatchRecord RunFactoryBatch()
+    {
+        var started = DateTime.UtcNow;
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var library = store.Read();
+        var qualifiedIds = library.Clips
+            .Where(clip => clip.Status == SourceMediaStatus.Qualified)
+            .Select(clip => clip.Id)
+            .ToHashSet();
+        var prospects = library.Demonstrations.Select(demonstration => new FactoryProspect(
+            demonstration.Slug,
+            demonstration.BusinessName,
+            demonstration.Market,
+            demonstration.Language,
+            demonstration.Disclosure,
+            demonstration.DecisionMakerName,
+            demonstration.ProspectState,
+            demonstration.Suppressed,
+            demonstration.Concepts.Select(concept => new FactoryConcept(
+                concept.Id,
+                concept.RecipeVersion,
+                concept.QaStatus,
+                concept.Headline,
+                concept.Subhead,
+                concept.Detail,
+                concept.CallToAction,
+                concept.QrDestination,
+                concept.SourceClipId,
+                qualifiedIds.Contains(concept.SourceClipId),
+                RenderAssetExists(concept.VideoFileName),
+                RenderAssetExists(concept.QrFileName))).ToArray())).ToArray();
+        var manifest = FactoryBatch.Inspect(new FactoryLibrary(prospects, qualifiedIds.Count));
+        watch.Stop();
+        var record = new FactoryBatchRecord
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            StartedAt = started,
+            FinishedAt = DateTime.UtcNow,
+            ElapsedMilliseconds = watch.ElapsedMilliseconds,
+            Status = manifest.Status,
+            ProspectCount = manifest.ProspectCount,
+            PreservedCount = manifest.PreservedCount,
+            SuppressedCount = manifest.SuppressedCount,
+            DemonstrationCount = manifest.DemonstrationCount,
+            ConceptCount = manifest.ConceptCount,
+            QualifiedClipCount = manifest.QualifiedClipCount,
+            ChecksPassed = manifest.ChecksPassed,
+            ExceptionCount = manifest.ExceptionCount,
+            AiCalls = manifest.AiCalls,
+            Cost = manifest.Cost,
+            Exceptions = manifest.Exceptions.ToList()
+        };
+        store.Update(document => document.Batches.Add(record));
+        return record;
+    }
+
     public async Task<SourceClipRecord> SaveUploadAsync(
         string originalFileName,
         byte[] bytes,
@@ -336,6 +392,23 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
                 document.Demonstrations[index] = current;
             }
         });
+    }
+
+    private bool RenderAssetExists(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName) || fileName != Path.GetFileName(fileName))
+        {
+            return false;
+        }
+
+        var path = Path.GetFullPath(store.RenderPath(fileName));
+        var root = Path.GetFullPath(store.RendersDirectory);
+        if (!root.EndsWith(Path.DirectorySeparatorChar))
+        {
+            root += Path.DirectorySeparatorChar;
+        }
+
+        return path.StartsWith(root, StringComparison.Ordinal) && File.Exists(path);
     }
 
     public string? RenderFile(string slug, string conceptId, bool qr)

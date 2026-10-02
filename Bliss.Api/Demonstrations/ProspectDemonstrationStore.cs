@@ -96,10 +96,31 @@ public sealed class DemonstrationRecord
     public DateTime CreatedAt { get; set; }
 }
 
+public sealed class FactoryBatchRecord
+{
+    public string Id { get; set; } = string.Empty;
+    public DateTime StartedAt { get; set; }
+    public DateTime FinishedAt { get; set; }
+    public long ElapsedMilliseconds { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public int ProspectCount { get; set; }
+    public int PreservedCount { get; set; }
+    public int SuppressedCount { get; set; }
+    public int DemonstrationCount { get; set; }
+    public int ConceptCount { get; set; }
+    public int QualifiedClipCount { get; set; }
+    public int ChecksPassed { get; set; }
+    public int ExceptionCount { get; set; }
+    public int AiCalls { get; set; }
+    public string Cost { get; set; } = string.Empty;
+    public List<string> Exceptions { get; set; } = [];
+}
+
 public sealed class LibraryDocument
 {
     public List<SourceClipRecord> Clips { get; set; } = [];
     public List<DemonstrationRecord> Demonstrations { get; set; } = [];
+    public List<FactoryBatchRecord> Batches { get; set; } = [];
 }
 
 public sealed class ProspectDemonstrationStore

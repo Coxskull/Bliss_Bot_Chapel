@@ -6,8 +6,8 @@ intelligence.
 **Program status:** future engineering program. Blueprint v2 is
 preserved. Reconciliation is recorded. The program is not verified.
 
-**You are here:** Phases 4–10 are verified local proofs. Phase 0 is this
-tracker. The next build, when a change is authorized, is Phase 11.
+**You are here:** Phases 4–11 are verified local proofs. Phase 0 is this
+tracker. The next build, when a change is authorized, is Phase 12.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -26,8 +26,8 @@ verified.
 | 8 | Preserve a legitimate business without a demonstration | Verified | Puerto Azul in Quito scores 75, stays PRESERVED, and receives no demonstration and no send |
 | 9 | Contact roads and suppression on the prospect | Verified | Puerto Azul keeps two public roads. Both stay ineligible. Suppression sends nothing |
 | 10 | Recipe runtime and just-in-time overlay | Verified | Mesa Norte stores overlay-1. QA matches the page QR and the disclosure. The flattened MP4 remains |
-| 11 | Factory QA and batch manifest | Next. Not started | Deterministic checks and a cost manifest |
-| 12 | Acquisition events from observable behavior | Not started | No AI opinion in place of an event |
+| 11 | Factory QA and batch manifest | Verified | The batch counts recipes and assets, records zero AI calls, and invents no price. Nothing is sent |
+| 12 | Acquisition events from observable behavior | Next. Not started | No AI opinion in place of an event |
 | 13 | Ask Alpha: one voice, answer then advance | Not started | Respectful address and positive advocacy. No invented person, price, or win |
 | 14 | Price answers read from Economics | Not started | Blocked until the accepted Economics result is the only number Ask Alpha can say |
 | 15 | Negotiation inside Economics | Not started | Authority envelope, creator floor, and the Phase 5 ledger. No second service |
@@ -47,7 +47,7 @@ verified.
 - Selling language must not outrun Economics, Bliss, or the unsent rule.
 - Required disclosures stay. They are not optional self-gating.
 
-## Evidence already accepted for Phases 4–10
+## Evidence already accepted for Phases 4–11
 
 - `PROSPECT-DEMONSTRATION-EVIDENCE.md`
 - `ADVERTISER-DISCOVERY-EVIDENCE.md`
@@ -55,5 +55,6 @@ verified.
 - `PRESERVED-BUSINESS-EVIDENCE.md`
 - `CONTACT-ROADS-EVIDENCE.md`
 - `RECIPE-RUNTIME-EVIDENCE.md`
+- `FACTORY-BATCH-EVIDENCE.md`
 
 The visible board is `/acquisition/index.html`.

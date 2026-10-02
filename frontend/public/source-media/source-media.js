@@ -2,6 +2,8 @@ const meter = document.querySelector("#meter");
 const rows = document.querySelector("#rows");
 const notice = document.querySelector("#notice");
 const discovery = document.querySelector("#discovery");
+const factoryNotice = document.querySelector("#factoryNotice");
+const factoryExceptions = document.querySelector("#factoryExceptions");
 const evidenceNotice = document.querySelector("#evidenceNotice");
 const evidenceProspect = document.querySelector("#evidenceProspect");
 const evidenceRole = document.querySelector("#evidenceRole");
@@ -347,6 +349,34 @@ document.querySelector("#suppress").addEventListener("submit", async event => {
   } catch (error) {
     roadNotice.textContent = error.message;
     roadNotice.scrollIntoView({ block: "center" });
+  }
+});
+
+document.querySelector("#factory").addEventListener("click", async () => {
+  factoryNotice.textContent = "Running factory QA…";
+  factoryExceptions.replaceChildren();
+  try {
+    const batch = await postJson("/api/demonstrations/factory-batch", {});
+    factoryNotice.textContent = "Status " + batch.status
+      + ". Prospects " + batch.prospectCount
+      + ". Preserved " + batch.preservedCount
+      + ". Suppressed " + batch.suppressedCount
+      + ". Demonstrations " + batch.demonstrationCount
+      + ". Concepts " + batch.conceptCount
+      + ". Checks passed " + batch.checksPassed
+      + ". Exceptions " + batch.exceptionCount
+      + ". AI calls " + batch.aiCalls
+      + ". " + batch.cost
+      + " Elapsed " + batch.elapsedMilliseconds + " ms. Delivery " + batch.delivery + ".";
+    (batch.exceptions || []).forEach(item => {
+      const line = document.createElement("li");
+      line.textContent = item;
+      factoryExceptions.append(line);
+    });
+    factoryNotice.scrollIntoView({ block: "center" });
+  } catch (error) {
+    factoryNotice.textContent = error.message;
+    factoryNotice.scrollIntoView({ block: "center" });
   }
 });
 
