@@ -9,7 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23123328' d='M20 2 37 11v18L20 38 3 29V11z'/%3E%3Cpath fill='none' stroke='%23a8efce' stroke-width='3' d='m11 21 6 6 12-14'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/operations/app.css">
   <script src="/operations/app.js?v=tempo-1" defer></script>
-  <script src="/operations/tempo.js?v=tempo-1" defer></script>
+  <script src="/operations/tempo.js?v=fleet-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -438,6 +438,18 @@
         </section>
 
         <section class="view" id="view-tempo" aria-labelledby="tempo-title">
+          <section class="panel" id="fleet-panel">
+            <div class="panel-header"><div><p class="eyebrow">FLEETS</p><h3>Independent fleets</h3></div></div>
+            <p id="fleet-notice">Two fleets share one operations console. A broken lane does not stop the ocean. Bliss Chapel stays the matching middle. Green does not send. Delivery remains NOT_SENT.</p>
+            <p id="fleet-ocean"></p>
+            <p id="fleet-bliss">Bliss Chapel stays the matching middle.</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Fleet</th><th>Lane</th><th>Place</th></tr></thead>
+                <tbody id="fleet-rows"></tbody>
+              </table>
+            </div>
+          </section>
           <div class="section-intro">
             <div>
               <p class="eyebrow">ONE CONSOLE</p>

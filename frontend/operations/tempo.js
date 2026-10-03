@@ -1,5 +1,6 @@
 async function loadLaneTempo() {
   const board = await api("/api/operations/tempo");
+  await loadFleets();
   $("#tempo-notice").textContent = board.notice || "";
   $("#tempo-summary").innerHTML = (board.lanes || []).map(lane =>
     `<li><strong>${escapeHtml(lane.displayName)}</strong> ${escapeHtml(lane.tempo)}</li>`).join("");
@@ -14,6 +15,19 @@ async function loadLaneTempo() {
   $("#tempo-audits").innerHTML = audits.length
     ? `<table><thead><tr><th>Lane</th><th>Tempo</th><th>Reason</th><th>Notice</th></tr></thead><tbody>${audits.map(item => `<tr><td>${escapeHtml(item.lane)}</td><td>${escapeHtml(item.tempo)}</td><td>${escapeHtml(item.reason)}</td><td>${escapeHtml(item.notice)}</td></tr>`).join("")}</tbody></table>`
     : emptyState("No lane tempo has been recorded. None was invented. Delivery remains NOT_SENT.");
+}
+
+async function loadFleets() {
+  const board = await api("/api/operations/tempo/fleets");
+  $("#fleet-notice").textContent = board.notice || "";
+  $("#fleet-ocean").textContent = board.ocean || "";
+  $("#fleet-bliss").textContent = board.bliss || "";
+  const rows = (board.fleets || []).map(fleet => {
+    const lanes = (fleet.lanes || []).map(lane =>
+      `<tr><td>${escapeHtml(fleet.displayName)}</td><td>${escapeHtml(lane.displayName)}</td><td>${escapeHtml(lane.place)}</td></tr>`).join("");
+    return `<tr><td colspan="3"><strong>${escapeHtml(fleet.notice)}</strong></td></tr>${lanes}`;
+  }).join("");
+  $("#fleet-rows").innerHTML = rows;
 }
 
 document.addEventListener("DOMContentLoaded", () => {

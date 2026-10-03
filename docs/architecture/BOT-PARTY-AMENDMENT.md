@@ -83,14 +83,14 @@ not send and delivery remains `NOT_SENT`. The audit is append-only.
 Phase 21 does not discover businesses, crawl, send, buy enrichment,
 change a creative layout, or create inventory rotations.
 
-## Queued phases, not started
+## Amendment phases
 
 | Phase | Capability | Status |
 | --- | --- | --- |
-| 24 | Green, yellow, and red progression on the prospect | Queued. Not started |
-| 25 | Flow control: preserve and queue legitimate volume | Queued. Not started |
-| 26 | Independent fleet lanes beyond a pause control | Queued. Not started |
-| 27 | Marketplace balance signals, without invented counts | Queued. Not started |
+| 24 | Green, yellow, and red progression on the prospect | Verified. Green is not a send |
+| 25 | Flow control: preserve and queue legitimate volume | Verified. None are discarded |
+| 26 | Independent fleet lanes beyond a pause control | Verified. A broken lane does not stop the ocean |
+| 27 | Marketplace balance signals, without invented counts | Next. Not started |
 | 28 | Balanced creative inventory: pairs of 2, 4, or 6 | Queued. Not started |
 | 29 | Rotation abundance under creator approval | Queued. Not started |
 
@@ -98,5 +98,19 @@ Phase 22 counts production events and stages an untrusted excerpt
 without changing the prospect. Phase 23 measures the in-memory rungs
 and does not claim stored scale. Phase 24 records green, yellow, and
 red on the prospect. Green is not a send. Phase 25 keeps excess
-legitimate prospects queued. The next authorized build after Phase 25
-is Phase 26.
+legitimate prospects queued. Phase 26 reads the Fishing Fleet and the
+Creator Fleet from the stored lane tempos. A broken lane does not stop
+the ocean. The next authorized build after Phase 26 is Phase 27.
+
+## What Phase 26 implements
+
+Phase 26 reads the six stored lane tempos as two fleets on
+`/operations#/tempo`. The Fishing Fleet is discovery, verification,
+road finding, policy, and outreach. The Creator Fleet is creator
+discovery. Bliss Chapel stays the matching middle. A stopped lane is
+broken for that lane. The other lanes and the other fleet keep their
+own tempo. The reading does not append an audit, crawl, send, or
+invent a lane. Green does not send. Delivery remains `NOT_SENT`.
+
+Phase 26 does not build a second console, a crawler, or marketplace
+balance counts.
