@@ -117,7 +117,11 @@ public static class FactoryBatch
                     exceptions.Add(prospect.BusinessName + " " + concept.Id + ": The source slice is not qualified.");
                 }
 
-                if (concept.FlattenedFileExists)
+                if (!RecipeRuntime.PermanentCompositeRequired(concept.RecipeVersion))
+                {
+                    passed++;
+                }
+                else if (concept.FlattenedFileExists)
                 {
                     passed++;
                 }

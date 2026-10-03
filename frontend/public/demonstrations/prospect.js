@@ -132,14 +132,10 @@ function render(page) {
       cta.textContent = concept.callToAction;
       overlay.append(brand, headline, subhead, detail, cta, qr);
       player.append(source, overlay);
-      const flatLabel = document.createElement("p");
-      flatLabel.textContent = "Flattened composite remains";
-      const flat = document.createElement("video");
-      flat.controls = true;
-      flat.playsInline = true;
-      flat.preload = "metadata";
-      flat.src = concept.videoUrl;
-      card.append(title, player, caption, flatLabel, flat);
+      const picture = document.createElement("p");
+      picture.id = "served-picture";
+      picture.textContent = concept.playerNotice || "The player is the served picture. A permanent composite is not required. None was written. Delivery remains NOT_SENT.";
+      card.append(title, player, caption, picture);
     } else {
       const video = document.createElement("video");
       video.controls = true;

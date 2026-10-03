@@ -60,6 +60,8 @@ only through its own Engineering Contract
 | Which future contracts exist, and which one local proof is open | `FUTURE-CONTRACTS.md` |
 | What the subscription ledger and factory budget persist | `LEDGER-BUDGET-EVIDENCE.md` |
 | The ledger and budget Engineering Contract | `contracts/SUBSCRIPTION-LEDGER-CONTRACT.md` |
+| What the player serves instead of a permanent composite | `PLAYER-SERVED-PICTURE-EVIDENCE.md` |
+| The player-served picture Engineering Contract | `contracts/PLAYER-SERVED-PICTURE-CONTRACT.md` |
 | Accepted Bliss behavior | `docs/bliss/` contracts and evidence |
 | Accepted Wedding Planner Phase 1 behavior | `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md` |
 | Wedding Planner product note for the current module | `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md` |

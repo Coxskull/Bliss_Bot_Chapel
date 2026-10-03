@@ -186,7 +186,7 @@ async function produceProspect(item) {
     discovery.textContent = page.businessName + " demonstration ready. Recipe "
       + (recipe && recipe.recipeVersion ? recipe.recipeVersion : "unversioned")
       + " QA " + (recipe && recipe.qaStatus ? recipe.qaStatus : "unrecorded")
-      + ". The flattened composite remains. Delivery is " + page.delivery + ".";
+      + ". The player is the served picture. A permanent composite is not required. Delivery is " + page.delivery + ".";
     const open = document.createElement("a");
     open.href = page.subject ? "/outreach/" + page.slug : item.outreachUrl;
     open.href = "/outreach/" + page.slug;

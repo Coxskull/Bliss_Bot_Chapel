@@ -11,7 +11,7 @@ public sealed class RecipeRuntimeApiTests : IClassFixture<BlissApiFactory>
     public RecipeRuntimeApiTests(BlissApiFactory factory) => _factory = factory;
 
     [Fact]
-    public async Task Produce_stores_overlay_1_and_keeps_the_flattened_composite()
+    public async Task Produce_stores_overlay_1_and_serves_the_player()
     {
         var client = _factory.CreateClient();
         var created = await client.PostAsJsonAsync("/api/demonstrations/discover", new
@@ -42,13 +42,17 @@ public sealed class RecipeRuntimeApiTests : IClassFixture<BlissApiFactory>
         Assert.Equal("La Mesa", concept.GetProperty("headline").GetString());
         Assert.Contains("/demonstrations/mesa-norte", concept.GetProperty("qrDestination").GetString());
 
+        Assert.Equal("PLAYER", concept.GetProperty("servedPicture").GetString());
+        Assert.Contains("not required", concept.GetProperty("playerNotice").GetString());
+        Assert.Contains("NOT_SENT", concept.GetProperty("playerNotice").GetString());
+        Assert.False(concept.TryGetProperty("videoUrl", out _));
         var source = await client.GetAsync(concept.GetProperty("sourceUrl").GetString());
-        var flat = await client.GetAsync(concept.GetProperty("videoUrl").GetString());
         var qr = await client.GetAsync(concept.GetProperty("qrUrl").GetString());
+        var flat = await client.GetAsync("/api/demonstrations/mesa-norte/concepts/" + concept.GetProperty("id").GetString() + "/video");
         Assert.Equal(HttpStatusCode.OK, source.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, flat.StatusCode);
         Assert.Equal(HttpStatusCode.OK, qr.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, flat.StatusCode);
         Assert.True(source.Content.Headers.ContentLength > 0);
-        Assert.True(flat.Content.Headers.ContentLength > 0);
+        Assert.Equal("video/mp4", source.Content.Headers.ContentType?.MediaType);
     }
 }

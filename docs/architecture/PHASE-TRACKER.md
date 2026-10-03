@@ -7,10 +7,10 @@ intelligence.
 preserved. Reconciliation is recorded. The program is not verified.
 
 **You are here:** Phases 4–29 are verified local proofs. Phase 0 is this
-tracker. The amendment queue has no further phase. The first priority
-contract, the subscription ledger and factory budget, is a verified local
-proof. Bliss hosted acceptance and Economics Phase 9 stay on their own
-paths. The program stays open.
+tracker. The amendment queue has no further phase. The subscription ledger
+and the player-served picture are verified local proofs. Bliss hosted
+acceptance and Economics Phase 9 stay on their own paths. The program stays
+open.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -23,12 +23,12 @@ verified.
 | 2 | Economics Phases 1–9, the only price authority | Implemented. Phase 9 awaits owner acceptance | Do not add a second rate engine |
 | 3 | Wedding Planner Phase 1 workspace | Implemented. Zero AI | Phase 19 inherits an accepted Economics result into that workspace. A discovered business is not planned |
 | 4 | Source media library, duplicates, and fuel | Verified | Media files stay on disk. Prospect rows are in PostgreSQL as of Phase 17 |
-| 5 | One software demonstration, QR, disclosure, unsent preview | Verified | ABC reference has four concepts. A discovered prospect has one. The permanent MP4 remains beside recipe overlay-1 |
+| 5 | One software demonstration, QR, disclosure, unsent preview | Verified | ABC reference can still hold four concepts. A discovered prospect has one. The player is the served picture. A permanent composite is not required |
 | 6 | Discovery screen at score 100 | Verified | A legitimate public-source business below 100 is stored by Phase 8. The demonstration still waits for 100 |
 | 7 | Public decision-maker evidence | Verified | Name without a URL is refused. Stale records are not personalized. Delivery stays unsent |
 | 8 | Preserve a legitimate business without a demonstration | Verified | Puerto Azul in Quito scores 75, stays PRESERVED, and receives no demonstration and no send |
 | 9 | Contact roads and suppression on the prospect | Verified | Puerto Azul keeps two public roads. Both stay ineligible. Suppression sends nothing |
-| 10 | Recipe runtime and just-in-time overlay | Verified | Mesa Norte stores overlay-1. QA matches the page QR and the disclosure. The flattened MP4 remains |
+| 10 | Recipe runtime and just-in-time overlay | Verified | Mesa Norte stores overlay-1. QA matches the page QR and the disclosure. The player is the served picture |
 | 11 | Factory QA and batch manifest | Verified | The batch counts recipes and assets, records zero AI calls, and invents no price. Nothing is sent |
 | 12 | Acquisition events from observable behavior | Verified | The ledger records a page open and a visitor message. An opinion and a send are refused. The watcher is not named |
 | 13 | Ask Alpha: one voice, answer then advance | Verified | The same voice answers, then advances. A repeated question is studied. No invented person, price, or win |
@@ -52,7 +52,7 @@ verified.
 ## Open conflicts
 
 - Resolved in Phase 8: a named public-source business is kept when the road scores below 100. The video, the decision-maker record, and the send stay withheld. A missing name or a missing public URL is still not stored.
-- Phase 10 proved recipe overlay-1. QA matches the QR destination and the not-sponsored disclosure. The permanent MP4 is still written. Retirement waits until the player is the only served picture.
+- Resolved: recipe overlay-1 is the served picture. QA matches the QR destination and the not-sponsored disclosure. A permanent per-prospect MP4 is not written.
 - Selling language must not outrun Economics, Bliss, or the unsent rule.
 - Required disclosures stay. They are not optional self-gating.
 
@@ -84,7 +84,9 @@ verified.
 - `CREATIVE-INVENTORY-EVIDENCE.md`
 - `ROTATION-ABUNDANCE-EVIDENCE.md`
 - `LEDGER-BUDGET-EVIDENCE.md`
+- `PLAYER-SERVED-PICTURE-EVIDENCE.md`
 - `contracts/SUBSCRIPTION-LEDGER-CONTRACT.md`
+- `contracts/PLAYER-SERVED-PICTURE-CONTRACT.md`
 - `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`. The ledger is
@@ -100,3 +102,4 @@ implemented here. They stay on their acceptance paths.
 | 1 | Bliss hosted acceptance | Separate acceptance path. Not started here |
 | 2 | Economics Phase 9 owner acceptance | Awaits the owner. Not started here |
 | 4 | Subscription ledger and factory budget | Verified local proof. A missing cost stays unrecorded. A reached ceiling degrades that scope. A review is not a purchase. Green does not send |
+| 5 | Deterministic media runtime | Verified local proof. The player is the served picture. A permanent composite is not required. QA still matches the QR and the disclosure. Green does not send |

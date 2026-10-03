@@ -934,7 +934,11 @@ public sealed class DemonstrationsController(
             concept.RecipeVersion,
             concept.QaStatus,
             concept.AccentHex,
-            videoUrl = $"/api/demonstrations/{demonstration.Slug}/concepts/{concept.Id}/video",
+            servedPicture = string.IsNullOrWhiteSpace(concept.VideoFileName) ? "PLAYER" : "FILE",
+            playerNotice = concept.RecipeVersion == RecipeRuntime.Version ? RecipeRuntime.PlayerNotice : null,
+            videoUrl = string.IsNullOrWhiteSpace(concept.VideoFileName)
+                ? null
+                : $"/api/demonstrations/{demonstration.Slug}/concepts/{concept.Id}/video",
             sourceUrl = $"/api/demonstrations/{demonstration.Slug}/concepts/{concept.Id}/source",
             qrUrl = $"/api/demonstrations/{demonstration.Slug}/concepts/{concept.Id}/qr"
         }),

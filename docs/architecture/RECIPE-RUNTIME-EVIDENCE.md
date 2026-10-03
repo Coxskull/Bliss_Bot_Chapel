@@ -42,3 +42,6 @@ on the source slice, the QR, the disclosure, and the flattened file.
 
 The screen recording is `mesa_norte_recipe_overlay_qa_passed.mp4`.
 The PDF report is `evidence/Alpha-Recipe-Runtime-Report.pdf`.
+
+A later contract makes the player the only served picture. See
+`PLAYER-SERVED-PICTURE-EVIDENCE.md`.
