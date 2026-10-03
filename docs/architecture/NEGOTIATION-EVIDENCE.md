@@ -42,6 +42,10 @@ The new proofs are `NegotiationEnvelopeTests` and `NegotiationApiTests`.
 ## Browser path
 
 On the Mesa Norte demonstration, no approved Economics quote is linked.
-Ask Alpha to take 100. The reply refuses to negotiate without an
-approved Economics quote, invents no price, and leaves delivery
-unsent.
+The visitor asks, "Can you take 100?" The assistant reply says Ask
+Alpha will not negotiate without an approved Economics quote, cannot
+invent a price, and leaves delivery `NOT_SENT`. The reply contains no
+digits. The gear is integrity. The quote id stays empty.
+
+The recording is `mesa_norte_negotiation_refused_without_approved_quote.mp4`.
+The report is `docs/architecture/evidence/Alpha-Negotiation-Report.pdf`.
