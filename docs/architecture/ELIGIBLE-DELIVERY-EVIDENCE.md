@@ -44,6 +44,9 @@ The new proofs are `DeliveryPolicyTests` and `EligibleDeliveryApiTests`.
 
 On Source Media, Puerto Azul is already suppressed. Preparing the
 preview says suppression comes before the adapter and delivery stays
-`NOT_SENT`. Mesa Norte then receives the fixture marketing road and the
-preview authorization. The notice says the road is eligible and
-delivery stays `NOT_SENT`.
+`NOT_SENT`. Mesa Norte then receives the fixture marketing road. That
+road notice stays ineligible. The preview authorization then says the
+road is eligible and transmission remains `NOT_SENT`.
+
+The recording is `preview_adapter_prepares_copy_nothing_transmitted.mp4`.
+The report is `docs/architecture/evidence/Alpha-Eligible-Delivery-Report.pdf`.
