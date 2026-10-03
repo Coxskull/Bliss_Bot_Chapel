@@ -170,8 +170,11 @@ form.addEventListener("submit", async event => {
     body: JSON.stringify({ text })
   });
   const body = await response.json();
-  if (response.ok) bubble("ASSISTANT", body.reply);
-  else bubble("ASSISTANT", body.error || "The message was not accepted.");
+  if (response.ok) {
+    bubble("ASSISTANT", body.reply);
+    const gear = document.querySelector("#gear");
+    if (gear) gear.textContent = "Gear: " + body.gear + ". The voice stays " + (body.voice || "Ask Alpha") + ".";
+  } else bubble("ASSISTANT", body.error || "The message was not accepted.");
 });
 
 load();

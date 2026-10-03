@@ -341,8 +341,10 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         var current = demonstrations.Find(slug)!;
         return Ok(new
         {
+            voice = DemonstrationConversation.Voice,
             reply = reply.Text,
             signal = reply.Signal,
+            gear = reply.Gear,
             humanEscalation = current.HumanEscalation,
             messages = current.Messages.Select(MessageDto)
         });
@@ -510,6 +512,7 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         message.Role,
         message.Text,
         message.Signal,
+        message.Gear,
         message.At
     };
 }

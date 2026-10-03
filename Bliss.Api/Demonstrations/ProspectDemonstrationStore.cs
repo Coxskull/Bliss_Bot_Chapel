@@ -41,6 +41,7 @@ public sealed class ChatRecord
     public string Role { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
     public string Signal { get; set; } = string.Empty;
+    public string Gear { get; set; } = string.Empty;
     public DateTime At { get; set; }
 }
 
