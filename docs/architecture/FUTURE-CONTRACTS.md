@@ -3,8 +3,8 @@
 **Status:** catalog. The subscription ledger, the player-served
 picture, source-media coverage, bounded advertiser discovery, the
 contact route audit, the local batch measurement, the marketplace
-handoff, the human creative approval, and the research ledger are
-local proofs. Every other row stays unauthorized. Hosted acceptance is
+handoff, the human creative approval, the research ledger, and the
+later rotation period are local proofs. Every other row stays unauthorized. Hosted acceptance is
 not claimed. Conversation AI and seven grooming models stay closed.
 
 Do not implement an item on this list because it appears here. The

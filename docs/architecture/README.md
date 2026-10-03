@@ -76,6 +76,8 @@ only through its own Engineering Contract
 | The creative approval Engineering Contract | `contracts/CREATIVE-APPROVAL-CONTRACT.md` |
 | What a research note records | `LEARNING-LEDGER-EVIDENCE.md` |
 | The research ledger Engineering Contract | `contracts/LEARNING-LEDGER-CONTRACT.md` |
+| What a later rotation period stores | `ROTATION-PERIOD-EVIDENCE.md` |
+| The later rotation period Engineering Contract | `contracts/ROTATION-PERIOD-CONTRACT.md` |
 | Accepted Bliss behavior | `docs/bliss/` contracts and evidence |
 | Accepted Wedding Planner Phase 1 behavior | `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md` |
 | Wedding Planner product note for the current module | `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md` |
