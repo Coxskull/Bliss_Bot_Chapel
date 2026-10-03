@@ -2,9 +2,10 @@
 
 **Status:** catalog. The subscription ledger, the player-served
 picture, source-media coverage, bounded advertiser discovery, the
-contact route audit, the local batch measurement, and the marketplace
-handoff are local proofs. Every other row stays unauthorized. Hosted
-acceptance is not claimed.
+contact route audit, the local batch measurement, the marketplace
+handoff, and the human creative approval are local proofs. Every other
+row stays unauthorized. Hosted acceptance is not claimed. Conversation
+AI stays closed.
 
 Do not implement an item on this list because it appears here. The
 Bliss package must reach its required acceptance point first. After
