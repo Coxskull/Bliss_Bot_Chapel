@@ -118,6 +118,7 @@ function render(library) {
   }
   loadRoles();
   loadEvents();
+  loadDeliveryRoads();
 }
 
 async function load() {
@@ -342,6 +343,53 @@ document.querySelector("#roads").addEventListener("submit", async event => {
   } catch (error) {
     roadNotice.textContent = error.message;
     roadNotice.scrollIntoView({ block: "center" });
+  }
+});
+
+roadProspect.addEventListener("change", loadDeliveryRoads);
+
+async function loadDeliveryRoads() {
+  const select = document.querySelector("#deliveryRoad");
+  if (!select) return;
+  const previous = select.value;
+  select.replaceChildren();
+  if (!roadProspect.value) return;
+  const response = await fetch("/api/demonstrations/" + roadProspect.value);
+  if (!response.ok) return;
+  const page = await response.json();
+  (page.contactRoads || []).forEach(road => {
+    const option = document.createElement("option");
+    option.value = road.id;
+    option.textContent = road.kind + " · " + road.value;
+    option.selected = road.id === previous;
+    select.append(option);
+  });
+}
+
+document.querySelector("#delivery").addEventListener("submit", async event => {
+  event.preventDefault();
+  const deliveryNotice = document.querySelector("#deliveryNotice");
+  if (!roadProspect.value || !document.querySelector("#deliveryRoad").value) {
+    deliveryNotice.textContent = "A delivery decision needs a stored contact road.";
+    deliveryNotice.scrollIntoView({ block: "center" });
+    return;
+  }
+  deliveryNotice.textContent = "Applying the preview policy…";
+  try {
+    const page = await postJson("/api/demonstrations/" + roadProspect.value + "/delivery", {
+      roadId: document.querySelector("#deliveryRoad").value,
+      policy: document.querySelector("#deliveryPolicy").value,
+      adapter: document.querySelector("#deliveryAdapter").value,
+      authorization: document.querySelector("#deliveryAuthorization").value
+    });
+    deliveryNotice.textContent = page.businessName + ". " + page.deliveryNotice
+      + " Outreach eligible " + page.outreachEligible
+      + ". Delivery " + page.delivery + ".";
+    deliveryNotice.scrollIntoView({ block: "center" });
+    await load();
+  } catch (error) {
+    deliveryNotice.textContent = error.message;
+    deliveryNotice.scrollIntoView({ block: "center" });
   }
 });
 

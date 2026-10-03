@@ -54,11 +54,10 @@ is not this program and stays stopped on its own security finding.
 
 - A preserved business that is legitimate and still not worth a
   demonstration.
-- Eligible delivery. Phase 9 records several contact roads and a
-  suppression flag. A public road stays ineligible until Phase 16.
-  Phase 15 records a proposal only inside an approved Economics
-  envelope, as a draft on the Phase 5 ledger. That draft is not
-  accepted and nothing is sent.
+- Prospect memory in PostgreSQL. Phase 16 can mark one stored road
+  eligible for the preview adapter after the preview policy. Suppression
+  still withholds the road. The adapter prepares a copy and does not
+  transmit it. The library is still a file.
 - Acquisition events. Phase 11 records a factory batch: deterministic checks, asset counts, zero model calls, and no invented price.
 - A laboratory of persona scenarios for conversation changes.
 - Measured scale. None of the 100, 1,000, or 10,000 targets has been run.
@@ -136,7 +135,7 @@ Schema, API, queue, isolation, and provider work belong to the phase
 that needs them. Phase 8 records `PRESERVED` for a business with no
 demonstration. Phase 9 records route rows and a suppression flag. A public road stays ineligible to send. Phase 10 records recipe `overlay-1` and a player. The permanent composite remains. Phase 12 appends observable events on the prospect record. An opinion and a delivery claim are refused. Phase 13 keeps one Ask Alpha voice that answers and then advances. Phase 13 needs conversation state that
 cannot see another prospect. Phase 14 reads an accepted Economics quote and copies that amount. Phase 15 records a visitor proposal through QuoteService only when it sits inside the approved line's recommendation low and high. The new version is a draft. It is not approved and it is not accepted.
-Phase 16 needs an adapter only after eligibility exists. Phase 17 needs
+Phase 16 applies the preview policy and the preview adapter. A public road stays short of permission to send. Transmission stays NOT_SENT. Phase 17 needs
 the PostgreSQL tables. None of those tables are created by this
 reconciliation.
 

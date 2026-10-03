@@ -321,12 +321,28 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
 
         var trimmed = reason.Trim();
         var sentence = trimmed.EndsWith('.') ? trimmed : trimmed + ".";
+        current.ContactRoads ??= [];
+        current.DeliveryDecisions ??= [];
+        var hadEligible = current.ContactRoads.Any(road => road.OutreachEligible)
+            || current.DeliveryDecisions.Any(item => item.Eligibility == "ELIGIBLE");
         current.Suppressed = true;
         current.SuppressionReason = trimmed;
         foreach (var road in current.ContactRoads)
         {
             road.State = "SUPPRESSED";
             road.OutreachEligible = false;
+        }
+
+        if (hadEligible)
+        {
+            current.DeliveryDecisions.Add(new DeliveryDecisionRecord
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Eligibility = "WITHHELD",
+                Transmission = DeliveryPolicy.Transmission,
+                Notice = "Suppression comes before the adapter. Nothing is sent.",
+                DecidedAt = DateTime.UtcNow
+            });
         }
 
         current.Messages.Add(new ChatRecord
@@ -499,6 +515,51 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         return current;
     }
 
+    public DemonstrationRecord DecideDelivery(
+        string slug,
+        string? roadId,
+        string? policy,
+        string? adapter,
+        string? authorization)
+    {
+        var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
+        current.ContactRoads ??= [];
+        current.DeliveryDecisions ??= [];
+        var road = current.ContactRoads.FirstOrDefault(item =>
+            string.Equals(item.Id, (roadId ?? string.Empty).Trim(), StringComparison.Ordinal));
+        var suppressed = current.Suppressed || string.Equals(road?.State, "SUPPRESSED", StringComparison.Ordinal);
+        var assessment = DeliveryPolicy.Decide(suppressed, road is not null, policy, adapter, authorization);
+        var already = assessment.Eligible
+            && current.DeliveryDecisions.Any(item =>
+                item.RoadId == road!.Id
+                && item.Policy == assessment.Policy
+                && item.Adapter == assessment.Adapter
+                && item.Eligibility == "ELIGIBLE");
+        if (!already)
+        {
+            var copy = assessment.Eligible ? PreviewDeliveryAdapter.Prepare(current.BusinessName) : null;
+            current.DeliveryDecisions.Add(new DeliveryDecisionRecord
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                RoadId = road?.Id ?? string.Empty,
+                Policy = assessment.Policy,
+                Adapter = assessment.Adapter,
+                Eligibility = assessment.Eligibility,
+                Transmission = DeliveryPolicy.Transmission,
+                Notice = assessment.Notice,
+                PreparedCopy = copy?.Text ?? string.Empty,
+                DecidedAt = DateTime.UtcNow
+            });
+            if (assessment.Eligible && road is not null)
+            {
+                road.OutreachEligible = true;
+            }
+        }
+
+        Save(slug, current);
+        return current;
+    }
+
     public DemonstrationRecord AttachEconomicsQuote(string slug, Guid quoteId)
     {
         var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
@@ -533,7 +594,8 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             demonstration.Suppressed,
             demonstration.LastSignal,
             economics?.Amount ?? string.Empty,
-            economics?.CurrencyCode ?? string.Empty);
+            economics?.CurrencyCode ?? string.Empty,
+            (demonstration.ContactRoads ?? []).Any(road => road.OutreachEligible) && !demonstration.Suppressed);
         var turn = negotiation is null
             ? DemonstrationConversation.Reply(facts, message)
             : DemonstrationConversation.Present(

@@ -93,10 +93,24 @@ public sealed class DemonstrationRecord
     public string SuppressionReason { get; set; } = string.Empty;
     public string EconomicsQuoteId { get; set; } = string.Empty;
     public List<ContactRoadRecord> ContactRoads { get; set; } = [];
+    public List<DeliveryDecisionRecord> DeliveryDecisions { get; set; } = [];
     public List<ConceptRecord> Concepts { get; set; } = [];
     public List<ChatRecord> Messages { get; set; } = [];
     public List<AcquisitionEventRecord> Events { get; set; } = [];
     public DateTime CreatedAt { get; set; }
+}
+
+public sealed class DeliveryDecisionRecord
+{
+    public string Id { get; set; } = string.Empty;
+    public string RoadId { get; set; } = string.Empty;
+    public string Policy { get; set; } = string.Empty;
+    public string Adapter { get; set; } = string.Empty;
+    public string Eligibility { get; set; } = string.Empty;
+    public string Transmission { get; set; } = "NOT_SENT";
+    public string Notice { get; set; } = string.Empty;
+    public string PreparedCopy { get; set; } = string.Empty;
+    public DateTime DecidedAt { get; set; }
 }
 
 public sealed class AcquisitionEventRecord

@@ -158,6 +158,23 @@ public sealed class DemonstrationsController(
         }
     }
 
+    [HttpPost("{slug}/delivery")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult DecideDelivery(string slug, [FromBody] DeliveryRequest request)
+    {
+        try
+        {
+            var body = request ?? new DeliveryRequest(null, null, null, null);
+            var prospect = demonstrations.DecideDelivery(slug, body.RoadId, body.Policy, body.Adapter, body.Authorization);
+            return Ok(DetailDto(prospect));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message, outreachEligible = false, delivery = "NOT_SENT" });
+        }
+    }
+
     [HttpPost("{slug}/suppression")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
@@ -457,7 +474,7 @@ public sealed class DemonstrationsController(
             personalizationAllowed = presentation.PersonalizationAllowed,
             roadCount = demonstration.ContactRoads.Count,
             suppressed = demonstration.Suppressed,
-            outreachEligible = false,
+            outreachEligible = DeliveryEligibility.Open(demonstration),
             conceptCount = demonstration.Concepts.Count,
             pageUrl = "/demonstrations/" + demonstration.Slug,
             outreachUrl = "/outreach/" + demonstration.Slug
@@ -506,18 +523,32 @@ public sealed class DemonstrationsController(
         demonstration.LastSignal,
         demonstration.Suppressed,
         demonstration.SuppressionReason,
-        outreachEligible = false,
-        contactRoads = demonstration.ContactRoads.Select(road => new
+        outreachEligible = DeliveryEligibility.Open(demonstration),
+        contactRoads = (demonstration.ContactRoads ?? []).Select(road => new
         {
             road.Id,
             road.Kind,
             road.Value,
             road.SourceUrl,
             road.State,
-            outreachEligible = false,
+            outreachEligible = road.OutreachEligible && !demonstration.Suppressed,
             permission = ContactRoads.NotPermission,
             road.RecordedAt
         }),
+        deliveryDecisions = (demonstration.DeliveryDecisions ?? []).Select(item => new
+        {
+            item.Id,
+            item.RoadId,
+            item.Policy,
+            item.Adapter,
+            item.Eligibility,
+            item.Transmission,
+            item.Notice,
+            item.PreparedCopy,
+            item.DecidedAt
+        }),
+        deliveryNotice = (demonstration.DeliveryDecisions ?? []).LastOrDefault()?.Notice ?? string.Empty,
+        transmission = DeliveryPolicy.Transmission,
         delivery = "NOT_SENT",
         subject = demonstration.ProspectState == "PRESERVED"
             ? $"{demonstration.BusinessName} is preserved. No demonstration was manufactured and nothing was sent."
@@ -569,6 +600,14 @@ public sealed class DemonstrationsController(
 public sealed record DiscoverRequest(string? Niche, string? Market, string? BusinessName, string? PublicSourceUrl);
 public sealed record AcquisitionEventRequest(string? Kind, string? Watcher);
 public sealed record ContactRoadRequest(string? Kind, string? Value, string? SourceUrl);
+public sealed record DeliveryRequest(string? RoadId, string? Policy, string? Adapter, string? Authorization);
+
+internal static class DeliveryEligibility
+{
+    public static bool Open(DemonstrationRecord demonstration) =>
+        !demonstration.Suppressed
+        && (demonstration.ContactRoads ?? []).Any(road => road.OutreachEligible);
+}
 public sealed record SuppressionRequest(string? Reason);
 public sealed record DecisionMakerRequest(
     string? PersonName,

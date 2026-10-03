@@ -94,8 +94,11 @@ public static class DemonstrationConversation
         if (ContainsAny(normalized, "email", "e-mail", "whatsapp", "send this", "send it", "message them", "text them"))
         {
             var suppressed = facts.Suppressed ? " The prospect is suppressed." : "";
+            var preview = facts.PreviewEligible
+                ? " The preview adapter can prepare a copy. Transmission remains NOT_SENT."
+                : "";
             return new ConversationTurn(
-                "A public road is not permission to send." + suppressed + " Delivery remains NOT_SENT.",
+                "A public road is not permission to send." + suppressed + preview + " Delivery remains NOT_SENT.",
                 "ROUTE_NOT_PERMISSION",
                 false);
         }
@@ -210,4 +213,5 @@ public sealed record ProspectFacts(
     bool Suppressed = false,
     string LastSignal = "",
     string AcceptedEconomicsAmount = "",
-    string AcceptedEconomicsCurrency = "");
+    string AcceptedEconomicsCurrency = "",
+    bool PreviewEligible = false);
