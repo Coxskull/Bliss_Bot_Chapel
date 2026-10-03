@@ -13,8 +13,8 @@ discovery, the contact route audit, the local batch measurement, the
 marketplace handoff, the human creative approval, the research ledger,
 and the later rotation period are verified local proofs. Economics Phase 9
 is accepted by the owner. Historical actuals stay append-only. An empty
-history stays unrecorded. Bliss hosted acceptance stays on its own path.
-The program stays open.
+history stays unrecorded. A hosted reading stores this process posture.
+Hosted acceptance is not claimed. The program stays open.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -110,6 +110,9 @@ verified.
 - `contracts/ROTATION-PERIOD-CONTRACT.md`
 - `ECONOMICS-PHASE-ACCEPTANCE-EVIDENCE.md`
 - `contracts/ECONOMICS-PHASE-ACCEPTANCE-CONTRACT.md`
+- `HOSTED-ACCEPTANCE-EVIDENCE.md`
+- `contracts/HOSTED-ACCEPTANCE-CONTRACT.md`
+- `evidence/Alpha-Hosted-Acceptance-Report.pdf`
 - `evidence/Alpha-Economics-Phase9-Acceptance-Report.pdf`
 - `evidence/Alpha-Later-Rotation-Period-Report.pdf`
 - `evidence/Alpha-Research-Ledger-Report.pdf`
@@ -118,16 +121,17 @@ verified.
 - `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`. The ledger is
-`/operations#/ledger`. The later period is `/operations#/period`.
+`/operations#/ledger`. The later period is `/operations#/period`. The
+hosted reading is `/operations#/hosted`.
 
 ## Priority contracts
 
-Hosted Bliss acceptance stays on its acceptance path. Economics Phase 9
-owner acceptance is recorded.
+Economics Phase 9 owner acceptance is recorded. The hosted reading stores
+this process posture and does not claim hosted acceptance.
 
 | Priority | Capability | Status |
 | --- | --- | --- |
-| 1 | Bliss hosted acceptance | Separate acceptance path. Not started here |
+| 1 | Bliss hosted acceptance | Verified local proof. The reading stores this process posture. Hosted acceptance is not claimed. A local database is not a hosted database. An identity provider was not contacted. A backup drill was not run. Satisfied gates do not finish the deployment. Green does not send |
 | 2 | Economics Phase 9 owner acceptance | Accepted by the owner on 2026-10-03. Historical actuals stay append-only. An empty history stays unrecorded. A pricing rule is not changed. A settlement is not created. Green does not send |
 | 4 | Subscription ledger and factory budget | Verified local proof. A missing cost stays unrecorded. A reached ceiling degrades that scope. A review is not a purchase. Green does not send |
 | 5 | Deterministic media runtime | Verified local proof. The player is the served picture. A permanent composite is not required. QA still matches the QR and the disclosure. Green does not send |
