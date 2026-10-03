@@ -9,8 +9,9 @@ preserved. Reconciliation is recorded. The program is not verified.
 **You are here:** Phases 4–29 are verified local proofs. Phase 0 is this
 tracker. The amendment queue has no further phase. The subscription ledger,
 the player-served picture, source-media coverage, bounded advertiser
-discovery, the contact route audit, the local batch measurement, the marketplace handoff, and the human
-creative approval are verified local proofs. Bliss hosted acceptance and
+discovery, the contact route audit, the local batch measurement, the
+marketplace handoff, the human creative approval, and the research ledger
+are verified local proofs. Bliss hosted acceptance and
 Economics Phase 9 stay on their own paths. The program stays open.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
@@ -101,6 +102,9 @@ verified.
 - `contracts/MARKETPLACE-HANDOFF-CONTRACT.md`
 - `CREATIVE-APPROVAL-EVIDENCE.md`
 - `contracts/CREATIVE-APPROVAL-CONTRACT.md`
+- `LEARNING-LEDGER-EVIDENCE.md`
+- `contracts/LEARNING-LEDGER-CONTRACT.md`
+- `evidence/Alpha-Research-Ledger-Report.pdf`
 - `evidence/Alpha-Creative-Approval-Report.pdf`
 - `evidence/Alpha-Marketplace-Handoff-Report.pdf`
 - `BOT-PARTY-AMENDMENT.md`
@@ -125,3 +129,4 @@ implemented here. They stay on their acceptance paths.
 | 9 | Local batch measurement | Verified local proof. The clock and the process working set are stored. No invoice is on file. A partial failure keeps the other prospects. A leaked name is recorded. Hosted acceptance and the 15-minute target are not claimed. Green does not send |
 | 10 | Marketplace handoff | Verified local proof. A qualified advertiser and a stored creator are handed to DeterministicRuleEvaluator once. A preserved advertiser is withheld. Another tenant's row is not shown. A certificate is not opened. This is not a win. Green does not send |
 | 11 | Human creative approval | Verified local proof. A human decision stays inside an open workspace. A discovered business is not opened. Campaign ready is refused. No price is invented. Six roles are not called. A match is not written. Green does not send |
+| 12 | Research ledger | Verified local proof. A note is appended only after the laboratory graduates. No authorized traffic is on file. Research does not change production. Another prospect's note is not shown. A model is not the record. Green does not send |

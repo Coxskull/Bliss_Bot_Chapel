@@ -74,6 +74,8 @@ only through its own Engineering Contract
 | The marketplace handoff Engineering Contract | `contracts/MARKETPLACE-HANDOFF-CONTRACT.md` |
 | What a human creative decision records | `CREATIVE-APPROVAL-EVIDENCE.md` |
 | The creative approval Engineering Contract | `contracts/CREATIVE-APPROVAL-CONTRACT.md` |
+| What a research note records | `LEARNING-LEDGER-EVIDENCE.md` |
+| The research ledger Engineering Contract | `contracts/LEARNING-LEDGER-CONTRACT.md` |
 | Accepted Bliss behavior | `docs/bliss/` contracts and evidence |
 | Accepted Wedding Planner Phase 1 behavior | `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md` |
 | Wedding Planner product note for the current module | `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md` |

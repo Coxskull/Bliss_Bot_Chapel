@@ -8,7 +8,7 @@
   <meta name="description" content="Creator partnership operations, deterministic matching, human review, and campaign planning.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23123328' d='M20 2 37 11v18L20 38 3 29V11z'/%3E%3Cpath fill='none' stroke='%23a8efce' stroke-width='3' d='m11 21 6 6 12-14'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/operations/app.css">
-  <script src="/operations/app.js?v=creative-1" defer></script>
+  <script src="/operations/app.js?v=learning-1" defer></script>
   <script src="/operations/tempo.js?v=fleet-1" defer></script>
   <script src="/operations/ledger.js?v=ledger-1" defer></script>
   <script src="/operations/fuel.js?v=fuel-1" defer></script>
@@ -17,6 +17,7 @@
   <script src="/operations/measure.js?v=measure-1" defer></script>
   <script src="/operations/handoff.js?v=handoff-1" defer></script>
   <script src="/operations/creative.js?v=creative-1" defer></script>
+  <script src="/operations/learning.js?v=learning-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -51,6 +52,7 @@
         <a class="nav-item" href="#/measure" data-view="measure"><span class="nav-icon" aria-hidden="true">◷</span><span>Local batch</span></a>
         <a class="nav-item" href="#/handoff" data-view="handoff"><span class="nav-icon" aria-hidden="true">◇</span><span>Handoff</span></a>
         <a class="nav-item" href="#/creative" data-view="creative"><span class="nav-icon" aria-hidden="true">✎</span><span>Creative</span></a>
+        <a class="nav-item" href="#/learning" data-view="learning"><span class="nav-icon" aria-hidden="true">≡</span><span>Learning</span></a>
         <a class="nav-item" href="#/status" data-view="status"><span class="nav-icon" aria-hidden="true">◎</span><span>Status</span></a>
       </nav>
       <div class="sidebar-bottom">
@@ -715,6 +717,29 @@
           <section class="panel table-panel">
             <div class="panel-header"><div><p class="eyebrow">AUDIT</p><h3>Creative audit</h3></div></div>
             <div class="table-wrap" id="creative-audits"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-learning" aria-labelledby="learning-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">ONE CONSOLE</p>
+              <h2 id="learning-title">Research ledger</h2>
+              <p id="learning-notice">A research note is appended only after the laboratory graduates. No authorized traffic is on file. The note does not change production. Research does not control production. A model is not the record. Seven grooming models are not configured. This is not a traffic count. Green does not send. Delivery remains NOT_SENT.</p>
+              <p id="learning-delivery">Delivery NOT_SENT. Model calls 0.</p>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">RESEARCH</p><h3>One stored prospect</h3></div></div>
+            <form class="form-grid">
+              <label class="span-two"><span>Stored prospect</span><select id="learning-prospect"></select></label>
+            </form>
+            <div class="form-actions"><button class="primary-button" type="button" id="learning-append">Record a research note</button></div>
+            <p id="learning-result"></p>
+          </section>
+          <section class="panel table-panel">
+            <div class="panel-header"><div><p class="eyebrow">APPEND ONLY</p><h3>Notes for this prospect</h3></div></div>
+            <div class="table-wrap" id="learning-rows"></div>
           </section>
         </section>
 

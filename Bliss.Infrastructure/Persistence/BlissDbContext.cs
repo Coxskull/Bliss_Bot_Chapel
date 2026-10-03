@@ -90,6 +90,7 @@ public class BlissDbContext : DbContext
     public DbSet<BatchMeasurementRow> BatchMeasurements => Set<BatchMeasurementRow>();
     public DbSet<MarketplaceHandoffRow> MarketplaceHandoffs => Set<MarketplaceHandoffRow>();
     public DbSet<CreativeApprovalRow> CreativeApprovals => Set<CreativeApprovalRow>();
+    public DbSet<LearningNoteRow> LearningNotes => Set<LearningNoteRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
