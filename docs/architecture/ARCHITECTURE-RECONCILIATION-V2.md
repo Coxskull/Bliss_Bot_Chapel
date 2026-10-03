@@ -56,10 +56,10 @@ is not this program and stays stopped on its own security finding.
   demonstration.
 - Eligible delivery. Phase 9 records several contact roads and a
   suppression flag. A public road stays ineligible until Phase 16.
+  Phase 15 records a proposal only inside an approved Economics
+  envelope, as a draft on the Phase 5 ledger. That draft is not
+  accepted and nothing is sent.
 - Acquisition events. Phase 11 records a factory batch: deterministic checks, asset counts, zero model calls, and no invented price.
-- Negotiation inside Economics. Phase 14 lets Ask Alpha say only an accepted Economics amount. Without that result it states no number.
-- An authority envelope that lets Ask Alpha negotiate without a second
-  pricing engine.
 - A laboratory of persona scenarios for conversation changes.
 - Measured scale. None of the 100, 1,000, or 10,000 targets has been run.
 
@@ -77,9 +77,11 @@ is not this program and stays stopped on its own security finding.
    the only served picture.
 3. **Ask for the sale versus authority.** Positive advocacy can be added
    without removing the disclosure or the unverified-person rule.
-   A binding price, a reservation, and a won state wait for Economics
-   and the authority envelope. Words and system state have to agree, so
-   Ask Alpha cannot announce a package the database did not accept.
+   A binding price, a reservation, and a won state wait for an accepted
+   Economics result. Phase 15 may record a draft only between the
+   creator floor and the envelope high already stored on the approved
+   line. Words and system state have to agree, so Ask Alpha cannot
+   announce a package the database did not accept.
 4. **Do not self-gate versus required truth.** The not-sponsored
    disclosure, the unsent status, and the refusal to invent a person or
    a price stay. Those are integrity checks, not voluntary objections.
@@ -133,7 +135,7 @@ commercial commitment.
 Schema, API, queue, isolation, and provider work belong to the phase
 that needs them. Phase 8 records `PRESERVED` for a business with no
 demonstration. Phase 9 records route rows and a suppression flag. A public road stays ineligible to send. Phase 10 records recipe `overlay-1` and a player. The permanent composite remains. Phase 12 appends observable events on the prospect record. An opinion and a delivery claim are refused. Phase 13 keeps one Ask Alpha voice that answers and then advances. Phase 13 needs conversation state that
-cannot see another prospect. Phase 14 reads an accepted Economics quote and copies that amount. Phase 15 is negotiation inside Economics.
+cannot see another prospect. Phase 14 reads an accepted Economics quote and copies that amount. Phase 15 records a visitor proposal through QuoteService only when it sits inside the approved line's recommendation low and high. The new version is a draft. It is not approved and it is not accepted.
 Phase 16 needs an adapter only after eligibility exists. Phase 17 needs
 the PostgreSQL tables. None of those tables are created by this
 reconciliation.

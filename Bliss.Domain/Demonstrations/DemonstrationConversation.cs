@@ -9,6 +9,11 @@ public static class DemonstrationConversation
     public static ConversationTurn Reply(ProspectFacts facts, string message)
     {
         var raw = Answer(facts, message);
+        return Present(facts, raw with { Gear = GearFor(raw.Signal) });
+    }
+
+    public static ConversationTurn Present(ProspectFacts facts, ConversationTurn raw)
+    {
         var repeated = raw.Signal is not ("NONE" or "")
             && string.Equals(facts.LastSignal, raw.Signal, StringComparison.Ordinal);
         var reply = Address(facts) + raw.Reply;
@@ -18,7 +23,7 @@ public static class DemonstrationConversation
         }
 
         reply += " " + Advance(raw.Signal, repeated);
-        return new ConversationTurn(reply, raw.Signal, raw.HumanEscalation, GearFor(raw.Signal));
+        return new ConversationTurn(reply, raw.Signal, raw.HumanEscalation, raw.Gear);
     }
 
     private static ConversationTurn Answer(ProspectFacts facts, string message)
@@ -160,6 +165,9 @@ public static class DemonstrationConversation
         "PRICING_QUESTION" => repeated
             ? "I will record a budget only for that handoff."
             : "The next step is a human handoff.",
+        "NEGOTIATION" => repeated
+            ? "The same envelope remains."
+            : "The next step is a human approval of any draft.",
         "DECISION_MAKER_QUESTION" => repeated
             ? "I will not invent a person."
             : "The next step stays on this page. Nothing is sent.",
@@ -183,7 +191,7 @@ public static class DemonstrationConversation
     private static string GearFor(string signal) => signal switch
     {
         "HUMAN_REQUESTED" or "INTEREST" => "handoff",
-        "PRICING_QUESTION" or "ROUTE_NOT_PERMISSION" or "DECISION_MAKER_QUESTION" => "integrity",
+        "PRICING_QUESTION" or "ROUTE_NOT_PERMISSION" or "DECISION_MAKER_QUESTION" or "NEGOTIATION" => "integrity",
         _ => "teaching"
     };
 }

@@ -11,7 +11,8 @@ namespace Bliss.Api.Demonstrations;
 [Route("api/demonstrations")]
 public sealed class DemonstrationsController(
     ProspectDemonstrationService demonstrations,
-    EconomicsAcceptedPriceReader economics) : ControllerBase
+    EconomicsAcceptedPriceReader economics,
+    EconomicsNegotiationGate negotiation) : ControllerBase
 {
     [HttpPost("factory-batch")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
@@ -375,12 +376,17 @@ public sealed class DemonstrationsController(
         }
 
         AcceptedEconomicsPrice? price = null;
-        if (Guid.TryParse(prospect.EconomicsQuoteId, out var quoteId))
+        PreparedNegotiation? prepared = null;
+        if (NegotiationEnvelope.IsNegotiation(request.Text))
+        {
+            prepared = await negotiation.ResolveAsync(prospect.EconomicsQuoteId, request.Text, cancellationToken);
+        }
+        else if (Guid.TryParse(prospect.EconomicsQuoteId, out var quoteId))
         {
             price = await economics.ReadAcceptedAsync(quoteId, cancellationToken);
         }
 
-        var reply = demonstrations.Converse(slug, request.Text, price);
+        var reply = demonstrations.Converse(slug, request.Text, price, prepared);
         var current = demonstrations.Find(slug)!;
         return Ok(new
         {
