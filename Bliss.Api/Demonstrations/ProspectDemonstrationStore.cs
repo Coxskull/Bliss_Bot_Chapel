@@ -104,6 +104,10 @@ public sealed class DemonstrationRecord
     public string WeddingPlannerNotice { get; set; } = string.Empty;
     public string WeddingPlannerWorkspaceId { get; set; } = string.Empty;
     public string WeddingPlannerSessionId { get; set; } = string.Empty;
+    public string ProgressionSignal { get; set; } = string.Empty;
+    public string ProgressionNotice { get; set; } = string.Empty;
+    public string ProgressionNextAction { get; set; } = string.Empty;
+    public List<ProgressionRecord> Progressions { get; set; } = [];
     public List<ContactRoadRecord> ContactRoads { get; set; } = [];
     public List<DeliveryDecisionRecord> DeliveryDecisions { get; set; } = [];
     public List<ConceptRecord> Concepts { get; set; } = [];
@@ -123,6 +127,15 @@ public sealed class DeliveryDecisionRecord
     public string Notice { get; set; } = string.Empty;
     public string PreparedCopy { get; set; } = string.Empty;
     public DateTime DecidedAt { get; set; }
+}
+
+public sealed class ProgressionRecord
+{
+    public string Id { get; set; } = string.Empty;
+    public string Signal { get; set; } = string.Empty;
+    public string Notice { get; set; } = string.Empty;
+    public string NextAction { get; set; } = string.Empty;
+    public DateTime RecordedAt { get; set; }
 }
 
 public sealed class AcquisitionEventRecord
