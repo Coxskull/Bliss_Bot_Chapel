@@ -9,9 +9,9 @@ preserved. Reconciliation is recorded. The program is not verified.
 **You are here:** Phases 4–29 are verified local proofs. Phase 0 is this
 tracker. The amendment queue has no further phase. The subscription ledger,
 the player-served picture, source-media coverage, bounded advertiser
-discovery, the contact route audit, and the local batch measurement are
-verified local proofs. Bliss hosted acceptance and Economics Phase 9 stay
-on their own paths. The program stays open.
+discovery, the contact route audit, the local batch measurement, and the
+marketplace handoff are verified local proofs. Bliss hosted acceptance and
+Economics Phase 9 stay on their own paths. The program stays open.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -97,6 +97,8 @@ verified.
 - `LOCAL-BATCH-EVIDENCE.md`
 - `contracts/LOCAL-BATCH-CONTRACT.md`
 - `evidence/Alpha-Local-Batch-Report.pdf`
+- `MARKETPLACE-HANDOFF-EVIDENCE.md`
+- `contracts/MARKETPLACE-HANDOFF-CONTRACT.md`
 - `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`. The ledger is
@@ -117,3 +119,4 @@ implemented here. They stay on their acceptance paths.
 | 7 | Bounded advertiser discovery | Verified local proof. A public source is one stored prospect. A duplicate source is not a second row. A blank name is refused. A score below 100 stays preserved. This is not a census. A crawler did not run. Green does not send |
 | 8 | Contact route audit | Verified local proof. Suppression, stale evidence, and a missing public source withhold the route. The preview adapter does not transmit. An explicit transmission request is recorded once. Delivery stays NOT_SENT |
 | 9 | Local batch measurement | Verified local proof. The clock and the process working set are stored. No invoice is on file. A partial failure keeps the other prospects. A leaked name is recorded. Hosted acceptance and the 15-minute target are not claimed. Green does not send |
+| 10 | Marketplace handoff | Verified local proof. A qualified advertiser and a stored creator are handed to DeterministicRuleEvaluator once. A preserved advertiser is withheld. Another tenant's row is not shown. A certificate is not opened. This is not a win. Green does not send |

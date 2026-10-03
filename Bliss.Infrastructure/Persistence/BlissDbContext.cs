@@ -88,6 +88,7 @@ public class BlissDbContext : DbContext
     public DbSet<FactoryBudgetAudit> FactoryBudgetAudits => Set<FactoryBudgetAudit>();
     public DbSet<ContactRouteAuditRow> ContactRouteAudits => Set<ContactRouteAuditRow>();
     public DbSet<BatchMeasurementRow> BatchMeasurements => Set<BatchMeasurementRow>();
+    public DbSet<MarketplaceHandoffRow> MarketplaceHandoffs => Set<MarketplaceHandoffRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

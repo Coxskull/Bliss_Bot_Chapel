@@ -8,13 +8,14 @@
   <meta name="description" content="Creator partnership operations, deterministic matching, human review, and campaign planning.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23123328' d='M20 2 37 11v18L20 38 3 29V11z'/%3E%3Cpath fill='none' stroke='%23a8efce' stroke-width='3' d='m11 21 6 6 12-14'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/operations/app.css">
-  <script src="/operations/app.js?v=measure-1" defer></script>
+  <script src="/operations/app.js?v=handoff-1" defer></script>
   <script src="/operations/tempo.js?v=fleet-1" defer></script>
   <script src="/operations/ledger.js?v=ledger-1" defer></script>
   <script src="/operations/fuel.js?v=fuel-1" defer></script>
   <script src="/operations/discovery.js?v=discovery-1" defer></script>
   <script src="/operations/routes.js?v=route-1" defer></script>
   <script src="/operations/measure.js?v=measure-1" defer></script>
+  <script src="/operations/handoff.js?v=handoff-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -47,6 +48,7 @@
         <a class="nav-item" href="#/discovery" data-view="discovery"><span class="nav-icon" aria-hidden="true">△</span><span>Discovery</span></a>
         <a class="nav-item" href="#/routes" data-view="routes"><span class="nav-icon" aria-hidden="true">→</span><span>Contact route</span></a>
         <a class="nav-item" href="#/measure" data-view="measure"><span class="nav-icon" aria-hidden="true">◷</span><span>Local batch</span></a>
+        <a class="nav-item" href="#/handoff" data-view="handoff"><span class="nav-icon" aria-hidden="true">◇</span><span>Handoff</span></a>
         <a class="nav-item" href="#/status" data-view="status"><span class="nav-icon" aria-hidden="true">◎</span><span>Status</span></a>
       </nav>
       <div class="sidebar-bottom">
@@ -651,6 +653,34 @@
           <section class="panel table-panel">
             <div class="panel-header"><div><p class="eyebrow">HISTORY</p><h3>Measurement rows</h3></div></div>
             <div class="table-wrap" id="measure-rows"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-handoff" aria-labelledby="handoff-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">ONE CONSOLE</p>
+              <h2 id="handoff-title">Marketplace handoff</h2>
+              <p id="handoff-notice">A qualified advertiser and a stored creator are handed to DeterministicRuleEvaluator. The handoff does not open a match certificate. A preserved advertiser is not handed off. A duplicate pair is not a second row. Another tenant's handoff is not shown. This is not a win. Green does not send. Delivery remains NOT_SENT.</p>
+              <p id="handoff-delivery">Delivery NOT_SENT. Green does not send.</p>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">ACCEPTED EVALUATOR</p><h3>One qualified pair</h3></div></div>
+            <form class="form-grid">
+              <label class="span-two"><span>Qualified advertiser</span><select id="handoff-advertiser"></select></label>
+              <label class="span-two"><span>Stored creator</span><select id="handoff-creator"></select></label>
+            </form>
+            <div class="form-actions"><button class="primary-button" type="button" id="handoff-submit">Hand to the accepted evaluator</button></div>
+            <p id="handoff-result"></p>
+          </section>
+          <section class="panel table-panel">
+            <div class="panel-header"><div><p class="eyebrow">THIS ADVERTISER</p><h3>Handoff rows</h3></div></div>
+            <div class="table-wrap" id="handoff-rows"></div>
+          </section>
+          <section class="panel table-panel">
+            <div class="panel-header"><div><p class="eyebrow">WITHHELD</p><h3>Advertisers that stay out</h3></div></div>
+            <div class="table-wrap" id="handoff-withheld"></div>
           </section>
         </section>
 
