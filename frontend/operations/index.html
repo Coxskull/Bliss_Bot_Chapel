@@ -8,9 +8,10 @@
   <meta name="description" content="Creator partnership operations, deterministic matching, human review, and campaign planning.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23123328' d='M20 2 37 11v18L20 38 3 29V11z'/%3E%3Cpath fill='none' stroke='%23a8efce' stroke-width='3' d='m11 21 6 6 12-14'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/operations/app.css">
-  <script src="/operations/app.js?v=ledger-1" defer></script>
+  <script src="/operations/app.js?v=fuel-1" defer></script>
   <script src="/operations/tempo.js?v=fleet-1" defer></script>
   <script src="/operations/ledger.js?v=ledger-1" defer></script>
+  <script src="/operations/fuel.js?v=fuel-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -39,6 +40,7 @@
         <a class="nav-item" href="#/audit" data-view="audit"><span class="nav-icon" aria-hidden="true">≡</span><span>Audit</span></a>
         <a class="nav-item" href="#/tempo" data-view="tempo"><span class="nav-icon" aria-hidden="true">♫</span><span>Spend and pause</span></a>
         <a class="nav-item" href="#/ledger" data-view="ledger"><span class="nav-icon" aria-hidden="true">▤</span><span>Ledger and budget</span></a>
+        <a class="nav-item" href="#/fuel" data-view="fuel"><span class="nav-icon" aria-hidden="true">▣</span><span>Media fuel</span></a>
         <a class="nav-item" href="#/status" data-view="status"><span class="nav-icon" aria-hidden="true">◎</span><span>Status</span></a>
       </nav>
       <div class="sidebar-bottom">
@@ -536,6 +538,30 @@
           <section class="panel table-panel">
             <div class="panel-header"><div><p class="eyebrow">HISTORY</p><h3>Subscription audits</h3></div></div>
             <div class="table-wrap" id="ledger-audits"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-fuel" aria-labelledby="fuel-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">ONE CONSOLE</p>
+              <h2 id="fuel-title">Source media fuel and coverage</h2>
+              <p id="fuel-notice">Market coverage counts stored qualified slices that have a fingerprint and provenance. A missing market is not listed. Duplicates are not coverage. The fuel gauge counts stored clips. A calendar week is not configured. None was invented. This is not a census. Green does not send. Delivery remains NOT_SENT.</p>
+              <p>A copyrighted podcast is not downloaded. A count that is not in the stored clips is not shown.</p>
+              <p id="fuel-delivery">Delivery NOT_SENT. Green does not send.</p>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">STORED CLIPS</p><h3>Fuel gauge</h3></div></div>
+            <div class="table-wrap" id="fuel-facts"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">STORED MARKETS</p><h3>Coverage</h3></div></div>
+            <div class="table-wrap" id="fuel-markets"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">INTEGRITY</p><h3>Withheld slices</h3></div></div>
+            <div class="table-wrap" id="fuel-withheld"></div>
           </section>
         </section>
 
