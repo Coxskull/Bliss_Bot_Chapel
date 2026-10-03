@@ -91,6 +91,7 @@ public class BlissDbContext : DbContext
     public DbSet<MarketplaceHandoffRow> MarketplaceHandoffs => Set<MarketplaceHandoffRow>();
     public DbSet<CreativeApprovalRow> CreativeApprovals => Set<CreativeApprovalRow>();
     public DbSet<LearningNoteRow> LearningNotes => Set<LearningNoteRow>();
+    public DbSet<RotationPeriodRow> RotationPeriods => Set<RotationPeriodRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
