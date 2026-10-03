@@ -84,6 +84,8 @@ only through its own Engineering Contract
 | The hosted acceptance reading Engineering Contract | `contracts/HOSTED-ACCEPTANCE-CONTRACT.md` |
 | What a coverage week stores | `COVERAGE-WEEK-EVIDENCE.md` |
 | The coverage week Engineering Contract | `contracts/COVERAGE-WEEK-CONTRACT.md` |
+| What a marketplace reading stores | `MARKETPLACE-METRICS-EVIDENCE.md` |
+| The marketplace metrics Engineering Contract | `contracts/MARKETPLACE-METRICS-CONTRACT.md` |
 | Accepted Bliss behavior | `docs/bliss/` contracts and evidence |
 | Accepted Wedding Planner Phase 1 behavior | `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md` |
 | Wedding Planner product note for the current module | `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md` |
