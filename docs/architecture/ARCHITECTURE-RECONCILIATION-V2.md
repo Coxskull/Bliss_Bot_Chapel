@@ -45,8 +45,8 @@ is not this program and stays stopped on its own security finding.
   It is not a queued multi-tenant conversation platform.
 - Economics can recommend and record negotiation history. Ask Alpha reads
   an accepted quote amount and states no number when that result is absent.
-- The operations console can show Bliss, Wedding Planner, and Economics.
-  It is not yet a spend and pause control for acquisition.
+- The operations console can show Bliss, Wedding Planner, and Economics,
+  and can pause one acquisition lane without stopping the others.
 - Prospect rows, clip metadata, and factory batches are rows in the
   Bliss PostgreSQL database. The video and QR files stay on disk.
 
@@ -54,9 +54,9 @@ is not this program and stays stopped on its own security finding.
 
 - A preserved business that is legitimate and still not worth a
   demonstration.
-- Spend and pause controls on the operations console. Phase 20 runs
-  persona scenarios against Ask Alpha and does not edit production
-  conversation. This is not a scale claim.
+- Green, yellow, and red progression on the prospect. Phase 21 can
+  pause one lane. It does not advance a prospect, and green still does
+  not send. This is not a scale claim.
 - Acquisition events. Phase 11 records a factory batch: deterministic checks, asset counts, zero model calls, and no invented price.
 - Measured scale. None of the 100, 1,000, or 10,000 targets has been run.
 
@@ -133,7 +133,7 @@ Schema, API, queue, isolation, and provider work belong to the phase
 that needs them. Phase 8 records `PRESERVED` for a business with no
 demonstration. Phase 9 records route rows and a suppression flag. A public road stays ineligible to send. Phase 10 records recipe `overlay-1` and a player. The permanent composite remains. Phase 12 appends observable events on the prospect record. An opinion and a delivery claim are refused. Phase 13 keeps one Ask Alpha voice that answers and then advances. Phase 13 needs conversation state that
 cannot see another prospect. Phase 14 reads an accepted Economics quote and copies that amount. Phase 15 records a visitor proposal through QuoteService only when it sits inside the approved line's recommendation low and high. The new version is a draft. It is not approved and it is not accepted.
-Phase 16 applies the preview policy and the preview adapter. A public road stays short of permission to send. Transmission stays NOT_SENT. Phase 17 adds `ProspectMemories`, `SourceClipMemories`, and `FactoryBatchMemories` on `BlissDbContext`. Phase 18 records a rematch notice by calling `DeterministicRuleEvaluator`. An approved alternate is not a win, and a missing opportunity keeps the advertiser. Phase 19 opens the existing Wedding Planner workspace only when Economics has accepted a result and an advertiser is already on file. The inherited message names that result and plans no campaign. Phase 20 runs the conversation laboratory against the production Ask Alpha replies. A failing scenario is the regression. The laboratory does not write a prospect. Phase 21 needs auditable spend and pause controls on the existing operations console.
+Phase 16 applies the preview policy and the preview adapter. A public road stays short of permission to send. Transmission stays NOT_SENT. Phase 17 adds `ProspectMemories`, `SourceClipMemories`, and `FactoryBatchMemories` on `BlissDbContext`. Phase 18 records a rematch notice by calling `DeterministicRuleEvaluator`. An approved alternate is not a win, and a missing opportunity keeps the advertiser. Phase 19 opens the existing Wedding Planner workspace only when Economics has accepted a result and an advertiser is already on file. The inherited message names that result and plans no campaign. Phase 20 runs the conversation laboratory against the production Ask Alpha replies. A failing scenario is the regression. The laboratory does not write a prospect. Phase 21 records lane tempo on the existing operations console. One paused lane does not stop the others. A ceiling is an operational limit, not an Economics price. Green does not send. The Bot Party amendment queues Phases 24–29 and does not start them.
 
 ## Acceptance
 

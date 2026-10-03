@@ -6,8 +6,9 @@ intelligence.
 **Program status:** future engineering program. Blueprint v2 is
 preserved. Reconciliation is recorded. The program is not verified.
 
-**You are here:** Phases 4–20 are verified local proofs. Phase 0 is this
-tracker. The next build, when a change is authorized, is Phase 21.
+**You are here:** Phases 4–21 are verified local proofs. Phase 0 is this
+tracker. The next build, when a change is authorized, is Phase 22.
+The Bot Party amendment is queued as Phases 24–29 and is not started.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -36,9 +37,15 @@ verified.
 | 18 | Bliss rematch when the economics do not fit | Verified | `DeterministicRuleEvaluator` stays the matching authority. No approved alternate keeps the advertiser. Delivery stays NOT_SENT |
 | 19 | Wedding Planner wakes after commercial progression | Verified | An accepted Economics result can open the existing workspace. No accepted result leaves the planner asleep. No campaign is planned. Delivery stays NOT_SENT |
 | 20 | Conversation laboratory and regression | Verified | Ten persona scenarios run against Ask Alpha. A failure blocks the change. Production conversation is not edited. Delivery stays NOT_SENT |
-| 21 | Spend and pause controls on the operations console | Next. Not started | Auditable limits. No second Mission Control product |
-| 22 | Grooming and external research | Future | Production events first. Research cannot change production |
+| 21 | Spend and pause controls on the operations console | Verified | One console. One paused lane leaves the others moving. Green does not send. Delivery stays NOT_SENT. No second Mission Control product |
+| 22 | Grooming and external research | Next. Not started | Production events first. Research cannot change production |
 | 23 | Scale proofs for recipes and conversations | Future | 100, then 1,000, then 10,000. Measure. Do not claim |
+| 24 | Green, yellow, and red progression on the prospect | Queued. Not started | Green moves to the next authorized action and does not send. Yellow is preserved. Red stops the prohibited action and keeps the record |
+| 25 | Flow control for legitimate volume | Queued. Not started | Preserve and queue. Do not discard a legitimate prospect because a downstream lane is slower |
+| 26 | Independent fleet lanes | Queued. Not started | Concurrent fleets. A broken lane does not stop the others. Phase 21 only pauses a lane |
+| 27 | Marketplace balance signals | Queued. Not started | Advertiser and creator pressure. Do not invent the counts |
+| 28 | Balanced creative inventory | Queued. Not started | Pairs of 2, 4, or 6. Creator approval still governs density |
+| 29 | Rotation abundance | Queued. Not started | Creator approval. Do not require one advertiser per theoretical slot |
 
 ## Open conflicts
 
@@ -47,7 +54,7 @@ verified.
 - Selling language must not outrun Economics, Bliss, or the unsent rule.
 - Required disclosures stay. They are not optional self-gating.
 
-## Evidence already accepted for Phases 4–20
+## Evidence already accepted for Phases 4–21
 
 - `PROSPECT-DEMONSTRATION-EVIDENCE.md`
 - `ADVERTISER-DISCOVERY-EVIDENCE.md`
@@ -65,5 +72,7 @@ verified.
 - `BLISS-REMATCH-EVIDENCE.md`
 - `WEDDING-PLANNER-WAKE-EVIDENCE.md`
 - `CONVERSATION-LABORATORY-EVIDENCE.md`
+- `SPEND-PAUSE-EVIDENCE.md`
+- `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`.

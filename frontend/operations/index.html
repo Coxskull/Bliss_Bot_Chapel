@@ -8,7 +8,8 @@
   <meta name="description" content="Creator partnership operations, deterministic matching, human review, and campaign planning.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23123328' d='M20 2 37 11v18L20 38 3 29V11z'/%3E%3Cpath fill='none' stroke='%23a8efce' stroke-width='3' d='m11 21 6 6 12-14'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/operations/app.css">
-  <script src="/operations/app.js" defer></script>
+  <script src="/operations/app.js?v=tempo-1" defer></script>
+  <script src="/operations/tempo.js?v=tempo-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -35,6 +36,7 @@
         <a class="nav-item" href="#/inventory" data-view="inventory"><span class="nav-icon" aria-hidden="true">▦</span><span>Inventory</span></a>
         <a class="nav-item" href="#/economics" data-view="economics"><span class="nav-icon" aria-hidden="true">◈</span><span>Economics</span></a>
         <a class="nav-item" href="#/audit" data-view="audit"><span class="nav-icon" aria-hidden="true">≡</span><span>Audit</span></a>
+        <a class="nav-item" href="#/tempo" data-view="tempo"><span class="nav-icon" aria-hidden="true">♫</span><span>Spend and pause</span></a>
         <a class="nav-item" href="#/status" data-view="status"><span class="nav-icon" aria-hidden="true">◎</span><span>Status</span></a>
       </nav>
       <div class="sidebar-bottom">
@@ -433,6 +435,48 @@
           </div>
           <p class="verify-result" id="verify-audit-result" hidden></p>
           <div class="panel table-panel"><div class="table-wrap" id="audit-content"></div></div>
+        </section>
+
+        <section class="view" id="view-tempo" aria-labelledby="tempo-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">ONE CONSOLE</p>
+              <h2 id="tempo-title">Spend and pause</h2>
+              <p id="tempo-notice">One operations console. A paused lane does not stop the others. Green does not send. Delivery remains NOT_SENT.</p>
+            </div>
+          </div>
+          <div class="panel table-panel"><div class="table-wrap" id="tempo-lanes"></div></div>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">AUDIT</p><h3>Record one lane</h3></div></div>
+            <form id="tempo-form" class="form-grid">
+              <label><span>Lane</span>
+                <select name="lane" required>
+                  <option value="DISCOVERY">Discovery</option>
+                  <option value="VERIFICATION">Verification</option>
+                  <option value="ROAD_FINDING">Road finding</option>
+                  <option value="POLICY">Policy</option>
+                  <option value="OUTREACH" selected>Outreach</option>
+                  <option value="CREATOR_DISCOVERY">Creator discovery</option>
+                </select>
+              </label>
+              <label><span>Tempo</span>
+                <select name="tempo" required>
+                  <option value="FULL">Full</option>
+                  <option value="REDUCED">Reduced</option>
+                  <option value="STOPPED" selected>Stopped</option>
+                </select>
+              </label>
+              <label><span>Spend ceiling amount</span><input name="ceilingAmount" inputmode="decimal" autocomplete="off" placeholder="Leave blank. None is invented."></label>
+              <label><span>Spend ceiling currency</span><input name="ceilingCurrency" maxlength="3" autocomplete="off" placeholder="Leave blank"></label>
+              <label class="span-two"><span>Reason</span><textarea name="reason" maxlength="300" required placeholder="Why this lane changes"></textarea></label>
+              <div class="form-actions span-two"><small>A blank ceiling records no number. A recorded ceiling is an operational limit, not an Economics price. Green does not send. Delivery remains NOT_SENT.</small><button class="primary-button" type="submit">Record the lane tempo</button></div>
+            </form>
+            <p id="tempo-result" class="tempo-result"></p>
+          </section>
+          <section class="panel table-panel">
+            <div class="panel-header"><div><p class="eyebrow">HISTORY</p><h3>Lane tempo audits</h3></div></div>
+            <div class="table-wrap" id="tempo-audits"></div>
+          </section>
         </section>
 
         <section class="view" id="view-status" aria-labelledby="status-title">
