@@ -51,6 +51,32 @@ public sealed class DemonstrationsController(
         });
     }
 
+    [HttpGet("scale-proof")]
+    [AllowAnonymous]
+    public ActionResult ScaleProofReport()
+    {
+        var report = ScaleProof.MeasureAll();
+        return Ok(new
+        {
+            report.Passed,
+            report.Notice,
+            report.Cost,
+            report.FactoryTarget,
+            report.AiCalls,
+            report.ProductionChanged,
+            report.Delivery,
+            rungs = report.Rungs.Select(item => new
+            {
+                item.Target,
+                item.Measured,
+                item.Passed,
+                item.Claimed,
+                item.ElapsedMilliseconds,
+                item.Failure
+            })
+        });
+    }
+
     [HttpGet("conversation-laboratory")]
     [AllowAnonymous]
     public ActionResult ConversationLaboratoryReport()
