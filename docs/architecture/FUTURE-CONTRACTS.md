@@ -1,8 +1,8 @@
 # Future acquisition contracts
 
 **Status:** catalog. The subscription ledger, the player-served
-picture, source-media coverage, and bounded advertiser discovery are
-local proofs. Every other row stays unauthorized.
+picture, source-media coverage, bounded advertiser discovery, and the
+contact route audit are local proofs. Every other row stays unauthorized.
 
 Do not implement an item on this list because it appears here. The
 Bliss package must reach its required acceptance point first. After
@@ -21,7 +21,7 @@ of this list is not permission to start.
 | Factory Budget Controller | Daily, monthly, provider, and prospect ceilings; selective behavior at the threshold | Local proof beside the ledger. A reached ceiling degrades that scope. Generation spend is still not authorized |
 | Fishing Fleet advertiser discovery | Inexpensive discovery of established local and regional businesses | Local proof on `/operations#/discovery`. A duplicate source is not a second prospect. A crawler did not run. This row does not open enrichment |
 | Opportunity Intelligence Engine | Light research, score, priority, production-investment decision | Advertiser discovery. Separate from decision-maker confidence |
-| Decision-Maker & Contact Intelligence | Buying role, evidence, confidence, freshness, contact fallback, provider abstraction | A discovered and scored business. Enrichment spend only after the ledger review |
+| Decision-Maker & Contact Intelligence | Buying role, evidence, confidence, freshness, contact fallback, provider abstraction | Local proof on `/operations#/routes`. A public address is not permission to send. A transmission request is recorded once. This row does not open a transmitter |
 | Alpha Source Media Library | Qualified reusable clips of about 15 seconds, uploaded by the human producer across cities, cultures, and countries | None for the catalog itself. See `PROSPECT-DEMONSTRATION-EXAMPLE.md` |
 | Source Media Integrity Engine | Fingerprints, duplicate refusal, and provenance on the stored slice | Local proof. A qualified slice without a fingerprint or provenance is withheld. This row does not open a download |
 | Media Supply & Productivity Control | Fuel gauge and market coverage from stored clips | Local proof on `/operations#/fuel`. A missing market is not listed. A calendar week is not configured |
