@@ -33,4 +33,15 @@ The new proofs are `ClosedModelsTests` and `ClosedModelsApiTests`.
 
 `/operations#/models` reads the stored model-call count and the laboratory.
 
+On this database the research notes are 1. Model calls are 0. The
+laboratory is 10 of 10. `models-reading-1` stores that reading.
+Configured models are 0. Models configured, authorized traffic, and
+production changed stay no. The same key was not stored again. A
+request to configure a grooming model was refused. The learning page
+still says seven grooming models are not configured. Delivery is
+`NOT_SENT`.
+
+The recording is `closed_models_stay_unconfigured.mp4`.
+The report is `docs/architecture/evidence/Alpha-Closed-Models-Report.pdf`.
+
 The contract is `docs/architecture/contracts/CLOSED-MODELS-CONTRACT.md`.

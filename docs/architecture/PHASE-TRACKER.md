@@ -123,6 +123,7 @@ verified.
 - `contracts/MARKETPLACE-METRICS-CONTRACT.md`
 - `CLOSED-MODELS-EVIDENCE.md`
 - `contracts/CLOSED-MODELS-CONTRACT.md`
+- `evidence/Alpha-Closed-Models-Report.pdf`
 - `evidence/Alpha-Marketplace-Metrics-Report.pdf`
 - `evidence/Alpha-Coverage-Week-Report.pdf`
 - `evidence/Alpha-Hosted-Acceptance-Report.pdf`
