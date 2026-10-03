@@ -338,6 +338,22 @@ public sealed class DemonstrationsController(
         }
     }
 
+    [HttpPost("{slug}/progression")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult ReadProgression(string slug)
+    {
+        try
+        {
+            var prospect = demonstrations.RememberProgression(slug);
+            return Ok(DetailDto(prospect));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message, delivery = "NOT_SENT", greenMeansSend = false, erased = false });
+        }
+    }
+
     [HttpPost("{slug}/suppression")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
@@ -717,6 +733,19 @@ public sealed class DemonstrationsController(
         rematchScore = demonstration.BlissRematchScore,
         plannerStatus = demonstration.WeddingPlannerStatus,
         plannerNotice = demonstration.WeddingPlannerNotice,
+        progressionSignal = demonstration.ProgressionSignal,
+        progressionNotice = demonstration.ProgressionNotice,
+        progressionNextAction = demonstration.ProgressionNextAction,
+        greenMeansSend = false,
+        erased = false,
+        progressions = (demonstration.Progressions ?? []).Select(item => new
+        {
+            item.Id,
+            item.Signal,
+            item.Notice,
+            item.NextAction,
+            item.RecordedAt
+        }),
         plannerWorkspaceId = demonstration.WeddingPlannerWorkspaceId,
         plannerSessionId = demonstration.WeddingPlannerSessionId,
         transmission = DeliveryPolicy.Transmission,

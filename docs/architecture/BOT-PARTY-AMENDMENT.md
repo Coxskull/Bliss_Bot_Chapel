@@ -96,5 +96,6 @@ change a creative layout, or create inventory rotations.
 
 Phase 22 counts production events and stages an untrusted excerpt
 without changing the prospect. Phase 23 measures the in-memory rungs
-and does not claim stored scale. The next authorized build after
-Phase 23 is Phase 24.
+and does not claim stored scale. Phase 24 records green, yellow, and
+red on the prospect. Green is not a send. The next authorized build
+after Phase 24 is Phase 25.

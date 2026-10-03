@@ -80,6 +80,10 @@ function render(page) {
   if (rematchNotice) rematchNotice.textContent = page.rematchNotice || "";
   const plannerNotice = document.querySelector("#plannerNotice");
   if (plannerNotice) plannerNotice.textContent = page.plannerNotice || "";
+  const progressionNotice = document.querySelector("#progressionNotice");
+  if (progressionNotice && page.progressionNotice) {
+    progressionNotice.textContent = page.progressionNotice + " " + page.businessName + " stays " + page.prospectState + ".";
+  }
   factRows.forEach(([label, value]) => {
     const block = document.createElement("div");
     const strong = document.createElement("strong");
@@ -198,6 +202,22 @@ document.querySelector("#rematch").addEventListener("submit", async event => {
   notice.textContent = response.ok
     ? body.rematchNotice
     : (body.error || "Bliss kept the advertiser. Delivery remains NOT_SENT.");
+  notice.scrollIntoView({ block: "center" });
+});
+
+document.querySelector("#progression").addEventListener("submit", async event => {
+  event.preventDefault();
+  const notice = document.querySelector("#progressionNotice");
+  notice.textContent = "Reading the progression…";
+  const response = await fetch("/api/demonstrations/" + slug + "/progression", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}"
+  });
+  const body = await response.json();
+  notice.textContent = response.ok
+    ? body.progressionNotice + " " + body.businessName + " stays " + body.prospectState + "."
+    : (body.error || "The prospect record is preserved. Delivery remains NOT_SENT.");
   notice.scrollIntoView({ block: "center" });
 });
 

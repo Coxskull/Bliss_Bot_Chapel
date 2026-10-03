@@ -418,6 +418,33 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         return current;
     }
 
+    public DemonstrationRecord RememberProgression(string slug)
+    {
+        var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
+        var roads = current.ContactRoads ?? [];
+        var decision = ProspectProgression.Decide(
+            current.BusinessName,
+            current.ProspectState,
+            current.Suppressed,
+            current.SuppressionReason,
+            roads.Count > 0,
+            !current.Suppressed && roads.Any(road => road.OutreachEligible));
+        current.ProgressionSignal = decision.Signal;
+        current.ProgressionNotice = decision.Notice;
+        current.ProgressionNextAction = decision.NextAction;
+        current.Progressions ??= [];
+        current.Progressions.Add(new ProgressionRecord
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            Signal = decision.Signal,
+            Notice = decision.Notice,
+            NextAction = decision.NextAction,
+            RecordedAt = DateTime.UtcNow
+        });
+        Save(slug, current);
+        return current;
+    }
+
     public DemonstrationRecord? Find(string slug) =>
         store.Read().Demonstrations.FirstOrDefault(x => x.Slug == slug);
 
