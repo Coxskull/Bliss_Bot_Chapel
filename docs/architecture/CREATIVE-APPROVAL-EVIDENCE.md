@@ -35,4 +35,16 @@ The new proofs are `CreativeApprovalTests` and
 
 `/operations#/creative` reads one open workspace at a time.
 
+On the live library, Sunrise Wellness Co. holds the human title
+Table card. The status is `HUMAN_APPROVED`. Campaign ready, match
+written, and price invented stay no. Model calls are 0. The
+conversation in that workspace is the stored note Sunrise private
+note. The audit is `CREATIVE_DECIDED`. The same decision was not
+written again. TEST Dental Manila shows no decision, no conversation,
+and no creative audit. Casa Verde and Mesa Norte are not in the
+workspace list. The match list stayed at 7. Delivery is `NOT_SENT`.
+
+The recording is `creative_approval_human_not_campaign_ready.mp4`.
+The report is `docs/architecture/evidence/Alpha-Creative-Approval-Report.pdf`.
+
 The contract is `docs/architecture/contracts/CREATIVE-APPROVAL-CONTRACT.md`.

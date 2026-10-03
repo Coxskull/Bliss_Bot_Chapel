@@ -101,6 +101,7 @@ verified.
 - `contracts/MARKETPLACE-HANDOFF-CONTRACT.md`
 - `CREATIVE-APPROVAL-EVIDENCE.md`
 - `contracts/CREATIVE-APPROVAL-CONTRACT.md`
+- `evidence/Alpha-Creative-Approval-Report.pdf`
 - `evidence/Alpha-Marketplace-Handoff-Report.pdf`
 - `BOT-PARTY-AMENDMENT.md`
 
