@@ -87,6 +87,7 @@ builder.Services.AddScoped<LaneTempoService>();
 builder.Services.AddScoped<SubscriptionLedgerService>();
 builder.Services.AddScoped<ContactRouteService>();
 builder.Services.AddScoped<BatchMeasurementService>();
+builder.Services.AddScoped<MarketplaceHandoffService>();
 builder.Services.AddSingleton(authentication);
 builder.Services.AddSingleton(runtime);
 builder.Services.AddSingleton(posture);

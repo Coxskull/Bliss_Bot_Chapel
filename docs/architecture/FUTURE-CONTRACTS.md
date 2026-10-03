@@ -2,8 +2,9 @@
 
 **Status:** catalog. The subscription ledger, the player-served
 picture, source-media coverage, bounded advertiser discovery, the
-contact route audit, and the local batch measurement are local proofs.
-Every other row stays unauthorized. Hosted acceptance is not claimed.
+contact route audit, the local batch measurement, and the marketplace
+handoff are local proofs. Every other row stays unauthorized. Hosted
+acceptance is not claimed.
 
 Do not implement an item on this list because it appears here. The
 Bliss package must reach its required acceptance point first. After
@@ -36,7 +37,7 @@ of this list is not permission to start.
 | Advertiser Demand Map | Prospective interest versus authorized budget, and remaining creator demand | Qualification signals |
 | Demand-Driven Creator Discovery | Fishing priority from demand, not random recruiting | Demand map |
 | Creator Prospect Presentation | Creator-facing demonstration | Creator discovery and the same cost rules as advertiser demos |
-| Acquisition → Bliss Integration | Hand qualified advertisers and creators to existing Bliss matching | Both sides of the marketplace. Does not replace `DeterministicRuleEvaluator` |
+| Acquisition → Bliss Integration | Hand qualified advertisers and creators to existing Bliss matching | Local proof on `/operations#/handoff`. The accepted evaluator is called once. A certificate is not opened. This is not a win |
 
 Creative DNA, Wedding Planner conversation, and the six logical creative
 responsibilities stay on the Wedding Planner phase sequence already

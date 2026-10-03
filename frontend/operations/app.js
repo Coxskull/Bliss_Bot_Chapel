@@ -1605,11 +1605,11 @@ function bindNavigation() {
 }
 function route() {
   const parts=(location.hash.replace(/^#\/?/,"")||"overview").split("/").filter(Boolean);
-  const valid=["overview","creators","matches","review","placement","wedding-planner","partners","inventory","economics","audit","tempo","ledger","fuel","discovery","routes","measure","status"];
+  const valid=["overview","creators","matches","review","placement","wedding-planner","partners","inventory","economics","audit","tempo","ledger","fuel","discovery","routes","measure","handoff","status"];
   const view=valid.includes(parts[0])?parts[0]:"overview";
   $$(".view").forEach(x=>x.classList.toggle("active",x.id===`view-${view}`));
   $$(".nav-item[data-view]").forEach(x=>{const active=x.dataset.view===view;x.classList.toggle("active",active);if(active)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});
-  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner foundation",partners:"Partner directory",inventory:"Inventory and campaigns",economics:"Economics reference data",audit:"Operations audit",tempo:"Spend and pause",ledger:"Ledger and budget",fuel:"Media fuel",discovery:"Advertiser discovery",routes:"Contact route",measure:"Local batch",status:"Workspace status"};
+  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner foundation",partners:"Partner directory",inventory:"Inventory and campaigns",economics:"Economics reference data",audit:"Operations audit",tempo:"Spend and pause",ledger:"Ledger and budget",fuel:"Media fuel",discovery:"Advertiser discovery",routes:"Contact route",measure:"Local batch",handoff:"Marketplace handoff",status:"Workspace status"};
   $("#page-title").textContent=titles[view];
   toggleMobileNav(false);
   if(view==="tempo"&&typeof loadLaneTempo==="function")loadLaneTempo().catch(error=>toast(error.message,true));
@@ -1618,6 +1618,7 @@ function route() {
   if(view==="discovery"&&typeof loadDiscovery==="function")loadDiscovery().catch(error=>toast(error.message,true));
   if(view==="routes"&&typeof loadRoutes==="function")loadRoutes().catch(error=>toast(error.message,true));
   if(view==="measure"&&typeof loadMeasure==="function")loadMeasure().catch(error=>toast(error.message,true));
+  if(view==="handoff"&&typeof loadHandoff==="function")loadHandoff().catch(error=>toast(error.message,true));
   if(!state.loaded)return;
   if(view==="creators"&&parts[1])openCreator(parts[1]);
   else if(view==="matches"&&parts[1])openMatch(parts[1]);
