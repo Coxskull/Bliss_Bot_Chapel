@@ -81,8 +81,7 @@ public static class DemonstrationConversation
         if (ContainsAny(normalized, "price", "pricing", "cost", "how much", "budget", "quote"))
         {
             return new ConversationTurn(
-                "I can discuss the shape of a podcast placement, and I cannot invent a price. "
-                + "Custom pricing and a binding quote stay with a human. If you share an approximate budget, timing, and market, I will record them for that handoff.",
+                EconomicsPriceSpeech.PricingReply(facts.AcceptedEconomicsAmount, facts.AcceptedEconomicsCurrency),
                 "PRICING_QUESTION",
                 false);
         }
@@ -201,4 +200,6 @@ public sealed record ProspectFacts(
     bool PersonalizationAllowed = false,
     string Freshness = "UNRECORDED",
     bool Suppressed = false,
-    string LastSignal = "");
+    string LastSignal = "",
+    string AcceptedEconomicsAmount = "",
+    string AcceptedEconomicsCurrency = "");

@@ -483,7 +483,23 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         return path.StartsWith(root, StringComparison.Ordinal) && File.Exists(path) ? path : null;
     }
 
-    public ChatRecord Converse(string slug, string message)
+    public DemonstrationRecord RememberEconomicsQuote(string slug, Guid quoteId)
+    {
+        var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
+        current.EconomicsQuoteId = quoteId.ToString("D");
+        current.Messages.Add(new ChatRecord
+        {
+            Role = "ASSISTANT",
+            Text = "An accepted Economics quote is linked. Ask Alpha will read that result when you ask the price. I cannot invent a price. Delivery remains NOT_SENT.",
+            Signal = "ECONOMICS_LINKED",
+            Gear = "integrity",
+            At = DateTime.UtcNow
+        });
+        Save(slug, current);
+        return current;
+    }
+
+    public ChatRecord Converse(string slug, string message, AcceptedEconomicsPrice? economics = null)
     {
         var demonstration = Find(slug) ?? throw new InvalidOperationException("Demonstration not found.");
         var presentation = DecisionMakerEvidence.Present(
@@ -503,7 +519,9 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             presentation.PersonalizationAllowed,
             presentation.Freshness,
             demonstration.Suppressed,
-            demonstration.LastSignal);
+            demonstration.LastSignal,
+            economics?.Amount ?? string.Empty,
+            economics?.CurrencyCode ?? string.Empty);
         var turn = DemonstrationConversation.Reply(facts, message);
         var visitor = new ChatRecord
         {
