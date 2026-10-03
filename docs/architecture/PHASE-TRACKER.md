@@ -115,6 +115,7 @@ verified.
 - `contracts/HOSTED-ACCEPTANCE-CONTRACT.md`
 - `COVERAGE-WEEK-EVIDENCE.md`
 - `contracts/COVERAGE-WEEK-CONTRACT.md`
+- `evidence/Alpha-Coverage-Week-Report.pdf`
 - `evidence/Alpha-Hosted-Acceptance-Report.pdf`
 - `evidence/Alpha-Economics-Phase9-Acceptance-Report.pdf`
 - `evidence/Alpha-Later-Rotation-Period-Report.pdf`

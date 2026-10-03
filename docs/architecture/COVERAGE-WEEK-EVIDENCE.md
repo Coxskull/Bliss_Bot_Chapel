@@ -30,4 +30,14 @@ The new proofs are `CoverageWeekTests` and `CoverageWeekApiTests`.
 
 `/operations#/week` reads the stored markets and the fuel gauge.
 
+On this library the stored market is Panama City. Qualified slices are 1.
+Submitted slices are 2. Fuel is SHORTAGE. Withheld markets are empty.
+`coverage-week-1` stores that reading. Census is no. Slices changed is
+no. The same key was not stored again. A request to add a missing
+market was refused. The fuel qualified count stayed 1. The fuel page
+still says a calendar week is not configured. Delivery is `NOT_SENT`.
+
+The recording is `coverage_week_stores_measured_market.mp4`.
+The report is `docs/architecture/evidence/Alpha-Coverage-Week-Report.pdf`.
+
 The contract is `docs/architecture/contracts/COVERAGE-WEEK-CONTRACT.md`.
