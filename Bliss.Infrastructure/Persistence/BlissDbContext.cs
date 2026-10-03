@@ -79,6 +79,8 @@ public class BlissDbContext : DbContext
     public DbSet<ProspectMemory> ProspectMemories => Set<ProspectMemory>();
     public DbSet<SourceClipMemory> SourceClipMemories => Set<SourceClipMemory>();
     public DbSet<FactoryBatchMemory> FactoryBatchMemories => Set<FactoryBatchMemory>();
+    public DbSet<LaneTempoState> LaneTempoStates => Set<LaneTempoState>();
+    public DbSet<LaneTempoAudit> LaneTempoAudits => Set<LaneTempoAudit>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
