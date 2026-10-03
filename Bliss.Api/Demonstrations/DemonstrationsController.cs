@@ -13,7 +13,8 @@ public sealed class DemonstrationsController(
     ProspectDemonstrationService demonstrations,
     EconomicsAcceptedPriceReader economics,
     EconomicsNegotiationGate negotiation,
-    BlissRematchGate rematch) : ControllerBase
+    BlissRematchGate rematch,
+    WeddingPlannerWakeGate planner) : ControllerBase
 {
     [HttpPost("factory-batch")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
@@ -192,6 +193,32 @@ public sealed class DemonstrationsController(
             var decision = await rematch.SelectAsync(request?.OpportunityId, request?.CurrentCreatorId, cancellationToken);
             var prospect = demonstrations.RememberRematch(slug, decision);
             return Ok(DetailDto(prospect));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message, delivery = "NOT_SENT" });
+        }
+    }
+
+    [HttpPost("{slug}/wedding-planner")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> WakeWeddingPlanner(
+        string slug,
+        [FromBody] WeddingPlannerWakeRequest? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var prospect = demonstrations.Find(slug);
+            if (prospect is null)
+            {
+                return NotFound(new { error = "Prospect not found.", delivery = "NOT_SENT" });
+            }
+
+            var decision = await planner.DecideAsync(prospect, request?.AdvertiserId, cancellationToken);
+            var current = demonstrations.RememberWake(slug, decision);
+            return Ok(DetailDto(current));
         }
         catch (InvalidOperationException ex)
         {
@@ -576,6 +603,10 @@ public sealed class DemonstrationsController(
         rematchStatus = demonstration.BlissRematchStatus,
         rematchCreatorName = demonstration.BlissRematchCreatorName,
         rematchScore = demonstration.BlissRematchScore,
+        plannerStatus = demonstration.WeddingPlannerStatus,
+        plannerNotice = demonstration.WeddingPlannerNotice,
+        plannerWorkspaceId = demonstration.WeddingPlannerWorkspaceId,
+        plannerSessionId = demonstration.WeddingPlannerSessionId,
         transmission = DeliveryPolicy.Transmission,
         delivery = "NOT_SENT",
         subject = demonstration.ProspectState == "PRESERVED"
@@ -630,6 +661,7 @@ public sealed record AcquisitionEventRequest(string? Kind, string? Watcher);
 public sealed record ContactRoadRequest(string? Kind, string? Value, string? SourceUrl);
 public sealed record DeliveryRequest(string? RoadId, string? Policy, string? Adapter, string? Authorization);
 public sealed record RematchRequest(Guid? OpportunityId, Guid? CurrentCreatorId);
+public sealed record WeddingPlannerWakeRequest(Guid? AdvertiserId);
 
 internal static class DeliveryEligibility
 {

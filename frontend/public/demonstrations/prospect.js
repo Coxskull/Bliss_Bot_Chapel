@@ -75,8 +75,11 @@ function render(page) {
   }
   if (page.suppressed) factRows.push(["Suppression", page.suppressionReason]);
   if (page.rematchNotice) factRows.push(["Bliss rematch", page.rematchNotice]);
+  if (page.plannerNotice) factRows.push(["Wedding Planner", page.plannerNotice]);
   const rematchNotice = document.querySelector("#rematchNotice");
   if (rematchNotice) rematchNotice.textContent = page.rematchNotice || "";
+  const plannerNotice = document.querySelector("#plannerNotice");
+  if (plannerNotice) plannerNotice.textContent = page.plannerNotice || "";
   factRows.forEach(([label, value]) => {
     const block = document.createElement("div");
     const strong = document.createElement("strong");
@@ -195,6 +198,22 @@ document.querySelector("#rematch").addEventListener("submit", async event => {
   notice.textContent = response.ok
     ? body.rematchNotice
     : (body.error || "Bliss kept the advertiser. Delivery remains NOT_SENT.");
+  notice.scrollIntoView({ block: "center" });
+});
+
+document.querySelector("#planner").addEventListener("submit", async event => {
+  event.preventDefault();
+  const notice = document.querySelector("#plannerNotice");
+  notice.textContent = "Checking commercial progression…";
+  const response = await fetch("/api/demonstrations/" + slug + "/wedding-planner", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}"
+  });
+  const body = await response.json();
+  notice.textContent = response.ok
+    ? body.plannerNotice
+    : (body.error || "Wedding Planner stays asleep. Delivery remains NOT_SENT.");
   notice.scrollIntoView({ block: "center" });
 });
 
