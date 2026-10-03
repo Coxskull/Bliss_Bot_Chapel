@@ -121,6 +121,43 @@ public sealed class DemonstrationsController(
         });
     }
 
+    [HttpGet("creative-inventory")]
+    [AllowAnonymous]
+    public async Task<ActionResult> CreativeInventoryBoard(CancellationToken cancellationToken)
+    {
+        var slots = await database.AdInventorySlots.AsNoTracking()
+            .Select(item => new StoredSlot(item.ContentItem.Title, item.SlotType))
+            .ToListAsync(cancellationToken);
+        var board = CreativeInventory.ReadStored(slots);
+        return Ok(InventoryBody(board));
+    }
+
+    [HttpPost("creative-inventory")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult ReadCreativeInventory([FromBody] CreativeInventoryRequest? request)
+    {
+        try
+        {
+            var decision = CreativeInventory.Decide(request?.Pair, request?.CreatorApproved, request?.Stack == true);
+            return Ok(new
+            {
+                decision.Notice,
+                decision.Result,
+                decision.Pair,
+                decision.Accepted,
+                decision.StackRefused,
+                decision.GreenMeansSend,
+                decision.Delivery,
+                decision.SlotsChanged
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message, delivery = "NOT_SENT", greenMeansSend = false, slotsChanged = false });
+        }
+    }
+
     [HttpGet("scale-proof")]
     [AllowAnonymous]
     public ActionResult ScaleProofReport()
@@ -665,6 +702,18 @@ public sealed class DemonstrationsController(
         });
     }
 
+    private static object InventoryBody(StoredInventory board) => new
+    {
+        board.Notice,
+        board.Stored,
+        board.Rotation,
+        board.SlotCount,
+        board.GreenMeansSend,
+        board.Delivery,
+        board.SlotsChanged,
+        contents = board.Contents.Select(item => new { item.Title, item.Line })
+    };
+
     private static object BatchDto(FactoryBatchRecord batch) => new
     {
         batch.Id,
@@ -868,6 +917,8 @@ public sealed class DemonstrationsController(
 }
 
 public sealed record FlowRequest(int? Capacity);
+
+public sealed record CreativeInventoryRequest(int? Pair, bool? CreatorApproved, bool? Stack);
 public sealed record GroomingResearchRequest(string? Excerpt);
 public sealed record DiscoverRequest(string? Niche, string? Market, string? BusinessName, string? PublicSourceUrl);
 public sealed record AcquisitionEventRequest(string? Kind, string? Watcher);
