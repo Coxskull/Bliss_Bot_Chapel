@@ -8,11 +8,12 @@
   <meta name="description" content="Creator partnership operations, deterministic matching, human review, and campaign planning.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23123328' d='M20 2 37 11v18L20 38 3 29V11z'/%3E%3Cpath fill='none' stroke='%23a8efce' stroke-width='3' d='m11 21 6 6 12-14'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/operations/app.css">
-  <script src="/operations/app.js?v=discovery-1" defer></script>
+  <script src="/operations/app.js?v=route-1" defer></script>
   <script src="/operations/tempo.js?v=fleet-1" defer></script>
   <script src="/operations/ledger.js?v=ledger-1" defer></script>
   <script src="/operations/fuel.js?v=fuel-1" defer></script>
   <script src="/operations/discovery.js?v=discovery-1" defer></script>
+  <script src="/operations/routes.js?v=route-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -43,6 +44,7 @@
         <a class="nav-item" href="#/ledger" data-view="ledger"><span class="nav-icon" aria-hidden="true">▤</span><span>Ledger and budget</span></a>
         <a class="nav-item" href="#/fuel" data-view="fuel"><span class="nav-icon" aria-hidden="true">▣</span><span>Media fuel</span></a>
         <a class="nav-item" href="#/discovery" data-view="discovery"><span class="nav-icon" aria-hidden="true">△</span><span>Discovery</span></a>
+        <a class="nav-item" href="#/routes" data-view="routes"><span class="nav-icon" aria-hidden="true">→</span><span>Contact route</span></a>
         <a class="nav-item" href="#/status" data-view="status"><span class="nav-icon" aria-hidden="true">◎</span><span>Status</span></a>
       </nav>
       <div class="sidebar-bottom">
@@ -588,6 +590,39 @@
           <section class="panel">
             <div class="panel-header"><div><p class="eyebrow">REFUSED</p><h3>Withheld rows</h3></div></div>
             <div class="table-wrap" id="discovery-withheld"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-routes" aria-labelledby="route-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">ONE CONSOLE</p>
+              <h2 id="route-title">Contact route</h2>
+              <p id="route-notice">The contact route reads stored evidence, freshness, suppression, and the preview adapter. A public address is not permission to send. A missing person is not invented. This is not a census. Transmission stays NOT_SENT. Green does not send.</p>
+              <p>A stale or missing public source withholds the person. Suppression comes first. The preview adapter prepares a copy and does not transmit it.</p>
+              <p id="route-delivery">Delivery NOT_SENT. Green does not send.</p>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">STORED PROSPECTS</p><h3>Route reading</h3></div></div>
+            <div class="table-wrap" id="route-facts"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">EACH PROSPECT</p><h3>Routes</h3></div></div>
+            <div class="table-wrap" id="route-rows"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">AUDIT</p><h3>Record one transmission request</h3></div></div>
+            <form id="route-transmission-form" class="form-grid">
+              <label class="span-two"><span>Explicit words</span><textarea name="authorization" maxlength="160" required>Send the message</textarea></label>
+              <label class="span-two"><span>Idempotency key</span><input name="idempotencyKey" maxlength="80" autocomplete="off" value="operator-transmission-1" required></label>
+              <div class="form-actions span-two"><small>The request is recorded once. No adapter transmits it. Green does not send. Delivery remains NOT_SENT.</small><button class="primary-button" type="submit">Record the transmission request</button></div>
+            </form>
+            <p id="route-result"></p>
+          </section>
+          <section class="panel table-panel">
+            <div class="panel-header"><div><p class="eyebrow">HISTORY</p><h3>Transmission audits</h3></div></div>
+            <div class="table-wrap" id="route-audits"></div>
           </section>
         </section>
 
