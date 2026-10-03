@@ -107,6 +107,7 @@ verified.
 - `contracts/LEARNING-LEDGER-CONTRACT.md`
 - `ROTATION-PERIOD-EVIDENCE.md`
 - `contracts/ROTATION-PERIOD-CONTRACT.md`
+- `evidence/Alpha-Later-Rotation-Period-Report.pdf`
 - `evidence/Alpha-Research-Ledger-Report.pdf`
 - `evidence/Alpha-Creative-Approval-Report.pdf`
 - `evidence/Alpha-Marketplace-Handoff-Report.pdf`

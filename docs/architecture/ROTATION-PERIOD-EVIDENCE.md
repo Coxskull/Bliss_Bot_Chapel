@@ -32,4 +32,17 @@ The new proofs are `RotationPeriodTests` and `RotationPeriodApiTests`.
 
 `/operations#/period` reads the stored advertisers and the stored slots.
 
+On the live library there are 4 stored advertisers and 8 stored slots.
+Harbor Audio Labs, Sunrise Wellness Co., TEST Dental Manila, and TEST
+Restaurant Santo Domingo are the advertisers already on file. Pair 6
+stores `later-period-1` as theoretical 6, placed 4, open 2, stored
+slots 8, creator Approved, census no, slots changed no. Revenue says
+no row is on file. The same key was not stored again, and the open
+slots were not filled. `later-period-withheld` keeps open 2 and leaves
+the approved row Approved. Advertisers stayed 4. Slots stayed 8.
+Delivery is `NOT_SENT`.
+
+The recording is `later_period_open_slots_stay_empty.mp4`.
+The report is `docs/architecture/evidence/Alpha-Later-Rotation-Period-Report.pdf`.
+
 The contract is `docs/architecture/contracts/ROTATION-PERIOD-CONTRACT.md`.
