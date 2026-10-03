@@ -92,7 +92,7 @@ change a creative layout, or create inventory rotations.
 | 26 | Independent fleet lanes beyond a pause control | Verified. A broken lane does not stop the ocean |
 | 27 | Marketplace balance signals, without invented counts | Verified. Stored rows only |
 | 28 | Balanced creative inventory: pairs of 2, 4, or 6 | Verified. The stack is refused |
-| 29 | Rotation abundance under creator approval | Next. Not started |
+| 29 | Rotation abundance under creator approval | Verified. Open slots remain |
 
 Phase 22 counts production events and stages an untrusted excerpt
 without changing the prospect. Phase 23 measures the in-memory rungs
@@ -105,7 +105,9 @@ from stored rows. A missing count stays unrecorded. Revenue and
 inventory stay unrecorded. Phase 28 accepts a balanced pair of 2, 4,
 or 6 when the creator approves that density. A two-over-four stack is
 refused. Stored slots stay as stored rows. The next authorized build
-after Phase 28 is Phase 29.
+after Phase 28 is Phase 29. Phase 29 reads one rotation pass. Open
+slots remain. One advertiser is not required for every theoretical
+slot. The amendment queue has no further phase. The program stays open.
 
 ## What Phase 26 implements
 
@@ -143,3 +145,15 @@ an advertiser to a slot, crawl, send, or invent a price. Green does
 not send. Delivery remains `NOT_SENT`.
 
 Phase 28 does not require one advertiser for every theoretical slot.
+
+## What Phase 29 implements
+
+Phase 29 reads one rotation on `/acquisition/rotation.html`. The
+theoretical slots are a balanced pair of 2, 4, or 6. Placed names are
+the stored advertisers. Open slots stay open. The reading does not
+invent an advertiser to fill a slot. Creator approval accepts the
+rotation or withholds it. A later period is not configured. Stored
+slots stay unchanged. The reading does not crawl, send, or invent a
+price. Green does not send. Delivery remains `NOT_SENT`.
+
+Phase 29 does not add another phase to this queue.

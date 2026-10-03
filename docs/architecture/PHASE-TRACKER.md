@@ -6,8 +6,8 @@ intelligence.
 **Program status:** future engineering program. Blueprint v2 is
 preserved. Reconciliation is recorded. The program is not verified.
 
-**You are here:** Phases 4–28 are verified local proofs. Phase 0 is this
-tracker. The next build, when a change is authorized, is Phase 29.
+**You are here:** Phases 4–29 are verified local proofs. Phase 0 is this
+tracker. The amendment queue has no further phase. The program stays open.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -44,7 +44,7 @@ verified.
 | 26 | Independent fleet lanes | Verified | The Fishing Fleet and the Creator Fleet are read from the stored lane tempos. A broken lane does not stop the ocean. Bliss Chapel stays the matching middle. Green does not send |
 | 27 | Marketplace balance signals | Verified | Advertiser pressure and creator pressure are counts of stored rows. A missing count stays unrecorded. Revenue and inventory stay unrecorded. None is invented. Green does not send |
 | 28 | Balanced creative inventory | Verified | A pair is 2, 4, or 6. A two-over-four stack is refused. Creator approval governs density. Stored slots are not rewritten. Green does not send |
-| 29 | Rotation abundance | Next. Not started | Creator approval. Do not require one advertiser per theoretical slot |
+| 29 | Rotation abundance | Verified | One rotation pass. Open slots remain. One advertiser is not required for every theoretical slot. Creator approval governs the rotation. Green does not send |
 
 ## Open conflicts
 
@@ -53,7 +53,7 @@ verified.
 - Selling language must not outrun Economics, Bliss, or the unsent rule.
 - Required disclosures stay. They are not optional self-gating.
 
-## Evidence already accepted for Phases 4–28
+## Evidence already accepted for Phases 4–29
 
 - `PROSPECT-DEMONSTRATION-EVIDENCE.md`
 - `ADVERTISER-DISCOVERY-EVIDENCE.md`
@@ -79,6 +79,7 @@ verified.
 - `FLEET-LANES-EVIDENCE.md`
 - `MARKETPLACE-BALANCE-EVIDENCE.md`
 - `CREATIVE-INVENTORY-EVIDENCE.md`
+- `ROTATION-ABUNDANCE-EVIDENCE.md`
 - `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`.

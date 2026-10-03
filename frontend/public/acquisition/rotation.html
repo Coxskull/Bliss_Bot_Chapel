@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rotation abundance</title>
+  <link rel="stylesheet" href="/demonstrations/alpha-demo.css">
+  <style>
+    .hero h1 { font-size: 30px; }
+    #notice, #period, #counts, #abundance, #result, #names, #unchanged { font-size: 16px; line-height: 1.4; max-width: 900px; }
+    #rotation-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 12px 0; }
+    #rotation-form label { display: grid; gap: 4px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/acquisition/index.html"><span class="mark">A</span><span><strong>ALPHA</strong><small>ROTATION</small></span></a>
+    <a href="/acquisition/index.html">Phase tracker</a>
+  </header>
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <p class="status">ROTATION ABUNDANCE</p>
+        <h1>Open slots remain. None are invented.</h1>
+      </div>
+    </section>
+    <p id="notice">Reading the stored advertisers.</p>
+    <p id="period"></p>
+    <p id="counts"></p>
+    <p id="abundance"></p>
+    <p id="names"></p>
+    <form id="rotation-form">
+      <label>Balanced pair
+        <select name="pair" required>
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="6" selected>6</option>
+        </select>
+      </label>
+      <label>Creator approval
+        <select name="creatorApproved" required>
+          <option value="yes" selected>Yes</option>
+          <option value="no">No</option>
+        </select>
+      </label>
+      <button type="submit">Read the rotation</button>
+    </form>
+    <p id="result"></p>
+    <p id="unchanged"></p>
+  </main>
+  <script src="/acquisition/rotation.js?v=rotation-1" defer></script>
+</body>
+</html>
