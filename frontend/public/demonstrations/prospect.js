@@ -161,6 +161,24 @@ async function load() {
   }).catch(() => {});
 }
 
+document.querySelector("#economics").addEventListener("submit", async event => {
+  event.preventDefault();
+  const notice = document.querySelector("#economicsNotice");
+  notice.textContent = "Reading Economics…";
+  const response = await fetch("/api/demonstrations/" + slug + "/economics-price", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ quoteId: document.querySelector("#quoteId").value.trim() })
+  });
+  const body = await response.json();
+  if (!response.ok) {
+    notice.textContent = body.error || "Economics has no accepted result.";
+    return;
+  }
+  notice.textContent = "Economics accepted " + body.spoken + ". That is the only number Ask Alpha can say. Delivery " + body.delivery + ".";
+  bubble("ASSISTANT", "An accepted Economics quote is linked. Ask Alpha will read that result when you ask the price.");
+});
+
 form.addEventListener("submit", async event => {
   event.preventDefault();
   const text = draft.value.trim();

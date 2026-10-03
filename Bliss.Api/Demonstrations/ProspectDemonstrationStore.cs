@@ -91,6 +91,7 @@ public sealed class DemonstrationRecord
     public string LastSignal { get; set; } = string.Empty;
     public bool Suppressed { get; set; }
     public string SuppressionReason { get; set; } = string.Empty;
+    public string EconomicsQuoteId { get; set; } = string.Empty;
     public List<ContactRoadRecord> ContactRoads { get; set; } = [];
     public List<ConceptRecord> Concepts { get; set; } = [];
     public List<ChatRecord> Messages { get; set; } = [];

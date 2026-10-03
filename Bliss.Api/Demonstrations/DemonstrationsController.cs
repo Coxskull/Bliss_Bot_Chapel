@@ -9,7 +9,9 @@ namespace Bliss.Api.Demonstrations;
 
 [ApiController]
 [Route("api/demonstrations")]
-public sealed class DemonstrationsController(ProspectDemonstrationService demonstrations) : ControllerBase
+public sealed class DemonstrationsController(
+    ProspectDemonstrationService demonstrations,
+    EconomicsAcceptedPriceReader economics) : ControllerBase
 {
     [HttpPost("factory-batch")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
@@ -322,12 +324,47 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         return path is null ? NotFound() : PhysicalFile(path, "image/png");
     }
 
+    [HttpPost("{slug}/economics-price")]
+    [AllowAnonymous]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> ReadEconomicsPrice(string slug, [FromBody] EconomicsPriceRequest request, CancellationToken cancellationToken)
+    {
+        if (demonstrations.Find(slug) is null)
+        {
+            return NotFound();
+        }
+
+        if (!Guid.TryParse(request?.QuoteId, out var quoteId) || quoteId == Guid.Empty)
+        {
+            return BadRequest(new { error = EconomicsPriceSpeech.MissingQuote });
+        }
+
+        var price = await economics.ReadAcceptedAsync(quoteId, cancellationToken);
+        var spoken = EconomicsPriceSpeech.Speak(price?.Amount, price?.CurrencyCode);
+        if (price is null || spoken is null)
+        {
+            return BadRequest(new { error = EconomicsPriceSpeech.MissingResult });
+        }
+
+        demonstrations.RememberEconomicsQuote(slug, quoteId);
+        return Ok(new
+        {
+            quoteId,
+            amount = price.Amount,
+            currency = price.CurrencyCode,
+            spoken,
+            voice = DemonstrationConversation.Voice,
+            delivery = "NOT_SENT"
+        });
+    }
+
     [HttpPost("{slug}/messages")]
     [AllowAnonymous]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
-    public ActionResult Message(string slug, [FromBody] VisitorMessageRequest request)
+    public async Task<ActionResult> Message(string slug, [FromBody] VisitorMessageRequest request, CancellationToken cancellationToken)
     {
-        if (demonstrations.Find(slug) is null)
+        var prospect = demonstrations.Find(slug);
+        if (prospect is null)
         {
             return NotFound();
         }
@@ -337,7 +374,13 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
             return BadRequest(new { error = "Write a message of 1 to 1000 characters." });
         }
 
-        var reply = demonstrations.Converse(slug, request.Text);
+        AcceptedEconomicsPrice? price = null;
+        if (Guid.TryParse(prospect.EconomicsQuoteId, out var quoteId))
+        {
+            price = await economics.ReadAcceptedAsync(quoteId, cancellationToken);
+        }
+
+        var reply = demonstrations.Converse(slug, request.Text, price);
         var current = demonstrations.Find(slug)!;
         return Ok(new
         {
@@ -534,3 +577,4 @@ public sealed record DecisionMakerRequest(
 public sealed record StudioSliceRequest(string? Market, string? Country, int Seconds);
 public sealed record ProduceRequest(Guid? SourceClipId, int? ConceptCount);
 public sealed record VisitorMessageRequest(string Text);
+public sealed record EconomicsPriceRequest(string? QuoteId);

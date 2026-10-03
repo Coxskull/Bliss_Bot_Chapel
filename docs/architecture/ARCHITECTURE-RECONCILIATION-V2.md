@@ -43,8 +43,8 @@ is not this program and stays stopped on its own security finding.
   It is not yet a recipe runtime.
 - The conversation is one Ask Alpha surface with deterministic answers.
   It is not a queued multi-tenant conversation platform.
-- Economics can recommend and record negotiation history. Ask Alpha does
-  not yet read those results, and it correctly refuses to invent a price.
+- Economics can recommend and record negotiation history. Ask Alpha reads
+  an accepted quote amount and states no number when that result is absent.
 - The operations console can show Bliss, Wedding Planner, and Economics.
   It is not yet a spend and pause control for acquisition.
 - The prospect store is durable for a local library. It is a file, not
@@ -57,7 +57,7 @@ is not this program and stays stopped on its own security finding.
 - Eligible delivery. Phase 9 records several contact roads and a
   suppression flag. A public road stays ineligible until Phase 16.
 - Acquisition events. Phase 11 records a factory batch: deterministic checks, asset counts, zero model calls, and no invented price.
-- Price answers that read Economics. Phase 13 is one Ask Alpha voice: it answers, then advances, and it does not invent a person, a price, or a win.
+- Negotiation inside Economics. Phase 14 lets Ask Alpha say only an accepted Economics amount. Without that result it states no number.
 - An authority envelope that lets Ask Alpha negotiate without a second
   pricing engine.
 - A laboratory of persona scenarios for conversation changes.
@@ -133,7 +133,7 @@ commercial commitment.
 Schema, API, queue, isolation, and provider work belong to the phase
 that needs them. Phase 8 records `PRESERVED` for a business with no
 demonstration. Phase 9 records route rows and a suppression flag. A public road stays ineligible to send. Phase 10 records recipe `overlay-1` and a player. The permanent composite remains. Phase 12 appends observable events on the prospect record. An opinion and a delivery claim are refused. Phase 13 keeps one Ask Alpha voice that answers and then advances. Phase 13 needs conversation state that
-cannot see another prospect. Phase 14 needs a read from Economics.
+cannot see another prospect. Phase 14 reads an accepted Economics quote and copies that amount. Phase 15 is negotiation inside Economics.
 Phase 16 needs an adapter only after eligibility exists. Phase 17 needs
 the PostgreSQL tables. None of those tables are created by this
 reconciliation.

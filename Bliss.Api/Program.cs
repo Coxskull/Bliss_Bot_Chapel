@@ -78,6 +78,7 @@ builder.Services.AddBlissInfrastructure(builder.Configuration);
 builder.Services.AddSingleton<ProspectDemonstrationStore>();
 builder.Services.AddSingleton<DemonstrationVideoStudio>();
 builder.Services.AddSingleton<ProspectDemonstrationService>();
+builder.Services.AddScoped<EconomicsAcceptedPriceReader>();
 builder.Services.AddSingleton(authentication);
 builder.Services.AddSingleton(runtime);
 builder.Services.AddSingleton(posture);
