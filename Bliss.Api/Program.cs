@@ -84,6 +84,7 @@ builder.Services.AddScoped<EconomicsNegotiationGate>();
 builder.Services.AddScoped<BlissRematchGate>();
 builder.Services.AddScoped<WeddingPlannerWakeGate>();
 builder.Services.AddScoped<LaneTempoService>();
+builder.Services.AddScoped<SubscriptionLedgerService>();
 builder.Services.AddSingleton(authentication);
 builder.Services.AddSingleton(runtime);
 builder.Services.AddSingleton(posture);

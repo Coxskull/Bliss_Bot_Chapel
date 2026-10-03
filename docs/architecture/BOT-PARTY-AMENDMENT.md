@@ -157,3 +157,13 @@ slots stay unchanged. The reading does not crawl, send, or invent a
 price. Green does not send. Delivery remains `NOT_SENT`.
 
 Phase 29 does not add another phase to this queue.
+
+## What the ledger contract implements
+
+The first priority contract after this queue persists the subscription
+register and four factory ceilings on `/operations#/ledger`. A missing
+cost stays unrecorded. A reached ceiling degrades only that scope. A
+review is not a purchase. The contract does not crawl, send, or invent
+a price. Green does not send. Delivery remains `NOT_SENT`.
+
+The ledger contract does not add another phase to this queue.

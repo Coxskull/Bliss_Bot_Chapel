@@ -57,7 +57,9 @@ only through its own Engineering Contract
 | What the abundance amendment queues and does not authorize | `BOT-PARTY-AMENDMENT.md` |
 | What Alpha already pays for, and whether a new subscription is allowed | `SUBSCRIPTION-LEDGER.md` |
 | What a future contract must contain before code is written | `ENGINEERING-CONTRACT-RULE.md` |
-| Which future contracts exist, and that none are open | `FUTURE-CONTRACTS.md` |
+| Which future contracts exist, and which one local proof is open | `FUTURE-CONTRACTS.md` |
+| What the subscription ledger and factory budget persist | `LEDGER-BUDGET-EVIDENCE.md` |
+| The ledger and budget Engineering Contract | `contracts/SUBSCRIPTION-LEDGER-CONTRACT.md` |
 | Accepted Bliss behavior | `docs/bliss/` contracts and evidence |
 | Accepted Wedding Planner Phase 1 behavior | `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md` |
 | Wedding Planner product note for the current module | `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md` |
