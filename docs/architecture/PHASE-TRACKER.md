@@ -6,9 +6,9 @@ intelligence.
 **Program status:** future engineering program. Blueprint v2 is
 preserved. Reconciliation is recorded. The program is not verified.
 
-**You are here:** Phases 4–24 are verified local proofs. Phase 0 is this
-tracker. The next build, when a change is authorized, is Phase 25.
-Phases 26–29 stay queued and are not started.
+**You are here:** Phases 4–25 are verified local proofs. Phase 0 is this
+tracker. The next build, when a change is authorized, is Phase 26.
+Phases 27–29 stay queued and are not started.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -41,8 +41,8 @@ verified.
 | 22 | Grooming and external research | Verified | Production events come first. An external excerpt is untrusted and does not change the prospect. Delivery stays NOT_SENT |
 | 23 | Scale proofs for recipes and conversations | Verified | Measured 100, 1,000, and 10,000 repeated in-memory checks. A passed check is not a claim of stored prospects or sends. The 15-minute factory target is not claimed |
 | 24 | Green, yellow, and red progression on the prospect | Verified | Green moves to the next authorized action and does not send. Yellow keeps the record. Red stops the prohibited action and keeps the business |
-| 25 | Flow control for legitimate volume | Next. Not started | Preserve and queue. Do not discard a legitimate prospect because a downstream lane is slower |
-| 26 | Independent fleet lanes | Queued. Not started | Concurrent fleets. A broken lane does not stop the others. Phase 21 only pauses a lane |
+| 25 | Flow control for legitimate volume | Verified | A slower downstream lane keeps the excess queued. None are discarded. Green does not send. Delivery stays NOT_SENT |
+| 26 | Independent fleet lanes | Next. Not started | Concurrent fleets. A broken lane does not stop the others. Phase 21 only pauses a lane |
 | 27 | Marketplace balance signals | Queued. Not started | Advertiser and creator pressure. Do not invent the counts |
 | 28 | Balanced creative inventory | Queued. Not started | Pairs of 2, 4, or 6. Creator approval still governs density |
 | 29 | Rotation abundance | Queued. Not started | Creator approval. Do not require one advertiser per theoretical slot |
@@ -54,7 +54,7 @@ verified.
 - Selling language must not outrun Economics, Bliss, or the unsent rule.
 - Required disclosures stay. They are not optional self-gating.
 
-## Evidence already accepted for Phases 4–24
+## Evidence already accepted for Phases 4–25
 
 - `PROSPECT-DEMONSTRATION-EVIDENCE.md`
 - `ADVERTISER-DISCOVERY-EVIDENCE.md`
@@ -76,6 +76,7 @@ verified.
 - `GROOMING-RESEARCH-EVIDENCE.md`
 - `SCALE-PROOF-EVIDENCE.md`
 - `PROSPECT-PROGRESSION-EVIDENCE.md`
+- `FLOW-CONTROL-EVIDENCE.md`
 - `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`.
