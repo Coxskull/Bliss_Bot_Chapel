@@ -2,8 +2,9 @@
 
 ## Result
 
-Phase 9 historical learning is implemented and verified. It is pending
-owner acceptance.
+Phase 9 historical learning is implemented and verified. The owner
+accepted it on 2026-10-03. Automatic repricing and settlement stay
+unauthorized. An empty history stays unrecorded.
 
 ## Delivered
 
