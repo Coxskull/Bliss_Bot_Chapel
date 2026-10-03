@@ -37,4 +37,6 @@ Recording a daily ceiling of 25 USD with recorded spend of 25 USD
 degrades the daily scope and leaves the monthly scope open. An
 incomplete enrichment proposal is refused. Delivery remains `NOT_SENT`.
 
+The recording is `ledger_unrecorded_cost_then_one_scope_degrades.mp4`.
+The report is `docs/architecture/evidence/Alpha-Subscription-Ledger-Report.pdf`.
 The contract is `docs/architecture/contracts/SUBSCRIPTION-LEDGER-CONTRACT.md`.
