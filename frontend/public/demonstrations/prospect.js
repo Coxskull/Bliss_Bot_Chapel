@@ -42,7 +42,9 @@ function render(page) {
       ? "No demonstration was manufactured"
       : "Get More Customers in " + page.market + " with Podcast Advertising";
   const roadLine = page.contactRoads && page.contactRoads.length
-    ? " Public roads stay ineligible. A public road is not permission to send."
+    ? (page.outreachEligible
+      ? " A public road is not permission to send."
+      : " Public roads stay ineligible. A public road is not permission to send.")
     : "";
   const suppressedLine = page.suppressed
     ? " " + page.businessName + " is suppressed. " + page.suppressionReason + "."
@@ -71,7 +73,7 @@ function render(page) {
   if (page.publicSourceUrl) factRows.push(["Public source", page.publicSourceUrl]);
   if (page.contactRoads && page.contactRoads.length) {
     factRows.push(["Public roads", page.contactRoads.map(road => road.kind + " " + road.value + " (" + road.state + ")").join("; ")]);
-    factRows.push(["Outreach", "Not eligible"]);
+    factRows.push(["Outreach", page.outreachEligible ? "Preview eligible" : "Not eligible"]);
   }
   if (page.suppressed) factRows.push(["Suppression", page.suppressionReason]);
   if (page.rematchNotice) factRows.push(["Bliss rematch", page.rematchNotice]);
