@@ -37,6 +37,10 @@ The new proofs are `ContactRouteAuditTests` and `ContactRouteApiTests`.
 ## Browser path
 
 `/operations#/routes` reads the stored prospects and the transmission
-audits. A business that is not stored is absent.
+audits. A business that is not stored is absent. The words "Send the
+message" are recorded once. A second request with the same key writes
+nothing.
 
+The recording is `contact_route_records_one_unsent_request.mp4`.
+The report is `docs/architecture/evidence/Alpha-Contact-Route-Report.pdf`.
 The contract is `docs/architecture/contracts/CONTACT-ROUTE-CONTRACT.md`.
