@@ -6,8 +6,8 @@ intelligence.
 **Program status:** future engineering program. Blueprint v2 is
 preserved. Reconciliation is recorded. The program is not verified.
 
-**You are here:** Phases 4–21 are verified local proofs. Phase 0 is this
-tracker. The next build, when a change is authorized, is Phase 22.
+**You are here:** Phases 4–22 are verified local proofs. Phase 0 is this
+tracker. The next build, when a change is authorized, is Phase 23.
 The Bot Party amendment is queued as Phases 24–29 and is not started.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
@@ -38,8 +38,8 @@ verified.
 | 19 | Wedding Planner wakes after commercial progression | Verified | An accepted Economics result can open the existing workspace. No accepted result leaves the planner asleep. No campaign is planned. Delivery stays NOT_SENT |
 | 20 | Conversation laboratory and regression | Verified | Ten persona scenarios run against Ask Alpha. A failure blocks the change. Production conversation is not edited. Delivery stays NOT_SENT |
 | 21 | Spend and pause controls on the operations console | Verified | One console. One paused lane leaves the others moving. Green does not send. Delivery stays NOT_SENT. No second Mission Control product |
-| 22 | Grooming and external research | Next. Not started | Production events first. Research cannot change production |
-| 23 | Scale proofs for recipes and conversations | Future | 100, then 1,000, then 10,000. Measure. Do not claim |
+| 22 | Grooming and external research | Verified | Production events come first. An external excerpt is untrusted and does not change the prospect. Delivery stays NOT_SENT |
+| 23 | Scale proofs for recipes and conversations | Next. Not started | 100, then 1,000, then 10,000. Measure. Do not claim |
 | 24 | Green, yellow, and red progression on the prospect | Queued. Not started | Green moves to the next authorized action and does not send. Yellow is preserved. Red stops the prohibited action and keeps the record |
 | 25 | Flow control for legitimate volume | Queued. Not started | Preserve and queue. Do not discard a legitimate prospect because a downstream lane is slower |
 | 26 | Independent fleet lanes | Queued. Not started | Concurrent fleets. A broken lane does not stop the others. Phase 21 only pauses a lane |
@@ -54,7 +54,7 @@ verified.
 - Selling language must not outrun Economics, Bliss, or the unsent rule.
 - Required disclosures stay. They are not optional self-gating.
 
-## Evidence already accepted for Phases 4–21
+## Evidence already accepted for Phases 4–22
 
 - `PROSPECT-DEMONSTRATION-EVIDENCE.md`
 - `ADVERTISER-DISCOVERY-EVIDENCE.md`
@@ -73,6 +73,7 @@ verified.
 - `WEDDING-PLANNER-WAKE-EVIDENCE.md`
 - `CONVERSATION-LABORATORY-EVIDENCE.md`
 - `SPEND-PAUSE-EVIDENCE.md`
+- `GROOMING-RESEARCH-EVIDENCE.md`
 - `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`.
