@@ -6,8 +6,8 @@ intelligence.
 **Program status:** future engineering program. Blueprint v2 is
 preserved. Reconciliation is recorded. The program is not verified.
 
-**You are here:** Phases 4–19 are verified local proofs. Phase 0 is this
-tracker. The next build, when a change is authorized, is Phase 20.
+**You are here:** Phases 4–20 are verified local proofs. Phase 0 is this
+tracker. The next build, when a change is authorized, is Phase 21.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -35,8 +35,8 @@ verified.
 | 17 | Prospect memory in PostgreSQL | Verified | Prospect rows, clip metadata, and factory batches are in the Bliss database. Media files stay on disk. This is not a scale claim |
 | 18 | Bliss rematch when the economics do not fit | Verified | `DeterministicRuleEvaluator` stays the matching authority. No approved alternate keeps the advertiser. Delivery stays NOT_SENT |
 | 19 | Wedding Planner wakes after commercial progression | Verified | An accepted Economics result can open the existing workspace. No accepted result leaves the planner asleep. No campaign is planned. Delivery stays NOT_SENT |
-| 20 | Conversation laboratory and regression | Next. Not started | Persona scenarios in tests before a behavior change |
-| 21 | Spend and pause controls on the operations console | Not started | Auditable limits. No second Mission Control product |
+| 20 | Conversation laboratory and regression | Verified | Ten persona scenarios run against Ask Alpha. A failure blocks the change. Production conversation is not edited. Delivery stays NOT_SENT |
+| 21 | Spend and pause controls on the operations console | Next. Not started | Auditable limits. No second Mission Control product |
 | 22 | Grooming and external research | Future | Production events first. Research cannot change production |
 | 23 | Scale proofs for recipes and conversations | Future | 100, then 1,000, then 10,000. Measure. Do not claim |
 
@@ -47,7 +47,7 @@ verified.
 - Selling language must not outrun Economics, Bliss, or the unsent rule.
 - Required disclosures stay. They are not optional self-gating.
 
-## Evidence already accepted for Phases 4–19
+## Evidence already accepted for Phases 4–20
 
 - `PROSPECT-DEMONSTRATION-EVIDENCE.md`
 - `ADVERTISER-DISCOVERY-EVIDENCE.md`
@@ -64,5 +64,6 @@ verified.
 - `PROSPECT-MEMORY-EVIDENCE.md`
 - `BLISS-REMATCH-EVIDENCE.md`
 - `WEDDING-PLANNER-WAKE-EVIDENCE.md`
+- `CONVERSATION-LABORATORY-EVIDENCE.md`
 
 The visible board is `/acquisition/index.html`.

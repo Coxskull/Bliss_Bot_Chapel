@@ -51,6 +51,33 @@ public sealed class DemonstrationsController(
         });
     }
 
+    [HttpGet("conversation-laboratory")]
+    [AllowAnonymous]
+    public ActionResult ConversationLaboratoryReport()
+    {
+        var report = ConversationLaboratory.Run();
+        return Ok(new
+        {
+            report.ScenarioCount,
+            report.PassedCount,
+            report.Passed,
+            report.Notice,
+            report.Voice,
+            delivery = "NOT_SENT",
+            aiCalls = 0,
+            scenarios = report.Results.Select(item => new
+            {
+                item.Id,
+                item.Persona,
+                item.Prompt,
+                item.Reply,
+                item.Signal,
+                item.Passed,
+                item.Missing
+            })
+        });
+    }
+
     [HttpGet("buying-roles")]
     [AllowAnonymous]
     public ActionResult BuyingRoles([FromQuery] string niche) =>
