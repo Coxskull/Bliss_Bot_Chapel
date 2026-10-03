@@ -1,9 +1,11 @@
 using Bliss.Api.Runtime;
 using Bliss.Api.Security;
 using Bliss.Domain.Demonstrations;
+using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 
 namespace Bliss.Api.Demonstrations;
 
@@ -14,7 +16,8 @@ public sealed class DemonstrationsController(
     EconomicsAcceptedPriceReader economics,
     EconomicsNegotiationGate negotiation,
     BlissRematchGate rematch,
-    WeddingPlannerWakeGate planner) : ControllerBase
+    WeddingPlannerWakeGate planner,
+    BlissDbContext database) : ControllerBase
 {
     [HttpPost("factory-batch")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
@@ -87,6 +90,35 @@ public sealed class DemonstrationsController(
         {
             return BadRequest(new { error = ex.Message, delivery = "NOT_SENT", discarded = 0, greenMeansSend = false });
         }
+    }
+
+    [HttpGet("balance")]
+    [AllowAnonymous]
+    public async Task<ActionResult> Balance(CancellationToken cancellationToken)
+    {
+        var advertisers = await database.Advertisers.AsNoTracking()
+            .Select(item => item.Name)
+            .ToListAsync(cancellationToken);
+        var creators = await database.Creators.AsNoTracking()
+            .Select(item => item.Name)
+            .ToListAsync(cancellationToken);
+        var board = MarketplaceBalance.Read(advertisers, creators);
+        return Ok(new
+        {
+            board.Notice,
+            board.Counts,
+            board.Pressure,
+            board.Revenue,
+            board.Inventory,
+            board.Skipped,
+            board.AdvertiserCount,
+            board.CreatorCount,
+            board.CensusClaimed,
+            board.GreenMeansSend,
+            board.Delivery,
+            advertisers = board.Advertisers,
+            creators = board.Creators
+        });
     }
 
     [HttpGet("scale-proof")]

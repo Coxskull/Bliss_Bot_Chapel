@@ -6,9 +6,9 @@ intelligence.
 **Program status:** future engineering program. Blueprint v2 is
 preserved. Reconciliation is recorded. The program is not verified.
 
-**You are here:** Phases 4–26 are verified local proofs. Phase 0 is this
-tracker. The next build, when a change is authorized, is Phase 27.
-Phases 28–29 stay queued and are not started.
+**You are here:** Phases 4–27 are verified local proofs. Phase 0 is this
+tracker. The next build, when a change is authorized, is Phase 28.
+Phase 29 stays queued and is not started.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -43,8 +43,8 @@ verified.
 | 24 | Green, yellow, and red progression on the prospect | Verified | Green moves to the next authorized action and does not send. Yellow keeps the record. Red stops the prohibited action and keeps the business |
 | 25 | Flow control for legitimate volume | Verified | A slower downstream lane keeps the excess queued. None are discarded. Green does not send. Delivery stays NOT_SENT |
 | 26 | Independent fleet lanes | Verified | The Fishing Fleet and the Creator Fleet are read from the stored lane tempos. A broken lane does not stop the ocean. Bliss Chapel stays the matching middle. Green does not send |
-| 27 | Marketplace balance signals | Next. Not started | Advertiser and creator pressure. Do not invent the counts |
-| 28 | Balanced creative inventory | Queued. Not started | Pairs of 2, 4, or 6. Creator approval still governs density |
+| 27 | Marketplace balance signals | Verified | Advertiser pressure and creator pressure are counts of stored rows. A missing count stays unrecorded. Revenue and inventory stay unrecorded. None is invented. Green does not send |
+| 28 | Balanced creative inventory | Next. Not started | Pairs of 2, 4, or 6. Creator approval still governs density |
 | 29 | Rotation abundance | Queued. Not started | Creator approval. Do not require one advertiser per theoretical slot |
 
 ## Open conflicts
@@ -54,7 +54,7 @@ verified.
 - Selling language must not outrun Economics, Bliss, or the unsent rule.
 - Required disclosures stay. They are not optional self-gating.
 
-## Evidence already accepted for Phases 4–26
+## Evidence already accepted for Phases 4–27
 
 - `PROSPECT-DEMONSTRATION-EVIDENCE.md`
 - `ADVERTISER-DISCOVERY-EVIDENCE.md`
@@ -78,6 +78,7 @@ verified.
 - `PROSPECT-PROGRESSION-EVIDENCE.md`
 - `FLOW-CONTROL-EVIDENCE.md`
 - `FLEET-LANES-EVIDENCE.md`
+- `MARKETPLACE-BALANCE-EVIDENCE.md`
 - `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`.
