@@ -40,4 +40,8 @@ The new proofs are `ProspectMemoryApiTests` and
 ## Browser path
 
 Source Media shows `Prospect memory: POSTGRESQL. One database. Media
-files stay on disk.` The imported prospects remain on the page.
+files stay on disk.` Mesa Norte and Puerto Azul remain on the page.
+Puerto Azul stays preserved and suppressed.
+
+The recording is `prospect_memory_postgresql_media_files_on_disk.mp4`.
+The report is `docs/architecture/evidence/Alpha-Prospect-Memory-Report.pdf`.
