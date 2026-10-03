@@ -91,8 +91,8 @@ change a creative layout, or create inventory rotations.
 | 25 | Flow control: preserve and queue legitimate volume | Verified. None are discarded |
 | 26 | Independent fleet lanes beyond a pause control | Verified. A broken lane does not stop the ocean |
 | 27 | Marketplace balance signals, without invented counts | Verified. Stored rows only |
-| 28 | Balanced creative inventory: pairs of 2, 4, or 6 | Next. Not started |
-| 29 | Rotation abundance under creator approval | Queued. Not started |
+| 28 | Balanced creative inventory: pairs of 2, 4, or 6 | Verified. The stack is refused |
+| 29 | Rotation abundance under creator approval | Next. Not started |
 
 Phase 22 counts production events and stages an untrusted excerpt
 without changing the prospect. Phase 23 measures the in-memory rungs
@@ -102,8 +102,10 @@ legitimate prospects queued. Phase 26 reads the Fishing Fleet and the
 Creator Fleet from the stored lane tempos. A broken lane does not stop
 the ocean. Phase 27 reads advertiser pressure and creator pressure
 from stored rows. A missing count stays unrecorded. Revenue and
-inventory stay unrecorded. The next authorized build after Phase 27
-is Phase 28.
+inventory stay unrecorded. Phase 28 accepts a balanced pair of 2, 4,
+or 6 when the creator approves that density. A two-over-four stack is
+refused. Stored slots stay as stored rows. The next authorized build
+after Phase 28 is Phase 29.
 
 ## What Phase 26 implements
 
@@ -129,3 +131,15 @@ row, crawl, send, or invent a price. Green does not send. Delivery
 remains `NOT_SENT`.
 
 Phase 27 does not choose a creative pair or a rotation.
+
+## What Phase 28 implements
+
+Phase 28 reads a proposed pair on `/acquisition/inventory.html`. A
+balanced pair is 2, 4, or 6. Creator approval accepts that density or
+withholds it. A two-over-four stack is refused even when approval is
+present. The stored slot rows stay unchanged and are not treated as a
+balanced pair. Rotation is not configured. The reading does not assign
+an advertiser to a slot, crawl, send, or invent a price. Green does
+not send. Delivery remains `NOT_SENT`.
+
+Phase 28 does not require one advertiser for every theoretical slot.

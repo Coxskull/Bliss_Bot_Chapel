@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Balanced creative inventory</title>
+  <link rel="stylesheet" href="/demonstrations/alpha-demo.css">
+  <style>
+    .hero h1 { font-size: 30px; }
+    #notice, #stored, #rotation, #contents, #pair-result, #stack-result, #unchanged { font-size: 16px; line-height: 1.4; max-width: 900px; }
+    #inventory-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin: 12px 0; }
+    #inventory-form label { display: grid; gap: 4px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/acquisition/index.html"><span class="mark">A</span><span><strong>ALPHA</strong><small>INVENTORY</small></span></a>
+    <a href="/acquisition/index.html">Phase tracker</a>
+  </header>
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <p class="status">CREATIVE INVENTORY</p>
+        <h1>A balanced pair is 2, 4, or 6.</h1>
+      </div>
+    </section>
+    <p id="notice">Reading the stored slots.</p>
+    <p id="stored"></p>
+    <p id="rotation"></p>
+    <p id="contents"></p>
+    <form id="inventory-form">
+      <label>Balanced pair
+        <select name="pair" required>
+          <option value="2">2</option>
+          <option value="4" selected>4</option>
+          <option value="6">6</option>
+        </select>
+      </label>
+      <label>Creator approval
+        <select name="creatorApproved" required>
+          <option value="yes" selected>Yes</option>
+          <option value="no">No</option>
+        </select>
+      </label>
+      <button type="submit">Read the pair</button>
+      <button type="button" id="stack-button">Read the two-over-four stack</button>
+    </form>
+    <p id="pair-result"></p>
+    <p id="stack-result"></p>
+    <p id="unchanged"></p>
+  </main>
+  <script src="/acquisition/inventory.js?v=inventory-1" defer></script>
+</body>
+</html>
