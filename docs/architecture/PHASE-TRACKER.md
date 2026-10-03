@@ -119,6 +119,7 @@ verified.
 - `contracts/COVERAGE-WEEK-CONTRACT.md`
 - `MARKETPLACE-METRICS-EVIDENCE.md`
 - `contracts/MARKETPLACE-METRICS-CONTRACT.md`
+- `evidence/Alpha-Marketplace-Metrics-Report.pdf`
 - `evidence/Alpha-Coverage-Week-Report.pdf`
 - `evidence/Alpha-Hosted-Acceptance-Report.pdf`
 - `evidence/Alpha-Economics-Phase9-Acceptance-Report.pdf`

@@ -32,4 +32,17 @@ The new proofs are `MarketplaceMetricsTests` and `MarketplaceMetricsApiTests`.
 
 `/operations#/metrics` reads the stored advertisers, creators, and slots.
 
+On this database the stored advertisers are Harbor Audio Labs, Sunrise
+Wellness Co., TEST Dental Manila, and TEST Restaurant Santo Domingo.
+The stored creators are Test Creator, Test Creator Brazil, and Unknown
+Demographics Creator. Slots are 8. Revenue rows are 0. Advertiser
+pressure is ahead of creator pressure. `metrics-reading-1` stores that
+reading. Census is no. Revenue recorded is no. Slots changed is no.
+The same key was not stored again. A request to record a revenue amount
+was refused. The balance page still says revenue is not recorded and
+inventory is not recorded. Delivery is `NOT_SENT`.
+
+The recording is `marketplace_reading_leaves_revenue_unrecorded.mp4`.
+The report is `docs/architecture/evidence/Alpha-Marketplace-Metrics-Report.pdf`.
+
 The contract is `docs/architecture/contracts/MARKETPLACE-METRICS-CONTRACT.md`.
