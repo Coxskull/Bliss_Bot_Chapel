@@ -37,6 +37,10 @@ The new proofs are `AdvertiserDiscoveryTests` and
 ## Browser path
 
 `/operations#/discovery` reads the stored prospects. Each row is a
-stored public source. A business that is not stored is absent.
+stored public source. A business that is not stored is absent. Submitting
+the Casa Verde source under another name writes nothing, and the stored
+count stays 3.
 
+The recording is `advertiser_discovery_counts_stored_sources_only.mp4`.
+The report is `docs/architecture/evidence/Alpha-Advertiser-Discovery-Register-Report.pdf`.
 The contract is `docs/architecture/contracts/ADVERTISER-DISCOVERY-CONTRACT.md`.
