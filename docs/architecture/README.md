@@ -43,6 +43,7 @@ only through its own Engineering Contract
 | What an acquisition event records | `ACQUISITION-EVENTS-EVIDENCE.md` |
 | What Ask Alpha says in one voice | `ASK-ALPHA-EVIDENCE.md` |
 | What price Ask Alpha may say | `ECONOMICS-PRICE-EVIDENCE.md` |
+| How Ask Alpha negotiates inside Economics | `NEGOTIATION-EVIDENCE.md` |
 | What Alpha already pays for, and whether a new subscription is allowed | `SUBSCRIPTION-LEDGER.md` |
 | What a future contract must contain before code is written | `ENGINEERING-CONTRACT-RULE.md` |
 | Which future contracts exist, and that none are open | `FUTURE-CONTRACTS.md` |

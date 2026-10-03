@@ -499,7 +499,19 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         return current;
     }
 
-    public ChatRecord Converse(string slug, string message, AcceptedEconomicsPrice? economics = null)
+    public DemonstrationRecord AttachEconomicsQuote(string slug, Guid quoteId)
+    {
+        var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
+        current.EconomicsQuoteId = quoteId.ToString("D");
+        Save(slug, current);
+        return current;
+    }
+
+    public ChatRecord Converse(
+        string slug,
+        string message,
+        AcceptedEconomicsPrice? economics = null,
+        PreparedNegotiation? negotiation = null)
     {
         var demonstration = Find(slug) ?? throw new InvalidOperationException("Demonstration not found.");
         var presentation = DecisionMakerEvidence.Present(
@@ -522,7 +534,11 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             demonstration.LastSignal,
             economics?.Amount ?? string.Empty,
             economics?.CurrencyCode ?? string.Empty);
-        var turn = DemonstrationConversation.Reply(facts, message);
+        var turn = negotiation is null
+            ? DemonstrationConversation.Reply(facts, message)
+            : DemonstrationConversation.Present(
+                facts,
+                new ConversationTurn(negotiation.Reply, "NEGOTIATION", negotiation.HumanEscalation, negotiation.Gear));
         var visitor = new ChatRecord
         {
             Role = "VISITOR",

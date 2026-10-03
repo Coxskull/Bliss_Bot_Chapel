@@ -6,8 +6,8 @@ intelligence.
 **Program status:** future engineering program. Blueprint v2 is
 preserved. Reconciliation is recorded. The program is not verified.
 
-**You are here:** Phases 4–14 are verified local proofs. Phase 0 is this
-tracker. The next build, when a change is authorized, is Phase 15.
+**You are here:** Phases 4–15 are verified local proofs. Phase 0 is this
+tracker. The next build, when a change is authorized, is Phase 16.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -30,8 +30,8 @@ verified.
 | 12 | Acquisition events from observable behavior | Verified | The ledger records a page open and a visitor message. An opinion and a send are refused. The watcher is not named |
 | 13 | Ask Alpha: one voice, answer then advance | Verified | The same voice answers, then advances. A repeated question is studied. No invented person, price, or win |
 | 14 | Price answers read from Economics | Verified | Ask Alpha says an accepted Economics amount and no other number. A missing or declined result states no number |
-| 15 | Negotiation inside Economics | Next. Not started | Authority envelope, creator floor, and the Phase 5 ledger. No second service |
-| 16 | Eligible delivery | Not started | Suppression, policy, and an approved adapter. Not authorized now |
+| 15 | Negotiation inside Economics | Verified | Ask Alpha records a proposal only inside the Economics envelope. The creator floor is the line's recommendation low. The result is a Phase 5 draft and is not accepted |
+| 16 | Eligible delivery | Next. Not started | Suppression, policy, and an approved adapter. Not authorized now |
 | 17 | Prospect memory in PostgreSQL | Not started | One database. Required before a scale claim |
 | 18 | Bliss rematch when the economics do not fit | Not started | `DeterministicRuleEvaluator` stays the matching authority |
 | 19 | Wedding Planner wakes after commercial progression | Not started | Inherit authorized context. Do not plan every discovered business |
@@ -47,7 +47,7 @@ verified.
 - Selling language must not outrun Economics, Bliss, or the unsent rule.
 - Required disclosures stay. They are not optional self-gating.
 
-## Evidence already accepted for Phases 4–14
+## Evidence already accepted for Phases 4–15
 
 - `PROSPECT-DEMONSTRATION-EVIDENCE.md`
 - `ADVERTISER-DISCOVERY-EVIDENCE.md`
@@ -59,5 +59,6 @@ verified.
 - `ACQUISITION-EVENTS-EVIDENCE.md`
 - `ASK-ALPHA-EVIDENCE.md`
 - `ECONOMICS-PRICE-EVIDENCE.md`
+- `NEGOTIATION-EVIDENCE.md`
 
 The visible board is `/acquisition/index.html`.
