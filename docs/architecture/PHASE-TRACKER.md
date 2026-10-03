@@ -104,6 +104,7 @@ verified.
 - `contracts/CREATIVE-APPROVAL-CONTRACT.md`
 - `LEARNING-LEDGER-EVIDENCE.md`
 - `contracts/LEARNING-LEDGER-CONTRACT.md`
+- `evidence/Alpha-Research-Ledger-Report.pdf`
 - `evidence/Alpha-Creative-Approval-Report.pdf`
 - `evidence/Alpha-Marketplace-Handoff-Report.pdf`
 - `BOT-PARTY-AMENDMENT.md`

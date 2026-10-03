@@ -33,4 +33,14 @@ The new proofs are `LearningLedgerTests` and `LearningLedgerApiTests`.
 
 `/operations#/learning` reads one stored prospect at a time.
 
+On the live library, the laboratory is 10 of 10 graduated. Casa Verde
+received one research note. Authorized traffic, production changed, and
+behavior changed stay no. Model calls are 0. The same note was not
+appended again. Casa Verde stayed `DEMONSTRATION_PREPARED`. Mesa Norte
+has no research note and stayed `DEMONSTRATION_PREPARED`. Delivery is
+`NOT_SENT`.
+
+The recording is `research_ledger_note_leaves_production.mp4`.
+The report is `docs/architecture/evidence/Alpha-Research-Ledger-Report.pdf`.
+
 The contract is `docs/architecture/contracts/LEARNING-LEDGER-CONTRACT.md`.
