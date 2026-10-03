@@ -20,6 +20,7 @@ public static class WeddingPlannerAuditActions
     public const string SessionCreated = "SESSION_CREATED";
     public const string MessageAppended = "MESSAGE_APPENDED";
     public const string EconomicsRecommendationRequested = "ECONOMICS_RECOMMENDATION_REQUESTED";
+    public const string CreativeDecided = "CREATIVE_DECIDED";
     public const string AccessDenied = "ACCESS_DENIED";
 }
 

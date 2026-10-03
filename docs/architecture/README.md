@@ -72,6 +72,8 @@ only through its own Engineering Contract
 | The local batch measurement Engineering Contract | `contracts/LOCAL-BATCH-CONTRACT.md` |
 | What a marketplace handoff records | `MARKETPLACE-HANDOFF-EVIDENCE.md` |
 | The marketplace handoff Engineering Contract | `contracts/MARKETPLACE-HANDOFF-CONTRACT.md` |
+| What a human creative decision records | `CREATIVE-APPROVAL-EVIDENCE.md` |
+| The creative approval Engineering Contract | `contracts/CREATIVE-APPROVAL-CONTRACT.md` |
 | Accepted Bliss behavior | `docs/bliss/` contracts and evidence |
 | Accepted Wedding Planner Phase 1 behavior | `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md` |
 | Wedding Planner product note for the current module | `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md` |
