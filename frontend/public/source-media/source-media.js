@@ -25,6 +25,10 @@ function cell(text) {
 }
 
 function render(library) {
+  const memory = document.querySelector("#memory");
+  if (memory) {
+    memory.textContent = "Prospect memory: " + (library.memory || "UNKNOWN") + ". One database. Media files stay on disk.";
+  }
   meter.replaceChildren();
   [
     ["Daily benchmark", library.dailyTarget],

@@ -47,17 +47,16 @@ is not this program and stays stopped on its own security finding.
   an accepted quote amount and states no number when that result is absent.
 - The operations console can show Bliss, Wedding Planner, and Economics.
   It is not yet a spend and pause control for acquisition.
-- The prospect store is durable for a local library. It is a file, not
-  the PostgreSQL system of record.
+- Prospect rows, clip metadata, and factory batches are rows in the
+  Bliss PostgreSQL database. The video and QR files stay on disk.
 
 ### Genuinely missing
 
 - A preserved business that is legitimate and still not worth a
   demonstration.
-- Prospect memory in PostgreSQL. Phase 16 can mark one stored road
-  eligible for the preview adapter after the preview policy. Suppression
-  still withholds the road. The adapter prepares a copy and does not
-  transmit it. The library is still a file.
+- Bliss rematch when the economics do not fit. Phase 17 stores the
+  prospect document in the existing Bliss database. `DeterministicRuleEvaluator`
+  stays the matching authority. This is not a scale claim.
 - Acquisition events. Phase 11 records a factory batch: deterministic checks, asset counts, zero model calls, and no invented price.
 - A laboratory of persona scenarios for conversation changes.
 - Measured scale. None of the 100, 1,000, or 10,000 targets has been run.
@@ -110,14 +109,14 @@ is not this program and stays stopped on its own security finding.
 
 ### Scale
 
-The file-backed library is the correct proof store and the wrong
-10,000-prospect store. PostgreSQL promotion is a phase of its own,
-using the existing Bliss database, before any scale ladder.
+Prospect rows now live in the Bliss PostgreSQL database. That promotion
+is not a measurement of 100, 1,000, or 10,000 prospects. Media files
+stay on disk.
 
 ## Simplest architecture that keeps the capability
 
-One ASP.NET application. One PostgreSQL database when the prospect
-library leaves files. One demonstration page that resolves a versioned
+One ASP.NET application. One PostgreSQL database, the existing Bliss
+database, holds the prospect rows. One demonstration page that resolves a versioned
 recipe. One Ask Alpha endpoint with gears behind it. Economics is the
 only price authority. Bliss remains the only matching authority.
 Wedding Planner remains the campaign workspace and stays asleep until
@@ -135,9 +134,7 @@ Schema, API, queue, isolation, and provider work belong to the phase
 that needs them. Phase 8 records `PRESERVED` for a business with no
 demonstration. Phase 9 records route rows and a suppression flag. A public road stays ineligible to send. Phase 10 records recipe `overlay-1` and a player. The permanent composite remains. Phase 12 appends observable events on the prospect record. An opinion and a delivery claim are refused. Phase 13 keeps one Ask Alpha voice that answers and then advances. Phase 13 needs conversation state that
 cannot see another prospect. Phase 14 reads an accepted Economics quote and copies that amount. Phase 15 records a visitor proposal through QuoteService only when it sits inside the approved line's recommendation low and high. The new version is a draft. It is not approved and it is not accepted.
-Phase 16 applies the preview policy and the preview adapter. A public road stays short of permission to send. Transmission stays NOT_SENT. Phase 17 needs
-the PostgreSQL tables. None of those tables are created by this
-reconciliation.
+Phase 16 applies the preview policy and the preview adapter. A public road stays short of permission to send. Transmission stays NOT_SENT. Phase 17 adds `ProspectMemories`, `SourceClipMemories`, and `FactoryBatchMemories` on `BlissDbContext`. Phase 18 needs a rematch through the accepted evaluator.
 
 ## Acceptance
 

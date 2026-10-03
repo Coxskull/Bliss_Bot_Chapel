@@ -6,6 +6,8 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
 {
     public LibraryDocument Library() => store.Read();
 
+    public string MemoryStore => store.MemoryProvider;
+
     public FactoryBatchRecord RunFactoryBatch()
     {
         var started = DateTime.UtcNow;
