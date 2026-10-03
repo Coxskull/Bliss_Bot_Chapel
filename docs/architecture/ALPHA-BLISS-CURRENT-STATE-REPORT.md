@@ -14,8 +14,8 @@ The amendment queue ends at Phase 29.
 
 This is not the same as a completed hosted platform. Bliss Chapel's Phase 20
 production posture is implemented, while hosted production acceptance remains
-unfinished. Economics Phases 1–9 are implemented, while Phase 9 still awaits
-owner acceptance. Wedding Planner has its Phase 1 foundation and the accepted
+unfinished. Economics Phases 1–9 are implemented, and the owner accepted
+Phase 9 on 2026-10-03. Wedding Planner has its Phase 1 foundation and the accepted
 Economics wake gate; its later AI and creative phases remain future work.
 
 The architecture remains intentionally consolidated:
@@ -41,7 +41,7 @@ prohibited action while preserving the business.
 | --- | --- | --- |
 | Alpha acquisition | Phases 4–29 implemented as local proofs | Verified locally; overall program remains open |
 | Bliss Chapel | Phases 1–20 implemented with matching, review, operations, audit, security, and production-posture gates | Hosted deployment is not declared finished |
-| Economics | Phases 1–9 implemented; sole price authority | Phase 9 awaits owner acceptance |
+| Economics | Phases 1–9 implemented; sole price authority | Phase 9 accepted by the owner on 2026-10-03 |
 | Wedding Planner | Phase 1 foundation, zero AI; accepted-Economics wake gate proved in Alpha Phase 19 | Later phases are not started |
 | Persistence | PostgreSQL through EF Core/Npgsql; prospect, Economics, Wedding Planner, audit, and operations rows | System of record; media files remain on disk |
 | Delivery | Preview preparation and policy checks | `NOT_SENT`; no phase authorizes live transmission |
@@ -162,8 +162,8 @@ Economics is the only price authority. Alpha operational ceilings, opening
 counts, stored-row counts, inventory pair sizes, and rotation slots are not
 prices. Phase 9 historical evidence does not mutate recommendations or quotes,
 does not automatically update pricing rules, and creates no settlement,
-invoice, payment, or payout authority. Phase 9 is implemented and pending owner
-acceptance.
+invoice, payment, or payout authority. Phase 9 is accepted by the owner on
+2026-10-03. An empty history stays unrecorded.
 
 ## Wedding Planner
 
@@ -205,8 +205,8 @@ Important interpretation:
 
 ## Known limitations and open boundaries
 
-1. Hosted Bliss production acceptance is unfinished.
-2. Economics Phase 9 awaits owner acceptance.
+1. Hosted Bliss production acceptance is unfinished. A local reading can store the process posture and still leaves the claim unmade.
+2. Economics Phase 9 is accepted by the owner. Automatic repricing and settlement stay unauthorized.
 3. Live sending has no authorized Engineering Contract.
 4. Fishing Fleet crawlers and contact-enrichment purchases remain out of scope.
 5. The permanent prospect MP4 remains beside the recipe overlay.

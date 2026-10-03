@@ -92,6 +92,8 @@ public class BlissDbContext : DbContext
     public DbSet<CreativeApprovalRow> CreativeApprovals => Set<CreativeApprovalRow>();
     public DbSet<LearningNoteRow> LearningNotes => Set<LearningNoteRow>();
     public DbSet<RotationPeriodRow> RotationPeriods => Set<RotationPeriodRow>();
+    public DbSet<EconomicsPhaseAcceptanceRow> EconomicsPhaseAcceptances => Set<EconomicsPhaseAcceptanceRow>();
+    public DbSet<HostedAcceptanceRow> HostedAcceptanceReadings => Set<HostedAcceptanceRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

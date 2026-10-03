@@ -377,7 +377,7 @@ Wedding Planner must call .NET. It must not call an LLM for a price.
 | Economics Phase 6 | Versioned compensation policies and non-settlement illustrations implemented and accepted. |
 | Economics Phase 7 | Public-research queue, candidate staging, and human promotion implemented and accepted. |
 | Economics Phase 8 | Wedding Planner-to-Economics recommendation handshake implemented and accepted. |
-| Economics Phase 9 | Append-only placement actuals, campaign performance, and external-versus-Alpha comparisons implemented; pending owner acceptance. |
+| Economics Phase 9 | Append-only placement actuals, campaign performance, and external-versus-Alpha comparisons implemented. Accepted by the owner on 2026-10-03. |
 | Media ledger / payouts | Separate later work. Reads contracted amounts; does not price inventory. |
 
 Do not auto-advance this module into the current Wedding Planner
