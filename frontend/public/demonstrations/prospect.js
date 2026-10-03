@@ -141,6 +141,9 @@ function render(page) {
   disclosure.textContent = page.disclosure + " " + page.contactRoute;
   messages.replaceChildren();
   page.messages.forEach(message => bubble(message.role, message.text));
+  const geared = [...page.messages].reverse().find(message => message.role === "ASSISTANT" && message.gear);
+  const gear = document.querySelector("#gear");
+  if (gear && geared) gear.textContent = "Gear: " + geared.gear + ". The voice stays Ask Alpha.";
 }
 
 async function load() {
