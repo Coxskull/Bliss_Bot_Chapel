@@ -78,6 +78,65 @@ public sealed class DemonstrationsController(
         });
     }
 
+    [HttpGet("{slug}/grooming")]
+    [AllowAnonymous]
+    public ActionResult Grooming(string slug)
+    {
+        var demonstration = demonstrations.Find(slug);
+        if (demonstration is null)
+        {
+            return NotFound(new { error = "Prospect not found.", delivery = "NOT_SENT", productionChanged = false });
+        }
+
+        var report = GroomingReport.Read((demonstration.Events ?? []).Select(item => item.Kind));
+        return Ok(new
+        {
+            report.EventCount,
+            counts = report.Counts.Select(item => new { item.Kind, item.Count }),
+            report.Friction,
+            report.Cost,
+            report.Experiments,
+            report.NextAction,
+            report.Notice,
+            report.AiCalls,
+            report.ProductionChanged,
+            report.Delivery
+        });
+    }
+
+    [HttpPost("{slug}/grooming/research")]
+    [AllowAnonymous]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult StageResearch(string slug, [FromBody] GroomingResearchRequest? request)
+    {
+        var demonstration = demonstrations.Find(slug);
+        if (demonstration is null)
+        {
+            return NotFound(new { error = "Prospect not found.", delivery = "NOT_SENT", productionChanged = false });
+        }
+
+        try
+        {
+            var reading = GroomingReport.Stage(
+                (demonstration.Events ?? []).Select(item => item.Kind),
+                request?.Excerpt);
+            return Ok(new
+            {
+                reading.Staged,
+                reading.Notice,
+                reading.Provenance,
+                reading.Hypothesis,
+                reading.AiCalls,
+                reading.ProductionChanged,
+                reading.Delivery
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message, delivery = "NOT_SENT", productionChanged = false });
+        }
+    }
+
     [HttpGet("buying-roles")]
     [AllowAnonymous]
     public ActionResult BuyingRoles([FromQuery] string niche) =>
@@ -683,6 +742,7 @@ public sealed class DemonstrationsController(
     };
 }
 
+public sealed record GroomingResearchRequest(string? Excerpt);
 public sealed record DiscoverRequest(string? Niche, string? Market, string? BusinessName, string? PublicSourceUrl);
 public sealed record AcquisitionEventRequest(string? Kind, string? Watcher);
 public sealed record ContactRoadRequest(string? Kind, string? Value, string? SourceUrl);

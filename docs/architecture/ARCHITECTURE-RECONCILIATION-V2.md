@@ -82,9 +82,11 @@ is not this program and stays stopped on its own security finding.
 4. **Do not self-gate versus required truth.** The not-sponsored
    disclosure, the unsent status, and the refusal to invent a person or
    a price stay. Those are integrity checks, not voluntary objections.
-5. **Research and grooming versus production.** An external page is
-   untrusted input. A weekly essay is not a deployment. Mission Control
-   does not appear by creating another repository or another console.
+5. **Research and grooming versus production.** Phase 22 counts the
+   production events already stored and stages an external excerpt as
+   untrusted. The excerpt is not copied onto the prospect. A weekly
+   note is not a deployment. Mission Control does not appear by
+   creating another repository or another console.
 
 ### Duplicative, expensive, or overbuilt if taken literally
 
@@ -133,7 +135,7 @@ Schema, API, queue, isolation, and provider work belong to the phase
 that needs them. Phase 8 records `PRESERVED` for a business with no
 demonstration. Phase 9 records route rows and a suppression flag. A public road stays ineligible to send. Phase 10 records recipe `overlay-1` and a player. The permanent composite remains. Phase 12 appends observable events on the prospect record. An opinion and a delivery claim are refused. Phase 13 keeps one Ask Alpha voice that answers and then advances. Phase 13 needs conversation state that
 cannot see another prospect. Phase 14 reads an accepted Economics quote and copies that amount. Phase 15 records a visitor proposal through QuoteService only when it sits inside the approved line's recommendation low and high. The new version is a draft. It is not approved and it is not accepted.
-Phase 16 applies the preview policy and the preview adapter. A public road stays short of permission to send. Transmission stays NOT_SENT. Phase 17 adds `ProspectMemories`, `SourceClipMemories`, and `FactoryBatchMemories` on `BlissDbContext`. Phase 18 records a rematch notice by calling `DeterministicRuleEvaluator`. An approved alternate is not a win, and a missing opportunity keeps the advertiser. Phase 19 opens the existing Wedding Planner workspace only when Economics has accepted a result and an advertiser is already on file. The inherited message names that result and plans no campaign. Phase 20 runs the conversation laboratory against the production Ask Alpha replies. A failing scenario is the regression. The laboratory does not write a prospect. Phase 21 records lane tempo on the existing operations console. One paused lane does not stop the others. A ceiling is an operational limit, not an Economics price. Green does not send. The Bot Party amendment queues Phases 24–29 and does not start them.
+Phase 16 applies the preview policy and the preview adapter. A public road stays short of permission to send. Transmission stays NOT_SENT. Phase 17 adds `ProspectMemories`, `SourceClipMemories`, and `FactoryBatchMemories` on `BlissDbContext`. Phase 18 records a rematch notice by calling `DeterministicRuleEvaluator`. An approved alternate is not a win, and a missing opportunity keeps the advertiser. Phase 19 opens the existing Wedding Planner workspace only when Economics has accepted a result and an advertiser is already on file. The inherited message names that result and plans no campaign. Phase 20 runs the conversation laboratory against the production Ask Alpha replies. A failing scenario is the regression. The laboratory does not write a prospect. Phase 21 records lane tempo on the existing operations console. One paused lane does not stop the others. A ceiling is an operational limit, not an Economics price. Green does not send. Phase 22 reads those production events into a grooming note. An external excerpt can be staged only after a production event, and the reading does not change the prospect. The Bot Party amendment queues Phases 24–29 and does not start them. Phase 23 remains the measured scale proofs.
 
 ## Acceptance
 

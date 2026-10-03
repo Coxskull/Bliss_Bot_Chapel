@@ -94,6 +94,6 @@ change a creative layout, or create inventory rotations.
 | 28 | Balanced creative inventory: pairs of 2, 4, or 6 | Queued. Not started |
 | 29 | Rotation abundance under creator approval | Queued. Not started |
 
-Phases 22 and 23 stay where they are: grooming and research, then
-measured scale proofs. The next authorized build after Phase 21 is
-Phase 22.
+Phase 22 counts production events and stages an untrusted excerpt
+without changing the prospect. Phase 23 remains the measured scale
+proofs. The next authorized build after Phase 22 is Phase 23.
