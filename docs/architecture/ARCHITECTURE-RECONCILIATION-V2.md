@@ -59,7 +59,6 @@ is not this program and stays stopped on its own security finding.
   result, on the existing workspace, and leaves every other discovered
   business unplanned. This is not a scale claim.
 - Acquisition events. Phase 11 records a factory batch: deterministic checks, asset counts, zero model calls, and no invented price.
-- A laboratory of persona scenarios for conversation changes.
 - Measured scale. None of the 100, 1,000, or 10,000 targets has been run.
 
 ### Conflicts to resolve before building past them
