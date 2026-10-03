@@ -1,8 +1,8 @@
 # Future acquisition contracts
 
-**Status:** catalog. The subscription ledger and factory budget
-contract is the one local proof authorized after the amendment queue.
-Every other row stays unauthorized.
+**Status:** catalog. The subscription ledger, the player-served
+picture, source-media coverage, and bounded advertiser discovery are
+local proofs. Every other row stays unauthorized.
 
 Do not implement an item on this list because it appears here. The
 Bliss package must reach its required acceptance point first. After
@@ -19,7 +19,7 @@ of this list is not permission to start.
 | --- | --- | --- |
 | Subscription & Infrastructure Ledger (software) | Persist the register that `SUBSCRIPTION-LEDGER.md` already keeps by hand | Local proof on `/operations#/ledger`. A missing cost stays unrecorded. This row does not open the next contract |
 | Factory Budget Controller | Daily, monthly, provider, and prospect ceilings; selective behavior at the threshold | Local proof beside the ledger. A reached ceiling degrades that scope. Generation spend is still not authorized |
-| Fishing Fleet advertiser discovery | Inexpensive discovery of established local and regional businesses | Budget policy if the discovery path spends money. Public-source research otherwise |
+| Fishing Fleet advertiser discovery | Inexpensive discovery of established local and regional businesses | Local proof on `/operations#/discovery`. A duplicate source is not a second prospect. A crawler did not run. This row does not open enrichment |
 | Opportunity Intelligence Engine | Light research, score, priority, production-investment decision | Advertiser discovery. Separate from decision-maker confidence |
 | Decision-Maker & Contact Intelligence | Buying role, evidence, confidence, freshness, contact fallback, provider abstraction | A discovered and scored business. Enrichment spend only after the ledger review |
 | Alpha Source Media Library | Qualified reusable clips of about 15 seconds, uploaded by the human producer across cities, cultures, and countries | None for the catalog itself. See `PROSPECT-DEMONSTRATION-EXAMPLE.md` |

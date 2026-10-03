@@ -8,9 +8,9 @@ preserved. Reconciliation is recorded. The program is not verified.
 
 **You are here:** Phases 4–29 are verified local proofs. Phase 0 is this
 tracker. The amendment queue has no further phase. The subscription ledger,
-the player-served picture, and source-media coverage are verified local
-proofs. Bliss hosted acceptance and Economics Phase 9 stay on their own
-paths. The program stays open.
+the player-served picture, source-media coverage, and bounded advertiser
+discovery are verified local proofs. Bliss hosted acceptance and Economics
+Phase 9 stay on their own paths. The program stays open.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -86,9 +86,11 @@ verified.
 - `LEDGER-BUDGET-EVIDENCE.md`
 - `PLAYER-SERVED-PICTURE-EVIDENCE.md`
 - `SOURCE-MEDIA-COVERAGE-EVIDENCE.md`
+- `ADVERTISER-DISCOVERY-REGISTER-EVIDENCE.md`
 - `contracts/SUBSCRIPTION-LEDGER-CONTRACT.md`
 - `contracts/PLAYER-SERVED-PICTURE-CONTRACT.md`
 - `contracts/SOURCE-MEDIA-COVERAGE-CONTRACT.md`
+- `contracts/ADVERTISER-DISCOVERY-CONTRACT.md`
 - `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`. The ledger is
@@ -106,3 +108,4 @@ implemented here. They stay on their acceptance paths.
 | 4 | Subscription ledger and factory budget | Verified local proof. A missing cost stays unrecorded. A reached ceiling degrades that scope. A review is not a purchase. Green does not send |
 | 5 | Deterministic media runtime | Verified local proof. The player is the served picture. A permanent composite is not required. QA still matches the QR and the disclosure. Green does not send |
 | 6 | Source media coverage | Verified local proof. A market is a count of stored qualified slices with a fingerprint and provenance. A duplicate is not coverage. None is invented. Green does not send |
+| 7 | Bounded advertiser discovery | Verified local proof. A public source is one stored prospect. A duplicate source is not a second row. A blank name is refused. A score below 100 stays preserved. This is not a census. A crawler did not run. Green does not send |

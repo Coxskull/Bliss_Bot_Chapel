@@ -147,30 +147,42 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         return demonstration;
     }
 
-    public DemonstrationRecord Discover(string niche, string market, string businessName, string sourceUrl)
+    public DiscoveryOutcome Discover(string niche, string market, string businessName, string sourceUrl)
     {
         var screen = OpportunityScreen.Evaluate(niche, market, businessName, sourceUrl);
-        if (!screen.PreservesBusiness)
+        var library = store.Read().Demonstrations;
+        var decision = AdvertiserDiscovery.Decide(
+            businessName,
+            sourceUrl,
+            library.Select(item => new StoredProspect(
+                item.Slug,
+                item.BusinessName,
+                item.Market,
+                item.PublicSourceUrl,
+                item.OpportunityScore,
+                item.ProspectState)).ToList(),
+            screen.PassesInitialScreen);
+        if (!decision.Accepted)
         {
-            throw new DiscoveryRejectedException(screen);
+            if (!screen.PreservesBusiness)
+            {
+                throw new DiscoveryRejectedException(screen);
+            }
+
+            throw new InvalidOperationException(decision.Notice);
+        }
+
+        if (decision.Duplicate)
+        {
+            var existing = library.First(item => item.Slug == decision.MatchedSlug);
+            return new DiscoveryOutcome(existing, true, false, decision.Notice);
         }
 
         var slug = OpportunityScreen.Slug(businessName);
-        if (slug.Length < 3)
-        {
-            throw new InvalidOperationException("The business name does not produce a usable prospect id.");
-        }
-
-        var existing = store.Read().Demonstrations.FirstOrDefault(x => x.Slug == slug);
-        if (existing is not null)
-        {
-            return existing;
-        }
-
         var trimmedName = businessName.Trim();
         var trimmedMarket = string.IsNullOrWhiteSpace(market) ? "Outside the initial markets" : market.Trim();
         var knownNiche = BuyingRoleCatalog.Niches.Contains(niche.Trim(), StringComparer.OrdinalIgnoreCase);
-        var preserved = !screen.PassesInitialScreen;
+        var preserved = decision.State == AdvertiserDiscovery.PreservedState;
         var record = new DemonstrationRecord
         {
             Slug = slug,
@@ -186,7 +198,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             Disclosure = NicheOverlay.Disclosure(trimmedName),
             PublicSourceUrl = sourceUrl.Trim(),
             OpportunityScore = screen.Score,
-            ProspectState = preserved ? "PRESERVED" : "OPPORTUNITY_SCORED",
+            ProspectState = decision.State,
             BusinessIdentity = "PUBLIC_SOURCE_RECORDED",
             Illustrative = true,
             CreatedAt = DateTime.UtcNow,
@@ -208,7 +220,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             ]
         };
         store.Update(document => document.Demonstrations.Add(record));
-        return record;
+        return new DiscoveryOutcome(record, false, true, decision.Notice);
     }
 
     public DemonstrationRecord RecordDecisionMaker(string slug, DecisionMakerInput input)
@@ -810,6 +822,8 @@ public sealed class ContactRoadRejectedException : InvalidOperationException
 
     public ContactRoadAssessment Result { get; }
 }
+
+public sealed record DiscoveryOutcome(DemonstrationRecord Prospect, bool Duplicate, bool Written, string Notice);
 
 public sealed class DiscoveryRejectedException : InvalidOperationException
 {
