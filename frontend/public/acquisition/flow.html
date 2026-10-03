@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flow control</title>
+  <link rel="stylesheet" href="/demonstrations/alpha-demo.css">
+  <style>
+    .hero h1 { font-size: 32px; }
+    #notice, #capacity-notice, #unchanged { font-size: 16px; line-height: 1.45; max-width: 860px; }
+    #flow-form { display: grid; gap: 10px; max-width: 420px; margin: 12px 0; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/acquisition/index.html"><span class="mark">A</span><span><strong>ALPHA</strong><small>FLOW</small></span></a>
+    <a href="/acquisition/index.html">Phase tracker</a>
+  </header>
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <p class="status">FLOW CONTROL</p>
+        <h1>Preserve the volume. Regulate the flow.</h1>
+      </div>
+    </section>
+    <p id="notice">Reading the stored prospects.</p>
+    <form id="flow-form">
+      <label>Downstream openings
+        <input name="capacity" inputmode="numeric" required placeholder="Openings this pass">
+      </label>
+      <button type="submit">Regulate the flow</button>
+    </form>
+    <p id="capacity-notice"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Prospect</th><th>Place</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <p id="unchanged"></p>
+  </main>
+  <script src="/acquisition/flow.js?v=flow-1" defer></script>
+</body>
+</html>

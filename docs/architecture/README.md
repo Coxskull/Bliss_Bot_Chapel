@@ -53,6 +53,7 @@ only through its own Engineering Contract
 | What a grooming report may read from production | `GROOMING-RESEARCH-EVIDENCE.md` |
 | What an in-memory scale rung measures and does not claim | `SCALE-PROOF-EVIDENCE.md` |
 | How green, yellow, and red move a prospect | `PROSPECT-PROGRESSION-EVIDENCE.md` |
+| How excess legitimate prospects stay queued | `FLOW-CONTROL-EVIDENCE.md` |
 | What the abundance amendment queues and does not authorize | `BOT-PARTY-AMENDMENT.md` |
 | What Alpha already pays for, and whether a new subscription is allowed | `SUBSCRIPTION-LEDGER.md` |
 | What a future contract must contain before code is written | `ENGINEERING-CONTRACT-RULE.md` |

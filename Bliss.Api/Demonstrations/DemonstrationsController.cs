@@ -51,6 +51,44 @@ public sealed class DemonstrationsController(
         });
     }
 
+    [HttpPost("flow")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult RegulateFlow([FromBody] FlowRequest? request)
+    {
+        try
+        {
+            var library = demonstrations.Library();
+            var board = FlowControl.Regulate(
+                library.Demonstrations.Select(item => new FlowProspect(item.Slug, item.BusinessName, item.Suppressed)),
+                request?.Capacity);
+            return Ok(new
+            {
+                board.Preserved,
+                board.Released,
+                board.Held,
+                board.Withheld,
+                board.Discarded,
+                board.Capacity,
+                board.Notice,
+                board.CapacityNotice,
+                board.GreenMeansSend,
+                board.Delivery,
+                assignments = board.Assignments.Select(item => new
+                {
+                    item.Slug,
+                    item.BusinessName,
+                    item.Lane,
+                    item.Label
+                })
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message, delivery = "NOT_SENT", discarded = 0, greenMeansSend = false });
+        }
+    }
+
     [HttpGet("scale-proof")]
     [AllowAnonymous]
     public ActionResult ScaleProofReport()
@@ -797,6 +835,7 @@ public sealed class DemonstrationsController(
     };
 }
 
+public sealed record FlowRequest(int? Capacity);
 public sealed record GroomingResearchRequest(string? Excerpt);
 public sealed record DiscoverRequest(string? Niche, string? Market, string? BusinessName, string? PublicSourceUrl);
 public sealed record AcquisitionEventRequest(string? Kind, string? Watcher);
