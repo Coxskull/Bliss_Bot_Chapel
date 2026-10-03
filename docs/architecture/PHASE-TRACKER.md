@@ -17,7 +17,9 @@ history stays unrecorded. A hosted reading stores this process posture.
 Hosted acceptance is not claimed. A coverage week stores the measured
 slices. A missing market is not added. A marketplace reading stores the
 measured advertiser count, creator count, and stored slot count. A
-revenue amount is not on file. The program stays open.
+revenue amount is not on file. A closed-model reading stores that
+seven grooming models are not configured. Configured models stay at
+zero. The program stays open.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -119,6 +121,8 @@ verified.
 - `contracts/COVERAGE-WEEK-CONTRACT.md`
 - `MARKETPLACE-METRICS-EVIDENCE.md`
 - `contracts/MARKETPLACE-METRICS-CONTRACT.md`
+- `CLOSED-MODELS-EVIDENCE.md`
+- `contracts/CLOSED-MODELS-CONTRACT.md`
 - `evidence/Alpha-Marketplace-Metrics-Report.pdf`
 - `evidence/Alpha-Coverage-Week-Report.pdf`
 - `evidence/Alpha-Hosted-Acceptance-Report.pdf`
@@ -132,7 +136,8 @@ verified.
 The visible board is `/acquisition/index.html`. The ledger is
 `/operations#/ledger`. The later period is `/operations#/period`. The
 hosted reading is `/operations#/hosted`. The coverage week is
-`/operations#/week`. The marketplace reading is `/operations#/metrics`.
+`/operations#/week`. The marketplace reading is `/operations#/metrics`. The closed-model
+reading is `/operations#/models`.
 
 ## Priority contracts
 
@@ -155,3 +160,4 @@ this process posture and does not claim hosted acceptance.
 | 13 | Later rotation period | Verified local proof. One later period stores the measured open slots and the creator decision. A theoretical slot is not filled. No revenue row is on file. This is not a census. Stored slots are not rewritten. Economics remains the only price authority. Green does not send |
 | 14 | Coverage week | Verified local proof. One week stores the measured coverage. A missing market is not added. This is not a census. The fuel gauge is unchanged. Green does not send |
 | 15 | Marketplace metrics | Verified local proof. One reading stores the measured advertiser count, creator count, and stored slot count. A revenue amount is not on file. This is not a census. The balance page is unchanged. Green does not send |
+| 16 | Closed models | Verified local proof. One reading stores that seven grooming models are not configured. Configured models stay at zero. A model is not named. The learning page is unchanged. Green does not send |

@@ -8,7 +8,7 @@
   <meta name="description" content="Creator partnership operations, deterministic matching, human review, and campaign planning.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23123328' d='M20 2 37 11v18L20 38 3 29V11z'/%3E%3Cpath fill='none' stroke='%23a8efce' stroke-width='3' d='m11 21 6 6 12-14'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/operations/app.css">
-  <script src="/operations/app.js?v=metrics-1" defer></script>
+  <script src="/operations/app.js?v=models-1" defer></script>
   <script src="/operations/tempo.js?v=fleet-1" defer></script>
   <script src="/operations/ledger.js?v=ledger-1" defer></script>
   <script src="/operations/fuel.js?v=fuel-1" defer></script>
@@ -23,6 +23,7 @@
   <script src="/operations/hosted.js?v=hosted-1" defer></script>
   <script src="/operations/week.js?v=week-1" defer></script>
   <script src="/operations/metrics.js?v=metrics-1" defer></script>
+  <script src="/operations/models.js?v=models-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -63,6 +64,7 @@
         <a class="nav-item" href="#/hosted" data-view="hosted"><span class="nav-icon" aria-hidden="true">⌂</span><span>Hosted</span></a>
         <a class="nav-item" href="#/week" data-view="week"><span class="nav-icon" aria-hidden="true">▦</span><span>Coverage week</span></a>
         <a class="nav-item" href="#/metrics" data-view="metrics"><span class="nav-icon" aria-hidden="true">◈</span><span>Marketplace</span></a>
+        <a class="nav-item" href="#/models" data-view="models"><span class="nav-icon" aria-hidden="true">◌</span><span>Closed models</span></a>
         <a class="nav-item" href="#/status" data-view="status"><span class="nav-icon" aria-hidden="true">◎</span><span>Status</span></a>
       </nav>
       <div class="sidebar-bottom">
@@ -856,6 +858,24 @@
           <section class="panel table-panel">
             <div class="panel-header"><div><p class="eyebrow">READING</p><h3>Stored reading</h3></div></div>
             <div class="table-wrap" id="metrics-history"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-models" aria-labelledby="models-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">ONE CONSOLE</p>
+              <h2 id="models-title">Closed models</h2>
+              <p id="models-notice">A closed-model reading stores that seven grooming models are not configured. Configured models stay at zero. Model calls stay at the stored count. No authorized traffic is on file. Production is not changed. This is not a traffic count. The learning page is unchanged. Green does not send. Delivery remains NOT_SENT.</p>
+              <p id="models-delivery">Delivery NOT_SENT.</p>
+              <p id="models-laboratory"></p>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">CLOSED</p><h3>Stored reading</h3></div></div>
+            <div class="form-actions"><button class="primary-button" type="button" id="models-store">Store the closed reading</button><button class="secondary-button" type="button" id="models-configure">Configure a grooming model</button></div>
+            <p id="models-result"></p>
+            <div class="table-wrap" id="models-history"></div>
           </section>
         </section>
 
