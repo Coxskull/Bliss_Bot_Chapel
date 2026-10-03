@@ -38,4 +38,6 @@ QR, the disclosure, and the notice that a permanent composite is not
 required. The flattened file is not on the page. Delivery remains
 `NOT_SENT`.
 
+The recording is `mesa_norte_player_is_the_served_picture.mp4`.
+The report is `docs/architecture/evidence/Alpha-Player-Served-Picture-Report.pdf`.
 The contract is `docs/architecture/contracts/PLAYER-SERVED-PICTURE-CONTRACT.md`.
