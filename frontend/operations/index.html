@@ -8,8 +8,9 @@
   <meta name="description" content="Creator partnership operations, deterministic matching, human review, and campaign planning.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23123328' d='M20 2 37 11v18L20 38 3 29V11z'/%3E%3Cpath fill='none' stroke='%23a8efce' stroke-width='3' d='m11 21 6 6 12-14'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/operations/app.css">
-  <script src="/operations/app.js?v=tempo-1" defer></script>
+  <script src="/operations/app.js?v=ledger-1" defer></script>
   <script src="/operations/tempo.js?v=fleet-1" defer></script>
+  <script src="/operations/ledger.js?v=ledger-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -37,6 +38,7 @@
         <a class="nav-item" href="#/economics" data-view="economics"><span class="nav-icon" aria-hidden="true">◈</span><span>Economics</span></a>
         <a class="nav-item" href="#/audit" data-view="audit"><span class="nav-icon" aria-hidden="true">≡</span><span>Audit</span></a>
         <a class="nav-item" href="#/tempo" data-view="tempo"><span class="nav-icon" aria-hidden="true">♫</span><span>Spend and pause</span></a>
+        <a class="nav-item" href="#/ledger" data-view="ledger"><span class="nav-icon" aria-hidden="true">▤</span><span>Ledger and budget</span></a>
         <a class="nav-item" href="#/status" data-view="status"><span class="nav-icon" aria-hidden="true">◎</span><span>Status</span></a>
       </nav>
       <div class="sidebar-bottom">
@@ -489,6 +491,51 @@
           <section class="panel table-panel">
             <div class="panel-header"><div><p class="eyebrow">HISTORY</p><h3>Lane tempo audits</h3></div></div>
             <div class="table-wrap" id="tempo-audits"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-ledger" aria-labelledby="ledger-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">ONE CONSOLE</p>
+              <h2 id="ledger-title">Subscription ledger and factory budget</h2>
+              <p id="ledger-notice">The subscription register records stored rows. A missing cost stays unrecorded. None was invented. A review is not a purchase. Nothing is purchased. Green does not send. Delivery remains NOT_SENT.</p>
+              <p>Bliss hosted acceptance and Economics Phase 9 stay on their own acceptance paths. This page records the register and the factory ceilings.</p>
+              <p id="ledger-delivery">Delivery NOT_SENT. Green does not send.</p>
+              <p id="ledger-result" class="tempo-result"></p>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">REGISTER</p><h3>Stored services</h3></div></div>
+            <div class="table-wrap" id="ledger-services"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">BUDGET</p><h3>Factory ceilings</h3></div></div>
+            <p id="ledger-budget-notice">Factory budgets are operational ceilings on the same operations console. A missing ceiling stays unrecorded. A reached ceiling degrades only that scope. This is not an Economics price. Nothing is purchased. Green does not send. Delivery remains NOT_SENT.</p>
+            <div class="table-wrap" id="ledger-budgets"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">AUDIT</p><h3>Record one ceiling</h3></div></div>
+            <form id="ledger-budget-form" class="form-grid">
+              <label><span>Scope</span>
+                <select name="scope" required>
+                  <option value="DAILY" selected>Daily</option>
+                  <option value="MONTHLY">Monthly</option>
+                  <option value="PROVIDER">Provider</option>
+                  <option value="PROSPECT">Prospect</option>
+                </select>
+              </label>
+              <label><span>Ceiling amount</span><input name="ceilingAmount" inputmode="decimal" autocomplete="off" value="25" required></label>
+              <label><span>Currency</span><input name="ceilingCurrency" maxlength="3" autocomplete="off" value="USD" required></label>
+              <label><span>Recorded spend</span><input name="recordedSpend" inputmode="decimal" autocomplete="off" value="25"></label>
+              <label class="span-two"><span>Reason</span><textarea name="reason" maxlength="300" required>Operator supplied the ceiling and the spend</textarea></label>
+              <div class="form-actions span-two"><small>A reached ceiling degrades only that scope. The ceiling is not an Economics price. Nothing is purchased. Green does not send. Delivery remains NOT_SENT.</small><button class="primary-button" type="submit">Record the factory ceiling</button></div>
+            </form>
+            <div class="form-actions"><small>An incomplete proposal is refused. The register does not gain a paid row.</small><button class="secondary-button" type="button" id="ledger-refuse-review">Refuse an incomplete paid proposal</button></div>
+          </section>
+          <section class="panel table-panel">
+            <div class="panel-header"><div><p class="eyebrow">HISTORY</p><h3>Subscription audits</h3></div></div>
+            <div class="table-wrap" id="ledger-audits"></div>
           </section>
         </section>
 

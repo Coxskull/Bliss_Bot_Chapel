@@ -82,6 +82,11 @@ public class BlissDbContext : DbContext
     public DbSet<LaneTempoState> LaneTempoStates => Set<LaneTempoState>();
     public DbSet<LaneTempoAudit> LaneTempoAudits => Set<LaneTempoAudit>();
 
+    public DbSet<SubscriptionRegisterRow> SubscriptionRegisterRows => Set<SubscriptionRegisterRow>();
+    public DbSet<SubscriptionLedgerAudit> SubscriptionLedgerAudits => Set<SubscriptionLedgerAudit>();
+    public DbSet<FactoryBudgetState> FactoryBudgetStates => Set<FactoryBudgetState>();
+    public DbSet<FactoryBudgetAudit> FactoryBudgetAudits => Set<FactoryBudgetAudit>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BlissDbContext).Assembly);

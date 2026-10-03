@@ -7,7 +7,10 @@ intelligence.
 preserved. Reconciliation is recorded. The program is not verified.
 
 **You are here:** Phases 4–29 are verified local proofs. Phase 0 is this
-tracker. The amendment queue has no further phase. The program stays open.
+tracker. The amendment queue has no further phase. The first priority
+contract, the subscription ledger and factory budget, is a verified local
+proof. Bliss hosted acceptance and Economics Phase 9 stay on their own
+paths. The program stays open.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -80,6 +83,20 @@ verified.
 - `MARKETPLACE-BALANCE-EVIDENCE.md`
 - `CREATIVE-INVENTORY-EVIDENCE.md`
 - `ROTATION-ABUNDANCE-EVIDENCE.md`
+- `LEDGER-BUDGET-EVIDENCE.md`
+- `contracts/SUBSCRIPTION-LEDGER-CONTRACT.md`
 - `BOT-PARTY-AMENDMENT.md`
 
-The visible board is `/acquisition/index.html`.
+The visible board is `/acquisition/index.html`. The ledger is
+`/operations#/ledger`.
+
+## Priority contracts
+
+Hosted Bliss acceptance and Economics Phase 9 owner acceptance are not
+implemented here. They stay on their acceptance paths.
+
+| Priority | Capability | Status |
+| --- | --- | --- |
+| 1 | Bliss hosted acceptance | Separate acceptance path. Not started here |
+| 2 | Economics Phase 9 owner acceptance | Awaits the owner. Not started here |
+| 4 | Subscription ledger and factory budget | Verified local proof. A missing cost stays unrecorded. A reached ceiling degrades that scope. A review is not a purchase. Green does not send |

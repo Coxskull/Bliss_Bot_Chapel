@@ -271,8 +271,8 @@ None. This document does not approve one.
 
 ## What to record next
 
-When a bill or contract is in hand, replace `UNRECORDED` on the matching
-row. Do not create a parallel spreadsheet that this register does not
-mention. A later Factory Budget Controller contract may persist the
-same fields in PostgreSQL. Until that contract is accepted, this file
-is the register.
+When a bill or contract is in hand, an operator records that amount on
+`/operations#/ledger`. The software stores the supplied amount and does
+not invent one. This file remains the classification source. PostgreSQL
+holds the same known services. A missing cost stays unrecorded. A review
+is not a purchase.
