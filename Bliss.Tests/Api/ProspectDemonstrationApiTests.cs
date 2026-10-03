@@ -51,10 +51,13 @@ public sealed class ProspectDemonstrationApiTests : IClassFixture<BlissApiFactor
         Assert.Contains("has not sponsored", page.GetProperty("disclosure").GetString());
 
         var concept = page.GetProperty("concepts")[0];
-        var video = await client.GetAsync(concept.GetProperty("videoUrl").GetString());
+        Assert.Equal("overlay-1", concept.GetProperty("recipeVersion").GetString());
+        Assert.Equal("PLAYER", concept.GetProperty("servedPicture").GetString());
+        Assert.False(concept.TryGetProperty("videoUrl", out _));
+        var source = await client.GetAsync(concept.GetProperty("sourceUrl").GetString());
         var qr = await client.GetAsync(concept.GetProperty("qrUrl").GetString());
-        Assert.Equal(HttpStatusCode.OK, video.StatusCode);
-        Assert.Equal("video/mp4", video.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(HttpStatusCode.OK, source.StatusCode);
+        Assert.Equal("video/mp4", source.Content.Headers.ContentType?.MediaType);
         Assert.Equal(HttpStatusCode.OK, qr.StatusCode);
         Assert.Equal("image/png", qr.Content.Headers.ContentType?.MediaType);
         var qrBytes = await qr.Content.ReadAsByteArrayAsync();

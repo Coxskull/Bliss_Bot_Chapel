@@ -25,7 +25,7 @@ of this list is not permission to start.
 | Alpha Source Media Library | Qualified reusable clips of about 15 seconds, uploaded by the human producer across cities, cultures, and countries | None for the catalog itself. See `PROSPECT-DEMONSTRATION-EXAMPLE.md` |
 | Source Media Integrity Engine | Fingerprints and duplicate rules | Lands with the library. A library that counts duplicates is not acceptable |
 | Media Supply & Productivity Control | Quota, replacement, Daily Operations, Mission Control fuel gauge, market coverage | Library + integrity. System evidence, not self-certification |
-| Deterministic Video Composition Engine | .NET + FFmpeg composite of a bot-produced overlay onto the uploaded slice, real QR, automated disclosure, mechanical QA | Approved source media and reusable components. Zero AI calls for QR and routine overlay |
+| Deterministic Video Composition Engine | The player draws recipe `overlay-1` on the approved slice. Real QR, disclosure, and mechanical QA. No permanent per-prospect MP4 | Local proof. Zero AI calls. This row does not open generative video or a per-prospect website |
 | Prospect Demonstration Engine | One strong demonstration per eligible prospect; further concept cards only on engagement | Opportunity score, source media, composition, cache. The ABC Pharmacy page is the artifact shape |
 | Dynamic Prospect Sales Room | One application, many prospect pages, including the private four-card layout in the reference example | Verified prospect facts. Pricing calls Economics; it does not invent prices |
 | Alpha Communication Router | Policy, eligibility, channel adapter. The reference send is the private demonstration message | A contact tier and suppression rules. No send without eligibility |

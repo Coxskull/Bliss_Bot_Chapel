@@ -19,6 +19,12 @@ public static class RecipeRuntime
 {
     public const string Version = "overlay-1";
 
+    public const string PlayerNotice =
+        "The player is the served picture. The recipe is drawn on the approved source slice. A permanent composite is not required. None was written. Green does not send. Delivery remains NOT_SENT.";
+
+    public static bool PermanentCompositeRequired(string? recipeVersion) =>
+        !string.Equals((recipeVersion ?? string.Empty).Trim(), Version, StringComparison.Ordinal);
+
     public static DemonstrationRecipe Compose(
         string slug,
         string businessName,

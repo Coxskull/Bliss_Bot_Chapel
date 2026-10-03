@@ -702,19 +702,11 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         if (qa.Count > 0)
         {
             throw new InvalidOperationException(
-                "The recipe failed QA. The permanent composite was not written. " + string.Join(" ", qa));
+                "The recipe failed QA. No picture was written. " + string.Join(" ", qa));
         }
 
         var qrName = demonstration.Slug + "-" + concept.Id + ".png";
-        var videoName = demonstration.Slug + "-" + concept.Id + ".mp4";
         await File.WriteAllBytesAsync(store.RenderPath(qrName), studio.CreateQrPng(destination), cancellationToken);
-        await studio.CompositeAsync(
-            store.ClipPath(clip),
-            store.RenderPath(qrName),
-            store.RenderPath(videoName),
-            concept,
-            demonstration.BusinessName,
-            cancellationToken);
         demonstration.Concepts.Add(new ConceptRecord
         {
             Id = concept.Id,
@@ -723,7 +715,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             Subhead = concept.Subhead,
             Detail = concept.Detail,
             CallToAction = concept.CallToAction,
-            VideoFileName = videoName,
+            VideoFileName = string.Empty,
             QrFileName = qrName,
             QrDestination = destination,
             SourceClipId = clip.Id,

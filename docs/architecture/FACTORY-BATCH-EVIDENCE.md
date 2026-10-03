@@ -10,9 +10,11 @@ sent.
 - A preserved business with no demonstration passes as withheld.
 - A produced recipe passes when `overlay-1` matches the prospect page,
   the disclosure names the missing sponsorship, the source slice is
-  qualified, and the flattened composite and QR file are present.
+  qualified, and the QR file is present. Recipe `overlay-1` does not
+  require a flattened composite.
 - A QR that leaves the prospect page, a preserved business that has a
-  demonstration, and a missing flattened file are exceptions.
+  demonstration, and a missing flattened file on a picture that is not
+  `overlay-1` are exceptions.
 - The manifest records prospect, preserved, demonstration, and concept
   counts, checks passed, exceptions, elapsed time, and AI calls `0`.
 - The cost line is: no dollar amount is recorded. Economics remains the

@@ -22,6 +22,11 @@ public sealed class RecipeRuntimeTests
         Assert.Equal("overlay-1", recipe.Version);
         Assert.Equal("La Mesa", recipe.Headline);
         Assert.Empty(RecipeRuntime.Check(recipe));
+        Assert.False(RecipeRuntime.PermanentCompositeRequired(recipe.Version));
+        Assert.Contains("player is the served picture", RecipeRuntime.PlayerNotice);
+        Assert.Contains("not required", RecipeRuntime.PlayerNotice);
+        Assert.Contains("None was written", RecipeRuntime.PlayerNotice);
+        Assert.Contains("NOT_SENT", RecipeRuntime.PlayerNotice);
     }
 
     [Fact]
@@ -39,6 +44,18 @@ public sealed class RecipeRuntimeTests
 
         var reasons = RecipeRuntime.Check(recipe);
         Assert.Contains(reasons, reason => reason.Contains("will not invent one"));
+    }
+
+    [Fact]
+    public void The_player_source_does_not_send_or_call_a_model()
+    {
+        var source = File.ReadAllText(Path.Combine(
+            AppContext.BaseDirectory, "..", "..", "..", "..", "Bliss.Domain", "Demonstrations", "RecipeRuntime.cs"));
+        Assert.Contains("permanent composite is not required", source);
+        Assert.DoesNotContain("Smtp", source);
+        Assert.DoesNotContain("HttpClient", source);
+        Assert.DoesNotContain("OpenAI", source);
+        Assert.DoesNotContain("$", source);
     }
 
     private static DemonstrationRecipe Sample()

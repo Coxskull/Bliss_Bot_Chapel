@@ -46,9 +46,20 @@ public sealed class FactoryBatchTests
     }
 
     [Fact]
-    public void A_missing_flattened_composite_is_an_exception()
+    public void Overlay_1_does_not_require_a_permanent_composite()
     {
         var concept = GoodConcept("table") with { FlattenedFileExists = false };
+        var manifest = FactoryBatch.Inspect(new FactoryLibrary([Produced("Mesa Norte", "mesa-norte", concept)], 1));
+
+        Assert.Equal("PASSED", manifest.Status);
+        Assert.Empty(manifest.Exceptions);
+        Assert.Equal(0, manifest.AiCalls);
+    }
+
+    [Fact]
+    public void A_missing_flattened_composite_is_an_exception_for_an_older_picture()
+    {
+        var concept = GoodConcept("table") with { RecipeVersion = "", FlattenedFileExists = false };
         var manifest = FactoryBatch.Inspect(new FactoryLibrary([Produced("Mesa Norte", "mesa-norte", concept)], 1));
 
         Assert.Contains(manifest.Exceptions, item => item.Contains("flattened composite is missing"));
