@@ -99,6 +99,7 @@ verified.
 - `evidence/Alpha-Local-Batch-Report.pdf`
 - `MARKETPLACE-HANDOFF-EVIDENCE.md`
 - `contracts/MARKETPLACE-HANDOFF-CONTRACT.md`
+- `evidence/Alpha-Marketplace-Handoff-Report.pdf`
 - `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`. The ledger is

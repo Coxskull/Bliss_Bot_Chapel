@@ -34,4 +34,15 @@ The new proofs are `MarketplaceHandoffTests` and
 
 `/operations#/handoff` reads one advertiser at a time.
 
+On the live library, Casa Verde and Test Creator Brazil were handed to
+`DeterministicRuleEvaluator` under Phase 2 Explicit Rules. The status
+is `INELIGIBLE`. The stored score is 0.3, the evaluator's result, and
+not a price. The stored country was not converted into a code. The
+same pair did not write a second row. Mesa Norte's reading does not
+show Casa Verde. ABC Pharmacy and Puerto Azul stay withheld. The match
+list stayed at 7. Delivery is `NOT_SENT`.
+
+The recording is `marketplace_handoff_evaluator_not_a_win.mp4`.
+The report is `docs/architecture/evidence/Alpha-Marketplace-Handoff-Report.pdf`.
+
 The contract is `docs/architecture/contracts/MARKETPLACE-HANDOFF-CONTRACT.md`.
