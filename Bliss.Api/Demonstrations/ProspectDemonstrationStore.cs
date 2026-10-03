@@ -96,6 +96,10 @@ public sealed class DemonstrationRecord
     public bool Suppressed { get; set; }
     public string SuppressionReason { get; set; } = string.Empty;
     public string EconomicsQuoteId { get; set; } = string.Empty;
+    public string BlissRematchNotice { get; set; } = string.Empty;
+    public string BlissRematchStatus { get; set; } = string.Empty;
+    public string BlissRematchCreatorName { get; set; } = string.Empty;
+    public decimal? BlissRematchScore { get; set; }
     public List<ContactRoadRecord> ContactRoads { get; set; } = [];
     public List<DeliveryDecisionRecord> DeliveryDecisions { get; set; } = [];
     public List<ConceptRecord> Concepts { get; set; } = [];

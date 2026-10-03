@@ -74,6 +74,9 @@ function render(page) {
     factRows.push(["Outreach", "Not eligible"]);
   }
   if (page.suppressed) factRows.push(["Suppression", page.suppressionReason]);
+  if (page.rematchNotice) factRows.push(["Bliss rematch", page.rematchNotice]);
+  const rematchNotice = document.querySelector("#rematchNotice");
+  if (rematchNotice) rematchNotice.textContent = page.rematchNotice || "";
   factRows.forEach(([label, value]) => {
     const block = document.createElement("div");
     const strong = document.createElement("strong");
@@ -177,6 +180,22 @@ document.querySelector("#economics").addEventListener("submit", async event => {
   }
   notice.textContent = "Economics accepted " + body.spoken + ". That is the only number Ask Alpha can say. Delivery " + body.delivery + ".";
   bubble("ASSISTANT", "An accepted Economics quote is linked. Ask Alpha will read that result when you ask the price.");
+});
+
+document.querySelector("#rematch").addEventListener("submit", async event => {
+  event.preventDefault();
+  const notice = document.querySelector("#rematchNotice");
+  notice.textContent = "Looking through the accepted evaluator…";
+  const response = await fetch("/api/demonstrations/" + slug + "/rematch", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}"
+  });
+  const body = await response.json();
+  notice.textContent = response.ok
+    ? body.rematchNotice
+    : (body.error || "Bliss kept the advertiser. Delivery remains NOT_SENT.");
+  notice.scrollIntoView({ block: "center" });
 });
 
 form.addEventListener("submit", async event => {
