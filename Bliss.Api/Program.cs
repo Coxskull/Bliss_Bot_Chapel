@@ -93,6 +93,7 @@ builder.Services.AddScoped<LearningLedgerService>();
 builder.Services.AddScoped<RotationPeriodService>();
 builder.Services.AddScoped<EconomicsPhaseAcceptanceService>();
 builder.Services.AddScoped<HostedAcceptanceService>();
+builder.Services.AddScoped<CoverageWeekService>();
 builder.Services.AddSingleton(authentication);
 builder.Services.AddSingleton(runtime);
 builder.Services.AddSingleton(posture);
