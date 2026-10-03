@@ -80,6 +80,7 @@ video { width: 100%; border-radius: 12px; background: #000; display: block; }
 .benefits strong { display: block; margin-bottom: 4px; }
 .layout { display: grid; grid-template-columns: 1.7fr 0.8fr; gap: 16px; align-items: start; }
 .chat { padding: 14px; display: flex; flex-direction: column; min-height: 520px; }
+.voice { color: var(--muted); font-size: 13px; margin: 0 0 6px; }
 .messages { display: flex; flex-direction: column; gap: 10px; flex: 1; }
 .bubble { border-radius: 14px; padding: 10px 12px; line-height: 1.4; }
 .bubble.ASSISTANT { background: #173154; }

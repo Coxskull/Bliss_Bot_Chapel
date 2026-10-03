@@ -1,10 +1,27 @@
 namespace Bliss.Domain.Demonstrations;
 
-public sealed record ConversationTurn(string Reply, string Signal, bool HumanEscalation);
+public sealed record ConversationTurn(string Reply, string Signal, bool HumanEscalation, string Gear = "teaching");
 
 public static class DemonstrationConversation
 {
+    public const string Voice = "Ask Alpha";
+
     public static ConversationTurn Reply(ProspectFacts facts, string message)
+    {
+        var raw = Answer(facts, message);
+        var repeated = raw.Signal is not ("NONE" or "")
+            && string.Equals(facts.LastSignal, raw.Signal, StringComparison.Ordinal);
+        var reply = Address(facts) + raw.Reply;
+        if (repeated)
+        {
+            reply += " Ask Alpha already answered that.";
+        }
+
+        reply += " " + Advance(raw.Signal, repeated);
+        return new ConversationTurn(reply, raw.Signal, raw.HumanEscalation, GearFor(raw.Signal));
+    }
+
+    private static ConversationTurn Answer(ProspectFacts facts, string message)
     {
         var text = (message ?? string.Empty).Trim();
         if (text.Length == 0)
@@ -84,7 +101,8 @@ public static class DemonstrationConversation
             return new ConversationTurn(
                 "Alpha places a short advertisement inside a source video of about 15 seconds. "
                 + "The overlay, the QR code, and the disclosure are produced for this private demonstration. "
-                + $"{facts.BusinessName} has not commissioned the work, and the page does not mean a campaign is live.",
+                + $"{facts.BusinessName} has not commissioned the work, and the page does not mean a campaign is live. "
+                + $"The value is a private look at a short placement for {facts.BusinessName}.",
                 "EXPLANATION",
                 false);
         }
@@ -124,6 +142,51 @@ public static class DemonstrationConversation
 
     private static bool ContainsAny(string text, params string[] needles) =>
         needles.Any(text.Contains);
+
+    private static string Address(ProspectFacts facts)
+    {
+        if (facts.PersonalizationAllowed && !string.IsNullOrWhiteSpace(facts.DecisionMakerName))
+        {
+            return facts.DecisionMakerName.Trim() + ", ";
+        }
+
+        return "Thank you. ";
+    }
+
+    private static string Advance(string signal, bool repeated) => signal switch
+    {
+        "EXPLANATION" => repeated
+            ? "The next step is a human handoff when you want one."
+            : "The next step is to ask what a human handoff requires.",
+        "PRICING_QUESTION" => repeated
+            ? "I will record a budget only for that handoff."
+            : "The next step is a human handoff.",
+        "DECISION_MAKER_QUESTION" => repeated
+            ? "I will not invent a person."
+            : "The next step stays on this page. Nothing is sent.",
+        "ROUTE_NOT_PERMISSION" => repeated
+            ? "Nothing is sent."
+            : "The next step is to leave delivery at NOT_SENT.",
+        "HUMAN_REQUESTED" => "The next step is that handoff.",
+        "INTEREST" => "The next step is a human close.",
+        "CONCEPT_QUESTION" => repeated
+            ? "The same concepts remain on this page."
+            : "The next step is to ask how the placement works.",
+        "QUALIFICATION_DETAIL" => repeated
+            ? "Those details stay on the prospect file."
+            : "The next step is a handoff when you want a person involved.",
+        "CLARIFY" => repeated
+            ? "I am ready for the demonstration or the handoff."
+            : "The next step is one question about the demonstration.",
+        _ => "The next step is your question."
+    };
+
+    private static string GearFor(string signal) => signal switch
+    {
+        "HUMAN_REQUESTED" or "INTEREST" => "handoff",
+        "PRICING_QUESTION" or "ROUTE_NOT_PERMISSION" or "DECISION_MAKER_QUESTION" => "integrity",
+        _ => "teaching"
+    };
 }
 
 public sealed record ProspectFacts(
@@ -137,4 +200,5 @@ public sealed record ProspectFacts(
     string Confidence = "UNVERIFIED",
     bool PersonalizationAllowed = false,
     string Freshness = "UNRECORDED",
-    bool Suppressed = false);
+    bool Suppressed = false,
+    string LastSignal = "");

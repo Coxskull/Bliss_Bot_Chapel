@@ -141,6 +141,9 @@ function render(page) {
   disclosure.textContent = page.disclosure + " " + page.contactRoute;
   messages.replaceChildren();
   page.messages.forEach(message => bubble(message.role, message.text));
+  const geared = [...page.messages].reverse().find(message => message.role === "ASSISTANT" && message.gear);
+  const gear = document.querySelector("#gear");
+  if (gear && geared) gear.textContent = "Gear: " + geared.gear + ". The voice stays Ask Alpha.";
 }
 
 async function load() {
@@ -170,8 +173,11 @@ form.addEventListener("submit", async event => {
     body: JSON.stringify({ text })
   });
   const body = await response.json();
-  if (response.ok) bubble("ASSISTANT", body.reply);
-  else bubble("ASSISTANT", body.error || "The message was not accepted.");
+  if (response.ok) {
+    bubble("ASSISTANT", body.reply);
+    const gear = document.querySelector("#gear");
+    if (gear) gear.textContent = "Gear: " + body.gear + ". The voice stays " + (body.voice || "Ask Alpha") + ".";
+  } else bubble("ASSISTANT", body.error || "The message was not accepted.");
 });
 
 load();

@@ -502,7 +502,8 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             string.IsNullOrWhiteSpace(demonstration.DecisionMakerStatus) ? "UNVERIFIED" : demonstration.DecisionMakerStatus,
             presentation.PersonalizationAllowed,
             presentation.Freshness,
-            demonstration.Suppressed);
+            demonstration.Suppressed,
+            demonstration.LastSignal);
         var turn = DemonstrationConversation.Reply(facts, message);
         var visitor = new ChatRecord
         {
@@ -516,6 +517,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
             Role = "ASSISTANT",
             Text = turn.Reply,
             Signal = turn.Signal,
+            Gear = turn.Gear,
             At = DateTime.UtcNow
         };
         store.Update(document =>
