@@ -8,12 +8,13 @@
   <meta name="description" content="Creator partnership operations, deterministic matching, human review, and campaign planning.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23123328' d='M20 2 37 11v18L20 38 3 29V11z'/%3E%3Cpath fill='none' stroke='%23a8efce' stroke-width='3' d='m11 21 6 6 12-14'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/operations/app.css">
-  <script src="/operations/app.js?v=route-1" defer></script>
+  <script src="/operations/app.js?v=measure-1" defer></script>
   <script src="/operations/tempo.js?v=fleet-1" defer></script>
   <script src="/operations/ledger.js?v=ledger-1" defer></script>
   <script src="/operations/fuel.js?v=fuel-1" defer></script>
   <script src="/operations/discovery.js?v=discovery-1" defer></script>
   <script src="/operations/routes.js?v=route-1" defer></script>
+  <script src="/operations/measure.js?v=measure-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -45,6 +46,7 @@
         <a class="nav-item" href="#/fuel" data-view="fuel"><span class="nav-icon" aria-hidden="true">▣</span><span>Media fuel</span></a>
         <a class="nav-item" href="#/discovery" data-view="discovery"><span class="nav-icon" aria-hidden="true">△</span><span>Discovery</span></a>
         <a class="nav-item" href="#/routes" data-view="routes"><span class="nav-icon" aria-hidden="true">→</span><span>Contact route</span></a>
+        <a class="nav-item" href="#/measure" data-view="measure"><span class="nav-icon" aria-hidden="true">◷</span><span>Local batch</span></a>
         <a class="nav-item" href="#/status" data-view="status"><span class="nav-icon" aria-hidden="true">◎</span><span>Status</span></a>
       </nav>
       <div class="sidebar-bottom">
@@ -623,6 +625,32 @@
           <section class="panel table-panel">
             <div class="panel-header"><div><p class="eyebrow">HISTORY</p><h3>Transmission audits</h3></div></div>
             <div class="table-wrap" id="route-audits"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-measure" aria-labelledby="measure-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">ONE CONSOLE</p>
+              <h2 id="measure-title">Local batch measurement</h2>
+              <p id="measure-notice">This measurement reads the local database. It is not hosted acceptance. The 15-minute factory target is not claimed. A rung of 100, 1,000, or 10,000 is not a stored census. No invoice is on file. A partial failure keeps the other stored prospects. A message that names another prospect is leakage. Green does not send. Delivery remains NOT_SENT.</p>
+              <p>The clock reading and the process working set are stored. A dollar amount is not invented. Economics remains the only price authority.</p>
+              <p id="measure-delivery">Delivery NOT_SENT. Green does not send.</p>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">LOCAL DATABASE</p><h3>Latest measurement</h3></div></div>
+            <div class="form-actions"><button class="primary-button" type="button" id="measure-once">Measure the local database</button><button class="secondary-button" type="button" id="measure-retry">Record one retry</button></div>
+            <p id="measure-result"></p>
+            <div class="table-wrap" id="measure-facts"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">KEPT</p><h3>Partial failures and leakage</h3></div></div>
+            <div class="table-wrap" id="measure-failures"></div>
+          </section>
+          <section class="panel table-panel">
+            <div class="panel-header"><div><p class="eyebrow">HISTORY</p><h3>Measurement rows</h3></div></div>
+            <div class="table-wrap" id="measure-rows"></div>
           </section>
         </section>
 
