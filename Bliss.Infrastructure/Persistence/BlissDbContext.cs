@@ -94,6 +94,7 @@ public class BlissDbContext : DbContext
     public DbSet<RotationPeriodRow> RotationPeriods => Set<RotationPeriodRow>();
     public DbSet<EconomicsPhaseAcceptanceRow> EconomicsPhaseAcceptances => Set<EconomicsPhaseAcceptanceRow>();
     public DbSet<HostedAcceptanceRow> HostedAcceptanceReadings => Set<HostedAcceptanceRow>();
+    public DbSet<CoverageWeekRow> CoverageWeeks => Set<CoverageWeekRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

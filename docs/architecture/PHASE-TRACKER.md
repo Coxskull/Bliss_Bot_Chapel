@@ -14,7 +14,8 @@ marketplace handoff, the human creative approval, the research ledger,
 and the later rotation period are verified local proofs. Economics Phase 9
 is accepted by the owner. Historical actuals stay append-only. An empty
 history stays unrecorded. A hosted reading stores this process posture.
-Hosted acceptance is not claimed. The program stays open.
+Hosted acceptance is not claimed. A coverage week stores the measured
+slices. A missing market is not added. The program stays open.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -112,6 +113,9 @@ verified.
 - `contracts/ECONOMICS-PHASE-ACCEPTANCE-CONTRACT.md`
 - `HOSTED-ACCEPTANCE-EVIDENCE.md`
 - `contracts/HOSTED-ACCEPTANCE-CONTRACT.md`
+- `COVERAGE-WEEK-EVIDENCE.md`
+- `contracts/COVERAGE-WEEK-CONTRACT.md`
+- `evidence/Alpha-Coverage-Week-Report.pdf`
 - `evidence/Alpha-Hosted-Acceptance-Report.pdf`
 - `evidence/Alpha-Economics-Phase9-Acceptance-Report.pdf`
 - `evidence/Alpha-Later-Rotation-Period-Report.pdf`
@@ -122,7 +126,8 @@ verified.
 
 The visible board is `/acquisition/index.html`. The ledger is
 `/operations#/ledger`. The later period is `/operations#/period`. The
-hosted reading is `/operations#/hosted`.
+hosted reading is `/operations#/hosted`. The coverage week is
+`/operations#/week`.
 
 ## Priority contracts
 
@@ -143,3 +148,4 @@ this process posture and does not claim hosted acceptance.
 | 11 | Human creative approval | Verified local proof. A human decision stays inside an open workspace. A discovered business is not opened. Campaign ready is refused. No price is invented. Six roles are not called. A match is not written. Green does not send |
 | 12 | Research ledger | Verified local proof. A note is appended only after the laboratory graduates. No authorized traffic is on file. Research does not change production. Another prospect's note is not shown. A model is not the record. Green does not send |
 | 13 | Later rotation period | Verified local proof. One later period stores the measured open slots and the creator decision. A theoretical slot is not filled. No revenue row is on file. This is not a census. Stored slots are not rewritten. Economics remains the only price authority. Green does not send |
+| 14 | Coverage week | Verified local proof. One week stores the measured coverage. A missing market is not added. This is not a census. The fuel gauge is unchanged. Green does not send |
