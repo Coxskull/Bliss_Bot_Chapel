@@ -12,7 +12,8 @@ namespace Bliss.Api.Demonstrations;
 public sealed class DemonstrationsController(
     ProspectDemonstrationService demonstrations,
     EconomicsAcceptedPriceReader economics,
-    EconomicsNegotiationGate negotiation) : ControllerBase
+    EconomicsNegotiationGate negotiation,
+    BlissRematchGate rematch) : ControllerBase
 {
     [HttpPost("factory-batch")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
@@ -173,6 +174,28 @@ public sealed class DemonstrationsController(
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { error = ex.Message, outreachEligible = false, delivery = "NOT_SENT" });
+        }
+    }
+
+    [HttpPost("{slug}/rematch")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> Rematch(string slug, [FromBody] RematchRequest? request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (demonstrations.Find(slug) is null)
+            {
+                return NotFound(new { error = "Prospect not found.", delivery = "NOT_SENT" });
+            }
+
+            var decision = await rematch.SelectAsync(request?.OpportunityId, request?.CurrentCreatorId, cancellationToken);
+            var prospect = demonstrations.RememberRematch(slug, decision);
+            return Ok(DetailDto(prospect));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message, delivery = "NOT_SENT" });
         }
     }
 
@@ -549,6 +572,10 @@ public sealed class DemonstrationsController(
             item.DecidedAt
         }),
         deliveryNotice = (demonstration.DeliveryDecisions ?? []).LastOrDefault()?.Notice ?? string.Empty,
+        rematchNotice = demonstration.BlissRematchNotice,
+        rematchStatus = demonstration.BlissRematchStatus,
+        rematchCreatorName = demonstration.BlissRematchCreatorName,
+        rematchScore = demonstration.BlissRematchScore,
         transmission = DeliveryPolicy.Transmission,
         delivery = "NOT_SENT",
         subject = demonstration.ProspectState == "PRESERVED"
@@ -602,6 +629,7 @@ public sealed record DiscoverRequest(string? Niche, string? Market, string? Busi
 public sealed record AcquisitionEventRequest(string? Kind, string? Watcher);
 public sealed record ContactRoadRequest(string? Kind, string? Value, string? SourceUrl);
 public sealed record DeliveryRequest(string? RoadId, string? Policy, string? Adapter, string? Authorization);
+public sealed record RematchRequest(Guid? OpportunityId, Guid? CurrentCreatorId);
 
 internal static class DeliveryEligibility
 {

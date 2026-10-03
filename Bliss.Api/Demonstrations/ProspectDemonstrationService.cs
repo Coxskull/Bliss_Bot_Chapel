@@ -562,6 +562,17 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         return current;
     }
 
+    public DemonstrationRecord RememberRematch(string slug, BlissRematchDecision decision)
+    {
+        var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
+        current.BlissRematchNotice = decision.Notice;
+        current.BlissRematchStatus = decision.MatchStatus;
+        current.BlissRematchCreatorName = decision.CreatorName;
+        current.BlissRematchScore = decision.OverallScore;
+        Save(slug, current);
+        return current;
+    }
+
     public DemonstrationRecord AttachEconomicsQuote(string slug, Guid quoteId)
     {
         var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");

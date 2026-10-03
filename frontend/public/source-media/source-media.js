@@ -397,6 +397,25 @@ document.querySelector("#delivery").addEventListener("submit", async event => {
   }
 });
 
+document.querySelector("#rematch").addEventListener("submit", async event => {
+  event.preventDefault();
+  const rematchNotice = document.querySelector("#rematchNotice");
+  if (!roadProspect.value) {
+    rematchNotice.textContent = "Record a prospect before a rematch.";
+    rematchNotice.scrollIntoView({ block: "center" });
+    return;
+  }
+  rematchNotice.textContent = "Looking through the accepted evaluator…";
+  try {
+    const page = await postJson("/api/demonstrations/" + roadProspect.value + "/rematch", {});
+    rematchNotice.textContent = page.businessName + ". " + page.rematchNotice + " Delivery " + page.delivery + ".";
+    rematchNotice.scrollIntoView({ block: "center" });
+  } catch (error) {
+    rematchNotice.textContent = error.message;
+    rematchNotice.scrollIntoView({ block: "center" });
+  }
+});
+
 document.querySelector("#suppress").addEventListener("submit", async event => {
   event.preventDefault();
   if (!roadProspect.value) {

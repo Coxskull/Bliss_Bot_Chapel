@@ -6,8 +6,8 @@ intelligence.
 **Program status:** future engineering program. Blueprint v2 is
 preserved. Reconciliation is recorded. The program is not verified.
 
-**You are here:** Phases 4–17 are verified local proofs. Phase 0 is this
-tracker. The next build, when a change is authorized, is Phase 18.
+**You are here:** Phases 4–18 are verified local proofs. Phase 0 is this
+tracker. The next build, when a change is authorized, is Phase 19.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -33,8 +33,8 @@ verified.
 | 15 | Negotiation inside Economics | Verified | Ask Alpha records a proposal only inside the Economics envelope. The creator floor is the line's recommendation low. The result is a Phase 5 draft and is not accepted |
 | 16 | Eligible delivery | Verified | Suppression still withholds the road. The preview policy and the preview adapter can prepare a copy. Transmission stays NOT_SENT |
 | 17 | Prospect memory in PostgreSQL | Verified | Prospect rows, clip metadata, and factory batches are in the Bliss database. Media files stay on disk. This is not a scale claim |
-| 18 | Bliss rematch when the economics do not fit | Next. Not started | `DeterministicRuleEvaluator` stays the matching authority |
-| 19 | Wedding Planner wakes after commercial progression | Not started | Inherit authorized context. Do not plan every discovered business |
+| 18 | Bliss rematch when the economics do not fit | Verified | `DeterministicRuleEvaluator` stays the matching authority. No approved alternate keeps the advertiser. Delivery stays NOT_SENT |
+| 19 | Wedding Planner wakes after commercial progression | Next. Not started | Inherit authorized context. Do not plan every discovered business |
 | 20 | Conversation laboratory and regression | Not started | Persona scenarios in tests before a behavior change |
 | 21 | Spend and pause controls on the operations console | Not started | Auditable limits. No second Mission Control product |
 | 22 | Grooming and external research | Future | Production events first. Research cannot change production |
@@ -47,7 +47,7 @@ verified.
 - Selling language must not outrun Economics, Bliss, or the unsent rule.
 - Required disclosures stay. They are not optional self-gating.
 
-## Evidence already accepted for Phases 4–17
+## Evidence already accepted for Phases 4–18
 
 - `PROSPECT-DEMONSTRATION-EVIDENCE.md`
 - `ADVERTISER-DISCOVERY-EVIDENCE.md`
@@ -62,5 +62,6 @@ verified.
 - `NEGOTIATION-EVIDENCE.md`
 - `ELIGIBLE-DELIVERY-EVIDENCE.md`
 - `PROSPECT-MEMORY-EVIDENCE.md`
+- `BLISS-REMATCH-EVIDENCE.md`
 
 The visible board is `/acquisition/index.html`.
