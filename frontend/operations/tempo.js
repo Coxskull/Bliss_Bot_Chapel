@@ -1,6 +1,8 @@
 async function loadLaneTempo() {
   const board = await api("/api/operations/tempo");
   $("#tempo-notice").textContent = board.notice || "";
+  $("#tempo-summary").innerHTML = (board.lanes || []).map(lane =>
+    `<li><strong>${escapeHtml(lane.displayName)}</strong> ${escapeHtml(lane.tempo)}</li>`).join("");
   const rows = (board.lanes || []).map(lane => {
     const ceiling = lane.ceilingAmount == null
       ? "No spend ceiling is recorded. None was invented."

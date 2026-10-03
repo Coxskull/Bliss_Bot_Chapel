@@ -443,9 +443,10 @@
               <p class="eyebrow">ONE CONSOLE</p>
               <h2 id="tempo-title">Spend and pause</h2>
               <p id="tempo-notice">One operations console. A paused lane does not stop the others. Green does not send. Delivery remains NOT_SENT.</p>
+              <ul id="tempo-summary"></ul>
+              <p id="tempo-result" class="tempo-result"></p>
             </div>
           </div>
-          <div class="panel table-panel"><div class="table-wrap" id="tempo-lanes"></div></div>
           <section class="panel">
             <div class="panel-header"><div><p class="eyebrow">AUDIT</p><h3>Record one lane</h3></div></div>
             <form id="tempo-form" class="form-grid">
@@ -471,8 +472,8 @@
               <label class="span-two"><span>Reason</span><textarea name="reason" maxlength="300" required placeholder="Why this lane changes"></textarea></label>
               <div class="form-actions span-two"><small>A blank ceiling records no number. A recorded ceiling is an operational limit, not an Economics price. Green does not send. Delivery remains NOT_SENT.</small><button class="primary-button" type="submit">Record the lane tempo</button></div>
             </form>
-            <p id="tempo-result" class="tempo-result"></p>
           </section>
+          <div class="panel table-panel"><div class="table-wrap" id="tempo-lanes"></div></div>
           <section class="panel table-panel">
             <div class="panel-header"><div><p class="eyebrow">HISTORY</p><h3>Lane tempo audits</h3></div></div>
             <div class="table-wrap" id="tempo-audits"></div>
