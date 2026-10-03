@@ -96,6 +96,7 @@ verified.
 - `contracts/CONTACT-ROUTE-CONTRACT.md`
 - `LOCAL-BATCH-EVIDENCE.md`
 - `contracts/LOCAL-BATCH-CONTRACT.md`
+- `evidence/Alpha-Local-Batch-Report.pdf`
 - `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`. The ledger is

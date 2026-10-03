@@ -36,4 +36,14 @@ The new proofs are `BatchMeasurementTests` and
 `/operations#/measure` reads the stored measurement rows. Hosted
 acceptance stays unclaimed before and after the button.
 
+On the live library, `local-batch-1` stored 4 prospects in 35
+milliseconds, with a working set of 312,238,080 bytes, retries 0, and
+no leakage. The same key did not write a second row. `local-batch-retry-1`
+stored the same 4 prospects in 6 milliseconds, with a working set of
+316,678,144 bytes and retries 1. Both deliveries are `NOT_SENT`. No
+invoice is on file.
+
+The recording is `local_batch_measured_hosted_acceptance_unclaimed.mp4`.
+The report is `docs/architecture/evidence/Alpha-Local-Batch-Report.pdf`.
+
 The contract is `docs/architecture/contracts/LOCAL-BATCH-CONTRACT.md`.
