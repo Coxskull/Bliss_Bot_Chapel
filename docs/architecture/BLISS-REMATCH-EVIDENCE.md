@@ -47,5 +47,5 @@ The Mesa Norte demonstration page asks Bliss to look for another match.
 The reply is: Bliss will not rematch without an active opportunity. The
 advertiser is kept. Delivery remains `NOT_SENT`. No person is named.
 
-The recording is `bliss_rematch_keeps_the_advertiser.mp4`.
+The recording is `bliss_rematch_click_keeps_the_advertiser.mp4`. The sentence is absent when the page opens and appears after Look for another Bliss match.
 The report is `docs/architecture/evidence/Alpha-Bliss-Rematch-Report.pdf`.
