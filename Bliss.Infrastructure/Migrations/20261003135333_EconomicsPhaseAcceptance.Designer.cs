@@ -3,6 +3,7 @@ using System;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Bliss.Infrastructure.Migrations
 {
     [DbContext(typeof(BlissDbContext))]
-    partial class BlissDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261003135333_EconomicsPhaseAcceptance")]
+    partial class EconomicsPhaseAcceptance
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1987,73 +1990,6 @@ namespace Bliss.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("HistoricalPlacementEconomics", (string)null);
-                });
-
-            modelBuilder.Entity("Bliss.Domain.Entities.HostedAcceptanceRow", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("BackupDeclared")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("BackupDrillRun")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("DatabaseServerCertificateVerified")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Delivery")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
-
-                    b.Property<string>("EnvironmentName")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)");
-
-                    b.Property<bool>("HostedAcceptanceClaimed")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("HostedDatabaseConfigured")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IdentityContacted")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IdentityProviderHttps")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Notice")
-                        .IsRequired()
-                        .HasMaxLength(800)
-                        .HasColumnType("character varying(800)");
-
-                    b.Property<bool>("ProductionGatesApplied")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("ReadingKey")
-                        .IsRequired()
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
-
-                    b.Property<DateTime>("RecordedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("RoleClaimsDistinct")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("SecretMaterialExternal")
-                        .HasColumnType("boolean");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ReadingKey")
-                        .IsUnique();
-
-                    b.ToTable("HostedAcceptanceReadings", (string)null);
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.IndustryEconomicProfile", b =>

@@ -1,7 +1,7 @@
 # Bliss Economics & Rate Intelligence Engine™
 
 **Status:** separate bounded context. Economics Phases 1–9 are
-implemented; Phase 9 is pending owner acceptance. It does not alter Bliss
+implemented. The owner accepted Phase 9 on 2026-10-03. It does not alter Bliss
 Phases 1–19 or Wedding Planner Phases 1–9.
 
 **Working name:** Bliss Economics & Rate Intelligence Engine™
@@ -40,8 +40,9 @@ creator/advertiser databases.
 ## Current-phase rule
 
 Phase 9 authorizes append-only placement actuals, campaign performance,
-and external-versus-Alpha comparisons. It does not authorize automatic
-pricing feedback, settlement, payable, invoice, or payout behavior.
+and external-versus-Alpha comparisons. The owner accepted that scope on
+2026-10-03. It does not authorize automatic pricing feedback, settlement,
+payable, invoice, or payout behavior. An empty history stays unrecorded.
 
 Wedding Planner Phase 1 remains workspace / session / message / audit
 infrastructure only.

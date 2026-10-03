@@ -78,6 +78,10 @@ only through its own Engineering Contract
 | The research ledger Engineering Contract | `contracts/LEARNING-LEDGER-CONTRACT.md` |
 | What a later rotation period stores | `ROTATION-PERIOD-EVIDENCE.md` |
 | The later rotation period Engineering Contract | `contracts/ROTATION-PERIOD-CONTRACT.md` |
+| What the Economics Phase 9 acceptance records | `ECONOMICS-PHASE-ACCEPTANCE-EVIDENCE.md` |
+| The Economics Phase 9 acceptance Engineering Contract | `contracts/ECONOMICS-PHASE-ACCEPTANCE-CONTRACT.md` |
+| What a hosted acceptance reading stores | `HOSTED-ACCEPTANCE-EVIDENCE.md` |
+| The hosted acceptance reading Engineering Contract | `contracts/HOSTED-ACCEPTANCE-CONTRACT.md` |
 | Accepted Bliss behavior | `docs/bliss/` contracts and evidence |
 | Accepted Wedding Planner Phase 1 behavior | `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md` |
 | Wedding Planner product note for the current module | `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md` |
