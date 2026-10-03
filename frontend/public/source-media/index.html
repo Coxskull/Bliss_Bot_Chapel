@@ -138,7 +138,7 @@
       <div>
         <p class="status">CONTACT ROADS</p>
         <h2>A public road is not permission to send</h2>
-        <p>Record a contact copied from a public page. One business can keep several roads. Finding a road does not make outreach eligible. Suppression stops the prospect. Nothing is sent.</p>
+        <p>Record a contact copied from a public page. One business can keep several roads. Finding a road does not make outreach eligible. The preview policy and the preview adapter can prepare a copy. Suppression comes first. Nothing is transmitted.</p>
       </div>
     </section>
     <p id="roadNotice"></p>
@@ -159,6 +159,24 @@
     <form id="suppress" class="discover">
       <label>Suppression reason<input id="suppressionReason" name="reason" type="text" required placeholder="Why Alpha must not contact this business"></label>
       <button class="secondary" type="submit">Suppress this prospect</button>
+    </form>
+    <p id="deliveryNotice"></p>
+    <form id="delivery" class="discover">
+      <label>Stored road
+        <select id="deliveryRoad" name="roadId" required></select>
+      </label>
+      <label>Policy
+        <select id="deliveryPolicy" name="policy">
+          <option value="preview-only">Preview only</option>
+        </select>
+      </label>
+      <label>Adapter
+        <select id="deliveryAdapter" name="adapter">
+          <option value="preview-adapter">Preview adapter</option>
+        </select>
+      </label>
+      <label>Operator authorization<input id="deliveryAuthorization" name="authorization" type="text" required placeholder="Prepare the preview"></label>
+      <button type="submit">Prepare the preview</button>
     </form>
   </main>
   <script src="/source-media/source-media.js" defer></script>
