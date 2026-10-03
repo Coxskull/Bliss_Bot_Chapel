@@ -6,8 +6,7 @@ contact route audit, the local batch measurement, the marketplace
 handoff, the human creative approval, the research ledger, and the
 later rotation period are local proofs. Economics Phase 9 is accepted
 by the owner. An empty history stays unrecorded. Every other row stays
-unauthorized. A hosted reading stores the process posture. Hosted acceptance is not claimed. Conversation AI and
-seven grooming models stay closed.
+unauthorized. A hosted reading stores the process posture. Hosted acceptance is not claimed. Conversation AI stays closed. A closed-model reading is stored on `/operations#/models`. Seven grooming models are not configured.
 
 Do not implement an item on this list because it appears here. The
 Bliss package must reach its required acceptance point first. After
