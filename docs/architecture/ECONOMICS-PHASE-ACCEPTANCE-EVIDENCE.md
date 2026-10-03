@@ -35,4 +35,18 @@ in the same suite.
 
 `/operations#/acceptance` reads the stored historical tables.
 
+On the live database, historical placements are 0, campaign snapshots
+are 0, and recommendations are 0. The owner acceptance is stored once
+as Phase 9. Repricing, settlement, and recommendation rewritten stay
+no. The history line says no actual is on file. The same acceptance
+was not stored again. Applying history to the price was refused.
+Delivery is `NOT_SENT`.
+
+The automated proof cites Contracted 215 PHP from the Phase 9 test
+graph and leaves that recommendation target unchanged. That amount is
+not a row in the live database.
+
+The recording is `economics_phase9_accepted_history_unrecorded.mp4`.
+The report is `docs/architecture/evidence/Alpha-Economics-Phase9-Acceptance-Report.pdf`.
+
 The contract is `docs/architecture/contracts/ECONOMICS-PHASE-ACCEPTANCE-CONTRACT.md`.

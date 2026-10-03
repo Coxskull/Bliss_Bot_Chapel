@@ -110,6 +110,7 @@ verified.
 - `contracts/ROTATION-PERIOD-CONTRACT.md`
 - `ECONOMICS-PHASE-ACCEPTANCE-EVIDENCE.md`
 - `contracts/ECONOMICS-PHASE-ACCEPTANCE-CONTRACT.md`
+- `evidence/Alpha-Economics-Phase9-Acceptance-Report.pdf`
 - `evidence/Alpha-Later-Rotation-Period-Report.pdf`
 - `evidence/Alpha-Research-Ledger-Report.pdf`
 - `evidence/Alpha-Creative-Approval-Report.pdf`
