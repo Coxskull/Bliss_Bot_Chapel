@@ -31,4 +31,15 @@ The new proofs are `HostedAcceptanceTests` and `HostedAcceptanceApiTests`.
 
 `/operations#/hosted` reads the process that is running.
 
+On this process the environment is Development. Production gates are
+not applied. Hosted database, server-certificate verification, identity
+provider HTTPS, and a declared backup stay no. Secrets outside
+appsettings and distinct role claims stay yes. `hosted-reading-1`
+stores that posture. Hosted acceptance claimed, identity contacted, and
+backup drill run stay no. The same key was not stored again. A request
+to claim hosted acceptance was refused. Delivery is `NOT_SENT`.
+
+The recording is `hosted_reading_leaves_acceptance_unclaimed.mp4`.
+The report is `docs/architecture/evidence/Alpha-Hosted-Acceptance-Report.pdf`.
+
 The contract is `docs/architecture/contracts/HOSTED-ACCEPTANCE-CONTRACT.md`.

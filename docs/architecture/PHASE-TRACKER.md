@@ -112,6 +112,7 @@ verified.
 - `contracts/ECONOMICS-PHASE-ACCEPTANCE-CONTRACT.md`
 - `HOSTED-ACCEPTANCE-EVIDENCE.md`
 - `contracts/HOSTED-ACCEPTANCE-CONTRACT.md`
+- `evidence/Alpha-Hosted-Acceptance-Report.pdf`
 - `evidence/Alpha-Economics-Phase9-Acceptance-Report.pdf`
 - `evidence/Alpha-Later-Rotation-Period-Report.pdf`
 - `evidence/Alpha-Research-Ledger-Report.pdf`
