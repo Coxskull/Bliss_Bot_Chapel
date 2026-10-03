@@ -43,6 +43,7 @@ public sealed class DemonstrationsController(
             fuel.WeeklyQualified,
             fuel.WeeklyRemaining,
             fuel.FuelStatus,
+            memory = demonstrations.MemoryStore,
             clips = library.Clips.OrderByDescending(x => x.AddedAt).Select(ClipDto),
             demonstrations = library.Demonstrations.Select(SummaryDto)
         });

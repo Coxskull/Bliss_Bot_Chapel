@@ -76,6 +76,9 @@ public class BlissDbContext : DbContext
         Set<HistoricalPlacementEconomics>();
     public DbSet<CampaignPerformanceEconomics> CampaignPerformanceEconomics =>
         Set<CampaignPerformanceEconomics>();
+    public DbSet<ProspectMemory> ProspectMemories => Set<ProspectMemory>();
+    public DbSet<SourceClipMemory> SourceClipMemories => Set<SourceClipMemory>();
+    public DbSet<FactoryBatchMemory> FactoryBatchMemories => Set<FactoryBatchMemory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,4 +1,8 @@
 using System.Text.Json;
+using Bliss.Domain.Entities;
+using Bliss.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Bliss.Api.Demonstrations;
 
@@ -153,10 +157,15 @@ public sealed class ProspectDemonstrationStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     private readonly string _root;
+    private readonly IServiceScopeFactory _scopes;
     private readonly object _gate = new();
 
-    public ProspectDemonstrationStore(IWebHostEnvironment environment, IConfiguration configuration)
+    public ProspectDemonstrationStore(
+        IWebHostEnvironment environment,
+        IConfiguration configuration,
+        IServiceScopeFactory scopes)
     {
+        _scopes = scopes;
         _root = configuration["Demonstrations:Root"]
             ?? Path.Combine(environment.ContentRootPath, "App_Data", "demonstrations");
         Directory.CreateDirectory(ClipsDirectory);
@@ -167,11 +176,33 @@ public sealed class ProspectDemonstrationStore
     public string ClipsDirectory => Path.Combine(_root, "clips");
     public string RendersDirectory => Path.Combine(_root, "renders");
 
+    public string MemoryProvider
+    {
+        get
+        {
+            using var scope = _scopes.CreateScope();
+            var name = scope.ServiceProvider.GetRequiredService<BlissDbContext>().Database.ProviderName ?? string.Empty;
+            if (name.Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
+            {
+                return "POSTGRESQL";
+            }
+
+            if (name.Contains("InMemory", StringComparison.OrdinalIgnoreCase))
+            {
+                return "IN_MEMORY";
+            }
+
+            return "UNKNOWN";
+        }
+    }
+
     public LibraryDocument Read()
     {
         lock (_gate)
         {
-            return ReadUnlocked();
+            using var scope = _scopes.CreateScope();
+            var database = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+            return Load(database);
         }
     }
 
@@ -179,11 +210,11 @@ public sealed class ProspectDemonstrationStore
     {
         lock (_gate)
         {
-            var document = ReadUnlocked();
+            using var scope = _scopes.CreateScope();
+            var database = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+            var document = Load(database);
             change(document);
-            var temporary = Path.Combine(_root, "library.json.tmp");
-            File.WriteAllText(temporary, JsonSerializer.Serialize(document, JsonOptions));
-            File.Move(temporary, Path.Combine(_root, "library.json"), overwrite: true);
+            Save(database, document);
         }
     }
 
@@ -191,7 +222,122 @@ public sealed class ProspectDemonstrationStore
 
     public string RenderPath(string fileName) => Path.Combine(RendersDirectory, fileName);
 
-    private LibraryDocument ReadUnlocked()
+    private LibraryDocument Load(BlissDbContext database)
+    {
+        var prospects = database.ProspectMemories.AsNoTracking().ToList();
+        var clips = database.SourceClipMemories.AsNoTracking().ToList();
+        var batches = database.FactoryBatchMemories.AsNoTracking().ToList();
+        if (prospects.Count == 0 && clips.Count == 0 && batches.Count == 0)
+        {
+            var imported = ReadFile();
+            if (imported.Demonstrations.Count > 0 || imported.Clips.Count > 0 || imported.Batches.Count > 0)
+            {
+                Save(database, imported);
+                return imported;
+            }
+        }
+
+        return new LibraryDocument
+        {
+            Demonstrations = prospects.Select(row => JsonSerializer.Deserialize<DemonstrationRecord>(row.PayloadJson, JsonOptions)!).ToList(),
+            Clips = clips.Select(row => JsonSerializer.Deserialize<SourceClipRecord>(row.PayloadJson, JsonOptions)!).ToList(),
+            Batches = batches.Select(row => JsonSerializer.Deserialize<FactoryBatchRecord>(row.PayloadJson, JsonOptions)!).ToList()
+        };
+    }
+
+    private static void Save(BlissDbContext database, LibraryDocument document)
+    {
+        document.Demonstrations ??= [];
+        document.Clips ??= [];
+        document.Batches ??= [];
+        var now = DateTime.UtcNow;
+        var prospects = database.ProspectMemories.ToDictionary(item => item.Slug, StringComparer.Ordinal);
+        var seenProspects = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var record in document.Demonstrations)
+        {
+            if (string.IsNullOrWhiteSpace(record.Slug) || !seenProspects.Add(record.Slug))
+            {
+                continue;
+            }
+
+            if (!prospects.TryGetValue(record.Slug, out var row))
+            {
+                row = new ProspectMemory { Id = Guid.NewGuid(), Slug = record.Slug };
+                database.ProspectMemories.Add(row);
+            }
+
+            row.BusinessName = Bound(record.BusinessName, 300);
+            row.Market = Bound(record.Market, 128);
+            row.ProspectState = Bound(record.ProspectState, 64);
+            row.OpportunityScore = record.OpportunityScore;
+            row.Suppressed = record.Suppressed;
+            row.PayloadJson = JsonSerializer.Serialize(record, JsonOptions);
+            row.UpdatedAt = now;
+        }
+
+        foreach (var stale in prospects.Values.Where(item => !seenProspects.Contains(item.Slug)))
+        {
+            database.ProspectMemories.Remove(stale);
+        }
+
+        var clips = database.SourceClipMemories.ToDictionary(item => item.Id);
+        var seenClips = new HashSet<Guid>();
+        foreach (var record in document.Clips)
+        {
+            if (record.Id == Guid.Empty || !seenClips.Add(record.Id))
+            {
+                continue;
+            }
+
+            if (!clips.TryGetValue(record.Id, out var row))
+            {
+                row = new SourceClipMemory { Id = record.Id };
+                database.SourceClipMemories.Add(row);
+            }
+
+            row.Market = Bound(record.Market, 128);
+            row.Status = Bound(record.Status, 64);
+            row.QuotaCredit = record.QuotaCredit;
+            row.Sha256 = Bound(record.Sha256, 128);
+            row.PayloadJson = JsonSerializer.Serialize(record, JsonOptions);
+            row.UpdatedAt = now;
+        }
+
+        foreach (var stale in clips.Values.Where(item => !seenClips.Contains(item.Id)))
+        {
+            database.SourceClipMemories.Remove(stale);
+        }
+
+        var batches = database.FactoryBatchMemories.ToDictionary(item => item.Id, StringComparer.Ordinal);
+        var seenBatches = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var record in document.Batches)
+        {
+            if (string.IsNullOrWhiteSpace(record.Id) || !seenBatches.Add(record.Id))
+            {
+                continue;
+            }
+
+            if (!batches.TryGetValue(record.Id, out var row))
+            {
+                row = new FactoryBatchMemory { Id = record.Id };
+                database.FactoryBatchMemories.Add(row);
+            }
+
+            row.Status = Bound(record.Status, 64);
+            row.AiCalls = record.AiCalls;
+            row.PayloadJson = JsonSerializer.Serialize(record, JsonOptions);
+            row.UpdatedAt = now;
+        }
+
+        foreach (var stale in batches.Values.Where(item => !seenBatches.Contains(item.Id)))
+        {
+            database.FactoryBatchMemories.Remove(stale);
+        }
+
+        database.SaveChanges();
+    }
+
+    private LibraryDocument ReadFile()
     {
         var path = Path.Combine(_root, "library.json");
         if (!File.Exists(path))
@@ -201,5 +347,11 @@ public sealed class ProspectDemonstrationStore
 
         return JsonSerializer.Deserialize<LibraryDocument>(File.ReadAllText(path), JsonOptions)
             ?? new LibraryDocument();
+    }
+
+    private static string Bound(string? value, int max)
+    {
+        var text = value ?? string.Empty;
+        return text.Length <= max ? text : text[..max];
     }
 }
