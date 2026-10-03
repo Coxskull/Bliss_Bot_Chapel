@@ -6,8 +6,8 @@ intelligence.
 **Program status:** future engineering program. Blueprint v2 is
 preserved. Reconciliation is recorded. The program is not verified.
 
-**You are here:** Phases 4–18 are verified local proofs. Phase 0 is this
-tracker. The next build, when a change is authorized, is Phase 19.
+**You are here:** Phases 4–19 are verified local proofs. Phase 0 is this
+tracker. The next build, when a change is authorized, is Phase 20.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -18,7 +18,7 @@ verified.
 | 0 | v2 blueprint, reconciliation, and this tracker | Recorded in this change | Screen recording and PDF report for the tracker |
 | 1 | Bliss Chapel Phases 1–20 | Evidence exists. Hosted deployment is not declared finished | Stay on the Bliss acceptance path. Do not restart it here |
 | 2 | Economics Phases 1–9, the only price authority | Implemented. Phase 9 awaits owner acceptance | Do not add a second rate engine |
-| 3 | Wedding Planner Phase 1 workspace | Implemented. Zero AI | Campaign inheritance waits for Phase 19 |
+| 3 | Wedding Planner Phase 1 workspace | Implemented. Zero AI | Phase 19 inherits an accepted Economics result into that workspace. A discovered business is not planned |
 | 4 | Source media library, duplicates, and fuel | Verified | Media files stay on disk. Prospect rows are in PostgreSQL as of Phase 17 |
 | 5 | One software demonstration, QR, disclosure, unsent preview | Verified | ABC reference has four concepts. A discovered prospect has one. The permanent MP4 remains beside recipe overlay-1 |
 | 6 | Discovery screen at score 100 | Verified | A legitimate public-source business below 100 is stored by Phase 8. The demonstration still waits for 100 |
@@ -34,8 +34,8 @@ verified.
 | 16 | Eligible delivery | Verified | Suppression still withholds the road. The preview policy and the preview adapter can prepare a copy. Transmission stays NOT_SENT |
 | 17 | Prospect memory in PostgreSQL | Verified | Prospect rows, clip metadata, and factory batches are in the Bliss database. Media files stay on disk. This is not a scale claim |
 | 18 | Bliss rematch when the economics do not fit | Verified | `DeterministicRuleEvaluator` stays the matching authority. No approved alternate keeps the advertiser. Delivery stays NOT_SENT |
-| 19 | Wedding Planner wakes after commercial progression | Next. Not started | Inherit authorized context. Do not plan every discovered business |
-| 20 | Conversation laboratory and regression | Not started | Persona scenarios in tests before a behavior change |
+| 19 | Wedding Planner wakes after commercial progression | Verified | An accepted Economics result can open the existing workspace. No accepted result leaves the planner asleep. No campaign is planned. Delivery stays NOT_SENT |
+| 20 | Conversation laboratory and regression | Next. Not started | Persona scenarios in tests before a behavior change |
 | 21 | Spend and pause controls on the operations console | Not started | Auditable limits. No second Mission Control product |
 | 22 | Grooming and external research | Future | Production events first. Research cannot change production |
 | 23 | Scale proofs for recipes and conversations | Future | 100, then 1,000, then 10,000. Measure. Do not claim |
@@ -47,7 +47,7 @@ verified.
 - Selling language must not outrun Economics, Bliss, or the unsent rule.
 - Required disclosures stay. They are not optional self-gating.
 
-## Evidence already accepted for Phases 4–18
+## Evidence already accepted for Phases 4–19
 
 - `PROSPECT-DEMONSTRATION-EVIDENCE.md`
 - `ADVERTISER-DISCOVERY-EVIDENCE.md`
@@ -63,5 +63,6 @@ verified.
 - `ELIGIBLE-DELIVERY-EVIDENCE.md`
 - `PROSPECT-MEMORY-EVIDENCE.md`
 - `BLISS-REMATCH-EVIDENCE.md`
+- `WEDDING-PLANNER-WAKE-EVIDENCE.md`
 
 The visible board is `/acquisition/index.html`.

@@ -54,10 +54,10 @@ is not this program and stays stopped on its own security finding.
 
 - A preserved business that is legitimate and still not worth a
   demonstration.
-- Wedding Planner wakes after commercial progression. Phase 18 looks
-  for another approved creator through `DeterministicRuleEvaluator` and
-  keeps the advertiser when none is approved. Wedding Planner stays
-  asleep. This is not a scale claim.
+- A laboratory of persona scenarios before a conversation change.
+  Phase 19 wakes Wedding Planner only after an accepted Economics
+  result, on the existing workspace, and leaves every other discovered
+  business unplanned. This is not a scale claim.
 - Acquisition events. Phase 11 records a factory batch: deterministic checks, asset counts, zero model calls, and no invented price.
 - A laboratory of persona scenarios for conversation changes.
 - Measured scale. None of the 100, 1,000, or 10,000 targets has been run.
@@ -135,7 +135,7 @@ Schema, API, queue, isolation, and provider work belong to the phase
 that needs them. Phase 8 records `PRESERVED` for a business with no
 demonstration. Phase 9 records route rows and a suppression flag. A public road stays ineligible to send. Phase 10 records recipe `overlay-1` and a player. The permanent composite remains. Phase 12 appends observable events on the prospect record. An opinion and a delivery claim are refused. Phase 13 keeps one Ask Alpha voice that answers and then advances. Phase 13 needs conversation state that
 cannot see another prospect. Phase 14 reads an accepted Economics quote and copies that amount. Phase 15 records a visitor proposal through QuoteService only when it sits inside the approved line's recommendation low and high. The new version is a draft. It is not approved and it is not accepted.
-Phase 16 applies the preview policy and the preview adapter. A public road stays short of permission to send. Transmission stays NOT_SENT. Phase 17 adds `ProspectMemories`, `SourceClipMemories`, and `FactoryBatchMemories` on `BlissDbContext`. Phase 18 records a rematch notice by calling `DeterministicRuleEvaluator`. An approved alternate is not a win, and a missing opportunity keeps the advertiser. Phase 19 needs Wedding Planner only after commercial progression.
+Phase 16 applies the preview policy and the preview adapter. A public road stays short of permission to send. Transmission stays NOT_SENT. Phase 17 adds `ProspectMemories`, `SourceClipMemories`, and `FactoryBatchMemories` on `BlissDbContext`. Phase 18 records a rematch notice by calling `DeterministicRuleEvaluator`. An approved alternate is not a win, and a missing opportunity keeps the advertiser. Phase 19 opens the existing Wedding Planner workspace only when Economics has accepted a result and an advertiser is already on file. The inherited message names that result and plans no campaign. Phase 20 needs persona scenarios before a conversation change.
 
 ## Acceptance
 

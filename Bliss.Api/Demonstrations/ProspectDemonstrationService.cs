@@ -573,6 +573,17 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         return current;
     }
 
+    public DemonstrationRecord RememberWake(string slug, WeddingPlannerWakeDecision decision)
+    {
+        var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");
+        current.WeddingPlannerStatus = decision.Status;
+        current.WeddingPlannerNotice = decision.Notice;
+        current.WeddingPlannerWorkspaceId = decision.WorkspaceId?.ToString("D") ?? string.Empty;
+        current.WeddingPlannerSessionId = decision.SessionId?.ToString("D") ?? string.Empty;
+        Save(slug, current);
+        return current;
+    }
+
     public DemonstrationRecord AttachEconomicsQuote(string slug, Guid quoteId)
     {
         var current = Find(slug) ?? throw new InvalidOperationException("Prospect not found.");

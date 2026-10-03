@@ -100,6 +100,10 @@ public sealed class DemonstrationRecord
     public string BlissRematchStatus { get; set; } = string.Empty;
     public string BlissRematchCreatorName { get; set; } = string.Empty;
     public decimal? BlissRematchScore { get; set; }
+    public string WeddingPlannerStatus { get; set; } = string.Empty;
+    public string WeddingPlannerNotice { get; set; } = string.Empty;
+    public string WeddingPlannerWorkspaceId { get; set; } = string.Empty;
+    public string WeddingPlannerSessionId { get; set; } = string.Empty;
     public List<ContactRoadRecord> ContactRoads { get; set; } = [];
     public List<DeliveryDecisionRecord> DeliveryDecisions { get; set; } = [];
     public List<ConceptRecord> Concepts { get; set; } = [];
