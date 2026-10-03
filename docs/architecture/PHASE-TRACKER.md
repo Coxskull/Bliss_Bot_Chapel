@@ -7,10 +7,10 @@ intelligence.
 preserved. Reconciliation is recorded. The program is not verified.
 
 **You are here:** Phases 4–29 are verified local proofs. Phase 0 is this
-tracker. The amendment queue has no further phase. The subscription ledger
-and the player-served picture are verified local proofs. Bliss hosted
-acceptance and Economics Phase 9 stay on their own paths. The program stays
-open.
+tracker. The amendment queue has no further phase. The subscription ledger,
+the player-served picture, and source-media coverage are verified local
+proofs. Bliss hosted acceptance and Economics Phase 9 stay on their own
+paths. The program stays open.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -22,7 +22,7 @@ verified.
 | 1 | Bliss Chapel Phases 1–20 | Evidence exists. Hosted deployment is not declared finished | Stay on the Bliss acceptance path. Do not restart it here |
 | 2 | Economics Phases 1–9, the only price authority | Implemented. Phase 9 awaits owner acceptance | Do not add a second rate engine |
 | 3 | Wedding Planner Phase 1 workspace | Implemented. Zero AI | Phase 19 inherits an accepted Economics result into that workspace. A discovered business is not planned |
-| 4 | Source media library, duplicates, and fuel | Verified | Media files stay on disk. Prospect rows are in PostgreSQL as of Phase 17 |
+| 4 | Source media library, duplicates, and fuel | Verified | Media files stay on disk. Coverage counts a qualified slice only when the fingerprint and provenance are stored |
 | 5 | One software demonstration, QR, disclosure, unsent preview | Verified | ABC reference can still hold four concepts. A discovered prospect has one. The player is the served picture. A permanent composite is not required |
 | 6 | Discovery screen at score 100 | Verified | A legitimate public-source business below 100 is stored by Phase 8. The demonstration still waits for 100 |
 | 7 | Public decision-maker evidence | Verified | Name without a URL is refused. Stale records are not personalized. Delivery stays unsent |
@@ -85,8 +85,10 @@ verified.
 - `ROTATION-ABUNDANCE-EVIDENCE.md`
 - `LEDGER-BUDGET-EVIDENCE.md`
 - `PLAYER-SERVED-PICTURE-EVIDENCE.md`
+- `SOURCE-MEDIA-COVERAGE-EVIDENCE.md`
 - `contracts/SUBSCRIPTION-LEDGER-CONTRACT.md`
 - `contracts/PLAYER-SERVED-PICTURE-CONTRACT.md`
+- `contracts/SOURCE-MEDIA-COVERAGE-CONTRACT.md`
 - `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`. The ledger is
@@ -103,3 +105,4 @@ implemented here. They stay on their acceptance paths.
 | 2 | Economics Phase 9 owner acceptance | Awaits the owner. Not started here |
 | 4 | Subscription ledger and factory budget | Verified local proof. A missing cost stays unrecorded. A reached ceiling degrades that scope. A review is not a purchase. Green does not send |
 | 5 | Deterministic media runtime | Verified local proof. The player is the served picture. A permanent composite is not required. QA still matches the QR and the disclosure. Green does not send |
+| 6 | Source media coverage | Verified local proof. A market is a count of stored qualified slices with a fingerprint and provenance. A duplicate is not coverage. None is invented. Green does not send |

@@ -23,8 +23,8 @@ of this list is not permission to start.
 | Opportunity Intelligence Engine | Light research, score, priority, production-investment decision | Advertiser discovery. Separate from decision-maker confidence |
 | Decision-Maker & Contact Intelligence | Buying role, evidence, confidence, freshness, contact fallback, provider abstraction | A discovered and scored business. Enrichment spend only after the ledger review |
 | Alpha Source Media Library | Qualified reusable clips of about 15 seconds, uploaded by the human producer across cities, cultures, and countries | None for the catalog itself. See `PROSPECT-DEMONSTRATION-EXAMPLE.md` |
-| Source Media Integrity Engine | Fingerprints and duplicate rules | Lands with the library. A library that counts duplicates is not acceptable |
-| Media Supply & Productivity Control | Quota, replacement, Daily Operations, Mission Control fuel gauge, market coverage | Library + integrity. System evidence, not self-certification |
+| Source Media Integrity Engine | Fingerprints, duplicate refusal, and provenance on the stored slice | Local proof. A qualified slice without a fingerprint or provenance is withheld. This row does not open a download |
+| Media Supply & Productivity Control | Fuel gauge and market coverage from stored clips | Local proof on `/operations#/fuel`. A missing market is not listed. A calendar week is not configured |
 | Deterministic Video Composition Engine | The player draws recipe `overlay-1` on the approved slice. Real QR, disclosure, and mechanical QA. No permanent per-prospect MP4 | Local proof. Zero AI calls. This row does not open generative video or a per-prospect website |
 | Prospect Demonstration Engine | One strong demonstration per eligible prospect; further concept cards only on engagement | Opportunity score, source media, composition, cache. The ABC Pharmacy page is the artifact shape |
 | Dynamic Prospect Sales Room | One application, many prospect pages, including the private four-card layout in the reference example | Verified prospect facts. Pricing calls Economics; it does not invent prices |
