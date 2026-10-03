@@ -34,4 +34,6 @@ The new proofs are `SourceMediaCoverageTests` and `SourceMediaCoverageApiTests`.
 count. Each market row is a stored qualified slice with a fingerprint
 and provenance. A market that is not stored is absent.
 
+The recording is `source_media_coverage_stored_market_only.mp4`.
+The report is `docs/architecture/evidence/Alpha-Source-Media-Coverage-Report.pdf`.
 The contract is `docs/architecture/contracts/SOURCE-MEDIA-COVERAGE-CONTRACT.md`.
