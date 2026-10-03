@@ -6,7 +6,7 @@ contact route audit, the local batch measurement, the marketplace
 handoff, the human creative approval, the research ledger, and the
 later rotation period are local proofs. Economics Phase 9 is accepted
 by the owner. An empty history stays unrecorded. Every other row stays
-unauthorized. Hosted acceptance is not claimed. Conversation AI and
+unauthorized. A hosted reading stores the process posture. Hosted acceptance is not claimed. Conversation AI and
 seven grooming models stay closed.
 
 Do not implement an item on this list because it appears here. The

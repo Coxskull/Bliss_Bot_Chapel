@@ -205,7 +205,7 @@ Important interpretation:
 
 ## Known limitations and open boundaries
 
-1. Hosted Bliss production acceptance is unfinished.
+1. Hosted Bliss production acceptance is unfinished. A local reading can store the process posture and still leaves the claim unmade.
 2. Economics Phase 9 is accepted by the owner. Automatic repricing and settlement stay unauthorized.
 3. Live sending has no authorized Engineering Contract.
 4. Fishing Fleet crawlers and contact-enrichment purchases remain out of scope.

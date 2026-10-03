@@ -8,7 +8,7 @@
   <meta name="description" content="Creator partnership operations, deterministic matching, human review, and campaign planning.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23123328' d='M20 2 37 11v18L20 38 3 29V11z'/%3E%3Cpath fill='none' stroke='%23a8efce' stroke-width='3' d='m11 21 6 6 12-14'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/operations/app.css">
-  <script src="/operations/app.js?v=acceptance-1" defer></script>
+  <script src="/operations/app.js?v=hosted-1" defer></script>
   <script src="/operations/tempo.js?v=fleet-1" defer></script>
   <script src="/operations/ledger.js?v=ledger-1" defer></script>
   <script src="/operations/fuel.js?v=fuel-1" defer></script>
@@ -20,6 +20,7 @@
   <script src="/operations/learning.js?v=learning-1" defer></script>
   <script src="/operations/rotation.js?v=rotation-1" defer></script>
   <script src="/operations/acceptance.js?v=acceptance-1" defer></script>
+  <script src="/operations/hosted.js?v=hosted-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -57,6 +58,7 @@
         <a class="nav-item" href="#/learning" data-view="learning"><span class="nav-icon" aria-hidden="true">≡</span><span>Learning</span></a>
         <a class="nav-item" href="#/period" data-view="period"><span class="nav-icon" aria-hidden="true">↻</span><span>Later period</span></a>
         <a class="nav-item" href="#/acceptance" data-view="acceptance"><span class="nav-icon" aria-hidden="true">§</span><span>Phase 9</span></a>
+        <a class="nav-item" href="#/hosted" data-view="hosted"><span class="nav-icon" aria-hidden="true">⌂</span><span>Hosted</span></a>
         <a class="nav-item" href="#/status" data-view="status"><span class="nav-icon" aria-hidden="true">◎</span><span>Status</span></a>
       </nav>
       <div class="sidebar-bottom">
@@ -786,6 +788,27 @@
           <section class="panel table-panel">
             <div class="panel-header"><div><p class="eyebrow">HISTORY</p><h3>Stored actuals</h3></div></div>
             <div class="table-wrap" id="acceptance-rows"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-hosted" aria-labelledby="hosted-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">ONE CONSOLE</p>
+              <h2 id="hosted-title">Hosted acceptance</h2>
+              <p id="hosted-notice">This reading records the process posture. Hosted acceptance is not claimed. A local database is not a hosted database. An identity provider was not contacted. A backup drill was not run. Green does not send. Delivery remains NOT_SENT.</p>
+              <p id="hosted-delivery">Delivery NOT_SENT.</p>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">POSTURE</p><h3>This process</h3></div></div>
+            <div class="form-actions"><button class="primary-button" type="button" id="hosted-store">Store the reading</button><button class="secondary-button" type="button" id="hosted-claim">Claim hosted acceptance</button></div>
+            <p id="hosted-result"></p>
+            <div class="table-wrap" id="hosted-gates"></div>
+          </section>
+          <section class="panel table-panel">
+            <div class="panel-header"><div><p class="eyebrow">READING</p><h3>Stored posture</h3></div></div>
+            <div class="table-wrap" id="hosted-history"></div>
           </section>
         </section>
 
