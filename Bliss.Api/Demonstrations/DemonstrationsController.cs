@@ -158,6 +158,34 @@ public sealed class DemonstrationsController(
         }
     }
 
+    [HttpGet("rotation")]
+    [AllowAnonymous]
+    public async Task<ActionResult> RotationPreview(CancellationToken cancellationToken)
+    {
+        var names = await database.Advertisers.AsNoTracking().Select(item => item.Name).ToListAsync(cancellationToken);
+        var slotCount = await database.AdInventorySlots.CountAsync(cancellationToken);
+        var board = RotationAbundance.Preview(names, slotCount);
+        return Ok(RotationBody(board));
+    }
+
+    [HttpPost("rotation")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> ReadRotation([FromBody] RotationRequest? request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var names = await database.Advertisers.AsNoTracking().Select(item => item.Name).ToListAsync(cancellationToken);
+            var slotCount = await database.AdInventorySlots.CountAsync(cancellationToken);
+            var board = RotationAbundance.Read(request?.Pair, names, request?.CreatorApproved, slotCount);
+            return Ok(RotationBody(board));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message, delivery = "NOT_SENT", greenMeansSend = false, slotsChanged = false });
+        }
+    }
+
     [HttpGet("scale-proof")]
     [AllowAnonymous]
     public ActionResult ScaleProofReport()
@@ -702,6 +730,25 @@ public sealed class DemonstrationsController(
         });
     }
 
+    private static object RotationBody(RotationBoard board) => new
+    {
+        board.Notice,
+        board.Period,
+        board.Counts,
+        board.Abundance,
+        board.Result,
+        board.TheoreticalSlots,
+        board.PlacedAdvertisers,
+        board.OpenSlots,
+        board.SlotCount,
+        board.Accepted,
+        board.GreenMeansSend,
+        board.Delivery,
+        board.SlotsChanged,
+        board.Skipped,
+        advertisers = board.Advertisers
+    };
+
     private static object InventoryBody(StoredInventory board) => new
     {
         board.Notice,
@@ -919,6 +966,8 @@ public sealed class DemonstrationsController(
 public sealed record FlowRequest(int? Capacity);
 
 public sealed record CreativeInventoryRequest(int? Pair, bool? CreatorApproved, bool? Stack);
+
+public sealed record RotationRequest(int? Pair, bool? CreatorApproved);
 public sealed record GroomingResearchRequest(string? Excerpt);
 public sealed record DiscoverRequest(string? Niche, string? Market, string? BusinessName, string? PublicSourceUrl);
 public sealed record AcquisitionEventRequest(string? Kind, string? Watcher);
