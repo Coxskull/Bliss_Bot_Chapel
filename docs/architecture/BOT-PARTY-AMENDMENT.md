@@ -95,5 +95,6 @@ change a creative layout, or create inventory rotations.
 | 29 | Rotation abundance under creator approval | Queued. Not started |
 
 Phase 22 counts production events and stages an untrusted excerpt
-without changing the prospect. Phase 23 remains the measured scale
-proofs. The next authorized build after Phase 22 is Phase 23.
+without changing the prospect. Phase 23 measures the in-memory rungs
+and does not claim stored scale. The next authorized build after
+Phase 23 is Phase 24.
