@@ -212,12 +212,14 @@ document.querySelector("#discover").addEventListener("submit", async event => {
       publicSourceUrl: document.querySelector("#sourceUrl").value
     });
     const preserved = page.prospectState === "PRESERVED";
-    discovery.textContent = page.businessName + " scored " + page.opportunityScore
-      + ". State " + page.prospectState + "."
-      + (preserved
-        ? " No demonstration was manufactured."
-        : " Buying roles: " + page.buyingRoles.join(", ") + ".")
-      + " Decision maker " + page.decisionMakerStatus + ". Delivery " + page.delivery + ".";
+    discovery.textContent = page.written === false
+      ? page.discoveryNotice
+      : page.businessName + " scored " + page.opportunityScore
+        + ". State " + page.prospectState + "."
+        + (preserved
+          ? " No demonstration was manufactured."
+          : " Buying roles: " + page.buyingRoles.join(", ") + ".")
+        + " Decision maker " + page.decisionMakerStatus + ". Delivery " + page.delivery + ".";
     discovery.scrollIntoView({ block: "center" });
     await load();
   } catch (error) {

@@ -8,10 +8,11 @@
   <meta name="description" content="Creator partnership operations, deterministic matching, human review, and campaign planning.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23123328' d='M20 2 37 11v18L20 38 3 29V11z'/%3E%3Cpath fill='none' stroke='%23a8efce' stroke-width='3' d='m11 21 6 6 12-14'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/operations/app.css">
-  <script src="/operations/app.js?v=fuel-1" defer></script>
+  <script src="/operations/app.js?v=discovery-1" defer></script>
   <script src="/operations/tempo.js?v=fleet-1" defer></script>
   <script src="/operations/ledger.js?v=ledger-1" defer></script>
   <script src="/operations/fuel.js?v=fuel-1" defer></script>
+  <script src="/operations/discovery.js?v=discovery-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
@@ -41,6 +42,7 @@
         <a class="nav-item" href="#/tempo" data-view="tempo"><span class="nav-icon" aria-hidden="true">♫</span><span>Spend and pause</span></a>
         <a class="nav-item" href="#/ledger" data-view="ledger"><span class="nav-icon" aria-hidden="true">▤</span><span>Ledger and budget</span></a>
         <a class="nav-item" href="#/fuel" data-view="fuel"><span class="nav-icon" aria-hidden="true">▣</span><span>Media fuel</span></a>
+        <a class="nav-item" href="#/discovery" data-view="discovery"><span class="nav-icon" aria-hidden="true">△</span><span>Discovery</span></a>
         <a class="nav-item" href="#/status" data-view="status"><span class="nav-icon" aria-hidden="true">◎</span><span>Status</span></a>
       </nav>
       <div class="sidebar-bottom">
@@ -562,6 +564,30 @@
           <section class="panel">
             <div class="panel-header"><div><p class="eyebrow">INTEGRITY</p><h3>Withheld slices</h3></div></div>
             <div class="table-wrap" id="fuel-withheld"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-discovery" aria-labelledby="discovery-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">ONE CONSOLE</p>
+              <h2 id="discovery-title">Advertiser discovery</h2>
+              <p id="discovery-notice">Discovery counts stored prospects that have a public source URL. A missing business is not listed. A duplicate source is not a second prospect. This is not a census. A crawler did not run. None was invented. Green does not send. Delivery remains NOT_SENT.</p>
+              <p>The operator supplies the business name and the public page. A blank name is refused. A score below 100 stays preserved. Nothing is sent.</p>
+              <p id="discovery-delivery">Delivery NOT_SENT. Green does not send.</p>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">STORED PROSPECTS</p><h3>Measured counts</h3></div></div>
+            <div class="table-wrap" id="discovery-facts"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">PUBLIC SOURCES</p><h3>Prospects</h3></div></div>
+            <div class="table-wrap" id="discovery-prospects"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">REFUSED</p><h3>Withheld rows</h3></div></div>
+            <div class="table-wrap" id="discovery-withheld"></div>
           </section>
         </section>
 

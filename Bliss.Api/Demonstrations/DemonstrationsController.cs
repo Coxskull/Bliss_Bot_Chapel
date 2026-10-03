@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using Bliss.Api.Runtime;
 using Bliss.Api.Security;
 using Bliss.Domain.Demonstrations;
@@ -319,12 +322,21 @@ public sealed class DemonstrationsController(
     {
         try
         {
-            var prospect = demonstrations.Discover(
+            var outcome = demonstrations.Discover(
                 request.Niche ?? string.Empty,
                 request.Market ?? string.Empty,
                 request.BusinessName ?? string.Empty,
                 request.PublicSourceUrl ?? string.Empty);
-            return Ok(DetailDto(prospect));
+            var node = JsonSerializer.SerializeToNode(
+                DetailDto(outcome.Prospect),
+                new JsonSerializerOptions(JsonSerializerDefaults.Web)
+                {
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                })!.AsObject();
+            node["duplicate"] = outcome.Duplicate;
+            node["written"] = outcome.Written;
+            node["discoveryNotice"] = outcome.Notice;
+            return Ok(node);
         }
         catch (DiscoveryRejectedException ex)
         {

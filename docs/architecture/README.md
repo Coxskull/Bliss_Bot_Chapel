@@ -64,6 +64,8 @@ only through its own Engineering Contract
 | The player-served picture Engineering Contract | `contracts/PLAYER-SERVED-PICTURE-CONTRACT.md` |
 | What source-media coverage counts | `SOURCE-MEDIA-COVERAGE-EVIDENCE.md` |
 | The source-media coverage Engineering Contract | `contracts/SOURCE-MEDIA-COVERAGE-CONTRACT.md` |
+| What bounded advertiser discovery counts | `ADVERTISER-DISCOVERY-REGISTER-EVIDENCE.md` |
+| The bounded advertiser discovery Engineering Contract | `contracts/ADVERTISER-DISCOVERY-CONTRACT.md` |
 | Accepted Bliss behavior | `docs/bliss/` contracts and evidence |
 | Accepted Wedding Planner Phase 1 behavior | `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md` |
 | Wedding Planner product note for the current module | `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md` |
