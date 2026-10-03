@@ -24,7 +24,7 @@ unsafe to treat as a design requirement today.
 | Compensation illustrations | Economics Phase 6. |
 | Public-research provenance | Economics Phase 7. The workflow may stage research. .NET still validates it. |
 | Planner asks Economics instead of inventing a price | Economics Phase 8. |
-| Append-only performance history | Economics Phase 9. Automatic repricing, settlement, and payout are not authorized. Phase 9 is pending owner acceptance. |
+| Append-only performance history | Economics Phase 9. Accepted by the owner on 2026-10-03. Automatic repricing, settlement, and payout are not authorized. |
 | Advertiser workspace, session, message, and audit | Wedding Planner Phase 1. Zero AI workers. |
 | Operator identity, roles, and audit visibility | Existing Bliss API and operations console. |
 | Source slice, duplicate rule, quota, and fuel | Verified demonstration library. |

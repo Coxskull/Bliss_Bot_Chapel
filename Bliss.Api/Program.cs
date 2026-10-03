@@ -91,6 +91,7 @@ builder.Services.AddScoped<MarketplaceHandoffService>();
 builder.Services.AddScoped<CreativeApprovalService>();
 builder.Services.AddScoped<LearningLedgerService>();
 builder.Services.AddScoped<RotationPeriodService>();
+builder.Services.AddScoped<EconomicsPhaseAcceptanceService>();
 builder.Services.AddSingleton(authentication);
 builder.Services.AddSingleton(runtime);
 builder.Services.AddSingleton(posture);

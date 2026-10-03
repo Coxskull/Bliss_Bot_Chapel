@@ -11,9 +11,10 @@ tracker. The amendment queue has no further phase. The subscription ledger,
 the player-served picture, source-media coverage, bounded advertiser
 discovery, the contact route audit, the local batch measurement, the
 marketplace handoff, the human creative approval, the research ledger,
-and the later rotation period are verified local proofs. Bliss hosted
-acceptance and Economics Phase 9 stay on their own paths. The program
-stays open.
+and the later rotation period are verified local proofs. Economics Phase 9
+is accepted by the owner. Historical actuals stay append-only. An empty
+history stays unrecorded. Bliss hosted acceptance stays on its own path.
+The program stays open.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -23,7 +24,7 @@ verified.
 | --- | --- | --- | --- |
 | 0 | v2 blueprint, reconciliation, and this tracker | Recorded in this change | Screen recording and PDF report for the tracker |
 | 1 | Bliss Chapel Phases 1–20 | Evidence exists. Hosted deployment is not declared finished | Stay on the Bliss acceptance path. Do not restart it here |
-| 2 | Economics Phases 1–9, the only price authority | Implemented. Phase 9 awaits owner acceptance | Do not add a second rate engine |
+| 2 | Economics Phases 1–9, the only price authority | Accepted by the owner on 2026-10-03. Phase 9 records append-only actuals | Do not add a second rate engine |
 | 3 | Wedding Planner Phase 1 workspace | Implemented. Zero AI | Phase 19 inherits an accepted Economics result into that workspace. A discovered business is not planned |
 | 4 | Source media library, duplicates, and fuel | Verified | Media files stay on disk. Coverage counts a qualified slice only when the fingerprint and provenance are stored |
 | 5 | One software demonstration, QR, disclosure, unsent preview | Verified | ABC reference can still hold four concepts. A discovered prospect has one. The player is the served picture. A permanent composite is not required |
@@ -107,6 +108,9 @@ verified.
 - `contracts/LEARNING-LEDGER-CONTRACT.md`
 - `ROTATION-PERIOD-EVIDENCE.md`
 - `contracts/ROTATION-PERIOD-CONTRACT.md`
+- `ECONOMICS-PHASE-ACCEPTANCE-EVIDENCE.md`
+- `contracts/ECONOMICS-PHASE-ACCEPTANCE-CONTRACT.md`
+- `evidence/Alpha-Economics-Phase9-Acceptance-Report.pdf`
 - `evidence/Alpha-Later-Rotation-Period-Report.pdf`
 - `evidence/Alpha-Research-Ledger-Report.pdf`
 - `evidence/Alpha-Creative-Approval-Report.pdf`
@@ -118,13 +122,13 @@ The visible board is `/acquisition/index.html`. The ledger is
 
 ## Priority contracts
 
-Hosted Bliss acceptance and Economics Phase 9 owner acceptance are not
-implemented here. They stay on their acceptance paths.
+Hosted Bliss acceptance stays on its acceptance path. Economics Phase 9
+owner acceptance is recorded.
 
 | Priority | Capability | Status |
 | --- | --- | --- |
 | 1 | Bliss hosted acceptance | Separate acceptance path. Not started here |
-| 2 | Economics Phase 9 owner acceptance | Awaits the owner. Not started here |
+| 2 | Economics Phase 9 owner acceptance | Accepted by the owner on 2026-10-03. Historical actuals stay append-only. An empty history stays unrecorded. A pricing rule is not changed. A settlement is not created. Green does not send |
 | 4 | Subscription ledger and factory budget | Verified local proof. A missing cost stays unrecorded. A reached ceiling degrades that scope. A review is not a purchase. Green does not send |
 | 5 | Deterministic media runtime | Verified local proof. The player is the served picture. A permanent composite is not required. QA still matches the QR and the disclosure. Green does not send |
 | 6 | Source media coverage | Verified local proof. A market is a count of stored qualified slices with a fingerprint and provenance. A duplicate is not coverage. None is invented. Green does not send |
