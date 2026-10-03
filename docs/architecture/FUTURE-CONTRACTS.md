@@ -1,8 +1,9 @@
 # Future acquisition contracts
 
 **Status:** catalog. The subscription ledger, the player-served
-picture, source-media coverage, bounded advertiser discovery, and the
-contact route audit are local proofs. Every other row stays unauthorized.
+picture, source-media coverage, bounded advertiser discovery, the
+contact route audit, and the local batch measurement are local proofs.
+Every other row stays unauthorized. Hosted acceptance is not claimed.
 
 Do not implement an item on this list because it appears here. The
 Bliss package must reach its required acceptance point first. After

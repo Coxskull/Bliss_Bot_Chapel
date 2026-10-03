@@ -9,8 +9,9 @@ preserved. Reconciliation is recorded. The program is not verified.
 **You are here:** Phases 4–29 are verified local proofs. Phase 0 is this
 tracker. The amendment queue has no further phase. The subscription ledger,
 the player-served picture, source-media coverage, bounded advertiser
-discovery, and the contact route audit are verified local proofs. Bliss hosted
-acceptance and Economics Phase 9 stay on their own paths. The program stays open.
+discovery, the contact route audit, and the local batch measurement are
+verified local proofs. Bliss hosted acceptance and Economics Phase 9 stay
+on their own paths. The program stays open.
 
 Accepted Bliss, Economics, and Wedding Planner work stays on its own
 acceptance path. Do not mark this program complete because one row is
@@ -93,6 +94,8 @@ verified.
 - `contracts/ADVERTISER-DISCOVERY-CONTRACT.md`
 - `CONTACT-ROUTE-EVIDENCE.md`
 - `contracts/CONTACT-ROUTE-CONTRACT.md`
+- `LOCAL-BATCH-EVIDENCE.md`
+- `contracts/LOCAL-BATCH-CONTRACT.md`
 - `BOT-PARTY-AMENDMENT.md`
 
 The visible board is `/acquisition/index.html`. The ledger is
@@ -112,3 +115,4 @@ implemented here. They stay on their acceptance paths.
 | 6 | Source media coverage | Verified local proof. A market is a count of stored qualified slices with a fingerprint and provenance. A duplicate is not coverage. None is invented. Green does not send |
 | 7 | Bounded advertiser discovery | Verified local proof. A public source is one stored prospect. A duplicate source is not a second row. A blank name is refused. A score below 100 stays preserved. This is not a census. A crawler did not run. Green does not send |
 | 8 | Contact route audit | Verified local proof. Suppression, stale evidence, and a missing public source withhold the route. The preview adapter does not transmit. An explicit transmission request is recorded once. Delivery stays NOT_SENT |
+| 9 | Local batch measurement | Verified local proof. The clock and the process working set are stored. No invoice is on file. A partial failure keeps the other prospects. A leaked name is recorded. Hosted acceptance and the 15-minute target are not claimed. Green does not send |
