@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marketplace balance</title>
+  <link rel="stylesheet" href="/demonstrations/alpha-demo.css">
+  <style>
+    .hero h1 { font-size: 32px; }
+    #notice, #counts, #pressure, #revenue, #inventory, #prospects, #skipped { font-size: 16px; line-height: 1.45; max-width: 860px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/acquisition/index.html"><span class="mark">A</span><span><strong>ALPHA</strong><small>BALANCE</small></span></a>
+    <a href="/acquisition/index.html">Phase tracker</a>
+  </header>
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <p class="status">MARKETPLACE BALANCE</p>
+        <h1>Read the stored pressure. Invent no count.</h1>
+      </div>
+    </section>
+    <p id="notice">Reading the stored rows.</p>
+    <p id="counts"></p>
+    <p id="pressure"></p>
+    <p id="revenue"></p>
+    <p id="inventory"></p>
+    <p id="skipped"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Side</th><th>Stored name</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <p id="prospects"></p>
+  </main>
+  <script src="/acquisition/balance.js?v=balance-1" defer></script>
+</body>
+</html>

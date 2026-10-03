@@ -90,8 +90,8 @@ change a creative layout, or create inventory rotations.
 | 24 | Green, yellow, and red progression on the prospect | Verified. Green is not a send |
 | 25 | Flow control: preserve and queue legitimate volume | Verified. None are discarded |
 | 26 | Independent fleet lanes beyond a pause control | Verified. A broken lane does not stop the ocean |
-| 27 | Marketplace balance signals, without invented counts | Next. Not started |
-| 28 | Balanced creative inventory: pairs of 2, 4, or 6 | Queued. Not started |
+| 27 | Marketplace balance signals, without invented counts | Verified. Stored rows only |
+| 28 | Balanced creative inventory: pairs of 2, 4, or 6 | Next. Not started |
 | 29 | Rotation abundance under creator approval | Queued. Not started |
 
 Phase 22 counts production events and stages an untrusted excerpt
@@ -100,7 +100,10 @@ and does not claim stored scale. Phase 24 records green, yellow, and
 red on the prospect. Green is not a send. Phase 25 keeps excess
 legitimate prospects queued. Phase 26 reads the Fishing Fleet and the
 Creator Fleet from the stored lane tempos. A broken lane does not stop
-the ocean. The next authorized build after Phase 26 is Phase 27.
+the ocean. Phase 27 reads advertiser pressure and creator pressure
+from stored rows. A missing count stays unrecorded. Revenue and
+inventory stay unrecorded. The next authorized build after Phase 27
+is Phase 28.
 
 ## What Phase 26 implements
 
@@ -114,3 +117,15 @@ invent a lane. Green does not send. Delivery remains `NOT_SENT`.
 
 Phase 26 does not build a second console, a crawler, or marketplace
 balance counts.
+
+## What Phase 27 implements
+
+Phase 27 reads stored advertiser names and stored creator names on
+`/acquisition/balance.html`. The counts are the named stored rows. A
+missing count stays unrecorded and is not treated as zero. A blank
+stored name is skipped. Revenue is not recorded. Inventory is not
+recorded. The reading claims no market census. It does not write a
+row, crawl, send, or invent a price. Green does not send. Delivery
+remains `NOT_SENT`.
+
+Phase 27 does not choose a creative pair or a rotation.
