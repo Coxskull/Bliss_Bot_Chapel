@@ -70,6 +70,26 @@
     </div>
     <section class="hero">
       <div>
+        <p class="status">ACQUISITION EVENTS</p>
+        <h2>Record what happened</h2>
+        <p>An event is an observable step. Discovery, a demonstration, a public road, a message, and a suppression write their own events. An opinion is not stored. A page open does not name who watched. Nothing is sent.</p>
+      </div>
+    </section>
+    <p id="eventNotice"></p>
+    <form id="events" class="discover">
+      <label>Prospect<select id="eventProspect" name="prospect"></select></label>
+      <label>What happened
+        <select id="eventKind" name="kind">
+          <option value="PAGE_OPENED">The demonstration page was opened</option>
+          <option value="INTERESTED">Interested (an opinion)</option>
+          <option value="SENT">Sent (a delivery claim)</option>
+        </select>
+      </label>
+      <button type="submit">Record the event</button>
+    </form>
+    <ul id="eventList"></ul>
+    <section class="hero">
+      <div>
         <p class="status">DECISION-MAKER EVIDENCE</p>
         <h2>Record a person only from a public source</h2>
         <p>A name without a public page is not stored. Official evidence plus a corroborating professional page can raise confidence. A company contact is the fallback when no direct mailbox is public. The person stays off the page until confidence supports it. Nothing is sent.</p>

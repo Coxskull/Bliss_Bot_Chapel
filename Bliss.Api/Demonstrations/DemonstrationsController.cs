@@ -262,6 +262,34 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
         }
     }
 
+    [HttpPost("{slug}/events")]
+    [AllowAnonymous]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult RecordEvent(string slug, [FromBody] AcquisitionEventRequest request)
+    {
+        if (demonstrations.Find(slug) is null)
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            var current = demonstrations.RecordEvent(slug, request?.Kind ?? string.Empty, request?.Watcher);
+            return Ok(new
+            {
+                kind = current.Events[^1].Kind,
+                observation = current.Events[^1].Observation,
+                aiCalls = current.Events[^1].AiCalls,
+                delivery = "NOT_SENT",
+                events = current.Events.Select(EventDto)
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     [HttpGet("{slug}")]
     [AllowAnonymous]
     public ActionResult Get(string slug)
@@ -462,9 +490,20 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
             sourceUrl = $"/api/demonstrations/{demonstration.Slug}/concepts/{concept.Id}/source",
             qrUrl = $"/api/demonstrations/{demonstration.Slug}/concepts/{concept.Id}/qr"
         }),
-        messages = demonstration.Messages.Select(MessageDto)
+        messages = demonstration.Messages.Select(MessageDto),
+        events = (demonstration.Events ?? []).Select(EventDto)
         };
     }
+
+    private static object EventDto(AcquisitionEventRecord item) => new
+    {
+        item.Id,
+        item.Kind,
+        item.Observation,
+        item.OccurredAt,
+        item.AiCalls,
+        delivery = "NOT_SENT"
+    };
 
     private static object MessageDto(ChatRecord message) => new
     {
@@ -476,6 +515,7 @@ public sealed class DemonstrationsController(ProspectDemonstrationService demons
 }
 
 public sealed record DiscoverRequest(string? Niche, string? Market, string? BusinessName, string? PublicSourceUrl);
+public sealed record AcquisitionEventRequest(string? Kind, string? Watcher);
 public sealed record ContactRoadRequest(string? Kind, string? Value, string? SourceUrl);
 public sealed record SuppressionRequest(string? Reason);
 public sealed record DecisionMakerRequest(

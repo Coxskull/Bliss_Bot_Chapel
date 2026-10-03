@@ -151,6 +151,11 @@ async function load() {
     return;
   }
   render(await response.json());
+  fetch("/api/demonstrations/" + slug + "/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind: "PAGE_OPENED" })
+  }).catch(() => {});
 }
 
 form.addEventListener("submit", async event => {
