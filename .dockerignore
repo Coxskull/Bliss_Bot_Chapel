@@ -1,0 +1,13 @@
+.git
+.github
+**/.vs
+**/bin
+**/obj
+**/*.user
+**/.env
+**/*.pfx
+**/*.pem
+**/*.key
+**/App_Data
+**/*.dump
+docs/architecture/evidence
