@@ -23,7 +23,12 @@ public sealed class CreativeAcademyApiTests
         var first = await stored.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(HttpStatusCode.OK, stored.StatusCode);
         Assert.True(first!.GetProperty("written").GetBoolean());
-        Assert.Equal(8, first.GetProperty("lessons").GetArrayLength());
+        Assert.Equal(9, first.GetProperty("lessons").GetArrayLength());
+        Assert.Equal(50, first.GetProperty("nicheRoster").GetArrayLength());
+        Assert.Equal(10, first.GetProperty("createdCount").GetInt32());
+        Assert.Equal(40, first.GetProperty("notCreatedCount").GetInt32());
+        Assert.Equal(11, first.GetProperty("nextNiche").GetProperty("number").GetInt32());
+        Assert.Equal("auto-parts", first.GetProperty("nextNiche").GetProperty("key").GetString());
 
         var lamour = Lesson(first, "lamour-sucre");
         var solara = Lesson(first, "solara");
@@ -33,6 +38,7 @@ public sealed class CreativeAcademyApiTests
         var grocery = Lesson(first, "freshmart-supplied");
         var fitness = Lesson(first, "nova-fit-reference");
         var automotive = Lesson(first, "taller-ruta-reference");
+        var motorcycle = Lesson(first, "brava-moto-reference");
         Assert.Equal("REVISE", lamour.GetProperty("status").GetString());
         Assert.Equal("REVISE", solara.GetProperty("status").GetString());
         Assert.Equal("WITHHELD", belmonte.GetProperty("status").GetString());
@@ -41,6 +47,8 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal("SUPPLIED_EXAMPLE", grocery.GetProperty("status").GetString());
         Assert.Equal("REFERENCE", fitness.GetProperty("status").GetString());
         Assert.Equal("REFERENCE", automotive.GetProperty("status").GetString());
+        Assert.Equal("REFERENCE", motorcycle.GetProperty("status").GetString());
+        Assert.Equal("motorcycle", motorcycle.GetProperty("family").GetString());
         Assert.Equal(0, lamour.GetProperty("modelCalls").GetInt32());
         Assert.False(lamour.GetProperty("campaignReady").GetBoolean());
         Assert.Equal("NOT_SENT", lamour.GetProperty("delivery").GetString());
@@ -50,7 +58,7 @@ public sealed class CreativeAcademyApiTests
             new { curriculumKey = "patisserie-curriculum-1" });
         var second = await again.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(second!.GetProperty("duplicate").GetBoolean());
-        Assert.Equal(8, second.GetProperty("lessons").GetArrayLength());
+        Assert.Equal(9, second.GetProperty("lessons").GetArrayLength());
 
         var visual = await client.PostAsJsonAsync(
             "/api/operations/academy/visual",

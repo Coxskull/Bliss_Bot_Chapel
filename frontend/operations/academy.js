@@ -57,6 +57,23 @@ async function loadAcademy() {
     ? lessons.filter(item => item.role === "CANDIDATE").map(lessonCard).join("")
     : emptyState("No candidate is stored.");
   $("#academy-parity-gate").innerHTML = `<ul>${lines(board.referenceParityGate)}</ul>`;
+  const roster = board.nicheRoster || [];
+  const next = board.nextNiche;
+  $("#academy-roster-next").textContent = next
+    ? `Next open niche is #${next.number} ${next.name}. Created this run: #10 Motorcycle / Moped Dealership. Niches 1-9 were not repeated. Created ${board.createdCount}. Not created ${board.notCreatedCount}. Delivery NOT_SENT.`
+    : "The roster is not loaded.";
+  $("#academy-roster").innerHTML = roster.length
+    ? `<table><thead><tr><th>#</th><th>Niche</th><th>Status</th><th>Anchor</th><th>Teacher</th></tr></thead><tbody>${roster.map(item =>
+        `<tr><td>${item.number}</td><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.status)}</td><td>${escapeHtml(item.anchorKind)}</td><td>${escapeHtml(item.teacherKey || "None")}</td></tr>`).join("")}</tbody></table>`
+    : emptyState("No niche roster is stored.");
+  const select = document.getElementById("academy-client-niche");
+  if (select && roster.length) {
+    const current = select.value;
+    select.innerHTML = roster.map(item =>
+      `<option value="${escapeHtml(item.key)}">#${item.number} ${escapeHtml(item.name)} — ${escapeHtml(item.status)}</option>`).join("")
+      + `<option value="patisserie">Patisserie curriculum — maison-fleur, not niche 16</option>`;
+    select.value = [...select.options].some(option => option.value === current) ? current : "motorcycle";
+  }
   const dna = board.dna || [];
   $("#academy-dna-table").innerHTML = dna.length
     ? `<table><thead><tr><th>Brand</th><th>Family</th><th>Teacher</th><th>On file</th><th>Distinct</th><th>Hero</th><th>Delivery</th></tr></thead><tbody>${dna.map(item =>

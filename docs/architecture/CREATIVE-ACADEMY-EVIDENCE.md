@@ -14,7 +14,7 @@ Doctrine: reproduce the craftsmanship; replace the creative content. Originality
 
 The Creative Academy stores the supplied patisserie curriculum and judges the stored copy. Maison Fleur Pâtisserie is the quality teacher. It is not cloned. L'Amour Sucré stays REVISE because the headline repeats "escape". Solara stays REVISE because the stored labels include "curdj" and "mjer". Belmonté stays WITHHELD until an operator records the visual benchmark, then PASS. Campaign ready is refused. A production model was not called.
 
-The client-intake full regression passed: 477 tests, 0 failed, 0 skipped. The preceding quality-anchor amendment had 472 passing tests. Five additional facts cover fitness and automotive routing, minimum intake, unsupported niches, recipe output, and model refusal.
+The niche-roster filter passed 27 tests. The full Bliss.Tests suite passed 479 tests, 0 failed, 0 skipped. The client-intake run before this roster passed 477 tests. This roster adds the 50-niche catalog and the Brava Moto lesson.
 
 The updated amendment adds:
 
@@ -41,7 +41,7 @@ The client can now enter a brand or store name and select a niche. The Academy r
 
 The newly supplied Nova Fit and Taller Ruta images are stored as niche quality references, not creative templates. Their fictional names, people, offers, environments, copy, and compositions must be replaced.
 
-FreshMart is still a supplied example, not an approved grocery anchor. Grocery and dental return `NICHE_ANCHOR_REQUIRED` rather than borrowing an unrelated reference.
+FreshMart remains the supplied supermarket example. Supermarket niche 2 points at that existing image and does not generate another one. Dental niche 9 is already created outside this repository and returns `ALREADY_CREATED`.
 
 | Phase | Result | Report | Recording |
 | --- | --- | --- | --- |
@@ -49,6 +49,14 @@ FreshMart is still a supplied example, not an approved grocery anchor. Grocery a
 | B2. Client intake | Brand/store name plus niche prepares a recipe. Optional fields preserve colors, font, market, language, offer, people, and restrictions. | `docs/architecture/evidence/academy/phase-b2-client-intake.pdf` | `academy_phase_b2_client_intake.mp4` |
 | B3. Generation boundary | Recipe readiness is not image generation. The Generate control visibly fails closed without a configured production model. | `docs/architecture/evidence/academy/phase-b3-generation-boundary.pdf` | `academy_phase_b3_generation_boundary.mp4` |
 | B4. QA and regression | The four instructor gates remain mandatory. Academy and full regressions pass. Nothing sends. | `docs/architecture/evidence/academy/phase-b4-qa-and-regression.pdf` | `academy_phase_b4_qa_and_regression.mp4` |
+
+## Fifty-niche roster
+
+Niches 1 through 9 were already created and were not repeated. Niche 10 stores `brava-moto-reference` for Motorcycle / Moped Dealership. The image is a quality teacher. Its visual benchmark is unrecorded, so it is not an approved campaign. Niches 11 through 50 stay `NOT_CREATED`. The next open niche is #11 Auto-Parts Store. Bakery niche 16 stays not created even though Maison Fleur remains the separate patisserie curriculum teacher. Shopping mall, new-car, used-car, casual dining, and dental return `ALREADY_CREATED` with no substitute image. The in-app Generate control still fails closed. Bliss model calls stay 0.
+
+| Phase | Result | Report | Recording |
+| --- | --- | --- | --- |
+| C. Niche roster | 10 created, 40 not created. Brava Moto is niche 10. Next is Auto-Parts Store. | `docs/architecture/evidence/academy/phase-c-niche-roster.pdf` | `academy_phase_c_niche_roster_console.mp4` |
 
 ## Phases
 

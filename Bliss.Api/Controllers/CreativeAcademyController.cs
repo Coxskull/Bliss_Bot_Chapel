@@ -146,6 +146,10 @@ public sealed class CreativeAcademyController(CreativeAcademyService academy) : 
         doctrine = "Reproduce the craftsmanship. Replace the creative content. Originality without quality parity fails. Quality parity without originality fails.",
         referenceParityGate = CreativeAcademy.ReferenceParityGate,
         nicheAnchors = CreativeAcademy.NicheAnchors,
+        nicheRoster = NicheCatalog.All,
+        nextNiche = NicheCatalog.NextOpen,
+        createdCount = NicheCatalog.All.Count(item => item.Status == NicheCatalog.Created),
+        notCreatedCount = NicheCatalog.All.Count(item => item.Status == NicheCatalog.NotCreated),
         masterPrototype = new
         {
             lessonKey = CreativeAcademy.PharmacyTeacher,

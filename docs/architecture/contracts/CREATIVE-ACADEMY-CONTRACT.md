@@ -165,18 +165,31 @@ The client-facing entry point requires:
 
 Optional Brand DNA improves the result: market, language, approved colors, approved font, headline, CTA, products, offer, people or photography, restrictions, QR destination, and inventory format.
 
-The niche router currently has approved quality anchors for:
+The ordered roster holds 50 niches. A created niche is not repeated. A niche that is not created does not borrow another niche's teacher.
 
-| Niche | Quality anchor |
-| --- | --- |
-| Pharmacy / drugstore | `vidacare-master-01` |
-| Fitness / gym | `nova-fit-reference` |
-| Automotive service | `taller-ruta-reference` |
-| Patisserie / bakery | `maison-fleur` |
+| # | Niche | Roster status | Local teacher |
+| --- | --- | --- | --- |
+| 1 | Pharmacy / Drugstore | CREATED | `vidacare-master-01` |
+| 2 | Supermarket / Hypermarket | CREATED | `freshmart-supplied` |
+| 3 | Shopping Mall / Shopping Center | CREATED, external | none in this repository |
+| 4 | New-Car Dealership | CREATED, external | none in this repository |
+| 5 | Used-Car Dealership | CREATED, external | none in this repository |
+| 6 | Restaurant / Casual Dining | CREATED, external | none in this repository |
+| 7 | Gym / Fitness Center | CREATED | `nova-fit-reference` |
+| 8 | Automotive Service / Mechanic Repair Shop | CREATED | `taller-ruta-reference` |
+| 9 | Dental Office / Dental Clinic | CREATED, external | none in this repository |
+| 10 | Motorcycle / Moped Dealership | CREATED this run | `brava-moto-reference` |
+| 11-50 | Auto-Parts Store through Household Cleaning / Consumer Products | NOT CREATED | none |
 
-Nova Fit and Taller Ruta are owner-supplied niche quality references. Their fictional names, people, offers, environments, copy, imagery, and compositions must be replaced for the client.
+The next open niche is #11, Auto-Parts Store.
 
-FreshMart remains supplied context rather than an approved grocery anchor. Grocery, dental, and other unsupported niches return `NICHE_ANCHOR_REQUIRED`. The system does not silently use an unrelated teacher.
+Nova Fit, Taller Ruta, and Brava Moto are niche quality references. Their fictional names, people, offers, environments, copy, imagery, and compositions must be replaced for the client. Brava Moto's visual benchmark is unrecorded, so the lesson stays a REFERENCE teacher and is not an approved campaign.
+
+FreshMart remains a supplied example. It is the local supermarket anchor because that niche was already created. It is not promoted to a master prototype.
+
+Niches 3, 4, 5, 6, and 9 return `ALREADY_CREATED`. No substitute image is invented. Niches 11-50 return `NICHE_NOT_CREATED` and stop before image generation.
+
+Bakery / Patisserie is niche 16 and stays not created. The earlier Maison Fleur lesson remains the patisserie curriculum teacher. It is not niche 16.
 
 After intake, the Academy prepares a wide 16:9 production recipe that names the selected anchor, the client identity, optional Brand DNA, originality requirements, parity standard, typography QA, CTA-safe placement, and QR-safe placement. Status `PRODUCTION_SPEC_READY` means the recipe is ready. It does not mean an image was generated.
 
@@ -207,14 +220,15 @@ The `Generate advertisement` control fails closed while no production image mode
 | B1 | Route the selected niche to its approved quality anchor. | Fitness selects Nova Fit; automotive service selects Taller Ruta; unsupported niches stop for anchor approval. |
 | B2 | Accept the client brand/store name and optional Brand DNA. | The Operations Console form prepares an original recipe from the entered values. |
 | B3 | Separate recipe readiness from image generation. | `PRODUCTION_SPEC_READY` is visible; `Generate advertisement` fails closed because no production model is configured. |
-| B4 | Run instructor and regression gates. | Quality parity and customization remain required, 25 academy tests pass, the full regression passes, and nothing sends. |
+| B4 | Run instructor and regression gates. | Quality parity and customization remain required, the academy filter passes, the full regression passes, and nothing sends. |
+| C | Register the 50-niche roster and store niche 10. | Niches 1-9 are not repeated. Brava Moto is the motorcycle reference. Niches 11-50 stay not created. The next niche is Auto-Parts Store. |
 
 ## A. This run completes
 
 - The method, the cake principle, and the instructor rules are written into this contract.
 - The six supplied images are stored under the operations console.
 - The instructor judges the stored advertising copy.
-- Patisserie DNA selects `maison-fleur`. Pharmacy DNA selects `vidacare-master-01`. Other known families report that no master prototype is on file.
+- Patisserie DNA selects `maison-fleur`. Pharmacy DNA selects `vidacare-master-01`. Motorcycle DNA selects `brava-moto-reference`.
 - Cloning Maison Fleur or VidaCare is refused.
 - A production brief preserves an advertiser's brand, burgundy/gold palette, Montserrat typography, Spanish copy, prescription-pickup focus, Panama market, and restriction not to show families.
 - The brief fixes the quality signature and replaces the creative content.
@@ -223,7 +237,8 @@ The `Generate advertisement` control fails closed while no production image mode
 - Fitness DNA selects `nova-fit-reference`; automotive-service DNA selects `taller-ruta-reference`.
 - The client can enter only a brand/store name and niche. Missing optional Brand DNA becomes explicit art-direction work rather than invented client facts.
 - Each production brief contains a concrete generation recipe.
-- Unsupported niches stop at `NICHE_ANCHOR_REQUIRED`.
+- Already-created niches 3, 4, 5, 6, and 9 return `ALREADY_CREATED` and invent no substitute image.
+- Niches 11-50 return `NICHE_NOT_CREATED`. Bakery niche 16 is one of them.
 - A duplicated word and malformed text return REVISE with a preserve list and a repair list.
 - Clean text stays WITHHELD until an operator records the visual benchmark.
 - A production-model flag and campaign ready are refused.
@@ -235,8 +250,10 @@ No price is stated. No model was purchased.
 
 1. A vision model, if Alpha later wants the instructor to read pixels instead of a human visual record.
 2. A production model, if Alpha later wants the system to generate advertisements. This run does not call one.
-3. Additional master prototype families. Restaurant, hotel, automotive, motorcycle, fitness, dental, medical, beauty, real estate, grocery, coffee, education, and financial services have no designated master teacher on file. FreshMart remains a supplied example until explicitly designated.
-4. The hosted dock remains open. This academy proof does not complete hosted acceptance.
+3. Local images for the already-created external niches: shopping mall, new-car dealership, used-car dealership, restaurant, and dental. This run did not invent substitutes.
+4. Quality anchors for niches 11-50. The next open niche is Auto-Parts Store. None of those images was invented.
+5. A human visual benchmark for Brava Moto. The reference is stored. It is not scored PASS.
+6. The hosted dock remains open. This academy proof does not complete hosted acceptance.
 
 ## What this contract will not do
 

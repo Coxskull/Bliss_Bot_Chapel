@@ -185,7 +185,9 @@ public sealed class CreativeAcademyTests
         Assert.True(dna.Distinct);
         Assert.False(dental.TeacherOnFile);
         Assert.Equal(string.Empty, dental.TeacherKey);
-        Assert.Contains("None was invented", dental.Notice);
+        Assert.Contains("already created", dental.Notice);
+        Assert.Contains("not repeated", dental.Notice);
+        Assert.DoesNotContain("None was invented", dental.Notice);
         Assert.Contains("not cloned", clone.Message);
         Assert.False(CreativeAcademy.SameBrand(dna.BrandName, "Solara"));
         Assert.Equal(0, dna.ModelCalls);
@@ -357,13 +359,74 @@ public sealed class CreativeAcademyTests
     public void A_niche_without_an_approved_anchor_does_not_enter_image_generation()
     {
         var brief = CreativeAcademy.PrepareProductionBrief(
-            "dental", "Sonrisa Norte",
+            "auto-parts", "Pieza Norte",
             null, null, null, null, "Colombia", "Spanish", null,
             true, false, false);
 
-        Assert.Equal("NICHE_ANCHOR_REQUIRED", brief.Status);
+        Assert.Equal(NicheCatalog.NicheNotCreated, brief.Status);
         Assert.Equal(string.Empty, brief.TeacherKey);
+        Assert.Contains("not created yet", brief.GenerationRecipe);
         Assert.Contains("Stop before image generation", brief.GenerationRecipe);
         Assert.False(brief.CanGenerate);
+        Assert.Equal("NOT_SENT", brief.Delivery);
+    }
+
+    [Fact]
+    public void The_roster_keeps_created_niches_and_queues_the_rest()
+    {
+        Assert.Equal(50, NicheCatalog.All.Count);
+        Assert.Equal(10, NicheCatalog.All.Count(item => item.Status == NicheCatalog.Created));
+        Assert.Equal(40, NicheCatalog.All.Count(item => item.Status == NicheCatalog.NotCreated));
+        Assert.Equal(11, NicheCatalog.NextOpen.Number);
+        Assert.Equal("auto-parts", NicheCatalog.NextOpen.Key);
+        Assert.Equal("Auto-Parts Store", NicheCatalog.NextOpen.Name);
+
+        var motorcycle = NicheCatalog.All.Single(item => item.Number == 10);
+        Assert.Equal(NicheCatalog.Created, motorcycle.Status);
+        Assert.True(motorcycle.CreatedThisRun);
+        Assert.Equal(CreativeAcademy.MotorcycleTeacher, motorcycle.TeacherKey);
+
+        var bakery = NicheCatalog.All.Single(item => item.Number == 16);
+        Assert.Equal("bakery", bakery.Key);
+        Assert.Equal(NicheCatalog.NotCreated, bakery.Status);
+        Assert.Equal(string.Empty, bakery.TeacherKey);
+
+        foreach (var number in new[] { 3, 4, 5, 6, 9 })
+        {
+            var created = NicheCatalog.All.Single(item => item.Number == number);
+            Assert.Equal(NicheCatalog.Created, created.Status);
+            Assert.Equal(NicheCatalog.ExternalAnchor, created.AnchorKind);
+            Assert.Equal(string.Empty, created.TeacherKey);
+            Assert.False(created.CreatedThisRun);
+        }
+    }
+
+    [Fact]
+    public void Motorcycle_uses_brava_and_an_already_created_niche_is_not_repeated()
+    {
+        var brief = CreativeAcademy.PrepareProductionBrief(
+            "motorcycle", "Ruta Libre Motos",
+            "Black and red", null, null, "Visita el showroom",
+            "Panama", "Spanish", null, true, false, false);
+        var dental = CreativeAcademy.PrepareProductionBrief(
+            "dental", "Sonrisa Norte",
+            null, null, null, null, "Colombia", "Spanish", null,
+            true, false, false);
+        var lesson = CreativeAcademy.AllLessons.Single(item => item.LessonKey == CreativeAcademy.MotorcycleTeacher);
+
+        Assert.Equal(CreativeAcademy.ProductionSpecReady, brief.Status);
+        Assert.Equal(CreativeAcademy.MotorcycleTeacher, brief.TeacherKey);
+        Assert.Contains("brava-moto-reference", brief.GenerationRecipe);
+        Assert.Contains("Ruta Libre Motos", brief.GenerationRecipe);
+        Assert.False(brief.CanGenerate);
+        Assert.Equal(CreativeAcademy.Reference, lesson.Role);
+        Assert.Equal("motorcycle", lesson.Family);
+        Assert.Equal("/operations/academy/brava-moto-reference.jpg", lesson.ImagePath);
+        Assert.Equal(NicheCatalog.AlreadyCreated, dental.Status);
+        Assert.Contains("not repeated", dental.Notice);
+        Assert.Contains("substitute image", dental.GenerationRecipe);
+        Assert.False(dental.CanGenerate);
+        Assert.Throws<InvalidOperationException>(() => CreativeAcademy.PrepareProductionBrief(
+            "motorcycle", "Brava Moto", null, null, null, null, "Panama", "Spanish", null, true, false, false));
     }
 }

@@ -21,9 +21,13 @@ Creative Academy is a separate local proof: VidaCare Pharmacy is Master
 Prototype 01/50 for pharmacy quality, Maison Fleur teaches patisserie
 quality, Creative DNA customizes the advertiser, and the instructor
 separately judges customization, quality parity, originality, and
-geographic authenticity. The Academy's purpose is to produce original
-advertisements at the reference quality class. This run prepares the
-production brief but does not invent a generated advertisement. A vision
+geographic authenticity. The ordered roster holds 50 niches. Niches 1
+through 9 were already created and were not repeated. Niche 10, Brava
+Moto, is the motorcycle and moped quality reference stored in this run.
+Niches 11 through 50 stay not created. The next open niche is Auto-Parts
+Store. The Academy's purpose is to produce original advertisements at
+the reference quality class. This run prepares the production brief but
+does not invent a generated advertisement for a queued niche. A vision
 model and production model are not configured.
 A production model was not called. Campaign ready is refused. This proof
 does not complete hosted acceptance. A coverage week stores the measured
@@ -175,4 +179,4 @@ this process posture and does not claim hosted acceptance.
 | 14 | Coverage week | Verified local proof. One week stores the measured coverage. A missing market is not added. This is not a census. The fuel gauge is unchanged. Green does not send |
 | 15 | Marketplace metrics | Verified local proof. One reading stores the measured advertiser count, creator count, and stored slot count. A revenue amount is not on file. This is not a census. The balance page is unchanged. Green does not send |
 | 16 | Closed models | Verified local proof. One reading stores that seven grooming models are not configured. Configured models stay at zero. A model is not named. The learning page is unchanged. Green does not send |
-| 17 | Creative Academy | Local architecture proof updated on 2026-10-05. A client brand/store name plus niche now prepares an original production recipe. Pharmacy routes to VidaCare Master 01/50, fitness routes to Nova Fit, automotive service routes to Taller Ruta, and patisserie routes to Maison Fleur. FreshMart remains supplied context until explicitly approved as the grocery anchor. Unsupported niches stop at NICHE_ANCHOR_REQUIRED. Production briefs preserve advertiser Brand DNA while fixing the quality floor. Specific-market casting replaces generic regional casting. Customization, quality parity, originality, and geographic authenticity are independent gates. A production image model is not configured, so the Generate control fails closed and no new advertisement is claimed. Campaign ready is refused. Hosted acceptance is not claimed. Green does not send |
+| 17 | Creative Academy | Local architecture proof updated on 2026-10-05. The roster lists 50 niches. Niches 1-9 stay created and were not repeated. Niche 10 stores Brava Moto as the motorcycle quality reference. Niches 11-50 stay NICHE_NOT_CREATED, and the next open niche is Auto-Parts Store. Shopping mall, new-car, used-car, restaurant, and dental are already created outside this repository, so intake returns ALREADY_CREATED and invents no substitute image. FreshMart remains the supplied supermarket example and is not a master prototype. Bakery niche 16 stays not created; Maison Fleur remains the separate patisserie curriculum teacher. A production image model is not configured, so the Generate control fails closed. Campaign ready is refused. Hosted acceptance is not claimed. Green does not send |
