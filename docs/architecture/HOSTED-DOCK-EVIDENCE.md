@@ -56,3 +56,7 @@ The recording is `dock_phase4_regression_and_claim_refused.mp4`.
 🟡 **HOSTED ACCEPTANCE — PARTIAL / BLOCKED**
 
 The owner still has to supply the host, the hosted database, organizational OIDC, the secret-store binding, DNS and the proxy address, and authorization for a hosted backup and restore.
+
+## Owner acknowledgment
+
+On 2026-10-05 the owner acknowledged the four phase reports and recordings. The local engineering work, the VerifyFull rehearsal, the wrong-authority and wrong-hostname refusals, the 31 migrations, the backup and restore, the 452 passing tests, and the refusal to claim hosted acceptance were received. The owner kept the milestone at PARTIAL / BLOCKED. Hosted acceptance stays unclaimed until the hosted requirements are authorized, implemented, tested, and evidenced. Delivery remains `NOT_SENT`.
