@@ -1,0 +1,29 @@
+ALPHA CREATIVE ACADEMY
+Phase 3 of 4 - Creative Instructor
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Purpose
+
+The instructor compares each candidate with the quality floor. It does not ask whether the picture is nice. A critical text defect blocks approval even when the picture is strong.
+
+Candidates from the supplied images
+
+L'Amour Sucre is a distinct brand. The stored headline is "A sweet escape escape awaits." The instructor returns REVISE. Defect: duplicated word ESCAPE. A human notices that word. The instructor notices it too. The advertisement is not approved.
+
+Solara is a distinct brand. The stored labels include "Blood orange curdj in cake" and "California mjer lemon gelato." The instructor returns REVISE. Defects: malformed text CURDJ and malformed text MJER. The word lemon is accepted. The malformed neighbors are not.
+
+Belmonte is a distinct brand. The stored headline is "Life is sweeter here." No critical text defect is found. The visual benchmark is unrecorded, so the status is WITHHELD. A vision model was not called, and a visual score was not invented from the pixels.
+
+What is preserved on a revision
+
+Composition, hero dessert, hosts, brand identity, call to action, and supporting imagery stay. The repair names the exact defect.
+
+What this phase does not claim
+
+WITHHELD is not PASS. REVISE is not PASS. Campaign ready is refused. Delivery remains NOT_SENT.
+
+Done when
+
+The three candidate cards show REVISE, REVISE, and WITHHELD, with the named defects.

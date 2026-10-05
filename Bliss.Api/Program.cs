@@ -98,6 +98,7 @@ builder.Services.AddScoped<HostedAcceptanceService>();
 builder.Services.AddScoped<CoverageWeekService>();
 builder.Services.AddScoped<MarketplaceMetricsService>();
 builder.Services.AddScoped<ClosedModelsService>();
+builder.Services.AddScoped<CreativeAcademyService>();
 builder.Services.AddSingleton(authentication);
 builder.Services.AddSingleton(runtime);
 builder.Services.AddSingleton(posture);

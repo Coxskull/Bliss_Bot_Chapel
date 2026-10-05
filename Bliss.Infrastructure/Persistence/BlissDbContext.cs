@@ -97,6 +97,8 @@ public class BlissDbContext : DbContext
     public DbSet<CoverageWeekRow> CoverageWeeks => Set<CoverageWeekRow>();
     public DbSet<MarketplaceMetricRow> MarketplaceMetricReadings => Set<MarketplaceMetricRow>();
     public DbSet<ClosedModelRow> ClosedModelReadings => Set<ClosedModelRow>();
+    public DbSet<CreativeAcademyLessonRow> CreativeAcademyLessons => Set<CreativeAcademyLessonRow>();
+    public DbSet<CreativeAcademyDnaRow> CreativeAcademyDna => Set<CreativeAcademyDnaRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

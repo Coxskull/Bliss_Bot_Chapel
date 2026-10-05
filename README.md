@@ -178,6 +178,9 @@ Wedding Planner Phase 1 foundation contract: `docs/wedding-planner/PHASE-1-ENGIN
 Wedding Planner master blueprint v1.1: `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md`.
 Economics & Rate Intelligence (Phases 1–9): `docs/economics/ARCHITECTURE.md`.
 
+Creative Academy contract: `docs/architecture/contracts/CREATIVE-ACADEMY-CONTRACT.md`.
+Creative Academy evidence: `docs/architecture/CREATIVE-ACADEMY-EVIDENCE.md`.
+
 Long-term Wedding Planner, Fishing Fleet, and Autonomous Demo Factory
 reference (not an implementation authorization): `docs/architecture/README.md`.
 Prospect-facing example (ABC Pharmacy, Panama City): `docs/architecture/PROSPECT-DEMONSTRATION-EXAMPLE.md`.

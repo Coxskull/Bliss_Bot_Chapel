@@ -1,0 +1,33 @@
+ALPHA CREATIVE ACADEMY
+Phase 4 of 4 - Targeted repair and the approval gate
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Purpose
+
+A failed element is repaired in place. The rest of a strong advertisement is not discarded. A numerical score does not override a critical defect. Campaign ready stays refused.
+
+Repair lists
+
+L'Amour Sucre, when the visual benchmark is recorded as met, scores 84 and stays REVISE. Typography weight 16 is removed. The repair says: remove the duplicated word ESCAPE.
+
+When the operator also records that the visual benchmark was not met, with the note "Weaker visual contrast.", the score is 72. Lighting weight 12 is removed as well. The duplicated word remains. Both defects are listed. The preserve list remains.
+
+Solara stays REVISE for CURDJ and MJER. The repair names those words.
+
+Belmonte, after the operator records that the visual benchmark was met, becomes PASS with score 100. That record is an operator inspection. It is not a vision-model score. Campaign ready stays false. Delivery stays NOT_SENT.
+
+A request to mark the same lesson campaign ready is refused. The response is HTTP 400. The error says campaign ready is refused. The stored lesson is not turned into a placement.
+
+Other gates
+
+Copying "A sweeter journey awaits you." or "French artistry" onto a candidate is FAIL. An obstructed creator face is FAIL. Quality weights that do not total 100 are refused. A flag that asks for a production model is refused before any call.
+
+Regression
+
+The full Bliss test suite passed: 464 tests, 0 failed, 0 skipped. Hosted acceptance was not claimed. The console used for the recording is Development on the local machine.
+
+Done when
+
+The repair lists are visible, Belmonte shows PASS only after the visual record, the campaign-ready control shows the refusal, and this report records the regression.
