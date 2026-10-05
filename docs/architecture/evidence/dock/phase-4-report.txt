@@ -1,0 +1,35 @@
+Alpha + Bliss hosted dock
+Phase 4 report: regression and milestone classification
+Date: 2026-10-04
+Command: dotnet test Bliss.Tests/Bliss.Tests.csproj --verbosity minimal
+Result: Passed 452, Failed 0, Skipped 0
+Milestone classification: HOSTED ACCEPTANCE - PARTIAL / BLOCKED
+Delivery: NOT_SENT
+
+The suite includes the dock readiness tests, the production posture tests, hosted-acceptance refusal, tenant isolation, suppression, Economics as the only price authority, Bliss matching, Wedding Planner boundaries, and the Bot Party fleet controls. A passing test proves the behavior it names. It does not prove a hosted deployment.
+
+The hosted reading still refuses a request to claim hosted acceptance. Identity contacted stays no. The hosted backup drill stays no. Delivery remains NOT_SENT. Green does not mean send.
+
+Why this is not a pass
+
+The required hosted evidence is absent:
+
+- There is no owner-selected application host.
+- There is no hosted PostgreSQL connection. The VerifyFull proof is loopback.
+- There is no organizational OIDC login.
+- There is no vendor secret store binding.
+- The operations console was not opened on a hosted environment.
+- The backup and restore were not performed on a hosted database.
+- Docker is not installed here, so the image was not started from the Dockerfile.
+
+What I need from the owner
+
+1. Choose the application host. Do not buy it until you authorize the purchase. I will not invent a price.
+2. Choose the PostgreSQL host and send the VerifyFull connection materials through the secret store: host, database, username, password, and the provider CA if needed. I did not connect to the earlier Supabase project bkutbglzivfdnoerigyb.
+3. Choose the identity provider and provide the HTTPS issuer, client id, client secret, and the five bliss role values.
+4. Name the secret store that will inject the environment variables or the three mounted files.
+5. Provide the public DNS name and the reverse-proxy address.
+6. Authorize one backup and one restore of the hosted database after it exists.
+7. Leave outreach locked until a separate contract. Delivery remains NOT_SENT.
+
+Final status: HOSTED ACCEPTANCE - PARTIAL / BLOCKED

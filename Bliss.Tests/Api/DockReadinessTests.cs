@@ -78,6 +78,7 @@ public sealed class DockReadinessTests
                 Path.GetTempPath()));
         Assert.Contains("not readable", missing.Message);
 
+        var root = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "bliss-dock-empty-root-" + Guid.NewGuid().ToString("N")));
         var secrets = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "bliss-dock-empty-" + Guid.NewGuid().ToString("N")));
         var file = Path.Combine(secrets.FullName, "empty");
         try
@@ -87,11 +88,12 @@ public sealed class DockReadinessTests
                 SecretFileLoader.Read(
                     "Runtime:DataProtectionCertificatePassword",
                     name => name.EndsWith("_FILE", StringComparison.Ordinal) ? file : "",
-                    Path.GetTempPath()));
+                    root.FullName));
             Assert.Contains("empty", empty.Message);
         }
         finally
         {
+            root.Delete(true);
             secrets.Delete(true);
         }
     }

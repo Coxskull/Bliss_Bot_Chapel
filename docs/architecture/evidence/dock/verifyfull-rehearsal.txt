@@ -1,0 +1,23 @@
+VerifyFull rehearsal. Target local. Loopback only.
+Hosted acceptance claimed: no
+Identity provider contacted: no
+Delivery: NOT_SENT
+verify-full matching name: success
+verify-full loopback address with the IP name in the certificate: success
+verify-full wrong certificate authority: refused
+verify-full wrong hostname: refused
+connection file mode: 600
+connection file records the password: no
+migrations applied through the application command
+migration history rows: 31
+backup dump bytes: 260905
+backup transport: verify-full
+restore marker: match
+restored migration history rows: 31
+rehearsal database host string for the application: 127.0.0.1
+hosted database: no
+server certificate verification performed: yes
+hosted acceptance claimed: no
+identity provider contacted: no
+delivery: NOT_SENT
+VerifyFull rehearsal completed.

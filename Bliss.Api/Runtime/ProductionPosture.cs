@@ -316,7 +316,10 @@ public static class ProductionPostureEvaluator
                 && IsSecretOk(builder.Password, 12)
                 && !string.IsNullOrWhiteSpace(builder.Database);
             var transportEncrypted = builder.SslMode is SslMode.Require or SslMode.VerifyCA or SslMode.VerifyFull;
-            var verified = builder.SslMode == SslMode.VerifyFull && !builder.TrustServerCertificate;
+#pragma warning disable CS0618 // Npgsql keeps the flag for compatibility. The production gate still rejects it.
+            var trustsServerCertificate = builder.TrustServerCertificate;
+#pragma warning restore CS0618
+            var verified = builder.SslMode == SslMode.VerifyFull && !trustsServerCertificate;
             return new DatabaseInspection(true, hosted, transportEncrypted, verified,
                 !string.IsNullOrWhiteSpace(builder.Username),
                 IsSecretOk(builder.Password, 12),

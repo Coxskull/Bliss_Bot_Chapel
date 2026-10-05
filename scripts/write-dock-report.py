@@ -18,12 +18,14 @@ def main() -> None:
     pdf.set_margins(18, 18, 18)
     pdf.add_page()
     pdf.set_font("Helvetica", size=11)
-    for paragraph in source.split("\n"):
+    usable = pdf.w - pdf.l_margin - pdf.r_margin
+    for paragraph in source.splitlines():
+        pdf.set_x(pdf.l_margin)
         text = paragraph.encode("latin-1", "replace").decode("latin-1")
         if text.strip() == "":
             pdf.ln(4)
             continue
-        pdf.multi_cell(0, 6, text)
+        pdf.multi_cell(usable, 6, text, new_x="LMARGIN", new_y="NEXT")
     output.parent.mkdir(parents=True, exist_ok=True)
     pdf.output(str(output))
 

@@ -78,7 +78,9 @@ openssl req -new -x509 -days 30 -nodes \
   -keyout "$work/wrong.key" -out "$work/wrong.crt" \
   -subj "/CN=Bliss Wrong CA" >/dev/null 2>&1
 
-sudo install -d -m 755 /var/lib/bliss-rehearsal/certs
+sudo install -d -o ubuntu -g ubuntu -m 755 /var/lib/bliss-rehearsal
+sudo install -d -o ubuntu -g ubuntu -m 755 /var/lib/bliss-rehearsal/certs
+sudo chown ubuntu:ubuntu /var/lib/bliss-rehearsal
 sudo install -m 644 "$work/ca.crt" /var/lib/bliss-rehearsal/certs/ca.crt
 sudo install -m 644 "$work/server.crt" /var/lib/bliss-rehearsal/certs/server.crt
 sudo install -m 644 "$work/wrong.crt" /var/lib/bliss-rehearsal/certs/wrong-ca.crt
@@ -125,7 +127,7 @@ BEGIN
 END
 \$\$;
 EOF
-sudo -u postgres psql -v ON_ERROR_STOP=1 -f "$sql" >/dev/null
+sudo -u postgres psql -v ON_ERROR_STOP=1 -f - < "$sql" >/dev/null
 rm -f "$sql"
 sudo -u postgres psql -v ON_ERROR_STOP=1 -c "ALTER ROLE bliss_rehearsal CREATEDB;" >/dev/null
 sudo -u postgres psql -v ON_ERROR_STOP=1 -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'bliss_rehearsal' AND pid <> pg_backend_pid();" >/dev/null || true

@@ -1,0 +1,4 @@
+Production startup exit: 134
+Production posture is incomplete. ConnectionStrings:DefaultConnection is required outside Development and must be supplied through the secret store. Authentication:ClientSecret must be supplied through the secret store and must not be a placeholder. Runtime:DataProtectionCertificatePath is required outside Development so persisted keys are encrypted at rest. Runtime:DataProtectionCertificatePassword must be supplied through the secret store. Runtime:KnownProxies must include at least one non-loopback deployment proxy outside Development. Runtime:Backup:Provider, Runtime:Backup:Schedule, and a positive Runtime:Backup:RetentionDays are required outside Development.
+Delivery: NOT_SENT
+Hosted acceptance claimed: no
