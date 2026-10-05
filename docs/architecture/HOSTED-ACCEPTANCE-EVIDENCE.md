@@ -43,3 +43,5 @@ The recording is `hosted_reading_leaves_acceptance_unclaimed.mp4`.
 The report is `docs/architecture/evidence/Alpha-Hosted-Acceptance-Report.pdf`.
 
 The contract is `docs/architecture/contracts/HOSTED-ACCEPTANCE-CONTRACT.md`.
+The next contract is `docs/architecture/contracts/HOSTED-DOCK-CONTRACT.md`.
+That contract does not claim hosted acceptance.

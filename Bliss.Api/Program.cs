@@ -21,6 +21,8 @@ using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+SecretFileLoader.Apply(builder.Configuration, builder.Environment.ContentRootPath);
+var applyMigrations = MigrationCommand.Requested(args);
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 var authentication = builder.Configuration
     .GetSection(BlissAuthenticationOptions.SectionName)
@@ -298,6 +300,15 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+if (applyMigrations)
+{
+    using var migrateScope = app.Services.CreateScope();
+    var migrateDb = migrateScope.ServiceProvider.GetRequiredService<BlissDbContext>();
+    migrateDb.Database.Migrate();
+    Console.WriteLine(MigrationCommand.CompletionLine);
+    return;
+}
 
 app.UseForwardedHeaders();
 app.Use(async (context, next) =>

@@ -1,0 +1,26 @@
+Alpha + Bliss hosted dock
+Phase 2 report: production gate, secrets, and the image contract
+Date: 2026-10-04
+Classification of this phase: proved on this machine
+Milestone classification: HOSTED ACCEPTANCE - PARTIAL / BLOCKED
+Delivery: NOT_SENT
+
+What was proved
+
+Outside Development, the process refuses to start until the database connection uses SSL Mode=VerifyFull and does not set Trust Server Certificate. SSL Mode=Require encrypts the connection and is rejected. SSL Mode=VerifyCA checks the authority and does not check the server name, so it is rejected.
+
+A Production process was started with authentication enabled, a documentation HTTPS authority, a client id, and a key directory. No database password, client secret, or certificate password was supplied. The process exited 134 before it served traffic. The refusal named the missing connection string, client secret, data-protection certificate, certificate password, deployment proxy, and backup declaration. The log did not contain a password assignment.
+
+Three settings can be read from an absolute file outside the application directory: the database connection, the OIDC client secret, and the data-protection certificate password. A file inside the application directory is refused. An inline value and a file for the same setting are refused together. The refusal text does not echo the secret.
+
+dotnet publish of Bliss.Api was scanned. The scanner reported: Publish scan passed. No embedded secret was found.
+
+The Dockerfile builds a Production image, listens on port 8080, and contains no password. This machine has no Docker daemon, so the image was not built here. The Dockerfile is the contract the owner can build on the chosen host. That missing build is not reported as a successful deployment.
+
+Npgsql in this solution marks TrustServerCertificate as obsolete and says the parameter does nothing at connection time. The production gate still rejects the declaration.
+
+What was not proved
+
+No hosted process is running. No organizational identity provider was contacted. Secrets were not placed in a vendor secret store because no store was chosen.
+
+Green does not mean send.

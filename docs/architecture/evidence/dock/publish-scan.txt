@@ -1,0 +1,1 @@
+Publish scan passed. No embedded secret was found.

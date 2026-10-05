@@ -1,5 +1,9 @@
 # Phase 20 Production Posture Evidence
 
+The dock contract later requires `SSL Mode=VerifyFull` outside Development.
+The production-shaped probe recorded below used `SSL Mode=Require` and did
+not verify the server certificate. That historical result is unchanged.
+
 ## Acceptance result
 
 Phase 20 adds a fail-closed production posture on top of the BLISS-SYS-NEGREG-001

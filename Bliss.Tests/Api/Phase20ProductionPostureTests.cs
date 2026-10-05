@@ -50,18 +50,23 @@ public sealed class Phase20ProductionPostureEvaluatorTests
         Assert.Equal(14, report.Document.BackupRetentionDays);
     }
 
-    [Fact]
-    public void Production_reports_tls_without_calling_trust_server_certificate_verified()
+    [Theory]
+    [InlineData("SSL Mode=Require")]
+    [InlineData("SSL Mode=VerifyCA")]
+    [InlineData("SSL Mode=VerifyFull;Trust Server Certificate=true")]
+    public void Production_rejects_database_tls_that_does_not_verify_the_server_name(string ssl)
     {
         var report = ProductionPostureEvaluator.Evaluate(ValidProductionInput() with
         {
             ConnectionString =
-                "Host=db.phase20.example.test;Port=5432;Database=bliss;Username=bliss_app;Password=phase20-db-password-do-not-leak;SSL Mode=Require;Trust Server Certificate=true"
+                "Host=db.phase20.example.test;Port=5432;Database=bliss;Username=bliss_app;Password=phase20-db-password-do-not-leak;"
+                + ssl
         });
 
-        Assert.Empty(report.Failures);
-        Assert.True(report.Document.DatabaseTransportEncrypted);
+        var exception = Assert.Throws<InvalidOperationException>(() => ProductionPostureEvaluator.Ensure(report));
+        Assert.Contains("VerifyFull", exception.Message);
         Assert.False(report.Document.DatabaseServerCertificateVerified);
+        Assert.DoesNotContain("phase20-db-password-do-not-leak", exception.Message);
     }
 
     [Theory]
@@ -403,7 +408,7 @@ public sealed class Phase20ProductionHostTests : IClassFixture<ProductionPosture
         Assert.Contains("\"keysEncryptedAtRest\":true", postureBody);
         Assert.Contains("\"hostedDatabaseConfigured\":true", postureBody);
         Assert.Contains("\"databaseTransportEncrypted\":true", postureBody);
-        Assert.Contains("\"databaseServerCertificateVerified\":false", postureBody);
+        Assert.Contains("\"databaseServerCertificateVerified\":true", postureBody);
         Assert.Contains("\"identityProviderHttps\":true", postureBody);
         Assert.Contains("bliss.reviewer", postureBody);
         Assert.Contains("\"backupDeclared\":true", postureBody);
@@ -530,7 +535,7 @@ public sealed class ProductionPostureApiFactory : WebApplicationFactory<Program>
             "ConnectionStrings:DefaultConnection",
             "Host=203.0.113.10;Port=5432;Database=bliss;Username=bliss_app;Password="
             + DatabasePassword
-            + ";SSL Mode=Require;Trust Server Certificate=true;Timeout=1");
+            + ";SSL Mode=VerifyFull;Trust Server Certificate=false;Timeout=1");
         builder.UseSetting("Authentication:Enabled", "true");
         builder.UseSetting("Authentication:Authority", "https://identity.example.test/realms/bliss");
         builder.UseSetting("Authentication:ClientId", "bliss-chapel");

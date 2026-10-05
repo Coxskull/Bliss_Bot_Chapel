@@ -1,0 +1,34 @@
+Alpha + Bliss hosted dock
+Phase 1 report: chart the dock
+Date: 2026-10-04
+Classification of this phase: recorded
+Milestone classification: HOSTED ACCEPTANCE - PARTIAL / BLOCKED
+Delivery: NOT_SENT
+
+This phase charts the work. It does not claim hosted acceptance.
+
+The previous local cycle remains the foundation. The dock contract splits the remaining work into what this run can prove and what the owner must supply. A blocked lane does not stop the other work.
+
+A. This run can complete
+
+1. Require SSL Mode=VerifyFull outside Development.
+2. Reject Trust Server Certificate=true, SSL Mode=Require, and SSL Mode=VerifyCA.
+3. Read the database connection, the OIDC client secret, and the data-protection certificate password from mounted files.
+4. Publish a container contract that contains no secret.
+5. Apply migrations with dotnet Bliss.Api.dll --migrate and then exit.
+6. Prove a loopback VerifyFull handshake, a wrong certificate authority, a wrong hostname, a migration, a backup, and a restore.
+7. Run the regression suite.
+
+B. Owner input required
+
+1. An application host. No account was selected and nothing was purchased.
+2. A hosted PostgreSQL endpoint whose server certificate can be checked with VerifyFull. Include the host, database, username, password, and the provider CA when the machine does not already trust it. A prior live test named Supabase project bkutbglzivfdnoerigyb. This run has no password for that project and did not connect.
+3. An organizational OIDC issuer on HTTPS, not loopback, plus a client id and a client secret. The ID token or userinfo response must carry distinct roles: bliss.viewer, bliss.operator, bliss.reviewer, bliss.admin, and bliss.advertiser.
+4. The platform that injects environment variables or mounted secret files. The application does not embed those values.
+5. The public HTTPS name, the DNS record, and one non-loopback reverse-proxy address.
+6. Authorization to back up and restore the real hosted database. The loopback restore does not certify that backup.
+7. A separate contract before any live outreach. Hosting does not authorize email, WhatsApp, SMS, social messaging, crawlers, paid enrichment, a new model, settlement, a creator payout, or an advertiser charge.
+
+No price is stated. A missing cost stays unrecorded.
+
+Green does not mean send.

@@ -14,7 +14,9 @@ marketplace handoff, the human creative approval, the research ledger,
 and the later rotation period are verified local proofs. Economics Phase 9
 is accepted by the owner. Historical actuals stay append-only. An empty
 history stays unrecorded. A hosted reading stores this process posture.
-Hosted acceptance is not claimed. A coverage week stores the measured
+Hosted acceptance is not claimed. The dock contract is open. Its
+classification is partial until the owner supplies a hosted database,
+organizational identity, and a platform secret store. A coverage week stores the measured
 slices. A missing market is not added. A marketplace reading stores the
 measured advertiser count, creator count, and stored slot count. A
 revenue amount is not on file. A closed-model reading stores that
@@ -147,7 +149,7 @@ this process posture and does not claim hosted acceptance.
 
 | Priority | Capability | Status |
 | --- | --- | --- |
-| 1 | Bliss hosted acceptance | Verified local proof. The reading stores this process posture. Hosted acceptance is not claimed. A local database is not a hosted database. An identity provider was not contacted. A backup drill was not run. Satisfied gates do not finish the deployment. Green does not send |
+| 1 | Bliss hosted acceptance | Dock contract open. Hosted acceptance is not claimed. VerifyFull is required outside Development. A loopback rehearsal is not a hosted database. An identity provider was not contacted. A hosted backup drill was not run. Green does not send |
 | 2 | Economics Phase 9 owner acceptance | Accepted by the owner on 2026-10-03. Historical actuals stay append-only. An empty history stays unrecorded. A pricing rule is not changed. A settlement is not created. Green does not send |
 | 4 | Subscription ledger and factory budget | Verified local proof. A missing cost stays unrecorded. A reached ceiling degrades that scope. A review is not a purchase. Green does not send |
 | 5 | Deterministic media runtime | Verified local proof. The player is the served picture. A permanent composite is not required. QA still matches the QR and the disclosure. Green does not send |

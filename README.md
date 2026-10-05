@@ -56,12 +56,23 @@ Development mode keeps authentication explicitly disabled by default for local
 tests and does not apply the hosted production gates.
 
 Outside Development the process refuses to start unless the database host is
-non-loopback, SSL Mode is `Require`, `VerifyCA`, or `VerifyFull`, the identity
-authority is HTTPS and non-loopback, a deployment proxy is listed, backup
-provider/schedule/retention are declared, and the data-protection key ring is
-persisted and encrypted with the configured PKCS#12 certificate. `SSL Mode=Require`
-encrypts the connection without verifying the server certificate. `VerifyCA` or
-`VerifyFull` is what posture reports as server-certificate verification.
+non-loopback, SSL Mode is `VerifyFull`, `Trust Server Certificate` stays false,
+the identity authority is HTTPS and non-loopback, a deployment proxy is listed,
+backup provider/schedule/retention are declared, and the data-protection key
+ring is persisted and encrypted with the configured PKCS#12 certificate.
+`SSL Mode=Require` encrypts the connection without verifying the server
+certificate, and the production gate rejects it. `VerifyCA` checks the
+certificate authority and does not check the server name. `VerifyFull` is the
+required production setting.
+
+Three secrets may be supplied as environment values or as mounted files:
+`ConnectionStrings__DefaultConnection_FILE`,
+`Authentication__ClientSecret_FILE`, and
+`Runtime__DataProtectionCertificatePassword_FILE`. A secret file must be an
+absolute path outside the application directory. The same setting must not be
+supplied both inline and as a file. `dotnet Bliss.Api.dll --migrate` applies
+the existing migrations and exits. It does not start the site, does not claim
+hosted acceptance, and does not send.
 
 The Data Protection path must be a persistent, access-controlled volume shared
 by every API replica. The certificate and its password must be supplied by the
@@ -77,13 +88,13 @@ to run unless `BLISS_BACKUP_DRILL=1`, `BLISS_BACKUP_DRILL_TARGET=local`, and
 
 The dashboard talks to `Bliss.Api`; it does **not** connect directly to PostgreSQL. A Supabase publishable key is intended for browser REST/Auth requests and cannot authenticate the EF Core/Npgsql backend. Do not put the database password or a service-role key in browser code.
 
-For the supplied project host, set the database password only in your shell or deployment secret store:
+Set the database password only in the shell or the deployment secret store. A prior live test named a Supabase project. This dock run did not connect to it. The production gate rejects `SSL Mode=Require` and `Trust Server Certificate=true`.
 
 ```bash
-export ConnectionStrings__DefaultConnection="Host=db.bkutbglzivfdnoerigyb.supabase.co;Port=5432;Database=postgres;Username=postgres;Password=<SUPABASE_DATABASE_PASSWORD>;SSL Mode=Require;Trust Server Certificate=true"
+export ConnectionStrings__DefaultConnection="Host=<HOSTED_DATABASE_HOST>;Port=5432;Database=<DATABASE>;Username=<DATABASE_USER>;Password=<DATABASE_PASSWORD>;SSL Mode=VerifyFull;Root Certificate=<PROVIDER_CA_PEM>"
 ```
 
-If your network has no IPv6 route to the direct database host, copy the **Session pooler** connection string from Supabase Dashboard → Connect and set the same environment variable.
+If the provider offers a session pooler, use that host in the same variable. Change the copied string to `SSL Mode=VerifyFull` and supply the provider CA. Leave `Trust Server Certificate` false.
 
 Apply migrations to a dedicated test project/database before starting the app:
 
