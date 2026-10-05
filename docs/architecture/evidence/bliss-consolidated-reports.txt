@@ -1,0 +1,1696 @@
+BLISS CONSOLIDATED EVIDENCE REPORT
+Creative Academy, hosted dock readiness, OpenAI image smoke, and full test summary
+Date: 2026-10-05
+Classification: local architecture and provider-smoke evidence
+Delivery: NOT_SENT
+Campaign ready: false
+Hosted acceptance: not claimed
+Green means send: false
+
+Standing boundaries
+
+This packet consolidates the reports produced for hosted dock readiness and Creative Academy work. It does not invent credentials, hosting, costs, or a send. Economics remains the only price authority. Wedding Planner is not opened by these reports. A draft is not PASS. A passing test is not hosted acceptance.
+
+Current creator truth
+
+The ad creator is installed and configured for OpenAI Images with gpt-image-1. The temporary API token is supplied only through Runtime:CreativeGeneration:ApiToken_FILE outside the application directory. Models authentication succeeded. Image generation is blocked by OpenAI credit_balance_exhausted / insufficient_quota. Academy generate fails closed with modelCalls 0, no stored draft, campaignReady false, and delivery NOT_SENT. After credits are added, re-run generate, then revoke the temporary key.
+
+Packet contents
+
+1. Creative Academy overview
+2. Hosted dock phases 1 through 4
+3. Creative Academy phases 1 through 4
+4. Creative Academy phases A1 through A4
+5. Creative Academy phases B1 through B4
+6. Creative Academy phase C niche roster
+7. Creative Academy phase D guarded ad creator
+8. OpenAI image smoke
+9. Full Bliss test summary (484 passed, 0 failed, 0 skipped)
+
+Related recordings exist as separate artifacts for dock phases, academy phases, and the OpenAI smoke. They are not embedded in this PDF.
+
+Part II of the PDF appendix appends the standalone Alpha subsystem PDF reports (43 files) and the dock phase PDF covers (4 files) for one-packet review. Those appendix pages keep their original titles. Academy phase PDFs are not re-appended because their full text is already included above.
+
+Source files remain under docs/architecture/evidence/academy/, docs/architecture/evidence/dock/, and docs/architecture/evidence/bliss-full-test-summary.txt. This consolidated PDF does not replace those sources; it gathers them for owner review.
+
+========================================================================
+
+CREATIVE ACADEMY OVERVIEW
+-------------------------
+
+ALPHA CREATIVE ACADEMY
+What the Creative Academy is inside Bliss
+Date: 2026-10-05
+Classification: local architecture proof
+Delivery: NOT_SENT
+Campaign ready: refused
+Hosted acceptance: not claimed
+Live model calls in this environment: 0
+
+1. What it is
+
+The Creative Academy is the part of Bliss that prepares and judges original commercial advertisements. It lives in the operations console at /operations#/academy and in the API at /api/operations/academy.
+
+Its job is production quality, not cloning. One hundred advertisers should be able to look like one hundred distinct professional brands while sharing one quality floor. A restaurant, a pharmacy, a motorcycle dealer, and a supermarket are not supposed to look like siblings.
+
+The governing doctrine is: reproduce the craftsmanship; replace the creative content. Originality without quality parity is a failure. Quality parity without originality is also a failure. An attractive picture is not enough.
+
+The Academy is preserved as future creative infrastructure for the Fishing Fleet and Wedding Planner. This feature does not open Wedding Planner, does not price anything, and does not send email, WhatsApp, SMS, or social messages. Economics remains the only price authority, and the Academy does not ask it for a price.
+
+2. The five roles
+
+The Academy separates five jobs that must not be collapsed into one template.
+
+The quality teacher is a stored reference image and its transcribed copy. It teaches how strong the finished advertisement must feel. It is not the client's brand, logo, people, store, products, or layout.
+
+The production recipe is the written instruction for a new advertisement. It names the client, the niche, the quality teacher, the brand direction, and the rule that the teacher's identity must be replaced.
+
+Creative DNA records who the advertiser is. Advertiser-approved Brand DNA is authoritative. Missing optional fields become art-direction work. They are not invented as client facts.
+
+The Creative Instructor judges stored copy and recorded visual benchmarks. It returns PASS, REVISE, FAIL, or WITHHELD. A critical defect overrides a flattering score. REVISE names what to preserve and what to repair. A strong advertisement is not thrown away and regenerated blindly.
+
+The ad creator is the installed worker that can ask one configured image provider to make a draft. A draft is not an approval, not a campaign, and not a send.
+
+3. How a client request moves through the system
+
+The required client inputs are a brand or store name and a niche. Optional Brand DNA can include market, language, colors, font, headline, call to action, products, offer, restrictions, approved people, QR destination, and inventory format.
+
+The niche selects its own quality teacher. The recipe is a wide 16:9 commercial instruction. It tells the worker to match or exceed the teacher in color power, contrast, lighting, depth, material realism, texture, hero dominance, hierarchy, typography, screen pop, commercial polish, and Premium Dominant Presence. It also tells the worker not to copy the teacher's brand, people, photograph, environment, products, headline, or layout.
+
+A recipe with status PRODUCTION_SPEC_READY is ready to be made. It is not itself an advertisement.
+
+If the niche was already created outside this repository, the result is ALREADY_CREATED. The prototype is not repeated and no substitute image is invented.
+
+If the niche has not been created, the result is NICHE_NOT_CREATED. The system stops before image generation and does not borrow an unrelated teacher.
+
+4. The quality floor
+
+Initial instructor weights total 100 and can be reconfigured only when they still total 100:
+
+Typography and text accuracy: 16
+Lighting and depth: 12
+Product and subject realism: 12
+Composition and placement: 12
+Visual hierarchy: 10
+Brand identity: 10
+Commercial credibility: 10
+Creator protection: 10
+Call to action: 8
+
+The 16-item reference parity gate is: color power, tonal contrast, lighting craftsmanship, highlight brilliance, shadow quality, dimensional depth, foreground and background separation, material realism, texture fidelity, hero dominance, visual hierarchy, typographic quality, screen pop, commercial polish, Premium Dominant Presence, and overall reference quality parity.
+
+The instructor reads stored transcribed copy. It does not invent a visual score by looking at pixels. A human records the visual benchmark. Until that record exists, visual categories stay unrecorded and a clean candidate stays WITHHELD.
+
+Known text results from the stored curriculum:
+
+L'Amour Sucre, duplicated word ESCAPE, visual benchmark met: REVISE, score 84.
+L'Amour Sucre, duplicated ESCAPE plus a recorded weaker-contrast note: REVISE, score 72.
+Solara, malformed words CURDJ and MJER: REVISE. Typography is subtracted once.
+Belmonte, clean text, visual benchmark unrecorded: WITHHELD, score unrecorded.
+Belmonte, visual benchmark recorded as met: PASS, score 100. Campaign ready stays false.
+Copied prototype identity: FAIL.
+Obstructed creator face: FAIL.
+
+A duplicated word or malformed important text is repaired in place. Copying a teacher identity, or covering a creator's face, fails the candidate.
+
+5. Four independent final gates
+
+After a candidate exists, four gates are judged separately:
+
+Advertiser customization and Brand DNA compliance.
+Reference quality parity.
+Originality.
+Geographic authenticity.
+
+Any failed gate returns REVISE. Any unrecorded gate returns WITHHELD. All four passed returns ELIGIBLE_TO_CONTINUE. That status means the candidate may continue through the approval workflow. It does not mean campaign ready, and it does not send.
+
+6. Geographic authenticity
+
+The initial markets are the Philippines, Malaysia, Indonesia, Colombia, Panama, and the Dominican Republic. The system refuses a generic Asian or generic Latino casting instruction. There is no stereotype engine.
+
+If the advertiser supplies approved people or photography, casting status is ADVERTISER_ASSET. Those assets take precedence.
+
+If the market is known but research is incomplete, casting status is MARKET_RESEARCH_REQUIRED. The system does not guess a national face.
+
+If the specific market is known and research is complete, casting status is LOCALLY_PLAUSIBLE_DEFAULT. People must be plausible for that market, varied across campaigns, and naturally integrated. Local authenticity does not lower the photorealism standard.
+
+7. The 50-niche roster
+
+The roster is ordered. A created niche is not repeated. A niche that is not created does not borrow another niche's teacher. Ten niches are created. Forty are not created. The next open niche is number 11, Auto-Parts Store.
+
+Local images stored in this repository:
+
+1. Pharmacy / Drugstore. CREATED. Teacher vidacare-master-01. VidaCare Pharmacy is Alpha Master Prototype 01/50. Its purpose is a quality anchor. It is not a creative template. Its blue and green branding, people, store, copy, and composition are not forced onto another pharmacy.
+2. Supermarket / Hypermarket. CREATED. Teacher freshmart-supplied. FreshMart is an owner-supplied example. It was not promoted to a master prototype.
+7. Gym / Fitness Center. CREATED. Teacher nova-fit-reference, Nova Fit.
+8. Automotive Service / Mechanic Repair Shop. CREATED. Teacher taller-ruta-reference, Taller Ruta.
+10. Motorcycle / Moped Dealership. CREATED in the roster run. Teacher brava-moto-reference, Brava Moto. Headline transcribed from the image: Tu proxima ruta empieza aqui. Its visual benchmark is unrecorded, so it is a teacher and not an approved campaign.
+
+Already created, with no image stored in this repository and no substitute invented:
+
+3. Shopping Mall / Shopping Center.
+4. New-Car Dealership.
+5. Used-Car Dealership.
+6. Restaurant / Casual Dining.
+9. Dental Office / Dental Clinic.
+
+Not created, in order:
+
+11. Auto-Parts Store. This is the next open niche.
+12. Gas Station / Convenience Store.
+13. Fast-Food Restaurant.
+14. Pizza Restaurant.
+15. Coffee Shop / Cafe.
+16. Bakery / Patisserie.
+17. Sports Bar / Nightlife Venue.
+18. Hotel / Resort.
+19. Travel / Tourism Business.
+20. Real-Estate Agency / Property Developer.
+21. Law Firm / Legal Practice.
+22. Medical Clinic / Doctor's Office.
+23. Optical / Eyewear Store.
+24. Beauty Salon.
+25. Barber Shop.
+26. Nail Salon.
+27. Spa / Beauty / Aesthetics.
+28. Clothing / Fashion Retailer.
+29. Athletic Shoes / Sneaker Retailer.
+30. Jewelry / Watch Retailer.
+31. Electronics Retailer.
+32. Mobile-Phone / Accessories Store.
+33. Furniture / Home Furnishing.
+34. Home Improvement / Hardware.
+35. Appliance Retailer.
+36. Department / Variety Store.
+37. Toy / Children's Retailer.
+38. Pet Store / Pet Care.
+39. Education / Vocational Training.
+40. Financial Services / Insurance.
+41. Soda / Soft-Drink Brand.
+42. Bottled-Water Brand.
+43. Fruit-Juice / Beverage Brand.
+44. Coffee Product Brand.
+45. Chocolate / Confectionery.
+46. Candy / Snack Brand.
+47. Bread / Packaged Bakery.
+48. Ice-Cream / Frozen Dessert.
+49. Personal-Care / Cosmetics.
+50. Household Cleaning / Consumer Products.
+
+Niche 16, Bakery / Patisserie, stays not created. Maison Fleur remains a separate patisserie curriculum teacher. It is not niche 16, and it is not a template for every bakery.
+
+8. What is stored today
+
+Curriculum lessons are stored in CreativeAcademyLessons. There are nine lessons: VidaCare, FreshMart, Nova Fit, Taller Ruta, Brava Moto, and the four patisserie lessons Maison Fleur, L'Amour Sucre, Belmonte, and Solara.
+
+Creative DNA decisions are stored in CreativeAcademyDna. A stored decision records family, brand, hero, palette, call to action, personality, and whether a local teacher is on file.
+
+Generated drafts, when a provider is configured, are stored in CreativeAcademyGenerations. Each row records the request key, brand, niche, teacher, image path, media type, provider request identifier, recipe SHA-256, model-call count, campaign-ready false, and delivery NOT_SENT.
+
+The operations console shows the doctrine, the quality teachers, the 50-row roster, client intake, the parity gate, geographic rules, stored DNA, instructor candidates, creator status, and generated drafts.
+
+9. The ad creator as it exists now
+
+The creator is installed. The Generate advertisement control calls POST /api/operations/academy/generate.
+
+When an authorized provider is configured, the server sends one production recipe to one HTTPS endpoint. The bearer token comes from the platform secret store. It is not shown in the browser and is not written into the generation ledger. The requested format is a wide 16:9 image, 1536 by 864, returned as base64. PNG, JPEG, and WebP are accepted. SVG and other content are refused. Oversized files, redirects, malformed responses, provider errors, and timeouts fail closed. The server chooses the file name. A repeated request key does not call the provider again.
+
+A successful result is GENERATED_PENDING_REVIEW. That means one draft exists. The human visual benchmark is still unrecorded. The four final gates are still unrecorded. Campaign ready is false. Delivery remains NOT_SENT.
+
+This environment has no authorized provider endpoint and no secret-store token. No credential and no paid service were invented. The honest console state is PROVIDER_CONFIGURATION_REQUIRED. The Generate button is disabled. Live model calls are 0. No generated draft is stored in this environment.
+
+A configured provider path was proved with an injected test provider. That test is evidence that the system path works. It is not evidence that a hosted image provider was contacted.
+
+10. What the Academy refuses
+
+It refuses to clone Maison Fleur, VidaCare, Nova Fit, Taller Ruta, FreshMart, or Brava Moto into a new advertiser.
+
+It refuses to treat a production recipe as a finished advertisement.
+
+It refuses to route a not-created niche to an unrelated teacher.
+
+It refuses to invent a substitute image for an already-created niche whose file is not in this repository.
+
+It refuses generic regional casting.
+
+It refuses campaign ready.
+
+It refuses to send.
+
+It refuses to claim hosted acceptance. A local database and a local console are not a hosted production environment.
+
+11. Owner input still required before live production
+
+1. A vision model, only if the instructor should later read pixels instead of a human visual record.
+2. An authorized image-provider HTTPS endpoint and an API token in the platform secret store.
+3. Local images for the already-created external niches: shopping mall, new-car dealership, used-car dealership, restaurant, and dental. None was invented here.
+4. Quality anchors for niches 11 through 50. The next one is Auto-Parts Store.
+5. A human visual benchmark for Brava Moto.
+6. The hosted dock: a hosted database, organizational identity, and a platform secret store. Hosted acceptance is not claimed.
+
+12. Where the proof lives
+
+Engineering contract: docs/architecture/contracts/CREATIVE-ACADEMY-CONTRACT.md
+Evidence index: docs/architecture/CREATIVE-ACADEMY-EVIDENCE.md
+This report: docs/architecture/evidence/academy/creative-academy-overview.pdf
+
+The latest regression recorded with the creator is 32 Creative Academy tests passed and 484 full Bliss tests passed, with 0 failed and 0 skipped.
+
+No message was sent. No campaign was approved. No price was invented. Delivery remains NOT_SENT.
+
+========================================================================
+
+HOSTED DOCK PHASE 1
+-------------------
+
+Alpha + Bliss hosted dock
+Phase 1 report: chart the dock
+Date: 2026-10-04
+Classification of this phase: recorded
+Milestone classification: HOSTED ACCEPTANCE - PARTIAL / BLOCKED
+Delivery: NOT_SENT
+
+This phase charts the work. It does not claim hosted acceptance.
+
+The previous local cycle remains the foundation. The dock contract splits the remaining work into what this run can prove and what the owner must supply. A blocked lane does not stop the other work.
+
+A. This run can complete
+
+1. Require SSL Mode=VerifyFull outside Development.
+2. Reject Trust Server Certificate=true, SSL Mode=Require, and SSL Mode=VerifyCA.
+3. Read the database connection, the OIDC client secret, and the data-protection certificate password from mounted files.
+4. Publish a container contract that contains no secret.
+5. Apply migrations with dotnet Bliss.Api.dll --migrate and then exit.
+6. Prove a loopback VerifyFull handshake, a wrong certificate authority, a wrong hostname, a migration, a backup, and a restore.
+7. Run the regression suite.
+
+B. Owner input required
+
+1. An application host. No account was selected and nothing was purchased.
+2. A hosted PostgreSQL endpoint whose server certificate can be checked with VerifyFull. Include the host, database, username, password, and the provider CA when the machine does not already trust it. A prior live test named Supabase project bkutbglzivfdnoerigyb. This run has no password for that project and did not connect.
+3. An organizational OIDC issuer on HTTPS, not loopback, plus a client id and a client secret. The ID token or userinfo response must carry distinct roles: bliss.viewer, bliss.operator, bliss.reviewer, bliss.admin, and bliss.advertiser.
+4. The platform that injects environment variables or mounted secret files. The application does not embed those values.
+5. The public HTTPS name, the DNS record, and one non-loopback reverse-proxy address.
+6. Authorization to back up and restore the real hosted database. The loopback restore does not certify that backup.
+7. A separate contract before any live outreach. Hosting does not authorize email, WhatsApp, SMS, social messaging, crawlers, paid enrichment, a new model, settlement, a creator payout, or an advertiser charge.
+
+No price is stated. A missing cost stays unrecorded.
+
+Green does not mean send.
+
+========================================================================
+
+HOSTED DOCK PHASE 2
+-------------------
+
+Alpha + Bliss hosted dock
+Phase 2 report: production gate, secrets, and the image contract
+Date: 2026-10-04
+Classification of this phase: proved on this machine
+Milestone classification: HOSTED ACCEPTANCE - PARTIAL / BLOCKED
+Delivery: NOT_SENT
+
+What was proved
+
+Outside Development, the process refuses to start until the database connection uses SSL Mode=VerifyFull and does not set Trust Server Certificate. SSL Mode=Require encrypts the connection and is rejected. SSL Mode=VerifyCA checks the authority and does not check the server name, so it is rejected.
+
+A Production process was started with authentication enabled, a documentation HTTPS authority, a client id, and a key directory. No database password, client secret, or certificate password was supplied. The process exited 134 before it served traffic. The refusal named the missing connection string, client secret, data-protection certificate, certificate password, deployment proxy, and backup declaration. The log did not contain a password assignment.
+
+Three settings can be read from an absolute file outside the application directory: the database connection, the OIDC client secret, and the data-protection certificate password. A file inside the application directory is refused. An inline value and a file for the same setting are refused together. The refusal text does not echo the secret.
+
+dotnet publish of Bliss.Api was scanned. The scanner reported: Publish scan passed. No embedded secret was found.
+
+The Dockerfile builds a Production image, listens on port 8080, and contains no password. This machine has no Docker daemon, so the image was not built here. The Dockerfile is the contract the owner can build on the chosen host. That missing build is not reported as a successful deployment.
+
+Npgsql in this solution marks TrustServerCertificate as obsolete and says the parameter does nothing at connection time. The production gate still rejects the declaration.
+
+What was not proved
+
+No hosted process is running. No organizational identity provider was contacted. Secrets were not placed in a vendor secret store because no store was chosen.
+
+Green does not mean send.
+
+========================================================================
+
+HOSTED DOCK PHASE 3
+-------------------
+
+Alpha + Bliss hosted dock
+Phase 3 report: VerifyFull rehearsal, migrations, backup, and restore
+Date: 2026-10-04
+Classification of this phase: loopback rehearsal proved
+Milestone classification: HOSTED ACCEPTANCE - PARTIAL / BLOCKED
+Delivery: NOT_SENT
+
+This rehearsal used PostgreSQL 16 on this engineering machine. The certificate authority was created here. The database host used by the application was 127.0.0.1. This is not a hosted database. Hosted acceptance was not claimed. An identity provider was not contacted.
+
+Handshake
+
+verify-full matching name: success
+verify-full loopback address with the IP name in the certificate: success
+verify-full wrong certificate authority: refused
+verify-full wrong hostname: refused
+
+The connection file is mode 600. The password was not written to this report.
+
+Migrations
+
+dotnet Bliss.Api.dll --migrate applied the migrations through the application and exited. It did not start the site. Migration history rows: 31. The same count was present after restore.
+
+Backup and restore
+
+The dump was taken over verify-full. Dump size: 260905 bytes. The database was dropped and created again. pg_restore loaded the dump over verify-full. The restored marker matched the marker written before the backup. Restored migration history rows: 31.
+
+The existing local backup drill also restored its own marker: marker-20261004T235306Z-7804. That drill remains a loopback procedure. It does not certify a hosted backup.
+
+What was not proved
+
+No hosted PostgreSQL endpoint was migrated. No hosted backup was restored. The operations console in the following recording runs as Development against this loopback database, so the production gates stay unapplied and the hosted-database flag stays no.
+
+Green does not mean send.
+
+========================================================================
+
+HOSTED DOCK PHASE 4
+-------------------
+
+Alpha + Bliss hosted dock
+Phase 4 report: regression and milestone classification
+Date: 2026-10-04
+Command: dotnet test Bliss.Tests/Bliss.Tests.csproj --verbosity minimal
+Result: Passed 452, Failed 0, Skipped 0
+Milestone classification: HOSTED ACCEPTANCE - PARTIAL / BLOCKED
+Delivery: NOT_SENT
+
+The suite includes the dock readiness tests, the production posture tests, hosted-acceptance refusal, tenant isolation, suppression, Economics as the only price authority, Bliss matching, Wedding Planner boundaries, and the Bot Party fleet controls. A passing test proves the behavior it names. It does not prove a hosted deployment.
+
+The hosted reading still refuses a request to claim hosted acceptance. Identity contacted stays no. The hosted backup drill stays no. Delivery remains NOT_SENT. Green does not mean send.
+
+Why this is not a pass
+
+The required hosted evidence is absent:
+
+- There is no owner-selected application host.
+- There is no hosted PostgreSQL connection. The VerifyFull proof is loopback.
+- There is no organizational OIDC login.
+- There is no vendor secret store binding.
+- The operations console was not opened on a hosted environment.
+- The backup and restore were not performed on a hosted database.
+- Docker is not installed here, so the image was not started from the Dockerfile.
+
+What I need from the owner
+
+1. Choose the application host. Do not buy it until you authorize the purchase. I will not invent a price.
+2. Choose the PostgreSQL host and send the VerifyFull connection materials through the secret store: host, database, username, password, and the provider CA if needed. I did not connect to the earlier Supabase project bkutbglzivfdnoerigyb.
+3. Choose the identity provider and provide the HTTPS issuer, client id, client secret, and the five bliss role values.
+4. Name the secret store that will inject the environment variables or the three mounted files.
+5. Provide the public DNS name and the reverse-proxy address.
+6. Authorize one backup and one restore of the hosted database after it exists.
+7. Leave outreach locked until a separate contract. Delivery remains NOT_SENT.
+
+Final status: HOSTED ACCEPTANCE - PARTIAL / BLOCKED
+
+========================================================================
+
+ACADEMY PHASE 1 - CHARTER AND PROTOTYPE
+---------------------------------------
+
+ALPHA CREATIVE ACADEMY
+Phase 1 of 4 - Charter and prototype library
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Purpose
+
+Preserve the teaching method for the future Fishing Fleet and Wedding Planner creative infrastructure. The prototype teaches the quality. The recipe teaches the craft. Creative DNA customizes the advertiser. The production worker creates the work. The instructor judges the work. Only approved work moves forward.
+
+The cake principle
+
+An excellent finished cake is shown together with the recipe and the quality standard. The next cake keeps that craftsmanship and changes the flavor for the customer. The academy does the same for advertisements. One quality floor. Many brands.
+
+What this phase stores
+
+The supplied Maison Fleur Patisserie advertisement is the quality teacher. Its role is REFERENCE. It is not an advertiser to clone. The name Maison Fleur, the slogan "A sweeter journey awaits you.", and the phrase "French artistry" stay with the teacher.
+
+The image used on the operations page is the owner-supplied reference. This run did not generate a replacement and did not call a vision model.
+
+What this phase does not claim
+
+Hosted acceptance is not complete. Campaign ready is refused. Green does not send. A production model was not called. Families other than patisserie have no prototype on file, and none was invented.
+
+Done when
+
+The contract is written, the prototype is visible on the Creative Academy page, this report exists, and the phase recording shows the teacher.
+
+========================================================================
+
+ACADEMY PHASE 2 - CREATIVE DNA
+------------------------------
+
+ALPHA CREATIVE ACADEMY
+Phase 2 of 4 - Creative DNA
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Purpose
+
+Creative DNA decides who the advertiser is. The prototype decides the quality floor. Two advertisers in the same niche must not become recolored copies of each other.
+
+Decisions proved
+
+Atelier Cendre is a distinct patisserie. Hero: burnt honey mille-feuille. Palette: ink and apricot. Call to action: Reserve your table. Personality: quiet coastal luxury. The teacher on file is maison-fleur. The brand stays distinct.
+
+North Clinic is a dental practice. No prototype is on file for dental. None was invented. The teacher key is empty.
+
+A request to store the brand Maison Fleur is refused. The prototype identity is the teacher. A new advertiser is not cloned.
+
+Known families with no teacher on file
+
+Restaurant, hotel, automotive, motorcycle, fitness, dental, medical, beauty, real estate, grocery, coffee, education, and financial services.
+
+What this phase does not claim
+
+Selecting a teacher does not approve an advertisement. It does not send a message. It does not open Wedding Planner. It does not invent a price.
+
+Done when
+
+The three DNA outcomes are visible: a distinct patisserie, a refused clone, and a family with no teacher.
+
+========================================================================
+
+ACADEMY PHASE 3 - INSTRUCTOR
+----------------------------
+
+ALPHA CREATIVE ACADEMY
+Phase 3 of 4 - Creative Instructor
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Purpose
+
+The instructor compares each candidate with the quality floor. It does not ask whether the picture is nice. A critical text defect blocks approval even when the picture is strong.
+
+Candidates from the supplied images
+
+L'Amour Sucre is a distinct brand. The stored headline is "A sweet escape escape awaits." The instructor returns REVISE. Defect: duplicated word ESCAPE. A human notices that word. The instructor notices it too. The advertisement is not approved.
+
+Solara is a distinct brand. The stored labels include "Blood orange curdj in cake" and "California mjer lemon gelato." The instructor returns REVISE. Defects: malformed text CURDJ and malformed text MJER. The word lemon is accepted. The malformed neighbors are not.
+
+Belmonte is a distinct brand. The stored headline is "Life is sweeter here." No critical text defect is found. The visual benchmark is unrecorded, so the status is WITHHELD. A vision model was not called, and a visual score was not invented from the pixels.
+
+What is preserved on a revision
+
+Composition, hero dessert, hosts, brand identity, call to action, and supporting imagery stay. The repair names the exact defect.
+
+What this phase does not claim
+
+WITHHELD is not PASS. REVISE is not PASS. Campaign ready is refused. Delivery remains NOT_SENT.
+
+Done when
+
+The three candidate cards show REVISE, REVISE, and WITHHELD, with the named defects.
+
+========================================================================
+
+ACADEMY PHASE 4 - REPAIR AND GATE
+---------------------------------
+
+ALPHA CREATIVE ACADEMY
+Phase 4 of 4 - Targeted repair and the approval gate
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Purpose
+
+A failed element is repaired in place. The rest of a strong advertisement is not discarded. A numerical score does not override a critical defect. Campaign ready stays refused.
+
+Repair lists
+
+L'Amour Sucre, when the visual benchmark is recorded as met, scores 84 and stays REVISE. Typography weight 16 is removed. The repair says: remove the duplicated word ESCAPE.
+
+When the operator also records that the visual benchmark was not met, with the note "Weaker visual contrast.", the score is 72. Lighting weight 12 is removed as well. The duplicated word remains. Both defects are listed. The preserve list remains.
+
+Solara stays REVISE for CURDJ and MJER. The repair names those words.
+
+Belmonte, after the operator records that the visual benchmark was met, becomes PASS with score 100. That record is an operator inspection. It is not a vision-model score. Campaign ready stays false. Delivery stays NOT_SENT.
+
+A request to mark the same lesson campaign ready is refused. The response is HTTP 400. The error says campaign ready is refused. The stored lesson is not turned into a placement.
+
+Other gates
+
+Copying "A sweeter journey awaits you." or "French artistry" onto a candidate is FAIL. An obstructed creator face is FAIL. Quality weights that do not total 100 are refused. A flag that asks for a production model is refused before any call.
+
+Regression
+
+The full Bliss test suite passed: 464 tests, 0 failed, 0 skipped. Hosted acceptance was not claimed. The console used for the recording is Development on the local machine.
+
+Done when
+
+The repair lists are visible, Belmonte shows PASS only after the visual record, the campaign-ready control shows the refusal, and this report records the regression.
+
+========================================================================
+
+ACADEMY PHASE A1 - QUALITY EXTRACTION
+-------------------------------------
+
+ALPHA CREATIVE ACADEMY
+Updated instruction phase A1 of A4 - Reference quality extraction
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Purpose
+
+The Academy exists to produce original advertisements at or above an approved reference's perceived commercial production quality. This local phase records what the production worker and instructor must preserve. It does not claim that a production model generated an advertisement.
+
+Governing doctrine
+
+REPRODUCE THE CRAFTSMANSHIP.
+REPLACE THE CREATIVE CONTENT.
+
+Originality without quality parity is failure.
+Quality parity without originality is failure.
+
+Fixed quality signature
+
+Deep tonal contrast, vibrant controlled color, rich saturation, brilliant controlled highlights, deep readable shadows, directional hero lighting, edge and rim separation, specular detail, foreground/background separation, dimensional depth, photorealistic rendering, material realism, texture fidelity, professional depth of field, elegant bokeh, hero dominance, screen pop, typography, commercial polish, and Premium Dominant Presence.
+
+Reference parity gate
+
+Color power; tonal contrast; lighting craftsmanship; highlight brilliance; shadow quality; dimensional depth; foreground/background separation; material realism; texture fidelity; hero dominance; visual hierarchy; typographic quality; screen pop; commercial polish; Premium Dominant Presence; and overall reference quality parity.
+
+Blind side-by-side test
+
+With brand identities hidden, a reasonable viewer should believe the reference and candidate belong to the same or a higher class of professional commercial production. Attractive alone is not enough.
+
+Boundaries
+
+A vision model is not configured. A production model is not configured. No visual score is invented from pixels. Campaign ready is false. Hosted acceptance is not claimed.
+
+========================================================================
+
+ACADEMY PHASE A2 - ANCHOR AND CUSTOMIZATION
+-------------------------------------------
+
+ALPHA CREATIVE ACADEMY
+Updated instruction phase A2 of A4 - Master anchor and customization
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Master prototype
+
+Designation: ALPHA MASTER PROTOTYPE 01/50
+Niche: PHARMACY / DRUGSTORE
+Purpose: QUALITY ANCHOR
+Creative template: NO
+Lesson key: vidacare-master-01
+
+VidaCare teaches how well a pharmacy advertisement should be produced. Its blue/green branding, fictional name, logo, headline, copy, people, store, products, and composition do not become a real advertiser's brand manual.
+
+Owner-supplied context
+
+FreshMart Supermarket is stored as SUPPLIED_EXAMPLE. It demonstrates the intended commercial production class. The owner did not explicitly designate it as a master prototype, so this run does not silently promote it.
+
+Customized production brief
+
+Advertiser: Farmacia Nueva Salud
+Market: Panama
+Language: Spanish
+Palette: Burgundy and gold
+Font: Montserrat
+Headline: Tu salud, mas cerca
+CTA: Recoge tu receta
+Requirement: Feature prescription pickup. Do not show families. Use locally plausible casting.
+Teacher: vidacare-master-01
+
+The brief keeps every advertiser instruction while inheriting the fixed quality signature. Burgundy and gold must retain excellent contrast, color richness, and depth. Montserrat must retain professional hierarchy and legibility. New photography must retain photorealism, lighting, material realism, and commercial polish.
+
+Result
+
+Status is PRODUCTION_SPEC_READY. Can generate is false because no production model is configured. This is a production specification, not a generated advertisement. Campaign ready is false. Delivery remains NOT_SENT.
+
+========================================================================
+
+ACADEMY PHASE A3 - GEOGRAPHIC AUTHENTICITY
+------------------------------------------
+
+ALPHA CREATIVE ACADEMY
+Updated instruction phase A3 of A4 - Geographic authenticity
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Purpose
+
+Localized advertising needs people who are plausible for the specific market. Changing language, flags, city names, or backgrounds while reusing the same generic people is not localization.
+
+Initial markets
+
+Philippines
+Malaysia
+Indonesia
+Colombia
+Panama
+Dominican Republic
+
+Specific-market rule
+
+“Asian” is not a casting plan. “Latino” is not a casting plan. The system requires a specific market. It considers contemporary commercial context, a realistic range of people within that market, hair, age, clothing, grooming, role, environment, audience, and campaign direction together. Localization is not reduced to skin color.
+
+No stereotype engine
+
+Do not caricature features, exaggerate skin tone, use costumes merely to signal nationality, infer personality or economic status from ethnicity, or create one permanent national face. Multiple advertisements within one market should naturally vary their casting.
+
+Research and advertiser assets
+
+When confidence is insufficient, status is MARKET_RESEARCH_REQUIRED. Curator and Research use multiple legitimate contemporary references before Art Direction. The generated people must remain original.
+
+When the advertiser supplies approved employees, spokespersons, models, or photography, status is ADVERTISER_ASSET and those assets take precedence.
+
+Quality still applies
+
+Local authenticity does not reduce requirements for realistic skin, hair, eyes, anatomy, hands, clothing materials, natural expressions, lighting integration, dimensional depth, and premium commercial photography.
+
+Boundaries
+
+No people were generated in this phase. No market research source was invented. Campaign ready is false. Delivery remains NOT_SENT.
+
+========================================================================
+
+ACADEMY PHASE A4 - DUAL GATE
+----------------------------
+
+ALPHA CREATIVE ACADEMY
+Updated instruction phase A4 of A4 - Independent final gates
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Purpose
+
+Customization and quality are separate requirements. Neither replaces the other. Originality and geographic authenticity are also explicit gates.
+
+Gate 1: Brand and customization compliance
+
+Did the work respect approved branding, colors, fonts, copy, products, voice, imagery, requirements, restrictions, and requested customization?
+
+Gate 2: Reference quality parity
+
+Does the work compete with or exceed the master in lighting, realism, contrast, depth, texture, hierarchy, screen impact, commercial polish, and Premium Dominant Presence?
+
+Gate 3: Originality
+
+Did the work replace the reference's photograph, product, people, environment, brand, copy, supporting imagery, and creative expression?
+
+Gate 4: Geographic authenticity
+
+When people are shown, are they plausible for the specific market without caricature, generic regional casting, or one permanent national face?
+
+Decision table
+
+Customization PASS plus quality FAIL equals REVISE.
+Quality PASS plus customization FAIL equals REVISE.
+Any originality or geographic-authenticity failure equals REVISE.
+An unrecorded gate equals WITHHELD.
+All four PASS equals ELIGIBLE_TO_CONTINUE.
+
+Proof
+
+The quality-drift control returns REVISE and names reference quality parity as the defect. The repair restores deficient contrast, lighting, realism, depth, texture, hierarchy, screen pop, or commercial polish.
+
+The all-gates control returns ELIGIBLE_TO_CONTINUE. Eligible is not campaign ready. It does not place or send the advertisement.
+
+Regression
+
+Creative Academy tests: 20 passed, 0 failed, 0 skipped.
+Full Bliss.Tests suite: 472 passed, 0 failed, 0 skipped.
+Hosted acceptance is not claimed. Delivery remains NOT_SENT.
+
+========================================================================
+
+ACADEMY PHASE B1 - NICHE ROUTER
+-------------------------------
+
+ALPHA CREATIVE ACADEMY
+Client workflow phase B1 of B4 - Niche quality-anchor router
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Client objective
+
+The client enters a brand or store name and chooses the business niche. The Academy selects the approved quality teacher for that niche. It does not use one universal template.
+
+Approved routes
+
+Pharmacy / drugstore -> vidacare-master-01
+Fitness / gym -> nova-fit-reference
+Automotive service -> taller-ruta-reference
+Patisserie / bakery -> maison-fleur
+
+New supplied references
+
+Nova Fit teaches the fitness production class: energetic hero dominance, realistic people and anatomy, rich black/yellow/red contrast, dimensional gym lighting, crisp offer hierarchy, legible benefits, CTA clarity, and QR-safe placement.
+
+Taller Ruta teaches the automotive-service production class: realistic technicians, tools, parts and vehicle materials, deep red/black/white contrast, directional workshop lighting, service hierarchy, legible benefits, CTA clarity, and QR-safe placement.
+
+Creative replacement rule
+
+The client's result must replace the fictional name, logo, people, offer, products, environment, copy, photography, and composition. The reference teaches how well the work is produced, not what the client must look like.
+
+Unsupported niches
+
+FreshMart remains owner-supplied context and is not silently promoted to the grocery anchor. Grocery, dental, and any other niche without an approved teacher return NICHE_ANCHOR_REQUIRED. The system does not borrow an unrelated reference.
+
+Boundaries
+
+No advertisement was generated. Campaign ready is false. Hosted acceptance is not claimed. Delivery remains NOT_SENT.
+
+========================================================================
+
+ACADEMY PHASE B2 - CLIENT INTAKE
+--------------------------------
+
+ALPHA CREATIVE ACADEMY
+Client workflow phase B2 of B4 - Brand/store and niche intake
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Required client inputs
+
+Brand or store name
+Niche
+
+Optional Brand DNA
+
+Market
+Language
+Approved colors
+Approved font
+Headline
+Call to action
+Products and services
+Offer
+Approved people or photography
+Restrictions
+QR destination
+Inventory format
+
+Behavior
+
+The Academy selects the niche quality anchor and prepares a new wide 16:9 production recipe. Optional client values remain authoritative. Missing optional values are stated as art-direction work; they are not represented as client-approved facts.
+
+Example
+
+Brand: Impulso Fitness
+Niche: Fitness / Gym
+Anchor: nova-fit-reference
+
+The recipe orders a completely original advertisement for Impulso Fitness. It prohibits copying Nova Fit's brand, people, photograph, environment, products, headline, layout, or distinctive creative content. It requires reference parity in color, contrast, lighting, depth, realism, texture, hierarchy, typography, screen pop, commercial polish, and Premium Dominant Presence.
+
+Geographic rule
+
+If the market is missing or research is incomplete, casting status is MARKET_RESEARCH_REQUIRED. If advertiser-approved people are supplied, those assets take precedence.
+
+Result
+
+The recipe status is PRODUCTION_SPEC_READY when the selected niche has an approved anchor. Can generate remains false until a production image model is configured. Delivery remains NOT_SENT.
+
+========================================================================
+
+ACADEMY PHASE B3 - GENERATION BOUNDARY
+--------------------------------------
+
+ALPHA CREATIVE ACADEMY
+Client workflow phase B3 of B4 - Recipe readiness versus image generation
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Critical distinction
+
+PRODUCTION_SPEC_READY means the niche anchor, client identity, Brand DNA, originality rules, quality signature, geographic direction, format, and QA requirements have been assembled into a production recipe.
+
+It does not mean an advertisement image exists.
+
+Generate advertisement control
+
+The client interface includes a Generate advertisement control so the intended workflow is explicit. In this environment, the production image model is not configured.
+
+The control therefore fails closed with:
+
+GENERATION BLOCKED
+A production model is not configured. No advertisement was generated.
+Campaign ready No.
+Model calls 0.
+Delivery NOT_SENT.
+
+Why the refusal is required
+
+The system must not:
+
+claim that a recipe is an ad,
+show an unrelated placeholder as client work,
+call an unauthorized provider,
+invent credentials,
+purchase a model,
+or mark a nonexistent image approved.
+
+Future completion condition
+
+An authorized production image model must accept the reference image plus the production recipe, return an original candidate, preserve important text correctly, and send the candidate through customization, quality parity, originality, geographic authenticity, critical-defect, and advertiser-review gates.
+
+Hosted acceptance remains unclaimed.
+
+========================================================================
+
+ACADEMY PHASE B4 - QA AND REGRESSION
+------------------------------------
+
+ALPHA CREATIVE ACADEMY
+Client workflow phase B4 of B4 - QA and regression
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Instructor sequence after future generation
+
+1. Verify advertiser Brand DNA and customization.
+2. Compare the candidate directly with its niche quality anchor.
+3. Verify originality of the creative content.
+4. Verify geographic authenticity when people are shown.
+5. Check spelling, grammar, duplicate words, malformed labels, CTA, dimensions, anatomy, hands, material realism, artifacts, creator safety, and QR-safe placement.
+6. Return PASS, REVISE with targeted repair, or FAIL.
+7. Only a fully passed candidate becomes eligible to continue through advertiser review.
+
+Independent gate behavior
+
+Customization pass plus quality fail equals REVISE.
+Quality pass plus customization fail equals REVISE.
+Originality fail equals REVISE or FAIL according to the defect.
+Geographic authenticity fail equals REVISE.
+An unrecorded gate equals WITHHELD.
+All gates passed equals ELIGIBLE_TO_CONTINUE.
+
+Eligibility is not campaign ready and does not send.
+
+Automated proof
+
+Creative Academy tests: 25 passed, 0 failed, 0 skipped.
+Full Bliss.Tests suite: 477 passed, 0 failed, 0 skipped.
+
+Covered facts include:
+
+fitness routes to nova-fit-reference,
+automotive service routes to taller-ruta-reference,
+brand plus niche are the minimum intake,
+missing market requires research,
+unsupported niche requires anchor approval,
+the recipe prohibits reference copying,
+the Generate control refuses an unconfigured model,
+campaign ready remains false,
+and delivery remains NOT_SENT.
+
+Hosted acceptance is not claimed.
+
+========================================================================
+
+ACADEMY PHASE C - NICHE ROSTER
+------------------------------
+
+ALPHA CREATIVE ACADEMY
+Niche roster phase C - Fifty niches, motorcycle dealership stored
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+Campaign ready: false
+Hosted acceptance: not claimed
+
+Roster
+
+The owner supplied 50 niches. Red niches 1 through 9 were already created and were not repeated. Green niches 10 through 50 were not yet created. This run started at niche 10.
+
+Created and not repeated
+
+1 Pharmacy / Drugstore - local master vidacare-master-01
+2 Supermarket / Hypermarket - local supplied example freshmart-supplied, not promoted to a master
+3 Shopping Mall / Shopping Center - already created outside this repository, no substitute image
+4 New-Car Dealership - already created outside this repository, no substitute image
+5 Used-Car Dealership - already created outside this repository, no substitute image
+6 Restaurant / Casual Dining - already created outside this repository, no substitute image
+7 Gym / Fitness Center - local reference nova-fit-reference
+8 Automotive Service / Mechanic Repair Shop - local reference taller-ruta-reference
+9 Dental Office / Dental Clinic - already created outside this repository, no substitute image
+
+Created in this run
+
+10 Motorcycle / Moped Dealership - brava-moto-reference
+Brand: Brava Moto
+Headline transcribed from the image: Tu proxima ruta empieza aqui.
+Image: /operations/academy/brava-moto-reference.jpg
+Role: REFERENCE quality teacher
+Visual benchmark: unrecorded
+This image is not an approved advertiser campaign. A client must replace the brand, people, showroom, offer, copy, photography, and composition.
+
+Not created
+
+11 Auto-Parts Store is the next open niche.
+12 through 50 remain NOT_CREATED, from Gas Station / Convenience Store through Household Cleaning / Consumer Products.
+Bakery / Patisserie is niche 16 and stays not created. Maison Fleur remains the separate patisserie curriculum teacher. It is not niche 16.
+
+Intake results
+
+A local anchor returns PRODUCTION_SPEC_READY and still does not generate an image.
+An external created niche returns ALREADY_CREATED. The prototype is not repeated.
+A queued niche returns NICHE_NOT_CREATED and stops before image generation.
+The Generate control fails closed. A production model is not configured. No advertisement was generated by the Bliss runtime.
+
+Regression
+
+Creative Academy filter: Passed 27, Failed 0, Skipped 0.
+Full Bliss.Tests suite: Passed 479, Failed 0, Skipped 0.
+
+Boundaries
+
+Economics was not asked for a price. Wedding Planner was not opened. No message was sent. Hosted acceptance was not claimed. Delivery remains NOT_SENT.
+
+========================================================================
+
+ACADEMY PHASE D - AD CREATOR
+----------------------------
+
+ALPHA CREATIVE ACADEMY
+Phase D - Guarded advertisement creator
+Date: 2026-10-05
+Delivery: NOT_SENT
+Campaign ready: false
+Hosted acceptance: not claimed
+
+Outcome
+
+The advertisement creator is installed in the Bliss system.
+
+The Operations Console now reads creator status and sends Generate advertisement to POST /api/operations/academy/generate. The server prepares the same advertiser-specific production recipe, requires an approved niche quality teacher, and calls one configuration-owned HTTPS image-provider endpoint.
+
+Provider contract
+
+The request contains an idempotency key, the wide 16:9 production prompt, width 1536, height 864, and response format base64.
+
+The endpoint and bearer token come from Runtime:CreativeGeneration configuration. The token is intended for the platform secret store. It is not returned to the browser or stored in the generation ledger.
+
+The response must contain base64 PNG, JPEG, or WebP. Unsupported types including SVG, oversized images, redirects, malformed responses, provider refusal, network failure, and timeout fail closed. The server chooses the output filename.
+
+Stored draft
+
+A successful provider response stores:
+
+- GENERATED_PENDING_REVIEW
+- advertiser brand and niche
+- quality teacher key
+- server image path and media type
+- idempotency request key
+- production-recipe SHA-256
+- provider request identifier
+- model calls 1
+- campaign ready false
+- delivery NOT_SENT
+
+The generated image is not PASS. The human visual benchmark and customization, quality parity, originality, and geographic authenticity gates remain unrecorded.
+
+Niche boundaries
+
+An approved local anchor can enter generation. An already-created external niche returns ALREADY_CREATED and does not repeat its prototype. A not-created niche returns NICHE_NOT_CREATED and does not borrow an unrelated teacher.
+
+Current environment
+
+The creator is installed, but this environment has no authorized provider endpoint and no secret-store token. Its honest state is PROVIDER_CONFIGURATION_REQUIRED. Live model calls remain 0. No paid service, credential, hosted acceptance, campaign approval, or sent delivery was invented.
+
+Verification
+
+The configured-provider integration uses an injected test provider. It creates one idempotent draft, stores model calls 1, serves the generated PNG, keeps campaign ready false, and keeps delivery NOT_SENT. A repeated request does not call the provider twice. The adapter separately verifies bearer authentication, recipe dimensions, and image-type validation.
+
+Creative Academy filter: Passed 32, Failed 0, Skipped 0.
+Full Bliss.Tests suite: Passed 484, Failed 0, Skipped 0.
+
+Owner input required for live generation
+
+1. Authorize an image provider.
+2. Supply its HTTPS adapter endpoint.
+3. Supply its API token through the platform secret store.
+4. Apply the database migration and configure durable generated-asset storage in the hosted environment.
+5. Run and evidence a real provider smoke test without sending or approving a campaign.
+
+No message was sent. Economics was not used as a price authority. Wedding Planner was not opened. Delivery remains NOT_SENT.
+
+========================================================================
+
+OPENAI IMAGE SMOKE
+------------------
+
+ALPHA CREATIVE ACADEMY
+OpenAI image-generation smoke report
+Date: 2026-10-05
+Classification: local provider smoke evidence
+Delivery: NOT_SENT
+Campaign ready: false
+Hosted acceptance: not claimed
+PR merged for adapter: https://github.com/Coxskull/Bliss_Bot_Chapel/pull/106
+
+1. Purpose
+
+Prove that the guarded ad creator can authenticate to OpenAI Images with a temporary API token supplied through the platform secret store, without committing the key, without storing a draft when the provider refuses, and without sending or approving a campaign.
+
+2. Configuration used for this smoke
+
+Provider: OpenAI
+Model: gpt-image-1
+Native endpoint: https://api.openai.com/v1/images/generations
+Secret path: /var/lib/bliss-rehearsal/openai.apitoken (mode 600)
+Configuration keys: Runtime:CreativeGeneration:Provider=OpenAI and Runtime:CreativeGeneration:ApiToken_FILE
+ApiToken is empty in appsettings. The key is not in git, not in the PR, and not returned by the API board.
+
+3. Creator status before generate
+
+GET /api/operations/academy returned:
+
+installed: true
+configured: true
+status: READY
+notice: The ad creator is ready. Generated drafts remain pending review, campaign ready false, and NOT_SENT.
+generations: 0
+delivery: NOT_SENT
+
+4. OpenAI authentication probe
+
+GET https://api.openai.com/v1/models with the temporary bearer token returned HTTP 200.
+The account model list included gpt-image-1.
+Conclusion: the temporary key authenticates to OpenAI.
+
+5. OpenAI Images probe
+
+POST https://api.openai.com/v1/images/generations with model gpt-image-1 returned:
+
+type: insufficient_quota
+code: credit_balance_exhausted
+message: You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+
+6. Academy generate smoke
+
+POST /api/operations/academy/generate with motorcycle niche, brand Ruta Libre Motos, market Panama, language Spanish, and market research complete returned HTTP 400:
+
+error: The configured image provider refused the generation request: OpenAI reports no remaining API credits. No advertisement was stored.
+modelCalls: 0
+campaignReady: false
+delivery: NOT_SENT
+greenMeansSend: false
+
+After the refusal, the board still showed generations 0. No image file was written under /operations/generated. Delivery remained NOT_SENT.
+
+7. What this proves
+
+The native OpenAI Images path is wired and READY.
+The secret-file loader supplies the token outside the application directory.
+The server authenticates to OpenAI and reaches the Images API.
+When OpenAI reports exhausted credits, the creator fails closed, stores nothing, keeps modelCalls at 0, keeps campaignReady false, and keeps delivery NOT_SENT.
+No message was sent. Economics was not used as a price authority. Wedding Planner was not opened.
+
+8. What remains blocked
+
+A successful GENERATED_PENDING_REVIEW draft still requires OpenAI billing credits on the account that owns the key.
+After credits are added, re-run Generate advertisement for an approved niche such as motorcycle.
+Then revoke or rotate the temporary key that was pasted into chat.
+
+9. Owner actions
+
+1. Add credits at the OpenAI organization billing page.
+2. Keep the key only in the secret store or ApiToken_FILE path outside the app directory.
+3. Re-run the smoke until a draft stores as GENERATED_PENDING_REVIEW with campaign ready false and delivery NOT_SENT.
+4. Revoke the temporary key after the successful smoke.
+5. Do not treat a draft as PASS, campaign ready, hosted acceptance, or a send.
+
+No advertisement was approved. No outreach was performed. Delivery remains NOT_SENT.
+
+========================================================================
+
+BLISS FULL TEST SUMMARY
+-----------------------
+
+BLISS TEST SUMMARY
+Every individual test in the latest full suite
+Date: 2026-10-05
+Result: 484 passed, 0 failed, 0 skipped
+Delivery: NOT_SENT
+Campaign ready: refused
+Hosted acceptance: not claimed
+
+This report records each of the 484 tests in the latest full Bliss.Tests run. Each line is one executed test. A theory with several inputs is listed once for each input. No test is repeated, and the section counts add to 484.
+
+Section counts
+
+Creative Academy: 24
+Persistence: 67
+Domain rules: 15
+Architecture constraints: 21
+Operations controls: 25
+Acquisition demonstrations: 166
+HTTP API: 161
+Wedding Planner approval: 5
+Total: 484
+
+The suite protects the standing boundaries. A passing test does not send a message, approve a campaign, invent a price, or claim hosted acceptance. The Creative Academy tests also keep a generated draft at GENERATED_PENDING_REVIEW when a test provider is injected. In this environment the live creator remains PROVIDER_CONFIGURATION_REQUIRED and makes 0 model calls.
+
+CREATIVE ACADEMY - 24 TESTS
+
+The advertisement teacher, recipe, instructor, roster, and guarded creator.
+
+Configured adapter sends one authenticated 1536 by 864 recipe and accepts a real PNG.
+Configured adapter rejects non-image content.
+The prototype teaches quality and is not an advertiser. Maison Fleur is a quality teacher, not an advertiser.
+A duplicated headline word is REVISE and preserves the rest. The duplicated word ESCAPE scores 84.
+Malformed product labels are REVISE. The stored labels CURDJ and MJER are the defects.
+Clear text stays WITHHELD until a human records the visual benchmark. This is the Belmonte path.
+A critical text defect still returns REVISE after a visual benchmark is met.
+Copying the prototype identity fails. Copying Maison Fleur, VidaCare, Nova Fit, or Taller Ruta returns FAIL.
+An obstructed creator face returns FAIL.
+Weights are configurable and must total 100.
+A model call and campaign-ready are refused.
+Patisserie DNA selects Maison Fleur. Dental is already created and is not repeated. Cloning Maison Fleur is refused.
+A weaker recorded contrast note returns REVISE, score 72, and keeps the duplicated word.
+VidaCare is Master Prototype 01/50. FreshMart remains a supplied example.
+Pharmacy Brand DNA changes the identity without lowering the quality anchor. Burgundy and gold stays burgundy and gold.
+A production brief preserves customization and the quality signature. The Panama pharmacy brief generates no image.
+Geographic casting requires a specific market and research when uncertain. Generic Latino casting is refused.
+Customization, quality, originality, and geography are independent gates. All four passing remains unsent.
+Production model calls are refused until a model is configured.
+Fitness selects Nova Fit. Automotive service selects Taller Ruta.
+Brand and niche are the only required client intake fields.
+A niche without an approved anchor does not enter image generation. Auto-parts stops before generation.
+The roster keeps created niches and queues the rest. It holds 50 niches: 10 created and 40 not created. Next is Auto-Parts Store. Bakery 16 stays uncreated.
+Motorcycle uses Brava Moto. Dental returns ALREADY_CREATED. Reusing the Brava Moto name is refused.
+
+PERSISTENCE - 67 TESTS
+
+Stored Bliss, Economics, and Wedding Planner records, seeds, and history.
+
+Creator supports multiple content items.
+Content item supports multiple ad inventory slots.
+Creator supports multiple simultaneous bliss matches without uniqueness violation.
+New bliss match does not overwrite another valid match.
+Multiple campaign placements can reference the same content item.
+Historical bliss match preserves original rule version.
+Network access and program access are independent.
+Data provenance retains source confidence and collected at.
+Unknown female percentage remains null and is not converted to zero.
+Phase1 seed creates required graph.
+Seeder persists six markets and all pricing models as data.
+New observation preserves older market history.
+Creator retains versioned audience and performance history.
+Unknown measurements remain null when new snapshot is added.
+Market versions and dated fx observations preserve history.
+Duration bands are data and do not imply linear pricing.
+Recommendation is a replayable explainable range.
+Ten times duration is not ten times the range.
+Historical output does not change when inputs change.
+Missing creator provenance cannot produce high confidence.
+Quote preserves explicit amount and idempotent version history.
+Negotiation creates new draft that requires fresh approval.
+Quote line keeps recommendation snapshot if source row changes.
+Illustration is replayable and allocations equal accepted amount.
+Unaccepted quote and invalid policy are rejected.
+Historical illustration does not change with policy rows.
+Accepted candidate becomes sourced append only observation.
+Rejected candidate is preserved without observation.
+Test/source", expected: "confidence").
+Test/source", expected: "VERIFIED").
+Test/source", expected: "HTTPS").
+Planner handshake calls economics and replays same result.
+Planner handshake requires approved owned compatible available inventory.
+Planner handshake creates no quote placement or compensation.
+Placement actual is explainable replayable and non settling.
+Corrections append and campaign rollup uses current history.
+Campaign rollup uses latest measurement per placement.
+Invalid relationships and measurements are rejected.
+Phase2 seed is additive and does not overwrite phase1 matches.
+Phase2 brazil match is approved and ph to br is ineligible.
+Re evaluating one match does not change another match.
+Unknown demographics creator review does not use zero audience.
+Second seed is idempotent.
+Phase3 seed is additive and records two brazil runs.
+Re evaluation appends a run and does not delete prior runs.
+Re evaluating one match does not change another match or its runs.
+Live checks are replaced while historical runs remain.
+Unknown demographics are still not zero after phase3 seed.
+Second phase3 seed is idempotent.
+First observation creates canonical creator profile run and provenance.
+Same source and idempotency key replays without duplicate writes.
+New observation for existing identity updates without duplicate creator.
+Same external id on different platform is a distinct identity.
+Invalid observation persists nothing.
+Controlled formation creates and evaluates audited match.
+Replay returns original and writes nothing.
+Different keys allow many matches for one creator.
+Invalid reference and documentless evaluation persist nothing.
+Approve moves review required match and writes immutable decision.
+Replay returns original and writes nothing.
+Created match without review status is rejected and persists nothing.
+Unknown decision persists nothing.
+Approved match binds to creator inventory without delivery mutation.
+Replay returns original and does not duplicate.
+Different keys allow multiple placements for same match and content.
+Nonapproved match and graph mismatches persist nothing.
+Advertiser keeps one primary workspace and append only messages.
+
+DOMAIN RULES - 15 TESTS
+
+Matching, Economics vocabulary, and entity defaults.
+
+Matching country and language is approved.
+Country mismatch is geo not eligible and does not use ai.
+Unknown audience is review required not zero.
+Missing document throws.
+Pricing vocabulary includes exposure models not minutes only.
+Observation status distinguishes verified from invented.
+Economics vocabulary does not compile a default compensation split.
+Economics http api exposes only controlled append only writes.
+Advertiser program defaults to active.
+Advertiser opportunity defaults to active.
+Bliss match defaults to created.
+Network and program access default to unknown independently.
+Ad inventory slot defaults to available.
+Data provenance confidence defaults to unknown.
+Wedding planner workspace defaults to primary and active.
+
+ARCHITECTURE CONSTRAINTS - 21 TESTS
+
+API surface, Economics boundaries, and database constraints.
+
+Phase1 read endpoints are present.
+N8n template is inactive provider configured and staging only.
+Wedding planner exposes one controlled economics write.
+Handshake delegates pricing and has no downstream authority.
+Historical service is append only and has no pricing or settlement authority.
+Phase9 contract forbids automatic feedback and payment.
+Bliss match creator id is not unique.
+Campaign placement content item id is not unique.
+Major relationships use restrict delete behavior.
+Economics catalog natural keys are unique.
+Match evaluation run bliss match id is not unique.
+Creator platform identity key is unique when present.
+Creator ingestion source and idempotency key are unique together.
+Match formation source and idempotency key are unique together.
+Match review source and idempotency key are unique together.
+Campaign placement run idempotency is unique but business keys are not.
+Wedding planner workspace advertiser id is unique.
+Wedding planner economics handshake has unique idempotency and recommendation.
+Female percentage is nullable.
+There is no direct creator to advertiser foreign key.
+Required foreign key indexes exist.
+
+OPERATIONS CONTROLS - 25 TESTS
+
+Budget, fleet lanes, lane tempo, and the subscription register.
+
+Four scopes start without an invented ceiling.
+A missing scope is not invented.
+A ceiling without spend is not compared.
+Spend at the ceiling degrades only that scope.
+Spend under the ceiling stays open.
+A partial ceiling is refused.
+Budget source does not send.
+A broken outreach lane does not stop the ocean.
+A stopped creator fleet leaves the fishing fleet moving.
+Every stopped lane does not claim the ocean is moving.
+A missing lane is refused.
+Fleet source does not send or invent a price.
+Six lanes start without an invented ceiling.
+Stopping one lane keeps the record and names no price.
+A recorded ceiling is an operational limit.
+A partial ceiling is refused.
+Tempo source does not send.
+Stored rows keep a missing cost unrecorded.
+A missing service is not invented.
+An operator cost does not become a purchase.
+A partial cost is refused.
+An incomplete paid review purchases nothing.
+A complete review stays not proposed.
+A rejected duplicate is not bought.
+Register source does not send or price with a symbol.
+
+ACQUISITION DEMONSTRATIONS - 166 TESTS
+
+Local proofs for discovery, media, delivery, marketplace, and progression. Nothing is sent.
+
+A page open is recorded without naming a watcher.
+An opinion is not an event.
+A delivery claim is not recorded.
+A named watcher is refused.
+A blank kind asks for the catalog.
+A public source is stored once and a duplicate url is not a second prospect.
+A named public source below 100 is preserved.
+A blank name and a missing source are refused.
+The reading counts only stored public sources.
+A missing list is refused.
+Discovery source does not crawl or send.
+An explanation answers and then advances in one voice.
+A price question advances without a number.
+A verified name is the address and a title is not chosen.
+A local read records the clock and claims nothing.
+A blank name is kept as a partial failure and the other prospect remains.
+A message that names another prospect is leakage.
+A missing list a negative clock and a third attempt are refused.
+Measurement source does not claim hosted scale.
+An approved alternate is the evaluator result.
+Equal scores break the tie by name.
+No approved alternate keeps the advertiser.
+A missing or inactive opportunity names nobody.
+Rematch source calls the accepted evaluator.
+A closed reading stores zero configured models and the measured calls.
+A repeat does not raise the stored model calls.
+Configuring a model traffic or an engagement count is refused.
+A laboratory result that does not match its counts is refused.
+Closed model source does not name a provider or a call.
+A public marketing road is discovered and not eligible to send.
+A road without a public source is rejected.
+Suppression keeps a new road ineligible.
+Suppression stale evidence and a missing road withhold the route.
+A current preview uses the provider neutral adapter and does not send.
+An explicit transmission request is recorded once and not sent.
+A missing list is refused.
+Route source does not transmit.
+Every persona scenario passes without a behavior change.
+The unverified price scenario states no number.
+A stale fixture name is not spoken and the economics fixture is the only number.
+Laboratory source calls the production replies.
+A coverage week stores the measured market and adds none.
+An empty library stores zero and a repeat does not add a market.
+A missing market and a qualified slice without a market are refused.
+Week source does not invent a market or a census.
+A pair of four with creator approval is accepted.
+The other balanced pairs are accepted with approval(pair: 2).
+The other balanced pairs are accepted with approval(pair: 6).
+Creator refusal withholds a balanced pair.
+A two over four stack is refused even with approval.
+Eight slots are not a balanced pair.
+A missing approval is refused.
+Stored rows keep their titles and do not become a pair.
+Inventory source does not send or invent a price.
+Dental prospect identifies a likely buying role.
+Unsupported name is rejected and stays unverified.
+Official and professional evidence with company contact is medium tier two.
+Official and professional evidence with direct contact is high.
+Directory only stays low and is not personalized.
+Marketing contact without a person uses tier three.
+Stale high confidence requires reverification.
+Personalized reply uses the recorded name and stays unsent.
+Stale reply does not use the personal name.
+A missing road is withheld.
+Suppression comes before the adapter.
+An unapproved policy or adapter is withheld.
+The preview adapter prepares a copy and does not transmit.
+Preview adapter source has no transmitter.
+An empty history is accepted and stays unrecorded.
+A stored actual is cited and a repeat does not reprice.
+Repricing settlement and an invented amount are refused.
+Acceptance source does not reprice or settle.
+A missing result states no number.
+An accepted result is the only number.
+Ask Alpha speaks the accepted amount and refuses without one.
+A preserved business and a checked recipe pass without a price.
+A qr that leaves the page is an exception.
+A preserved business with a demonstration is an exception.
+Overlay 1 does not require a permanent composite.
+A missing flattened composite is an exception for an older picture.
+Excess legitimate prospects stay queued and none are discarded.
+A larger opening count does not invent prospects.
+A missing capacity is refused.
+Flow source does not send.
+External reading waits until a production event exists.
+A page open sets the next action and invents no cost.
+An untrusted excerpt is not copied into the reading.
+Suppression is friction and the source does not call a model.
+A development reading does not claim hosted acceptance.
+Satisfied gates still leave hosted acceptance unclaimed.
+A hosted claim and a missing environment are refused.
+Hosted source does not claim a deployment.
+A graduated laboratory appends a research note and leaves production.
+The same note is not appended again.
+Traffic a production change and a failed laboratory are refused.
+Another prospect note is not shown.
+Learning source does not configure grooming models.
+Stored advertiser rows ahead of stored creator rows are not a census.
+Equal stored counts are level.
+Stored creator rows ahead of stored advertiser rows.
+A missing count is not treated as zero.
+A blank stored name is skipped.
+Balance source does not invent a price or send.
+A qualified pair keeps the evaluator result and does not claim a win.
+An approved evaluator result is copied and still is not a win.
+A preserved advertiser and a duplicate pair do not call the evaluator.
+A tenant reading hides the other advertiser.
+Handoff source uses the accepted evaluator and does not score.
+A marketplace reading stores measured counts and leaves revenue unrecorded.
+An empty marketplace stores zero and a repeat does not raise the count.
+A revenue amount and an added slot are refused.
+A stored revenue row is counted without copying an amount.
+Metrics source does not invent revenue or a census.
+A price question is not a negotiation.
+No approved quote states no number.
+Below the floor names the floor and does not write the proposal.
+Above the envelope does not raise the price.
+An in range proposal waits for the ledger total.
+A negotiation without one amount explains the envelope.
+A human request stays a human request.
+A named public business in an initial market passes.
+A named public business outside the initial markets is preserved.
+Missing public source does not pass and does not invent a name.
+Restaurant overlay uses the market language.
+Red stops the prohibited action and keeps the record.
+Yellow keeps a preserved business.
+Green moves to the next authorized action and does not send.
+Progression source does not send.
+A restaurant recipe matches the page qr and the disclosure.
+A qr that leaves the prospect page fails qa.
+A recipe that names a person fails qa and is not a composite.
+The player source does not send or call a model.
+Four stored advertisers leave two slots open in a pair of six.
+A full pair still allows open slots.
+Creator refusal withholds the rotation and keeps the open slots.
+A missing list is not treated as zero advertisers.
+Extra advertisers and a missing approval are refused.
+A blank name is skipped and a repeat is kept once.
+Preview does not claim a rotation.
+Rotation source does not send or invent a price.
+A later period keeps the open slots and records no revenue.
+A withheld decision keeps the open count and a repeat does not fill.
+A filled slot and a revenue amount are refused.
+Period source does not invent a census or a price.
+One hundred checks pass and are not claimed as stored prospects.
+Ten thousand checks are measured and still not claimed.
+A rung outside the ladder is refused.
+Scale source does not call a model or send.
+A fingerprinted slice covers only its stored market.
+A missing fingerprint is not counted as coverage.
+A blank market is not invented.
+Missing provenance and a missing list are refused.
+Coverage source does not send or download.
+Renamed exact duplicate earns no quota credit.
+Near duplicate frame earns no quota credit.
+Usable unique slice earns one credit.
+Short clip is rejected and creates replacement pressure.
+Pharmacy buying roles include a marketing manager.
+Unsupported name is not treated as a verified person.
+Pricing question does not invent a price.
+Human request escalates and does not mark a win.
+A discovered business without an accepted result stays asleep.
+Suppression comes before a campaign.
+An accepted result without an advertiser opens no campaign.
+An accepted result and an advertiser wake the planner.
+Wake source does not plan with a model.
+
+HTTP API - 161 TESTS
+
+The same rules exercised through the Bliss API, including Creative Academy, Economics, hosted posture, and Wedding Planner.
+
+An opinion is refused and a page open is stored.
+A public source is written once and the reading counts stored rows.
+Ask Alpha answers then advances and repeats a studied answer.
+A local batch is measured once and a retry is a second row.
+Approved alternate matches the evaluator and sends nothing.
+No approved alternate keeps the advertiser.
+A missing opportunity names nobody.
+A closed reading matches the laboratory and does not configure a model.
+Public roads stay ineligible and suppression sends nothing.
+A transmission request is audited once and the route stays unsent.
+The laboratory passes and does not write the prospect.
+A coverage week matches the fuel reading and does not add a market.
+The curriculum is judged once, stores 9 lessons, and does not send. A second store is a duplicate. Campaign-ready returns 400.
+The production brief uses the pharmacy anchor without generating an advertisement.
+Both final gates must pass, and eligibility still does not send.
+A client can enter only a store name and niche to prepare the recipe. Automotive service selects Taller Ruta.
+The old generate flag fails closed until a production model is configured.
+The installed creator reports the missing provider without calling a model. The status is PROVIDER_CONFIGURATION_REQUIRED.
+A configured test provider stores one idempotent draft, status GENERATED_PENDING_REVIEW, serves the PNG, and keeps it unsent.
+The creator does not generate a queued niche with an unrelated teacher. Auto-parts never reaches the provider.
+A human decision stays in its workspace and does not write a match.
+A pair reading does not rewrite stored slots.
+Public evidence can raise confidence without sending.
+Secret file supplies the connection without writing appsettings.
+Secret file refuses a path inside the application directory.
+Secret file refuses an inline value and a file together.
+Secret file refuses a missing or empty file without echoing a value.
+Migration command is explicit and does not claim acceptance.
+Design time connection uses the external value when it is set.
+Publish scanner rejects a secret left in the output.
+VerifyFull rehearsal refuses without the local opt in.
+Container contract does not embed a secret.
+Reference endpoints return structured provenance.
+Economics reference routes do not expose generic writes or quotes.
+Snapshot endpoints return versioned metrics and provenance.
+Snapshot routes are read only.
+Phase3 endpoints return versioned sourced context.
+Phase3 routes are read only.
+Recommendation endpoint returns and replays explainable range.
+Recommendation endpoint rejects unknown inputs.
+Quote api requires explicit human approval before acceptance.
+Compensation api returns versioned non settlement illustration.
+Research api stages then human promotes public evidence.
+Research api rejects ai verified claim.
+Planner requests and reads explainable economics result.
+Advertiser handshake is tenant scoped and direct economics write stays forbidden.
+Historical learning api appends actuals and campaign snapshot.
+Historical api rejects unknown measurements.
+Owner acceptance cites no amount when history is empty.
+A stored placement actual is cited and the recommendation stays.
+Ask Alpha says only an accepted economics amount.
+Preview adapter marks one road eligible and transmits nothing.
+A batch counts a preserved business and a produced recipe.
+Reading fleets keeps a broken lane from stopping the ocean.
+Regulating flow keeps every stored prospect.
+Root serves the public bliss chapel experience.
+Operations route preserves the internal console.
+Css", mediaType: "text/css").
+Js", mediaType: "text/javascript").
+Css", mediaType: "text/css").
+Js", mediaType: "text/javascript").
+Client routes fall back to the dashboard.
+Research reads production events and leaves the prospect unchanged.
+The reading stores the process posture and does not claim hosted acceptance.
+Stopping outreach leaves discovery moving and preserves the prospect.
+A research note stays with its prospect and does not change production.
+Balance reads stored rows and leaves revenue unrecorded.
+A qualified advertiser is handed once and stays inside its tenant.
+A marketplace reading matches stored rows and does not record revenue.
+Ask Alpha negotiates only inside the economics envelope.
+Responses include generated and accepted request ids.
+Invalid request ids are replaced.
+Write throttle events appear on runtime status.
+Evaluation export is a summary pack with request id.
+Unknown ledger is rejected.
+Match case file includes related evaluations without snapshots.
+Missing match case file is not found.
+Creator case file includes related matches without snapshots.
+Missing creator case file is not found.
+Campaign case file includes planned placements without snapshots.
+Missing campaign case file is not found.
+Ledger pack digest covers records and ignores export metadata.
+Match creator and campaign packs include stable content digests.
+Missing or unsupported exports omit content digest.
+Sha256 hex is lowercase and stable.
+Exported ledger and case packs verify as matched.
+Tampered pack is reported as mismatch.
+Unsupported or invalid packs are rejected.
+Verification receipt includes correlation and event detail.
+Mismatch receipt still records detail without storing the pack.
+Status exposes the last verification receipt without the pack.
+Status keeps recent verification receipts without the pack.
+Verification history drops receipts beyond the limit.
+Development does not require hosted production settings.
+Production accepts a hosted ssl identity and encrypted key declaration.
+Production rejects database tls that does not verify the server name(ssl: "SSL Mode=Require").
+Production rejects database tls that does not verify the server name(ssl: "SSL Mode=VerifyCA").
+Production rejects database tls that does not verify the server name(ssl: "SSL Mode=VerifyFull;Trust Server Certificate=true").
+Production rejects unsafe database settings(connectionString: "Host=localhost;Port=5432;Database=bliss;Username=b"···, expected: "Loopback").
+1;Port=5432;Database=bliss;Username=b"···, expected: "Loopback").
+Test;Port=5432;Database=bl"···, expected: "SSL Mode").
+Test;Port=5432;Database=bl"···, expected: "secret store").
+Production rejects a missing database password without echoing it.
+Test").
+Production rejects a non hosted identity provider(authority: "https://localhost/realms/bliss").
+1/realms/bliss").
+Production rejects placeholder and committed secrets.
+Production rejects duplicate roles missing backup and loopback proxies.
+Production rejects a key ring that is not encrypted.
+Committed appsettings do not contain secrets.
+Certificate loader rejects a wrong password without echoing it.
+Request log records the path and omits the query.
+Userinfo role array grants admin write and review.
+Userinfo reviewer string cannot write.
+Json array role claim is normalized before authorization.
+Cookie alignment honors framework role claims.
+OpenIdConnect userinfo event applies roles.
+Development posture is anonymous and does not claim production.
+Production probes distinguish process database and posture.
+Persisted keys are encrypted and round trip on a second process.
+Liveness stays available under a small concurrent probe.
+Production startup rejects an unencrypted key ring.
+Backup drill refuses without an explicit local opt in.
+Campaigns and networks return phase2 records.
+Evaluate rules returns bad request for phase1 rule without document.
+Evaluation runs are visible and match history is listed.
+Evaluate rules appends a run visible on the api.
+Post then replay returns created then ok with same run.
+Invalid observation returns bad request.
+Post then replay exposes one formation and evaluated match.
+Invalid reference returns bad request without formation.
+Queue lists review required and approve then replay are idempotent.
+Created match cannot be approved.
+Post then replay exposes one planned binding.
+Nonapproved match returns bad request.
+Development session explicitly reports open mode.
+Authenticated identity replaces submitted operator label.
+Anonymous api access is rejected when oidc is enabled.
+Roles and csrf both gate operator writes.
+Liveness and database readiness are machine readable.
+Security headers are applied without server disclosure.
+Controlled writes are rate limited per runtime policy.
+A named public business below 100 is kept without a demonstration.
+Studio slice duplicate and pharmacy page keep the quota and contact rules.
+Discovery requires a public source then one demonstration stays unsent.
+A prospect is stored in the bliss database.
+An existing file is copied once and then the database is read.
+Green yellow and red leave the prospect on the record.
+Produce stores overlay 1 and serves the player.
+A rotation leaves open slots and does not rewrite inventory.
+A later period stores the measured slots and does not fill them.
+The ladder is measured without changing the prospect.
+A studio slice covers its stored market and a duplicate does not.
+The register starts unpriced and a reached ceiling degrades one scope.
+Authorized advertiser can open session and resume durable messages.
+Invalid ids and ai actors fail safely.
+Anonymous and cross tenant access are rejected.
+Phase1 source does not invoke ai or alpha auto.
+Discovered businesses stay asleep and open no workspace.
+An accepted quote wakes the existing planner once.
+An unaccepted quote and suppression leave the planner asleep.
+
+WEDDING PLANNER APPROVAL - 5 TESTS
+
+Human creative approval stays inside its workspace and calls no model.
+
+A human approval is not campaign ready and calls no model.
+A withhold stays withheld and a repeat does not ask again.
+A model a campaign and a discovered business are refused.
+Another workspace decision is not shown.
+Creative source does not call a matcher or a model.
+
+Boundaries that stayed closed
+
+No message was sent. No campaign was approved. No price was invented. Hosted acceptance was not claimed. Delivery remains NOT_SENT.
+
+========================================================================
