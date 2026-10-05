@@ -1,0 +1,62 @@
+ALPHA CREATIVE ACADEMY
+Phase D - Guarded advertisement creator
+Date: 2026-10-05
+Delivery: NOT_SENT
+Campaign ready: false
+Hosted acceptance: not claimed
+
+Outcome
+
+The advertisement creator is installed in the Bliss system.
+
+The Operations Console now reads creator status and sends Generate advertisement to POST /api/operations/academy/generate. The server prepares the same advertiser-specific production recipe, requires an approved niche quality teacher, and calls one configuration-owned HTTPS image-provider endpoint.
+
+Provider contract
+
+The request contains an idempotency key, the wide 16:9 production prompt, width 1536, height 864, and response format base64.
+
+The endpoint and bearer token come from Runtime:CreativeGeneration configuration. The token is intended for the platform secret store. It is not returned to the browser or stored in the generation ledger.
+
+The response must contain base64 PNG, JPEG, or WebP. Unsupported types including SVG, oversized images, redirects, malformed responses, provider refusal, network failure, and timeout fail closed. The server chooses the output filename.
+
+Stored draft
+
+A successful provider response stores:
+
+- GENERATED_PENDING_REVIEW
+- advertiser brand and niche
+- quality teacher key
+- server image path and media type
+- idempotency request key
+- production-recipe SHA-256
+- provider request identifier
+- model calls 1
+- campaign ready false
+- delivery NOT_SENT
+
+The generated image is not PASS. The human visual benchmark and customization, quality parity, originality, and geographic authenticity gates remain unrecorded.
+
+Niche boundaries
+
+An approved local anchor can enter generation. An already-created external niche returns ALREADY_CREATED and does not repeat its prototype. A not-created niche returns NICHE_NOT_CREATED and does not borrow an unrelated teacher.
+
+Current environment
+
+The creator is installed, but this environment has no authorized provider endpoint and no secret-store token. Its honest state is PROVIDER_CONFIGURATION_REQUIRED. Live model calls remain 0. No paid service, credential, hosted acceptance, campaign approval, or sent delivery was invented.
+
+Verification
+
+The configured-provider integration uses an injected test provider. It creates one idempotent draft, stores model calls 1, serves the generated PNG, keeps campaign ready false, and keeps delivery NOT_SENT. A repeated request does not call the provider twice. The adapter separately verifies bearer authentication, recipe dimensions, and image-type validation.
+
+Creative Academy filter: Passed 32, Failed 0, Skipped 0.
+Full Bliss.Tests suite: Passed 484, Failed 0, Skipped 0.
+
+Owner input required for live generation
+
+1. Authorize an image provider.
+2. Supply its HTTPS adapter endpoint.
+3. Supply its API token through the platform secret store.
+4. Apply the database migration and configure durable generated-asset storage in the hosted environment.
+5. Run and evidence a real provider smoke test without sending or approving a campaign.
+
+No message was sent. Economics was not used as a price authority. Wedding Planner was not opened. Delivery remains NOT_SENT.

@@ -241,6 +241,7 @@ public sealed class CreativeAcademyApiTests
         var secondResponse = await client.PostAsJsonAsync("/api/operations/academy/generate", request);
         var second = await secondResponse.Content.ReadFromJsonAsync<JsonElement>();
         var board = await client.GetFromJsonAsync<JsonElement>("/api/operations/academy");
+        var imageResponse = await client.GetAsync(first.GetProperty("imagePath").GetString());
 
         Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
         Assert.Equal("GENERATED_PENDING_REVIEW", first.GetProperty("status").GetString());
@@ -257,6 +258,8 @@ public sealed class CreativeAcademyApiTests
         Assert.True(board.GetProperty("adCreator").GetProperty("configured").GetBoolean());
         Assert.Equal("READY", board.GetProperty("adCreator").GetProperty("status").GetString());
         Assert.Equal(1, board.GetProperty("generations").GetArrayLength());
+        Assert.Equal(HttpStatusCode.OK, imageResponse.StatusCode);
+        Assert.Equal("image/png", imageResponse.Content.Headers.ContentType!.MediaType);
     }
 
     [Fact]

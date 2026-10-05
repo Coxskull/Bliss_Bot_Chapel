@@ -6,4 +6,6 @@ Client brand-and-niche intake filter: Passed 25, Failed 0, Skipped 0.
 Client brand-and-niche full Bliss.Tests suite: Passed 477, Failed 0, Skipped 0.
 Niche roster filter: Passed 27, Failed 0, Skipped 0.
 Niche roster full Bliss.Tests suite: Passed 479, Failed 0, Skipped 0.
-Hosted acceptance was not claimed. Delivery remains NOT_SENT. Model calls 0.
+Ad creator filter: Passed 32, Failed 0, Skipped 0.
+Ad creator full Bliss.Tests suite: Passed 484, Failed 0, Skipped 0.
+Hosted acceptance was not claimed. Delivery remains NOT_SENT. Live model calls in this environment: 0.
