@@ -1,0 +1,82 @@
+ALPHA CREATIVE ACADEMY
+OpenAI image-generation smoke report
+Date: 2026-10-05
+Classification: local provider smoke evidence
+Delivery: NOT_SENT
+Campaign ready: false
+Hosted acceptance: not claimed
+PR merged for adapter: https://github.com/Coxskull/Bliss_Bot_Chapel/pull/106
+
+1. Purpose
+
+Prove that the guarded ad creator can authenticate to OpenAI Images with a temporary API token supplied through the platform secret store, without committing the key, without storing a draft when the provider refuses, and without sending or approving a campaign.
+
+2. Configuration used for this smoke
+
+Provider: OpenAI
+Model: gpt-image-1
+Native endpoint: https://api.openai.com/v1/images/generations
+Secret path: /var/lib/bliss-rehearsal/openai.apitoken (mode 600)
+Configuration keys: Runtime:CreativeGeneration:Provider=OpenAI and Runtime:CreativeGeneration:ApiToken_FILE
+ApiToken is empty in appsettings. The key is not in git, not in the PR, and not returned by the API board.
+
+3. Creator status before generate
+
+GET /api/operations/academy returned:
+
+installed: true
+configured: true
+status: READY
+notice: The ad creator is ready. Generated drafts remain pending review, campaign ready false, and NOT_SENT.
+generations: 0
+delivery: NOT_SENT
+
+4. OpenAI authentication probe
+
+GET https://api.openai.com/v1/models with the temporary bearer token returned HTTP 200.
+The account model list included gpt-image-1.
+Conclusion: the temporary key authenticates to OpenAI.
+
+5. OpenAI Images probe
+
+POST https://api.openai.com/v1/images/generations with model gpt-image-1 returned:
+
+type: insufficient_quota
+code: credit_balance_exhausted
+message: You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.
+
+6. Academy generate smoke
+
+POST /api/operations/academy/generate with motorcycle niche, brand Ruta Libre Motos, market Panama, language Spanish, and market research complete returned HTTP 400:
+
+error: The configured image provider refused the generation request: OpenAI reports no remaining API credits. No advertisement was stored.
+modelCalls: 0
+campaignReady: false
+delivery: NOT_SENT
+greenMeansSend: false
+
+After the refusal, the board still showed generations 0. No image file was written under /operations/generated. Delivery remained NOT_SENT.
+
+7. What this proves
+
+The native OpenAI Images path is wired and READY.
+The secret-file loader supplies the token outside the application directory.
+The server authenticates to OpenAI and reaches the Images API.
+When OpenAI reports exhausted credits, the creator fails closed, stores nothing, keeps modelCalls at 0, keeps campaignReady false, and keeps delivery NOT_SENT.
+No message was sent. Economics was not used as a price authority. Wedding Planner was not opened.
+
+8. What remains blocked
+
+A successful GENERATED_PENDING_REVIEW draft still requires OpenAI billing credits on the account that owns the key.
+After credits are added, re-run Generate advertisement for an approved niche such as motorcycle.
+Then revoke or rotate the temporary key that was pasted into chat.
+
+9. Owner actions
+
+1. Add credits at the OpenAI organization billing page.
+2. Keep the key only in the secret store or ApiToken_FILE path outside the app directory.
+3. Re-run the smoke until a draft stores as GENERATED_PENDING_REVIEW with campaign ready false and delivery NOT_SENT.
+4. Revoke the temporary key after the successful smoke.
+5. Do not treat a draft as PASS, campaign ready, hosted acceptance, or a send.
+
+No advertisement was approved. No outreach was performed. Delivery remains NOT_SENT.
