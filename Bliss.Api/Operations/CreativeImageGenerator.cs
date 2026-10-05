@@ -46,21 +46,17 @@ public sealed class ConfiguredCreativeImageGenerator(
         {
             throw new InvalidOperationException(
                 "The ad creator is installed but its image provider is not configured. "
-                + "Set Runtime:CreativeGeneration:Endpoint and supply the API token through the secret store.");
+                + "Set Runtime:CreativeGeneration:Provider=OpenAI and supply the API token through the secret store.");
         }
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(Math.Clamp(_options.TimeoutSeconds, 10, 300)));
-        using var message = new HttpRequestMessage(HttpMethod.Post, _options.Endpoint);
+        using var message = new HttpRequestMessage(HttpMethod.Post, _options.ResolvedEndpoint);
         message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiToken);
-        message.Content = JsonContent.Create(new
-        {
-            requestId = request.RequestKey,
-            prompt = request.Prompt,
-            width = request.Width,
-            height = request.Height,
-            responseFormat = "base64"
-        });
+        message.Content = JsonContent.Create(
+            _options.IsOpenAi
+                ? OpenAiBody(request, _options.Model)
+                : BlissBody(request));
 
         using var response = await client.SendAsync(
             message,
@@ -68,25 +64,174 @@ public sealed class ConfiguredCreativeImageGenerator(
             timeout.Token);
         if (!response.IsSuccessStatusCode)
         {
+            var detail = await SafeProviderErrorAsync(response, timeout.Token);
             throw new InvalidOperationException(
-                "The configured image provider refused the generation request. No advertisement was stored.");
+                "The configured image provider refused the generation request"
+                + (detail.Length == 0 ? "." : ": " + detail)
+                + " No advertisement was stored.");
         }
 
         await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
-        var body = await JsonSerializer.DeserializeAsync<ProviderImageResponse>(
-            stream,
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true },
-            cancellationToken: timeout.Token);
-        if (body is null || string.IsNullOrWhiteSpace(body.ImageBase64))
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: timeout.Token);
+        var parsed = ParseProviderImage(document.RootElement, _options.IsOpenAi);
+        var mediaType = NormalizeAndValidateImage(
+            parsed.Content,
+            parsed.MediaType,
+            Math.Clamp(_options.MaxImageBytes, 1024, 50 * 1024 * 1024));
+        var providerRequestId = parsed.ProviderRequestId.Trim();
+        if (providerRequestId.Length > 200)
+        {
+            throw new InvalidOperationException(
+                "The configured image provider returned an invalid request identifier. No advertisement was stored.");
+        }
+
+        return new CreativeImageResult(parsed.Content, mediaType, providerRequestId);
+    }
+
+    private static async Task<string> SafeProviderErrorAsync(
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+            if (document.RootElement.TryGetProperty("error", out var error)
+                && error.ValueKind == JsonValueKind.Object)
+            {
+                var code = error.TryGetProperty("code", out var codeNode) ? codeNode.GetString() : null;
+                var type = error.TryGetProperty("type", out var typeNode) ? typeNode.GetString() : null;
+                var message = error.TryGetProperty("message", out var messageNode) ? messageNode.GetString() : null;
+                if (!string.IsNullOrWhiteSpace(code) && code.Contains("credit", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "OpenAI reports no remaining API credits.";
+                }
+
+                if (!string.IsNullOrWhiteSpace(type) && type.Contains("insufficient_quota", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "OpenAI reports insufficient quota.";
+                }
+
+                if (!string.IsNullOrWhiteSpace(message)
+                    && message.Contains("credits", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "OpenAI reports no remaining API credits.";
+                }
+
+                if (!string.IsNullOrWhiteSpace(code))
+                {
+                    return "provider code " + code.Trim();
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            return string.Empty;
+        }
+        catch (IOException)
+        {
+            return string.Empty;
+        }
+
+        return "HTTP " + (int)response.StatusCode;
+    }
+
+    public static object OpenAiBody(CreativeImageRequest request, string? model)
+    {
+        var selected = string.IsNullOrWhiteSpace(model) ? "gpt-image-1" : model.Trim();
+        var size = MapOpenAiSize(request.Width, request.Height, selected);
+        if (selected.StartsWith("dall-e", StringComparison.OrdinalIgnoreCase))
+        {
+            return new
+            {
+                model = selected,
+                prompt = request.Prompt,
+                size,
+                n = 1,
+                response_format = "b64_json"
+            };
+        }
+
+        return new
+        {
+            model = selected,
+            prompt = request.Prompt,
+            size,
+            n = 1
+        };
+    }
+
+    public static string MapOpenAiSize(int width, int height, string model)
+    {
+        var landscape = width >= height;
+        if (model.StartsWith("dall-e", StringComparison.OrdinalIgnoreCase))
+        {
+            return landscape ? "1792x1024" : "1024x1792";
+        }
+
+        return landscape ? "1536x1024" : "1024x1536";
+    }
+
+    private static object BlissBody(CreativeImageRequest request) => new
+    {
+        requestId = request.RequestKey,
+        prompt = request.Prompt,
+        width = request.Width,
+        height = request.Height,
+        responseFormat = "base64"
+    };
+
+    internal static (byte[] Content, string MediaType, string ProviderRequestId) ParseProviderImage(
+        JsonElement root,
+        bool openAi)
+    {
+        if (openAi)
+        {
+            if (!root.TryGetProperty("data", out var data)
+                || data.ValueKind != JsonValueKind.Array
+                || data.GetArrayLength() == 0)
+            {
+                throw new InvalidOperationException(
+                    "The configured image provider returned no image. No advertisement was stored.");
+            }
+
+            var first = data[0];
+            var b64 = first.TryGetProperty("b64_json", out var b64Node)
+                ? b64Node.GetString()
+                : null;
+            if (string.IsNullOrWhiteSpace(b64))
+            {
+                throw new InvalidOperationException(
+                    "The configured image provider returned no image. No advertisement was stored.");
+            }
+
+            byte[] content;
+            try
+            {
+                content = Convert.FromBase64String(b64);
+            }
+            catch (FormatException)
+            {
+                throw new InvalidOperationException(
+                    "The configured image provider returned an invalid image. No advertisement was stored.");
+            }
+
+            return (content, DetectMediaType(content), string.Empty);
+        }
+
+        var imageBase64 = root.TryGetProperty("imageBase64", out var imageNode)
+            ? imageNode.GetString()
+            : null;
+        if (string.IsNullOrWhiteSpace(imageBase64))
         {
             throw new InvalidOperationException(
                 "The configured image provider returned no image. No advertisement was stored.");
         }
 
-        byte[] content;
+        byte[] blissContent;
         try
         {
-            content = Convert.FromBase64String(body.ImageBase64);
+            blissContent = Convert.FromBase64String(imageBase64);
         }
         catch (FormatException)
         {
@@ -94,21 +239,13 @@ public sealed class ConfiguredCreativeImageGenerator(
                 "The configured image provider returned an invalid image. No advertisement was stored.");
         }
 
-        var mediaType = NormalizeAndValidateImage(
-            content,
-            body.MediaType,
-            Math.Clamp(_options.MaxImageBytes, 1024, 50 * 1024 * 1024));
-        var providerRequestId = (body.ProviderRequestId ?? string.Empty).Trim();
-        if (providerRequestId.Length > 200)
-        {
-            throw new InvalidOperationException(
-                "The configured image provider returned an invalid request identifier. No advertisement was stored.");
-        }
-
-        return new CreativeImageResult(
-            content,
-            mediaType,
-            providerRequestId);
+        var claimed = root.TryGetProperty("mediaType", out var mediaNode)
+            ? mediaNode.GetString()
+            : null;
+        var providerRequestId = root.TryGetProperty("providerRequestId", out var idNode)
+            ? idNode.GetString() ?? string.Empty
+            : string.Empty;
+        return (blissContent, claimed ?? string.Empty, providerRequestId);
     }
 
     internal static string NormalizeAndValidateImage(
@@ -122,13 +259,7 @@ public sealed class ConfiguredCreativeImageGenerator(
                 "The configured image provider returned an image outside the allowed size. No advertisement was stored.");
         }
 
-        var detected = content switch
-        {
-            [0x89, 0x50, 0x4e, 0x47, ..] => "image/png",
-            [0xff, 0xd8, 0xff, ..] => "image/jpeg",
-            [0x52, 0x49, 0x46, 0x46, _, _, _, _, 0x57, 0x45, 0x42, 0x50, ..] => "image/webp",
-            _ => string.Empty
-        };
+        var detected = DetectMediaType(content);
         var claimed = (claimedMediaType ?? string.Empty).Trim().ToLowerInvariant();
         if (detected.Length == 0 || (claimed.Length > 0 && claimed != detected))
         {
@@ -139,10 +270,14 @@ public sealed class ConfiguredCreativeImageGenerator(
         return detected;
     }
 
-    private sealed record ProviderImageResponse(
-        string? ImageBase64,
-        string? MediaType,
-        string? ProviderRequestId);
+    private static string DetectMediaType(byte[] content) =>
+        content switch
+        {
+            [0x89, 0x50, 0x4e, 0x47, ..] => "image/png",
+            [0xff, 0xd8, 0xff, ..] => "image/jpeg",
+            [0x52, 0x49, 0x46, 0x46, _, _, _, _, 0x57, 0x45, 0x42, 0x50, ..] => "image/webp",
+            _ => string.Empty
+        };
 }
 
 public sealed record CreativeGenerationDecision(
@@ -240,6 +375,7 @@ public sealed class CreativeGenerationService(
             throw new InvalidOperationException(
                 "The configured image provider returned an invalid response. No advertisement was stored.");
         }
+
         var id = Guid.NewGuid();
         var extension = result.MediaType switch
         {

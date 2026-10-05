@@ -24,16 +24,29 @@ public sealed class BackupDeclarationOptions
 
 public sealed class CreativeGenerationOptions
 {
+    public const string OpenAiImagesEndpoint = "https://api.openai.com/v1/images/generations";
+
+    public string Provider { get; set; } = string.Empty;
     public string Endpoint { get; set; } = string.Empty;
     public string ApiToken { get; set; } = string.Empty;
+    public string Model { get; set; } = "gpt-image-1";
     public string OutputPath { get; set; } = string.Empty;
     public int TimeoutSeconds { get; set; } = 120;
     public int MaxImageBytes { get; set; } = 20 * 1024 * 1024;
 
+    public bool IsOpenAi =>
+        string.Equals(Provider.Trim(), "OpenAI", StringComparison.OrdinalIgnoreCase)
+        || Endpoint.Contains("api.openai.com", StringComparison.OrdinalIgnoreCase);
+
+    public string ResolvedEndpoint =>
+        string.IsNullOrWhiteSpace(Endpoint) && IsOpenAi
+            ? OpenAiImagesEndpoint
+            : Endpoint.Trim();
+
     public bool Configured =>
-        Uri.TryCreate(Endpoint, UriKind.Absolute, out var endpoint)
-        && endpoint.Scheme == Uri.UriSchemeHttps
-        && !string.IsNullOrWhiteSpace(ApiToken);
+        !string.IsNullOrWhiteSpace(ApiToken)
+        && Uri.TryCreate(ResolvedEndpoint, UriKind.Absolute, out var endpoint)
+        && endpoint.Scheme == Uri.UriSchemeHttps;
 }
 
 public static class BlissRateLimitPolicies
