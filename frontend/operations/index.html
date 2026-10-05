@@ -17,7 +17,7 @@
   <script src="/operations/measure.js?v=measure-1" defer></script>
   <script src="/operations/handoff.js?v=handoff-1" defer></script>
   <script src="/operations/creative.js?v=creative-1" defer></script>
-  <script src="/operations/academy.js?v=academy-5" defer></script>
+  <script src="/operations/academy.js?v=academy-6" defer></script>
   <script src="/operations/learning.js?v=learning-1" defer></script>
   <script src="/operations/rotation.js?v=rotation-1" defer></script>
   <script src="/operations/acceptance.js?v=acceptance-1" defer></script>
@@ -836,6 +836,7 @@
           <section class="panel">
             <div class="panel-header"><div><p class="eyebrow">CLIENT AD INTAKE</p><h3>Enter the store name and niche</h3></div></div>
             <p>The niche selects its approved quality anchor. The store name and optional Brand DNA create a new production recipe. The reference determines how well the ad is produced; it does not determine the client's identity.</p>
+            <div id="academy-creator-status"><p class="eyebrow">LOADING AD CREATOR</p></div>
             <div class="form-grid compact">
               <label><span>Brand or store name *</span><input id="academy-client-brand" value="Impulso Fitness" maxlength="120"></label>
               <label><span>Niche *</span><select id="academy-client-niche"><option value="motorcycle">#10 Motorcycle / Moped Dealership — CREATED</option></select></label>
@@ -854,6 +855,11 @@
               <button class="secondary-button" type="button" id="academy-generate">Generate advertisement</button>
             </div>
             <div id="academy-production-result"><p>No production brief prepared. A production model is not configured.</p></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">GENERATED DRAFTS</p><h3>Pending instructor review</h3></div></div>
+            <p>A generated image is not an approved campaign. A human visual benchmark and the customization, quality-parity, originality, and geographic-authenticity gates must still be recorded. Green does not send.</p>
+            <div id="academy-generations"></div>
           </section>
           <section class="panel">
             <div class="panel-header"><div><p class="eyebrow">REFERENCE PARITY GATE</p><h3>Attractive is not enough</h3></div></div>

@@ -55,7 +55,9 @@ if (!builder.Environment.IsDevelopment()
 
 if (runtime.WriteRateLimitPermitLimit <= 0
     || runtime.AuthenticationRateLimitPermitLimit <= 0
-    || runtime.RateLimitWindowSeconds <= 0)
+    || runtime.RateLimitWindowSeconds <= 0
+    || runtime.CreativeGeneration.TimeoutSeconds <= 0
+    || runtime.CreativeGeneration.MaxImageBytes <= 0)
 {
     throw new InvalidOperationException("Runtime rate-limit values must be positive.");
 }
@@ -99,6 +101,14 @@ builder.Services.AddScoped<CoverageWeekService>();
 builder.Services.AddScoped<MarketplaceMetricsService>();
 builder.Services.AddScoped<ClosedModelsService>();
 builder.Services.AddScoped<CreativeAcademyService>();
+builder.Services.AddScoped<CreativeGenerationService>();
+builder.Services.AddHttpClient<ICreativeImageGenerator, ConfiguredCreativeImageGenerator>(client =>
+{
+    client.Timeout = Timeout.InfiniteTimeSpan;
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    AllowAutoRedirect = false
+});
 builder.Services.AddSingleton(authentication);
 builder.Services.AddSingleton(runtime);
 builder.Services.AddSingleton(posture);
@@ -353,6 +363,10 @@ app.Use(async (context, next) =>
 var frontendRoot = FrontendHost.ResolveRoot(app.Environment);
 var publicFrontend = Path.Combine(frontendRoot, "public");
 var operationsFrontend = Path.Combine(frontendRoot, "operations");
+var generatedCreativeRoot = string.IsNullOrWhiteSpace(runtime.CreativeGeneration.OutputPath)
+    ? Path.Combine(operationsFrontend, "generated")
+    : Path.GetFullPath(runtime.CreativeGeneration.OutputPath);
+Directory.CreateDirectory(generatedCreativeRoot);
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(publicFrontend)
@@ -362,6 +376,16 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(operationsFrontend),
     RequestPath = "/operations"
 });
+if (!Path.GetFullPath(generatedCreativeRoot).StartsWith(
+        Path.GetFullPath(operationsFrontend) + Path.DirectorySeparatorChar,
+        StringComparison.Ordinal))
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(generatedCreativeRoot),
+        RequestPath = "/operations/generated"
+    });
+}
 
 if (app.Environment.IsDevelopment())
 {

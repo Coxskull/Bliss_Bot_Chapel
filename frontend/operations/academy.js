@@ -44,11 +44,33 @@ function parityCard(item) {
   </article>`;
 }
 
+function generationCard(item) {
+  return `<article class="panel">
+    <div class="panel-header"><div><p class="eyebrow">${escapeHtml(item.status)}</p><h3>${escapeHtml(item.brandName)}</h3></div></div>
+    <img src="${escapeHtml(item.imagePath)}" alt="${escapeHtml(item.brandName)} generated advertisement pending review" style="max-width:100%;height:auto">
+    <p>Family ${escapeHtml(item.family)}. Teacher ${escapeHtml(item.teacherKey)}.</p>
+    <p>${escapeHtml(item.notice)}</p>
+    <p>Model calls ${item.modelCalls}. Campaign ready ${item.campaignReady ? "Yes" : "No"}. Delivery ${escapeHtml(item.delivery)}.</p>
+  </article>`;
+}
+
 async function loadAcademy() {
   const board = await api("/api/operations/academy");
   $("#academy-notice").textContent = board.notice;
   $("#academy-delivery").textContent = `Delivery ${board.delivery}. Model calls ${board.modelCalls}. Campaign ready ${board.campaignReady ? "Yes" : "No"}.`;
   const lessons = board.lessons || [];
+  const creator = board.adCreator || {};
+  $("#academy-creator-status").innerHTML = `<p class="eyebrow">${escapeHtml(creator.status || "UNKNOWN")}</p>
+    <p>${escapeHtml(creator.notice || "Ad creator status is unavailable.")}</p>`;
+  const generateButton = document.getElementById("academy-generate");
+  if (generateButton) {
+    generateButton.disabled = !creator.configured;
+    generateButton.title = creator.configured ? "" : "Provider endpoint and secret-store token required";
+  }
+  const generations = board.generations || [];
+  $("#academy-generations").innerHTML = generations.length
+    ? generations.map(generationCard).join("")
+    : emptyState("No generated draft is stored.");
   const prototypes = lessons.filter(item => item.role !== "CANDIDATE");
   $("#academy-prototypes").innerHTML = prototypes.length
     ? prototypes.map(lessonCard).join("")
@@ -121,6 +143,41 @@ async function prepareProductionBrief(callModel = false) {
   }
 }
 
+function productionRequest() {
+  const value = id => document.getElementById(id)?.value || "";
+  return {
+    family: value("academy-client-niche"),
+    brandName: value("academy-client-brand"),
+    palette: value("academy-client-palette"),
+    fontFamily: value("academy-client-font"),
+    headline: value("academy-client-headline"),
+    cta: value("academy-client-cta"),
+    market: value("academy-client-market"),
+    language: value("academy-client-language"),
+    requirements: value("academy-client-requirements"),
+    marketResearchComplete: document.getElementById("academy-client-researched")?.checked || false,
+    approvedPeopleProvided: document.getElementById("academy-client-people")?.checked || false
+  };
+}
+
+async function generateAdvertisement() {
+  const request = productionRequest();
+  request.requestKey = `creative-${Date.now()}-${crypto.randomUUID()}`;
+  try {
+    const result = await api("/api/operations/academy/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request)
+    });
+    $("#academy-production-result").innerHTML = generationCard(result);
+    $("#academy-result").textContent = result.notice;
+    await loadAcademy();
+  } catch (error) {
+    $("#academy-production-result").innerHTML = `<article><p class="eyebrow">GENERATION BLOCKED</p><p>${escapeHtml(error.message)}</p><p>Campaign ready No. Delivery NOT_SENT.</p></article>`;
+    $("#academy-result").textContent = error.message;
+  }
+}
+
 async function evaluateParity(qualityParity) {
   const result = await api("/api/operations/academy/parity", {
     method: "POST",
@@ -155,7 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   bind("academy-store", () => postAcademy("/api/operations/academy/curriculum", { curriculumKey: "creative-academy-2" }));
   bind("academy-production", () => prepareProductionBrief(false));
-  bind("academy-generate", () => prepareProductionBrief(true));
+  bind("academy-generate", generateAdvertisement);
   bind("academy-drift", () => evaluateParity(false));
   bind("academy-both-pass", () => evaluateParity(true));
   bind("academy-dna", () => postAcademy("/api/operations/academy/dna", {

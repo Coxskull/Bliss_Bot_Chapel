@@ -10,14 +10,17 @@ namespace Bliss.Api.Controllers;
 
 [ApiController]
 [Route("api/operations/academy")]
-public sealed class CreativeAcademyController(CreativeAcademyService academy) : ControllerBase
+public sealed class CreativeAcademyController(
+    CreativeAcademyService academy,
+    CreativeGenerationService generation) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult> Read(CancellationToken cancellationToken)
     {
         var board = await academy.ReadAsync(cancellationToken);
-        return Ok(Body(board, null));
+        var generations = await generation.ReadAsync(cancellationToken);
+        return Ok(Body(board, generations, generation.Configured, null));
     }
 
     [HttpPost("curriculum")]
@@ -29,7 +32,8 @@ public sealed class CreativeAcademyController(CreativeAcademyService academy) : 
         {
             var write = await academy.StoreCurriculumAsync(request?.CurriculumKey, cancellationToken);
             var board = await academy.ReadAsync(cancellationToken);
-            return Ok(Body(board, write));
+            var generations = await generation.ReadAsync(cancellationToken);
+            return Ok(Body(board, generations, generation.Configured, write));
         }
         catch (InvalidOperationException ex)
         {
@@ -55,7 +59,8 @@ public sealed class CreativeAcademyController(CreativeAcademyService academy) : 
                 request?.CallModel ?? false,
                 cancellationToken);
             var board = await academy.ReadAsync(cancellationToken);
-            return Ok(Body(board, write));
+            var generations = await generation.ReadAsync(cancellationToken);
+            return Ok(Body(board, generations, generation.Configured, write));
         }
         catch (InvalidOperationException ex)
         {
@@ -78,7 +83,8 @@ public sealed class CreativeAcademyController(CreativeAcademyService academy) : 
                 request?.CampaignReady ?? false,
                 cancellationToken);
             var board = await academy.ReadAsync(cancellationToken);
-            return Ok(Body(board, write));
+            var generations = await generation.ReadAsync(cancellationToken);
+            return Ok(Body(board, generations, generation.Configured, write));
         }
         catch (InvalidOperationException ex)
         {
@@ -113,6 +119,36 @@ public sealed class CreativeAcademyController(CreativeAcademyService academy) : 
         }
     }
 
+    [HttpPost("generate")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> Generate(
+        [FromBody] AcademyGenerateRequest? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await generation.GenerateAsync(
+                request?.RequestKey,
+                request?.Family,
+                request?.BrandName,
+                request?.Palette,
+                request?.FontFamily,
+                request?.Headline,
+                request?.Cta,
+                request?.Market,
+                request?.Language,
+                request?.Requirements,
+                request?.MarketResearchComplete ?? false,
+                request?.ApprovedPeopleProvided ?? false,
+                cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Refuse(ex);
+        }
+    }
+
     [HttpPost("parity")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
@@ -133,7 +169,11 @@ public sealed class CreativeAcademyController(CreativeAcademyService academy) : 
             campaignReady = false
         });
 
-    private static object Body(AcademyBoard board, AcademyWrite? write) => new
+    private static object Body(
+        AcademyBoard board,
+        IReadOnlyList<Bliss.Domain.Entities.CreativeAcademyGenerationRow> generations,
+        bool creatorConfigured,
+        AcademyWrite? write) => new
     {
         notice = write?.Notice ?? CreativeAcademy.Notice,
         delivery = "NOT_SENT",
@@ -150,6 +190,15 @@ public sealed class CreativeAcademyController(CreativeAcademyService academy) : 
         nextNiche = NicheCatalog.NextOpen,
         createdCount = NicheCatalog.All.Count(item => item.Status == NicheCatalog.Created),
         notCreatedCount = NicheCatalog.All.Count(item => item.Status == NicheCatalog.NotCreated),
+        adCreator = new
+        {
+            installed = true,
+            configured = creatorConfigured,
+            status = creatorConfigured ? "READY" : "PROVIDER_CONFIGURATION_REQUIRED",
+            notice = creatorConfigured
+                ? "The ad creator is ready. Generated drafts remain pending review, campaign ready false, and NOT_SENT."
+                : "The ad creator is installed. A provider endpoint and secret-store API token are required before it can call a model."
+        },
         masterPrototype = new
         {
             lessonKey = CreativeAcademy.PharmacyTeacher,
@@ -159,7 +208,8 @@ public sealed class CreativeAcademyController(CreativeAcademyService academy) : 
             creativeTemplate = false
         },
         lessons = board.Lessons.Select(Lesson),
-        dna = board.Dna.Select(Dna)
+        dna = board.Dna.Select(Dna),
+        generations = generations.Select(Generation)
     };
 
     private static object Lesson(Bliss.Domain.Entities.CreativeAcademyLessonRow item) => new
@@ -201,6 +251,23 @@ public sealed class CreativeAcademyController(CreativeAcademyService academy) : 
         item.Delivery
     };
 
+    private static object Generation(Bliss.Domain.Entities.CreativeAcademyGenerationRow item) => new
+    {
+        item.Id,
+        item.RequestKey,
+        item.Status,
+        item.BrandName,
+        item.Family,
+        item.TeacherKey,
+        item.ImagePath,
+        item.MediaType,
+        item.ModelCalls,
+        item.CampaignReady,
+        item.Delivery,
+        item.Notice,
+        item.RecordedAt
+    };
+
     private static string[] Split(string value) =>
         string.IsNullOrWhiteSpace(value)
             ? []
@@ -239,6 +306,20 @@ public sealed record AcademyProductionRequest(
     bool? MarketResearchComplete,
     bool? ApprovedPeopleProvided,
     bool? CallModel);
+
+public sealed record AcademyGenerateRequest(
+    string? RequestKey,
+    string? Family,
+    string? BrandName,
+    string? Palette,
+    string? FontFamily,
+    string? Headline,
+    string? Cta,
+    string? Market,
+    string? Language,
+    string? Requirements,
+    bool? MarketResearchComplete,
+    bool? ApprovedPeopleProvided);
 
 public sealed record AcademyParityRequest(
     bool? CustomizationCompliance,
