@@ -18,18 +18,62 @@ function lessonCard(item) {
   </article>`;
 }
 
+function productionBriefCard(item) {
+  return `<article>
+    <p class="eyebrow">${escapeHtml(item.status)}</p>
+    <h4>${escapeHtml(item.brandName)} · ${escapeHtml(item.market)} · ${escapeHtml(item.language)}</h4>
+    <p>Teacher ${escapeHtml(item.teacherKey || "None on file")}. Palette ${escapeHtml(item.palette)}. Font ${escapeHtml(item.fontFamily)}.</p>
+    <p>Headline: ${escapeHtml(item.headline)} · CTA: ${escapeHtml(item.cta)}</p>
+    <p>Requirements: ${escapeHtml(item.requirements)}</p>
+    <p>Casting: ${escapeHtml(item.casting.status)} — ${escapeHtml(item.casting.direction)}</p>
+    <h4>Production recipe</h4>
+    <p>${escapeHtml(item.generationRecipe)}</p>
+    <p>${escapeHtml(item.notice)}</p>
+    <p>Can generate ${item.canGenerate ? "Yes" : "No"}. Model calls ${item.modelCalls}. Campaign ready ${item.campaignReady ? "Yes" : "No"}. Delivery ${escapeHtml(item.delivery)}.</p>
+    <h4>Replace creative content</h4><ul>${lines(item.replaceCreative)}</ul>
+  </article>`;
+}
+
+function parityCard(item) {
+  return `<article>
+    <p class="eyebrow">${escapeHtml(item.status)}</p>
+    <p>${escapeHtml(item.notice)}</p>
+    <h4>Defects</h4><ul>${lines(item.defects) || "<li>None recorded.</li>"}</ul>
+    <h4>Repair</h4><ul>${lines(item.repair) || "<li>None recorded.</li>"}</ul>
+    <p>Eligible to continue ${item.eligibleToContinue ? "Yes" : "No"}. Campaign ready ${item.campaignReady ? "Yes" : "No"}. Model calls ${item.modelCalls}. Delivery ${escapeHtml(item.delivery)}.</p>
+  </article>`;
+}
+
 async function loadAcademy() {
   const board = await api("/api/operations/academy");
   $("#academy-notice").textContent = board.notice;
   $("#academy-delivery").textContent = `Delivery ${board.delivery}. Model calls ${board.modelCalls}. Campaign ready ${board.campaignReady ? "Yes" : "No"}.`;
   const lessons = board.lessons || [];
-  const prototype = lessons.find(item => item.lessonKey === "maison-fleur");
-  $("#academy-prototype").innerHTML = prototype
-    ? lessonCard(prototype)
-    : emptyState("No prototype is stored. The curriculum was not invented.");
+  const prototypes = lessons.filter(item => item.role !== "CANDIDATE");
+  $("#academy-prototypes").innerHTML = prototypes.length
+    ? prototypes.map(lessonCard).join("")
+    : emptyState("No quality anchor is stored. The curriculum was not invented.");
   $("#academy-lessons").innerHTML = lessons.filter(item => item.role === "CANDIDATE").length
     ? lessons.filter(item => item.role === "CANDIDATE").map(lessonCard).join("")
     : emptyState("No candidate is stored.");
+  $("#academy-parity-gate").innerHTML = `<ul>${lines(board.referenceParityGate)}</ul>`;
+  const roster = board.nicheRoster || [];
+  const next = board.nextNiche;
+  $("#academy-roster-next").textContent = next
+    ? `Next open niche is #${next.number} ${next.name}. Created this run: #10 Motorcycle / Moped Dealership. Niches 1-9 were not repeated. Created ${board.createdCount}. Not created ${board.notCreatedCount}. Delivery NOT_SENT.`
+    : "The roster is not loaded.";
+  $("#academy-roster").innerHTML = roster.length
+    ? `<table><thead><tr><th>#</th><th>Niche</th><th>Status</th><th>Anchor</th><th>Teacher</th></tr></thead><tbody>${roster.map(item =>
+        `<tr><td>${item.number}</td><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item.status)}</td><td>${escapeHtml(item.anchorKind)}</td><td>${escapeHtml(item.teacherKey || "None")}</td></tr>`).join("")}</tbody></table>`
+    : emptyState("No niche roster is stored.");
+  const select = document.getElementById("academy-client-niche");
+  if (select && roster.length) {
+    const current = select.value;
+    select.innerHTML = roster.map(item =>
+      `<option value="${escapeHtml(item.key)}">#${item.number} ${escapeHtml(item.name)} — ${escapeHtml(item.status)}</option>`).join("")
+      + `<option value="patisserie">Patisserie curriculum — maison-fleur, not niche 16</option>`;
+    select.value = [...select.options].some(option => option.value === current) ? current : "motorcycle";
+  }
   const dna = board.dna || [];
   $("#academy-dna-table").innerHTML = dna.length
     ? `<table><thead><tr><th>Brand</th><th>Family</th><th>Teacher</th><th>On file</th><th>Distinct</th><th>Hero</th><th>Delivery</th></tr></thead><tbody>${dna.map(item =>
@@ -46,6 +90,50 @@ async function postAcademy(path, body) {
   });
   $("#academy-result").textContent = result.notice || "Delivery remains NOT_SENT.";
   await loadAcademy();
+}
+
+async function prepareProductionBrief(callModel = false) {
+  const value = id => document.getElementById(id)?.value || "";
+  try {
+    const result = await api("/api/operations/academy/production-brief", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        family: value("academy-client-niche"),
+        brandName: value("academy-client-brand"),
+        palette: value("academy-client-palette"),
+        fontFamily: value("academy-client-font"),
+        headline: value("academy-client-headline"),
+        cta: value("academy-client-cta"),
+        market: value("academy-client-market"),
+        language: value("academy-client-language"),
+        requirements: value("academy-client-requirements"),
+        marketResearchComplete: document.getElementById("academy-client-researched")?.checked || false,
+        approvedPeopleProvided: document.getElementById("academy-client-people")?.checked || false,
+        callModel
+      })
+    });
+    $("#academy-production-result").innerHTML = productionBriefCard(result);
+    $("#academy-result").textContent = result.notice;
+  } catch (error) {
+    $("#academy-production-result").innerHTML = `<article><p class="eyebrow">GENERATION BLOCKED</p><p>${escapeHtml(error.message)}</p><p>Campaign ready No. Model calls 0. Delivery NOT_SENT.</p></article>`;
+    $("#academy-result").textContent = error.message;
+  }
+}
+
+async function evaluateParity(qualityParity) {
+  const result = await api("/api/operations/academy/parity", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      customizationCompliance: true,
+      qualityParity,
+      originality: true,
+      geographicAuthenticity: true
+    })
+  });
+  $("#academy-parity-result").innerHTML = parityCard(result);
+  $("#academy-result").textContent = result.notice;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -65,7 +153,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  bind("academy-store", () => postAcademy("/api/operations/academy/curriculum", { curriculumKey: "patisserie-curriculum-1" }));
+  bind("academy-store", () => postAcademy("/api/operations/academy/curriculum", { curriculumKey: "creative-academy-2" }));
+  bind("academy-production", () => prepareProductionBrief(false));
+  bind("academy-generate", () => prepareProductionBrief(true));
+  bind("academy-drift", () => evaluateParity(false));
+  bind("academy-both-pass", () => evaluateParity(true));
   bind("academy-dna", () => postAcademy("/api/operations/academy/dna", {
     dnaKey: "atelier-cendre-1",
     family: "patisserie",

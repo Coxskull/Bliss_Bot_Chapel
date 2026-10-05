@@ -1,0 +1,37 @@
+ALPHA CREATIVE ACADEMY
+Updated instruction phase A2 of A4 - Master anchor and customization
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Master prototype
+
+Designation: ALPHA MASTER PROTOTYPE 01/50
+Niche: PHARMACY / DRUGSTORE
+Purpose: QUALITY ANCHOR
+Creative template: NO
+Lesson key: vidacare-master-01
+
+VidaCare teaches how well a pharmacy advertisement should be produced. Its blue/green branding, fictional name, logo, headline, copy, people, store, products, and composition do not become a real advertiser's brand manual.
+
+Owner-supplied context
+
+FreshMart Supermarket is stored as SUPPLIED_EXAMPLE. It demonstrates the intended commercial production class. The owner did not explicitly designate it as a master prototype, so this run does not silently promote it.
+
+Customized production brief
+
+Advertiser: Farmacia Nueva Salud
+Market: Panama
+Language: Spanish
+Palette: Burgundy and gold
+Font: Montserrat
+Headline: Tu salud, mas cerca
+CTA: Recoge tu receta
+Requirement: Feature prescription pickup. Do not show families. Use locally plausible casting.
+Teacher: vidacare-master-01
+
+The brief keeps every advertiser instruction while inheriting the fixed quality signature. Burgundy and gold must retain excellent contrast, color richness, and depth. Montserrat must retain professional hierarchy and legibility. New photography must retain photorealism, lighting, material realism, and commercial polish.
+
+Result
+
+Status is PRODUCTION_SPEC_READY. Can generate is false because no production model is configured. This is a production specification, not a generated advertisement. Campaign ready is false. Delivery remains NOT_SENT.

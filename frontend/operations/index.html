@@ -17,7 +17,7 @@
   <script src="/operations/measure.js?v=measure-1" defer></script>
   <script src="/operations/handoff.js?v=handoff-1" defer></script>
   <script src="/operations/creative.js?v=creative-1" defer></script>
-  <script src="/operations/academy.js?v=academy-2" defer></script>
+  <script src="/operations/academy.js?v=academy-5" defer></script>
   <script src="/operations/learning.js?v=learning-1" defer></script>
   <script src="/operations/rotation.js?v=rotation-1" defer></script>
   <script src="/operations/acceptance.js?v=acceptance-1" defer></script>
@@ -803,15 +803,18 @@
           <div class="section-intro">
             <div>
               <p class="eyebrow">CREATIVE ACADEMY</p>
-              <h2 id="academy-title">Prototype, recipe, and instructor</h2>
-              <p id="academy-notice">The prototype teaches the quality. The recipe teaches the craft. Creative DNA customizes the advertiser. The instructor judges the stored copy. A vision model is not configured. A production model was not called. Campaign ready is refused. Green does not send. Delivery remains NOT_SENT.</p>
+              <h2 id="academy-title">Quality anchor, original production, and dual-gate QA</h2>
+              <p id="academy-notice">The Academy is designed to produce original advertisements at the reference quality class. Reproduce the craftsmanship. Replace the creative content. Advertiser Brand DNA remains authoritative. Both customization compliance and quality parity must pass. A production model was not called. Delivery remains NOT_SENT.</p>
               <p id="academy-delivery">Delivery NOT_SENT.</p>
             </div>
           </div>
           <section class="panel">
-            <div class="panel-header"><div><p class="eyebrow">METHOD</p><h3>One quality floor, many brands</h3></div></div>
+            <div class="panel-header"><div><p class="eyebrow">GOVERNING DOCTRINE</p><h3>Reproduce the craftsmanship. Replace the creative content.</h3></div></div>
+            <p>Originality without quality parity is failure. Quality parity without originality is failure. The brand, product, people, environment, photography, copy, color, typography, and composition may change. The standard of excellence does not go down.</p>
             <div class="form-actions">
-              <button class="primary-button" type="button" id="academy-store">Store the patisserie curriculum</button>
+              <button class="primary-button" type="button" id="academy-store">Store the updated curriculum</button>
+              <button class="secondary-button" type="button" id="academy-drift">Test quality drift</button>
+              <button class="secondary-button" type="button" id="academy-both-pass">Record both gates passed</button>
               <button class="secondary-button" type="button" id="academy-dna">Select distinct patisserie DNA</button>
               <button class="secondary-button" type="button" id="academy-clone">Clone Maison Fleur</button>
               <button class="secondary-button" type="button" id="academy-dental">Select dental DNA</button>
@@ -821,8 +824,45 @@
             <p id="academy-result"></p>
           </section>
           <section class="panel">
-            <div class="panel-header"><div><p class="eyebrow">PROTOTYPE</p><h3>Quality teacher</h3></div></div>
-            <div id="academy-prototype"></div>
+            <div class="panel-header"><div><p class="eyebrow">QUALITY ANCHORS</p><h3>Teachers, not rigid templates</h3></div></div>
+            <p>VidaCare Pharmacy is ALPHA MASTER PROTOTYPE 01/50 for pharmacy and drugstore. It fixes the quality floor, not the advertiser's branding. FreshMart is retained as an owner-supplied example and is not promoted to a master prototype without explicit designation. Niches 1 through 9 were already created and were not repeated. Niche 10, Brava Moto, is the motorcycle and moped quality reference created in this run. Niches 11 through 50 stay not created.</p>
+            <div id="academy-prototypes"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">NICHE ROSTER</p><h3>Fifty niches, one next position</h3></div></div>
+            <p id="academy-roster-next">The roster loads with the curriculum. Created niches are not repeated.</p>
+            <div class="table-wrap" id="academy-roster"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">CLIENT AD INTAKE</p><h3>Enter the store name and niche</h3></div></div>
+            <p>The niche selects its approved quality anchor. The store name and optional Brand DNA create a new production recipe. The reference determines how well the ad is produced; it does not determine the client's identity.</p>
+            <div class="form-grid compact">
+              <label><span>Brand or store name *</span><input id="academy-client-brand" value="Impulso Fitness" maxlength="120"></label>
+              <label><span>Niche *</span><select id="academy-client-niche"><option value="motorcycle">#10 Motorcycle / Moped Dealership — CREATED</option></select></label>
+              <label><span>Market</span><select id="academy-client-market"><option value="Panama">Panama</option><option value="Philippines">Philippines</option><option value="Malaysia">Malaysia</option><option value="Indonesia">Indonesia</option><option value="Colombia">Colombia</option><option value="Dominican Republic">Dominican Republic</option><option value="">Not supplied</option></select></label>
+              <label><span>Language</span><select id="academy-client-language"><option value="Spanish">Spanish</option><option value="English">English</option><option value="">To be confirmed</option></select></label>
+              <label><span>Brand colors</span><input id="academy-client-palette" placeholder="Optional — e.g. burgundy and gold"></label>
+              <label><span>Approved font</span><input id="academy-client-font" placeholder="Optional — e.g. Montserrat"></label>
+              <label><span>Headline</span><input id="academy-client-headline" placeholder="Optional — Academy creates an original direction"></label>
+              <label><span>Call to action</span><input id="academy-client-cta" placeholder="Optional — e.g. Join today"></label>
+              <label class="span-two"><span>Products, offer, requirements, and restrictions</span><textarea id="academy-client-requirements" placeholder="Optional — products, offer, approved people, restrictions, QR destination, inventory format"></textarea></label>
+              <label class="checkbox-label"><input type="checkbox" id="academy-client-researched" checked><span>Market research is complete</span></label>
+              <label class="checkbox-label"><input type="checkbox" id="academy-client-people"><span>Advertiser-approved people or photography supplied</span></label>
+            </div>
+            <div class="form-actions">
+              <button class="primary-button" type="button" id="academy-production">Prepare original ad recipe</button>
+              <button class="secondary-button" type="button" id="academy-generate">Generate advertisement</button>
+            </div>
+            <div id="academy-production-result"><p>No production brief prepared. A production model is not configured.</p></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">REFERENCE PARITY GATE</p><h3>Attractive is not enough</h3></div></div>
+            <div id="academy-parity-gate"></div>
+            <div id="academy-parity-result"><p>Customization compliance, quality parity, originality, and geographic authenticity are independent gates.</p></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">GEOGRAPHIC AUTHENTICITY</p><h3>Specific market, plausible people, no stereotype engine</h3></div></div>
+            <p>Initial markets: Philippines, Malaysia, Indonesia, Colombia, Panama, and Dominican Republic. Do not cast a generic “Asian” or generic “Latino” person. Research the specific contemporary market when confidence is insufficient. Use advertiser-approved people when supplied. Vary people within a market and preserve photorealism, anatomy, lighting, material realism, and commercial polish.</p>
           </section>
           <section class="panel">
             <div class="panel-header"><div><p class="eyebrow">DNA</p><h3>Who the advertiser is</h3></div></div>

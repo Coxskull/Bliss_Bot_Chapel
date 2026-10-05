@@ -99,6 +99,21 @@ public sealed class CreativeAcademyTests
 
         Assert.Equal(CreativeAcademy.Fail, inspection.Status);
         Assert.Contains("Prototype identity was copied.", inspection.Defects);
+
+        var fitnessCopy = CreativeAcademy.Judge(
+            "CANDIDATE",
+            "Different Club",
+            "Tu mejor versión comienza aquí.",
+            "Nova Fit membership. Join today.",
+            "DIFFERENT,CLUB",
+            false,
+            true,
+            null,
+            false,
+            false,
+            null);
+        Assert.Equal(CreativeAcademy.Fail, fitnessCopy.Status);
+        Assert.Contains("Prototype identity was copied.", fitnessCopy.Defects);
     }
 
     [Fact]
@@ -170,7 +185,9 @@ public sealed class CreativeAcademyTests
         Assert.True(dna.Distinct);
         Assert.False(dental.TeacherOnFile);
         Assert.Equal(string.Empty, dental.TeacherKey);
-        Assert.Contains("None was invented", dental.Notice);
+        Assert.Contains("already created", dental.Notice);
+        Assert.Contains("not repeated", dental.Notice);
+        Assert.DoesNotContain("None was invented", dental.Notice);
         Assert.Contains("not cloned", clone.Message);
         Assert.False(CreativeAcademy.SameBrand(dna.BrandName, "Solara"));
         Assert.Equal(0, dna.ModelCalls);
@@ -189,5 +206,227 @@ public sealed class CreativeAcademyTests
         Assert.Contains("Duplicated word: ESCAPE", inspection.Defects);
         Assert.Contains("Weaker visual contrast.", inspection.Defects);
         Assert.Equal(72, inspection.Score);
+    }
+
+    [Fact]
+    public void VidaCare_is_master_prototype_01_and_FreshMart_stays_a_supplied_example()
+    {
+        var pharmacy = CreativeAcademy.AllLessons.Single(item => item.LessonKey == "vidacare-master-01");
+        var grocery = CreativeAcademy.AllLessons.Single(item => item.LessonKey == "freshmart-supplied");
+
+        Assert.Equal(CreativeAcademy.MasterReference, pharmacy.Role);
+        Assert.Equal("pharmacy", pharmacy.Family);
+        Assert.Contains("quality anchor", pharmacy.Body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Creative template: no", pharmacy.Body);
+        Assert.Equal(CreativeAcademy.SuppliedExample, grocery.Role);
+        Assert.Contains("not promoted", grocery.Body);
+    }
+
+    [Fact]
+    public void Pharmacy_brand_dna_changes_the_identity_without_lowering_the_quality_anchor()
+    {
+        var dna = CreativeAcademy.Choose(
+            "pharmacy",
+            "Farmacia Nueva Salud",
+            "Prescription pickup",
+            "Burgundy and gold",
+            "Recoge tu receta",
+            "Warm professional Panama",
+            false);
+
+        Assert.Equal(CreativeAcademy.PharmacyTeacher, dna.TeacherKey);
+        Assert.True(dna.TeacherOnFile);
+        Assert.True(dna.Distinct);
+        Assert.Contains("Brand DNA remains authoritative", dna.Notice);
+        Assert.Throws<InvalidOperationException>(() => CreativeAcademy.Choose(
+            "pharmacy", "VidaCare Pharmacy", "Medicine", "Blue and green", "Shop now", "Bright", false));
+    }
+
+    [Fact]
+    public void A_production_brief_preserves_customization_and_the_quality_signature()
+    {
+        var brief = CreativeAcademy.PrepareProductionBrief(
+            "pharmacy",
+            "Farmacia Nueva Salud",
+            "Burgundy and gold",
+            "Montserrat",
+            "Tu salud, más cerca",
+            "Recoge tu receta",
+            "Panama",
+            "Spanish",
+            "Feature prescription pickup; do not show families",
+            true,
+            false,
+            false);
+
+        Assert.Equal(CreativeAcademy.ProductionSpecReady, brief.Status);
+        Assert.Equal(CreativeAcademy.PharmacyTeacher, brief.TeacherKey);
+        Assert.Equal("Burgundy and gold", brief.Palette);
+        Assert.Equal("Montserrat", brief.FontFamily);
+        Assert.Equal("LOCALLY_PLAUSIBLE_DEFAULT", brief.Casting.Status);
+        Assert.Contains("hero dominance", brief.QualitySignature);
+        Assert.Contains("photography and people", brief.ReplaceCreative);
+        Assert.False(brief.CanGenerate);
+        Assert.Equal(0, brief.ModelCalls);
+        Assert.False(brief.CampaignReady);
+        Assert.Equal("NOT_SENT", brief.Delivery);
+    }
+
+    [Fact]
+    public void Geographic_casting_requires_a_specific_market_and_research_when_uncertain()
+    {
+        var research = CreativeAcademy.PlanCasting("Santo Domingo", false, false);
+        var approved = CreativeAcademy.PlanCasting("Manila", false, true);
+
+        Assert.Equal("MARKET_RESEARCH_REQUIRED", research.Status);
+        Assert.True(research.ResearchRequired);
+        Assert.Equal("ADVERTISER_ASSET", approved.Status);
+        Assert.False(approved.ResearchRequired);
+        Assert.Throws<InvalidOperationException>(() => CreativeAcademy.PlanCasting("generic Latino", true, false));
+    }
+
+    [Fact]
+    public void Customization_quality_originality_and_geography_are_independent_gates()
+    {
+        var qualityFailed = CreativeAcademy.EvaluateFinalGates(true, false, true, true);
+        var customizationFailed = CreativeAcademy.EvaluateFinalGates(false, true, true, true);
+        var withheld = CreativeAcademy.EvaluateFinalGates(true, true, null, true);
+        var eligible = CreativeAcademy.EvaluateFinalGates(true, true, true, true);
+
+        Assert.Equal(CreativeAcademy.Revise, qualityFailed.Status);
+        Assert.Contains(qualityFailed.Defects, item => item.Contains("quality parity", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(CreativeAcademy.Revise, customizationFailed.Status);
+        Assert.Contains(customizationFailed.Defects, item => item.Contains("Brand DNA", StringComparison.Ordinal));
+        Assert.Equal(CreativeAcademy.Withheld, withheld.Status);
+        Assert.Equal(CreativeAcademy.Eligible, eligible.Status);
+        Assert.True(eligible.EligibleToContinue);
+        Assert.False(eligible.CampaignReady);
+        Assert.Equal("NOT_SENT", eligible.Delivery);
+    }
+
+    [Fact]
+    public void Production_model_calls_are_still_refused_until_a_model_is_configured()
+    {
+        var refusal = Assert.Throws<InvalidOperationException>(() =>
+            CreativeAcademy.PrepareProductionBrief(
+                "pharmacy", "Farmacia Nueva Salud", "Burgundy and gold", "Montserrat",
+                "Tu salud, más cerca", "Recoge tu receta", "Panama", "Spanish",
+                "Feature prescription pickup", true, false, true));
+
+        Assert.Contains("not configured", refusal.Message);
+    }
+
+    [Fact]
+    public void Fitness_and_automotive_niches_select_their_supplied_quality_references()
+    {
+        var fitness = CreativeAcademy.Choose(
+            "fitness", "Impulso Fitness", "Membership", "Black and orange",
+            "Join today", "Energetic local club", false);
+        var automotive = CreativeAcademy.Choose(
+            "automotive", "Motor Centro", "Brake service", "Navy and silver",
+            "Book service", "Precise and trustworthy", false);
+
+        Assert.Equal(CreativeAcademy.FitnessTeacher, fitness.TeacherKey);
+        Assert.Equal(CreativeAcademy.AutomotiveTeacher, automotive.TeacherKey);
+        Assert.True(fitness.TeacherOnFile);
+        Assert.True(automotive.TeacherOnFile);
+        Assert.Contains(CreativeAcademy.AllLessons, item =>
+            item.LessonKey == CreativeAcademy.FitnessTeacher && item.Role == CreativeAcademy.Reference);
+        Assert.Contains(CreativeAcademy.AllLessons, item =>
+            item.LessonKey == CreativeAcademy.AutomotiveTeacher && item.Role == CreativeAcademy.Reference);
+    }
+
+    [Fact]
+    public void Brand_and_niche_are_the_only_required_client_intake_fields()
+    {
+        var brief = CreativeAcademy.PrepareProductionBrief(
+            "fitness", "Impulso Fitness",
+            null, null, null, null, null, null, null,
+            false, false, false);
+
+        Assert.Equal(CreativeAcademy.ProductionSpecReady, brief.Status);
+        Assert.Equal(CreativeAcademy.FitnessTeacher, brief.TeacherKey);
+        Assert.Equal("MARKET_RESEARCH_REQUIRED", brief.Casting.Status);
+        Assert.Contains("Impulso Fitness", brief.GenerationRecipe);
+        Assert.Contains("wide 16:9", brief.GenerationRecipe);
+        Assert.Contains(CreativeAcademy.FitnessTeacher, brief.GenerationRecipe);
+        Assert.Contains("Do not copy", brief.GenerationRecipe);
+        Assert.False(brief.CanGenerate);
+        Assert.Equal("NOT_SENT", brief.Delivery);
+    }
+
+    [Fact]
+    public void A_niche_without_an_approved_anchor_does_not_enter_image_generation()
+    {
+        var brief = CreativeAcademy.PrepareProductionBrief(
+            "auto-parts", "Pieza Norte",
+            null, null, null, null, "Colombia", "Spanish", null,
+            true, false, false);
+
+        Assert.Equal(NicheCatalog.NicheNotCreated, brief.Status);
+        Assert.Equal(string.Empty, brief.TeacherKey);
+        Assert.Contains("not created yet", brief.GenerationRecipe);
+        Assert.Contains("Stop before image generation", brief.GenerationRecipe);
+        Assert.False(brief.CanGenerate);
+        Assert.Equal("NOT_SENT", brief.Delivery);
+    }
+
+    [Fact]
+    public void The_roster_keeps_created_niches_and_queues_the_rest()
+    {
+        Assert.Equal(50, NicheCatalog.All.Count);
+        Assert.Equal(10, NicheCatalog.All.Count(item => item.Status == NicheCatalog.Created));
+        Assert.Equal(40, NicheCatalog.All.Count(item => item.Status == NicheCatalog.NotCreated));
+        Assert.Equal(11, NicheCatalog.NextOpen.Number);
+        Assert.Equal("auto-parts", NicheCatalog.NextOpen.Key);
+        Assert.Equal("Auto-Parts Store", NicheCatalog.NextOpen.Name);
+
+        var motorcycle = NicheCatalog.All.Single(item => item.Number == 10);
+        Assert.Equal(NicheCatalog.Created, motorcycle.Status);
+        Assert.True(motorcycle.CreatedThisRun);
+        Assert.Equal(CreativeAcademy.MotorcycleTeacher, motorcycle.TeacherKey);
+
+        var bakery = NicheCatalog.All.Single(item => item.Number == 16);
+        Assert.Equal("bakery", bakery.Key);
+        Assert.Equal(NicheCatalog.NotCreated, bakery.Status);
+        Assert.Equal(string.Empty, bakery.TeacherKey);
+
+        foreach (var number in new[] { 3, 4, 5, 6, 9 })
+        {
+            var created = NicheCatalog.All.Single(item => item.Number == number);
+            Assert.Equal(NicheCatalog.Created, created.Status);
+            Assert.Equal(NicheCatalog.ExternalAnchor, created.AnchorKind);
+            Assert.Equal(string.Empty, created.TeacherKey);
+            Assert.False(created.CreatedThisRun);
+        }
+    }
+
+    [Fact]
+    public void Motorcycle_uses_brava_and_an_already_created_niche_is_not_repeated()
+    {
+        var brief = CreativeAcademy.PrepareProductionBrief(
+            "motorcycle", "Ruta Libre Motos",
+            "Black and red", null, null, "Visita el showroom",
+            "Panama", "Spanish", null, true, false, false);
+        var dental = CreativeAcademy.PrepareProductionBrief(
+            "dental", "Sonrisa Norte",
+            null, null, null, null, "Colombia", "Spanish", null,
+            true, false, false);
+        var lesson = CreativeAcademy.AllLessons.Single(item => item.LessonKey == CreativeAcademy.MotorcycleTeacher);
+
+        Assert.Equal(CreativeAcademy.ProductionSpecReady, brief.Status);
+        Assert.Equal(CreativeAcademy.MotorcycleTeacher, brief.TeacherKey);
+        Assert.Contains("brava-moto-reference", brief.GenerationRecipe);
+        Assert.Contains("Ruta Libre Motos", brief.GenerationRecipe);
+        Assert.False(brief.CanGenerate);
+        Assert.Equal(CreativeAcademy.Reference, lesson.Role);
+        Assert.Equal("motorcycle", lesson.Family);
+        Assert.Equal("/operations/academy/brava-moto-reference.jpg", lesson.ImagePath);
+        Assert.Equal(NicheCatalog.AlreadyCreated, dental.Status);
+        Assert.Contains("not repeated", dental.Notice);
+        Assert.Contains("substitute image", dental.GenerationRecipe);
+        Assert.False(dental.CanGenerate);
+        Assert.Throws<InvalidOperationException>(() => CreativeAcademy.PrepareProductionBrief(
+            "motorcycle", "Brava Moto", null, null, null, null, "Panama", "Spanish", null, true, false, false));
     }
 }
