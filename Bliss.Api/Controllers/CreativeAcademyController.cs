@@ -197,7 +197,7 @@ public sealed class CreativeAcademyController(
             status = creatorConfigured ? "READY" : "PROVIDER_CONFIGURATION_REQUIRED",
             notice = creatorConfigured
                 ? "The ad creator is ready. Generated drafts remain pending review, campaign ready false, and NOT_SENT."
-                : "The ad creator is installed. A provider endpoint and secret-store API token are required before it can call a model."
+                : "The ad creator is installed. Set Runtime:CreativeGeneration:Provider=OpenAI and supply the OpenAI API token through the secret store before it can call a model."
         },
         masterPrototype = new
         {

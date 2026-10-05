@@ -262,7 +262,7 @@ When the endpoint or token is absent, the console reports `PROVIDER_CONFIGURATIO
 No price is stated. No model was purchased.
 
 1. A vision model, if Alpha later wants the instructor to read pixels instead of a human visual record.
-2. An authorized image-provider HTTPS endpoint and API token supplied through the platform secret store. This environment has neither, so live model calls remain 0.
+2. An authorized image provider. OpenAI is supported natively with `Runtime:CreativeGeneration:Provider=OpenAI` and an OpenAI API token supplied through the platform secret store as `Runtime:CreativeGeneration:ApiToken` or `Runtime:CreativeGeneration:ApiToken_FILE`. The account must have image-generation credits. A custom HTTPS adapter endpoint remains supported for non-OpenAI providers.
 3. Local images for the already-created external niches: shopping mall, new-car dealership, used-car dealership, restaurant, and dental. This run did not invent substitutes.
 4. Quality anchors for niches 11-50. The next open niche is Auto-Parts Store. None of those images was invented.
 5. A human visual benchmark for Brava Moto. The reference is stored. It is not scored PASS.

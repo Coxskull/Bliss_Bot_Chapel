@@ -14,7 +14,8 @@ public static class SecretFileLoader
     [
         "ConnectionStrings:DefaultConnection",
         "Authentication:ClientSecret",
-        "Runtime:DataProtectionCertificatePassword"
+        "Runtime:DataProtectionCertificatePassword",
+        "Runtime:CreativeGeneration:ApiToken"
     ];
 
     public static void Apply(ConfigurationManager configuration, string contentRoot)
