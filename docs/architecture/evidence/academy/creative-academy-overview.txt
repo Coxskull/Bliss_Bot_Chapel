@@ -1,0 +1,219 @@
+ALPHA CREATIVE ACADEMY
+What the Creative Academy is inside Bliss
+Date: 2026-10-05
+Classification: local architecture proof
+Delivery: NOT_SENT
+Campaign ready: refused
+Hosted acceptance: not claimed
+Live model calls in this environment: 0
+
+1. What it is
+
+The Creative Academy is the part of Bliss that prepares and judges original commercial advertisements. It lives in the operations console at /operations#/academy and in the API at /api/operations/academy.
+
+Its job is production quality, not cloning. One hundred advertisers should be able to look like one hundred distinct professional brands while sharing one quality floor. A restaurant, a pharmacy, a motorcycle dealer, and a supermarket are not supposed to look like siblings.
+
+The governing doctrine is: reproduce the craftsmanship; replace the creative content. Originality without quality parity is a failure. Quality parity without originality is also a failure. An attractive picture is not enough.
+
+The Academy is preserved as future creative infrastructure for the Fishing Fleet and Wedding Planner. This feature does not open Wedding Planner, does not price anything, and does not send email, WhatsApp, SMS, or social messages. Economics remains the only price authority, and the Academy does not ask it for a price.
+
+2. The five roles
+
+The Academy separates five jobs that must not be collapsed into one template.
+
+The quality teacher is a stored reference image and its transcribed copy. It teaches how strong the finished advertisement must feel. It is not the client's brand, logo, people, store, products, or layout.
+
+The production recipe is the written instruction for a new advertisement. It names the client, the niche, the quality teacher, the brand direction, and the rule that the teacher's identity must be replaced.
+
+Creative DNA records who the advertiser is. Advertiser-approved Brand DNA is authoritative. Missing optional fields become art-direction work. They are not invented as client facts.
+
+The Creative Instructor judges stored copy and recorded visual benchmarks. It returns PASS, REVISE, FAIL, or WITHHELD. A critical defect overrides a flattering score. REVISE names what to preserve and what to repair. A strong advertisement is not thrown away and regenerated blindly.
+
+The ad creator is the installed worker that can ask one configured image provider to make a draft. A draft is not an approval, not a campaign, and not a send.
+
+3. How a client request moves through the system
+
+The required client inputs are a brand or store name and a niche. Optional Brand DNA can include market, language, colors, font, headline, call to action, products, offer, restrictions, approved people, QR destination, and inventory format.
+
+The niche selects its own quality teacher. The recipe is a wide 16:9 commercial instruction. It tells the worker to match or exceed the teacher in color power, contrast, lighting, depth, material realism, texture, hero dominance, hierarchy, typography, screen pop, commercial polish, and Premium Dominant Presence. It also tells the worker not to copy the teacher's brand, people, photograph, environment, products, headline, or layout.
+
+A recipe with status PRODUCTION_SPEC_READY is ready to be made. It is not itself an advertisement.
+
+If the niche was already created outside this repository, the result is ALREADY_CREATED. The prototype is not repeated and no substitute image is invented.
+
+If the niche has not been created, the result is NICHE_NOT_CREATED. The system stops before image generation and does not borrow an unrelated teacher.
+
+4. The quality floor
+
+Initial instructor weights total 100 and can be reconfigured only when they still total 100:
+
+Typography and text accuracy: 16
+Lighting and depth: 12
+Product and subject realism: 12
+Composition and placement: 12
+Visual hierarchy: 10
+Brand identity: 10
+Commercial credibility: 10
+Creator protection: 10
+Call to action: 8
+
+The 16-item reference parity gate is: color power, tonal contrast, lighting craftsmanship, highlight brilliance, shadow quality, dimensional depth, foreground and background separation, material realism, texture fidelity, hero dominance, visual hierarchy, typographic quality, screen pop, commercial polish, Premium Dominant Presence, and overall reference quality parity.
+
+The instructor reads stored transcribed copy. It does not invent a visual score by looking at pixels. A human records the visual benchmark. Until that record exists, visual categories stay unrecorded and a clean candidate stays WITHHELD.
+
+Known text results from the stored curriculum:
+
+L'Amour Sucre, duplicated word ESCAPE, visual benchmark met: REVISE, score 84.
+L'Amour Sucre, duplicated ESCAPE plus a recorded weaker-contrast note: REVISE, score 72.
+Solara, malformed words CURDJ and MJER: REVISE. Typography is subtracted once.
+Belmonte, clean text, visual benchmark unrecorded: WITHHELD, score unrecorded.
+Belmonte, visual benchmark recorded as met: PASS, score 100. Campaign ready stays false.
+Copied prototype identity: FAIL.
+Obstructed creator face: FAIL.
+
+A duplicated word or malformed important text is repaired in place. Copying a teacher identity, or covering a creator's face, fails the candidate.
+
+5. Four independent final gates
+
+After a candidate exists, four gates are judged separately:
+
+Advertiser customization and Brand DNA compliance.
+Reference quality parity.
+Originality.
+Geographic authenticity.
+
+Any failed gate returns REVISE. Any unrecorded gate returns WITHHELD. All four passed returns ELIGIBLE_TO_CONTINUE. That status means the candidate may continue through the approval workflow. It does not mean campaign ready, and it does not send.
+
+6. Geographic authenticity
+
+The initial markets are the Philippines, Malaysia, Indonesia, Colombia, Panama, and the Dominican Republic. The system refuses a generic Asian or generic Latino casting instruction. There is no stereotype engine.
+
+If the advertiser supplies approved people or photography, casting status is ADVERTISER_ASSET. Those assets take precedence.
+
+If the market is known but research is incomplete, casting status is MARKET_RESEARCH_REQUIRED. The system does not guess a national face.
+
+If the specific market is known and research is complete, casting status is LOCALLY_PLAUSIBLE_DEFAULT. People must be plausible for that market, varied across campaigns, and naturally integrated. Local authenticity does not lower the photorealism standard.
+
+7. The 50-niche roster
+
+The roster is ordered. A created niche is not repeated. A niche that is not created does not borrow another niche's teacher. Ten niches are created. Forty are not created. The next open niche is number 11, Auto-Parts Store.
+
+Local images stored in this repository:
+
+1. Pharmacy / Drugstore. CREATED. Teacher vidacare-master-01. VidaCare Pharmacy is Alpha Master Prototype 01/50. Its purpose is a quality anchor. It is not a creative template. Its blue and green branding, people, store, copy, and composition are not forced onto another pharmacy.
+2. Supermarket / Hypermarket. CREATED. Teacher freshmart-supplied. FreshMart is an owner-supplied example. It was not promoted to a master prototype.
+7. Gym / Fitness Center. CREATED. Teacher nova-fit-reference, Nova Fit.
+8. Automotive Service / Mechanic Repair Shop. CREATED. Teacher taller-ruta-reference, Taller Ruta.
+10. Motorcycle / Moped Dealership. CREATED in the roster run. Teacher brava-moto-reference, Brava Moto. Headline transcribed from the image: Tu proxima ruta empieza aqui. Its visual benchmark is unrecorded, so it is a teacher and not an approved campaign.
+
+Already created, with no image stored in this repository and no substitute invented:
+
+3. Shopping Mall / Shopping Center.
+4. New-Car Dealership.
+5. Used-Car Dealership.
+6. Restaurant / Casual Dining.
+9. Dental Office / Dental Clinic.
+
+Not created, in order:
+
+11. Auto-Parts Store. This is the next open niche.
+12. Gas Station / Convenience Store.
+13. Fast-Food Restaurant.
+14. Pizza Restaurant.
+15. Coffee Shop / Cafe.
+16. Bakery / Patisserie.
+17. Sports Bar / Nightlife Venue.
+18. Hotel / Resort.
+19. Travel / Tourism Business.
+20. Real-Estate Agency / Property Developer.
+21. Law Firm / Legal Practice.
+22. Medical Clinic / Doctor's Office.
+23. Optical / Eyewear Store.
+24. Beauty Salon.
+25. Barber Shop.
+26. Nail Salon.
+27. Spa / Beauty / Aesthetics.
+28. Clothing / Fashion Retailer.
+29. Athletic Shoes / Sneaker Retailer.
+30. Jewelry / Watch Retailer.
+31. Electronics Retailer.
+32. Mobile-Phone / Accessories Store.
+33. Furniture / Home Furnishing.
+34. Home Improvement / Hardware.
+35. Appliance Retailer.
+36. Department / Variety Store.
+37. Toy / Children's Retailer.
+38. Pet Store / Pet Care.
+39. Education / Vocational Training.
+40. Financial Services / Insurance.
+41. Soda / Soft-Drink Brand.
+42. Bottled-Water Brand.
+43. Fruit-Juice / Beverage Brand.
+44. Coffee Product Brand.
+45. Chocolate / Confectionery.
+46. Candy / Snack Brand.
+47. Bread / Packaged Bakery.
+48. Ice-Cream / Frozen Dessert.
+49. Personal-Care / Cosmetics.
+50. Household Cleaning / Consumer Products.
+
+Niche 16, Bakery / Patisserie, stays not created. Maison Fleur remains a separate patisserie curriculum teacher. It is not niche 16, and it is not a template for every bakery.
+
+8. What is stored today
+
+Curriculum lessons are stored in CreativeAcademyLessons. There are nine lessons: VidaCare, FreshMart, Nova Fit, Taller Ruta, Brava Moto, and the four patisserie lessons Maison Fleur, L'Amour Sucre, Belmonte, and Solara.
+
+Creative DNA decisions are stored in CreativeAcademyDna. A stored decision records family, brand, hero, palette, call to action, personality, and whether a local teacher is on file.
+
+Generated drafts, when a provider is configured, are stored in CreativeAcademyGenerations. Each row records the request key, brand, niche, teacher, image path, media type, provider request identifier, recipe SHA-256, model-call count, campaign-ready false, and delivery NOT_SENT.
+
+The operations console shows the doctrine, the quality teachers, the 50-row roster, client intake, the parity gate, geographic rules, stored DNA, instructor candidates, creator status, and generated drafts.
+
+9. The ad creator as it exists now
+
+The creator is installed. The Generate advertisement control calls POST /api/operations/academy/generate.
+
+When an authorized provider is configured, the server sends one production recipe to one HTTPS endpoint. The bearer token comes from the platform secret store. It is not shown in the browser and is not written into the generation ledger. The requested format is a wide 16:9 image, 1536 by 864, returned as base64. PNG, JPEG, and WebP are accepted. SVG and other content are refused. Oversized files, redirects, malformed responses, provider errors, and timeouts fail closed. The server chooses the file name. A repeated request key does not call the provider again.
+
+A successful result is GENERATED_PENDING_REVIEW. That means one draft exists. The human visual benchmark is still unrecorded. The four final gates are still unrecorded. Campaign ready is false. Delivery remains NOT_SENT.
+
+This environment has no authorized provider endpoint and no secret-store token. No credential and no paid service were invented. The honest console state is PROVIDER_CONFIGURATION_REQUIRED. The Generate button is disabled. Live model calls are 0. No generated draft is stored in this environment.
+
+A configured provider path was proved with an injected test provider. That test is evidence that the system path works. It is not evidence that a hosted image provider was contacted.
+
+10. What the Academy refuses
+
+It refuses to clone Maison Fleur, VidaCare, Nova Fit, Taller Ruta, FreshMart, or Brava Moto into a new advertiser.
+
+It refuses to treat a production recipe as a finished advertisement.
+
+It refuses to route a not-created niche to an unrelated teacher.
+
+It refuses to invent a substitute image for an already-created niche whose file is not in this repository.
+
+It refuses generic regional casting.
+
+It refuses campaign ready.
+
+It refuses to send.
+
+It refuses to claim hosted acceptance. A local database and a local console are not a hosted production environment.
+
+11. Owner input still required before live production
+
+1. A vision model, only if the instructor should later read pixels instead of a human visual record.
+2. An authorized image-provider HTTPS endpoint and an API token in the platform secret store.
+3. Local images for the already-created external niches: shopping mall, new-car dealership, used-car dealership, restaurant, and dental. None was invented here.
+4. Quality anchors for niches 11 through 50. The next one is Auto-Parts Store.
+5. A human visual benchmark for Brava Moto.
+6. The hosted dock: a hosted database, organizational identity, and a platform secret store. Hosted acceptance is not claimed.
+
+12. Where the proof lives
+
+Engineering contract: docs/architecture/contracts/CREATIVE-ACADEMY-CONTRACT.md
+Evidence index: docs/architecture/CREATIVE-ACADEMY-EVIDENCE.md
+This report: docs/architecture/evidence/academy/creative-academy-overview.pdf
+
+The latest regression recorded with the creator is 32 Creative Academy tests passed and 484 full Bliss tests passed, with 0 failed and 0 skipped.
+
+No message was sent. No campaign was approved. No price was invented. Delivery remains NOT_SENT.
