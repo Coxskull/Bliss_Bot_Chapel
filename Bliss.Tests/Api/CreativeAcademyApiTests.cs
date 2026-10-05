@@ -23,7 +23,7 @@ public sealed class CreativeAcademyApiTests
         var first = await stored.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(HttpStatusCode.OK, stored.StatusCode);
         Assert.True(first!.GetProperty("written").GetBoolean());
-        Assert.Equal(6, first.GetProperty("lessons").GetArrayLength());
+        Assert.Equal(8, first.GetProperty("lessons").GetArrayLength());
 
         var lamour = Lesson(first, "lamour-sucre");
         var solara = Lesson(first, "solara");
@@ -31,12 +31,16 @@ public sealed class CreativeAcademyApiTests
         var prototype = Lesson(first, "maison-fleur");
         var pharmacy = Lesson(first, "vidacare-master-01");
         var grocery = Lesson(first, "freshmart-supplied");
+        var fitness = Lesson(first, "nova-fit-reference");
+        var automotive = Lesson(first, "taller-ruta-reference");
         Assert.Equal("REVISE", lamour.GetProperty("status").GetString());
         Assert.Equal("REVISE", solara.GetProperty("status").GetString());
         Assert.Equal("WITHHELD", belmonte.GetProperty("status").GetString());
         Assert.Equal("REFERENCE", prototype.GetProperty("status").GetString());
         Assert.Equal("MASTER_REFERENCE", pharmacy.GetProperty("status").GetString());
         Assert.Equal("SUPPLIED_EXAMPLE", grocery.GetProperty("status").GetString());
+        Assert.Equal("REFERENCE", fitness.GetProperty("status").GetString());
+        Assert.Equal("REFERENCE", automotive.GetProperty("status").GetString());
         Assert.Equal(0, lamour.GetProperty("modelCalls").GetInt32());
         Assert.False(lamour.GetProperty("campaignReady").GetBoolean());
         Assert.Equal("NOT_SENT", lamour.GetProperty("delivery").GetString());
@@ -46,7 +50,7 @@ public sealed class CreativeAcademyApiTests
             new { curriculumKey = "patisserie-curriculum-1" });
         var second = await again.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(second!.GetProperty("duplicate").GetBoolean());
-        Assert.Equal(6, second.GetProperty("lessons").GetArrayLength());
+        Assert.Equal(8, second.GetProperty("lessons").GetArrayLength());
 
         var visual = await client.PostAsJsonAsync(
             "/api/operations/academy/visual",
@@ -130,6 +134,42 @@ public sealed class CreativeAcademyApiTests
         Assert.True(eligible.GetProperty("eligibleToContinue").GetBoolean());
         Assert.False(eligible.GetProperty("campaignReady").GetBoolean());
         Assert.Equal("NOT_SENT", eligible.GetProperty("delivery").GetString());
+    }
+
+    [Fact]
+    public async Task Client_can_enter_only_store_name_and_niche_to_prepare_the_recipe()
+    {
+        await using var factory = new BlissApiFactory();
+        var client = factory.CreateClient();
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/academy/production-brief",
+            new { family = "automotive", brandName = "Motor Centro" });
+        var brief = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("PRODUCTION_SPEC_READY", brief!.GetProperty("status").GetString());
+        Assert.Equal("taller-ruta-reference", brief.GetProperty("teacherKey").GetString());
+        Assert.Contains("Motor Centro", brief.GetProperty("generationRecipe").GetString());
+        Assert.Equal("MARKET_RESEARCH_REQUIRED", brief.GetProperty("casting").GetProperty("status").GetString());
+        Assert.False(brief.GetProperty("canGenerate").GetBoolean());
+        Assert.Equal("NOT_SENT", brief.GetProperty("delivery").GetString());
+    }
+
+    [Fact]
+    public async Task Generate_button_fails_closed_until_a_production_model_is_configured()
+    {
+        await using var factory = new BlissApiFactory();
+        var client = factory.CreateClient();
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/academy/production-brief",
+            new { family = "fitness", brandName = "Impulso Fitness", callModel = true });
+        var refusal = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("not configured", refusal!.GetProperty("error").GetString());
+        Assert.Equal(0, refusal.GetProperty("modelCalls").GetInt32());
+        Assert.False(refusal.GetProperty("campaignReady").GetBoolean());
+        Assert.Equal("NOT_SENT", refusal.GetProperty("delivery").GetString());
     }
 
     private static JsonElement Lesson(JsonElement board, string key)

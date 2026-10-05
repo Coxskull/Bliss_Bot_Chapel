@@ -99,6 +99,21 @@ public sealed class CreativeAcademyTests
 
         Assert.Equal(CreativeAcademy.Fail, inspection.Status);
         Assert.Contains("Prototype identity was copied.", inspection.Defects);
+
+        var fitnessCopy = CreativeAcademy.Judge(
+            "CANDIDATE",
+            "Different Club",
+            "Tu mejor versión comienza aquí.",
+            "Nova Fit membership. Join today.",
+            "DIFFERENT,CLUB",
+            false,
+            true,
+            null,
+            false,
+            false,
+            null);
+        Assert.Equal(CreativeAcademy.Fail, fitnessCopy.Status);
+        Assert.Contains("Prototype identity was copied.", fitnessCopy.Defects);
     }
 
     [Fact]
@@ -297,5 +312,58 @@ public sealed class CreativeAcademyTests
                 "Feature prescription pickup", true, false, true));
 
         Assert.Contains("not configured", refusal.Message);
+    }
+
+    [Fact]
+    public void Fitness_and_automotive_niches_select_their_supplied_quality_references()
+    {
+        var fitness = CreativeAcademy.Choose(
+            "fitness", "Impulso Fitness", "Membership", "Black and orange",
+            "Join today", "Energetic local club", false);
+        var automotive = CreativeAcademy.Choose(
+            "automotive", "Motor Centro", "Brake service", "Navy and silver",
+            "Book service", "Precise and trustworthy", false);
+
+        Assert.Equal(CreativeAcademy.FitnessTeacher, fitness.TeacherKey);
+        Assert.Equal(CreativeAcademy.AutomotiveTeacher, automotive.TeacherKey);
+        Assert.True(fitness.TeacherOnFile);
+        Assert.True(automotive.TeacherOnFile);
+        Assert.Contains(CreativeAcademy.AllLessons, item =>
+            item.LessonKey == CreativeAcademy.FitnessTeacher && item.Role == CreativeAcademy.Reference);
+        Assert.Contains(CreativeAcademy.AllLessons, item =>
+            item.LessonKey == CreativeAcademy.AutomotiveTeacher && item.Role == CreativeAcademy.Reference);
+    }
+
+    [Fact]
+    public void Brand_and_niche_are_the_only_required_client_intake_fields()
+    {
+        var brief = CreativeAcademy.PrepareProductionBrief(
+            "fitness", "Impulso Fitness",
+            null, null, null, null, null, null, null,
+            false, false, false);
+
+        Assert.Equal(CreativeAcademy.ProductionSpecReady, brief.Status);
+        Assert.Equal(CreativeAcademy.FitnessTeacher, brief.TeacherKey);
+        Assert.Equal("MARKET_RESEARCH_REQUIRED", brief.Casting.Status);
+        Assert.Contains("Impulso Fitness", brief.GenerationRecipe);
+        Assert.Contains("wide 16:9", brief.GenerationRecipe);
+        Assert.Contains(CreativeAcademy.FitnessTeacher, brief.GenerationRecipe);
+        Assert.Contains("Do not copy", brief.GenerationRecipe);
+        Assert.False(brief.CanGenerate);
+        Assert.Equal("NOT_SENT", brief.Delivery);
+    }
+
+    [Fact]
+    public void A_niche_without_an_approved_anchor_does_not_enter_image_generation()
+    {
+        var brief = CreativeAcademy.PrepareProductionBrief(
+            "dental", "Sonrisa Norte",
+            null, null, null, null, "Colombia", "Spanish", null,
+            true, false, false);
+
+        Assert.Equal("NICHE_ANCHOR_REQUIRED", brief.Status);
+        Assert.Equal(string.Empty, brief.TeacherKey);
+        Assert.Contains("Stop before image generation", brief.GenerationRecipe);
+        Assert.False(brief.CanGenerate);
     }
 }

@@ -14,7 +14,7 @@ Doctrine: reproduce the craftsmanship; replace the creative content. Originality
 
 The Creative Academy stores the supplied patisserie curriculum and judges the stored copy. Maison Fleur Pâtisserie is the quality teacher. It is not cloned. L'Amour Sucré stays REVISE because the headline repeats "escape". Solara stays REVISE because the stored labels include "curdj" and "mjer". Belmonté stays WITHHELD until an operator records the visual benchmark, then PASS. Campaign ready is refused. A production model was not called.
 
-The updated full regression passed: 472 tests, 0 failed, 0 skipped. The first academy proof had 464 passing tests. The amendment adds eight production-purpose, anchor, customization, casting, and dual-gate facts.
+The client-intake full regression passed: 477 tests, 0 failed, 0 skipped. The preceding quality-anchor amendment had 472 passing tests. Five additional facts cover fitness and automotive routing, minimum intake, unsupported niches, recipe output, and model refusal.
 
 The updated amendment adds:
 
@@ -34,6 +34,21 @@ The updated amendment adds:
 | A2. Master anchor and customization | VidaCare is Master 01/50. FreshMart is supplied context. The Panama pharmacy brief changes identity without changing the quality floor. | `docs/architecture/evidence/academy/phase-a2-anchor-and-customization.pdf` | `academy_phase_a2_master_examples_and_customization.mp4` |
 | A3. Geographic authenticity | A specific market, research-before-casting, advertiser assets, diversity, and anti-stereotype rules are displayed. | `docs/architecture/evidence/academy/phase-a3-geographic-authenticity.pdf` | `academy_phase_a3_geographic_authenticity.mp4` |
 | A4. Dual gate | Quality drift returns REVISE. All four gates passed returns ELIGIBLE_TO_CONTINUE with campaign ready false and NOT_SENT. | `docs/architecture/evidence/academy/phase-a4-dual-gate.pdf` | `academy_phase_a4_dual_gate.mp4` |
+
+## Client brand-and-niche workflow
+
+The client can now enter a brand or store name and select a niche. The Academy routes fitness to `nova-fit-reference`, automotive service to `taller-ruta-reference`, pharmacy to `vidacare-master-01`, and patisserie to `maison-fleur`. It prepares a new wide 16:9 production recipe using the client identity and optional Brand DNA.
+
+The newly supplied Nova Fit and Taller Ruta images are stored as niche quality references, not creative templates. Their fictional names, people, offers, environments, copy, and compositions must be replaced.
+
+FreshMart is still a supplied example, not an approved grocery anchor. Grocery and dental return `NICHE_ANCHOR_REQUIRED` rather than borrowing an unrelated reference.
+
+| Phase | Result | Report | Recording |
+| --- | --- | --- | --- |
+| B1. Niche router | Fitness and automotive service select their own supplied quality references. Unsupported niches stop. | `docs/architecture/evidence/academy/phase-b1-niche-router.pdf` | `academy_phase_b1_niche_router.mp4` |
+| B2. Client intake | Brand/store name plus niche prepares a recipe. Optional fields preserve colors, font, market, language, offer, people, and restrictions. | `docs/architecture/evidence/academy/phase-b2-client-intake.pdf` | `academy_phase_b2_client_intake.mp4` |
+| B3. Generation boundary | Recipe readiness is not image generation. The Generate control visibly fails closed without a configured production model. | `docs/architecture/evidence/academy/phase-b3-generation-boundary.pdf` | `academy_phase_b3_generation_boundary.mp4` |
+| B4. QA and regression | The four instructor gates remain mandatory. Academy and full regressions pass. Nothing sends. | `docs/architecture/evidence/academy/phase-b4-qa-and-regression.pdf` | `academy_phase_b4_qa_and_regression.mp4` |
 
 ## Phases
 

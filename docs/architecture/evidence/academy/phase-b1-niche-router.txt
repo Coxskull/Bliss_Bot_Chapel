@@ -1,0 +1,34 @@
+ALPHA CREATIVE ACADEMY
+Client workflow phase B1 of B4 - Niche quality-anchor router
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Client objective
+
+The client enters a brand or store name and chooses the business niche. The Academy selects the approved quality teacher for that niche. It does not use one universal template.
+
+Approved routes
+
+Pharmacy / drugstore -> vidacare-master-01
+Fitness / gym -> nova-fit-reference
+Automotive service -> taller-ruta-reference
+Patisserie / bakery -> maison-fleur
+
+New supplied references
+
+Nova Fit teaches the fitness production class: energetic hero dominance, realistic people and anatomy, rich black/yellow/red contrast, dimensional gym lighting, crisp offer hierarchy, legible benefits, CTA clarity, and QR-safe placement.
+
+Taller Ruta teaches the automotive-service production class: realistic technicians, tools, parts and vehicle materials, deep red/black/white contrast, directional workshop lighting, service hierarchy, legible benefits, CTA clarity, and QR-safe placement.
+
+Creative replacement rule
+
+The client's result must replace the fictional name, logo, people, offer, products, environment, copy, photography, and composition. The reference teaches how well the work is produced, not what the client must look like.
+
+Unsupported niches
+
+FreshMart remains owner-supplied context and is not silently promoted to the grocery anchor. Grocery, dental, and any other niche without an approved teacher return NICHE_ANCHOR_REQUIRED. The system does not borrow an unrelated reference.
+
+Boundaries
+
+No advertisement was generated. Campaign ready is false. Hosted acceptance is not claimed. Delivery remains NOT_SENT.

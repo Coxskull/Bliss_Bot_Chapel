@@ -77,6 +77,7 @@ public sealed record ProductionBrief(
     string Headline,
     string Cta,
     string Requirements,
+    string GenerationRecipe,
     CastingDecision Casting,
     IReadOnlyList<string> QualitySignature,
     IReadOnlyList<string> ReplaceCreative,
@@ -114,6 +115,8 @@ public static class CreativeAcademy
     public const string ProductionSpecReady = "PRODUCTION_SPEC_READY";
     public const string PatisserieTeacher = "maison-fleur";
     public const string PharmacyTeacher = "vidacare-master-01";
+    public const string FitnessTeacher = "nova-fit-reference";
+    public const string AutomotiveTeacher = "taller-ruta-reference";
 
     public const string Notice =
         "The Academy is designed to produce original advertisements at the reference quality class. Reproduce the craftsmanship. Replace the creative content. Advertiser Brand DNA remains authoritative. Both customization compliance and quality parity must pass. A vision model is not configured. A production model was not called. Campaign ready is refused. Green does not send. Delivery remains NOT_SENT.";
@@ -147,6 +150,15 @@ public static class CreativeAcademy
         "environment and props",
         "composition and campaign expression"
     ];
+
+    public static IReadOnlyDictionary<string, string> NicheAnchors { get; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["pharmacy"] = PharmacyTeacher,
+            ["fitness"] = FitnessTeacher,
+            ["automotive"] = AutomotiveTeacher,
+            ["patisserie"] = PatisserieTeacher
+        };
 
     private static readonly string[] PreserveList =
     [
@@ -248,7 +260,25 @@ public static class CreativeAcademy
             "Good food. Brighter lives.",
             "Owner-supplied supermarket example. It demonstrates the kind of commercially powerful advertisement the Academy is intended to produce. It is preserved as supplied context and is not promoted to a master prototype without an explicit designation.",
             "FRESHMART",
-            "/operations/academy/freshmart-supplied.png")
+            "/operations/academy/freshmart-supplied.png"),
+        new(
+            FitnessTeacher,
+            Reference,
+            "fitness",
+            "Nova Fit Gym & Wellness Club",
+            "Tu mejor versión comienza aquí.",
+            "Owner-supplied fitness quality reference. Protect energetic hero dominance, realistic people and anatomy, rich black/yellow/red contrast, dimensional gym lighting, crisp offer hierarchy, legible service benefits, CTA clarity, QR-safe placement, and premium commercial impact. Replace the fictional brand, people, gym, offer, copy, photography, and composition for the client.",
+            "NOVA,FIT",
+            "/operations/academy/nova-fit-reference.png"),
+        new(
+            AutomotiveTeacher,
+            Reference,
+            "automotive",
+            "Taller Ruta Auto Service",
+            "Tu auto en buenas manos.",
+            "Owner-supplied automotive-service quality reference. Protect photorealistic technicians, tools, parts and vehicle materials, deep red/black/white contrast, directional workshop lighting, strong service hierarchy, legible benefits, CTA clarity, QR-safe placement, and premium commercial impact. Replace the fictional brand, people, workshop, services, copy, photography, and composition for the client.",
+            "TALLER,RUTA",
+            "/operations/academy/taller-ruta-reference.png")
     ];
 
     public static IReadOnlyList<CurriculumLesson> AllLessons { get; } =
@@ -314,7 +344,13 @@ public static class CreativeAcademy
         var normalized = Fold(text);
         if (normalized.Contains("MAISON FLEUR", StringComparison.Ordinal)
             || normalized.Contains("A SWEETER JOURNEY", StringComparison.Ordinal)
-            || normalized.Contains("FRENCH ARTISTRY", StringComparison.Ordinal))
+            || normalized.Contains("FRENCH ARTISTRY", StringComparison.Ordinal)
+            || normalized.Contains("VIDACARE", StringComparison.Ordinal)
+            || normalized.Contains("CARE FOR A BRIGHTER YOU", StringComparison.Ordinal)
+            || normalized.Contains("NOVA FIT", StringComparison.Ordinal)
+            || normalized.Contains("TU MEJOR VERSION COMIENZA AQUI", StringComparison.Ordinal)
+            || normalized.Contains("TALLER RUTA", StringComparison.Ordinal)
+            || normalized.Contains("TU AUTO EN BUENAS MANOS", StringComparison.Ordinal))
         {
             defects.Add("Prototype identity was copied.");
             repair.Add("Invent a different brand. The prototype is the teacher, not the advertiser.");
@@ -440,6 +476,8 @@ public static class CreativeAcademy
         var folded = Fold(name);
         if (folded is "MAISON FLEUR" or "MAISONFLEUR"
             or "VIDACARE" or "VIDACARE PHARMACY" or "VIDACAREPHARMACY"
+            or "NOVA FIT" or "NOVAFIT"
+            or "TALLER RUTA" or "TALLERRUTA"
             || Fold(action).Contains("A SWEETER JOURNEY", StringComparison.Ordinal)
             || Fold(action).Contains("CARE FOR A BRIGHTER YOU", StringComparison.Ordinal)
             || Fold(tone).Contains("FRENCH ARTISTRY", StringComparison.Ordinal))
@@ -447,12 +485,7 @@ public static class CreativeAcademy
             throw new InvalidOperationException("The prototype identity is the teacher. A new advertiser was not cloned.");
         }
 
-        var teacherKey = lane switch
-        {
-            "patisserie" => PatisserieTeacher,
-            "pharmacy" => PharmacyTeacher,
-            _ => string.Empty
-        };
+        var teacherKey = TeacherFor(lane);
         var teacher = teacherKey.Length > 0;
         var notice = teacher
             ? lane + " DNA selects " + teacherKey + " as the quality teacher. The advertiser's approved Brand DNA remains authoritative. The new creative identity stays distinct. A model was not called. Delivery remains NOT_SENT."
@@ -499,31 +532,39 @@ public static class CreativeAcademy
         }
 
         var name = Require("brand", brand);
-        var color = Require("palette", palette);
-        var font = Require("font family", fontFamily);
-        var title = Require("headline", headline);
-        var action = Require("call to action", cta);
-        var locale = Require("market", market);
-        var copyLanguage = Require("language", language);
-        var limits = Require("requirements", requirements);
+        var color = Default(palette, "Create an original niche-appropriate palette unless advertiser colors are supplied.");
+        var font = Default(fontFamily, "Choose a professional niche-appropriate font unless an approved font is supplied.");
+        var title = Default(headline, "Create an original niche-appropriate headline.");
+        var action = Default(cta, "Create one clear niche-appropriate call to action.");
+        var locale = Default(market, "Unspecified market");
+        var copyLanguage = Default(language, "Language to be confirmed");
+        var limits = Default(requirements, "No additional advertiser restrictions were supplied.");
         var folded = Fold(name);
-        if (folded is "VIDACARE" or "VIDACARE PHARMACY" or "VIDACAREPHARMACY")
+        if (folded is "VIDACARE" or "VIDACARE PHARMACY" or "VIDACAREPHARMACY"
+            or "NOVA FIT" or "NOVAFIT"
+            or "TALLER RUTA" or "TALLERRUTA")
         {
             throw new InvalidOperationException("The master prototype is the quality teacher. Its fictional identity was not reused.");
         }
 
-        var teacherKey = lane switch
-        {
-            "patisserie" => PatisserieTeacher,
-            "pharmacy" => PharmacyTeacher,
-            _ => string.Empty
-        };
+        var teacherKey = TeacherFor(lane);
         var casting = PlanCasting(locale, marketResearchComplete, approvedPeopleProvided);
+        var anchorDirection = teacherKey.Length == 0
+            ? "No approved niche anchor is on file. Stop before image generation."
+            : "Use " + teacherKey + " only as the quality anchor.";
+        var recipe =
+            "Create a completely original wide 16:9 commercial advertisement for " + name +
+            " in the " + lane + " niche. " + anchorDirection +
+            " Do not copy the reference brand, people, photograph, environment, products, headline, layout, or distinctive creative content. " +
+            "Brand direction: " + color + " Typography: " + font + " Headline direction: " + title +
+            " CTA direction: " + action + " Market: " + casting.Market + " Language: " + copyLanguage +
+            " Requirements: " + limits +
+            " Match or exceed the anchor in color power, tonal contrast, lighting craftsmanship, dimensional depth, material realism, texture fidelity, hero dominance, hierarchy, screen pop, typography, commercial polish, and Premium Dominant Presence. Important text must be correctly spelled. Preserve safe placement for the CTA and any QR code.";
         var notice = teacherKey.Length == 0
             ? "The production specification is recorded, but no quality anchor is on file for this family and no production model is configured. No advertisement was generated. Delivery remains NOT_SENT."
             : "The production specification is ready. The anchor fixes the quality floor, not the creative template. The advertiser's brand, palette, font, copy, photography, people, environment, and composition remain customizable. A production model is not configured, so no advertisement was generated. Delivery remains NOT_SENT.";
         return new ProductionBrief(
-            ProductionSpecReady,
+            teacherKey.Length == 0 ? "NICHE_ANCHOR_REQUIRED" : ProductionSpecReady,
             name,
             lane,
             teacherKey,
@@ -534,6 +575,7 @@ public static class CreativeAcademy
             title,
             action,
             limits,
+            recipe,
             casting,
             ReferenceParityGate,
             ReplaceCreativeContent,
@@ -641,6 +683,9 @@ public static class CreativeAcademy
         repair.Add(repairInstruction);
     }
 
+    private static string TeacherFor(string family) =>
+        NicheAnchors.TryGetValue(family, out var teacher) ? teacher : string.Empty;
+
     private static int Score(QualityWeights weights, IReadOnlyList<string> defects, bool? visualBenchmarkMet)
     {
         var score = 100;
@@ -741,5 +786,11 @@ public static class CreativeAcademy
         }
 
         return text;
+    }
+
+    private static string Default(string? value, string fallback)
+    {
+        var text = (value ?? string.Empty).Trim();
+        return text.Length == 0 ? fallback : text;
     }
 }

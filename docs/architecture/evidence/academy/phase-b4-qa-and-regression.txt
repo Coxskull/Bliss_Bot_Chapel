@@ -1,0 +1,45 @@
+ALPHA CREATIVE ACADEMY
+Client workflow phase B4 of B4 - QA and regression
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Instructor sequence after future generation
+
+1. Verify advertiser Brand DNA and customization.
+2. Compare the candidate directly with its niche quality anchor.
+3. Verify originality of the creative content.
+4. Verify geographic authenticity when people are shown.
+5. Check spelling, grammar, duplicate words, malformed labels, CTA, dimensions, anatomy, hands, material realism, artifacts, creator safety, and QR-safe placement.
+6. Return PASS, REVISE with targeted repair, or FAIL.
+7. Only a fully passed candidate becomes eligible to continue through advertiser review.
+
+Independent gate behavior
+
+Customization pass plus quality fail equals REVISE.
+Quality pass plus customization fail equals REVISE.
+Originality fail equals REVISE or FAIL according to the defect.
+Geographic authenticity fail equals REVISE.
+An unrecorded gate equals WITHHELD.
+All gates passed equals ELIGIBLE_TO_CONTINUE.
+
+Eligibility is not campaign ready and does not send.
+
+Automated proof
+
+Creative Academy tests: 25 passed, 0 failed, 0 skipped.
+Full Bliss.Tests suite: 477 passed, 0 failed, 0 skipped.
+
+Covered facts include:
+
+fitness routes to nova-fit-reference,
+automotive service routes to taller-ruta-reference,
+brand plus niche are the minimum intake,
+missing market requires research,
+unsupported niche requires anchor approval,
+the recipe prohibits reference copying,
+the Generate control refuses an unconfigured model,
+campaign ready remains false,
+and delivery remains NOT_SENT.
+
+Hosted acceptance is not claimed.

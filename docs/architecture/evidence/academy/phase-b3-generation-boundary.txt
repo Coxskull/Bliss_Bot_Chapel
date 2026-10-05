@@ -1,0 +1,40 @@
+ALPHA CREATIVE ACADEMY
+Client workflow phase B3 of B4 - Recipe readiness versus image generation
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Critical distinction
+
+PRODUCTION_SPEC_READY means the niche anchor, client identity, Brand DNA, originality rules, quality signature, geographic direction, format, and QA requirements have been assembled into a production recipe.
+
+It does not mean an advertisement image exists.
+
+Generate advertisement control
+
+The client interface includes a Generate advertisement control so the intended workflow is explicit. In this environment, the production image model is not configured.
+
+The control therefore fails closed with:
+
+GENERATION BLOCKED
+A production model is not configured. No advertisement was generated.
+Campaign ready No.
+Model calls 0.
+Delivery NOT_SENT.
+
+Why the refusal is required
+
+The system must not:
+
+claim that a recipe is an ad,
+show an unrelated placeholder as client work,
+call an unauthorized provider,
+invent credentials,
+purchase a model,
+or mark a nonexistent image approved.
+
+Future completion condition
+
+An authorized production image model must accept the reference image plus the production recipe, return an original candidate, preserve important text correctly, and send the candidate through customization, quality parity, originality, geographic authenticity, critical-defect, and advertiser-review gates.
+
+Hosted acceptance remains unclaimed.

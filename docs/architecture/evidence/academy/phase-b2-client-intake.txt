@@ -1,0 +1,45 @@
+ALPHA CREATIVE ACADEMY
+Client workflow phase B2 of B4 - Brand/store and niche intake
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Required client inputs
+
+Brand or store name
+Niche
+
+Optional Brand DNA
+
+Market
+Language
+Approved colors
+Approved font
+Headline
+Call to action
+Products and services
+Offer
+Approved people or photography
+Restrictions
+QR destination
+Inventory format
+
+Behavior
+
+The Academy selects the niche quality anchor and prepares a new wide 16:9 production recipe. Optional client values remain authoritative. Missing optional values are stated as art-direction work; they are not represented as client-approved facts.
+
+Example
+
+Brand: Impulso Fitness
+Niche: Fitness / Gym
+Anchor: nova-fit-reference
+
+The recipe orders a completely original advertisement for Impulso Fitness. It prohibits copying Nova Fit's brand, people, photograph, environment, products, headline, layout, or distinctive creative content. It requires reference parity in color, contrast, lighting, depth, realism, texture, hierarchy, typography, screen pop, commercial polish, and Premium Dominant Presence.
+
+Geographic rule
+
+If the market is missing or research is incomplete, casting status is MARKET_RESEARCH_REQUIRED. If advertiser-approved people are supplied, those assets take precedence.
+
+Result
+
+The recipe status is PRODUCTION_SPEC_READY when the selected niche has an approved anchor. Can generate remains false until a production image model is configured. Delivery remains NOT_SENT.

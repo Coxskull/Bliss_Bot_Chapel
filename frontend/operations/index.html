@@ -17,7 +17,7 @@
   <script src="/operations/measure.js?v=measure-1" defer></script>
   <script src="/operations/handoff.js?v=handoff-1" defer></script>
   <script src="/operations/creative.js?v=creative-1" defer></script>
-  <script src="/operations/academy.js?v=academy-3" defer></script>
+  <script src="/operations/academy.js?v=academy-4" defer></script>
   <script src="/operations/learning.js?v=learning-1" defer></script>
   <script src="/operations/rotation.js?v=rotation-1" defer></script>
   <script src="/operations/acceptance.js?v=acceptance-1" defer></script>
@@ -813,7 +813,6 @@
             <p>Originality without quality parity is failure. Quality parity without originality is failure. The brand, product, people, environment, photography, copy, color, typography, and composition may change. The standard of excellence does not go down.</p>
             <div class="form-actions">
               <button class="primary-button" type="button" id="academy-store">Store the updated curriculum</button>
-              <button class="primary-button" type="button" id="academy-production">Prepare customized pharmacy brief</button>
               <button class="secondary-button" type="button" id="academy-drift">Test quality drift</button>
               <button class="secondary-button" type="button" id="academy-both-pass">Record both gates passed</button>
               <button class="secondary-button" type="button" id="academy-dna">Select distinct patisserie DNA</button>
@@ -830,7 +829,25 @@
             <div id="academy-prototypes"></div>
           </section>
           <section class="panel">
-            <div class="panel-header"><div><p class="eyebrow">PRODUCTION SPECIFICATION</p><h3>Customize the identity without quality drift</h3></div></div>
+            <div class="panel-header"><div><p class="eyebrow">CLIENT AD INTAKE</p><h3>Enter the store name and niche</h3></div></div>
+            <p>The niche selects its approved quality anchor. The store name and optional Brand DNA create a new production recipe. The reference determines how well the ad is produced; it does not determine the client's identity.</p>
+            <div class="form-grid compact">
+              <label><span>Brand or store name *</span><input id="academy-client-brand" value="Impulso Fitness" maxlength="120"></label>
+              <label><span>Niche *</span><select id="academy-client-niche"><option value="fitness">Fitness / Gym</option><option value="automotive">Automotive Service</option><option value="pharmacy">Pharmacy / Drugstore</option><option value="patisserie">Patisserie / Bakery</option><option value="grocery">Grocery / Supermarket — anchor approval required</option><option value="dental">Dental — no anchor on file</option></select></label>
+              <label><span>Market</span><select id="academy-client-market"><option value="Panama">Panama</option><option value="Philippines">Philippines</option><option value="Malaysia">Malaysia</option><option value="Indonesia">Indonesia</option><option value="Colombia">Colombia</option><option value="Dominican Republic">Dominican Republic</option><option value="">Not supplied</option></select></label>
+              <label><span>Language</span><select id="academy-client-language"><option value="Spanish">Spanish</option><option value="English">English</option><option value="">To be confirmed</option></select></label>
+              <label><span>Brand colors</span><input id="academy-client-palette" placeholder="Optional — e.g. burgundy and gold"></label>
+              <label><span>Approved font</span><input id="academy-client-font" placeholder="Optional — e.g. Montserrat"></label>
+              <label><span>Headline</span><input id="academy-client-headline" placeholder="Optional — Academy creates an original direction"></label>
+              <label><span>Call to action</span><input id="academy-client-cta" placeholder="Optional — e.g. Join today"></label>
+              <label class="span-two"><span>Products, offer, requirements, and restrictions</span><textarea id="academy-client-requirements" placeholder="Optional — products, offer, approved people, restrictions, QR destination, inventory format"></textarea></label>
+              <label class="checkbox-label"><input type="checkbox" id="academy-client-researched" checked><span>Market research is complete</span></label>
+              <label class="checkbox-label"><input type="checkbox" id="academy-client-people"><span>Advertiser-approved people or photography supplied</span></label>
+            </div>
+            <div class="form-actions">
+              <button class="primary-button" type="button" id="academy-production">Prepare original ad recipe</button>
+              <button class="secondary-button" type="button" id="academy-generate">Generate advertisement</button>
+            </div>
             <div id="academy-production-result"><p>No production brief prepared. A production model is not configured.</p></div>
           </section>
           <section class="panel">

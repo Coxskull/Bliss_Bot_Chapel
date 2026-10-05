@@ -156,6 +156,32 @@ Local authenticity does not lower requirements for skin, hair, eyes, anatomy, ha
 
 All four gates passed returns `ELIGIBLE_TO_CONTINUE`. It does not set campaign ready, place an advertisement, or send anything.
 
+## Client brand-and-niche intake
+
+The client-facing entry point requires:
+
+1. Brand or store name
+2. Niche
+
+Optional Brand DNA improves the result: market, language, approved colors, approved font, headline, CTA, products, offer, people or photography, restrictions, QR destination, and inventory format.
+
+The niche router currently has approved quality anchors for:
+
+| Niche | Quality anchor |
+| --- | --- |
+| Pharmacy / drugstore | `vidacare-master-01` |
+| Fitness / gym | `nova-fit-reference` |
+| Automotive service | `taller-ruta-reference` |
+| Patisserie / bakery | `maison-fleur` |
+
+Nova Fit and Taller Ruta are owner-supplied niche quality references. Their fictional names, people, offers, environments, copy, imagery, and compositions must be replaced for the client.
+
+FreshMart remains supplied context rather than an approved grocery anchor. Grocery, dental, and other unsupported niches return `NICHE_ANCHOR_REQUIRED`. The system does not silently use an unrelated teacher.
+
+After intake, the Academy prepares a wide 16:9 production recipe that names the selected anchor, the client identity, optional Brand DNA, originality requirements, parity standard, typography QA, CTA-safe placement, and QR-safe placement. Status `PRODUCTION_SPEC_READY` means the recipe is ready. It does not mean an image was generated.
+
+The `Generate advertisement` control fails closed while no production image model is configured. It returns `GENERATION BLOCKED`, model calls 0, campaign ready false, and delivery `NOT_SENT`.
+
 ## Phases
 
 | Phase | Work | Done when |
@@ -174,6 +200,15 @@ All four gates passed returns `ELIGIBLE_TO_CONTINUE`. It does not set campaign r
 | A3 | Apply the geographic-authenticity standard. | The specific-market rule, research-required path, approved-asset path, PDF, and recording are visible. |
 | A4 | Enforce independent customization, quality, originality, and geography gates. | Quality drift returns REVISE; all four passed returns ELIGIBLE_TO_CONTINUE while campaign ready remains false and delivery remains NOT_SENT. |
 
+## Client workflow phases
+
+| Phase | Work | Done when |
+| --- | --- | --- |
+| B1 | Route the selected niche to its approved quality anchor. | Fitness selects Nova Fit; automotive service selects Taller Ruta; unsupported niches stop for anchor approval. |
+| B2 | Accept the client brand/store name and optional Brand DNA. | The Operations Console form prepares an original recipe from the entered values. |
+| B3 | Separate recipe readiness from image generation. | `PRODUCTION_SPEC_READY` is visible; `Generate advertisement` fails closed because no production model is configured. |
+| B4 | Run instructor and regression gates. | Quality parity and customization remain required, 25 academy tests pass, the full regression passes, and nothing sends. |
+
 ## A. This run completes
 
 - The method, the cake principle, and the instructor rules are written into this contract.
@@ -185,6 +220,10 @@ All four gates passed returns `ELIGIBLE_TO_CONTINUE`. It does not set campaign r
 - The brief fixes the quality signature and replaces the creative content.
 - Generic “Asian” or “Latino” casting is refused. A specific market and research posture are required.
 - Customization, quality parity, originality, and geographic authenticity are independent gates.
+- Fitness DNA selects `nova-fit-reference`; automotive-service DNA selects `taller-ruta-reference`.
+- The client can enter only a brand/store name and niche. Missing optional Brand DNA becomes explicit art-direction work rather than invented client facts.
+- Each production brief contains a concrete generation recipe.
+- Unsupported niches stop at `NICHE_ANCHOR_REQUIRED`.
 - A duplicated word and malformed text return REVISE with a preserve list and a repair list.
 - Clean text stays WITHHELD until an operator records the visual benchmark.
 - A production-model flag and campaign ready are refused.
@@ -204,6 +243,8 @@ No price is stated. No model was purchased.
 - It will not clone Maison Fleur into another advertiser.
 - It will not clone VidaCare's blue/green branding, people, store, copy, or composition into another pharmacy.
 - It will not describe a prepared production brief as a generated advertisement.
+- It will not route an unsupported niche to an unrelated reference.
+- It will not claim the client-facing Generate control works before an authorized production image model is configured and tested.
 - It will not accept customization when quality parity failed, or quality parity when customization failed.
 - It will not use one generic “Asian” or “Latino” model across countries.
 - It will not treat a strong picture with a duplicated word as approved.

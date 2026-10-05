@@ -145,6 +145,7 @@ public sealed class CreativeAcademyController(CreativeAcademyService academy) : 
         purpose = "Produce original advertisements at or above the approved reference quality class.",
         doctrine = "Reproduce the craftsmanship. Replace the creative content. Originality without quality parity fails. Quality parity without originality fails.",
         referenceParityGate = CreativeAcademy.ReferenceParityGate,
+        nicheAnchors = CreativeAcademy.NicheAnchors,
         masterPrototype = new
         {
             lessonKey = CreativeAcademy.PharmacyTeacher,

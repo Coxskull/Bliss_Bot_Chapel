@@ -26,6 +26,8 @@ function productionBriefCard(item) {
     <p>Headline: ${escapeHtml(item.headline)} · CTA: ${escapeHtml(item.cta)}</p>
     <p>Requirements: ${escapeHtml(item.requirements)}</p>
     <p>Casting: ${escapeHtml(item.casting.status)} — ${escapeHtml(item.casting.direction)}</p>
+    <h4>Production recipe</h4>
+    <p>${escapeHtml(item.generationRecipe)}</p>
     <p>${escapeHtml(item.notice)}</p>
     <p>Can generate ${item.canGenerate ? "Yes" : "No"}. Model calls ${item.modelCalls}. Campaign ready ${item.campaignReady ? "Yes" : "No"}. Delivery ${escapeHtml(item.delivery)}.</p>
     <h4>Replace creative content</h4><ul>${lines(item.replaceCreative)}</ul>
@@ -73,25 +75,33 @@ async function postAcademy(path, body) {
   await loadAcademy();
 }
 
-async function prepareProductionBrief() {
-  const result = await api("/api/operations/academy/production-brief", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      family: "pharmacy",
-      brandName: "Farmacia Nueva Salud",
-      palette: "Burgundy and gold",
-      fontFamily: "Montserrat",
-      headline: "Tu salud, más cerca",
-      cta: "Recoge tu receta",
-      market: "Panama",
-      language: "Spanish",
-      requirements: "Feature prescription pickup. Do not show families. Use locally plausible casting.",
-      marketResearchComplete: true
-    })
-  });
-  $("#academy-production-result").innerHTML = productionBriefCard(result);
-  $("#academy-result").textContent = result.notice;
+async function prepareProductionBrief(callModel = false) {
+  const value = id => document.getElementById(id)?.value || "";
+  try {
+    const result = await api("/api/operations/academy/production-brief", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        family: value("academy-client-niche"),
+        brandName: value("academy-client-brand"),
+        palette: value("academy-client-palette"),
+        fontFamily: value("academy-client-font"),
+        headline: value("academy-client-headline"),
+        cta: value("academy-client-cta"),
+        market: value("academy-client-market"),
+        language: value("academy-client-language"),
+        requirements: value("academy-client-requirements"),
+        marketResearchComplete: document.getElementById("academy-client-researched")?.checked || false,
+        approvedPeopleProvided: document.getElementById("academy-client-people")?.checked || false,
+        callModel
+      })
+    });
+    $("#academy-production-result").innerHTML = productionBriefCard(result);
+    $("#academy-result").textContent = result.notice;
+  } catch (error) {
+    $("#academy-production-result").innerHTML = `<article><p class="eyebrow">GENERATION BLOCKED</p><p>${escapeHtml(error.message)}</p><p>Campaign ready No. Model calls 0. Delivery NOT_SENT.</p></article>`;
+    $("#academy-result").textContent = error.message;
+  }
 }
 
 async function evaluateParity(qualityParity) {
@@ -127,7 +137,8 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   bind("academy-store", () => postAcademy("/api/operations/academy/curriculum", { curriculumKey: "creative-academy-2" }));
-  bind("academy-production", prepareProductionBrief);
+  bind("academy-production", () => prepareProductionBrief(false));
+  bind("academy-generate", () => prepareProductionBrief(true));
   bind("academy-drift", () => evaluateParity(false));
   bind("academy-both-pass", () => evaluateParity(true));
   bind("academy-dna", () => postAcademy("/api/operations/academy/dna", {
