@@ -2,7 +2,7 @@
 
 **Status:** local architecture proof. This is not hosted acceptance and not a send.
 **Delivery:** `NOT_SENT`. Green does not mean send. Campaign ready is refused.
-**Model calls:** 0. A vision model is not configured. A production model is not called.
+**Live model calls in this environment:** 0. A vision model is not configured. The ad creator is installed, but an image-provider endpoint and secret-store token are not configured in this environment.
 
 This contract preserves the Alpha Creative Academy method for the future Fishing Fleet and Wedding Planner creative infrastructure. It does not authorize outreach, a new paid model, or a claim that hosted acceptance is complete.
 
@@ -10,7 +10,7 @@ This contract preserves the Alpha Creative Academy method for the future Fishing
 
 Produce original advertisements that compete with or exceed an approved reference's perceived commercial production quality. Teach production work from an approved visual prototype and a written recipe. Creative DNA customizes the advertiser. The instructor judges the result. Only approved work moves forward.
 
-The purpose of the Academy is production. This local proof prepares the production specification, anchor selection, casting direction, and QA gates. It does not pretend that an advertisement was generated when no production model is configured.
+The purpose of the Academy is production. It prepares the production specification, anchor selection, casting direction, and QA gates. The guarded creator can call one explicitly configured image-provider endpoint. It does not pretend that an advertisement was generated when provider configuration is absent.
 
 The objective is not for 100 advertisements to look alike. The objective is for 100 advertisers to look like 100 professionally designed brands at one quality floor.
 
@@ -193,7 +193,17 @@ Bakery / Patisserie is niche 16 and stays not created. The earlier Maison Fleur 
 
 After intake, the Academy prepares a wide 16:9 production recipe that names the selected anchor, the client identity, optional Brand DNA, originality requirements, parity standard, typography QA, CTA-safe placement, and QR-safe placement. Status `PRODUCTION_SPEC_READY` means the recipe is ready. It does not mean an image was generated.
 
-The `Generate advertisement` control fails closed while no production image model is configured. It returns `GENERATION BLOCKED`, model calls 0, campaign ready false, and delivery `NOT_SENT`.
+The `Generate advertisement` control calls `POST /api/operations/academy/generate`. The creator:
+
+1. Requires an approved local niche teacher and a valid idempotency key.
+2. Sends the production recipe to one configuration-owned HTTPS endpoint with a secret-store bearer token.
+3. Accepts base64 PNG, JPEG, or WebP only, with a configurable byte ceiling.
+4. Chooses the output filename on the server and stores the request key, recipe SHA-256, provider request identifier, model-call count, and immutable safety posture.
+5. Returns `GENERATED_PENDING_REVIEW`, model calls 1, campaign ready false, and `NOT_SENT`.
+
+The generated image is a draft, not an approval. The human visual benchmark and the customization, quality-parity, originality, and geographic-authenticity gates remain unrecorded. An approved visual does not send.
+
+When the endpoint or token is absent, the console reports `PROVIDER_CONFIGURATION_REQUIRED`, disables Generate, and makes 0 model calls. Redirects, unsupported image types, oversized content, provider errors, already-created external niches, and not-created niches fail closed.
 
 ## Phases
 
@@ -222,6 +232,7 @@ The `Generate advertisement` control fails closed while no production image mode
 | B3 | Separate recipe readiness from image generation. | `PRODUCTION_SPEC_READY` is visible; `Generate advertisement` fails closed because no production model is configured. |
 | B4 | Run instructor and regression gates. | Quality parity and customization remain required, the academy filter passes, the full regression passes, and nothing sends. |
 | C | Register the 50-niche roster and store niche 10. | Niches 1-9 are not repeated. Brava Moto is the motorcycle reference. Niches 11-50 stay not created. The next niche is Auto-Parts Store. |
+| D | Install the guarded ad creator. | A configured provider creates one idempotent draft and stores it as GENERATED_PENDING_REVIEW. Missing provider configuration, unapproved niches, and unsafe output fail closed. Campaign ready stays false and delivery stays NOT_SENT. |
 
 ## A. This run completes
 
@@ -241,7 +252,9 @@ The `Generate advertisement` control fails closed while no production image mode
 - Niches 11-50 return `NICHE_NOT_CREATED`. Bakery niche 16 is one of them.
 - A duplicated word and malformed text return REVISE with a preserve list and a repair list.
 - Clean text stays WITHHELD until an operator records the visual benchmark.
-- A production-model flag and campaign ready are refused.
+- The provider adapter, generated-draft persistence, static image delivery, and Operations Console creator status are installed.
+- This environment has no provider endpoint or token, so live generation remains blocked without inventing a credential or purchase.
+- Campaign ready remains refused for generated drafts.
 - Delivery remains `NOT_SENT`. Model calls remain 0.
 
 ## B. Owner input required
@@ -249,7 +262,7 @@ The `Generate advertisement` control fails closed while no production image mode
 No price is stated. No model was purchased.
 
 1. A vision model, if Alpha later wants the instructor to read pixels instead of a human visual record.
-2. A production model, if Alpha later wants the system to generate advertisements. This run does not call one.
+2. An authorized image-provider HTTPS endpoint and API token supplied through the platform secret store. This environment has neither, so live model calls remain 0.
 3. Local images for the already-created external niches: shopping mall, new-car dealership, used-car dealership, restaurant, and dental. This run did not invent substitutes.
 4. Quality anchors for niches 11-50. The next open niche is Auto-Parts Store. None of those images was invented.
 5. A human visual benchmark for Brava Moto. The reference is stored. It is not scored PASS.
@@ -261,7 +274,8 @@ No price is stated. No model was purchased.
 - It will not clone VidaCare's blue/green branding, people, store, copy, or composition into another pharmacy.
 - It will not describe a prepared production brief as a generated advertisement.
 - It will not route an unsupported niche to an unrelated reference.
-- It will not claim the client-facing Generate control works before an authorized production image model is configured and tested.
+- It will not claim a live advertisement was generated before an authorized provider is configured and tested.
+- It will not treat `GENERATED_PENDING_REVIEW` as PASS, campaign-ready, or sent.
 - It will not accept customization when quality parity failed, or quality parity when customization failed.
 - It will not use one generic “Asian” or “Latino” model across countries.
 - It will not treat a strong picture with a duplicated word as approved.

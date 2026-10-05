@@ -1,6 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Bliss.Api.Operations;
+using Bliss.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Bliss.Tests.Api;
 
@@ -180,6 +187,104 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal("NOT_SENT", refusal.GetProperty("delivery").GetString());
     }
 
+    [Fact]
+    public async Task Installed_creator_reports_the_missing_provider_without_calling_a_model()
+    {
+        await using var factory = new BlissApiFactory();
+        var client = factory.CreateClient();
+        var board = await client.GetFromJsonAsync<JsonElement>("/api/operations/academy");
+        var creator = board.GetProperty("adCreator");
+
+        Assert.True(creator.GetProperty("installed").GetBoolean());
+        Assert.False(creator.GetProperty("configured").GetBoolean());
+        Assert.Equal("PROVIDER_CONFIGURATION_REQUIRED", creator.GetProperty("status").GetString());
+
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/academy/generate",
+            new
+            {
+                requestKey = "unconfigured-generation-1",
+                family = "motorcycle",
+                brandName = "Ruta Libre Motos",
+                market = "Panama",
+                language = "Spanish",
+                marketResearchComplete = true
+            });
+        var refusal = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("provider is not configured", refusal.GetProperty("error").GetString());
+        Assert.Equal(0, refusal.GetProperty("modelCalls").GetInt32());
+        Assert.False(refusal.GetProperty("campaignReady").GetBoolean());
+        Assert.Equal("NOT_SENT", refusal.GetProperty("delivery").GetString());
+    }
+
+    [Fact]
+    public async Task Configured_creator_stores_one_idempotent_draft_pending_review()
+    {
+        await using var factory = new AdCreatorApiFactory();
+        var client = factory.CreateClient();
+        var request = new
+        {
+            requestKey = "ruta-libre-generation-1",
+            family = "motorcycle",
+            brandName = "Ruta Libre Motos",
+            palette = "Black and red",
+            cta = "Visita el showroom",
+            market = "Panama",
+            language = "Spanish",
+            marketResearchComplete = true
+        };
+
+        var firstResponse = await client.PostAsJsonAsync("/api/operations/academy/generate", request);
+        var first = await firstResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var secondResponse = await client.PostAsJsonAsync("/api/operations/academy/generate", request);
+        var second = await secondResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var board = await client.GetFromJsonAsync<JsonElement>("/api/operations/academy");
+        var imageResponse = await client.GetAsync(first.GetProperty("imagePath").GetString());
+
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+        Assert.Equal("GENERATED_PENDING_REVIEW", first.GetProperty("status").GetString());
+        Assert.Equal("brava-moto-reference", first.GetProperty("teacherKey").GetString());
+        Assert.Equal("image/png", first.GetProperty("mediaType").GetString());
+        Assert.StartsWith("/operations/generated/", first.GetProperty("imagePath").GetString());
+        Assert.Equal(1, first.GetProperty("modelCalls").GetInt32());
+        Assert.False(first.GetProperty("campaignReady").GetBoolean());
+        Assert.Equal("NOT_SENT", first.GetProperty("delivery").GetString());
+        Assert.False(first.GetProperty("duplicate").GetBoolean());
+        Assert.True(second.GetProperty("duplicate").GetBoolean());
+        Assert.Equal(first.GetProperty("id").GetGuid(), second.GetProperty("id").GetGuid());
+        Assert.Equal(1, factory.Generator.Calls);
+        Assert.True(board.GetProperty("adCreator").GetProperty("configured").GetBoolean());
+        Assert.Equal("READY", board.GetProperty("adCreator").GetProperty("status").GetString());
+        Assert.Equal(1, board.GetProperty("generations").GetArrayLength());
+        Assert.Equal(HttpStatusCode.OK, imageResponse.StatusCode);
+        Assert.Equal("image/png", imageResponse.Content.Headers.ContentType!.MediaType);
+    }
+
+    [Fact]
+    public async Task Creator_does_not_generate_a_queued_niche_with_an_unrelated_teacher()
+    {
+        await using var factory = new AdCreatorApiFactory();
+        var client = factory.CreateClient();
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/academy/generate",
+            new
+            {
+                requestKey = "auto-parts-generation-1",
+                family = "auto-parts",
+                brandName = "Pieza Norte",
+                market = "Panama",
+                language = "Spanish",
+                marketResearchComplete = true
+            });
+        var refusal = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("not created yet", refusal.GetProperty("error").GetString());
+        Assert.Equal(0, factory.Generator.Calls);
+    }
+
     private static JsonElement Lesson(JsonElement board, string key)
     {
         foreach (var lesson in board.GetProperty("lessons").EnumerateArray())
@@ -191,5 +296,72 @@ public sealed class CreativeAcademyApiTests
         }
 
         throw new InvalidOperationException("Missing lesson " + key);
+    }
+}
+
+public sealed class AdCreatorApiFactory : WebApplicationFactory<Program>
+{
+    private readonly string _dbName = Guid.NewGuid().ToString();
+    private readonly string _outputPath = Path.Combine(
+        Path.GetTempPath(),
+        "bliss-creative-generation",
+        Guid.NewGuid().ToString("N"));
+
+    public FakeCreativeImageGenerator Generator { get; } = new();
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseEnvironment("Development");
+        builder.UseSetting("Runtime:CreativeGeneration:Endpoint", "https://image-provider.invalid/generate");
+        builder.UseSetting("Runtime:CreativeGeneration:ApiToken", "test-token");
+        builder.UseSetting("Runtime:CreativeGeneration:OutputPath", _outputPath);
+        builder.ConfigureServices(services =>
+        {
+            var toRemove = services.Where(d =>
+                    d.ServiceType == typeof(DbContextOptions<BlissDbContext>)
+                    || d.ServiceType == typeof(BlissDbContext))
+                .ToList();
+            foreach (var descriptor in toRemove)
+            {
+                services.Remove(descriptor);
+            }
+
+            services.RemoveAll<ICreativeImageGenerator>();
+            services.AddSingleton<ICreativeImageGenerator>(Generator);
+            services.AddDbContext<BlissDbContext>(options => options.UseInMemoryDatabase(_dbName));
+        });
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing && Directory.Exists(_outputPath))
+        {
+            Directory.Delete(_outputPath, true);
+        }
+    }
+}
+
+public sealed class FakeCreativeImageGenerator : ICreativeImageGenerator
+{
+    private static readonly byte[] OnePixelPng = Convert.FromBase64String(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
+
+    public bool Configured => true;
+    public int Calls { get; private set; }
+
+    public Task<CreativeImageResult> GenerateAsync(
+        CreativeImageRequest request,
+        CancellationToken cancellationToken)
+    {
+        Calls++;
+        Assert.Contains("Ruta Libre Motos", request.Prompt);
+        Assert.Contains("brava-moto-reference", request.Prompt);
+        Assert.Equal(1536, request.Width);
+        Assert.Equal(864, request.Height);
+        return Task.FromResult(new CreativeImageResult(
+            OnePixelPng,
+            "image/png",
+            "provider-request-1"));
     }
 }

@@ -99,6 +99,8 @@ public class BlissDbContext : DbContext
     public DbSet<ClosedModelRow> ClosedModelReadings => Set<ClosedModelRow>();
     public DbSet<CreativeAcademyLessonRow> CreativeAcademyLessons => Set<CreativeAcademyLessonRow>();
     public DbSet<CreativeAcademyDnaRow> CreativeAcademyDna => Set<CreativeAcademyDnaRow>();
+    public DbSet<CreativeAcademyGenerationRow> CreativeAcademyGenerations =>
+        Set<CreativeAcademyGenerationRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

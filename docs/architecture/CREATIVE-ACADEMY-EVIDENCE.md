@@ -6,7 +6,11 @@
 
 ## Updated purpose
 
-The Academy is intended to produce original advertisements at or above an approved reference's perceived commercial quality class. This run implements the production specification, anchor selection, customization rules, casting direction, and dual-gate QA. It does not claim a generated advertisement because no production model is configured.
+The Academy is intended to produce original advertisements at or above an approved reference's perceived commercial quality class. It implements the production specification, anchor selection, customization rules, casting direction, guarded image-provider adapter, generated-draft ledger, and independent QA gates.
+
+The ad creator is installed. This environment has no authorized image-provider endpoint or secret-store token, so its visible state is `PROVIDER_CONFIGURATION_REQUIRED` and live model calls remain 0. A configured-provider path is verified with an injected test provider; this is test evidence, not a claim that a hosted provider was contacted.
+
+The ad-creator filter passed 32 tests. The full Bliss.Tests suite passed 484 tests, 0 failed, 0 skipped.
 
 Doctrine: reproduce the craftsmanship; replace the creative content. Originality without quality parity fails. Quality parity without originality fails.
 
@@ -57,6 +61,16 @@ Niches 1 through 9 were already created and were not repeated. Niche 10 stores `
 | Phase | Result | Report | Recording |
 | --- | --- | --- | --- |
 | C. Niche roster | 10 created, 40 not created. Brava Moto is niche 10. Next is Auto-Parts Store. | `docs/architecture/evidence/academy/phase-c-niche-roster.pdf` | `academy_phase_c_niche_roster_console.mp4` |
+
+## Ad creator
+
+The Generate control now targets `POST /api/operations/academy/generate`. An approved niche recipe is sent only to the configuration-owned HTTPS endpoint. The bearer token is configuration-only and is not returned to the browser. PNG, JPEG, and WebP are accepted; SVG and other content are refused. Server-selected filenames, an idempotency key, recipe SHA-256, provider request identifier, model-call count, campaign-ready false, and `NOT_SENT` are stored.
+
+A successful provider response becomes `GENERATED_PENDING_REVIEW`. It does not pass the human visual benchmark or any final gate. It does not send. Already-created external niches and not-created niches never reach the provider.
+
+| Phase | Result | Report | Recording |
+| --- | --- | --- | --- |
+| D. Guarded ad creator | Creator installed. Configured-provider integration is tested. This environment correctly reports PROVIDER_CONFIGURATION_REQUIRED because no endpoint or token was supplied. | `docs/architecture/evidence/academy/phase-d-ad-creator.pdf` | `academy_phase_d_ad_creator_boundary.mp4` |
 
 ## Phases
 
