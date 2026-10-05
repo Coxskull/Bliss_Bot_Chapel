@@ -4,6 +4,8 @@
 **Classification:** local architecture proof. Hosted acceptance is not claimed.
 **Delivery:** `NOT_SENT`. Model calls: 0. Campaign ready: refused.
 
+The owner briefing is `docs/architecture/evidence/academy/creative-academy-overview.pdf`. It explains the Academy's purpose, five roles, client flow, quality floor, 50-niche roster, stored lessons, installed creator, and the limits that remain closed.
+
 ## Updated purpose
 
 The Academy is intended to produce original advertisements at or above an approved reference's perceived commercial quality class. It implements the production specification, anchor selection, customization rules, casting direction, guarded image-provider adapter, generated-draft ledger, and independent QA gates.
