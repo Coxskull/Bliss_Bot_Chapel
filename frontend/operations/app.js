@@ -1605,11 +1605,11 @@ function bindNavigation() {
 }
 function route() {
   const parts=(location.hash.replace(/^#\/?/,"")||"overview").split("/").filter(Boolean);
-  const valid=["overview","creators","matches","review","placement","wedding-planner","partners","inventory","economics","audit","tempo","ledger","fuel","discovery","routes","measure","handoff","creative","learning","period","acceptance","hosted","week","metrics","models","status"];
+  const valid=["overview","creators","matches","review","placement","wedding-planner","partners","inventory","economics","audit","tempo","ledger","fuel","discovery","routes","measure","handoff","creative","academy","learning","period","acceptance","hosted","week","metrics","models","status"];
   const view=valid.includes(parts[0])?parts[0]:"overview";
   $$(".view").forEach(x=>x.classList.toggle("active",x.id===`view-${view}`));
   $$(".nav-item[data-view]").forEach(x=>{const active=x.dataset.view===view;x.classList.toggle("active",active);if(active)x.setAttribute("aria-current","page");else x.removeAttribute("aria-current");});
-  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner foundation",partners:"Partner directory",inventory:"Inventory and campaigns",economics:"Economics reference data",audit:"Operations audit",tempo:"Spend and pause",ledger:"Ledger and budget",fuel:"Media fuel",discovery:"Advertiser discovery",routes:"Contact route",measure:"Local batch",handoff:"Marketplace handoff",creative:"Creative approval",learning:"Research ledger",period:"Later rotation period",acceptance:"Economics Phase 9",hosted:"Hosted acceptance",week:"Coverage week",metrics:"Marketplace metrics",models:"Closed models",status:"Workspace status"};
+  const titles={overview:"Operations overview",creators:"Creator operations",matches:"Match certificates",review:"Human review",placement:"Campaign placement","wedding-planner":"Wedding Planner foundation",partners:"Partner directory",inventory:"Inventory and campaigns",economics:"Economics reference data",audit:"Operations audit",tempo:"Spend and pause",ledger:"Ledger and budget",fuel:"Media fuel",discovery:"Advertiser discovery",routes:"Contact route",measure:"Local batch",handoff:"Marketplace handoff",creative:"Creative approval",academy:"Creative Academy",learning:"Research ledger",period:"Later rotation period",acceptance:"Economics Phase 9",hosted:"Hosted acceptance",week:"Coverage week",metrics:"Marketplace metrics",models:"Closed models",status:"Workspace status"};
   $("#page-title").textContent=titles[view];
   toggleMobileNav(false);
   if(view==="tempo"&&typeof loadLaneTempo==="function")loadLaneTempo().catch(error=>toast(error.message,true));
@@ -1620,6 +1620,7 @@ function route() {
   if(view==="measure"&&typeof loadMeasure==="function")loadMeasure().catch(error=>toast(error.message,true));
   if(view==="handoff"&&typeof loadHandoff==="function")loadHandoff().catch(error=>toast(error.message,true));
   if(view==="creative"&&typeof loadCreative==="function")loadCreative().catch(error=>toast(error.message,true));
+  if(view==="academy"&&typeof loadAcademy==="function")loadAcademy().catch(error=>toast(error.message,true));
   if(view==="learning"&&typeof loadLearning==="function")loadLearning().catch(error=>toast(error.message,true));
   if(view==="period"&&typeof loadRotation==="function")loadRotation().catch(error=>toast(error.message,true));
   if(view==="acceptance"&&typeof loadAcceptance==="function")loadAcceptance().catch(error=>toast(error.message,true));

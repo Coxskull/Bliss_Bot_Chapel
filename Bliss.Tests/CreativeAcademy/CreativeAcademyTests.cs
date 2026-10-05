@@ -1,0 +1,193 @@
+using Bliss.Domain.CreativeAcademy;
+
+namespace Bliss.Tests.Academy;
+
+public sealed class CreativeAcademyTests
+{
+    [Fact]
+    public void The_prototype_teaches_quality_and_is_not_an_advertiser()
+    {
+        var lesson = CreativeAcademy.PatisserieLessons.Single(item => item.LessonKey == "maison-fleur");
+        var inspection = CreativeAcademy.Judge(
+            lesson.Role, lesson.BrandName, lesson.Headline, lesson.Body, lesson.ProperNouns,
+            false, null, null, false, false, null);
+
+        Assert.Equal(CreativeAcademy.Reference, inspection.Status);
+        Assert.Equal(0, inspection.ModelCalls);
+        Assert.False(inspection.CampaignReady);
+        Assert.Equal("NOT_SENT", inspection.Delivery);
+        Assert.Contains("not an advertiser", inspection.Notice);
+    }
+
+    [Fact]
+    public void A_duplicated_headline_word_is_revise_and_preserves_the_rest()
+    {
+        var lesson = CreativeAcademy.PatisserieLessons.Single(item => item.LessonKey == "lamour-sucre");
+        var inspection = CreativeAcademy.Judge(
+            lesson.Role, lesson.BrandName, lesson.Headline, lesson.Body, lesson.ProperNouns,
+            false, true, null, false, false, null);
+
+        Assert.Equal(CreativeAcademy.Revise, inspection.Status);
+        Assert.Contains("Duplicated word: ESCAPE", inspection.Defects);
+        Assert.Contains("hero dessert", inspection.Preserve);
+        Assert.Contains("Remove the duplicated word ESCAPE.", inspection.Repair);
+        Assert.Equal(84, inspection.Score);
+        Assert.Equal(0, inspection.ModelCalls);
+        Assert.False(inspection.GreenMeansSend);
+    }
+
+    [Fact]
+    public void Malformed_product_labels_are_revise()
+    {
+        var lesson = CreativeAcademy.PatisserieLessons.Single(item => item.LessonKey == "solara");
+        var inspection = CreativeAcademy.Judge(
+            lesson.Role, lesson.BrandName, lesson.Headline, lesson.Body, lesson.ProperNouns,
+            false, true, null, false, false, null);
+
+        Assert.Equal(CreativeAcademy.Revise, inspection.Status);
+        Assert.Contains("Malformed text: CURDJ", inspection.Defects);
+        Assert.Contains("Malformed text: MJER", inspection.Defects);
+        Assert.DoesNotContain(inspection.Defects, item => item.Contains("LEMON", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Clear_text_stays_withheld_until_a_visual_benchmark_is_recorded()
+    {
+        var lesson = CreativeAcademy.PatisserieLessons.Single(item => item.LessonKey == "belmonte");
+        var withheld = CreativeAcademy.Judge(
+            lesson.Role, lesson.BrandName, lesson.Headline, lesson.Body, lesson.ProperNouns,
+            false, null, null, false, false, null);
+        var passed = CreativeAcademy.Judge(
+            lesson.Role, lesson.BrandName, lesson.Headline, lesson.Body, lesson.ProperNouns,
+            false, true, null, false, false, null);
+
+        Assert.Equal(CreativeAcademy.Withheld, withheld.Status);
+        Assert.Null(withheld.Score);
+        Assert.Contains("unrecorded", withheld.Notice);
+        Assert.Equal(CreativeAcademy.Pass, passed.Status);
+        Assert.Equal(100, passed.Score);
+        Assert.False(passed.CampaignReady);
+    }
+
+    [Fact]
+    public void A_critical_text_defect_overrides_a_met_visual_benchmark()
+    {
+        var lesson = CreativeAcademy.PatisserieLessons.Single(item => item.LessonKey == "lamour-sucre");
+        var inspection = CreativeAcademy.Judge(
+            lesson.Role, lesson.BrandName, lesson.Headline, lesson.Body, lesson.ProperNouns,
+            false, true, null, false, false, QualityWeights.Initial);
+
+        Assert.Equal(CreativeAcademy.Revise, inspection.Status);
+        Assert.NotEqual(CreativeAcademy.Pass, inspection.Status);
+    }
+
+    [Fact]
+    public void Copying_the_prototype_identity_fails()
+    {
+        var inspection = CreativeAcademy.Judge(
+            "CANDIDATE",
+            "Another Name",
+            "A sweeter journey awaits you.",
+            "French artistry. Reserve your table.",
+            "OTHER",
+            false,
+            true,
+            null,
+            false,
+            false,
+            null);
+
+        Assert.Equal(CreativeAcademy.Fail, inspection.Status);
+        Assert.Contains("Prototype identity was copied.", inspection.Defects);
+    }
+
+    [Fact]
+    public void An_obstructed_creator_face_fails()
+    {
+        var lesson = CreativeAcademy.PatisserieLessons.Single(item => item.LessonKey == "belmonte");
+        var inspection = CreativeAcademy.Judge(
+            lesson.Role, lesson.BrandName, lesson.Headline, lesson.Body, lesson.ProperNouns,
+            true, true, null, false, false, null);
+
+        Assert.Equal(CreativeAcademy.Fail, inspection.Status);
+        Assert.Contains("Creator face obstructed.", inspection.Defects);
+    }
+
+    [Fact]
+    public void Weights_are_configurable_and_must_total_100()
+    {
+        var lesson = CreativeAcademy.PatisserieLessons.Single(item => item.LessonKey == "lamour-sucre");
+        var heavier = new QualityWeights(20, 8, 12, 12, 10, 10, 10, 10, 8);
+        var inspection = CreativeAcademy.Judge(
+            lesson.Role, lesson.BrandName, lesson.Headline, lesson.Body, lesson.ProperNouns,
+            false, true, null, false, false, heavier);
+
+        Assert.Equal(80, inspection.Score);
+        Assert.Throws<InvalidOperationException>(() => CreativeAcademy.Judge(
+            lesson.Role, lesson.BrandName, lesson.Headline, lesson.Body, lesson.ProperNouns,
+            false, true, null, false, false, new QualityWeights(50, 12, 12, 12, 10, 10, 10, 10, 8)));
+    }
+
+    [Fact]
+    public void A_model_call_and_campaign_ready_are_refused()
+    {
+        var lesson = CreativeAcademy.PatisserieLessons.Single(item => item.LessonKey == "belmonte");
+        var model = Assert.Throws<InvalidOperationException>(() => CreativeAcademy.Judge(
+            lesson.Role, lesson.BrandName, lesson.Headline, lesson.Body, lesson.ProperNouns,
+            false, true, null, true, false, null));
+        var campaign = Assert.Throws<InvalidOperationException>(() => CreativeAcademy.Judge(
+            lesson.Role, lesson.BrandName, lesson.Headline, lesson.Body, lesson.ProperNouns,
+            false, true, null, false, true, null));
+
+        Assert.Contains("not called", model.Message);
+        Assert.Contains("Campaign ready is refused", campaign.Message);
+    }
+
+    [Fact]
+    public void Patisserie_dna_selects_the_teacher_and_a_clone_is_refused()
+    {
+        var dna = CreativeAcademy.Choose(
+            "patisserie",
+            "Atelier Cendre",
+            "Burnt honey mille-feuille",
+            "Ink and apricot",
+            "Reserve your table",
+            "Quiet coastal luxury",
+            false);
+        var dental = CreativeAcademy.Choose(
+            "dental",
+            "North Clinic",
+            "A calm consultation",
+            "Stone and sage",
+            "Book a visit",
+            "Precise and warm",
+            false);
+        var clone = Assert.Throws<InvalidOperationException>(() => CreativeAcademy.Choose(
+            "patisserie", "Maison Fleur", "Cake", "Gold", "Reserve your table", "Luxury", false));
+
+        Assert.True(dna.TeacherOnFile);
+        Assert.Equal(CreativeAcademy.PatisserieTeacher, dna.TeacherKey);
+        Assert.True(dna.Distinct);
+        Assert.False(dental.TeacherOnFile);
+        Assert.Equal(string.Empty, dental.TeacherKey);
+        Assert.Contains("None was invented", dental.Notice);
+        Assert.Contains("not cloned", clone.Message);
+        Assert.False(CreativeAcademy.SameBrand(dna.BrandName, "Solara"));
+        Assert.Equal(0, dna.ModelCalls);
+        Assert.Equal("NOT_SENT", dna.Delivery);
+    }
+
+    [Fact]
+    public void A_weaker_recorded_contrast_note_revises_without_erasing_the_text_defect()
+    {
+        var lesson = CreativeAcademy.PatisserieLessons.Single(item => item.LessonKey == "lamour-sucre");
+        var inspection = CreativeAcademy.Judge(
+            lesson.Role, lesson.BrandName, lesson.Headline, lesson.Body, lesson.ProperNouns,
+            false, false, "Weaker visual contrast.", false, false, null);
+
+        Assert.Equal(CreativeAcademy.Revise, inspection.Status);
+        Assert.Contains("Duplicated word: ESCAPE", inspection.Defects);
+        Assert.Contains("Weaker visual contrast.", inspection.Defects);
+        Assert.Equal(72, inspection.Score);
+    }
+}

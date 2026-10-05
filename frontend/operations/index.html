@@ -17,6 +17,7 @@
   <script src="/operations/measure.js?v=measure-1" defer></script>
   <script src="/operations/handoff.js?v=handoff-1" defer></script>
   <script src="/operations/creative.js?v=creative-1" defer></script>
+  <script src="/operations/academy.js?v=academy-2" defer></script>
   <script src="/operations/learning.js?v=learning-1" defer></script>
   <script src="/operations/rotation.js?v=rotation-1" defer></script>
   <script src="/operations/acceptance.js?v=acceptance-1" defer></script>
@@ -58,6 +59,7 @@
         <a class="nav-item" href="#/measure" data-view="measure"><span class="nav-icon" aria-hidden="true">◷</span><span>Local batch</span></a>
         <a class="nav-item" href="#/handoff" data-view="handoff"><span class="nav-icon" aria-hidden="true">◇</span><span>Handoff</span></a>
         <a class="nav-item" href="#/creative" data-view="creative"><span class="nav-icon" aria-hidden="true">✎</span><span>Creative</span></a>
+        <a class="nav-item" href="#/academy" data-view="academy"><span class="nav-icon" aria-hidden="true">🎓</span><span>Academy</span></a>
         <a class="nav-item" href="#/learning" data-view="learning"><span class="nav-icon" aria-hidden="true">≡</span><span>Learning</span></a>
         <a class="nav-item" href="#/period" data-view="period"><span class="nav-icon" aria-hidden="true">↻</span><span>Later period</span></a>
         <a class="nav-item" href="#/acceptance" data-view="acceptance"><span class="nav-icon" aria-hidden="true">§</span><span>Phase 9</span></a>
@@ -794,6 +796,41 @@
           <section class="panel table-panel">
             <div class="panel-header"><div><p class="eyebrow">HISTORY</p><h3>Stored actuals</h3></div></div>
             <div class="table-wrap" id="acceptance-rows"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-academy" aria-labelledby="academy-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">CREATIVE ACADEMY</p>
+              <h2 id="academy-title">Prototype, recipe, and instructor</h2>
+              <p id="academy-notice">The prototype teaches the quality. The recipe teaches the craft. Creative DNA customizes the advertiser. The instructor judges the stored copy. A vision model is not configured. A production model was not called. Campaign ready is refused. Green does not send. Delivery remains NOT_SENT.</p>
+              <p id="academy-delivery">Delivery NOT_SENT.</p>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">METHOD</p><h3>One quality floor, many brands</h3></div></div>
+            <div class="form-actions">
+              <button class="primary-button" type="button" id="academy-store">Store the patisserie curriculum</button>
+              <button class="secondary-button" type="button" id="academy-dna">Select distinct patisserie DNA</button>
+              <button class="secondary-button" type="button" id="academy-clone">Clone Maison Fleur</button>
+              <button class="secondary-button" type="button" id="academy-dental">Select dental DNA</button>
+              <button class="secondary-button" type="button" id="academy-visual">Record Belmonté visual benchmark</button>
+              <button class="secondary-button" type="button" id="academy-campaign">Mark campaign ready</button>
+            </div>
+            <p id="academy-result"></p>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">PROTOTYPE</p><h3>Quality teacher</h3></div></div>
+            <div id="academy-prototype"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">DNA</p><h3>Who the advertiser is</h3></div></div>
+            <div class="table-wrap" id="academy-dna-table"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">INSTRUCTOR</p><h3>Candidates</h3></div></div>
+            <div id="academy-lessons"></div>
           </section>
         </section>
 

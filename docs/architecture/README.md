@@ -88,6 +88,8 @@ only through its own Engineering Contract
 | The marketplace metrics Engineering Contract | `contracts/MARKETPLACE-METRICS-CONTRACT.md` |
 | What a closed-model reading stores | `CLOSED-MODELS-EVIDENCE.md` |
 | The closed models Engineering Contract | `contracts/CLOSED-MODELS-CONTRACT.md` |
+| What the Creative Academy stores and refuses | `CREATIVE-ACADEMY-EVIDENCE.md` |
+| The Creative Academy Engineering Contract | `contracts/CREATIVE-ACADEMY-CONTRACT.md` |
 | Accepted Bliss behavior | `docs/bliss/` contracts and evidence |
 | Accepted Wedding Planner Phase 1 behavior | `docs/wedding-planner/PHASE-1-ENGINEERING-CONTRACT.md` |
 | Wedding Planner product note for the current module | `docs/wedding-planner/MASTER-BLUEPRINT-V1.1.md` |

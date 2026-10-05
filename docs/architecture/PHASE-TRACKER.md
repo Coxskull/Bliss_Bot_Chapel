@@ -16,7 +16,12 @@ is accepted by the owner. Historical actuals stay append-only. An empty
 history stays unrecorded. A hosted reading stores this process posture.
 Hosted acceptance is not claimed. On 2026-10-05 the owner acknowledged
 the dock evidence and kept the milestone partial until a hosted database,
-organizational identity, and a platform secret store are supplied. A coverage week stores the measured
+organizational identity, and a platform secret store are supplied. The
+Creative Academy is a separate local proof: the supplied Maison Fleur
+advertisement teaches quality, Creative DNA customizes the advertiser,
+and the instructor judges stored copy. A vision model is not configured.
+A production model was not called. Campaign ready is refused. This proof
+does not complete hosted acceptance. A coverage week stores the measured
 slices. A missing market is not added. A marketplace reading stores the
 measured advertiser count, creator count, and stored slot count. A
 revenue amount is not on file. A closed-model reading stores that
@@ -138,7 +143,8 @@ verified.
 
 The visible board is `/acquisition/index.html`. The ledger is
 `/operations#/ledger`. The later period is `/operations#/period`. The
-hosted reading is `/operations#/hosted`. The coverage week is
+hosted reading is `/operations#/hosted`. The Creative Academy is
+`/operations#/academy`. The coverage week is
 `/operations#/week`. The marketplace reading is `/operations#/metrics`. The closed-model
 reading is `/operations#/models`.
 
@@ -164,3 +170,4 @@ this process posture and does not claim hosted acceptance.
 | 14 | Coverage week | Verified local proof. One week stores the measured coverage. A missing market is not added. This is not a census. The fuel gauge is unchanged. Green does not send |
 | 15 | Marketplace metrics | Verified local proof. One reading stores the measured advertiser count, creator count, and stored slot count. A revenue amount is not on file. This is not a census. The balance page is unchanged. Green does not send |
 | 16 | Closed models | Verified local proof. One reading stores that seven grooming models are not configured. Configured models stay at zero. A model is not named. The learning page is unchanged. Green does not send |
+| 17 | Creative Academy | Local architecture proof on 2026-10-05. The supplied patisserie images are the curriculum. Maison Fleur is the teacher and is not cloned. L'Amour Sucré and Solara stay REVISE. Belmonté stays WITHHELD until a visual benchmark is recorded. A vision model is not configured. Campaign ready is refused. Hosted acceptance is not claimed. Green does not send |
