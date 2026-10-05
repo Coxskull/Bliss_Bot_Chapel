@@ -1,0 +1,40 @@
+ALPHA CREATIVE ACADEMY
+Updated instruction phase A3 of A4 - Geographic authenticity
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Purpose
+
+Localized advertising needs people who are plausible for the specific market. Changing language, flags, city names, or backgrounds while reusing the same generic people is not localization.
+
+Initial markets
+
+Philippines
+Malaysia
+Indonesia
+Colombia
+Panama
+Dominican Republic
+
+Specific-market rule
+
+“Asian” is not a casting plan. “Latino” is not a casting plan. The system requires a specific market. It considers contemporary commercial context, a realistic range of people within that market, hair, age, clothing, grooming, role, environment, audience, and campaign direction together. Localization is not reduced to skin color.
+
+No stereotype engine
+
+Do not caricature features, exaggerate skin tone, use costumes merely to signal nationality, infer personality or economic status from ethnicity, or create one permanent national face. Multiple advertisements within one market should naturally vary their casting.
+
+Research and advertiser assets
+
+When confidence is insufficient, status is MARKET_RESEARCH_REQUIRED. Curator and Research use multiple legitimate contemporary references before Art Direction. The generated people must remain original.
+
+When the advertiser supplies approved employees, spokespersons, models, or photography, status is ADVERTISER_ASSET and those assets take precedence.
+
+Quality still applies
+
+Local authenticity does not reduce requirements for realistic skin, hair, eyes, anatomy, hands, clothing materials, natural expressions, lighting integration, dimensional depth, and premium commercial photography.
+
+Boundaries
+
+No people were generated in this phase. No market research source was invented. Campaign ready is false. Delivery remains NOT_SENT.

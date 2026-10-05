@@ -1,0 +1,45 @@
+ALPHA CREATIVE ACADEMY
+Updated instruction phase A4 of A4 - Independent final gates
+Date: 2026-10-05
+Delivery: NOT_SENT
+Model calls: 0
+
+Purpose
+
+Customization and quality are separate requirements. Neither replaces the other. Originality and geographic authenticity are also explicit gates.
+
+Gate 1: Brand and customization compliance
+
+Did the work respect approved branding, colors, fonts, copy, products, voice, imagery, requirements, restrictions, and requested customization?
+
+Gate 2: Reference quality parity
+
+Does the work compete with or exceed the master in lighting, realism, contrast, depth, texture, hierarchy, screen impact, commercial polish, and Premium Dominant Presence?
+
+Gate 3: Originality
+
+Did the work replace the reference's photograph, product, people, environment, brand, copy, supporting imagery, and creative expression?
+
+Gate 4: Geographic authenticity
+
+When people are shown, are they plausible for the specific market without caricature, generic regional casting, or one permanent national face?
+
+Decision table
+
+Customization PASS plus quality FAIL equals REVISE.
+Quality PASS plus customization FAIL equals REVISE.
+Any originality or geographic-authenticity failure equals REVISE.
+An unrecorded gate equals WITHHELD.
+All four PASS equals ELIGIBLE_TO_CONTINUE.
+
+Proof
+
+The quality-drift control returns REVISE and names reference quality parity as the defect. The repair restores deficient contrast, lighting, realism, depth, texture, hierarchy, screen pop, or commercial polish.
+
+The all-gates control returns ELIGIBLE_TO_CONTINUE. Eligible is not campaign ready. It does not place or send the advertisement.
+
+Regression
+
+Creative Academy tests: 20 passed, 0 failed, 0 skipped.
+Full Bliss.Tests suite: 472 passed, 0 failed, 0 skipped.
+Hosted acceptance is not claimed. Delivery remains NOT_SENT.

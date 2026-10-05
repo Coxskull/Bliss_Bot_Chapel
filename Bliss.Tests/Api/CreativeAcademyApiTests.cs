@@ -23,16 +23,20 @@ public sealed class CreativeAcademyApiTests
         var first = await stored.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(HttpStatusCode.OK, stored.StatusCode);
         Assert.True(first!.GetProperty("written").GetBoolean());
-        Assert.Equal(4, first.GetProperty("lessons").GetArrayLength());
+        Assert.Equal(6, first.GetProperty("lessons").GetArrayLength());
 
         var lamour = Lesson(first, "lamour-sucre");
         var solara = Lesson(first, "solara");
         var belmonte = Lesson(first, "belmonte");
         var prototype = Lesson(first, "maison-fleur");
+        var pharmacy = Lesson(first, "vidacare-master-01");
+        var grocery = Lesson(first, "freshmart-supplied");
         Assert.Equal("REVISE", lamour.GetProperty("status").GetString());
         Assert.Equal("REVISE", solara.GetProperty("status").GetString());
         Assert.Equal("WITHHELD", belmonte.GetProperty("status").GetString());
         Assert.Equal("REFERENCE", prototype.GetProperty("status").GetString());
+        Assert.Equal("MASTER_REFERENCE", pharmacy.GetProperty("status").GetString());
+        Assert.Equal("SUPPLIED_EXAMPLE", grocery.GetProperty("status").GetString());
         Assert.Equal(0, lamour.GetProperty("modelCalls").GetInt32());
         Assert.False(lamour.GetProperty("campaignReady").GetBoolean());
         Assert.Equal("NOT_SENT", lamour.GetProperty("delivery").GetString());
@@ -42,7 +46,7 @@ public sealed class CreativeAcademyApiTests
             new { curriculumKey = "patisserie-curriculum-1" });
         var second = await again.Content.ReadFromJsonAsync<JsonElement>();
         Assert.True(second!.GetProperty("duplicate").GetBoolean());
-        Assert.Equal(4, second.GetProperty("lessons").GetArrayLength());
+        Assert.Equal(6, second.GetProperty("lessons").GetArrayLength());
 
         var visual = await client.PostAsJsonAsync(
             "/api/operations/academy/visual",
@@ -60,6 +64,72 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal("NOT_SENT", refused!.GetProperty("delivery").GetString());
         Assert.False(refused.GetProperty("campaignReady").GetBoolean());
         Assert.Contains("Campaign ready is refused", refused.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Production_brief_uses_the_pharmacy_anchor_without_generating_an_ad()
+    {
+        await using var factory = new BlissApiFactory();
+        var client = factory.CreateClient();
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/academy/production-brief",
+            new
+            {
+                family = "pharmacy",
+                brandName = "Farmacia Nueva Salud",
+                palette = "Burgundy and gold",
+                fontFamily = "Montserrat",
+                headline = "Tu salud, mas cerca",
+                cta = "Recoge tu receta",
+                market = "Panama",
+                language = "Spanish",
+                requirements = "Feature prescription pickup; do not show families",
+                marketResearchComplete = true
+            });
+        var brief = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("PRODUCTION_SPEC_READY", brief!.GetProperty("status").GetString());
+        Assert.Equal("vidacare-master-01", brief.GetProperty("teacherKey").GetString());
+        Assert.Equal("Burgundy and gold", brief.GetProperty("palette").GetString());
+        Assert.Equal("LOCALLY_PLAUSIBLE_DEFAULT", brief.GetProperty("casting").GetProperty("status").GetString());
+        Assert.False(brief.GetProperty("canGenerate").GetBoolean());
+        Assert.Equal(0, brief.GetProperty("modelCalls").GetInt32());
+        Assert.Equal("NOT_SENT", brief.GetProperty("delivery").GetString());
+    }
+
+    [Fact]
+    public async Task Both_final_gates_must_pass_and_eligibility_still_does_not_send()
+    {
+        await using var factory = new BlissApiFactory();
+        var client = factory.CreateClient();
+        var reviseResponse = await client.PostAsJsonAsync(
+            "/api/operations/academy/parity",
+            new
+            {
+                customizationCompliance = true,
+                qualityParity = false,
+                originality = true,
+                geographicAuthenticity = true
+            });
+        var revise = await reviseResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var eligibleResponse = await client.PostAsJsonAsync(
+            "/api/operations/academy/parity",
+            new
+            {
+                customizationCompliance = true,
+                qualityParity = true,
+                originality = true,
+                geographicAuthenticity = true
+            });
+        var eligible = await eligibleResponse.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal("REVISE", revise!.GetProperty("status").GetString());
+        Assert.False(revise.GetProperty("eligibleToContinue").GetBoolean());
+        Assert.Equal("ELIGIBLE_TO_CONTINUE", eligible!.GetProperty("status").GetString());
+        Assert.True(eligible.GetProperty("eligibleToContinue").GetBoolean());
+        Assert.False(eligible.GetProperty("campaignReady").GetBoolean());
+        Assert.Equal("NOT_SENT", eligible.GetProperty("delivery").GetString());
     }
 
     private static JsonElement Lesson(JsonElement board, string key)

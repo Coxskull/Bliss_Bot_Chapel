@@ -4,11 +4,36 @@
 **Classification:** local architecture proof. Hosted acceptance is not claimed.
 **Delivery:** `NOT_SENT`. Model calls: 0. Campaign ready: refused.
 
+## Updated purpose
+
+The Academy is intended to produce original advertisements at or above an approved reference's perceived commercial quality class. This run implements the production specification, anchor selection, customization rules, casting direction, and dual-gate QA. It does not claim a generated advertisement because no production model is configured.
+
+Doctrine: reproduce the craftsmanship; replace the creative content. Originality without quality parity fails. Quality parity without originality fails.
+
 ## What was proved
 
 The Creative Academy stores the supplied patisserie curriculum and judges the stored copy. Maison Fleur Pâtisserie is the quality teacher. It is not cloned. L'Amour Sucré stays REVISE because the headline repeats "escape". Solara stays REVISE because the stored labels include "curdj" and "mjer". Belmonté stays WITHHELD until an operator records the visual benchmark, then PASS. Campaign ready is refused. A production model was not called.
 
-The full regression passed: 464 tests, 0 failed, 0 skipped. The previous dock count was 452. The 12 new tests are the academy facts.
+The updated full regression passed: 472 tests, 0 failed, 0 skipped. The first academy proof had 464 passing tests. The amendment adds eight production-purpose, anchor, customization, casting, and dual-gate facts.
+
+The updated amendment adds:
+
+- VidaCare Pharmacy as `ALPHA MASTER PROTOTYPE 01/50`, niche pharmacy/drugstore, purpose quality anchor, creative template no.
+- FreshMart Supermarket as an owner-supplied example, not silently promoted to master.
+- A pharmacy production brief that keeps the advertiser's burgundy/gold palette, Montserrat font, Spanish copy, prescription-pickup focus, Panama market, and no-families restriction while inheriting the Alpha quality signature.
+- The 16-item reference-parity gate.
+- A specific-market casting standard for the Philippines, Malaysia, Indonesia, Colombia, Panama, and Dominican Republic.
+- Independent customization, quality, originality, and geographic-authenticity gates.
+- `REVISE` when quality drift occurs and `ELIGIBLE_TO_CONTINUE` only when all four gates pass. Eligibility still does not set campaign ready or send.
+
+## Updated instruction phase evidence
+
+| Phase | Result | Report | Recording |
+| --- | --- | --- | --- |
+| A1. Quality extraction | The doctrine and 16 parity criteria are displayed. | `docs/architecture/evidence/academy/phase-a1-quality-extraction.pdf` | `academy_phase_a1_quality_extraction.mp4` |
+| A2. Master anchor and customization | VidaCare is Master 01/50. FreshMart is supplied context. The Panama pharmacy brief changes identity without changing the quality floor. | `docs/architecture/evidence/academy/phase-a2-anchor-and-customization.pdf` | `academy_phase_a2_master_examples_and_customization.mp4` |
+| A3. Geographic authenticity | A specific market, research-before-casting, advertiser assets, diversity, and anti-stereotype rules are displayed. | `docs/architecture/evidence/academy/phase-a3-geographic-authenticity.pdf` | `academy_phase_a3_geographic_authenticity.mp4` |
+| A4. Dual gate | Quality drift returns REVISE. All four gates passed returns ELIGIBLE_TO_CONTINUE with campaign ready false and NOT_SENT. | `docs/architecture/evidence/academy/phase-a4-dual-gate.pdf` | `academy_phase_a4_dual_gate.mp4` |
 
 ## Phases
 
@@ -39,7 +64,8 @@ A vision model did not produce these scores. The text defects are read from the 
 - Wedding Planner was not opened by this feature.
 - Economics was not asked for a price.
 - No email, WhatsApp, SMS, social message, crawler, paid enrichment, settlement, payout, or advertiser charge was sent.
-- No fifth advertisement was generated.
+- No new advertisement was generated from any supplied image.
+- `PRODUCTION_SPEC_READY` means the deterministic brief is ready; it does not mean an image exists.
 
 ## Where the proof lives
 

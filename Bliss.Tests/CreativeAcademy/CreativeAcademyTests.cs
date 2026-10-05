@@ -190,4 +190,112 @@ public sealed class CreativeAcademyTests
         Assert.Contains("Weaker visual contrast.", inspection.Defects);
         Assert.Equal(72, inspection.Score);
     }
+
+    [Fact]
+    public void VidaCare_is_master_prototype_01_and_FreshMart_stays_a_supplied_example()
+    {
+        var pharmacy = CreativeAcademy.AllLessons.Single(item => item.LessonKey == "vidacare-master-01");
+        var grocery = CreativeAcademy.AllLessons.Single(item => item.LessonKey == "freshmart-supplied");
+
+        Assert.Equal(CreativeAcademy.MasterReference, pharmacy.Role);
+        Assert.Equal("pharmacy", pharmacy.Family);
+        Assert.Contains("quality anchor", pharmacy.Body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Creative template: no", pharmacy.Body);
+        Assert.Equal(CreativeAcademy.SuppliedExample, grocery.Role);
+        Assert.Contains("not promoted", grocery.Body);
+    }
+
+    [Fact]
+    public void Pharmacy_brand_dna_changes_the_identity_without_lowering_the_quality_anchor()
+    {
+        var dna = CreativeAcademy.Choose(
+            "pharmacy",
+            "Farmacia Nueva Salud",
+            "Prescription pickup",
+            "Burgundy and gold",
+            "Recoge tu receta",
+            "Warm professional Panama",
+            false);
+
+        Assert.Equal(CreativeAcademy.PharmacyTeacher, dna.TeacherKey);
+        Assert.True(dna.TeacherOnFile);
+        Assert.True(dna.Distinct);
+        Assert.Contains("Brand DNA remains authoritative", dna.Notice);
+        Assert.Throws<InvalidOperationException>(() => CreativeAcademy.Choose(
+            "pharmacy", "VidaCare Pharmacy", "Medicine", "Blue and green", "Shop now", "Bright", false));
+    }
+
+    [Fact]
+    public void A_production_brief_preserves_customization_and_the_quality_signature()
+    {
+        var brief = CreativeAcademy.PrepareProductionBrief(
+            "pharmacy",
+            "Farmacia Nueva Salud",
+            "Burgundy and gold",
+            "Montserrat",
+            "Tu salud, más cerca",
+            "Recoge tu receta",
+            "Panama",
+            "Spanish",
+            "Feature prescription pickup; do not show families",
+            true,
+            false,
+            false);
+
+        Assert.Equal(CreativeAcademy.ProductionSpecReady, brief.Status);
+        Assert.Equal(CreativeAcademy.PharmacyTeacher, brief.TeacherKey);
+        Assert.Equal("Burgundy and gold", brief.Palette);
+        Assert.Equal("Montserrat", brief.FontFamily);
+        Assert.Equal("LOCALLY_PLAUSIBLE_DEFAULT", brief.Casting.Status);
+        Assert.Contains("hero dominance", brief.QualitySignature);
+        Assert.Contains("photography and people", brief.ReplaceCreative);
+        Assert.False(brief.CanGenerate);
+        Assert.Equal(0, brief.ModelCalls);
+        Assert.False(brief.CampaignReady);
+        Assert.Equal("NOT_SENT", brief.Delivery);
+    }
+
+    [Fact]
+    public void Geographic_casting_requires_a_specific_market_and_research_when_uncertain()
+    {
+        var research = CreativeAcademy.PlanCasting("Santo Domingo", false, false);
+        var approved = CreativeAcademy.PlanCasting("Manila", false, true);
+
+        Assert.Equal("MARKET_RESEARCH_REQUIRED", research.Status);
+        Assert.True(research.ResearchRequired);
+        Assert.Equal("ADVERTISER_ASSET", approved.Status);
+        Assert.False(approved.ResearchRequired);
+        Assert.Throws<InvalidOperationException>(() => CreativeAcademy.PlanCasting("generic Latino", true, false));
+    }
+
+    [Fact]
+    public void Customization_quality_originality_and_geography_are_independent_gates()
+    {
+        var qualityFailed = CreativeAcademy.EvaluateFinalGates(true, false, true, true);
+        var customizationFailed = CreativeAcademy.EvaluateFinalGates(false, true, true, true);
+        var withheld = CreativeAcademy.EvaluateFinalGates(true, true, null, true);
+        var eligible = CreativeAcademy.EvaluateFinalGates(true, true, true, true);
+
+        Assert.Equal(CreativeAcademy.Revise, qualityFailed.Status);
+        Assert.Contains(qualityFailed.Defects, item => item.Contains("quality parity", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(CreativeAcademy.Revise, customizationFailed.Status);
+        Assert.Contains(customizationFailed.Defects, item => item.Contains("Brand DNA", StringComparison.Ordinal));
+        Assert.Equal(CreativeAcademy.Withheld, withheld.Status);
+        Assert.Equal(CreativeAcademy.Eligible, eligible.Status);
+        Assert.True(eligible.EligibleToContinue);
+        Assert.False(eligible.CampaignReady);
+        Assert.Equal("NOT_SENT", eligible.Delivery);
+    }
+
+    [Fact]
+    public void Production_model_calls_are_still_refused_until_a_model_is_configured()
+    {
+        var refusal = Assert.Throws<InvalidOperationException>(() =>
+            CreativeAcademy.PrepareProductionBrief(
+                "pharmacy", "Farmacia Nueva Salud", "Burgundy and gold", "Montserrat",
+                "Tu salud, más cerca", "Recoge tu receta", "Panama", "Spanish",
+                "Feature prescription pickup", true, false, true));
+
+        Assert.Contains("not configured", refusal.Message);
+    }
 }

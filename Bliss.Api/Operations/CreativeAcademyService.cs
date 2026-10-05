@@ -21,20 +21,26 @@ public sealed class CreativeAcademyService(BlissDbContext database)
     public async Task<AcademyWrite> StoreCurriculumAsync(string? curriculumKey, CancellationToken cancellationToken)
     {
         var key = RequireKey(curriculumKey);
-        if (!string.Equals(key, "patisserie-curriculum-1", StringComparison.Ordinal))
+        if (!string.Equals(key, "patisserie-curriculum-1", StringComparison.Ordinal)
+            && !string.Equals(key, "creative-academy-2", StringComparison.Ordinal))
         {
-            throw new InvalidOperationException("The patisserie curriculum key is required. None was invented.");
+            throw new InvalidOperationException("A known Creative Academy curriculum key is required. None was invented.");
         }
 
-        var existing = await database.CreativeAcademyLessons.AsNoTracking().ToListAsync(cancellationToken);
-        if (existing.Count > 0)
-        {
-            return new AcademyWrite(true, false, CreativeAcademy.Notice);
-        }
+        var existing = await database.CreativeAcademyLessons.AsNoTracking()
+            .Select(item => item.LessonKey)
+            .ToListAsync(cancellationToken);
+        var existingKeys = new HashSet<string>(existing, StringComparer.Ordinal);
 
         var now = DateTime.UtcNow;
-        foreach (var lesson in CreativeAcademy.PatisserieLessons)
+        var written = 0;
+        foreach (var lesson in CreativeAcademy.AllLessons)
         {
+            if (existingKeys.Contains(lesson.LessonKey))
+            {
+                continue;
+            }
+
             var inspection = CreativeAcademy.Judge(
                 lesson.Role,
                 lesson.BrandName,
@@ -71,10 +77,15 @@ public sealed class CreativeAcademyService(BlissDbContext database)
                 Delivery = "NOT_SENT",
                 RecordedAt = now
             });
+            written++;
         }
 
-        await database.SaveChangesAsync(cancellationToken);
-        return new AcademyWrite(false, true, CreativeAcademy.Notice);
+        if (written > 0)
+        {
+            await database.SaveChangesAsync(cancellationToken);
+        }
+
+        return new AcademyWrite(written == 0, written > 0, CreativeAcademy.Notice);
     }
 
     public async Task<AcademyWrite> StoreDnaAsync(
@@ -134,7 +145,7 @@ public sealed class CreativeAcademyService(BlissDbContext database)
             throw new InvalidOperationException("The lesson is not stored. None was invented.");
         }
 
-        if (row.Role == CreativeAcademy.Reference)
+        if (row.Role is CreativeAcademy.Reference or CreativeAcademy.MasterReference or CreativeAcademy.SuppliedExample)
         {
             throw new InvalidOperationException("The prototype is the teacher. It is not approved as an advertiser.");
         }

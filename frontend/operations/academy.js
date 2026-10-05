@@ -18,18 +18,43 @@ function lessonCard(item) {
   </article>`;
 }
 
+function productionBriefCard(item) {
+  return `<article>
+    <p class="eyebrow">${escapeHtml(item.status)}</p>
+    <h4>${escapeHtml(item.brandName)} · ${escapeHtml(item.market)} · ${escapeHtml(item.language)}</h4>
+    <p>Teacher ${escapeHtml(item.teacherKey || "None on file")}. Palette ${escapeHtml(item.palette)}. Font ${escapeHtml(item.fontFamily)}.</p>
+    <p>Headline: ${escapeHtml(item.headline)} · CTA: ${escapeHtml(item.cta)}</p>
+    <p>Requirements: ${escapeHtml(item.requirements)}</p>
+    <p>Casting: ${escapeHtml(item.casting.status)} — ${escapeHtml(item.casting.direction)}</p>
+    <p>${escapeHtml(item.notice)}</p>
+    <p>Can generate ${item.canGenerate ? "Yes" : "No"}. Model calls ${item.modelCalls}. Campaign ready ${item.campaignReady ? "Yes" : "No"}. Delivery ${escapeHtml(item.delivery)}.</p>
+    <h4>Replace creative content</h4><ul>${lines(item.replaceCreative)}</ul>
+  </article>`;
+}
+
+function parityCard(item) {
+  return `<article>
+    <p class="eyebrow">${escapeHtml(item.status)}</p>
+    <p>${escapeHtml(item.notice)}</p>
+    <h4>Defects</h4><ul>${lines(item.defects) || "<li>None recorded.</li>"}</ul>
+    <h4>Repair</h4><ul>${lines(item.repair) || "<li>None recorded.</li>"}</ul>
+    <p>Eligible to continue ${item.eligibleToContinue ? "Yes" : "No"}. Campaign ready ${item.campaignReady ? "Yes" : "No"}. Model calls ${item.modelCalls}. Delivery ${escapeHtml(item.delivery)}.</p>
+  </article>`;
+}
+
 async function loadAcademy() {
   const board = await api("/api/operations/academy");
   $("#academy-notice").textContent = board.notice;
   $("#academy-delivery").textContent = `Delivery ${board.delivery}. Model calls ${board.modelCalls}. Campaign ready ${board.campaignReady ? "Yes" : "No"}.`;
   const lessons = board.lessons || [];
-  const prototype = lessons.find(item => item.lessonKey === "maison-fleur");
-  $("#academy-prototype").innerHTML = prototype
-    ? lessonCard(prototype)
-    : emptyState("No prototype is stored. The curriculum was not invented.");
+  const prototypes = lessons.filter(item => item.role !== "CANDIDATE");
+  $("#academy-prototypes").innerHTML = prototypes.length
+    ? prototypes.map(lessonCard).join("")
+    : emptyState("No quality anchor is stored. The curriculum was not invented.");
   $("#academy-lessons").innerHTML = lessons.filter(item => item.role === "CANDIDATE").length
     ? lessons.filter(item => item.role === "CANDIDATE").map(lessonCard).join("")
     : emptyState("No candidate is stored.");
+  $("#academy-parity-gate").innerHTML = `<ul>${lines(board.referenceParityGate)}</ul>`;
   const dna = board.dna || [];
   $("#academy-dna-table").innerHTML = dna.length
     ? `<table><thead><tr><th>Brand</th><th>Family</th><th>Teacher</th><th>On file</th><th>Distinct</th><th>Hero</th><th>Delivery</th></tr></thead><tbody>${dna.map(item =>
@@ -46,6 +71,42 @@ async function postAcademy(path, body) {
   });
   $("#academy-result").textContent = result.notice || "Delivery remains NOT_SENT.";
   await loadAcademy();
+}
+
+async function prepareProductionBrief() {
+  const result = await api("/api/operations/academy/production-brief", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      family: "pharmacy",
+      brandName: "Farmacia Nueva Salud",
+      palette: "Burgundy and gold",
+      fontFamily: "Montserrat",
+      headline: "Tu salud, más cerca",
+      cta: "Recoge tu receta",
+      market: "Panama",
+      language: "Spanish",
+      requirements: "Feature prescription pickup. Do not show families. Use locally plausible casting.",
+      marketResearchComplete: true
+    })
+  });
+  $("#academy-production-result").innerHTML = productionBriefCard(result);
+  $("#academy-result").textContent = result.notice;
+}
+
+async function evaluateParity(qualityParity) {
+  const result = await api("/api/operations/academy/parity", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      customizationCompliance: true,
+      qualityParity,
+      originality: true,
+      geographicAuthenticity: true
+    })
+  });
+  $("#academy-parity-result").innerHTML = parityCard(result);
+  $("#academy-result").textContent = result.notice;
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -65,7 +126,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  bind("academy-store", () => postAcademy("/api/operations/academy/curriculum", { curriculumKey: "patisserie-curriculum-1" }));
+  bind("academy-store", () => postAcademy("/api/operations/academy/curriculum", { curriculumKey: "creative-academy-2" }));
+  bind("academy-production", prepareProductionBrief);
+  bind("academy-drift", () => evaluateParity(false));
+  bind("academy-both-pass", () => evaluateParity(true));
   bind("academy-dna", () => postAcademy("/api/operations/academy/dna", {
     dnaKey: "atelier-cendre-1",
     family: "patisserie",

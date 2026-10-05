@@ -86,6 +86,43 @@ public sealed class CreativeAcademyController(CreativeAcademyService academy) : 
         }
     }
 
+    [HttpPost("production-brief")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult ProductionBrief([FromBody] AcademyProductionRequest? request)
+    {
+        try
+        {
+            return Ok(CreativeAcademy.PrepareProductionBrief(
+                request?.Family,
+                request?.BrandName,
+                request?.Palette,
+                request?.FontFamily,
+                request?.Headline,
+                request?.Cta,
+                request?.Market,
+                request?.Language,
+                request?.Requirements,
+                request?.MarketResearchComplete ?? false,
+                request?.ApprovedPeopleProvided ?? false,
+                request?.CallModel ?? false));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Refuse(ex);
+        }
+    }
+
+    [HttpPost("parity")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public ActionResult Parity([FromBody] AcademyParityRequest? request) =>
+        Ok(CreativeAcademy.EvaluateFinalGates(
+            request?.CustomizationCompliance,
+            request?.QualityParity,
+            request?.Originality,
+            request?.GeographicAuthenticity));
+
     private static ActionResult Refuse(InvalidOperationException ex) =>
         new BadRequestObjectResult(new
         {
@@ -105,6 +142,17 @@ public sealed class CreativeAcademyController(CreativeAcademyService academy) : 
         written = write?.Written ?? false,
         modelCalls = 0,
         campaignReady = false,
+        purpose = "Produce original advertisements at or above the approved reference quality class.",
+        doctrine = "Reproduce the craftsmanship. Replace the creative content. Originality without quality parity fails. Quality parity without originality fails.",
+        referenceParityGate = CreativeAcademy.ReferenceParityGate,
+        masterPrototype = new
+        {
+            lessonKey = CreativeAcademy.PharmacyTeacher,
+            designation = "ALPHA MASTER PROTOTYPE 01/50",
+            niche = "PHARMACY / DRUGSTORE",
+            purpose = "QUALITY ANCHOR",
+            creativeTemplate = false
+        },
         lessons = board.Lessons.Select(Lesson),
         dna = board.Dna.Select(Dna)
     };
@@ -172,3 +220,23 @@ public sealed record AcademyVisualRequest(
     string? VisualNote,
     bool? CallModel,
     bool? CampaignReady);
+
+public sealed record AcademyProductionRequest(
+    string? Family,
+    string? BrandName,
+    string? Palette,
+    string? FontFamily,
+    string? Headline,
+    string? Cta,
+    string? Market,
+    string? Language,
+    string? Requirements,
+    bool? MarketResearchComplete,
+    bool? ApprovedPeopleProvided,
+    bool? CallModel);
+
+public sealed record AcademyParityRequest(
+    bool? CustomizationCompliance,
+    bool? QualityParity,
+    bool? Originality,
+    bool? GeographicAuthenticity);

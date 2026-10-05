@@ -17,9 +17,14 @@ history stays unrecorded. A hosted reading stores this process posture.
 Hosted acceptance is not claimed. On 2026-10-05 the owner acknowledged
 the dock evidence and kept the milestone partial until a hosted database,
 organizational identity, and a platform secret store are supplied. The
-Creative Academy is a separate local proof: the supplied Maison Fleur
-advertisement teaches quality, Creative DNA customizes the advertiser,
-and the instructor judges stored copy. A vision model is not configured.
+Creative Academy is a separate local proof: VidaCare Pharmacy is Master
+Prototype 01/50 for pharmacy quality, Maison Fleur teaches patisserie
+quality, Creative DNA customizes the advertiser, and the instructor
+separately judges customization, quality parity, originality, and
+geographic authenticity. The Academy's purpose is to produce original
+advertisements at the reference quality class. This run prepares the
+production brief but does not invent a generated advertisement. A vision
+model and production model are not configured.
 A production model was not called. Campaign ready is refused. This proof
 does not complete hosted acceptance. A coverage week stores the measured
 slices. A missing market is not added. A marketplace reading stores the
@@ -170,4 +175,4 @@ this process posture and does not claim hosted acceptance.
 | 14 | Coverage week | Verified local proof. One week stores the measured coverage. A missing market is not added. This is not a census. The fuel gauge is unchanged. Green does not send |
 | 15 | Marketplace metrics | Verified local proof. One reading stores the measured advertiser count, creator count, and stored slot count. A revenue amount is not on file. This is not a census. The balance page is unchanged. Green does not send |
 | 16 | Closed models | Verified local proof. One reading stores that seven grooming models are not configured. Configured models stay at zero. A model is not named. The learning page is unchanged. Green does not send |
-| 17 | Creative Academy | Local architecture proof on 2026-10-05. The supplied patisserie images are the curriculum. Maison Fleur is the teacher and is not cloned. L'Amour Sucré and Solara stay REVISE. Belmonté stays WITHHELD until a visual benchmark is recorded. A vision model is not configured. Campaign ready is refused. Hosted acceptance is not claimed. Green does not send |
+| 17 | Creative Academy | Local architecture proof updated on 2026-10-05. VidaCare Pharmacy is Master Prototype 01/50, a pharmacy quality anchor and not a creative template. FreshMart is a supplied example and not silently promoted to master. Maison Fleur remains the patisserie teacher. Production briefs preserve advertiser Brand DNA while fixing the quality floor. Specific-market casting replaces generic regional casting. Customization, quality parity, originality, and geographic authenticity are independent gates. A production model is not configured, so no new advertisement is claimed. Campaign ready is refused. Hosted acceptance is not claimed. Green does not send |
