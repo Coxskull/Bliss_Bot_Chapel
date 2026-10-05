@@ -1,0 +1,551 @@
+BLISS TEST SUMMARY
+Every individual test in the latest full suite
+Date: 2026-10-05
+Result: 484 passed, 0 failed, 0 skipped
+Delivery: NOT_SENT
+Campaign ready: refused
+Hosted acceptance: not claimed
+
+This report records each of the 484 tests in the latest full Bliss.Tests run. Each line is one executed test. A theory with several inputs is listed once for each input. No test is repeated, and the section counts add to 484.
+
+Section counts
+
+Creative Academy: 24
+Persistence: 67
+Domain rules: 15
+Architecture constraints: 21
+Operations controls: 25
+Acquisition demonstrations: 166
+HTTP API: 161
+Wedding Planner approval: 5
+Total: 484
+
+The suite protects the standing boundaries. A passing test does not send a message, approve a campaign, invent a price, or claim hosted acceptance. The Creative Academy tests also keep a generated draft at GENERATED_PENDING_REVIEW when a test provider is injected. In this environment the live creator remains PROVIDER_CONFIGURATION_REQUIRED and makes 0 model calls.
+
+CREATIVE ACADEMY - 24 TESTS
+
+The advertisement teacher, recipe, instructor, roster, and guarded creator.
+
+Configured adapter sends one authenticated 1536 by 864 recipe and accepts a real PNG.
+Configured adapter rejects non-image content.
+The prototype teaches quality and is not an advertiser. Maison Fleur is a quality teacher, not an advertiser.
+A duplicated headline word is REVISE and preserves the rest. The duplicated word ESCAPE scores 84.
+Malformed product labels are REVISE. The stored labels CURDJ and MJER are the defects.
+Clear text stays WITHHELD until a human records the visual benchmark. This is the Belmonte path.
+A critical text defect still returns REVISE after a visual benchmark is met.
+Copying the prototype identity fails. Copying Maison Fleur, VidaCare, Nova Fit, or Taller Ruta returns FAIL.
+An obstructed creator face returns FAIL.
+Weights are configurable and must total 100.
+A model call and campaign-ready are refused.
+Patisserie DNA selects Maison Fleur. Dental is already created and is not repeated. Cloning Maison Fleur is refused.
+A weaker recorded contrast note returns REVISE, score 72, and keeps the duplicated word.
+VidaCare is Master Prototype 01/50. FreshMart remains a supplied example.
+Pharmacy Brand DNA changes the identity without lowering the quality anchor. Burgundy and gold stays burgundy and gold.
+A production brief preserves customization and the quality signature. The Panama pharmacy brief generates no image.
+Geographic casting requires a specific market and research when uncertain. Generic Latino casting is refused.
+Customization, quality, originality, and geography are independent gates. All four passing remains unsent.
+Production model calls are refused until a model is configured.
+Fitness selects Nova Fit. Automotive service selects Taller Ruta.
+Brand and niche are the only required client intake fields.
+A niche without an approved anchor does not enter image generation. Auto-parts stops before generation.
+The roster keeps created niches and queues the rest. It holds 50 niches: 10 created and 40 not created. Next is Auto-Parts Store. Bakery 16 stays uncreated.
+Motorcycle uses Brava Moto. Dental returns ALREADY_CREATED. Reusing the Brava Moto name is refused.
+
+PERSISTENCE - 67 TESTS
+
+Stored Bliss, Economics, and Wedding Planner records, seeds, and history.
+
+Creator supports multiple content items.
+Content item supports multiple ad inventory slots.
+Creator supports multiple simultaneous bliss matches without uniqueness violation.
+New bliss match does not overwrite another valid match.
+Multiple campaign placements can reference the same content item.
+Historical bliss match preserves original rule version.
+Network access and program access are independent.
+Data provenance retains source confidence and collected at.
+Unknown female percentage remains null and is not converted to zero.
+Phase1 seed creates required graph.
+Seeder persists six markets and all pricing models as data.
+New observation preserves older market history.
+Creator retains versioned audience and performance history.
+Unknown measurements remain null when new snapshot is added.
+Market versions and dated fx observations preserve history.
+Duration bands are data and do not imply linear pricing.
+Recommendation is a replayable explainable range.
+Ten times duration is not ten times the range.
+Historical output does not change when inputs change.
+Missing creator provenance cannot produce high confidence.
+Quote preserves explicit amount and idempotent version history.
+Negotiation creates new draft that requires fresh approval.
+Quote line keeps recommendation snapshot if source row changes.
+Illustration is replayable and allocations equal accepted amount.
+Unaccepted quote and invalid policy are rejected.
+Historical illustration does not change with policy rows.
+Accepted candidate becomes sourced append only observation.
+Rejected candidate is preserved without observation.
+Test/source", expected: "confidence").
+Test/source", expected: "VERIFIED").
+Test/source", expected: "HTTPS").
+Planner handshake calls economics and replays same result.
+Planner handshake requires approved owned compatible available inventory.
+Planner handshake creates no quote placement or compensation.
+Placement actual is explainable replayable and non settling.
+Corrections append and campaign rollup uses current history.
+Campaign rollup uses latest measurement per placement.
+Invalid relationships and measurements are rejected.
+Phase2 seed is additive and does not overwrite phase1 matches.
+Phase2 brazil match is approved and ph to br is ineligible.
+Re evaluating one match does not change another match.
+Unknown demographics creator review does not use zero audience.
+Second seed is idempotent.
+Phase3 seed is additive and records two brazil runs.
+Re evaluation appends a run and does not delete prior runs.
+Re evaluating one match does not change another match or its runs.
+Live checks are replaced while historical runs remain.
+Unknown demographics are still not zero after phase3 seed.
+Second phase3 seed is idempotent.
+First observation creates canonical creator profile run and provenance.
+Same source and idempotency key replays without duplicate writes.
+New observation for existing identity updates without duplicate creator.
+Same external id on different platform is a distinct identity.
+Invalid observation persists nothing.
+Controlled formation creates and evaluates audited match.
+Replay returns original and writes nothing.
+Different keys allow many matches for one creator.
+Invalid reference and documentless evaluation persist nothing.
+Approve moves review required match and writes immutable decision.
+Replay returns original and writes nothing.
+Created match without review status is rejected and persists nothing.
+Unknown decision persists nothing.
+Approved match binds to creator inventory without delivery mutation.
+Replay returns original and does not duplicate.
+Different keys allow multiple placements for same match and content.
+Nonapproved match and graph mismatches persist nothing.
+Advertiser keeps one primary workspace and append only messages.
+
+DOMAIN RULES - 15 TESTS
+
+Matching, Economics vocabulary, and entity defaults.
+
+Matching country and language is approved.
+Country mismatch is geo not eligible and does not use ai.
+Unknown audience is review required not zero.
+Missing document throws.
+Pricing vocabulary includes exposure models not minutes only.
+Observation status distinguishes verified from invented.
+Economics vocabulary does not compile a default compensation split.
+Economics http api exposes only controlled append only writes.
+Advertiser program defaults to active.
+Advertiser opportunity defaults to active.
+Bliss match defaults to created.
+Network and program access default to unknown independently.
+Ad inventory slot defaults to available.
+Data provenance confidence defaults to unknown.
+Wedding planner workspace defaults to primary and active.
+
+ARCHITECTURE CONSTRAINTS - 21 TESTS
+
+API surface, Economics boundaries, and database constraints.
+
+Phase1 read endpoints are present.
+N8n template is inactive provider configured and staging only.
+Wedding planner exposes one controlled economics write.
+Handshake delegates pricing and has no downstream authority.
+Historical service is append only and has no pricing or settlement authority.
+Phase9 contract forbids automatic feedback and payment.
+Bliss match creator id is not unique.
+Campaign placement content item id is not unique.
+Major relationships use restrict delete behavior.
+Economics catalog natural keys are unique.
+Match evaluation run bliss match id is not unique.
+Creator platform identity key is unique when present.
+Creator ingestion source and idempotency key are unique together.
+Match formation source and idempotency key are unique together.
+Match review source and idempotency key are unique together.
+Campaign placement run idempotency is unique but business keys are not.
+Wedding planner workspace advertiser id is unique.
+Wedding planner economics handshake has unique idempotency and recommendation.
+Female percentage is nullable.
+There is no direct creator to advertiser foreign key.
+Required foreign key indexes exist.
+
+OPERATIONS CONTROLS - 25 TESTS
+
+Budget, fleet lanes, lane tempo, and the subscription register.
+
+Four scopes start without an invented ceiling.
+A missing scope is not invented.
+A ceiling without spend is not compared.
+Spend at the ceiling degrades only that scope.
+Spend under the ceiling stays open.
+A partial ceiling is refused.
+Budget source does not send.
+A broken outreach lane does not stop the ocean.
+A stopped creator fleet leaves the fishing fleet moving.
+Every stopped lane does not claim the ocean is moving.
+A missing lane is refused.
+Fleet source does not send or invent a price.
+Six lanes start without an invented ceiling.
+Stopping one lane keeps the record and names no price.
+A recorded ceiling is an operational limit.
+A partial ceiling is refused.
+Tempo source does not send.
+Stored rows keep a missing cost unrecorded.
+A missing service is not invented.
+An operator cost does not become a purchase.
+A partial cost is refused.
+An incomplete paid review purchases nothing.
+A complete review stays not proposed.
+A rejected duplicate is not bought.
+Register source does not send or price with a symbol.
+
+ACQUISITION DEMONSTRATIONS - 166 TESTS
+
+Local proofs for discovery, media, delivery, marketplace, and progression. Nothing is sent.
+
+A page open is recorded without naming a watcher.
+An opinion is not an event.
+A delivery claim is not recorded.
+A named watcher is refused.
+A blank kind asks for the catalog.
+A public source is stored once and a duplicate url is not a second prospect.
+A named public source below 100 is preserved.
+A blank name and a missing source are refused.
+The reading counts only stored public sources.
+A missing list is refused.
+Discovery source does not crawl or send.
+An explanation answers and then advances in one voice.
+A price question advances without a number.
+A verified name is the address and a title is not chosen.
+A local read records the clock and claims nothing.
+A blank name is kept as a partial failure and the other prospect remains.
+A message that names another prospect is leakage.
+A missing list a negative clock and a third attempt are refused.
+Measurement source does not claim hosted scale.
+An approved alternate is the evaluator result.
+Equal scores break the tie by name.
+No approved alternate keeps the advertiser.
+A missing or inactive opportunity names nobody.
+Rematch source calls the accepted evaluator.
+A closed reading stores zero configured models and the measured calls.
+A repeat does not raise the stored model calls.
+Configuring a model traffic or an engagement count is refused.
+A laboratory result that does not match its counts is refused.
+Closed model source does not name a provider or a call.
+A public marketing road is discovered and not eligible to send.
+A road without a public source is rejected.
+Suppression keeps a new road ineligible.
+Suppression stale evidence and a missing road withhold the route.
+A current preview uses the provider neutral adapter and does not send.
+An explicit transmission request is recorded once and not sent.
+A missing list is refused.
+Route source does not transmit.
+Every persona scenario passes without a behavior change.
+The unverified price scenario states no number.
+A stale fixture name is not spoken and the economics fixture is the only number.
+Laboratory source calls the production replies.
+A coverage week stores the measured market and adds none.
+An empty library stores zero and a repeat does not add a market.
+A missing market and a qualified slice without a market are refused.
+Week source does not invent a market or a census.
+A pair of four with creator approval is accepted.
+The other balanced pairs are accepted with approval(pair: 2).
+The other balanced pairs are accepted with approval(pair: 6).
+Creator refusal withholds a balanced pair.
+A two over four stack is refused even with approval.
+Eight slots are not a balanced pair.
+A missing approval is refused.
+Stored rows keep their titles and do not become a pair.
+Inventory source does not send or invent a price.
+Dental prospect identifies a likely buying role.
+Unsupported name is rejected and stays unverified.
+Official and professional evidence with company contact is medium tier two.
+Official and professional evidence with direct contact is high.
+Directory only stays low and is not personalized.
+Marketing contact without a person uses tier three.
+Stale high confidence requires reverification.
+Personalized reply uses the recorded name and stays unsent.
+Stale reply does not use the personal name.
+A missing road is withheld.
+Suppression comes before the adapter.
+An unapproved policy or adapter is withheld.
+The preview adapter prepares a copy and does not transmit.
+Preview adapter source has no transmitter.
+An empty history is accepted and stays unrecorded.
+A stored actual is cited and a repeat does not reprice.
+Repricing settlement and an invented amount are refused.
+Acceptance source does not reprice or settle.
+A missing result states no number.
+An accepted result is the only number.
+Ask Alpha speaks the accepted amount and refuses without one.
+A preserved business and a checked recipe pass without a price.
+A qr that leaves the page is an exception.
+A preserved business with a demonstration is an exception.
+Overlay 1 does not require a permanent composite.
+A missing flattened composite is an exception for an older picture.
+Excess legitimate prospects stay queued and none are discarded.
+A larger opening count does not invent prospects.
+A missing capacity is refused.
+Flow source does not send.
+External reading waits until a production event exists.
+A page open sets the next action and invents no cost.
+An untrusted excerpt is not copied into the reading.
+Suppression is friction and the source does not call a model.
+A development reading does not claim hosted acceptance.
+Satisfied gates still leave hosted acceptance unclaimed.
+A hosted claim and a missing environment are refused.
+Hosted source does not claim a deployment.
+A graduated laboratory appends a research note and leaves production.
+The same note is not appended again.
+Traffic a production change and a failed laboratory are refused.
+Another prospect note is not shown.
+Learning source does not configure grooming models.
+Stored advertiser rows ahead of stored creator rows are not a census.
+Equal stored counts are level.
+Stored creator rows ahead of stored advertiser rows.
+A missing count is not treated as zero.
+A blank stored name is skipped.
+Balance source does not invent a price or send.
+A qualified pair keeps the evaluator result and does not claim a win.
+An approved evaluator result is copied and still is not a win.
+A preserved advertiser and a duplicate pair do not call the evaluator.
+A tenant reading hides the other advertiser.
+Handoff source uses the accepted evaluator and does not score.
+A marketplace reading stores measured counts and leaves revenue unrecorded.
+An empty marketplace stores zero and a repeat does not raise the count.
+A revenue amount and an added slot are refused.
+A stored revenue row is counted without copying an amount.
+Metrics source does not invent revenue or a census.
+A price question is not a negotiation.
+No approved quote states no number.
+Below the floor names the floor and does not write the proposal.
+Above the envelope does not raise the price.
+An in range proposal waits for the ledger total.
+A negotiation without one amount explains the envelope.
+A human request stays a human request.
+A named public business in an initial market passes.
+A named public business outside the initial markets is preserved.
+Missing public source does not pass and does not invent a name.
+Restaurant overlay uses the market language.
+Red stops the prohibited action and keeps the record.
+Yellow keeps a preserved business.
+Green moves to the next authorized action and does not send.
+Progression source does not send.
+A restaurant recipe matches the page qr and the disclosure.
+A qr that leaves the prospect page fails qa.
+A recipe that names a person fails qa and is not a composite.
+The player source does not send or call a model.
+Four stored advertisers leave two slots open in a pair of six.
+A full pair still allows open slots.
+Creator refusal withholds the rotation and keeps the open slots.
+A missing list is not treated as zero advertisers.
+Extra advertisers and a missing approval are refused.
+A blank name is skipped and a repeat is kept once.
+Preview does not claim a rotation.
+Rotation source does not send or invent a price.
+A later period keeps the open slots and records no revenue.
+A withheld decision keeps the open count and a repeat does not fill.
+A filled slot and a revenue amount are refused.
+Period source does not invent a census or a price.
+One hundred checks pass and are not claimed as stored prospects.
+Ten thousand checks are measured and still not claimed.
+A rung outside the ladder is refused.
+Scale source does not call a model or send.
+A fingerprinted slice covers only its stored market.
+A missing fingerprint is not counted as coverage.
+A blank market is not invented.
+Missing provenance and a missing list are refused.
+Coverage source does not send or download.
+Renamed exact duplicate earns no quota credit.
+Near duplicate frame earns no quota credit.
+Usable unique slice earns one credit.
+Short clip is rejected and creates replacement pressure.
+Pharmacy buying roles include a marketing manager.
+Unsupported name is not treated as a verified person.
+Pricing question does not invent a price.
+Human request escalates and does not mark a win.
+A discovered business without an accepted result stays asleep.
+Suppression comes before a campaign.
+An accepted result without an advertiser opens no campaign.
+An accepted result and an advertiser wake the planner.
+Wake source does not plan with a model.
+
+HTTP API - 161 TESTS
+
+The same rules exercised through the Bliss API, including Creative Academy, Economics, hosted posture, and Wedding Planner.
+
+An opinion is refused and a page open is stored.
+A public source is written once and the reading counts stored rows.
+Ask Alpha answers then advances and repeats a studied answer.
+A local batch is measured once and a retry is a second row.
+Approved alternate matches the evaluator and sends nothing.
+No approved alternate keeps the advertiser.
+A missing opportunity names nobody.
+A closed reading matches the laboratory and does not configure a model.
+Public roads stay ineligible and suppression sends nothing.
+A transmission request is audited once and the route stays unsent.
+The laboratory passes and does not write the prospect.
+A coverage week matches the fuel reading and does not add a market.
+The curriculum is judged once, stores 9 lessons, and does not send. A second store is a duplicate. Campaign-ready returns 400.
+The production brief uses the pharmacy anchor without generating an advertisement.
+Both final gates must pass, and eligibility still does not send.
+A client can enter only a store name and niche to prepare the recipe. Automotive service selects Taller Ruta.
+The old generate flag fails closed until a production model is configured.
+The installed creator reports the missing provider without calling a model. The status is PROVIDER_CONFIGURATION_REQUIRED.
+A configured test provider stores one idempotent draft, status GENERATED_PENDING_REVIEW, serves the PNG, and keeps it unsent.
+The creator does not generate a queued niche with an unrelated teacher. Auto-parts never reaches the provider.
+A human decision stays in its workspace and does not write a match.
+A pair reading does not rewrite stored slots.
+Public evidence can raise confidence without sending.
+Secret file supplies the connection without writing appsettings.
+Secret file refuses a path inside the application directory.
+Secret file refuses an inline value and a file together.
+Secret file refuses a missing or empty file without echoing a value.
+Migration command is explicit and does not claim acceptance.
+Design time connection uses the external value when it is set.
+Publish scanner rejects a secret left in the output.
+VerifyFull rehearsal refuses without the local opt in.
+Container contract does not embed a secret.
+Reference endpoints return structured provenance.
+Economics reference routes do not expose generic writes or quotes.
+Snapshot endpoints return versioned metrics and provenance.
+Snapshot routes are read only.
+Phase3 endpoints return versioned sourced context.
+Phase3 routes are read only.
+Recommendation endpoint returns and replays explainable range.
+Recommendation endpoint rejects unknown inputs.
+Quote api requires explicit human approval before acceptance.
+Compensation api returns versioned non settlement illustration.
+Research api stages then human promotes public evidence.
+Research api rejects ai verified claim.
+Planner requests and reads explainable economics result.
+Advertiser handshake is tenant scoped and direct economics write stays forbidden.
+Historical learning api appends actuals and campaign snapshot.
+Historical api rejects unknown measurements.
+Owner acceptance cites no amount when history is empty.
+A stored placement actual is cited and the recommendation stays.
+Ask Alpha says only an accepted economics amount.
+Preview adapter marks one road eligible and transmits nothing.
+A batch counts a preserved business and a produced recipe.
+Reading fleets keeps a broken lane from stopping the ocean.
+Regulating flow keeps every stored prospect.
+Root serves the public bliss chapel experience.
+Operations route preserves the internal console.
+Css", mediaType: "text/css").
+Js", mediaType: "text/javascript").
+Css", mediaType: "text/css").
+Js", mediaType: "text/javascript").
+Client routes fall back to the dashboard.
+Research reads production events and leaves the prospect unchanged.
+The reading stores the process posture and does not claim hosted acceptance.
+Stopping outreach leaves discovery moving and preserves the prospect.
+A research note stays with its prospect and does not change production.
+Balance reads stored rows and leaves revenue unrecorded.
+A qualified advertiser is handed once and stays inside its tenant.
+A marketplace reading matches stored rows and does not record revenue.
+Ask Alpha negotiates only inside the economics envelope.
+Responses include generated and accepted request ids.
+Invalid request ids are replaced.
+Write throttle events appear on runtime status.
+Evaluation export is a summary pack with request id.
+Unknown ledger is rejected.
+Match case file includes related evaluations without snapshots.
+Missing match case file is not found.
+Creator case file includes related matches without snapshots.
+Missing creator case file is not found.
+Campaign case file includes planned placements without snapshots.
+Missing campaign case file is not found.
+Ledger pack digest covers records and ignores export metadata.
+Match creator and campaign packs include stable content digests.
+Missing or unsupported exports omit content digest.
+Sha256 hex is lowercase and stable.
+Exported ledger and case packs verify as matched.
+Tampered pack is reported as mismatch.
+Unsupported or invalid packs are rejected.
+Verification receipt includes correlation and event detail.
+Mismatch receipt still records detail without storing the pack.
+Status exposes the last verification receipt without the pack.
+Status keeps recent verification receipts without the pack.
+Verification history drops receipts beyond the limit.
+Development does not require hosted production settings.
+Production accepts a hosted ssl identity and encrypted key declaration.
+Production rejects database tls that does not verify the server name(ssl: "SSL Mode=Require").
+Production rejects database tls that does not verify the server name(ssl: "SSL Mode=VerifyCA").
+Production rejects database tls that does not verify the server name(ssl: "SSL Mode=VerifyFull;Trust Server Certificate=true").
+Production rejects unsafe database settings(connectionString: "Host=localhost;Port=5432;Database=bliss;Username=b"···, expected: "Loopback").
+1;Port=5432;Database=bliss;Username=b"···, expected: "Loopback").
+Test;Port=5432;Database=bl"···, expected: "SSL Mode").
+Test;Port=5432;Database=bl"···, expected: "secret store").
+Production rejects a missing database password without echoing it.
+Test").
+Production rejects a non hosted identity provider(authority: "https://localhost/realms/bliss").
+1/realms/bliss").
+Production rejects placeholder and committed secrets.
+Production rejects duplicate roles missing backup and loopback proxies.
+Production rejects a key ring that is not encrypted.
+Committed appsettings do not contain secrets.
+Certificate loader rejects a wrong password without echoing it.
+Request log records the path and omits the query.
+Userinfo role array grants admin write and review.
+Userinfo reviewer string cannot write.
+Json array role claim is normalized before authorization.
+Cookie alignment honors framework role claims.
+OpenIdConnect userinfo event applies roles.
+Development posture is anonymous and does not claim production.
+Production probes distinguish process database and posture.
+Persisted keys are encrypted and round trip on a second process.
+Liveness stays available under a small concurrent probe.
+Production startup rejects an unencrypted key ring.
+Backup drill refuses without an explicit local opt in.
+Campaigns and networks return phase2 records.
+Evaluate rules returns bad request for phase1 rule without document.
+Evaluation runs are visible and match history is listed.
+Evaluate rules appends a run visible on the api.
+Post then replay returns created then ok with same run.
+Invalid observation returns bad request.
+Post then replay exposes one formation and evaluated match.
+Invalid reference returns bad request without formation.
+Queue lists review required and approve then replay are idempotent.
+Created match cannot be approved.
+Post then replay exposes one planned binding.
+Nonapproved match returns bad request.
+Development session explicitly reports open mode.
+Authenticated identity replaces submitted operator label.
+Anonymous api access is rejected when oidc is enabled.
+Roles and csrf both gate operator writes.
+Liveness and database readiness are machine readable.
+Security headers are applied without server disclosure.
+Controlled writes are rate limited per runtime policy.
+A named public business below 100 is kept without a demonstration.
+Studio slice duplicate and pharmacy page keep the quota and contact rules.
+Discovery requires a public source then one demonstration stays unsent.
+A prospect is stored in the bliss database.
+An existing file is copied once and then the database is read.
+Green yellow and red leave the prospect on the record.
+Produce stores overlay 1 and serves the player.
+A rotation leaves open slots and does not rewrite inventory.
+A later period stores the measured slots and does not fill them.
+The ladder is measured without changing the prospect.
+A studio slice covers its stored market and a duplicate does not.
+The register starts unpriced and a reached ceiling degrades one scope.
+Authorized advertiser can open session and resume durable messages.
+Invalid ids and ai actors fail safely.
+Anonymous and cross tenant access are rejected.
+Phase1 source does not invoke ai or alpha auto.
+Discovered businesses stay asleep and open no workspace.
+An accepted quote wakes the existing planner once.
+An unaccepted quote and suppression leave the planner asleep.
+
+WEDDING PLANNER APPROVAL - 5 TESTS
+
+Human creative approval stays inside its workspace and calls no model.
+
+A human approval is not campaign ready and calls no model.
+A withhold stays withheld and a repeat does not ask again.
+A model a campaign and a discovered business are refused.
+Another workspace decision is not shown.
+Creative source does not call a matcher or a model.
+
+Boundaries that stayed closed
+
+No message was sent. No campaign was approved. No price was invented. Hosted acceptance was not claimed. Delivery remains NOT_SENT.
