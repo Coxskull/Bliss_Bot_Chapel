@@ -1,6 +1,6 @@
 # Engineering Contract: Hosted dock
 
-**Status:** open. Hosted acceptance is not claimed.
+**Status:** open. The owner acknowledged the partial result on 2026-10-05. Hosted acceptance is not claimed.
 **Classification target:** the evidence file records the result after the four phases.
 **Delivery:** `NOT_SENT`. Green does not mean send.
 
