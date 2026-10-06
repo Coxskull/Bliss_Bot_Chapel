@@ -74,6 +74,16 @@ verified.
 | 28 | Balanced creative inventory | Verified | A pair is 2, 4, or 6. A two-over-four stack is refused. Creator approval governs density. Stored slots are not rewritten. Green does not send |
 | 29 | Rotation abundance | Verified | One rotation pass. Open slots remain. One advertiser is not required for every theoretical slot. Creator approval governs the rotation. Green does not send |
 
+## Open owner amendments (2026-10-06)
+
+Two controlling blueprints are open. They are not verified acquisition phases, and they do not reopen Phases 4–29.
+
+- Advertising Real Estate Catalog: phases ARE-1 through ARE-11, after the upload dock in Phase 0.
+- Creative Academy Reference Library: phases ACA-1 through ACA-8.
+- Joint acceptance: J-1.
+
+The plan is `ALPHA-MASTER-BLUEPRINT-PHASES.md`. Prototype and showcase uploads go in `assets/alpha-prototypes/`. Both amendments stay OPEN / PENDING IMPLEMENTATION + END-TO-END EVIDENCE until the owner reviews the acceptance recordings. A folder of images is not that evidence.
+
 ## Open conflicts
 
 - Resolved in Phase 8: a named public-source business is kept when the road scores below 100. The video, the decision-maker record, and the send stay withheld. A missing name or a missing public URL is still not stored.
