@@ -381,4 +381,4 @@ Catalog: OPEN / PENDING IMPLEMENTATION + END-TO-END EVIDENCE.
 
 Academy Reference Library: OPEN / PENDING IMPLEMENTATION + AUTONOMOUS CREATIVE ACCEPTANCE EVIDENCE.
 
-Phase 0 is the only phase this change performs. ARE-1 through ARE-11, ACA-1 through ACA-8, and J-1 remain pending.
+Phase 0, the upload dock, is in the repository. A later change installs the draft catalog engine at `/api/operations/blueprint` and the operations view `/operations#/catalog`. That engine names the draft products, refuses unrecorded geometry, refuses an invented price, and retrieves Academy references only when a file is ACTIVE. It does not mark ARE-11 or ACA-8 accepted. Both amendments remain OPEN until the owner reviews end-to-end evidence.
