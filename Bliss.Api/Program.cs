@@ -101,6 +101,7 @@ builder.Services.AddScoped<CoverageWeekService>();
 builder.Services.AddScoped<MarketplaceMetricsService>();
 builder.Services.AddScoped<ClosedModelsService>();
 builder.Services.AddScoped<CreativeAcademyService>();
+builder.Services.AddScoped<BlueprintPhaseService>();
 builder.Services.AddScoped<CreativeGenerationService>();
 builder.Services.AddHttpClient<ICreativeImageGenerator, ConfiguredCreativeImageGenerator>(client =>
 {

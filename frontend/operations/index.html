@@ -18,6 +18,7 @@
   <script src="/operations/handoff.js?v=handoff-1" defer></script>
   <script src="/operations/creative.js?v=creative-1" defer></script>
   <script src="/operations/academy.js?v=academy-6" defer></script>
+  <script src="/operations/catalog.js?v=catalog-1" defer></script>
   <script src="/operations/learning.js?v=learning-1" defer></script>
   <script src="/operations/rotation.js?v=rotation-1" defer></script>
   <script src="/operations/acceptance.js?v=acceptance-1" defer></script>
@@ -60,6 +61,7 @@
         <a class="nav-item" href="#/handoff" data-view="handoff"><span class="nav-icon" aria-hidden="true">◇</span><span>Handoff</span></a>
         <a class="nav-item" href="#/creative" data-view="creative"><span class="nav-icon" aria-hidden="true">✎</span><span>Creative</span></a>
         <a class="nav-item" href="#/academy" data-view="academy"><span class="nav-icon" aria-hidden="true">🎓</span><span>Academy</span></a>
+        <a class="nav-item" href="#/catalog" data-view="catalog"><span class="nav-icon" aria-hidden="true">▭</span><span>Real estate</span></a>
         <a class="nav-item" href="#/learning" data-view="learning"><span class="nav-icon" aria-hidden="true">≡</span><span>Learning</span></a>
         <a class="nav-item" href="#/period" data-view="period"><span class="nav-icon" aria-hidden="true">↻</span><span>Later period</span></a>
         <a class="nav-item" href="#/acceptance" data-view="acceptance"><span class="nav-icon" aria-hidden="true">§</span><span>Phase 9</span></a>
@@ -796,6 +798,43 @@
           <section class="panel table-panel">
             <div class="panel-header"><div><p class="eyebrow">HISTORY</p><h3>Stored actuals</h3></div></div>
             <div class="table-wrap" id="acceptance-rows"></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-catalog" aria-labelledby="catalog-title">
+          <div class="section-intro">
+            <div>
+              <p class="eyebrow">ADVERTISING REAL ESTATE</p>
+              <h2 id="catalog-title">Defined inventory, retrieved by Ask Alpha</h2>
+              <p id="catalog-notice">Loading the draft catalog.</p>
+              <p id="catalog-delivery">Delivery NOT_SENT.</p>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">ASK ALPHA</p><h3>Acceptance questions</h3></div></div>
+            <p>These questions read the stored draft. A draft product is not an offer. Economics is not asked to invent a rate. The educational guide is not a contract.</p>
+            <div class="form-actions">
+              <button class="secondary-button" type="button" data-catalog-ask="This is my first campaign. I want to try Alpha, but I don't want to spend very much.">Lower budget</button>
+              <button class="secondary-button" type="button" data-catalog-ask="We want a premium campaign with a much larger visual presence.">Premium</button>
+              <button class="secondary-button" type="button" data-catalog-ask="We don't want another advertiser displayed beside us.">Exclusivity</button>
+              <button class="secondary-button" type="button" data-catalog-ask="Will this same advertising configuration work on mobile?">Mobile</button>
+              <button class="secondary-button" type="button" data-catalog-ask="What if I want the advertisement displayed 20 times instead of 5?">Twenty displays</button>
+              <button class="secondary-button" type="button" data-catalog-ask="How will I know my advertisement actually ran?">Proof of delivery</button>
+              <button class="secondary-button" type="button" data-catalog-ask="I want a configuration covering 70% of the podcast screen for $10.">Unauthorized request</button>
+            </div>
+            <p id="catalog-turn"></p>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">PRODUCTS</p><h3>Draft inventory</h3></div></div>
+            <div class="table-wrap" id="catalog-products"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">SHOWCASE</p><h3>Illustrations on file</h3></div></div>
+            <div id="catalog-showcases"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">ACADEMY LIBRARY</p><h3>50 reference slots</h3></div></div>
+            <p id="catalog-references"></p>
           </section>
         </section>
 
