@@ -1,0 +1,51 @@
+referenceId	nicheNumber	nicheKey	nicheName	expectedFile	lifecycle	status	learn	doNotCopy
+ACA-001-V1	1	pharmacy	Pharmacy / Drugstore	ACA-001-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-002-V1	2	supermarket	Supermarket / Hypermarket	ACA-002-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-003-V1	3	shopping-mall	Shopping Mall / Shopping Center	ACA-003-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-004-V1	4	new-car	New-Car Dealership	ACA-004-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-005-V1	5	used-car	Used-Car Dealership	ACA-005-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-006-V1	6	restaurant	Restaurant / Casual Dining	ACA-006-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-007-V1	7	fitness	Gym / Fitness Center	ACA-007-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-008-V1	8	automotive	Automotive Service / Mechanic Repair Shop	ACA-008-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-009-V1	9	dental	Dental Office / Dental Clinic	ACA-009-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-010-V1	10	motorcycle	Motorcycle / Moped Dealership	ACA-010-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-011-V1	11	auto-parts	Auto-Parts Store	ACA-011-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-012-V1	12	gas-station	Gas Station / Convenience Store	ACA-012-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-013-V1	13	fast-food	Fast-Food Restaurant	ACA-013-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-014-V1	14	pizza	Pizza Restaurant	ACA-014-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-015-V1	15	coffee-shop	Coffee Shop / Cafe	ACA-015-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-016-V1	16	bakery	Bakery / Patisserie	ACA-016-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-017-V1	17	sports-bar	Sports Bar / Nightlife Venue	ACA-017-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-018-V1	18	hotel	Hotel / Resort	ACA-018-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-019-V1	19	travel	Travel / Tourism Business	ACA-019-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-020-V1	20	real-estate	Real-Estate Agency / Property Developer	ACA-020-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-021-V1	21	law	Law Firm / Legal Practice	ACA-021-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-022-V1	22	medical	Medical Clinic / Doctor's Office	ACA-022-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-023-V1	23	optical	Optical / Eyewear Store	ACA-023-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-024-V1	24	beauty-salon	Beauty Salon	ACA-024-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-025-V1	25	barber	Barber Shop	ACA-025-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-026-V1	26	nail-salon	Nail Salon	ACA-026-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-027-V1	27	spa	Spa / Beauty / Aesthetics	ACA-027-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-028-V1	28	fashion	Clothing / Fashion Retailer	ACA-028-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-029-V1	29	sneakers	Athletic Shoes / Sneaker Retailer	ACA-029-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-030-V1	30	jewelry	Jewelry / Watch Retailer	ACA-030-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-031-V1	31	electronics	Electronics Retailer	ACA-031-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-032-V1	32	mobile-phone	Mobile-Phone / Accessories Store	ACA-032-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-033-V1	33	furniture	Furniture / Home Furnishing	ACA-033-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-034-V1	34	hardware	Home Improvement / Hardware	ACA-034-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-035-V1	35	appliance	Appliance Retailer	ACA-035-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-036-V1	36	department	Department / Variety Store	ACA-036-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-037-V1	37	toys	Toy / Children's Retailer	ACA-037-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-038-V1	38	pet	Pet Store / Pet Care	ACA-038-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-039-V1	39	education	Education / Vocational Training	ACA-039-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-040-V1	40	financial	Financial Services / Insurance	ACA-040-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-041-V1	41	soda	Soda / Soft-Drink Brand	ACA-041-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-042-V1	42	bottled-water	Bottled-Water Brand	ACA-042-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-043-V1	43	juice	Fruit-Juice / Beverage Brand	ACA-043-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-044-V1	44	coffee-brand	Coffee Product Brand	ACA-044-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-045-V1	45	chocolate	Chocolate / Confectionery	ACA-045-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-046-V1	46	candy	Candy / Snack Brand	ACA-046-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-047-V1	47	packaged-bakery	Bread / Packaged Bakery	ACA-047-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-048-V1	48	ice-cream	Ice-Cream / Frozen Dessert	ACA-048-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-049-V1	49	personal-care	Personal-Care / Cosmetics	ACA-049-V1.png	CANDIDATE	AWAITING_UPLOAD		
+ACA-050-V1	50	household	Household Cleaning / Consumer Products	ACA-050-V1.png	CANDIDATE	AWAITING_UPLOAD		
