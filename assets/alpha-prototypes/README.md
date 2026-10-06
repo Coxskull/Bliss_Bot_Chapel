@@ -6,8 +6,8 @@ Status of both amendments: OPEN / PENDING IMPLEMENTATION + END-TO-END EVIDENCE.
 
 | Folder | What to upload | Identity |
 | --- | --- | --- |
-| `creative-academy/inbox/` | The 50 Creative Academy quality prototypes | `ACA-001-V1` through `ACA-050-V1` |
-| `advertising-real-estate/showcase/` | Inventory showcase illustrations | `ARE-001-V1`, `ARE-002-V1`, `ARE-003-V1` |
+| `creative-academy/inbox/` | The Creative Academy quality prototypes | 49 candidate files are registered in `MANIFEST.tsv`. Used-car is still awaiting. Catalog and podcast images stay unassigned. |
+| `advertising-real-estate/showcase/` | Inventory showcase illustrations | `ARE-001-V1.jpeg`, `ARE-002-V1.jpeg`, and `ARE-003-V1.jpeg` are on file and remain draft illustrations. |
 
 `advertising-real-estate/showcase/ARE-GUIDE-001-V1.png` is already stored. It is the educational catalog overview. Percentages and prices drawn on that image are illustrative. Official geometry and official price come from an approved specification and from Economics.
 

@@ -4,10 +4,10 @@ Upload the product illustrations that explain a configuration. The illustration 
 
 | Path | Showcase ID | What belongs here | Status |
 | --- | --- | --- | --- |
-| `ARE-GUIDE-001-V1.png` | ARE-GUIDE-001-V1 | Educational catalog overview. Stored from the supplied infographic. | UPLOADED / educational only |
-| `ARE-001-V1/` | ARE-001-V1 | Premium single-advertiser configuration. AutoMax in the guide is a showcase, not the brand template. | AWAITING_UPLOAD |
-| `ARE-002-V1/` | ARE-002-V1 | Premium two-advertiser split. Two brands stay visually distinct. Shared premium inventory. | AWAITING_UPLOAD |
-| `ARE-003-V1/` | ARE-003-V1 | Standard / entry multi-advertiser configuration. Smaller rectangles. | AWAITING_UPLOAD |
+| `ARE-GUIDE-001-V1.png` | ARE-GUIDE-001-V1 | Educational catalog overview. Stored from the supplied infographic. | ON FILE / educational only / DRAFT |
+| `ARE-001-V1/ARE-001-V1.jpeg` | ARE-001-V1 | Premium single-advertiser configuration. The pictured brand is a showcase, not the template. | ON FILE / DRAFT |
+| `ARE-002-V1/ARE-002-V1.jpeg` | ARE-002-V1 | Premium two-advertiser split. Two brands stay visually distinct. Shared premium inventory. | ON FILE / DRAFT |
+| `ARE-003-V1/ARE-003-V1.jpeg` | ARE-003-V1 | Standard / entry multi-advertiser configuration. Smaller rectangles. | ON FILE / DRAFT |
 
 Drop one image into the matching folder and name it the same as the folder plus an extension, for example `ARE-001-V1/ARE-001-V1.png`.
 
