@@ -81,7 +81,7 @@ The package contains the Harborlight brief, automatically retrieved references, 
 
 **Quality DNA.** GQD-1 stays the attribute list. Grades stay `UNCLASSIFIED` until a human classifies a specific attribute from evidence. The phase prepares the attribute list for that review. It does not write scores to complete the field.
 
-**Progress.** The HV-001 review sheet is prepared. All sixteen GQD-1 grades are `UNCLASSIFIED`. Copy checks are `NOT_REVIEWED`. Panama-market authenticity and the adapted layout are `UNRECORDED`. Human review remains `NOT_REQUESTED`. Pixel distances to the four retrieved references are `MEASURED` and `NOT_JUDGED`. They are not grades.
+**Progress.** The HV-001 review sheet is prepared. All sixteen GQD-1 grades are `UNCLASSIFIED`. Copy checks are `NOT_REVIEWED`. Panama-market authenticity and the adapted layout are `UNRECORDED`. Human review remains `NOT_REQUESTED`. Pixel distances to the four retrieved references are `MEASURED` and `NOT_JUDGED`. They are not grades. An apply gate can classify a supplied attribute in memory and leaves every unsupplied attribute `UNCLASSIFIED`. No owner grade is on file, and the gate does not infer acceptance.
 
 **Done when.** The human review result is recorded by the owner. Unreviewed attributes remain `UNCLASSIFIED`.
 

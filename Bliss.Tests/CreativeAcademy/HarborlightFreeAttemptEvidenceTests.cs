@@ -134,6 +134,57 @@ public sealed class HarborlightFreeAttemptEvidenceTests
     }
 
     [Fact]
+    public void Owner_grade_gate_applies_only_supplied_attributes()
+    {
+        var json = File.ReadAllText(EvidencePath());
+        var prepared = HarborlightReview.ParseEvidence(json);
+        var empty = HarborlightReview.ApplyOwnerGrades(prepared, []);
+        Assert.Equal(HarborlightReview.Prepared, empty.Status);
+        Assert.Equal(prepared.Notice, empty.Notice);
+        Assert.All(empty.Attributes, item => Assert.Equal(ReferenceLibrary.Unclassified, item.Grade));
+
+        var applied = HarborlightReview.ApplyOwnerGrades(
+            prepared,
+            [new QualityAttribute("color power", "STRONG")]);
+        Assert.Equal(HarborlightReview.OwnerEntryApplied, applied.Status);
+        Assert.Equal("STRONG", applied.Attributes.Single(item => item.Name == "color power").Grade);
+        Assert.Equal(15, applied.Attributes.Count(item => item.Grade == ReferenceLibrary.Unclassified));
+        Assert.Equal(HarborlightReview.NotRequested, applied.HumanReview);
+        Assert.False(applied.CampaignReady);
+        Assert.Equal("NOT_SENT", applied.Delivery);
+        Assert.Equal("BASELINE_NOT_RECORDED", applied.Regression);
+
+        Assert.Contains(
+            "UNCLASSIFIED",
+            Assert.Throws<InvalidOperationException>(() =>
+                HarborlightReview.ApplyOwnerGrades(prepared, [new QualityAttribute("color power", "UNCLASSIFIED")])).Message,
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "unknown",
+            Assert.Throws<InvalidOperationException>(() =>
+                HarborlightReview.ApplyOwnerGrades(prepared, [new QualityAttribute("invented attribute", "STRONG")])).Message,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            "twice",
+            Assert.Throws<InvalidOperationException>(() =>
+                HarborlightReview.ApplyOwnerGrades(prepared, [
+                    new QualityAttribute("color power", "STRONG"),
+                    new QualityAttribute("color power", "SUPPORTING")
+                ])).Message,
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            "REFERENCE_STRENGTH",
+            Assert.Throws<InvalidOperationException>(() =>
+                HarborlightReview.ApplyOwnerGrades(prepared, [new QualityAttribute("color power", "ACCEPTED")])).Message,
+            StringComparison.Ordinal);
+
+        var stored = HarborlightReview.ParseEvidence(File.ReadAllText(EvidencePath()));
+        Assert.Equal(HarborlightReview.Prepared, stored.Status);
+        Assert.All(stored.Attributes, item => Assert.Equal(ReferenceLibrary.Unclassified, item.Grade));
+        Assert.Equal(json, File.ReadAllText(EvidencePath()));
+    }
+
+    [Fact]
     public void Workflow_trace_refuses_an_invented_acceptance()
     {
         var node = JsonNode.Parse(File.ReadAllText(EvidencePath()))!;

@@ -409,6 +409,51 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal("BASELINE_NOT_RECORDED", sheet.GetProperty("regression").GetString());
     }
 
+    [Fact]
+    public async Task Harborlight_owner_grades_apply_in_memory_and_leave_the_file_unclassified()
+    {
+        await using var factory = new BlissApiFactory();
+        var client = factory.CreateClient();
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/academy/harborlight-review",
+            new
+            {
+                grades = new[] { new { name = "color power", grade = "STRONG" } },
+                humanReview = "ACCEPTED",
+                campaignReady = true
+            });
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var sheet = body.GetProperty("reviewSheet");
+        var attributes = sheet.GetProperty("attributes").EnumerateArray().ToArray();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.False(body.GetProperty("stored").GetBoolean());
+        Assert.Contains("not changed", body.GetProperty("notice").GetString(), StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("OWNER_ENTRY_APPLIED", sheet.GetProperty("status").GetString());
+        Assert.Equal("NOT_REQUESTED", sheet.GetProperty("humanReview").GetString());
+        Assert.False(sheet.GetProperty("campaignReady").GetBoolean());
+        Assert.Equal("NOT_SENT", sheet.GetProperty("delivery").GetString());
+        Assert.Equal("BASELINE_NOT_RECORDED", sheet.GetProperty("regression").GetString());
+        Assert.Equal(1, attributes.Count(item => item.GetProperty("grade").GetString() != "UNCLASSIFIED"));
+        Assert.Equal(
+            "STRONG",
+            attributes.Single(item => item.GetProperty("name").GetString() == "color power")
+                .GetProperty("grade").GetString());
+
+        var stored = await client.GetAsync("/api/operations/academy/harborlight-review");
+        var storedSheet = (await stored.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("reviewSheet");
+        Assert.Equal(HttpStatusCode.OK, stored.StatusCode);
+        Assert.Equal("PREPARED", storedSheet.GetProperty("status").GetString());
+        Assert.All(
+            storedSheet.GetProperty("attributes").EnumerateArray(),
+            item => Assert.Equal("UNCLASSIFIED", item.GetProperty("grade").GetString()));
+
+        var invalid = await client.PostAsJsonAsync(
+            "/api/operations/academy/harborlight-review",
+            new { grades = new[] { new { name = "color power", grade = "ACCEPTED" } } });
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+    }
+
     private static JsonElement Lesson(JsonElement board, string key)
     {
         foreach (var lesson in board.GetProperty("lessons").EnumerateArray())
