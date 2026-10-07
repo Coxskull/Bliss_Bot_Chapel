@@ -111,6 +111,8 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal("PRODUCTION_SPEC_READY", brief!.GetProperty("status").GetString());
         Assert.Equal("vidacare-master-01", brief.GetProperty("teacherKey").GetString());
         Assert.Equal("Burgundy and gold", brief.GetProperty("palette").GetString());
+        Assert.Equal("GQD-1", brief.GetProperty("qualityDnaVersion").GetString());
+        Assert.Contains("Keep the advertiser palette exactly: Burgundy and gold", brief.GetProperty("generationRecipe").GetString());
         Assert.Equal("LOCALLY_PLAUSIBLE_DEFAULT", brief.GetProperty("casting").GetProperty("status").GetString());
         Assert.False(brief.GetProperty("canGenerate").GetBoolean());
         Assert.Equal(0, brief.GetProperty("modelCalls").GetInt32());

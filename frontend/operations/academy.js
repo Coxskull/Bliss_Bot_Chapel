@@ -22,7 +22,7 @@ function productionBriefCard(item) {
   return `<article>
     <p class="eyebrow">${escapeHtml(item.status)}</p>
     <h4>${escapeHtml(item.brandName)} · ${escapeHtml(item.market)} · ${escapeHtml(item.language)}</h4>
-    <p>Teacher ${escapeHtml(item.teacherKey || "None on file")}. Palette ${escapeHtml(item.palette)}. Font ${escapeHtml(item.fontFamily)}.</p>
+    <p>Quality DNA ${escapeHtml(item.qualityDnaVersion || "unrecorded")}. Teacher ${escapeHtml(item.teacherKey || "None on file")}. Advertiser palette kept: ${escapeHtml(item.palette)}. Font ${escapeHtml(item.fontFamily)}.</p>
     <p>Headline: ${escapeHtml(item.headline)} · CTA: ${escapeHtml(item.cta)}</p>
     <p>Requirements: ${escapeHtml(item.requirements)}</p>
     <p>Casting: ${escapeHtml(item.casting.status)} — ${escapeHtml(item.casting.direction)}</p>

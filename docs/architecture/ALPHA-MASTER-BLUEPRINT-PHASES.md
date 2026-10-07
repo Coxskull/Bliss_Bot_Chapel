@@ -282,6 +282,8 @@ This DNA sets the quality class. Advertiser Brand DNA sets the identity. The two
 
 **Done when.** Production reads the DNA version that was ACTIVE at generation time, and a Brand DNA palette is preserved rather than replaced by a reference brand's colors.
 
+**Progress.** Production briefs read Global Quality DNA `GQD-1`, the existing reference-parity list. The recipe names that version and keeps the advertiser palette text. A palette that names VidaCare, Maison Fleur, Nova Fit, Taller Ruta, FreshMart, or Brava Moto is refused. Prototype quality grades stay `UNCLASSIFIED`. This does not accept ACA-8.
+
 ### ACA-4 — Four layers and selective retrieval
 
 Keep four layers distinct:

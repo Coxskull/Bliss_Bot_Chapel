@@ -262,12 +262,19 @@ public sealed class CreativeAcademyTests
         Assert.Equal(CreativeAcademy.ProductionSpecReady, brief.Status);
         Assert.Equal(CreativeAcademy.PharmacyTeacher, brief.TeacherKey);
         Assert.Equal("Burgundy and gold", brief.Palette);
+        Assert.Equal(ReferenceLibrary.QualityDnaVersion, brief.QualityDnaVersion);
+        Assert.Contains("Quality DNA " + ReferenceLibrary.QualityDnaVersion, brief.GenerationRecipe);
+        Assert.Contains("Keep the advertiser palette exactly: Burgundy and gold", brief.GenerationRecipe);
         Assert.Equal("Montserrat", brief.FontFamily);
         Assert.Equal("LOCALLY_PLAUSIBLE_DEFAULT", brief.Casting.Status);
         Assert.Contains("hero dominance", brief.QualitySignature);
         Assert.Contains("photography and people", brief.ReplaceCreative);
         Assert.False(brief.CanGenerate);
         Assert.Equal(0, brief.ModelCalls);
+        Assert.Throws<InvalidOperationException>(() => CreativeAcademy.PrepareProductionBrief(
+            "pharmacy", "Farmacia Nueva Salud", "VidaCare burgundy and green", "Montserrat",
+            "Tu salud, más cerca", "Recoge tu receta", "Panama", "Spanish",
+            "Feature prescription pickup", true, false, false));
         Assert.False(brief.CampaignReady);
         Assert.Equal("NOT_SENT", brief.Delivery);
     }
