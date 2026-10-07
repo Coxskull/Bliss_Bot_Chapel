@@ -1,0 +1,118 @@
+INSTRUCTION AND AMENDMENT END-TO-END REPORT
+Date: 2026-10-07
+Test: InstructionAmendmentEndToEndApiTests
+Full suite: 523 passed, 0 failed, 0 skipped
+Verdict: Every stored owner instruction was read. Supplied facts are present. Open facts stayed open. Both amendments remain OPEN. This report is the evidence of that reading. It does not close either amendment.
+
+METHOD
+One application walk covered the catalog blueprint, stored images, all seven Ask Alpha questions, the conversation ledger, inventory adaptation, a copied-reference check, joint acceptance, and the Harborlight voyage. The voyage stopped before a provider call. Model calls were 0. Campaign ready stayed false. Delivery stayed NOT_SENT.
+
+OWNER INSTRUCTIONS THAT ARE SUPPLIED
+50 of 50 Academy references are uploaded and ACTIVE.
+Every reference has a LEARN note and a DO NOT COPY note.
+ACA-005-V1.png is the used-car prototype and is ACTIVE.
+ACA-004-V1 is Automotive.jpeg for new-car. Auto shop.jpeg remains automotive service.
+ACA-014-V1 is Italian restaurant.jpeg for pizza.
+ACA-033-V1 is Home renovation.jpeg for furniture.
+ACA-044-V1 is Coffeee.jpeg for the coffee product brand. Coffee.jpeg remains the coffee shop.
+VidaCare is the pharmacy teacher. FreshMart is the supermarket teacher. Nova Fit is the fitness teacher. Taller Ruta is the automotive-service teacher. Brava Moto is the motorcycle teacher. Their local files were not renumbered.
+Catalog.jpeg and the seven podcast-with-ads images stay unassigned. They are not Academy niches and they are not geometry.
+Rights recorded for each reference: owner upload, owner ownership, approved 2026-10-07 by the owner, Academy quality reference. Provider use is NOT_AUTHORIZED.
+ARE-GEO-V1 stores recommended 1920 x 1080 slot width, height, origin, and area. The notices say the values are not measured from the guide. Every stored area equals width times height.
+Creator authorization is recorded.
+Device status and platform status are OWNER_APPROVED. That is an owner decision, not a measured device-lab result.
+ARE-001-V1, ARE-002-V1, and ARE-003-V1 are ACTIVE showcase offers. ARE-GUIDE-001-V1 remains a DRAFT educational guide. Its printed percentages and prices are not authoritative.
+The owner review of the recordings is stored. That review keeps both amendments OPEN.
+
+OWNER INSTRUCTIONS THAT STAY OPEN
+Quality grades: every Global Quality DNA attribute remains UNCLASSIFIED. Blank was not filled.
+Economics: ARE-P01, ARE-P02, ARE-S01, and ARE-E01 have no authorized price. Ask Alpha does not state a number.
+Duration and occurrence price: 15 seconds is stored and unpriced. A change from 5 displays to 20 displays is recognized and is not priced.
+Proof of delivery: no display is stored. Delivery remains NOT_SENT. Impressions were not invented.
+OpenAI billing credits and key rotation: the key is not stored. The provider is not configured.
+Hosted acceptance: UNCLAIMED.
+Official occupancy: UNRECORDED. Stored slot area was not turned into an occupancy percentage or a price.
+
+ASK ALPHA END-TO-END
+Lower budget returned ENTRY, displayed the stored entry showcase, and stated no price.
+Premium returned PREMIUM, displayed the stored premium showcases, and stated no price.
+Exclusivity returned EXCLUSIVITY, displayed the stored exclusive showcase, and did not promise exclusivity by itself.
+Mobile returned DEVICE and the stored OWNER_APPROVED status. No showcase was displayed.
+Twenty displays returned FREQUENCY and recognized 20 occurrences. No price was invented.
+Proof of delivery returned DELIVERY and did not invent impressions.
+The 70 percent and dollar request returned UNSUPPORTED, escalated to a human, and invented neither a product nor a price.
+Seven conversation rows were written. Every row has delivery NOT_SENT.
+An original Norte Salud adaptation recomposed ARE-P01 without scaling the Academy prototype.
+A copied VidaCare identity returned REGENERATE.
+
+JOINT READING
+Status: BLOCKED.
+Catalog amendment: OPEN.
+Academy amendment: OPEN.
+Hosted acceptance: UNCLAIMED.
+Academy retrieval: RECORDED.
+Inventory adaptation: RECORDED.
+Economics: NO_AUTHORIZED_PRICE.
+Owner inputs: OPEN, six needs remain blank.
+Delivery: NOT_SENT.
+Model calls: 0.
+
+HARBORLIGHT VOYAGE
+Status: BLOCKED before generation.
+Reference intelligence: READY.
+Inventory preflight: RECOMPOSED.
+Provider: PROVIDER_CONFIGURATION_REQUIRED.
+Finished creative: NOT_CREATED.
+Visual QA: NOT_RUN.
+Human review: NOT_REQUESTED.
+Regression: BASELINE_NOT_RECORDED and not passed.
+Reference assets sent to a provider: No.
+Stored quality: UNCLASSIFIED.
+Blockers that remain: provider configuration, visual QA, human review, and unrecorded usage cost.
+The geometry blocker is not present.
+
+CATALOG AMENDMENT, PHASE BY PHASE
+The Catalog amendment status is OPEN / PENDING IMPLEMENTATION + END-TO-END EVIDENCE. Running this test does not change that status.
+
+ARE-1 Showcase library. Records and image files exist for the guide and three product showcases. The three product showcases are ACTIVE offers. The guide stays educational. The phase is not accepted.
+ARE-2 Geometry and occupancy. Named slots have versioned width, height, origin, and area. Occupancy remains UNRECORDED because no sellable-area basis was authorized. The guide image was not measured. The phase is not accepted.
+ARE-3 Inventory products. ARE-P01, ARE-P02, ARE-S01, and ARE-E01 are stored and ACTIVE. An unknown 70 percent configuration was refused. Pricing-rule and occupancy fields remain unrecorded. The phase is not accepted.
+ARE-4 Duration and frequency. Fifteen seconds is stored. Twenty occurrences are a different request from five. No rate was invented. The phase is not accepted.
+ARE-5 Device, platform, disclosure, and legibility. The stored device and platform status is OWNER_APPROVED. Disclosure and a measured legibility result are unrecorded. The phase is not accepted.
+ARE-6 Creator authorization. A creator authorization flag is stored, so an offer can be discussed. A separate protected-region contract was not added by this test. The phase is not accepted.
+ARE-7 Economics inputs. The catalog contains no rate and no discount. The Economics result is explicitly absent. The phase is not accepted.
+ARE-8 Ask Alpha retrieval. The seven questions retrieved stored products or stored refusals, and the ledger recorded them. The phase is not accepted while the amendment stays OPEN.
+ARE-9 Proof of delivery. The delivery question reports that no delivery is stored. The phase is not accepted.
+ARE-10 Mission control. The joint reading shows the stored product fields and leaves missing commercial facts unrecorded. It does not compute a price. The phase is not accepted.
+ARE-11 Catalog end-to-end evidence. Tests 1 through 6 and the critical failure test ran against stored data, with showcase images served for the offer questions. The amendment stays OPEN until the owner reviews this evidence.
+
+ACADEMY AMENDMENT, PHASE BY PHASE
+The Academy amendment status is OPEN / PENDING IMPLEMENTATION + AUTONOMOUS CREATIVE ACCEPTANCE EVIDENCE. Running this test does not change that status.
+
+ACA-1 Prototype dock. Fifty assets, fifty IDs, and the file join are present, including the used-car prototype. Per-attribute grades and a full provider license are incomplete, so the phase is not accepted.
+ACA-2 Lifecycle and quality metadata. The references are ACTIVE and carry learn and do-not-copy notes. Every quality grade remains UNCLASSIFIED. The phase is not accepted.
+ACA-3 Global Quality DNA. Version GQD-1 is named. No attribute was graded. The phase is not accepted.
+ACA-4 Selective retrieval. Pharmacy retrieval returned ACTIVE references with stored reasons and notes. It did not attach all fifty files. The phase is not accepted.
+ACA-5 Adaptation and originality. ARE-P01 recomposed into stored slot sizes. The prototype was not scaled. A copied reference identity was rejected. No visual score was invented. The phase is not accepted.
+ACA-6 Rejection and regression. The regression suite names its briefs and records BASELINE_NOT_RECORDED. It is not passed. The phase is not accepted.
+ACA-7 Provenance, provider, and cost. Provenance and the provider-use restriction are stored. No provider, model, or cost was recorded because no generation ran. The phase is not accepted.
+ACA-8 Autonomous creative acceptance. Storage and retrieval gates are ready for the Harborlight brief. Production quality is not met: there is no finished original, no visual QA, no human review, and no cost record. The phase is not accepted.
+
+JOINT ACCEPTANCE
+J-1 records the product, the showcase, the retrieved Academy references, the Economics source, the adapted slots, and delivery NOT_SENT. The reading is BLOCKED because price, owner inputs, and a real display are absent. Both parent amendments stay OPEN. Hosted acceptance stays UNCLAIMED.
+
+WHAT REMAINS BEFORE EITHER AMENDMENT CAN CLOSE
+1. Record authorized Economics prices for the four products.
+2. Record the Economics result for a duration or occurrence change.
+3. Add OpenAI billing credits, rotate the temporary key, and configure the provider.
+4. Run the live Harborlight generation only after that configuration exists.
+5. Perform visual QA and human review on the finished creative.
+6. Record the actual provider usage and cost.
+7. Record regression baselines and pass the suite against them.
+8. Grade Global Quality DNA attributes only where a human has evidence.
+9. Record proof of delivery only after a display happens.
+10. Record hosted acceptance separately.
+11. Owner review of this evidence. Until that review, both amendments stay OPEN.
+
+CONCLUSION
+The implementation now has one tested path from the owner instructions through the catalog questions, Academy retrieval, geometry adaptation, and the fail-closed voyage. The successful result of this end-to-end test is a blocked production voyage and two open amendments. Missing prices, grades, credits, delivery, and hosted acceptance were not invented.
