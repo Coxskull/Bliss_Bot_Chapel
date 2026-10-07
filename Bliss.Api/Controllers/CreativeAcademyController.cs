@@ -57,6 +57,37 @@ public sealed class CreativeAcademyController(
         }
     }
 
+    [HttpPost("harborlight-review")]
+    [AllowAnonymous]
+    public ActionResult ApplyHarborlightOwnerGrades([FromBody] HarborlightOwnerGradeRequest? request)
+    {
+        try
+        {
+            var path = HarborlightEvidencePath();
+            var stored = System.IO.File.ReadAllText(path);
+            var prepared = HarborlightReview.ParseEvidence(stored);
+            var grades = request?.Grades?
+                .Select(item => new QualityAttribute(item.Name ?? string.Empty, item.Grade ?? string.Empty))
+                .ToArray();
+            var applied = HarborlightReview.ApplyOwnerGrades(prepared, grades);
+            if (!string.Equals(stored, System.IO.File.ReadAllText(path), StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("The stored review sheet changed. The apply gate does not write it.");
+            }
+
+            return Ok(new
+            {
+                stored = false,
+                notice = "The stored Harborlight review sheet was not changed.",
+                reviewSheet = applied
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Refuse(ex);
+        }
+    }
+
     [HttpPost("acceptance-voyages")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
@@ -360,6 +391,10 @@ public sealed record AcademyDnaRequest(
     string? Cta,
     string? Personality,
     bool? CallModel);
+
+public sealed record HarborlightOwnerGradeEntry(string? Name, string? Grade);
+
+public sealed record HarborlightOwnerGradeRequest(IReadOnlyList<HarborlightOwnerGradeEntry>? Grades);
 
 public sealed record AcademyVisualRequest(
     string? LessonKey,

@@ -25,6 +25,7 @@ public sealed record HarborlightReviewSheet(
 public static class HarborlightReview
 {
     public const string Prepared = "PREPARED";
+    public const string OwnerEntryApplied = "OWNER_ENTRY_APPLIED";
     public const string NotReviewed = "NOT_REVIEWED";
     public const string Unrecorded = "UNRECORDED";
     public const string NotRequested = "NOT_REQUESTED";
@@ -110,6 +111,58 @@ public static class HarborlightReview
         }
 
         return prepared;
+    }
+
+    public static HarborlightReviewSheet ApplyOwnerGrades(
+        HarborlightReviewSheet prepared,
+        IReadOnlyList<QualityAttribute>? ownerGrades)
+    {
+        var source = RequirePrepared(prepared);
+        if (ownerGrades is null || ownerGrades.Count == 0)
+        {
+            return source;
+        }
+
+        var allowed = new HashSet<string>(
+            ReferenceLibrary.QualityGrades.Where(grade => grade != ReferenceLibrary.Unclassified),
+            StringComparer.Ordinal);
+        var supplied = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var entry in ownerGrades)
+        {
+            var name = (entry.Name ?? string.Empty).Trim();
+            var grade = (entry.Grade ?? string.Empty).Trim();
+            if (!ReferenceLibrary.QualityDna.Contains(name, StringComparer.Ordinal))
+            {
+                throw new InvalidOperationException("An unknown quality attribute was supplied. None was added.");
+            }
+
+            if (!allowed.Contains(grade))
+            {
+                throw new InvalidOperationException(
+                    "A quality grade must be REFERENCE_STRENGTH, STRONG, SUPPORTING, or NOT_APPLICABLE. A blank stays UNCLASSIFIED.");
+            }
+
+            if (!supplied.TryAdd(name, grade))
+            {
+                throw new InvalidOperationException("The same attribute was graded twice. None was merged.");
+            }
+        }
+
+        var attributes = source.Attributes
+            .Select(item => supplied.TryGetValue(item.Name, out var grade)
+                ? new QualityAttribute(item.Name, grade)
+                : item)
+            .ToArray();
+        return source with
+        {
+            Status = OwnerEntryApplied,
+            Attributes = attributes,
+            HumanReview = NotRequested,
+            CampaignReady = false,
+            Delivery = "NOT_SENT",
+            Regression = "BASELINE_NOT_RECORDED",
+            Notice = "Owner grades were applied only to the supplied attributes. Unsupplied attributes stay UNCLASSIFIED. Human review remains NOT_REQUESTED. No regression baseline was recorded."
+        };
     }
 
     public static HarborlightReviewSheet RequirePrepared(HarborlightReviewSheet sheet)

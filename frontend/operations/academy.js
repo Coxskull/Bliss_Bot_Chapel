@@ -192,6 +192,7 @@ async function loadHarborlightReview() {
   const similarity = reading?.pixelSimilarity;
   const target = document.getElementById("harborlight-review");
   if (!target || !sheet) return;
+  const recorded = (sheet.attributes || []).filter(item => item.grade !== "UNCLASSIFIED").length;
   const rows = (items, valueName) => (items || []).map(item =>
     `<tr><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item[valueName])}</td></tr>`).join("");
   const distances = (similarity?.references || []).map(item =>
@@ -200,6 +201,7 @@ async function loadHarborlightReview() {
     <p class="eyebrow">${escapeHtml(sheet.attemptId)} · ${escapeHtml(sheet.status)} · ${escapeHtml(sheet.qualityDnaVersion)}</p>
     <p>${escapeHtml(sheet.notice)}</p>
     <p>Human review ${escapeHtml(sheet.humanReview)}. Campaign ready ${sheet.campaignReady ? "Yes" : "No"}. Delivery ${escapeHtml(sheet.delivery)}. Regression ${escapeHtml(sheet.regression)}.</p>
+    <p>Owner grades recorded: ${recorded === 0 ? "none" : String(recorded)}. A supplied grade classifies only that attribute. Unsupplied attributes stay UNCLASSIFIED.</p>
     <h4>Quality attributes</h4>
     <table><thead><tr><th>Attribute</th><th>Grade</th></tr></thead><tbody>${rows(sheet.attributes, "grade")}</tbody></table>
     <h4>Copy checks</h4>
