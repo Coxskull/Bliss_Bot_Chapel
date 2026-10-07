@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Bliss.Domain.CreativeAcademy;
 
 namespace Bliss.Tests.Academy;
@@ -123,6 +124,36 @@ public sealed class HarborlightFreeAttemptEvidenceTests
             Assert.InRange(distance.AverageHashDistance, 0, 64);
             Assert.Equal(Sha256(Path.Combine(inbox, "inbox", distance.File)), distance.Sha256);
         }
+
+        var trace = HarborlightWorkflow.ParseEvidence(File.ReadAllText(evidencePath));
+        Assert.Equal(HarborlightWorkflow.Expected, trace);
+        Assert.Equal("NOT_RUN", trace.Single(step => step.Step == "VISUAL_QA").Status);
+        Assert.Equal("NOT_REQUESTED", trace.Single(step => step.Step == "HUMAN_REVIEW").Status);
+        Assert.Equal("NOT_SENT", trace.Single(step => step.Step == "DELIVERY").Status);
+        Assert.Equal("BASELINE_NOT_RECORDED", trace.Single(step => step.Step == "REGRESSION").Status);
+    }
+
+    [Fact]
+    public void Workflow_trace_refuses_an_invented_acceptance()
+    {
+        var node = JsonNode.Parse(File.ReadAllText(EvidencePath()))!;
+        var review = node["workflowTrace"]!.AsArray()
+            .Single(step => step!["step"]!.GetValue<string>() == "HUMAN_REVIEW")!;
+        review["status"] = "ACCEPTED";
+
+        var error = Assert.Throws<InvalidOperationException>(() => HarborlightWorkflow.ParseEvidence(node.ToJsonString()));
+        Assert.Contains("not invented", error.Message, StringComparison.Ordinal);
+    }
+
+    private static string EvidencePath()
+    {
+        return Path.Combine(
+            RepositoryRoot(),
+            "assets",
+            "alpha-prototypes",
+            "creative-academy",
+            "harborlight",
+            "HV-001-evidence.json");
     }
 
     private static string Resolve(string root, string? relative)

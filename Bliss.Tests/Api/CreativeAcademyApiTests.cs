@@ -385,6 +385,12 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal("NOT_JUDGED", similarity.GetProperty("judgment").GetString());
         Assert.Equal("NOT_ASSIGNED", similarity.GetProperty("visualGrade").GetString());
         Assert.Equal(4, similarity.GetProperty("references").GetArrayLength());
+        Assert.Equal(13, body.GetProperty("workflowTrace").GetArrayLength());
+        Assert.Equal(
+            "NOT_REQUESTED",
+            body.GetProperty("workflowTrace").EnumerateArray()
+                .Single(step => step.GetProperty("step").GetString() == "HUMAN_REVIEW")
+                .GetProperty("status").GetString());
         Assert.Equal("PREPARED", sheet.GetProperty("status").GetString());
         Assert.Equal("GQD-1", sheet.GetProperty("qualityDnaVersion").GetString());
         Assert.Equal(ReferenceLibrary.QualityDna.Count, sheet.GetProperty("attributes").GetArrayLength());
