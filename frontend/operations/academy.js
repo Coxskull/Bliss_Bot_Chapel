@@ -205,6 +205,7 @@ async function loadHarborlightReview() {
     <p class="eyebrow">${escapeHtml(sheet.attemptId)} · ${escapeHtml(sheet.status)} · ${escapeHtml(sheet.qualityDnaVersion)}</p>
     <p>${escapeHtml(sheet.notice)}</p>
     <p>Human review ${escapeHtml(sheet.humanReview)}. Campaign ready ${sheet.campaignReady ? "Yes" : "No"}. Delivery ${escapeHtml(sheet.delivery)}. Regression ${escapeHtml(sheet.regression)}.</p>
+    <p>Failures and retries ${escapeHtml(reading.failuresAndRetries?.status || "UNRECORDED")}. Stored attempts ${escapeHtml(String(reading.failuresAndRetries?.storedAttempts ?? "UNRECORDED"))}. Stored failure files ${escapeHtml(String(reading.failuresAndRetries?.storedFailureFiles ?? "UNRECORDED"))}. Retries ${escapeHtml(reading.failuresAndRetries?.retries || "UNRECORDED")}. ${escapeHtml(reading.failuresAndRetries?.notice || "No failure record is stored.")}</p>
     <p>Owner grades recorded: ${recorded === 0 ? "none" : String(recorded)}. A supplied grade classifies only that attribute. Unsupplied attributes stay UNCLASSIFIED.</p>
     <div class="harborlight-figures">${figures((reading.images || []).filter(item => item.role === "original" || item.role === "adapted"))}</div>
     <h4>Retrieved references</h4>
