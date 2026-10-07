@@ -102,6 +102,17 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
         return allowed ? OpenInboxFile(name, claimedOnly: false) : null;
     }
 
+    public async Task<JointAcceptanceReading> ReadJointAsync(CancellationToken cancellationToken)
+    {
+        var reading = await ReadAsync(cancellationToken);
+        return JointAcceptance.Read(
+            reading.Catalog,
+            reading.References,
+            reading.Catalog.Slots,
+            null,
+            reading.OwnerNeeds.Count(item => item.Status == OwnerNeeds.Open));
+    }
+
     public async Task<CatalogTurn> AskAsync(string? message, CancellationToken cancellationToken)
     {
         var reading = await ReadAsync(cancellationToken);

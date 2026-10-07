@@ -74,6 +74,18 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
             board.GetProperty("quality").GetProperty("attributes").EnumerateArray(),
             item => Assert.Equal("UNCLASSIFIED", item.GetProperty("grade").GetString()));
 
+        var joint = await client.GetFromJsonAsync<JsonElement>("/api/operations/blueprint/joint-acceptance");
+        Assert.Equal("BLOCKED", joint.GetProperty("status").GetString());
+        Assert.Equal(7, joint.GetProperty("conversations").GetArrayLength());
+        Assert.Equal("NICHE_REFERENCE_NOT_ACTIVE", joint.GetProperty("retrievalStatus").GetString());
+        Assert.Equal("GEOMETRY_UNRECORDED", joint.GetProperty("adaptationStatus").GetString());
+        Assert.Equal("NO_AUTHORIZED_PRICE", joint.GetProperty("gates").EnumerateArray().Single(item => item.GetProperty("gateId").GetString() == "ECONOMICS").GetProperty("status").GetString());
+        Assert.Equal("UNCLAIMED", joint.GetProperty("hostedAcceptance").GetString());
+        Assert.Equal(0, joint.GetProperty("modelCalls").GetInt32());
+        Assert.False(joint.GetProperty("campaignReady").GetBoolean());
+        Assert.Equal("NOT_SENT", joint.GetProperty("delivery").GetString());
+        Assert.Equal(4, joint.GetProperty("missionControl").GetArrayLength());
+
         foreach (var showcase in board.GetProperty("showcases").EnumerateArray())
         {
             Assert.True(showcase.GetProperty("assetPresent").GetBoolean());

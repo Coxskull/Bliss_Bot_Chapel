@@ -19,6 +19,11 @@ public sealed class BlueprintPhaseController(BlueprintPhaseService phases) : Con
         return Ok(Body(reading, retrieval, null));
     }
 
+    [HttpGet("joint-acceptance")]
+    [AllowAnonymous]
+    public async Task<ActionResult<JointAcceptanceReading>> Joint(CancellationToken cancellationToken) =>
+        Ok(await phases.ReadJointAsync(cancellationToken));
+
     [HttpPost("ask")]
     [AllowAnonymous]
     public async Task<ActionResult> Ask([FromBody] BlueprintAskRequest? request, CancellationToken cancellationToken)

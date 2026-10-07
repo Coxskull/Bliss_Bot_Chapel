@@ -370,6 +370,12 @@ public static class RealEstateCatalog
             + (productArt ? " This picture is not the contract." : " This guide is not geometry and not a price."));
     }
 
+    private static string DistinctStatus(CatalogBoard board, Func<CatalogProduct, string> select)
+    {
+        var statuses = board.Products.Select(select).Distinct(StringComparer.Ordinal).ToList();
+        return statuses.Count == 0 ? Unrecorded : string.Join(", ", statuses);
+    }
+
     private static string Classify(string text)
     {
         var value = text.ToLowerInvariant();
@@ -473,7 +479,9 @@ public static class RealEstateCatalog
             "ENTRY" => "Ask Alpha recognizes a smaller first commitment. Eligible draft or active entry products: " + ids + ".",
             "PREMIUM" => "Ask Alpha recognizes a request for greater visual presence. Eligible premium products: " + ids + ".",
             "EXCLUSIVITY" => "Ask Alpha recognizes an exclusivity requirement. Eligible exclusive products: " + ids + ". Exclusivity is not promised unless the product is ACTIVE, the creator authorized it, availability allows it, and Economics authorizes the terms.",
-            "DEVICE" => "Device status for desktop landscape, mobile landscape, mobile portrait, livestream, and recorded video is " + NeedsReview + ". Ask Alpha will not guess, and it will not stretch a desktop advertisement until it is unreadable.",
+            "DEVICE" => "Device status is " + DistinctStatus(board, item => item.DeviceStatus)
+                + ". Platform status is " + DistinctStatus(board, item => item.PlatformStatus)
+                + ". Ask Alpha will not guess, and it will not stretch a desktop advertisement until it is unreadable.",
             "FREQUENCY" => "Ask Alpha recognizes an occurrence change"
                 + (occurrences is null ? "." : " to " + occurrences.Value.ToString(CultureInfo.InvariantCulture) + " displays.")
                 + " Five displays and twenty displays are different requests. " + board.Economics,
