@@ -14,7 +14,7 @@ ACA-RIGHTS	SUPPLIED	Owner upload, owned by the owner, approved 2026-10-07 for Ac
 ACA-ACTIVE	SUPPLIED	Owner approved all 50 references ACTIVE on 2026-10-07	Name any reference a human approves as ACTIVE. Upload and filename confirmation do not do this.
 ACA-TEACHERS	SUPPLIED	VidaCare pharmacy, FreshMart supermarket, Nova Fit fitness, Taller Ruta automotive, Brava Moto motorcycle. Local teacher files were not renumbered.	Connect VidaCare, FreshMart, Nova Fit, Taller Ruta, and Brava Moto to reference records only by an explicit human decision.
 ACA-UNASSIGNED	SUPPLIED	Catalog.jpeg stays the educational catalog overview. The seven podcast-with-ads images stay placement illustrations. None is an Academy niche or a geometry specification.	Decide later whether Catalog.jpeg and the seven podcast-with-ads images belong anywhere. They stay unassigned until then.
-ARE-GEOMETRY	OPEN		Supply versioned width, height, and area for the named slots. The guide image is not that specification.
+ARE-GEOMETRY	SUPPLIED	Owner authorized ARE-GEO-V1 recommended 1920x1080 geometry on 2026-10-07. It is not measured from the guide.	Supply versioned width, height, and area for the named slots. The guide image is not that specification.
 ARE-ECONOMICS	OPEN		Record an Economics price for ARE-P01, ARE-P02, ARE-S01, and ARE-E01. Ask Alpha will not invent one.
 ARE-CREATOR-AUTH	SUPPLIED	Owner authorized creators for the stored products on 2026-10-07	Record creator authorization before any catalog product can be offered.
 ARE-DEVICE	SUPPLIED	Owner approved device and platform status on 2026-10-07. This is not a measured lab result.	Record device and platform status. A missing status stays NEEDS_REVIEW.

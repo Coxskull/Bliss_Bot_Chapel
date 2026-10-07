@@ -107,6 +107,7 @@ public static class RealEstateCatalog
 {
     public const string Draft = "DRAFT";
     public const string Active = "ACTIVE";
+    public const string Recorded = "RECORDED";
     public const string Unrecorded = "UNRECORDED";
     public const string NeedsReview = "NEEDS_REVIEW";
     public const string AmendmentOpen = "OPEN / PENDING IMPLEMENTATION + END-TO-END EVIDENCE";
@@ -163,20 +164,41 @@ public static class RealEstateCatalog
         IReadOnlyList<DeliveryFact>? deliveries = null,
         IReadOnlyDictionary<string, string>? lifecycleOverrides = null,
         string? deviceStatus = null,
-        string? platformStatus = null)
+        string? platformStatus = null,
+        IReadOnlyDictionary<string, OwnerSlotGeometry>? geometry = null)
     {
         var files = assets ?? new Dictionary<string, bool>(StringComparer.Ordinal);
         var overrides = lifecycleOverrides ?? new Dictionary<string, string>(StringComparer.Ordinal);
-        var slots = SlotIds.Select(id => new CatalogSlot(
-            id,
-            "V1",
-            Draft,
-            null,
-            null,
-            null,
-            null,
-            null,
-            id + " is named. Width, height, coordinates, and area are unrecorded until a human approves a geometry version.")).ToList();
+        var slots = SlotIds.Select(id =>
+        {
+            if (geometry is not null && geometry.TryGetValue(id, out var stored))
+            {
+                return new CatalogSlot(
+                    id,
+                    stored.Version,
+                    Active,
+                    stored.Width,
+                    stored.Height,
+                    stored.OriginX,
+                    stored.OriginY,
+                    stored.Area,
+                    stored.Basis + ". Owner-approved recommendation on " + stored.ApprovedOn
+                    + " by " + stored.ApprovingAuthority + "; it is not measured from the guide.");
+            }
+
+            return new CatalogSlot(
+                id,
+                "V1",
+                Draft,
+                null,
+                null,
+                null,
+                null,
+                null,
+                id + " is named. Width, height, coordinates, and area are unrecorded until a human approves a geometry version.");
+        }).ToList();
+        var geometryRecorded = slots.All(slot =>
+            slot.Width > 0 && slot.Height > 0 && slot.OriginX >= 0 && slot.OriginY >= 0 && slot.Area > 0);
 
         var products = new List<CatalogProduct>
         {
@@ -200,7 +222,9 @@ public static class RealEstateCatalog
 
         return new CatalogBoard(
             AmendmentOpen,
-            "The database definition is a draft. Ask Alpha may sell only an ACTIVE product. Geometry is unrecorded. Economics has not priced these products. Delivery remains NOT_SENT.",
+            "Ask Alpha may sell only an ACTIVE product. Geometry is "
+            + (geometryRecorded ? "stored as an owner-approved recommendation" : "unrecorded")
+            + ". Economics has not priced these products. Delivery remains NOT_SENT.",
             slots,
             products,
             showcases,
@@ -308,7 +332,7 @@ public static class RealEstateCatalog
             offered.Select(item => item.ProductId).ToList(),
             showcaseIds,
             displayed,
-            Unrecorded,
+            board.Slots.All(slot => slot.Width > 0 && slot.Height > 0 && slot.Area > 0) ? Recorded : Unrecorded,
             board.Products[0].DeviceStatus,
             offered.FirstOrDefault()?.Exclusivity ?? "NONE",
             occurrences,
@@ -511,7 +535,9 @@ public static class RealEstateCatalog
         var picture = displayed
             ? " The approved showcase illustration for the ACTIVE product is available to display."
             : " No approved product illustration is displayed. " + GuideId + " may be shown only as an educational guide, and its printed percentages are not occupancy.";
-        var geometry = " Geometry occupancy is UNRECORDED.";
+        var geometry = board.Slots.All(slot => slot.Width > 0 && slot.Height > 0 && slot.Area > 0)
+            ? " Recommended slot geometry is RECORDED. Occupancy remains UNRECORDED."
+            : " Geometry occupancy is UNRECORDED.";
         return lead + sale + creator + picture + geometry + " " + board.Economics
             + " Campaign ready is false. Delivery remains NOT_SENT.";
     }

@@ -20,9 +20,18 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
         Assert.Equal("NOT_SENT", board.GetProperty("delivery").GetString());
         Assert.False(board.GetProperty("campaignReady").GetBoolean());
         Assert.Equal(0, board.GetProperty("modelCalls").GetInt32());
-        Assert.Equal("UNRECORDED", board.GetProperty("geometryStatus").GetString());
+        Assert.Equal("RECORDED", board.GetProperty("geometryStatus").GetString());
         Assert.Equal(4, board.GetProperty("products").GetArrayLength());
         Assert.Equal(7, board.GetProperty("slots").GetArrayLength());
+        Assert.All(board.GetProperty("slots").EnumerateArray(), slot =>
+        {
+            Assert.Equal("ARE-GEO-V1", slot.GetProperty("version").GetString());
+            Assert.True(slot.GetProperty("width").GetInt32() > 0);
+            Assert.True(slot.GetProperty("height").GetInt32() > 0);
+            Assert.Equal(
+                slot.GetProperty("width").GetInt32() * slot.GetProperty("height").GetInt32(),
+                slot.GetProperty("area").GetInt32());
+        });
         Assert.Equal(50, references.GetProperty("registered").GetInt32());
         Assert.Equal(50, references.GetProperty("uploaded").GetInt32());
         Assert.Equal(0, references.GetProperty("awaitingUpload").GetInt32());
@@ -81,7 +90,7 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
         Assert.Equal("BLOCKED", joint.GetProperty("status").GetString());
         Assert.Equal(7, joint.GetProperty("conversations").GetArrayLength());
         Assert.Equal("RETRIEVED", joint.GetProperty("retrievalStatus").GetString());
-        Assert.Equal("GEOMETRY_UNRECORDED", joint.GetProperty("adaptationStatus").GetString());
+        Assert.Equal("RECOMPOSED", joint.GetProperty("adaptationStatus").GetString());
         Assert.Equal("NO_AUTHORIZED_PRICE", joint.GetProperty("gates").EnumerateArray().Single(item => item.GetProperty("gateId").GetString() == "ECONOMICS").GetProperty("status").GetString());
         Assert.Equal("UNCLAIMED", joint.GetProperty("hostedAcceptance").GetString());
         Assert.Equal(0, joint.GetProperty("modelCalls").GetInt32());
@@ -142,7 +151,7 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
     }
 
     [Fact]
-    public async Task Adapt_reports_unrecorded_geometry_and_rejects_a_scaled_prototype()
+    public async Task Adapt_uses_owner_approved_geometry_and_rejects_a_scaled_prototype()
     {
         var client = _factory.CreateClient();
         var response = await client.PostAsJsonAsync(
@@ -161,8 +170,12 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
         var slots = adaptation.GetProperty("slots").EnumerateArray().Select(item => item.GetProperty("slotId").GetString()).ToArray();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal("GEOMETRY_UNRECORDED", adaptation.GetProperty("status").GetString());
+        Assert.Equal("RECOMPOSED", adaptation.GetProperty("status").GetString());
         Assert.Equal(["LEFT_VERTICAL", "BOTTOM_FULL"], slots);
+        Assert.Equal(320, adaptation.GetProperty("slots")[0].GetProperty("width").GetInt32());
+        Assert.Equal(1080, adaptation.GetProperty("slots")[0].GetProperty("height").GetInt32());
+        Assert.Equal(1280, adaptation.GetProperty("slots")[1].GetProperty("width").GetInt32());
+        Assert.Equal(180, adaptation.GetProperty("slots")[1].GetProperty("height").GetInt32());
         Assert.False(adaptation.GetProperty("scaledFromPrototype").GetBoolean());
         Assert.Equal("PASS", body.GetProperty("similarity").GetProperty("status").GetString());
         Assert.Equal(8, body.GetProperty("workers").GetArrayLength());

@@ -231,7 +231,7 @@ public sealed class CreativeAcademyApiTests
     }
 
     [Fact]
-    public async Task One_acceptance_voyage_stops_at_the_missing_active_reference_gate()
+    public async Task One_acceptance_voyage_stops_at_the_missing_provider_configuration_gate()
     {
         await using var factory = new BlissApiFactory();
         var client = factory.CreateClient();
@@ -266,14 +266,16 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal("PREPARED", report.GetProperty("brandDna").GetProperty("status").GetString());
         Assert.Equal("PROVIDER_CONFIGURATION_REQUIRED", report.GetProperty("providerJob").GetProperty("status").GetString());
         Assert.Equal("NOT_CREATED", report.GetProperty("finishedCreative").GetProperty("status").GetString());
-        Assert.Equal("GEOMETRY_UNRECORDED", report.GetProperty("inventoryPreflight").GetProperty("status").GetString());
+        Assert.Equal("RECOMPOSED", report.GetProperty("inventoryPreflight").GetProperty("status").GetString());
         Assert.Equal("NOT_RUN", report.GetProperty("qualityQa").GetProperty("status").GetString());
         Assert.Equal("NOT_REQUESTED", report.GetProperty("humanReview").GetProperty("status").GetString());
         Assert.Equal(0, report.GetProperty("modelCalls").GetInt32());
         Assert.False(report.GetProperty("campaignReady").GetBoolean());
         Assert.Equal("NOT_SENT", report.GetProperty("delivery").GetString());
-        Assert.Equal("INVENTORY_GEOMETRY_FAILURE", report.GetProperty("rejections")[0].GetProperty("code").GetString());
-        Assert.False(report.GetProperty("rejections")[0].GetProperty("positiveReference").GetBoolean());
+        Assert.Empty(report.GetProperty("rejections").EnumerateArray());
+        Assert.DoesNotContain(
+            report.GetProperty("blockers").EnumerateArray(),
+            blocker => blocker.GetString() == "INVENTORY_GEOMETRY_REQUIRED");
         Assert.Equal("BASELINE_NOT_RECORDED", report.GetProperty("regression").GetProperty("status").GetString());
         Assert.False(report.GetProperty("regression").GetProperty("passed").GetBoolean());
         Assert.Equal(12, report.GetProperty("regression").GetProperty("cases").GetArrayLength());

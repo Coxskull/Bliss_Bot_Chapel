@@ -28,6 +28,7 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
     {
         var assets = ReadAssets();
         var approval = OwnerAuthorizationFile.Read(ReadAuthorization());
+        var geometry = OwnerGeometryFile.Read(ReadGeometry());
         var overrides = new Dictionary<string, string>(approval.LifecycleOverrides, StringComparer.Ordinal);
         foreach (var stored in await LifecycleOverridesAsync(cancellationToken))
         {
@@ -39,7 +40,8 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
             approval.CreatorAuthorized,
             lifecycleOverrides: overrides,
             deviceStatus: approval.DeviceStatus,
-            platformStatus: approval.PlatformStatus);
+            platformStatus: approval.PlatformStatus,
+            geometry: geometry);
         await MirrorProductsAsync(board, cancellationToken);
         var manifest = ReadManifest();
         var references = ReferenceLibrary.ParseManifest(manifest, name => AssetExists(name, assets));
@@ -258,6 +260,12 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
     private string ReadAuthorization()
     {
         var path = Path.Combine(PrototypeRoot(), "OWNER-AUTHORIZATION.tsv");
+        return File.Exists(path) ? File.ReadAllText(path) : string.Empty;
+    }
+
+    private string ReadGeometry()
+    {
+        var path = Path.Combine(PrototypeRoot(), "OWNER-GEOMETRY.tsv");
         return File.Exists(path) ? File.ReadAllText(path) : string.Empty;
     }
 
