@@ -369,6 +369,34 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal(0, factory.Generator.Calls);
     }
 
+    [Fact]
+    public async Task Harborlight_review_sheet_is_prepared_and_unclassified()
+    {
+        await using var factory = new BlissApiFactory();
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/operations/academy/harborlight-review");
+        var sheet = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("HV-001", sheet.GetProperty("attemptId").GetString());
+        Assert.Equal("PREPARED", sheet.GetProperty("status").GetString());
+        Assert.Equal("GQD-1", sheet.GetProperty("qualityDnaVersion").GetString());
+        Assert.Equal(ReferenceLibrary.QualityDna.Count, sheet.GetProperty("attributes").GetArrayLength());
+        Assert.All(
+            sheet.GetProperty("attributes").EnumerateArray(),
+            item => Assert.Equal("UNCLASSIFIED", item.GetProperty("grade").GetString()));
+        Assert.All(
+            sheet.GetProperty("copyChecks").EnumerateArray(),
+            item => Assert.Equal("NOT_REVIEWED", item.GetProperty("status").GetString()));
+        Assert.All(
+            sheet.GetProperty("questions").EnumerateArray(),
+            item => Assert.Equal("UNRECORDED", item.GetProperty("status").GetString()));
+        Assert.Equal("NOT_REQUESTED", sheet.GetProperty("humanReview").GetString());
+        Assert.False(sheet.GetProperty("campaignReady").GetBoolean());
+        Assert.Equal("NOT_SENT", sheet.GetProperty("delivery").GetString());
+        Assert.Equal("BASELINE_NOT_RECORDED", sheet.GetProperty("regression").GetString());
+    }
+
     private static JsonElement Lesson(JsonElement board, string key)
     {
         foreach (var lesson in board.GetProperty("lessons").EnumerateArray())

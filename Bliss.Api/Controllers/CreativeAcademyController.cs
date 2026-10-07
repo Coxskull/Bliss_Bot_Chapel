@@ -14,7 +14,8 @@ public sealed class CreativeAcademyController(
     CreativeAcademyService academy,
     CreativeGenerationService generation,
     BlueprintPhaseService phases,
-    CreativeAcceptanceVoyageService voyages) : ControllerBase
+    CreativeAcceptanceVoyageService voyages,
+    IWebHostEnvironment environment) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
@@ -35,6 +36,21 @@ public sealed class CreativeAcademyController(
             campaignReady = false,
             delivery = "NOT_SENT"
         });
+
+    [HttpGet("harborlight-review")]
+    [AllowAnonymous]
+    public ActionResult ReadHarborlightReview()
+    {
+        try
+        {
+            var path = HarborlightEvidencePath();
+            return Ok(HarborlightReview.ParseEvidence(System.IO.File.ReadAllText(path)));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Refuse(ex);
+        }
+    }
 
     [HttpPost("acceptance-voyages")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
@@ -189,6 +205,29 @@ public sealed class CreativeAcademyController(
             request?.QualityParity,
             request?.Originality,
             request?.GeographicAuthenticity));
+
+    private string HarborlightEvidencePath()
+    {
+        var current = new DirectoryInfo(environment.ContentRootPath);
+        while (current is not null)
+        {
+            var candidate = Path.Combine(
+                current.FullName,
+                "assets",
+                "alpha-prototypes",
+                "creative-academy",
+                "harborlight",
+                "HV-001-evidence.json");
+            if (System.IO.File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            current = current.Parent;
+        }
+
+        throw new InvalidOperationException("The Harborlight review sheet is not stored. None was invented.");
+    }
 
     private static ActionResult Refuse(InvalidOperationException ex) =>
         new BadRequestObjectResult(new
