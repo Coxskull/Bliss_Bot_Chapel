@@ -1,0 +1,107 @@
+{
+  "attemptId": "HV-001",
+  "status": "GENERATED_PENDING_HUMAN_REVIEW",
+  "generatedOn": "2026-10-07",
+  "brief": {
+    "advertiser": "Harborlight Pharmacy",
+    "city": "Panama City",
+    "market": "Panama",
+    "niche": "pharmacy",
+    "objective": "Introduce convenient prescription pickup to local customers",
+    "inventoryProductId": "ARE-P01"
+  },
+  "retrieval": {
+    "status": "RETRIEVED",
+    "manuallySelected": false,
+    "referenceAssetsSentToProvider": false,
+    "references": [
+      {
+        "referenceId": "ACA-001-V1",
+        "reason": "niche match",
+        "learn": "premium product lighting on a pharmacy counter",
+        "doNotCopy": "VidaCare; Care for a Brighter You"
+      },
+      {
+        "referenceId": "ACA-002-V1",
+        "reason": "product realism",
+        "learn": "shelf product realism and aisle lighting",
+        "doNotCopy": "FreshMart"
+      },
+      {
+        "referenceId": "ACA-006-V1",
+        "reason": "lighting and depth",
+        "learn": "lighting and depth in a dining room",
+        "doNotCopy": "the pictured restaurant identity"
+      },
+      {
+        "referenceId": "ACA-008-V1",
+        "reason": "typography",
+        "learn": "typography for a service shop",
+        "doNotCopy": "Taller Ruta"
+      }
+    ]
+  },
+  "qualityDna": {
+    "version": "GQD-1",
+    "gradeStatus": "UNCLASSIFIED",
+    "humanClassificationRequired": true
+  },
+  "creativeDna": {
+    "palette": "deep ocean navy, luminous coral, warm ivory, sea-glass teal",
+    "headline": "Prescription pickup, ready when you are.",
+    "brand": "Harborlight Pharmacy",
+    "direction": "Original contemporary Panama City neighborhood pharmacy; premium commercial lighting; protected center; perimeter inventory",
+    "copiedReferenceIdentity": false
+  },
+  "provider": {
+    "name": "Cursor GenerateImage capability",
+    "model": "UNREPORTED_BY_PROVIDER",
+    "jobId": "UNREPORTED_BY_PROVIDER",
+    "attempts": 1,
+    "usage": "one 1280x720 image",
+    "costStatus": "UNREPORTED_BY_PROVIDER",
+    "actualCost": null,
+    "currency": "",
+    "newSubscriptionPurchased": false,
+    "note": "No separate subscription was purchased. The provider capability did not expose a model, job identifier, usage invoice, or price, so none was invented."
+  },
+  "original": {
+    "path": "assets/alpha-prototypes/creative-academy/harborlight/HV-001-original.jpg",
+    "width": 1280,
+    "height": 720,
+    "sha256": "3fa9e45467683c37b3d1fa356aa968bff5b2f0719fa2184ac31ab7f87c1ebd47"
+  },
+  "adaptation": {
+    "status": "RECOMPOSED_TEST_PREVIEW",
+    "path": "assets/alpha-prototypes/creative-academy/harborlight/HV-001-adapted-preview.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "8679e0d83f2a6734d793a80aafb14363833688cd8428bca09bcce33fce598201",
+    "slots": [
+      { "slotId": "LEFT_VERTICAL", "width": 320, "height": 1080 },
+      { "slotId": "BOTTOM_FULL", "width": 1280, "height": 180 }
+    ],
+    "prototypeScaled": false,
+    "notice": "The generated original, not an Academy prototype, was deterministically cropped and placed into ARE-P01. The center is a labeled protected-content placeholder. This is a test preview and was not delivered."
+  },
+  "checks": {
+    "textIdentityOriginality": "PASS",
+    "pixelSimilarity": "NOT_RUN",
+    "deterministicImageValidation": "PASS",
+    "visualQa": "NOT_RUN",
+    "humanReview": "NOT_REQUESTED",
+    "regression": "BASELINE_NOT_RECORDED",
+    "campaignReady": false,
+    "delivery": "NOT_SENT"
+  },
+  "reviewNotes": [
+    "Human review should assess commercial color, contrast, highlights, shadows, lighting, realism, depth, separation, typography, hierarchy, polish, screen impact, and Premium Dominant Presence.",
+    "Human review should verify Panama-market authenticity and that the invented person, products, setting, composition, and identity do not copy an Academy reference.",
+    "The extreme bottom-banner crop is visibly incomplete and may require a purpose-built recomposition before acceptance."
+  ],
+  "amendments": {
+    "creativeAcademy": "OPEN",
+    "advertisingRealEstate": "OPEN",
+    "hostedAcceptance": "UNCLAIMED"
+  }
+}
