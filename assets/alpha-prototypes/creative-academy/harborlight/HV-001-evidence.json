@@ -1,0 +1,113 @@
+{
+  "attemptId": "HV-001",
+  "status": "GENERATED_PENDING_HUMAN_REVIEW",
+  "generatedOn": "2026-10-07",
+  "brief": {
+    "advertiser": "Harborlight Pharmacy",
+    "city": "Panama City",
+    "market": "Panama",
+    "niche": "pharmacy",
+    "objective": "Introduce convenient prescription pickup to local customers",
+    "inventoryProductId": "ARE-P01"
+  },
+  "retrieval": {
+    "status": "RETRIEVED",
+    "manuallySelected": false,
+    "referenceAssetsSentToProvider": false,
+    "references": [
+      {
+        "referenceId": "ACA-001-V1",
+        "reason": "niche match",
+        "learn": "premium product lighting on a pharmacy counter",
+        "doNotCopy": "VidaCare; Care for a Brighter You"
+      },
+      {
+        "referenceId": "ACA-002-V1",
+        "reason": "product realism",
+        "learn": "shelf product realism and aisle lighting",
+        "doNotCopy": "FreshMart"
+      },
+      {
+        "referenceId": "ACA-006-V1",
+        "reason": "lighting and depth",
+        "learn": "lighting and depth in a dining room",
+        "doNotCopy": "the pictured restaurant identity"
+      },
+      {
+        "referenceId": "ACA-008-V1",
+        "reason": "typography",
+        "learn": "typography for a service shop",
+        "doNotCopy": "Taller Ruta"
+      }
+    ]
+  },
+  "qualityDna": {
+    "version": "GQD-1",
+    "gradeStatus": "UNCLASSIFIED",
+    "humanClassificationRequired": true
+  },
+  "creativeDna": {
+    "palette": "deep ocean navy, luminous coral, warm ivory, sea-glass teal",
+    "headline": "Prescription pickup, ready when you are.",
+    "brand": "Harborlight Pharmacy",
+    "direction": "Original contemporary Panama City neighborhood pharmacy; premium commercial lighting; protected center; perimeter inventory",
+    "copiedReferenceIdentity": false
+  },
+  "provider": {
+    "name": "Cursor GenerateImage capability",
+    "model": "UNREPORTED_BY_PROVIDER",
+    "jobId": "UNREPORTED_BY_PROVIDER",
+    "attempts": 1,
+    "usage": "one 1280x720 image",
+    "costStatus": "UNREPORTED_BY_PROVIDER",
+    "actualCost": null,
+    "currency": "",
+    "newSubscriptionPurchased": false,
+    "note": "No separate subscription was purchased. The provider capability did not expose a model, job identifier, usage invoice, or price, so none was invented."
+  },
+  "original": {
+    "path": "assets/alpha-prototypes/creative-academy/harborlight/HV-001-original.jpg",
+    "width": 1280,
+    "height": 720,
+    "sha256": "3fa9e45467683c37b3d1fa356aa968bff5b2f0719fa2184ac31ab7f87c1ebd47"
+  },
+  "adaptation": {
+    "status": "PURPOSE_BUILT_TEST_PREVIEW",
+    "path": "assets/alpha-prototypes/creative-academy/harborlight/HV-001-adapted-preview.png",
+    "width": 1920,
+    "height": 1080,
+    "sha256": "273f52bb10e954fc05cf712ec03d6f3000ababbccc980531d8f387dfd6463744",
+    "slots": [
+      { "slotId": "LEFT_VERTICAL", "width": 320, "height": 1080 },
+      { "slotId": "BOTTOM_FULL", "width": 1280, "height": 180 }
+    ],
+    "prototypeScaled": false,
+    "bottomBanner": {
+      "method": "PURPOSE_BUILT_FROM_ORIGINAL_MARK",
+      "headline": "Prescription pickup, ready when you are.",
+      "headlineComplete": true,
+      "photographCrop": false
+    },
+    "notice": "LEFT_VERTICAL contains the original brand panel without stretching it. BOTTOM_FULL is a purpose-built 1280x180 banner using the original lighthouse mark and the complete headline; it is not a crop through the photograph. The center is a labeled protected-content placeholder. This is a test preview and was not delivered."
+  },
+  "checks": {
+    "textIdentityOriginality": "PASS",
+    "pixelSimilarity": "NOT_RUN",
+    "deterministicImageValidation": "PASS",
+    "visualQa": "NOT_RUN",
+    "humanReview": "NOT_REQUESTED",
+    "regression": "BASELINE_NOT_RECORDED",
+    "campaignReady": false,
+    "delivery": "NOT_SENT"
+  },
+  "reviewNotes": [
+    "Human review should assess commercial color, contrast, highlights, shadows, lighting, realism, depth, separation, typography, hierarchy, polish, screen impact, and Premium Dominant Presence.",
+    "Human review should verify Panama-market authenticity and that the invented person, products, setting, composition, and identity do not copy an Academy reference.",
+    "The bottom banner is a purpose-built 1280x180 layout. Human review must still accept the adapted layout, commercial quality, and Panama-market authenticity before any regression baseline."
+  ],
+  "amendments": {
+    "creativeAcademy": "OPEN",
+    "advertisingRealEstate": "OPEN",
+    "hostedAcceptance": "UNCLAIMED"
+  }
+}
