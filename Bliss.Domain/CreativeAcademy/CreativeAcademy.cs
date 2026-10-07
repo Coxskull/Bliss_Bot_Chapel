@@ -85,7 +85,8 @@ public sealed record ProductionBrief(
     int ModelCalls,
     bool CampaignReady,
     string Delivery,
-    string Notice);
+    string Notice,
+    string QualityDnaVersion);
 
 public sealed record ParityDecision(
     string Status,
@@ -476,7 +477,7 @@ public static class CreativeAcademy
 
         var name = Require("brand", brand);
         var subject = Require("hero", hero);
-        var color = Require("palette", palette);
+        var color = PreserveAdvertiserPalette(palette, required: true);
         var action = Require("call to action", cta);
         var tone = Require("personality", personality);
         var folded = Fold(name);
@@ -540,7 +541,7 @@ public static class CreativeAcademy
         }
 
         var name = Require("brand", brand);
-        var color = Default(palette, "Create an original niche-appropriate palette unless advertiser colors are supplied.");
+        var color = PreserveAdvertiserPalette(palette, required: false);
         var font = Default(fontFamily, "Choose a professional niche-appropriate font unless an approved font is supplied.");
         var title = Default(headline, "Create an original niche-appropriate headline.");
         var action = Default(cta, "Create one clear niche-appropriate call to action.");
@@ -569,7 +570,8 @@ public static class CreativeAcademy
             "Brand direction: " + color + " Typography: " + font + " Headline direction: " + title +
             " CTA direction: " + action + " Market: " + casting.Market + " Language: " + copyLanguage +
             " Requirements: " + limits +
-            " Match or exceed the anchor in color power, tonal contrast, lighting craftsmanship, dimensional depth, material realism, texture fidelity, hero dominance, hierarchy, screen pop, typography, commercial polish, and Premium Dominant Presence. Important text must be correctly spelled. Preserve safe placement for the CTA and any QR code.";
+            " Quality DNA " + ReferenceLibrary.QualityDnaVersion + " sets the quality class and was the ACTIVE version read for this brief. It does not set the face, the pose, the gradient, or the headline position. Keep the advertiser palette exactly: " + color + ". Do not replace it with a reference brand's colors. " +
+            "Match or exceed the anchor in color power, tonal contrast, lighting craftsmanship, dimensional depth, material realism, texture fidelity, hero dominance, hierarchy, screen pop, typography, commercial polish, and Premium Dominant Presence. Important text must be correctly spelled. Preserve safe placement for the CTA and any QR code.";
         var notice = external
             ? "This niche was already created. The prototype was not repeated and no substitute image was invented. A production model is not configured, so no advertisement was generated. Delivery remains NOT_SENT."
             : teacherKey.Length == 0
@@ -598,7 +600,8 @@ public static class CreativeAcademy
             0,
             false,
             "NOT_SENT",
-            notice);
+            notice,
+            ReferenceLibrary.QualityDnaVersion);
     }
 
     public static CastingDecision PlanCasting(
@@ -700,6 +703,40 @@ public static class CreativeAcademy
 
     private static bool KnownFamily(string lane) =>
         LegacyFamilies.Contains(lane) || NicheCatalog.Find(lane) is not null;
+
+    private static string PreserveAdvertiserPalette(string? palette, bool required)
+    {
+        var supplied = (palette ?? string.Empty).Trim();
+        if (supplied.Length == 0)
+        {
+            if (required)
+            {
+                throw new InvalidOperationException("An advertiser palette is required. A reference brand's colors were not substituted.");
+            }
+
+            return "Advertiser palette was not supplied. Do not copy a reference brand's colors.";
+        }
+
+        if (UsesReferenceIdentity(Fold(supplied)))
+        {
+            throw new InvalidOperationException("A reference brand's colors are not the advertiser palette. The supplied Brand DNA was not replaced.");
+        }
+
+        return supplied;
+    }
+
+    private static bool UsesReferenceIdentity(string folded) =>
+        IsProtectedIdentity(folded)
+        || folded.Contains("VIDACARE", StringComparison.Ordinal)
+        || folded.Contains("MAISON FLEUR", StringComparison.Ordinal)
+        || folded.Contains("MAISONFLEUR", StringComparison.Ordinal)
+        || folded.Contains("NOVA FIT", StringComparison.Ordinal)
+        || folded.Contains("NOVAFIT", StringComparison.Ordinal)
+        || folded.Contains("TALLER RUTA", StringComparison.Ordinal)
+        || folded.Contains("TALLERRUTA", StringComparison.Ordinal)
+        || folded.Contains("FRESHMART", StringComparison.Ordinal)
+        || folded.Contains("BRAVA MOTO", StringComparison.Ordinal)
+        || folded.Contains("BRAVAMOTO", StringComparison.Ordinal);
 
     private static bool IsProtectedIdentity(string folded) =>
         folded is "MAISON FLEUR" or "MAISONFLEUR"

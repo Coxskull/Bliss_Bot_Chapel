@@ -407,7 +407,8 @@ public sealed class CreativeGenerationService(
             CampaignReady = false,
             Delivery = "NOT_SENT",
             Notice =
-                "The configured image provider created one draft. It is GENERATED_PENDING_REVIEW. "
+                "Quality DNA " + brief.QualityDnaVersion + " was read. The advertiser palette was kept. "
+                + "The configured image provider created one draft. It is GENERATED_PENDING_REVIEW. "
                 + "The visual benchmark and all four final gates are unrecorded. "
                 + "Campaign ready is false. Delivery remains NOT_SENT.",
             RecordedAt = DateTime.UtcNow
