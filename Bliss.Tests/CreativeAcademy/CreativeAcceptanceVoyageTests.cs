@@ -58,7 +58,16 @@ public sealed class CreativeAcceptanceVoyageTests
         Assert.Contains("ACTIVE_REFERENCE_INTELLIGENCE_REQUIRED", voyage.Blockers);
         Assert.Contains("INVENTORY_GEOMETRY_REQUIRED", voyage.Blockers);
         Assert.Contains("USAGE_COST_UNRECORDED", voyage.Blockers);
-        Assert.Equal(10, voyage.Trace.Count);
+        Assert.Equal(13, voyage.Trace.Count);
+        Assert.Equal("INVENTORY_GEOMETRY_FAILURE", voyage.Rejections.Single().Code);
+        Assert.False(voyage.Rejections.Single().PositiveReference);
+        Assert.Equal("BASELINE_NOT_RECORDED", voyage.Regression.Status);
+        Assert.False(voyage.Regression.Passed);
+        Assert.Equal(12, voyage.Regression.Cases.Count);
+        Assert.All(voyage.Provenance, item => Assert.Equal("NOT_AUTHORIZED", item.PermittedProviderUse));
+        Assert.False(voyage.ReferenceAssetsSentToProvider);
+        Assert.Equal("UNCLASSIFIED", voyage.StoredQuality.Single().Status);
+        Assert.Equal(0, voyage.StoredQuality.Single().ModelCalls);
         Assert.Equal("GQD-1", voyage.ProductionBrief.QualityDnaVersion);
         Assert.Equal(ReferenceLibrary.QualityDna.Count, voyage.GlobalQualityDna.Count);
         Assert.False(voyage.CampaignReady);

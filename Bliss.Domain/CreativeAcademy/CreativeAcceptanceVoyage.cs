@@ -71,6 +71,11 @@ public sealed record CreativeAcceptanceVoyage(
     AcceptanceEvidence BrandDnaCompliance,
     AcceptanceEvidence DoNotCopyCompliance,
     AcceptanceEvidence HumanReview,
+    IReadOnlyList<StoredRejection> Rejections,
+    RegressionSuiteResult Regression,
+    IReadOnlyList<AssetProvenance> Provenance,
+    IReadOnlyList<StoredQualityReading> StoredQuality,
+    bool ReferenceAssetsSentToProvider,
     IReadOnlyList<string> GlobalQualityDna,
     IReadOnlyList<string> Blockers,
     IReadOnlyList<AcceptanceTraceStep> Trace,
@@ -195,6 +200,19 @@ public static class CreativeAcceptance
             "",
             "No provider request was made. Usage and cost were not invented.");
         var originality = ReferenceLibrary.Compare("", "", "", "", references);
+        var rejections = new List<StoredRejection>();
+        if (inventory.Status != "RECOMPOSED")
+        {
+            rejections.Add(ReferenceLibrary.Reject("INVENTORY_GEOMETRY_FAILURE", product.ProductId));
+        }
+
+        var regression = ReferenceLibrary.ReadRegression(null);
+        var provenance = references.Select(ReferenceLibrary.ReadProvenance).ToList();
+        var storedQuality = references
+            .Where(item => item.NicheKey.Equals(campaign.Niche, StringComparison.OrdinalIgnoreCase))
+            .Select(ReferenceLibrary.ReadStoredQuality)
+            .ToList();
+        var assetsSent = provenance.Any(ReferenceLibrary.MaySendToProvider);
         var trace = new List<AcceptanceTraceStep>
         {
             new(1, "STORAGE", references.Count == 50 ? "RECORDED" : "INCOMPLETE",
@@ -207,7 +225,15 @@ public static class CreativeAcceptance
             new(7, "QUALITY_QA", "NOT_RUN", "No finished image exists. A visual score was not invented."),
             new(8, "ORIGINALITY_QA", originality.Status, originality.Notice),
             new(9, "HUMAN_REVIEW", "NOT_REQUESTED", "No finished image exists for a human to review."),
-            new(10, "DELIVERY", "NOT_SENT", "Campaign ready is false. Green does not send.")
+            new(10, "DELIVERY", "NOT_SENT", "Campaign ready is false. Green does not send."),
+            new(11, "REJECTION_TAXONOMY", rejections.Count == 0 ? "NONE" : "RECORDED",
+                rejections.Count == 0
+                    ? "No stored rejection code applies yet."
+                    : string.Join(", ", rejections.Select(item => item.Code + " on " + item.SubjectId)) + ". Rejected work is not a positive reference."),
+            new(12, "REGRESSION_SUITE", regression.Status, regression.Notice),
+            new(13, "PROVENANCE_AND_COST", "UNRECORDED",
+                "Provenance, rights, approving authority, usage, and cost are unrecorded. Reference assets sent to a provider: "
+                + (assetsSent ? "Yes" : "No") + ". A model was not called to re-analyze stored quality.")
         };
 
         return new CreativeAcceptanceVoyage(
@@ -236,6 +262,11 @@ public static class CreativeAcceptance
                     ? "A finished image is required before compliance can be judged."
                     : "No ACTIVE reference has stored DO NOT COPY intelligence."),
             new AcceptanceEvidence("NOT_REQUESTED", "No human approval was claimed."),
+            rejections,
+            regression,
+            provenance,
+            storedQuality,
+            assetsSent,
             ReferenceLibrary.QualityDna,
             blockers.Distinct(StringComparer.Ordinal).ToList(),
             trace,

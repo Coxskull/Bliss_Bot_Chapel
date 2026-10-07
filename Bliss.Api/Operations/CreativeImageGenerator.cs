@@ -293,7 +293,11 @@ public sealed record CreativeGenerationDecision(
     bool CampaignReady,
     string Delivery,
     string Notice,
-    bool Duplicate);
+    bool Duplicate,
+    string Provider,
+    string Model,
+    string CostStatus,
+    decimal? Cost);
 
 public sealed class CreativeGenerationService(
     BlissDbContext database,
@@ -405,6 +409,15 @@ public sealed class CreativeGenerationService(
             ProviderRequestId = result.ProviderRequestId,
             RecipeSha256 = Convert.ToHexString(
                 SHA256.HashData(Encoding.UTF8.GetBytes(brief.GenerationRecipe))),
+            Provider = string.IsNullOrWhiteSpace(runtime.CreativeGeneration.Provider)
+                ? "UNNAMED"
+                : runtime.CreativeGeneration.Provider.Trim(),
+            Model = string.IsNullOrWhiteSpace(runtime.CreativeGeneration.Model)
+                ? "UNRECORDED"
+                : runtime.CreativeGeneration.Model.Trim(),
+            CostStatus = "UNRECORDED",
+            Cost = null,
+            Currency = string.Empty,
             ModelCalls = 1,
             CampaignReady = false,
             Delivery = "NOT_SENT",
@@ -414,6 +427,9 @@ public sealed class CreativeGenerationService(
                 + ". The advertiser palette was kept. "
                 + "The configured image provider created one draft. It is GENERATED_PENDING_REVIEW. "
                 + "The visual benchmark and all four final gates are unrecorded. "
+                + "Provider " + (string.IsNullOrWhiteSpace(runtime.CreativeGeneration.Provider) ? "UNNAMED" : runtime.CreativeGeneration.Provider.Trim())
+                + " and model " + (string.IsNullOrWhiteSpace(runtime.CreativeGeneration.Model) ? "UNRECORDED" : runtime.CreativeGeneration.Model.Trim())
+                + " are recorded. Usage cost is UNRECORDED and was not invented. "
                 + "Campaign ready is false. Delivery remains NOT_SENT.",
             RecordedAt = DateTime.UtcNow
         };
@@ -472,5 +488,9 @@ public sealed class CreativeGenerationService(
             row.CampaignReady,
             row.Delivery,
             row.Notice,
-            duplicate);
+            duplicate,
+            row.Provider,
+            row.Model,
+            row.CostStatus,
+            row.Cost);
 }
