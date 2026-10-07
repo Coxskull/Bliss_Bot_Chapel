@@ -113,8 +113,10 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal("vidacare-master-01", brief.GetProperty("teacherKey").GetString());
         Assert.Equal("Burgundy and gold", brief.GetProperty("palette").GetString());
         Assert.Equal(4, brief.GetProperty("layers").GetArrayLength());
-        Assert.Equal("NICHE_REFERENCE_NOT_ACTIVE", brief.GetProperty("retrieval").GetProperty("status").GetString());
-        Assert.Equal(0, brief.GetProperty("retrieval").GetProperty("selected").GetArrayLength());
+        Assert.Equal("RETRIEVED", brief.GetProperty("retrieval").GetProperty("status").GetString());
+        Assert.Contains(
+            brief.GetProperty("retrieval").GetProperty("selected").EnumerateArray(),
+            item => item.GetProperty("referenceId").GetString() == "ACA-001-V1");
         Assert.Contains(
             "Burgundy and gold",
             brief.GetProperty("layers").EnumerateArray().Single(item => item.GetProperty("layerId").GetString() == "BRAND_DNA").GetProperty("content").GetString());
@@ -254,15 +256,15 @@ public sealed class CreativeAcademyApiTests
         Assert.True(first.GetProperty("written").GetBoolean());
         Assert.False(first.GetProperty("duplicate").GetBoolean());
         Assert.Equal("BLOCKED", report.GetProperty("status").GetString());
-        Assert.Equal(0, report.GetProperty("referenceIntelligence").GetProperty("active").GetInt32());
+        Assert.Equal(50, report.GetProperty("referenceIntelligence").GetProperty("active").GetInt32());
         Assert.Equal(
-            "REFERENCE_INTELLIGENCE_INCOMPLETE",
+            "READY",
             report.GetProperty("referenceIntelligence").GetProperty("status").GetString());
         Assert.Equal(
-            "NICHE_REFERENCE_NOT_ACTIVE",
+            "RETRIEVED",
             report.GetProperty("productionBrief").GetProperty("retrieval").GetProperty("status").GetString());
-        Assert.Equal("NOT_CREATED", report.GetProperty("brandDna").GetProperty("status").GetString());
-        Assert.Equal("BLOCKED_REFERENCE_GATE", report.GetProperty("providerJob").GetProperty("status").GetString());
+        Assert.Equal("PREPARED", report.GetProperty("brandDna").GetProperty("status").GetString());
+        Assert.Equal("PROVIDER_CONFIGURATION_REQUIRED", report.GetProperty("providerJob").GetProperty("status").GetString());
         Assert.Equal("NOT_CREATED", report.GetProperty("finishedCreative").GetProperty("status").GetString());
         Assert.Equal("GEOMETRY_UNRECORDED", report.GetProperty("inventoryPreflight").GetProperty("status").GetString());
         Assert.Equal("NOT_RUN", report.GetProperty("qualityQa").GetProperty("status").GetString());

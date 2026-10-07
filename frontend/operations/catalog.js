@@ -42,7 +42,7 @@ async function loadCatalog() {
   }
   const references = board.references || {};
   document.getElementById("catalog-references").textContent =
-    `Registered ${references.registered ?? 0} of ${references.expected ?? 50}. Uploaded ${references.uploaded ?? 0}. Awaiting upload ${references.awaitingUpload ?? 0}. ACTIVE ${references.active ?? 0}. Sample retrieval ${board.sampleRetrieval?.status ?? "unavailable"}. Regression ${board.regressionStatus}. Uploaded files stay CANDIDATE until a human approves them.`;
+    `Registered ${references.registered ?? 0} of ${references.expected ?? 50}. Uploaded ${references.uploaded ?? 0}. Awaiting upload ${references.awaitingUpload ?? 0}. ACTIVE ${references.active ?? 0}. Sample retrieval ${board.sampleRetrieval?.status ?? "unavailable"}. Regression ${board.regressionStatus}. Quality grades stay UNCLASSIFIED.`;
   const items = (references.items || []).slice().sort((left, right) => (left.nicheNumber || 0) - (right.nicheNumber || 0));
   const grid = document.getElementById("catalog-reference-grid");
   if (grid) {

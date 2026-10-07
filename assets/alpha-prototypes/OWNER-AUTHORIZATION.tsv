@@ -1,0 +1,11 @@
+key	value	lifecycle
+creatorAuthorized	true
+deviceStatus	OWNER_APPROVED
+platformStatus	OWNER_APPROVED
+lifecycle	ARE-P01	ACTIVE
+lifecycle	ARE-P02	ACTIVE
+lifecycle	ARE-S01	ACTIVE
+lifecycle	ARE-E01	ACTIVE
+lifecycle	ARE-001-V1	ACTIVE
+lifecycle	ARE-002-V1	ACTIVE
+lifecycle	ARE-003-V1	ACTIVE

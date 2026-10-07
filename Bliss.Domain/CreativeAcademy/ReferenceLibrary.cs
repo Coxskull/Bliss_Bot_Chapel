@@ -14,7 +14,12 @@ public sealed record AcademyReferenceRecord(
     string Learn,
     string DoNotCopy,
     string MappingNote = "",
-    string QualityStatus = "UNCLASSIFIED");
+    string QualityStatus = "UNCLASSIFIED",
+    string ProvenanceSource = "",
+    string Ownership = "",
+    string ApprovedOn = "",
+    string ApprovingAuthority = "",
+    string PermittedInternalUse = "");
 
 public sealed record RetrievedReference(
     string ReferenceId,
@@ -215,7 +220,13 @@ public static class ReferenceLibrary
                 present,
                 cells.Length > 7 ? cells[7].Trim() : string.Empty,
                 cells.Length > 8 ? cells[8].Trim() : string.Empty,
-                cells.Length > 9 ? cells[9].Trim() : string.Empty));
+                cells.Length > 9 ? cells[9].Trim() : string.Empty,
+                Unclassified,
+                cells.Length > 10 ? cells[10].Trim() : string.Empty,
+                cells.Length > 11 ? cells[11].Trim() : string.Empty,
+                cells.Length > 12 ? cells[12].Trim() : string.Empty,
+                cells.Length > 13 ? cells[13].Trim() : string.Empty,
+                cells.Length > 14 ? cells[14].Trim() : string.Empty));
         }
 
         return rows;
@@ -453,17 +464,20 @@ public static class ReferenceLibrary
         ArgumentNullException.ThrowIfNull(reference);
         return new AssetProvenance(
             reference.ReferenceId,
+            Known(reference.ProvenanceSource),
             "UNRECORDED",
-            "UNRECORDED",
-            "UNRECORDED",
-            "UNRECORDED",
-            "UNRECORDED",
+            Known(reference.Ownership),
+            string.IsNullOrWhiteSpace(reference.ApprovedOn) ? "UNRECORDED" : "Approved " + reference.ApprovedOn.Trim(),
+            Known(reference.PermittedInternalUse),
             "NOT_AUTHORIZED",
             "UNRECORDED",
             reference.Lifecycle,
-            "UNRECORDED",
-            "UNRECORDED");
+            Known(reference.ApprovedOn),
+            Known(reference.ApprovingAuthority));
     }
+
+    private static string Known(string value) =>
+        string.IsNullOrWhiteSpace(value) ? "UNRECORDED" : value.Trim();
 
     public static bool MaySendToProvider(AssetProvenance provenance)
     {
