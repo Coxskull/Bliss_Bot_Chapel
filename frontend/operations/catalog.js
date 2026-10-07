@@ -133,7 +133,9 @@ async function askCatalog(message) {
   const turn = body.turn || {};
   const target = document.getElementById("catalog-turn");
   if (target) {
-    target.innerHTML = `<article><p class="eyebrow">${escapeCatalog(turn.intent)}</p><p>${escapeCatalog(turn.reply)}</p><p>Showcase displayed ${turn.showcaseDisplayed ? "Yes" : "No"}. Invented product ${turn.inventedProduct ? "Yes" : "No"}. Invented price ${turn.inventedPrice ? "Yes" : "No"}. Human escalation ${turn.humanEscalation ? "Yes" : "No"}. Delivery ${escapeCatalog(turn.delivery)}.</p></article>`;
+    const products = (turn.productIds || []).join(", ") || "none";
+    const showcases = (turn.showcaseIds || []).join(", ") || "none";
+    target.innerHTML = `<article><p class="eyebrow">${escapeCatalog(turn.intent)}</p><p>${escapeCatalog(turn.reply)}</p><p>Products ${escapeCatalog(products)}. Showcases ${escapeCatalog(showcases)}. Showcase displayed ${turn.showcaseDisplayed ? "Yes" : "No"}. Geometry ${escapeCatalog(turn.geometryStatus)}. Invented product ${turn.inventedProduct ? "Yes" : "No"}. Invented price ${turn.inventedPrice ? "Yes" : "No"}. Human escalation ${turn.humanEscalation ? "Yes" : "No"}. Delivery ${escapeCatalog(turn.delivery)}.</p></article>`;
   }
   await loadCatalog();
 }
