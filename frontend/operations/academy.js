@@ -128,6 +128,14 @@ function generationCard(item) {
 }
 
 async function loadAcademy() {
+  try {
+    return await loadAcademyBoard();
+  } finally {
+    await loadHarborlightReview();
+  }
+}
+
+async function loadAcademyBoard() {
   const board = await api("/api/operations/academy");
   $("#academy-notice").textContent = board.notice;
   $("#academy-delivery").textContent = `Delivery ${board.delivery}. Model calls ${board.modelCalls}. Campaign ready ${board.campaignReady ? "Yes" : "No"}.`;
@@ -176,6 +184,25 @@ async function loadAcademy() {
     : emptyState("No Creative DNA is stored.");
   await loadAcceptanceVoyages();
   return board;
+}
+
+async function loadHarborlightReview() {
+  const sheet = await api("/api/operations/academy/harborlight-review");
+  const target = document.getElementById("harborlight-review");
+  if (!target || !sheet) return;
+  const rows = (items, valueName) => (items || []).map(item =>
+    `<tr><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item[valueName])}</td></tr>`).join("");
+  target.innerHTML = `<article>
+    <p class="eyebrow">${escapeHtml(sheet.attemptId)} · ${escapeHtml(sheet.status)} · ${escapeHtml(sheet.qualityDnaVersion)}</p>
+    <p>${escapeHtml(sheet.notice)}</p>
+    <p>Human review ${escapeHtml(sheet.humanReview)}. Campaign ready ${sheet.campaignReady ? "Yes" : "No"}. Delivery ${escapeHtml(sheet.delivery)}. Regression ${escapeHtml(sheet.regression)}.</p>
+    <h4>Quality attributes</h4>
+    <table><thead><tr><th>Attribute</th><th>Grade</th></tr></thead><tbody>${rows(sheet.attributes, "grade")}</tbody></table>
+    <h4>Copy checks</h4>
+    <table><thead><tr><th>Check</th><th>Status</th></tr></thead><tbody>${rows(sheet.copyChecks, "status")}</tbody></table>
+    <h4>Open questions</h4>
+    <table><thead><tr><th>Question</th><th>Status</th></tr></thead><tbody>${rows(sheet.questions, "status")}</tbody></table>
+  </article>`;
 }
 
 async function postAcademy(path, body) {

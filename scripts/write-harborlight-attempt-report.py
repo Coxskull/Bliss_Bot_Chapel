@@ -81,6 +81,16 @@ def main() -> None:
     )
 
     pdf.add_page()
+    heading(pdf, "HV-4 review sheet")
+    sheet = evidence["reviewSheet"]
+    paragraph(pdf, f"Sheet {sheet['status']}. Human review {sheet['humanReview']}. Regression {sheet['regression']}. Campaign ready: false. Delivery: NOT_SENT.")
+    paragraph(pdf, sheet["notice"])
+    for attribute in sheet["attributes"]:
+        paragraph(pdf, f"{attribute['name']}: {attribute['grade']}")
+    for check in sheet["copyChecks"]:
+        paragraph(pdf, f"Copy check {check['name']}: {check['status']}")
+    for question in sheet["questions"]:
+        paragraph(pdf, f"{question['name']}: {question['status']}")
     heading(pdf, "Review required")
     for note in evidence["reviewNotes"]:
         paragraph(pdf, "- " + note)

@@ -80,13 +80,17 @@ The generated image visibly provides a new Harborlight identity, pharmacy settin
 - Advertising Real Estate: OPEN
 - Hosted acceptance: UNCLAIMED
 
-The attempt advances HV-2 and HV-3 evidence, but it does not satisfy HV-4. No regression baseline may be established unless the owner accepts a finished and properly adapted creative.
+## HV-4 review sheet
+
+The sheet is `PREPARED` for `HV-001` and bound to the stored original and adapted-preview hashes. It lists every GQD-1 attribute as `UNCLASSIFIED`, every copy check as `NOT_REVIEWED`, and Panama-market authenticity plus the adapted layout as `UNRECORDED`.
+
+Human review remains `NOT_REQUESTED`. The sheet does not satisfy HV-4 and does not establish a regression baseline.
 
 ## Verification
 
 ```text
 dotnet test BlissBotChapel.sln --no-restore
-Passed: 524
+Passed: 525
 Failed: 0
 Skipped: 0
 ```

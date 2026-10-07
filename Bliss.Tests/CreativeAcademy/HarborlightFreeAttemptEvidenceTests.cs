@@ -89,6 +89,26 @@ public sealed class HarborlightFreeAttemptEvidenceTests
         Assert.Equal("OPEN", record.GetProperty("amendments").GetProperty("creativeAcademy").GetString());
         Assert.Equal("OPEN", record.GetProperty("amendments").GetProperty("advertisingRealEstate").GetString());
         Assert.Equal("UNCLAIMED", record.GetProperty("amendments").GetProperty("hostedAcceptance").GetString());
+
+        var sheet = HarborlightReview.ParseEvidence(File.ReadAllText(evidencePath));
+        var prepared = HarborlightReview.Prepare(
+            "HV-001",
+            record.GetProperty("original").GetProperty("sha256").GetString()!,
+            record.GetProperty("adaptation").GetProperty("sha256").GetString()!);
+        Assert.Equal(prepared.AttemptId, sheet.AttemptId);
+        Assert.Equal(prepared.Status, sheet.Status);
+        Assert.Equal(prepared.OriginalSha256, sheet.OriginalSha256);
+        Assert.Equal(prepared.AdaptedSha256, sheet.AdaptedSha256);
+        Assert.Equal(prepared.Notice, sheet.Notice);
+        Assert.Equal(ReferenceLibrary.QualityDna, sheet.Attributes.Select(item => item.Name).ToArray());
+        Assert.All(sheet.Attributes, item => Assert.Equal(ReferenceLibrary.Unclassified, item.Grade));
+        Assert.Equal(HarborlightReview.CopyCheckNames, sheet.CopyChecks.Select(item => item.Name).ToArray());
+        Assert.All(sheet.CopyChecks, item => Assert.Equal(HarborlightReview.NotReviewed, item.Status));
+        Assert.All(sheet.Questions, item => Assert.Equal(HarborlightReview.Unrecorded, item.Status));
+        Assert.Equal(HarborlightReview.NotRequested, sheet.HumanReview);
+        Assert.False(sheet.CampaignReady);
+        Assert.Equal("NOT_SENT", sheet.Delivery);
+        Assert.Equal("BASELINE_NOT_RECORDED", sheet.Regression);
     }
 
     private static string Resolve(string root, string? relative)

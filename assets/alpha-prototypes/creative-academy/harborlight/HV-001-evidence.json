@@ -78,8 +78,16 @@
     "height": 1080,
     "sha256": "273f52bb10e954fc05cf712ec03d6f3000ababbccc980531d8f387dfd6463744",
     "slots": [
-      { "slotId": "LEFT_VERTICAL", "width": 320, "height": 1080 },
-      { "slotId": "BOTTOM_FULL", "width": 1280, "height": 180 }
+      {
+        "slotId": "LEFT_VERTICAL",
+        "width": 320,
+        "height": 1080
+      },
+      {
+        "slotId": "BOTTOM_FULL",
+        "width": 1280,
+        "height": 180
+      }
     ],
     "prototypeScaled": false,
     "bottomBanner": {
@@ -103,11 +111,138 @@
   "reviewNotes": [
     "Human review should assess commercial color, contrast, highlights, shadows, lighting, realism, depth, separation, typography, hierarchy, polish, screen impact, and Premium Dominant Presence.",
     "Human review should verify Panama-market authenticity and that the invented person, products, setting, composition, and identity do not copy an Academy reference.",
-    "The bottom banner is a purpose-built 1280x180 layout. Human review must still accept the adapted layout, commercial quality, and Panama-market authenticity before any regression baseline."
+    "The bottom banner is a purpose-built 1280x180 layout. Human review must still accept the adapted layout, commercial quality, and Panama-market authenticity before any regression baseline.",
+    "The HV-4 review sheet is prepared. Every GQD-1 grade is UNCLASSIFIED. No copy check, market judgment, or layout acceptance was recorded."
   ],
   "amendments": {
     "creativeAcademy": "OPEN",
     "advertisingRealEstate": "OPEN",
     "hostedAcceptance": "UNCLAIMED"
+  },
+  "reviewSheet": {
+    "attemptId": "HV-001",
+    "status": "PREPARED",
+    "qualityDnaVersion": "GQD-1",
+    "originalSha256": "3fa9e45467683c37b3d1fa356aa968bff5b2f0719fa2184ac31ab7f87c1ebd47",
+    "adaptedSha256": "273f52bb10e954fc05cf712ec03d6f3000ababbccc980531d8f387dfd6463744",
+    "attributes": [
+      {
+        "name": "color power",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "tonal contrast",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "lighting craftsmanship",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "highlight brilliance",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "shadow quality",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "dimensional depth",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "foreground/background separation",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "material realism",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "texture fidelity",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "hero dominance",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "visual hierarchy",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "typographic quality",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "screen pop",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "commercial polish",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "Premium Dominant Presence",
+        "grade": "UNCLASSIFIED"
+      },
+      {
+        "name": "overall reference quality parity",
+        "grade": "UNCLASSIFIED"
+      }
+    ],
+    "copyChecks": [
+      {
+        "name": "company",
+        "status": "NOT_REVIEWED"
+      },
+      {
+        "name": "identity",
+        "status": "NOT_REVIEWED"
+      },
+      {
+        "name": "person",
+        "status": "NOT_REVIEWED"
+      },
+      {
+        "name": "product",
+        "status": "NOT_REVIEWED"
+      },
+      {
+        "name": "photograph",
+        "status": "NOT_REVIEWED"
+      },
+      {
+        "name": "wording",
+        "status": "NOT_REVIEWED"
+      },
+      {
+        "name": "background",
+        "status": "NOT_REVIEWED"
+      },
+      {
+        "name": "composition",
+        "status": "NOT_REVIEWED"
+      },
+      {
+        "name": "distinctive identity",
+        "status": "NOT_REVIEWED"
+      }
+    ],
+    "questions": [
+      {
+        "name": "Panama-market authenticity",
+        "status": "UNRECORDED"
+      },
+      {
+        "name": "adapted layout",
+        "status": "UNRECORDED"
+      }
+    ],
+    "humanReview": "NOT_REQUESTED",
+    "campaignReady": false,
+    "delivery": "NOT_SENT",
+    "regression": "BASELINE_NOT_RECORDED",
+    "notice": "The GQD-1 attribute list is prepared for owner review. Every grade is UNCLASSIFIED. No copy judgment, market judgment, layout acceptance, or regression baseline was written."
   }
 }
