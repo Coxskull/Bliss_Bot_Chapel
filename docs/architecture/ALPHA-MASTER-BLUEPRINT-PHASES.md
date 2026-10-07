@@ -225,6 +225,8 @@ Expose, on the existing operations console rather than a second product, the fie
 
 **Done when.** An operator can read those fields for one product. The page does not compute a price.
 
+**Progress.** The joint reading shows those fields for every stored product. Disclosure, availability, reservations, exceptions, duration price, and proof of delivery stay `UNRECORDED` or `NOT_RECORDED` when no stored fact exists. The page does not compute a price. This does not accept ARE-10.
+
 ### ARE-11 — Catalog end-to-end evidence
 
 Run Tests 1 through 6 and the critical failure test from the Catalog acceptance note, in the Ask Alpha conversation surface, against the database.
@@ -243,6 +245,8 @@ Required evidence:
 - Screenshot or recording of each test
 
 The Catalog amendment stays OPEN until that evidence is reviewed. Database tables, APIs, unit tests, and a verbal confirmation do not close it.
+
+**Progress.** The seven conversations now run against the stored draft in one reading. Each reply refuses an invented product and an invented price. The mobile, frequency, delivery, and unauthorized-request checks meet their stored-data rules. The three offer checks do not, because no product or showcase is ACTIVE and creator authorization is absent. ARE-11 remains OPEN.
 
 ---
 
@@ -383,6 +387,8 @@ One path, still two systems:
 7. Delivery remains `NOT_SENT` and campaign ready remains false unless a separate human authorization says otherwise.
 
 **Done when.** One recorded conversation shows the product ID, the showcase ID, the Academy reference IDs with reasons, the Economics source, the adapted creative, and the delivery status. Both parent amendments stay OPEN until the owner reviews that evidence.
+
+**Progress.** `GET /api/operations/blueprint/joint-acceptance` records the seven catalog conversations, the Economics source, pharmacy retrieval, ARE-P01 adaptation, creator and platform status, availability, and delivery. The live reading is `BLOCKED`: 0 ACTIVE references, `GEOMETRY_UNRECORDED`, no authorized price, and availability unrecorded. A fixture with those facts supplied reaches `AWAITING_REVIEW` and still leaves both amendments OPEN and hosted acceptance unclaimed. No consolidated report is issued. J-1 remains OPEN.
 
 ## Evidence the owner still has to supply
 

@@ -61,7 +61,35 @@ async function loadCatalog() {
       ? extras.map(item => `<figure class="catalog-tile"><img class="catalog-thumb" src="/api/operations/blueprint/unassigned/${encodeURIComponent(item.fileName)}" alt="${escapeCatalog(item.fileName)} unassigned upload" loading="lazy"><figcaption><strong>${escapeCatalog(item.fileName)}</strong><small>${escapeCatalog(item.reason)}</small></figcaption></figure>`).join("")
       : "<p>No unassigned inbox image is stored.</p>";
   }
+  await loadJointAcceptance();
   return board;
+}
+
+function renderJoint(reading) {
+  const target = document.getElementById("catalog-joint-result");
+  if (!target || !reading) return;
+  const gates = (reading.gates || []).map(item => `<li><strong>${escapeCatalog(item.gateId)} · ${escapeCatalog(item.status)}</strong><br>${escapeCatalog(item.evidence)}</li>`).join("");
+  const conversations = (reading.conversations || []).map(item => `<li><strong>${escapeCatalog(item.caseId)} · ${escapeCatalog(item.intent)}</strong> · integrity ${item.integrityPassed ? "passed" : "failed"} · acceptance ${item.acceptancePassed ? "met" : "not met"}<br>${escapeCatalog(item.notice)}</li>`).join("");
+  const mission = (reading.missionControl || []).map(item => `<tr><td>${escapeCatalog(item.productId)}</td><td>${escapeCatalog(item.tier)}</td><td>${escapeCatalog(item.occupancyStatus)}</td><td>${item.creatorAuthorized ? "Yes" : "No"}</td><td>${escapeCatalog(item.deviceStatus)} / ${escapeCatalog(item.platformStatus)}</td><td>${escapeCatalog(item.disclosure)}</td><td>${escapeCatalog(item.availability)}</td><td>${escapeCatalog(item.proofOfDelivery)}</td><td>${escapeCatalog(item.economicsPricingVersion)}</td></tr>`).join("");
+  const retrieved = (reading.retrievedReferences || []).map(item => `<li>${escapeCatalog(item.referenceId)} — ${escapeCatalog(item.reason)}</li>`).join("") || "<li>No ACTIVE reference was retrieved.</li>";
+  target.innerHTML = `<article>
+    <p class="eyebrow">${escapeCatalog(reading.status)}</p>
+    <p>Catalog amendment ${escapeCatalog(reading.catalogAmendment)}. Academy amendment ${escapeCatalog(reading.academyAmendment)}. Hosted acceptance ${escapeCatalog(reading.hostedAcceptance)}.</p>
+    <p>Retrieval ${escapeCatalog(reading.retrievalStatus)}. Adaptation ${escapeCatalog(reading.adaptationStatus)} for ${escapeCatalog(reading.adaptedProductId)}. Economics ${escapeCatalog(reading.economicsSource)}</p>
+    <h4>Gates</h4><ul>${gates}</ul>
+    <h4>Conversations</h4><ol>${conversations}</ol>
+    <h4>Retrieved references</h4><ul>${retrieved}</ul>
+    <h4>Mission control</h4>
+    <div class="table-wrap"><table><thead><tr><th>Product</th><th>Tier</th><th>Occupancy</th><th>Creator</th><th>Device / platform</th><th>Disclosure</th><th>Availability</th><th>Delivery proof</th><th>Economics</th></tr></thead><tbody>${mission}</tbody></table></div>
+    <p>${escapeCatalog(reading.notice)}</p>
+    <p>Model calls ${reading.modelCalls}. Campaign ready ${reading.campaignReady ? "Yes" : "No"}. Delivery ${escapeCatalog(reading.delivery)}.</p>
+  </article>`;
+}
+
+async function loadJointAcceptance() {
+  const reading = await api("/api/operations/blueprint/joint-acceptance");
+  renderJoint(reading);
+  return reading;
 }
 
 function renderAdaptation(result) {
@@ -142,6 +170,21 @@ document.addEventListener("DOMContentLoaded", () => {
         if (target) target.textContent = error.message;
       } finally {
         copied.disabled = false;
+      }
+    });
+  }
+  const joint = document.getElementById("catalog-joint");
+  if (joint) {
+    joint.addEventListener("click", async () => {
+      joint.disabled = true;
+      try {
+        await loadJointAcceptance();
+        document.getElementById("catalog-joint-result")?.scrollIntoView({ block: "start" });
+      } catch (error) {
+        const target = document.getElementById("catalog-joint-result");
+        if (target) target.textContent = error.message;
+      } finally {
+        joint.disabled = false;
       }
     });
   }
