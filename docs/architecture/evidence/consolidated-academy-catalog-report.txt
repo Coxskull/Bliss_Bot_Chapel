@@ -1,7 +1,7 @@
 CONSOLIDATED ACADEMY + CATALOG READINESS REPORT
 As of: 2026-10-07
 Scope: Creative Academy references, Advertising Real Estate catalog, recommended geometry, joint acceptance, and deferred Harborlight voyage
-Verification: 521 tests passed, 0 failed, 0 skipped
+Verification: 522 tests passed, 0 failed, 0 skipped
 
 EXECUTIVE RESULT
 The approved source records are working together without inventing missing commercial or production facts.
@@ -76,13 +76,37 @@ Academy amendment: OPEN
 
 The Harborlight request stops before generation because provider configuration and credits are deferred. No reference asset was sent to a provider, no finished creative was substituted, and no cost or acceptance was invented.
 
-TESTING
-The new ConsolidatedReadinessApiTests reads the catalog/Academy blueprint, joint catalog and Academy acceptance, and the fail-closed Harborlight acceptance voyage.
+END-TO-END TEST
+CatalogEndToEndApiTests walks one operator path against the stored records.
 
-It verifies that approved references and geometry clear their gates while the missing provider, QA, review, cost, regression, Economics, hosted, readiness, and delivery facts remain blocked.
+1. Load the catalog and confirm geometry RECORDED, 50 ACTIVE references, and creator authorization.
+2. Serve ACA-005-V1.png, ARE-001-V1, and ARE-003-V1.
+3. Ask all seven catalog questions and write each reply to the conversation ledger.
+4. Adapt an original Norte Salud identity into LEFT_VERTICAL 320 x 1080 and BOTTOM_FULL 1280 x 180.
+5. Reject a copied VidaCare identity with REGENERATE.
+6. Read joint acceptance.
+7. Start the Harborlight voyage and stop before generation.
+
+Lower budget: ENTRY; ARE-S01 and its showcase displayed; no price.
+Premium: PREMIUM; premium products and showcases displayed; no price.
+Exclusivity: EXCLUSIVITY; exclusive products displayed; exclusivity not promised.
+Mobile: DEVICE; stored OWNER_APPROVED status; no showcase.
+Twenty displays: FREQUENCY; 20 occurrences recognized; no price.
+Proof of delivery: DELIVERY; no impressions invented.
+Unauthorized request: UNSUPPORTED; escalated; no product or price invented.
+Conversation ledger: 7 rows, all NOT_SENT.
+Adaptation: RECOMPOSED.
+Copied identity: REGENERATE.
+Joint acceptance: BLOCKED, retrieval RETRIEVED, adaptation RECOMPOSED.
+Harborlight voyage: BLOCKED at PROVIDER_CONFIGURATION_REQUIRED.
+
+The offer questions display stored showcase images. Device, frequency, and delivery questions do not, because they are not offers. Every turn records geometry RECORDED, zero model calls, campaign ready false, and delivery NOT_SENT.
+
+TESTING
+ConsolidatedReadinessApiTests reads the blueprint, joint acceptance, and deferred voyage together. CatalogEndToEndApiTests adds the seven-question conversation, image serving, ledger, adaptation, and originality checks.
 
 Command: dotnet test BlissBotChapel.sln --no-restore
-Passed: 521
+Passed: 522
 Failed: 0
 Skipped: 0
 
