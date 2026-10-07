@@ -81,6 +81,12 @@ def main() -> None:
     )
 
     pdf.add_page()
+    heading(pdf, "Pixel similarity")
+    similarity = evidence["pixelSimilarity"]
+    paragraph(pdf, f"Status {similarity['status']}. Judgment {similarity['judgment']}. Visual grade {similarity['visualGrade']}.")
+    paragraph(pdf, similarity["notice"])
+    for distance in similarity["references"]:
+        paragraph(pdf, f"{distance['referenceId']}: mean absolute error {distance['meanAbsoluteError']}, average-hash distance {distance['averageHashDistance']} of 64.")
     heading(pdf, "HV-4 review sheet")
     sheet = evidence["reviewSheet"]
     paragraph(pdf, f"Sheet {sheet['status']}. Human review {sheet['humanReview']}. Regression {sheet['regression']}. Campaign ready: false. Delivery: NOT_SENT.")

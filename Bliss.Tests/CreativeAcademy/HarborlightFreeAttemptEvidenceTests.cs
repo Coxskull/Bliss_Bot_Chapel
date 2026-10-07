@@ -80,7 +80,7 @@ public sealed class HarborlightFreeAttemptEvidenceTests
         Assert.Equal("NOT_SENT", originality.Delivery);
 
         var checks = record.GetProperty("checks");
-        Assert.Equal("NOT_RUN", checks.GetProperty("pixelSimilarity").GetString());
+        Assert.Equal("MEASURED", checks.GetProperty("pixelSimilarity").GetString());
         Assert.Equal("NOT_RUN", checks.GetProperty("visualQa").GetString());
         Assert.Equal("NOT_REQUESTED", checks.GetProperty("humanReview").GetString());
         Assert.Equal("BASELINE_NOT_RECORDED", checks.GetProperty("regression").GetString());
@@ -109,6 +109,20 @@ public sealed class HarborlightFreeAttemptEvidenceTests
         Assert.False(sheet.CampaignReady);
         Assert.Equal("NOT_SENT", sheet.Delivery);
         Assert.Equal("BASELINE_NOT_RECORDED", sheet.Regression);
+
+        var similarity = HarborlightPixelSimilarity.ParseEvidence(File.ReadAllText(evidencePath));
+        Assert.Equal(HarborlightPixelSimilarity.Measured, similarity.Status);
+        Assert.Equal(HarborlightPixelSimilarity.NotJudged, similarity.Judgment);
+        Assert.Equal(HarborlightPixelSimilarity.NotAssigned, similarity.VisualGrade);
+        Assert.Equal(
+            ["ACA-001-V1", "ACA-002-V1", "ACA-006-V1", "ACA-008-V1"],
+            similarity.References.Select(item => item.ReferenceId).ToArray());
+        foreach (var distance in similarity.References)
+        {
+            Assert.InRange(distance.MeanAbsoluteError, 0, 255);
+            Assert.InRange(distance.AverageHashDistance, 0, 64);
+            Assert.Equal(Sha256(Path.Combine(inbox, "inbox", distance.File)), distance.Sha256);
+        }
     }
 
     private static string Resolve(string root, string? relative)

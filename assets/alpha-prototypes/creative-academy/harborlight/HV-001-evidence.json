@@ -100,7 +100,7 @@
   },
   "checks": {
     "textIdentityOriginality": "PASS",
-    "pixelSimilarity": "NOT_RUN",
+    "pixelSimilarity": "MEASURED",
     "deterministicImageValidation": "PASS",
     "visualQa": "NOT_RUN",
     "humanReview": "NOT_REQUESTED",
@@ -244,5 +244,43 @@
     "delivery": "NOT_SENT",
     "regression": "BASELINE_NOT_RECORDED",
     "notice": "The GQD-1 attribute list is prepared for owner review. Every grade is UNCLASSIFIED. No copy judgment, market judgment, layout acceptance, or regression baseline was written."
+  },
+  "pixelSimilarity": {
+    "status": "MEASURED",
+    "judgment": "NOT_JUDGED",
+    "visualGrade": "NOT_ASSIGNED",
+    "method": "32x18 grayscale mean absolute error and 8x8 average-hash Hamming distance",
+    "originalSha256": "3fa9e45467683c37b3d1fa356aa968bff5b2f0719fa2184ac31ab7f87c1ebd47",
+    "references": [
+      {
+        "referenceId": "ACA-001-V1",
+        "file": "Pharmacy.jpeg",
+        "sha256": "9f9700ed16e9ac6630bcc97dd9ecff8588a06c2bc100b43228ec244b34b6d48a",
+        "meanAbsoluteError": 67.69,
+        "averageHashDistance": 31
+      },
+      {
+        "referenceId": "ACA-002-V1",
+        "file": "Market.jpeg",
+        "sha256": "fd282a8ad661f381abfa255a673d7aa1cf3d0aef752175ea725bf74e414cebec",
+        "meanAbsoluteError": 52.91,
+        "averageHashDistance": 18
+      },
+      {
+        "referenceId": "ACA-006-V1",
+        "file": "Restaurant.jpeg",
+        "sha256": "396c6b6e69a965a22608df28dfc82a62bda2d7dd53a37dddeb85d067963e7467",
+        "meanAbsoluteError": 61.68,
+        "averageHashDistance": 28
+      },
+      {
+        "referenceId": "ACA-008-V1",
+        "file": "Auto shop.jpeg",
+        "sha256": "2dfd49a7714068582c07a403561bc369fc6fbc9dc7ea6013e7e3fa5b2ead69ad",
+        "meanAbsoluteError": 57.78,
+        "averageHashDistance": 26
+      }
+    ],
+    "notice": "These distances are measurements against the four retrieved references. They are not a quality grade, a copy judgment, or a visual QA result."
   }
 }

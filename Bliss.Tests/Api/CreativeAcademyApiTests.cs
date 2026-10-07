@@ -375,10 +375,16 @@ public sealed class CreativeAcademyApiTests
         await using var factory = new BlissApiFactory();
         var client = factory.CreateClient();
         var response = await client.GetAsync("/api/operations/academy/harborlight-review");
-        var sheet = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var sheet = body.GetProperty("reviewSheet");
+        var similarity = body.GetProperty("pixelSimilarity");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("HV-001", sheet.GetProperty("attemptId").GetString());
+        Assert.Equal("MEASURED", similarity.GetProperty("status").GetString());
+        Assert.Equal("NOT_JUDGED", similarity.GetProperty("judgment").GetString());
+        Assert.Equal("NOT_ASSIGNED", similarity.GetProperty("visualGrade").GetString());
+        Assert.Equal(4, similarity.GetProperty("references").GetArrayLength());
         Assert.Equal("PREPARED", sheet.GetProperty("status").GetString());
         Assert.Equal("GQD-1", sheet.GetProperty("qualityDnaVersion").GetString());
         Assert.Equal(ReferenceLibrary.QualityDna.Count, sheet.GetProperty("attributes").GetArrayLength());

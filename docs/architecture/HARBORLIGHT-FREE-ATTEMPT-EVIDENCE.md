@@ -65,7 +65,7 @@ The first preview cropped the 1280×720 original through the photograph, so the 
 | --- | --- |
 | File validation and hashes | PASS |
 | Text/identity originality | PASS |
-| Pixel similarity | NOT_RUN |
+| Pixel similarity | MEASURED, judgment NOT_JUDGED |
 | Visual QA | NOT_RUN |
 | Human review | NOT_REQUESTED |
 | Regression | BASELINE_NOT_RECORDED |
@@ -85,6 +85,19 @@ The generated image visibly provides a new Harborlight identity, pharmacy settin
 The sheet is `PREPARED` for `HV-001` and bound to the stored original and adapted-preview hashes. It lists every GQD-1 attribute as `UNCLASSIFIED`, every copy check as `NOT_REVIEWED`, and Panama-market authenticity plus the adapted layout as `UNRECORDED`.
 
 Human review remains `NOT_REQUESTED`. The sheet does not satisfy HV-4 and does not establish a regression baseline.
+
+## Pixel similarity
+
+`scripts/measure-harborlight-similarity.py` compared the 1280×720 original with the four retrieved reference files. Each distance is a 32×18 grayscale mean absolute error and an 8×8 average-hash Hamming distance.
+
+| Reference | Mean absolute error | Average-hash distance |
+| --- | --- | --- |
+| ACA-001-V1 | 67.69 | 31 of 64 |
+| ACA-002-V1 | 52.91 | 18 of 64 |
+| ACA-006-V1 | 61.68 | 28 of 64 |
+| ACA-008-V1 | 57.78 | 26 of 64 |
+
+The measurement status is `MEASURED`. The judgment is `NOT_JUDGED`. The visual grade is `NOT_ASSIGNED`. Visual QA remains `NOT_RUN`. These numbers are not a copy decision and not a quality grade.
 
 ## Verification
 
