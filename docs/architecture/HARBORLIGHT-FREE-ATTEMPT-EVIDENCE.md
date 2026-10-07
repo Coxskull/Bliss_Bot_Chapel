@@ -81,3 +81,14 @@ The generated image visibly provides a new Harborlight identity, pharmacy settin
 - Hosted acceptance: UNCLAIMED
 
 The attempt advances HV-2 and HV-3 evidence, but it does not satisfy HV-4. No regression baseline may be established unless the owner accepts a finished and properly adapted creative.
+
+## Verification
+
+```text
+dotnet test BlissBotChapel.sln --no-restore
+Passed: 524
+Failed: 0
+Skipped: 0
+```
+
+The visual PDF evidence package is `docs/architecture/evidence/harborlight-free-attempt-report.pdf`.
