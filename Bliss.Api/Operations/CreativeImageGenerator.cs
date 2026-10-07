@@ -299,7 +299,8 @@ public sealed class CreativeGenerationService(
     BlissDbContext database,
     ICreativeImageGenerator generator,
     BlissRuntimeOptions runtime,
-    IWebHostEnvironment environment)
+    IWebHostEnvironment environment,
+    BlueprintPhaseService phases)
 {
     public bool Configured => generator.Configured;
 
@@ -344,7 +345,8 @@ public sealed class CreativeGenerationService(
             requirements,
             marketResearchComplete,
             approvedPeopleProvided,
-            false);
+            false,
+            phases.ReadReferences());
         if (brief.Status != CreativeAcademy.ProductionSpecReady)
         {
             throw new InvalidOperationException(
@@ -407,7 +409,9 @@ public sealed class CreativeGenerationService(
             CampaignReady = false,
             Delivery = "NOT_SENT",
             Notice =
-                "Quality DNA " + brief.QualityDnaVersion + " was read. The advertiser palette was kept. "
+                "Quality DNA " + brief.QualityDnaVersion + " was read. Retrieval " + brief.Retrieval.Status
+                + ". Attached " + brief.Retrieval.Selected.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                + ". The advertiser palette was kept. "
                 + "The configured image provider created one draft. It is GENERATED_PENDING_REVIEW. "
                 + "The visual benchmark and all four final gates are unrecorded. "
                 + "Campaign ready is false. Delivery remains NOT_SENT.",

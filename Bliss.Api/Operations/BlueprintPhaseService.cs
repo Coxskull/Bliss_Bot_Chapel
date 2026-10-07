@@ -42,6 +42,12 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
             ReferenceLibrary.RegressionBriefs);
     }
 
+    public IReadOnlyList<AcademyReferenceRecord> ReadReferences()
+    {
+        var assets = ReadAssets();
+        return ReferenceLibrary.ParseManifest(ReadManifest(), name => AssetExists(name, assets));
+    }
+
     public BlueprintFile? OpenReference(string? referenceId)
     {
         if (string.IsNullOrWhiteSpace(referenceId) || !ReferenceIdPattern.IsMatch(referenceId))

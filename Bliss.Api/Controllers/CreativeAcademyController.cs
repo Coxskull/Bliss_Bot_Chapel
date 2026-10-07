@@ -12,7 +12,8 @@ namespace Bliss.Api.Controllers;
 [Route("api/operations/academy")]
 public sealed class CreativeAcademyController(
     CreativeAcademyService academy,
-    CreativeGenerationService generation) : ControllerBase
+    CreativeGenerationService generation,
+    BlueprintPhaseService phases) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
@@ -111,7 +112,8 @@ public sealed class CreativeAcademyController(
                 request?.Requirements,
                 request?.MarketResearchComplete ?? false,
                 request?.ApprovedPeopleProvided ?? false,
-                request?.CallModel ?? false));
+                request?.CallModel ?? false,
+                phases.ReadReferences()));
         }
         catch (InvalidOperationException ex)
         {

@@ -301,6 +301,8 @@ Global Alpha Quality DNA + selected Academy references + niche intelligence + ma
 
 **Done when.** Gate 2 shows a brief, the reference IDs retrieved, and a stored reason for each ID, without a person attaching the files by hand.
 
+**Progress.** A production brief now keeps four separate layers: Global Quality DNA `GQD-1`, the niche roster entry, the named market, and the advertiser Brand DNA. Retrieval selects at most five ACTIVE references and stores a reason for each. Candidate uploads are not attached. The live library has no ACTIVE reference, so a real brief records `NICHE_REFERENCE_NOT_ACTIVE` until a human approves one. Gate 2 is not accepted.
+
 ### ACA-5 — Workers, adaptation, and originality
 
 Use the existing worker responsibilities. Do not add a new worker for a job an existing role already has:

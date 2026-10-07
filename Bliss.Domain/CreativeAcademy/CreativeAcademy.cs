@@ -86,7 +86,14 @@ public sealed record ProductionBrief(
     bool CampaignReady,
     string Delivery,
     string Notice,
-    string QualityDnaVersion);
+    string QualityDnaVersion,
+    IReadOnlyList<ProductionLayer> Layers,
+    ReferenceRetrieval Retrieval);
+
+public sealed record ProductionLayer(
+    string LayerId,
+    string Name,
+    string Content);
 
 public sealed record ParityDecision(
     string Status,
@@ -165,6 +172,8 @@ public static class CreativeAcademy
             ["motorcycle"] = MotorcycleTeacher,
             ["patisserie"] = PatisserieTeacher
         };
+
+    private static readonly string[] DefaultRetrievalReasons = ["product realism", "lighting and depth", "typography"];
 
     private static readonly string[] PreserveList =
     [
@@ -527,7 +536,9 @@ public static class CreativeAcademy
         string? requirements,
         bool marketResearchComplete,
         bool approvedPeopleProvided,
-        bool callModel)
+        bool callModel,
+        IReadOnlyList<AcademyReferenceRecord>? library = null,
+        IReadOnlyList<string>? retrievalReasons = null)
     {
         if (callModel)
         {
@@ -558,6 +569,36 @@ public static class CreativeAcademy
         var external = entry is { Status: NicheCatalog.Created, AnchorKind: NicheCatalog.ExternalAnchor };
         var teacherKey = external ? string.Empty : TeacherFor(lane);
         var casting = PlanCasting(locale, marketResearchComplete, approvedPeopleProvided);
+        var retrieval = ReferenceLibrary.Select(lane, library ?? [], retrievalReasons ?? DefaultRetrievalReasons);
+        var attached = retrieval.Selected.Count == 0
+            ? "No ACTIVE Academy reference was attached. The full library was not attached."
+            : "Retrieved " + string.Join("; ", retrieval.Selected.Select(item => item.ReferenceId + " because " + item.Reason)) + ". The full library was not attached.";
+        var niche = NicheCatalog.Find(lane);
+        var layers = new ProductionLayer[]
+        {
+            new(
+                "QUALITY_DNA",
+                "Global Alpha Quality DNA",
+                "Version " + ReferenceLibrary.QualityDnaVersion + ". Quality class only. It does not set the advertiser identity."),
+            new(
+                "NICHE",
+                "Niche quality intelligence",
+                niche is null
+                    ? "No roster niche matched this family. None was invented."
+                    : "Niche " + niche.Number.ToString(CultureInfo.InvariantCulture) + " " + niche.Key + " " + niche.Name
+                        + ". Roster status " + niche.Status + ". Quality anchor "
+                        + (teacherKey.Length == 0 ? "none on file" : teacherKey)
+                        + ". This layer is not the advertiser brand."),
+            new(
+                "MARKET",
+                "Market and cultural intelligence",
+                casting.Market + ". " + casting.Status + ". " + casting.Direction),
+            new(
+                "BRAND_DNA",
+                "Advertiser Brand DNA",
+                name + ". Palette " + color + ". Font " + font + ". Headline " + title + ". CTA " + action
+                    + ". Requirements " + limits + ". This layer is the advertiser, not a reference brand.")
+        };
         var anchorDirection = external
             ? "This niche was already created. Do not repeat the prototype and do not invent a substitute image."
             : teacherKey.Length == 0
@@ -571,6 +612,7 @@ public static class CreativeAcademy
             " CTA direction: " + action + " Market: " + casting.Market + " Language: " + copyLanguage +
             " Requirements: " + limits +
             " Quality DNA " + ReferenceLibrary.QualityDnaVersion + " sets the quality class and was the ACTIVE version read for this brief. It does not set the face, the pose, the gradient, or the headline position. Keep the advertiser palette exactly: " + color + ". Do not replace it with a reference brand's colors. " +
+            attached + " " +
             "Match or exceed the anchor in color power, tonal contrast, lighting craftsmanship, dimensional depth, material realism, texture fidelity, hero dominance, hierarchy, screen pop, typography, commercial polish, and Premium Dominant Presence. Important text must be correctly spelled. Preserve safe placement for the CTA and any QR code.";
         var notice = external
             ? "This niche was already created. The prototype was not repeated and no substitute image was invented. A production model is not configured, so no advertisement was generated. Delivery remains NOT_SENT."
@@ -601,7 +643,9 @@ public static class CreativeAcademy
             false,
             "NOT_SENT",
             notice,
-            ReferenceLibrary.QualityDnaVersion);
+            ReferenceLibrary.QualityDnaVersion,
+            layers,
+            retrieval);
     }
 
     public static CastingDecision PlanCasting(

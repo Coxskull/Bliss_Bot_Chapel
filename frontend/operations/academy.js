@@ -26,6 +26,11 @@ function productionBriefCard(item) {
     <p>Headline: ${escapeHtml(item.headline)} · CTA: ${escapeHtml(item.cta)}</p>
     <p>Requirements: ${escapeHtml(item.requirements)}</p>
     <p>Casting: ${escapeHtml(item.casting.status)} — ${escapeHtml(item.casting.direction)}</p>
+    <h4>Four layers</h4>
+    <ul>${(item.layers || []).map(layer => `<li><strong>${escapeHtml(layer.name)}</strong> ${escapeHtml(layer.content)}</li>`).join("")}</ul>
+    <h4>Retrieved references</h4>
+    <p>${escapeHtml(item.retrieval?.status || "unrecorded")}. ${escapeHtml(item.retrieval?.notice || "")}</p>
+    <ul>${(item.retrieval?.selected || []).map(reference => `<li>${escapeHtml(reference.referenceId)} — ${escapeHtml(reference.reason)}</li>`).join("") || "<li>No ACTIVE reference was attached.</li>"}</ul>
     <h4>Production recipe</h4>
     <p>${escapeHtml(item.generationRecipe)}</p>
     <p>${escapeHtml(item.notice)}</p>

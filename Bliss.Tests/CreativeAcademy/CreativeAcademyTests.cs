@@ -277,6 +277,53 @@ public sealed class CreativeAcademyTests
             "Feature prescription pickup", true, false, false));
         Assert.False(brief.CampaignReady);
         Assert.Equal("NOT_SENT", brief.Delivery);
+        Assert.Equal(4, brief.Layers.Select(item => item.LayerId).Distinct().Count());
+        Assert.Contains("Panama", brief.Layers.Single(item => item.LayerId == "MARKET").Content);
+        Assert.Contains("Burgundy and gold", brief.Layers.Single(item => item.LayerId == "BRAND_DNA").Content);
+        Assert.Equal("NICHE_REFERENCE_NOT_ACTIVE", brief.Retrieval.Status);
+        Assert.Empty(brief.Retrieval.Selected);
+    }
+
+    [Fact]
+    public void A_brief_retrieves_active_references_with_reasons_and_leaves_the_rest_off()
+    {
+        var library = new List<AcademyReferenceRecord>
+        {
+            new("ACA-001-V1", 1, "pharmacy", "Pharmacy", "Pharmacy.jpeg", "ACTIVE", "UPLOADED", true, "product realism", "VidaCare"),
+            new("ACA-008-V1", 8, "automotive", "Automotive Service", "Auto shop.jpeg", "ACTIVE", "UPLOADED", true, "typography", "bay"),
+            new("ACA-016-V1", 16, "bakery", "Bakery", "Bakery.jpeg", "CANDIDATE", "UPLOADED", true, "typography", "Maison Fleur"),
+            new("ACA-006-V1", 6, "restaurant", "Restaurant", "Restaurant.jpeg", "ACTIVE", "UPLOADED", true, "lighting and depth", "room"),
+            new("ACA-015-V1", 15, "coffee-shop", "Coffee Shop", "Coffee.jpeg", "ACTIVE", "UPLOADED", true, "typography", "cup"),
+            new("ACA-021-V1", 21, "law", "Law Firm", "Law firm.jpeg", "ACTIVE", "UPLOADED", true, "typography", "seal"),
+            new("ACA-049-V1", 49, "personal-care", "Cosmetics", "Cosmetics.jpeg", "ACTIVE", "UPLOADED", true, "typography", "bottle")
+        };
+
+        var brief = CreativeAcademy.PrepareProductionBrief(
+            "pharmacy",
+            "Farmacia Nueva Salud",
+            "Burgundy and gold",
+            "Montserrat",
+            "Tu salud, más cerca",
+            "Recoge tu receta",
+            "Panama",
+            "Spanish",
+            "Feature prescription pickup",
+            true,
+            false,
+            false,
+            library);
+
+        Assert.Equal("RETRIEVED", brief.Retrieval.Status);
+        Assert.Equal(3, brief.Retrieval.Selected.Count);
+        Assert.True(brief.Retrieval.Selected.Count <= 5);
+        Assert.Equal("ACA-001-V1", brief.Retrieval.Selected[0].ReferenceId);
+        Assert.Equal("niche match", brief.Retrieval.Selected[0].Reason);
+        Assert.Contains(brief.Retrieval.Selected, item => item.ReferenceId == "ACA-006-V1" && item.Reason == "lighting and depth");
+        Assert.Contains(brief.Retrieval.Selected, item => item.ReferenceId == "ACA-008-V1" && item.Reason == "typography");
+        Assert.DoesNotContain(brief.Retrieval.Selected, item => item.ReferenceId is "ACA-016-V1" or "ACA-015-V1" or "ACA-021-V1" or "ACA-049-V1");
+        Assert.Contains("ACA-001-V1 because niche match", brief.GenerationRecipe);
+        Assert.Contains("The full library was not attached", brief.GenerationRecipe);
+        Assert.Equal("GQD-1", brief.Layers.Single(item => item.LayerId == "QUALITY_DNA").Content.Split(' ')[1].Trim('.'));
     }
 
     [Fact]
