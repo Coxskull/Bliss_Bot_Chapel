@@ -193,6 +193,10 @@ async function loadHarborlightReview() {
   const target = document.getElementById("harborlight-review");
   if (!target || !sheet) return;
   const recorded = (sheet.attributes || []).filter(item => item.grade !== "UNCLASSIFIED").length;
+  const figures = items => items.map(item => `<figure class="harborlight-figure">
+      <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.label)}. ${escapeHtml(item.notice)}">
+      <figcaption><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.notice)}</small></figcaption>
+    </figure>`).join("");
   const rows = (items, valueName) => (items || []).map(item =>
     `<tr><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item[valueName])}</td></tr>`).join("");
   const distances = (similarity?.references || []).map(item =>
@@ -202,6 +206,10 @@ async function loadHarborlightReview() {
     <p>${escapeHtml(sheet.notice)}</p>
     <p>Human review ${escapeHtml(sheet.humanReview)}. Campaign ready ${sheet.campaignReady ? "Yes" : "No"}. Delivery ${escapeHtml(sheet.delivery)}. Regression ${escapeHtml(sheet.regression)}.</p>
     <p>Owner grades recorded: ${recorded === 0 ? "none" : String(recorded)}. A supplied grade classifies only that attribute. Unsupplied attributes stay UNCLASSIFIED.</p>
+    <div class="harborlight-figures">${figures((reading.images || []).filter(item => item.role === "original" || item.role === "adapted"))}</div>
+    <h4>Retrieved references</h4>
+    <p>These files were retrieved for comparison. They were not sent to the provider. Showing them is not a copy judgment.</p>
+    <div class="harborlight-figures harborlight-references">${figures((reading.images || []).filter(item => item.role !== "original" && item.role !== "adapted"))}</div>
     <h4>Quality attributes</h4>
     <table><thead><tr><th>Attribute</th><th>Grade</th></tr></thead><tbody>${rows(sheet.attributes, "grade")}</tbody></table>
     <h4>Copy checks</h4>
