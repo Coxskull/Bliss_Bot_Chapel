@@ -10,14 +10,14 @@ These images teach how strong an advertisement must look. They are quality bench
 
 49 niches have a file. Niche 5, used-car (`ACA-005-V1`), has no file and stays `AWAITING_UPLOAD`.
 
-Four bindings are filename judgments and need a human confirmation before approval:
+The owner confirmed these four filename bindings on 2026-10-07. Confirmation names the niche. It does not mark the reference ACTIVE.
 
-| Reference | Owner file | Bound niche | Confirm |
+| Reference | Owner file | Bound niche | Owner confirmation |
 | --- | --- | --- | --- |
-| ACA-004-V1 | `Automotive.jpeg` | new-car | This is not the auto-shop file. `Auto shop.jpeg` is niche 8. |
-| ACA-014-V1 | `Italian restaurant.jpeg` | pizza | Closest open restaurant niche. |
-| ACA-033-V1 | `Home renovation.jpeg` | furniture | Closest open home niche. |
-| ACA-044-V1 | `Coffeee.jpeg` | coffee-brand | `Coffee.jpeg` is the coffee shop. |
+| ACA-004-V1 | `Automotive.jpeg` | new-car | Confirmed. `Auto shop.jpeg` remains niche 8. |
+| ACA-014-V1 | `Italian restaurant.jpeg` | pizza | Confirmed. |
+| ACA-033-V1 | `Home renovation.jpeg` | furniture | Confirmed. |
+| ACA-044-V1 | `Coffeee.jpeg` | coffee-brand | Confirmed. `Coffee.jpeg` remains the coffee shop. |
 
 ## Not forced into a niche
 

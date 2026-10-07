@@ -46,10 +46,10 @@ Creative Academy trains quality. The Catalog defines placement. The ships use bo
 
 The upload dock is `assets/alpha-prototypes/`.
 
-- `creative-academy/inbox/` is empty and waiting for `ACA-001-V1` through `ACA-050-V1`.
-- `creative-academy/MANIFEST.tsv` maps those 50 IDs onto the existing niche roster, in niche order, status `AWAITING_UPLOAD`.
+- `creative-academy/inbox/` holds the owner prototype files. `MANIFEST.tsv` registers 49 of them as `CANDIDATE`. Used-car is still awaiting a file.
+- `OWNER-NEEDS.tsv` is the single list of owner inputs. Open rows stay blank until the owner writes them.
 - `advertising-real-estate/showcase/ARE-GUIDE-001-V1.png` is the supplied catalog infographic.
-- `ARE-001-V1`, `ARE-002-V1`, and `ARE-003-V1` are waiting for the separated showcase illustrations.
+- `ARE-001-V1`, `ARE-002-V1`, and `ARE-003-V1` have illustration files and remain draft showcases.
 
 Existing local Academy teachers (VidaCare, FreshMart, Nova Fit, Taller Ruta, Brava Moto) stay where they are. They are not silently renumbered into `ACA-001` through `ACA-010`.
 
@@ -256,7 +256,7 @@ Registration then connects each file to a reference record: reference ID, protot
 
 **Done when.** Gate 1 can show 50 assets, 50 IDs, and a join from record to file. A directory listing alone is not done.
 
-**Progress.** Owner files in the inbox are registered by their uploaded names. 49 niches have a candidate file. Niche 5, used-car, has no file and stays awaiting. `Catalog.jpeg` and the seven podcast-with-ads images stay unassigned. Lifecycle remains `CANDIDATE`, so retrieval still returns `NICHE_REFERENCE_NOT_ACTIVE`. Gate 1 is not accepted: `learn`, do-not-copy, rights, and approval dates are still blank, and one niche has no asset.
+**Progress.** Owner files in the inbox are registered by their uploaded names. 49 niches have a candidate file. Niche 5, used-car, has no file and stays awaiting. `Catalog.jpeg` and the seven podcast-with-ads images stay unassigned. On 2026-10-07 the owner confirmed four filename bindings: `Automotive.jpeg` to new-car, `Italian restaurant.jpeg` to pizza, `Home renovation.jpeg` to furniture, and `Coffeee.jpeg` to coffee-brand. That confirmation does not change lifecycle. Lifecycle remains `CANDIDATE`, so retrieval still returns `NICHE_REFERENCE_NOT_ACTIVE`. Gate 1 is not accepted: `learn`, do-not-copy, rights, and approval dates are still blank, and one niche has no asset.
 
 **Reuse.** The niche roster already has these 50 niches. Registration binds a file to that niche. It does not create a second roster.
 
@@ -271,6 +271,8 @@ Quality attributes, when a human classifies them, use `REFERENCE STRENGTH`, `STR
 Each reference also stores `learn` and `doNotCopy`. Persist that classification. Do not pay a model to rediscover it on the next job.
 
 **Done when.** A reference can be retrieved with its learn list and its do-not-copy list, and a superseded version remains readable for historical jobs.
+
+**Progress.** The lifecycle names and the quality-grade names are stored. Every current reference stays `CANDIDATE`, and every quality attribute stays `UNCLASSIFIED`. Retrieval copies `learn` and `doNotCopy` only from an ACTIVE reference. A superseded row stays in the library and is not selected. The owner writes the actual notes in `assets/alpha-prototypes/OWNER-NEEDS.tsv`. This phase is not accepted while those notes are blank.
 
 ### ACA-3 — Global Alpha Quality DNA
 
@@ -372,11 +374,7 @@ One path, still two systems:
 
 ## Evidence the owner still has to supply
 
-- A used-car prototype for `ACA-005-V1`. The other 49 niches have an owner file registered as `CANDIDATE`. `Catalog.jpeg` and the podcast-with-ads images are stored and were not forced into a niche.
-- Confirmation of four filename bindings before approval: `Automotive.jpeg` to new-car, `Italian restaurant.jpeg` to pizza, `Home renovation.jpeg` to furniture, and `Coffeee.jpeg` to coffee-brand.
-- The three showcase illustrations are on file as draft art. They are not an approved geometry specification.
-- Human `learn` / `doNotCopy` notes and quality classifications. They are not invented from the filename.
-- Review of the Catalog conversation recordings and the Academy production recording before either status leaves OPEN.
+Every remaining owner input is in `assets/alpha-prototypes/OWNER-NEEDS.tsv`. An `OPEN` row has a blank `ownerEntry`. Later phases read that file and do not invent the entry. Supplied rows already record the 49 prototype files, the four confirmed filename bindings, and the showcase files on disk.
 
 ## Status
 

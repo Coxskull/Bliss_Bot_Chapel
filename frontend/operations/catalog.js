@@ -27,6 +27,19 @@ async function loadCatalog() {
       : `<div class="catalog-thumb catalog-missing">Awaiting file</div>`;
     return `<article class="catalog-tile">${image}<p class="eyebrow">${escapeCatalog(item.showcaseId)} · ${escapeCatalog(item.lifecycle)}</p><p>${escapeCatalog(item.notice)}</p><p>Asset on file: ${item.assetPresent ? "Yes" : "No"}. Authoritative contract: ${item.authoritative ? "Educational guide only" : "No"}.</p></article>`;
   }).join("");
+  const needs = board.ownerNeeds || {};
+  const needsSummary = document.getElementById("catalog-needs-summary");
+  const needsTable = document.getElementById("catalog-needs");
+  if (needsSummary) {
+    needsSummary.textContent = `Open ${needs.open ?? 0}. Supplied ${needs.supplied ?? 0}. Quality grades stay ${board.quality?.status ?? "UNCLASSIFIED"} until a human writes them in the owner needs file.`;
+  }
+  if (needsTable) {
+    const openNeeds = (needs.items || []).filter(item => item.status === "OPEN");
+    needsTable.innerHTML = openNeeds.length
+      ? `<table><thead><tr><th>Need</th><th>Waiting on the owner</th></tr></thead><tbody>${openNeeds.map(item =>
+          `<tr><td>${escapeCatalog(item.needId)}</td><td>${escapeCatalog(item.need)}</td></tr>`).join("")}</tbody></table>`
+      : "<p>No open owner need is stored.</p>";
+  }
   const references = board.references || {};
   document.getElementById("catalog-references").textContent =
     `Registered ${references.registered ?? 0} of ${references.expected ?? 50}. Uploaded ${references.uploaded ?? 0}. Awaiting upload ${references.awaitingUpload ?? 0}. ACTIVE ${references.active ?? 0}. Sample retrieval ${board.sampleRetrieval?.status ?? "unavailable"}. Regression ${board.regressionStatus}. Uploaded files stay CANDIDATE until a human approves them.`;

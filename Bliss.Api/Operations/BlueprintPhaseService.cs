@@ -36,6 +36,7 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
             board,
             references,
             ListUnassigned(references),
+            ReadOwnerNeeds(),
             ReferenceLibrary.QualityDna,
             ReferenceLibrary.DoNotProduce,
             ReferenceLibrary.RegressionBriefs);
@@ -195,6 +196,13 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
         return File.Exists(path) ? File.ReadAllText(path) : string.Empty;
     }
 
+    private IReadOnlyList<OwnerNeed> ReadOwnerNeeds()
+    {
+        var path = Path.Combine(PrototypeRoot(), "OWNER-NEEDS.tsv");
+        var text = File.Exists(path) ? File.ReadAllText(path) : string.Empty;
+        return OwnerNeeds.Parse(text);
+    }
+
     private string PrototypeRoot()
     {
         var current = new DirectoryInfo(environment.ContentRootPath);
@@ -284,6 +292,7 @@ public sealed record BlueprintReading(
     CatalogBoard Catalog,
     IReadOnlyList<AcademyReferenceRecord> References,
     IReadOnlyList<UnassignedUpload> Unassigned,
+    IReadOnlyList<OwnerNeed> OwnerNeeds,
     IReadOnlyList<string> QualityDna,
     IReadOnlyList<string> DoNotProduce,
     IReadOnlyList<string> RegressionBriefs);

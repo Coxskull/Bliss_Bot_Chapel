@@ -48,6 +48,32 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
         Assert.False(usedCar.GetProperty("assetPresent").GetBoolean());
         Assert.Equal("AWAITING_UPLOAD", usedCar.GetProperty("uploadStatus").GetString());
 
+        foreach (var referenceId in new[] { "ACA-004-V1", "ACA-014-V1", "ACA-033-V1", "ACA-044-V1" })
+        {
+            var confirmed = references.GetProperty("items").EnumerateArray()
+                .Single(item => item.GetProperty("referenceId").GetString() == referenceId);
+            Assert.Equal("CANDIDATE", confirmed.GetProperty("lifecycle").GetString());
+            Assert.Contains("Owner confirmed 2026-10-07", confirmed.GetProperty("mappingNote").GetString());
+            Assert.Equal(string.Empty, confirmed.GetProperty("learn").GetString());
+            Assert.Equal(string.Empty, confirmed.GetProperty("doNotCopy").GetString());
+        }
+
+        var needs = board.GetProperty("ownerNeeds");
+        Assert.True(needs.GetProperty("open").GetInt32() > 0);
+        Assert.Contains(
+            needs.GetProperty("items").EnumerateArray(),
+            item => item.GetProperty("needId").GetString() == "ACA-005-FILE"
+                && item.GetProperty("status").GetString() == "OPEN"
+                && item.GetProperty("ownerEntry").GetString() == string.Empty);
+        Assert.Contains(
+            needs.GetProperty("items").EnumerateArray(),
+            item => item.GetProperty("needId").GetString() == "BIND-004"
+                && item.GetProperty("status").GetString() == "SUPPLIED");
+        Assert.Equal("UNCLASSIFIED", board.GetProperty("quality").GetProperty("status").GetString());
+        Assert.All(
+            board.GetProperty("quality").GetProperty("attributes").EnumerateArray(),
+            item => Assert.Equal("UNCLASSIFIED", item.GetProperty("grade").GetString()));
+
         foreach (var showcase in board.GetProperty("showcases").EnumerateArray())
         {
             Assert.True(showcase.GetProperty("assetPresent").GetBoolean());
