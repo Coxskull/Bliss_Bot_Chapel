@@ -73,6 +73,8 @@ The package contains the Harborlight brief, automatically retrieved references, 
 
 **Done when.** Every item above is either stored evidence or an explicit `NOT_RUN` / `UNRECORDED` fact. No item is filled with a placeholder image or an invented number.
 
+**Progress.** HV-001 now stores a thirteen-step workflow trace. Visual QA is `NOT_RUN`, human review is `NOT_REQUESTED`, delivery is `NOT_SENT`, and regression is `BASELINE_NOT_RECORDED`. Changing the human-review step to an acceptance is refused.
+
 ## HV-4 — Human visual review and Quality DNA
 
 **Purpose.** A person judges whether the finished creative reaches the Academy visual class: commercial color, saturation, contrast, highlights, shadows, lighting, materials, people when applicable, depth, separation, typography, hierarchy, polish, screen impact, and Premium Dominant Presence. The same review checks that the creative did not copy a prototype's company, identity, person, product, photograph, wording, background, composition, or distinctive identity.

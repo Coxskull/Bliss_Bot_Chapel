@@ -99,11 +99,33 @@ Human review remains `NOT_REQUESTED`. The sheet does not satisfy HV-4 and does n
 
 The measurement status is `MEASURED`. The judgment is `NOT_JUDGED`. The visual grade is `NOT_ASSIGNED`. Visual QA remains `NOT_RUN`. These numbers are not a copy decision and not a quality grade.
 
+## Workflow trace
+
+The attempt stores thirteen steps copied from the evidence above. Deterministic QA passes only the file dimensions and hashes. It does not grade the picture.
+
+| Step | Status |
+| --- | --- |
+| BRIEF | RECORDED |
+| AUTOMATIC_RETRIEVAL | RETRIEVED |
+| CREATIVE_DNA | RECORDED |
+| ORIGINAL_GENERATION | GENERATED |
+| INVENTORY_ADAPTATION | PURPOSE_BUILT_TEST_PREVIEW |
+| TEXT_ORIGINALITY | PASS |
+| PIXEL_SIMILARITY | MEASURED |
+| DETERMINISTIC_QA | PASS |
+| VISUAL_QA | NOT_RUN |
+| HUMAN_REVIEW | NOT_REQUESTED |
+| DELIVERY | NOT_SENT |
+| REGRESSION | BASELINE_NOT_RECORDED |
+| AMENDMENTS | OPEN |
+
+Model, job ID, and cost stay `UNREPORTED_BY_PROVIDER`. Both parent amendments stay OPEN. Hosted acceptance stays `UNCLAIMED`.
+
 ## Verification
 
 ```text
 dotnet test BlissBotChapel.sln --no-restore
-Passed: 525
+Passed: 526
 Failed: 0
 Skipped: 0
 ```

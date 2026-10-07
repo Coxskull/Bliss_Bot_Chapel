@@ -47,7 +47,8 @@ public sealed class CreativeAcademyController(
             return Ok(new
             {
                 reviewSheet = HarborlightReview.ParseEvidence(text),
-                pixelSimilarity = HarborlightPixelSimilarity.ParseEvidence(text)
+                pixelSimilarity = HarborlightPixelSimilarity.ParseEvidence(text),
+                workflowTrace = HarborlightWorkflow.ParseEvidence(text)
             });
         }
         catch (InvalidOperationException ex)

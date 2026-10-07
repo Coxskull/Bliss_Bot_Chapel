@@ -209,6 +209,8 @@ async function loadHarborlightReview() {
     <h4>Pixel similarity ${escapeHtml(similarity?.status || "NOT_RUN")}</h4>
     <p>${escapeHtml(similarity?.notice || "No pixel measurement is stored.")} Judgment ${escapeHtml(similarity?.judgment || "NOT_JUDGED")}. Visual grade ${escapeHtml(similarity?.visualGrade || "NOT_ASSIGNED")}.</p>
     <table><thead><tr><th>Reference</th><th>Mean absolute error</th><th>Average-hash distance</th></tr></thead><tbody>${distances}</tbody></table>
+    <h4>Workflow trace</h4>
+    <ol>${(reading.workflowTrace || []).map(step => `<li><strong>${escapeHtml(step.step)} · ${escapeHtml(step.status)}</strong><br>${escapeHtml(step.evidence)}</li>`).join("")}</ol>
   </article>`;
 }
 

@@ -81,6 +81,9 @@ def main() -> None:
     )
 
     pdf.add_page()
+    heading(pdf, "Workflow trace")
+    for step in evidence["workflowTrace"]:
+        paragraph(pdf, f"{step['sequence']}. {step['step']}: {step['status']}. {step['evidence']}")
     heading(pdf, "Pixel similarity")
     similarity = evidence["pixelSimilarity"]
     paragraph(pdf, f"Status {similarity['status']}. Judgment {similarity['judgment']}. Visual grade {similarity['visualGrade']}.")

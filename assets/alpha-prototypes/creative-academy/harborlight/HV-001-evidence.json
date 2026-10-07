@@ -282,5 +282,85 @@
       }
     ],
     "notice": "These distances are measurements against the four retrieved references. They are not a quality grade, a copy judgment, or a visual QA result."
-  }
+  },
+  "workflowTrace": [
+    {
+      "sequence": 1,
+      "step": "BRIEF",
+      "status": "RECORDED",
+      "evidence": "Harborlight Pharmacy, Panama City, Panama. Niche pharmacy. Inventory ARE-P01. Objective: introduce convenient prescription pickup."
+    },
+    {
+      "sequence": 2,
+      "step": "AUTOMATIC_RETRIEVAL",
+      "status": "RETRIEVED",
+      "evidence": "ACA-001-V1, ACA-002-V1, ACA-006-V1, and ACA-008-V1 were selected by niche and quality need. References were not manually selected. Reference image files were not sent."
+    },
+    {
+      "sequence": 3,
+      "step": "CREATIVE_DNA",
+      "status": "RECORDED",
+      "evidence": "Headline: Prescription pickup, ready when you are. Palette: deep ocean navy, luminous coral, warm ivory, sea-glass teal. Copied reference identity: false."
+    },
+    {
+      "sequence": 4,
+      "step": "ORIGINAL_GENERATION",
+      "status": "GENERATED",
+      "evidence": "One 1280x720 image. Provider: Cursor GenerateImage capability. Model, job ID, and cost: UNREPORTED_BY_PROVIDER. Attempts: 1. New subscription: no."
+    },
+    {
+      "sequence": 5,
+      "step": "INVENTORY_ADAPTATION",
+      "status": "PURPOSE_BUILT_TEST_PREVIEW",
+      "evidence": "1920x1080 preview. LEFT_VERTICAL 320x1080 contains the brand panel. BOTTOM_FULL 1280x180 is purpose-built. Prototype scaled: no. Delivered: no."
+    },
+    {
+      "sequence": 6,
+      "step": "TEXT_ORIGINALITY",
+      "status": "PASS",
+      "evidence": "The advertiser name and headline did not reproduce a stored reference identity. Campaign ready remains false."
+    },
+    {
+      "sequence": 7,
+      "step": "PIXEL_SIMILARITY",
+      "status": "MEASURED",
+      "evidence": "Distances to the four retrieved references are stored. Judgment NOT_JUDGED. Visual grade NOT_ASSIGNED."
+    },
+    {
+      "sequence": 8,
+      "step": "DETERMINISTIC_QA",
+      "status": "PASS",
+      "evidence": "The original is 1280x720 and the preview is 1920x1080. Both hashes match the stored files. This check does not grade visual quality."
+    },
+    {
+      "sequence": 9,
+      "step": "VISUAL_QA",
+      "status": "NOT_RUN",
+      "evidence": "No visual score was recorded."
+    },
+    {
+      "sequence": 10,
+      "step": "HUMAN_REVIEW",
+      "status": "NOT_REQUESTED",
+      "evidence": "The review sheet is prepared. Every GQD-1 grade is UNCLASSIFIED. No acceptance was recorded."
+    },
+    {
+      "sequence": 11,
+      "step": "DELIVERY",
+      "status": "NOT_SENT",
+      "evidence": "Campaign ready is false. Green does not send."
+    },
+    {
+      "sequence": 12,
+      "step": "REGRESSION",
+      "status": "BASELINE_NOT_RECORDED",
+      "evidence": "No accepted creative is stored as a baseline."
+    },
+    {
+      "sequence": 13,
+      "step": "AMENDMENTS",
+      "status": "OPEN",
+      "evidence": "Creative Academy OPEN. Advertising Real Estate OPEN. Hosted acceptance UNCLAIMED."
+    }
+  ]
 }
