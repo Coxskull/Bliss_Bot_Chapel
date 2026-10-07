@@ -55,6 +55,16 @@ public sealed record AcceptanceTraceStep(
     string Status,
     string Evidence);
 
+public sealed record AcceptanceGenerationOutcome(
+    bool Succeeded,
+    string JobId,
+    string ImagePath,
+    int ModelCalls,
+    string CostStatus,
+    decimal? Cost,
+    string Currency,
+    string Notice);
+
 public sealed record CreativeAcceptanceVoyage(
     string Status,
     string AmendmentStatus,
@@ -85,9 +95,10 @@ public sealed record CreativeAcceptanceVoyage(
     string Notice);
 
 /// <summary>
-/// Runs the pre-provider portion of one Academy acceptance voyage. The voyage
-/// stops before generation when the reference gate is incomplete. Candidate
-/// files never become ACTIVE through this path.
+/// Runs one Academy acceptance voyage. Generation is authorized only after the
+/// retrieved ACTIVE references already have LEARN and DO NOT COPY notes and the
+/// purchased slots already have width and height. Candidate files never become
+/// ACTIVE through this path.
 /// </summary>
 public static class CreativeAcceptance
 {
@@ -126,23 +137,6 @@ public static class CreativeAcceptance
             item.DoNotCopy,
             ReferenceLibrary.QualityDnaVersion,
             "UNRECORDED")).ToList();
-        var intelligenceComplete = active.Count > 0
-            && active.All(item => !string.IsNullOrWhiteSpace(item.Learn)
-                && !string.IsNullOrWhiteSpace(item.DoNotCopy));
-        var intelligence = new AcceptanceReferenceIntelligence(
-            references.Count,
-            references.Count(item => item.AssetPresent),
-            references.Count(item => item.Lifecycle == ReferenceLibrary.Candidate),
-            active.Count,
-            active.Count(item => !string.IsNullOrWhiteSpace(item.Learn)),
-            active.Count(item => !string.IsNullOrWhiteSpace(item.DoNotCopy)),
-            "UNRECORDED",
-            activeReferences,
-            intelligenceComplete ? "READY" : "REFERENCE_INTELLIGENCE_INCOMPLETE",
-            intelligenceComplete
-                ? "ACTIVE references have stored LEARN and DO NOT COPY intelligence. Provenance remains separately governed."
-                : "No reference was promoted. Normal production requires human-authorized ACTIVE references with stored LEARN and DO NOT COPY intelligence. Provenance is unrecorded.");
-
         var brief = CreativeAcademy.PrepareProductionBrief(
             campaign.Niche,
             campaign.AdvertiserName,
@@ -157,6 +151,28 @@ public static class CreativeAcceptance
             false,
             false,
             references);
+        var retrieved = brief.Retrieval.Selected
+            .Select(item => references.FirstOrDefault(record =>
+                record.ReferenceId.Equals(item.ReferenceId, StringComparison.OrdinalIgnoreCase)))
+            .OfType<AcademyReferenceRecord>()
+            .ToList();
+        var intelligenceComplete = retrieved.Count > 0
+            && retrieved.All(item => !string.IsNullOrWhiteSpace(item.Learn)
+                && !string.IsNullOrWhiteSpace(item.DoNotCopy));
+        var intelligence = new AcceptanceReferenceIntelligence(
+            references.Count,
+            references.Count(item => item.AssetPresent),
+            references.Count(item => item.Lifecycle == ReferenceLibrary.Candidate),
+            active.Count,
+            active.Count(item => !string.IsNullOrWhiteSpace(item.Learn)),
+            active.Count(item => !string.IsNullOrWhiteSpace(item.DoNotCopy)),
+            "UNRECORDED",
+            activeReferences,
+            intelligenceComplete ? "READY" : "REFERENCE_INTELLIGENCE_INCOMPLETE",
+            intelligenceComplete
+                ? "Retrieved ACTIVE references have stored LEARN and DO NOT COPY intelligence. References that were not retrieved were not attached. Provenance remains separately governed."
+                : "No reference was promoted. Normal production requires human-authorized ACTIVE references with stored LEARN and DO NOT COPY intelligence. Provenance is unrecorded.");
+
         var inventory = RealEstateCatalog.Adapt(product, slots, false);
 
         var blockers = new List<string>();
@@ -185,9 +201,14 @@ public static class CreativeAcceptance
         blockers.Add("USAGE_COST_UNRECORDED");
 
         var firstGateComplete = intelligenceComplete && brief.Retrieval.Status == "RETRIEVED";
-        var jobStatus = firstGateComplete
-            ? providerConfigured ? "READY_FOR_GENERATION" : "PROVIDER_CONFIGURATION_REQUIRED"
-            : "BLOCKED_REFERENCE_GATE";
+        var geometryReady = inventory.Status == "RECOMPOSED";
+        var jobStatus = !firstGateComplete
+            ? "BLOCKED_REFERENCE_GATE"
+            : !providerConfigured
+                ? "PROVIDER_CONFIGURATION_REQUIRED"
+                : !geometryReady
+                    ? "BLOCKED_INVENTORY_GEOMETRY"
+                    : "READY_FOR_GENERATION";
         var providerJob = new AcceptanceProviderJob(
             jobStatus,
             string.IsNullOrWhiteSpace(provider) ? "UNCONFIGURED" : provider.Trim(),
@@ -198,7 +219,25 @@ public static class CreativeAcceptance
             "UNRECORDED",
             null,
             "",
-            "No provider request was made. Usage and cost were not invented.");
+            jobStatus switch
+            {
+                "READY_FOR_GENERATION" =>
+                    "Generation is authorized but not started. Reference image files were not sent. Usage and cost were not invented.",
+                "BLOCKED_INVENTORY_GEOMETRY" =>
+                    "The retrieved references are ready, but purchased slot width and height are unrecorded. Generation was not started. None was invented.",
+                "PROVIDER_CONFIGURATION_REQUIRED" =>
+                    "The retrieved references are ready, but no image provider is configured. Generation was not started. Usage and cost were not invented.",
+                _ => "No provider request was made. Usage and cost were not invented."
+            });
+        var brandDna = firstGateComplete
+            ? new AcceptanceEvidence(
+                "PREPARED",
+                "New Brand DNA uses this advertiser. Palette: " + brief.Palette
+                + ". Headline: " + brief.Headline
+                + ". This is the advertiser brief, not a reference brand and not a recolored prototype.")
+            : new AcceptanceEvidence(
+                "NOT_CREATED",
+                "No new Brand DNA was manufactured after the ACTIVE reference intelligence gate failed.");
         var originality = ReferenceLibrary.Compare("", "", "", "", references);
         var rejections = new List<StoredRejection>();
         if (inventory.Status != "RECOMPOSED")
@@ -219,7 +258,10 @@ public static class CreativeAcceptance
                 references.Count + " reference records; " + references.Count(item => item.AssetPresent) + " files on disk."),
             new(2, "REFERENCE_INTELLIGENCE", intelligence.Status, intelligence.Notice),
             new(3, "AUTOMATIC_RETRIEVAL", brief.Retrieval.Status, brief.Retrieval.Notice),
-            new(4, "CREATIVE_REASONING", "BLOCKED", "Brand DNA, concept, copy, and composition were not invented after the reference gate failed."),
+            new(4, "CREATIVE_REASONING", firstGateComplete ? "PREPARED" : "BLOCKED",
+                firstGateComplete
+                    ? brandDna.Notice
+                    : "Brand DNA, concept, copy, and composition were not invented after the reference gate failed."),
             new(5, "ORIGINAL_GENERATION", jobStatus, providerJob.Notice),
             new(6, "INVENTORY_PREFLIGHT", inventory.Status, inventory.Notice),
             new(7, "QUALITY_QA", "NOT_RUN", "No finished image exists. A visual score was not invented."),
@@ -237,14 +279,12 @@ public static class CreativeAcceptance
         };
 
         return new CreativeAcceptanceVoyage(
-            "BLOCKED",
+            jobStatus == "READY_FOR_GENERATION" ? "READY_FOR_GENERATION" : "BLOCKED",
             Open,
             campaign,
             intelligence,
             brief,
-            new AcceptanceEvidence(
-                "NOT_CREATED",
-                "No new Brand DNA was manufactured after the ACTIVE reference intelligence gate failed."),
+            brandDna,
             providerJob,
             new AcceptanceEvidence(
                 "NOT_CREATED",
@@ -255,7 +295,11 @@ public static class CreativeAcceptance
             new AcceptanceEvidence(
                 inventory.Status == "RECOMPOSED" ? "READY" : "BLOCKED",
                 inventory.Notice),
-            new AcceptanceEvidence("NOT_RUN", "No new Brand DNA or finished image exists to compare."),
+            new AcceptanceEvidence(
+                "NOT_RUN",
+                firstGateComplete
+                    ? "Brand DNA is prepared from the advertiser brief. Compliance waits for a finished image."
+                    : "No new Brand DNA or finished image exists to compare."),
             new AcceptanceEvidence(
                 active.Any(item => !string.IsNullOrWhiteSpace(item.DoNotCopy)) ? "NOT_RUN" : "BLOCKED",
                 active.Any(item => !string.IsNullOrWhiteSpace(item.DoNotCopy))
@@ -273,7 +317,182 @@ public static class CreativeAcceptance
             0,
             false,
             "NOT_SENT",
-            "The voyage stopped at the first incomplete acceptance gate. Refusal to invent missing intelligence is a pass condition, but ACA-8 is not accepted. Delivery remains NOT_SENT.");
+            jobStatus == "READY_FOR_GENERATION"
+                ? "The voyage is authorized to generate one original advertisement. Generation has not started. ACA-8 is not accepted. Delivery remains NOT_SENT."
+                : "The voyage stopped at the first incomplete acceptance gate. Refusal to invent missing intelligence is a pass condition, but ACA-8 is not accepted. Delivery remains NOT_SENT.");
+    }
+
+    public static CreativeAcceptanceVoyage WithGeneration(
+        CreativeAcceptanceVoyage voyage,
+        AcceptanceGenerationOutcome outcome,
+        IReadOnlyList<AcademyReferenceRecord> references)
+    {
+        ArgumentNullException.ThrowIfNull(voyage);
+        ArgumentNullException.ThrowIfNull(outcome);
+        ArgumentNullException.ThrowIfNull(references);
+        if (voyage.ProviderJob.Status != "READY_FOR_GENERATION")
+        {
+            throw new InvalidOperationException(
+                "The voyage is not authorized to generate. None was invented.");
+        }
+
+        if (outcome.Succeeded
+            && (outcome.ModelCalls <= 0
+                || string.IsNullOrWhiteSpace(outcome.ImagePath)
+                || string.IsNullOrWhiteSpace(outcome.JobId)))
+        {
+            throw new InvalidOperationException("No finished image was stored. None was invented.");
+        }
+
+        if (!outcome.Succeeded)
+        {
+            var failedJob = voyage.ProviderJob with
+            {
+                Status = "FAILED",
+                JobId = string.IsNullOrWhiteSpace(outcome.JobId) ? "NOT_STARTED" : outcome.JobId.Trim(),
+                Attempts = 1,
+                ModelCalls = 0,
+                CostStatus = string.IsNullOrWhiteSpace(outcome.CostStatus) ? "UNRECORDED" : outcome.CostStatus.Trim(),
+                Cost = outcome.Cost,
+                Currency = outcome.Currency ?? string.Empty,
+                Notice = outcome.Notice.Trim()
+                    + " Reference image files were not sent. A rejection code was not invented for a provider failure."
+            };
+            return voyage with
+            {
+                Status = "BLOCKED",
+                AmendmentStatus = Open,
+                ProviderJob = failedJob,
+                FinishedCreative = new AcceptanceEvidence(
+                    "NOT_CREATED",
+                    "No finished original advertisement was stored. A placeholder was not substituted."),
+                ReferenceAssetsSentToProvider = false,
+                ModelCalls = 0,
+                CampaignReady = false,
+                Delivery = "NOT_SENT",
+                Trace = ReplaceSteps(
+                    voyage.Trace,
+                    new AcceptanceTraceStep(5, "ORIGINAL_GENERATION", "FAILED", failedJob.Notice),
+                    new AcceptanceTraceStep(7, "QUALITY_QA", "NOT_RUN", "No finished image exists. A visual score was not invented."),
+                    new AcceptanceTraceStep(9, "HUMAN_REVIEW", "NOT_REQUESTED", "No finished image exists for a human to review.")),
+                Notice = "The provider did not store a finished image. ACA-8 is not accepted. Delivery remains NOT_SENT."
+            };
+        }
+
+        var jobId = outcome.JobId.Trim();
+        var imagePath = outcome.ImagePath.Trim();
+        var originality = ReferenceLibrary.Compare(
+            voyage.ProductionBrief.BrandName,
+            voyage.ProductionBrief.Headline,
+            string.Empty,
+            string.Empty,
+            references);
+        var rejections = voyage.Rejections.ToList();
+        var copied = originality.Status is "REGENERATE" or "RECOMPOSE";
+        if (copied)
+        {
+            rejections.Add(ReferenceLibrary.Reject("REFERENCE_TOO_SIMILAR", jobId));
+        }
+
+        var geometryReady = voyage.InventoryPreflight.Status == "RECOMPOSED";
+        var status = geometryReady && originality.Status == "PASS" && !copied
+            ? "AWAITING_REVIEW"
+            : "BLOCKED";
+        var costStatus = string.IsNullOrWhiteSpace(outcome.CostStatus) ? "UNRECORDED" : outcome.CostStatus.Trim();
+        var job = voyage.ProviderJob with
+        {
+            Status = "GENERATED",
+            JobId = jobId,
+            Attempts = 1,
+            ModelCalls = outcome.ModelCalls,
+            CostStatus = costStatus,
+            Cost = outcome.Cost,
+            Currency = outcome.Currency ?? string.Empty,
+            Notice = "The provider stored one draft from the text recipe. Reference image files were not sent. "
+                + (costStatus == "UNRECORDED" ? "Usage cost was not invented. " : "Provider cost was recorded. ")
+                + outcome.Notice.Trim()
+        };
+        var finished = new AcceptanceEvidence(
+            "GENERATED_PENDING_REVIEW",
+            "One original draft is stored at " + imagePath
+            + ". It is not campaign ready and not a contract. Reference image files were not sent.");
+        var inventoryQa = geometryReady
+            ? new AcceptanceEvidence(
+                "RECORDED",
+                "Purchased slot width and height are on the adaptation. The Academy prototype was not scaled. The provider draft was not resized into a second placement file; those pixels were not invented.")
+            : new AcceptanceEvidence("BLOCKED", voyage.InventoryPreflight.Notice);
+        var brandCompliance = originality.Status == "PASS"
+            ? new AcceptanceEvidence(
+                "PASS",
+                "The stored brand and headline do not reproduce a reference identity. This is not a visual score.")
+            : new AcceptanceEvidence(copied ? "FAIL" : "BLOCKED", originality.Notice);
+        var doNotCopy = originality.Status == "PASS"
+            ? new AcceptanceEvidence("PASS", originality.Notice)
+            : new AcceptanceEvidence(copied ? "FAIL" : "BLOCKED", originality.Notice);
+        var blockers = voyage.Blockers
+            .Where(item => item is not "ACTIVE_REFERENCE_INTELLIGENCE_REQUIRED"
+                and not "ACTIVE_REFERENCE_RETRIEVAL_REQUIRED"
+                and not "PROVIDER_CONFIGURATION_REQUIRED"
+                and not "INVENTORY_GEOMETRY_REQUIRED")
+            .ToList();
+        if (!geometryReady)
+        {
+            blockers.Add("INVENTORY_GEOMETRY_REQUIRED");
+        }
+
+        if (outcome.Cost is not null && costStatus != "UNRECORDED")
+        {
+            blockers.Remove("USAGE_COST_UNRECORDED");
+        }
+
+        var notice = status == "AWAITING_REVIEW"
+            ? "One draft is stored and awaits visual QA and human review. ACA-8 is not accepted. Campaign ready is false. Delivery remains NOT_SENT."
+            : copied
+                ? "The draft reproduces stored do-not-copy intelligence and was rejected. The failed attempt is kept. ACA-8 is not accepted. Delivery remains NOT_SENT."
+                : "The draft is stored, but an acceptance gate is still incomplete. ACA-8 is not accepted. Delivery remains NOT_SENT.";
+        return voyage with
+        {
+            Status = status,
+            AmendmentStatus = Open,
+            ProviderJob = job,
+            FinishedCreative = finished,
+            Originality = originality,
+            InventoryQa = inventoryQa,
+            BrandDnaCompliance = brandCompliance,
+            DoNotCopyCompliance = doNotCopy,
+            QualityQa = new AcceptanceEvidence(
+                "NOT_RUN",
+                "A visual score was not invented. The draft awaits a human benchmark."),
+            HumanReview = new AcceptanceEvidence(
+                "NOT_REQUESTED",
+                "Human review was not claimed. The draft is stored for a later review."),
+            Rejections = rejections,
+            ReferenceAssetsSentToProvider = false,
+            Blockers = blockers.Distinct(StringComparer.Ordinal).ToList(),
+            ModelCalls = outcome.ModelCalls,
+            CampaignReady = false,
+            Delivery = "NOT_SENT",
+            Trace = ReplaceSteps(
+                voyage.Trace,
+                new AcceptanceTraceStep(5, "ORIGINAL_GENERATION", "GENERATED", job.Notice),
+                new AcceptanceTraceStep(7, "QUALITY_QA", "NOT_RUN", "A visual score was not invented. The draft awaits a human benchmark."),
+                new AcceptanceTraceStep(8, "ORIGINALITY_QA", originality.Status, originality.Notice),
+                new AcceptanceTraceStep(9, "HUMAN_REVIEW", "NOT_REQUESTED", "Human review was not claimed."),
+                new AcceptanceTraceStep(11, "REJECTION_TAXONOMY", rejections.Count == 0 ? "NONE" : "RECORDED",
+                    rejections.Count == 0
+                        ? "No stored rejection code applies yet."
+                        : string.Join(", ", rejections.Select(item => item.Code + " on " + item.SubjectId))
+                          + ". Rejected work is not a positive reference.")),
+            Notice = notice
+        };
+    }
+
+    private static IReadOnlyList<AcceptanceTraceStep> ReplaceSteps(
+        IReadOnlyList<AcceptanceTraceStep> trace,
+        params AcceptanceTraceStep[] replacements)
+    {
+        var mapped = replacements.ToDictionary(item => item.Sequence);
+        return trace.Select(step => mapped.TryGetValue(step.Sequence, out var replacement) ? replacement : step).ToList();
     }
 
     private static void RequireCampaign(AcceptanceCampaignBrief campaign)

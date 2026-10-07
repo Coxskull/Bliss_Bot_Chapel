@@ -11,7 +11,8 @@ public sealed class CreativeAcceptanceVoyageService(
     BlissDbContext database,
     BlueprintPhaseService phases,
     BlissRuntimeOptions runtime,
-    ICreativeImageGenerator generator)
+    ICreativeImageGenerator generator,
+    CreativeGenerationService generation)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -60,6 +61,10 @@ public sealed class CreativeAcceptanceVoyageService(
             options.Provider,
             options.Model,
             generator.Configured);
+        if (report.ProviderJob.Status == "READY_FOR_GENERATION")
+        {
+            report = await ContinueGenerationAsync(report, campaign, reading.References, cancellationToken);
+        }
         var row = new CreativeAcceptanceVoyageRow
         {
             Id = Guid.NewGuid(),
@@ -78,6 +83,58 @@ public sealed class CreativeAcceptanceVoyageService(
         database.CreativeAcceptanceVoyages.Add(row);
         await database.SaveChangesAsync(cancellationToken);
         return new CreativeAcceptanceVoyageWrite(ToHistory(row), false, true);
+    }
+
+    private async Task<CreativeAcceptanceVoyage> ContinueGenerationAsync(
+        CreativeAcceptanceVoyage report,
+        AcceptanceCampaignBrief campaign,
+        IReadOnlyList<AcademyReferenceRecord> references,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var decision = await generation.GenerateAsync(
+                campaign.VoyageKey,
+                campaign.Niche,
+                campaign.AdvertiserName,
+                null,
+                null,
+                null,
+                null,
+                campaign.Market,
+                null,
+                campaign.Objective + ". Required inventory product " + campaign.InventoryProductId + ".",
+                true,
+                false,
+                cancellationToken);
+            return CreativeAcceptance.WithGeneration(
+                report,
+                new AcceptanceGenerationOutcome(
+                    true,
+                    decision.Id.ToString(),
+                    decision.ImagePath,
+                    decision.ModelCalls,
+                    decision.CostStatus,
+                    decision.Cost,
+                    string.Empty,
+                    decision.Notice),
+                references);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return CreativeAcceptance.WithGeneration(
+                report,
+                new AcceptanceGenerationOutcome(
+                    false,
+                    string.Empty,
+                    string.Empty,
+                    0,
+                    "UNRECORDED",
+                    null,
+                    string.Empty,
+                    exception.Message),
+                references);
+        }
     }
 
     private static CreativeAcceptanceVoyageHistory ToHistory(CreativeAcceptanceVoyageRow row) =>
