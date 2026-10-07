@@ -13,4 +13,6 @@ Status of both amendments: OPEN / PENDING IMPLEMENTATION + END-TO-END EVIDENCE.
 
 The phase plan is `docs/architecture/ALPHA-MASTER-BLUEPRINT-PHASES.md`.
 
+`OWNER-NEEDS.tsv` lists every owner input still required. Fill `ownerEntry` on an `OPEN` row when that input exists. Leave it blank until then. A blank entry is not a price, a geometry measurement, a quality grade, or an ACTIVE approval.
+
 Do not place API keys, connection strings, or customer lists in this folder.

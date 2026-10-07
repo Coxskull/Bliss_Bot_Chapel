@@ -50,6 +50,49 @@ public sealed class ReferenceLibraryTests
     }
 
     [Fact]
+    public void Retrieval_returns_stored_notes_and_keeps_a_superseded_reference_readable()
+    {
+        var library = new List<AcademyReferenceRecord>
+        {
+            new("ACA-011-V1", 11, "auto-parts", "Auto-Parts Store", "Auto Parts.jpeg", "SUPERSEDED", "UPLOADED", true, "counter lighting", "Old Counter"),
+            new("ACA-011-V2", 11, "auto-parts", "Auto-Parts Store", "Auto Parts.jpeg", "ACTIVE", "UPLOADED", true, "product realism", "Exact bay")
+        };
+
+        var retrieval = ReferenceLibrary.Select("auto-parts", library, ["counter lighting"]);
+
+        Assert.Equal(2, library.Count);
+        Assert.Equal(ReferenceLibrary.Superseded, library[0].Lifecycle);
+        Assert.Equal("RETRIEVED", retrieval.Status);
+        Assert.Single(retrieval.Selected);
+        Assert.Equal("ACA-011-V2", retrieval.Selected[0].ReferenceId);
+        Assert.Equal("product realism", retrieval.Selected[0].Learn);
+        Assert.Equal("Exact bay", retrieval.Selected[0].DoNotCopy);
+        Assert.Equal(ReferenceLibrary.Unclassified, library[0].QualityStatus);
+        Assert.All(ReferenceLibrary.UnclassifiedAttributes(), item => Assert.Equal(ReferenceLibrary.Unclassified, item.Grade));
+        Assert.Contains(ReferenceLibrary.HumanReview, ReferenceLibrary.Lifecycles);
+    }
+
+    [Fact]
+    public void Owner_needs_keep_a_blank_entry_blank()
+    {
+        const string file = """
+            needId	status	ownerEntry	need
+            ACA-005-FILE	OPEN		Upload the used-car prototype.
+            BIND-004	SUPPLIED	Owner confirmed the new-car file	Filename binding.
+            MYSTERY	MAYBE		This status is not a supplied answer.
+            """;
+
+        var needs = OwnerNeeds.Parse(file);
+
+        Assert.Equal(3, needs.Count);
+        Assert.Equal(OwnerNeeds.Open, needs[0].Status);
+        Assert.Equal(string.Empty, needs[0].OwnerEntry);
+        Assert.Equal(OwnerNeeds.Supplied, needs[1].Status);
+        Assert.Equal("Owner confirmed the new-car file", needs[1].OwnerEntry);
+        Assert.Equal(OwnerNeeds.Open, needs[2].Status);
+    }
+
+    [Fact]
     public void Retrieval_selects_only_active_files_and_records_why()
     {
         var library = new List<AcademyReferenceRecord>

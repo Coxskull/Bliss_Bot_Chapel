@@ -101,6 +101,21 @@ public sealed class BlueprintPhaseController(BlueprintPhaseService phases) : Con
                 items = reading.References
             },
             unassigned = reading.Unassigned,
+            ownerNeeds = new
+            {
+                source = "assets/alpha-prototypes/OWNER-NEEDS.tsv",
+                open = reading.OwnerNeeds.Count(item => item.Status == OwnerNeeds.Open),
+                supplied = reading.OwnerNeeds.Count(item => item.Status == OwnerNeeds.Supplied),
+                items = reading.OwnerNeeds
+            },
+            quality = new
+            {
+                version = ReferenceLibrary.QualityDnaVersion,
+                status = ReferenceLibrary.Unclassified,
+                attributes = ReferenceLibrary.UnclassifiedAttributes(),
+                allowedGrades = ReferenceLibrary.QualityGrades,
+                lifecycles = ReferenceLibrary.Lifecycles
+            },
             sampleRetrieval = retrieval,
             turn
         };

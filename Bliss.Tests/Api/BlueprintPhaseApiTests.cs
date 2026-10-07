@@ -58,6 +58,22 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
             Assert.Equal(string.Empty, confirmed.GetProperty("doNotCopy").GetString());
         }
 
+        var needs = board.GetProperty("ownerNeeds");
+        Assert.True(needs.GetProperty("open").GetInt32() > 0);
+        Assert.Contains(
+            needs.GetProperty("items").EnumerateArray(),
+            item => item.GetProperty("needId").GetString() == "ACA-005-FILE"
+                && item.GetProperty("status").GetString() == "OPEN"
+                && item.GetProperty("ownerEntry").GetString() == string.Empty);
+        Assert.Contains(
+            needs.GetProperty("items").EnumerateArray(),
+            item => item.GetProperty("needId").GetString() == "BIND-004"
+                && item.GetProperty("status").GetString() == "SUPPLIED");
+        Assert.Equal("UNCLASSIFIED", board.GetProperty("quality").GetProperty("status").GetString());
+        Assert.All(
+            board.GetProperty("quality").GetProperty("attributes").EnumerateArray(),
+            item => Assert.Equal("UNCLASSIFIED", item.GetProperty("grade").GetString()));
+
         foreach (var showcase in board.GetProperty("showcases").EnumerateArray())
         {
             Assert.True(showcase.GetProperty("assetPresent").GetBoolean());

@@ -1,0 +1,26 @@
+needId	status	ownerEntry	need
+ACA-FILES-49	SUPPLIED	49 owner files registered as CANDIDATE on 2026-10-07	Prototype files for 49 niches are in the inbox and registered. They are not ACTIVE.
+BIND-004	SUPPLIED	Owner confirmed 2026-10-07: Automotive.jpeg is new-car	Filename binding for ACA-004-V1. Auto shop.jpeg remains niche 8.
+BIND-014	SUPPLIED	Owner confirmed 2026-10-07: Italian restaurant.jpeg is pizza	Filename binding for ACA-014-V1.
+BIND-033	SUPPLIED	Owner confirmed 2026-10-07: Home renovation.jpeg is furniture	Filename binding for ACA-033-V1.
+BIND-044	SUPPLIED	Owner confirmed 2026-10-07: Coffeee.jpeg is the coffee product brand	Filename binding for ACA-044-V1. Coffee.jpeg remains the coffee shop.
+SHOWCASE-FILES	SUPPLIED	ARE-001-V1.jpeg, ARE-002-V1.jpeg, and ARE-003-V1.jpeg are on file as DRAFT	Showcase illustrations. They are not a geometry contract or a price.
+GUIDE-FILE	SUPPLIED	ARE-GUIDE-001-V1.png is stored as an educational overview	Printed percentages and prices on the guide are not authoritative.
+ACA-005-FILE	OPEN		Upload the used-car prototype for ACA-005-V1. No file is registered for that niche.
+ACA-LEARN	OPEN		Write learn notes for each reference. A model must not invent them.
+ACA-DO-NOT-COPY	OPEN		Write do-not-copy notes for each reference. A model must not invent them.
+ACA-QUALITY	OPEN		Classify each reference on the existing Global Quality DNA attributes. Allowed grades are REFERENCE_STRENGTH, STRONG, SUPPORTING, or NOT_APPLICABLE. Blank stays UNCLASSIFIED.
+ACA-RIGHTS	OPEN		Record rights, provenance, created date, and approved date where they are known.
+ACA-ACTIVE	OPEN		Name any reference a human approves as ACTIVE. Upload and filename confirmation do not do this.
+ACA-TEACHERS	OPEN		Connect VidaCare, FreshMart, Nova Fit, Taller Ruta, and Brava Moto to reference records only by an explicit human decision.
+ACA-UNASSIGNED	OPEN		Decide later whether Catalog.jpeg and the seven podcast-with-ads images belong anywhere. They stay unassigned until then.
+ARE-GEOMETRY	OPEN		Supply versioned width, height, and area for the named slots. The guide image is not that specification.
+ARE-ECONOMICS	OPEN		Record an Economics price for ARE-P01, ARE-P02, ARE-S01, and ARE-E01. Ask Alpha will not invent one.
+ARE-CREATOR-AUTH	OPEN		Record creator authorization before any catalog product can be offered.
+ARE-DEVICE	OPEN		Record device and platform status. A missing status stays NEEDS_REVIEW.
+ARE-DURATION-PRICE	OPEN		Record the Economics result for a duration or occurrence change. Fifteen seconds is stored and unpriced.
+ARE-DELIVERY	OPEN		Record proof of delivery only after a display actually happens.
+ARE-SHOWCASE-ACTIVE	OPEN		Approve a showcase before Ask Alpha may display it as an offer. A file on disk is not that approval.
+AMENDMENT-REVIEW	OPEN		Review the catalog and Academy recordings before either amendment leaves OPEN.
+OPENAI-CREDITS	OPEN		Add OpenAI billing credits and rotate the temporary key that was pasted in chat. The key is not stored in this file.
+HOSTED-ACCEPTANCE	OPEN		Hosted acceptance stays unclaimed until a separate owner acceptance is recorded.

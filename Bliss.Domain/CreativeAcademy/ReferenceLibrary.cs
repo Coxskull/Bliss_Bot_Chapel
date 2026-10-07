@@ -13,12 +13,15 @@ public sealed record AcademyReferenceRecord(
     bool AssetPresent,
     string Learn,
     string DoNotCopy,
-    string MappingNote = "");
+    string MappingNote = "",
+    string QualityStatus = "UNCLASSIFIED");
 
 public sealed record RetrievedReference(
     string ReferenceId,
     string NicheKey,
-    string Reason);
+    string Reason,
+    string Learn = "",
+    string DoNotCopy = "");
 
 public sealed record ReferenceRetrieval(
     string Status,
@@ -27,6 +30,8 @@ public sealed record ReferenceRetrieval(
     int ModelCalls,
     bool CampaignReady,
     string Delivery);
+
+public sealed record QualityAttribute(string Name, string Grade);
 
 public sealed record OriginalityResult(
     string Status,
@@ -43,11 +48,38 @@ public static class ReferenceLibrary
     public const string AwaitingUpload = "AWAITING_UPLOAD";
     public const string Uploaded = "UPLOADED";
     public const string Candidate = "CANDIDATE";
+    public const string HumanReview = "HUMAN_REVIEW";
+    public const string AlphaApproved = "ALPHA_APPROVED";
     public const string Active = "ACTIVE";
+    public const string Superseded = "SUPERSEDED";
+    public const string Retired = "RETIRED";
+    public const string Unclassified = "UNCLASSIFIED";
     public const string QualityDnaVersion = "GQD-1";
+
+    public static IReadOnlyList<string> Lifecycles { get; } =
+    [
+        Candidate,
+        HumanReview,
+        AlphaApproved,
+        Active,
+        Superseded,
+        Retired
+    ];
+
+    public static IReadOnlyList<string> QualityGrades { get; } =
+    [
+        Unclassified,
+        "REFERENCE_STRENGTH",
+        "STRONG",
+        "SUPPORTING",
+        "NOT_APPLICABLE"
+    ];
     public const string UnassignedReason = "Stored in the inbox and not forced into a niche. Not an ACTIVE reference.";
 
     public static IReadOnlyList<string> QualityDna { get; } = CreativeAcademy.ReferenceParityGate;
+
+    public static IReadOnlyList<QualityAttribute> UnclassifiedAttributes() =>
+        QualityDna.Select(name => new QualityAttribute(name, Unclassified)).ToArray();
 
     public static IReadOnlyList<string> DoNotProduce { get; } =
     [
@@ -149,7 +181,7 @@ public static class ReferenceLibrary
         var nicheHit = active.FirstOrDefault(item => item.NicheKey.Equals(niche, StringComparison.OrdinalIgnoreCase));
         if (nicheHit is not null)
         {
-            selected.Add(new RetrievedReference(nicheHit.ReferenceId, nicheHit.NicheKey, "niche match"));
+            selected.Add(new RetrievedReference(nicheHit.ReferenceId, nicheHit.NicheKey, "niche match", nicheHit.Learn, nicheHit.DoNotCopy));
         }
 
         foreach (var reason in extraReasons ?? [])
@@ -165,7 +197,7 @@ public static class ReferenceLibrary
                     || item.NicheName.Contains(reason, StringComparison.OrdinalIgnoreCase)));
             if (match is not null)
             {
-                selected.Add(new RetrievedReference(match.ReferenceId, match.NicheKey, reason));
+                selected.Add(new RetrievedReference(match.ReferenceId, match.NicheKey, reason, match.Learn, match.DoNotCopy));
             }
         }
 
