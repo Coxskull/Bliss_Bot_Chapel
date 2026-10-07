@@ -322,6 +322,8 @@ Similarity against Academy references, prior Alpha demos, and other active adver
 
 **Done when.** An adapted asset for a known product uses that product's slot geometry, and a creative that reproduces a reference brand, face, product, or headline fails the originality check.
 
+**Progress.** The eight existing worker roles are listed, and none of them sets campaign ready. Adaptation reads the named slots on a stored product. Live slots have no width or height, so ARE-P01 returns `GEOMETRY_UNRECORDED`, names `LEFT_VERTICAL` and `BOTTOM_FULL`, and does not scale a prototype. A test that already has width and height uses those stored numbers and does not calculate area. Similarity is separate from the existing originality judge. Copying a protected reference brand, face, product, or headline returns `REGENERATE`. The live library has no do-not-copy notes, so an unmatched creative returns `REVIEW REQUIRED`. That is not a visual score and not `PASS`. Official geometry stays unrecorded. This does not accept ACA-5 or ACA-8. The amendment stays OPEN.
+
 ### ACA-6 — Rejection taxonomy and regression suite
 
 Store failure reasons so rejected work teaches QA and does not become a positive reference. Initial codes include `FLAT_LIGHTING`, `MUDDY_COLORS`, `WEAK_CONTRAST`, `GENERIC_AI_LOOK`, `UNREALISTIC_SKIN`, `ANATOMY_FAILURE`, `PRODUCT_REALISM_FAILURE`, `MATERIAL_REALISM_FAILURE`, `POOR_HIERARCHY`, `UNREADABLE_TYPOGRAPHY`, `OVERLOADED_COMPOSITION`, `WEAK_SCREEN_IMPACT`, `BRAND_DNA_VIOLATION`, `REFERENCE_TOO_SIMILAR`, `INVENTORY_GEOMETRY_FAILURE`, and `QR_FAILURE`.
@@ -360,6 +362,8 @@ Required evidence includes the finished original, the inventory-adapted creative
 
 The Academy amendment stays OPEN until that evidence is reviewed.
 
+**Progress.** One controlled voyage is now idempotently stored with a ten-step audit trace. The fictitious Harborlight Pharmacy scenario supplied Panama City, pharmacy, its campaign objective, and ARE-P01; it did not name a reference. The live run found 50 registered records, 49 files, 50 candidates, 0 ACTIVE references, 0 ACTIVE LEARN notes, and 0 ACTIVE DO-NOT-COPY notes. Automatic retrieval returned `NICHE_REFERENCE_NOT_ACTIVE`. Creative reasoning and provider generation stopped before a model call. No Brand DNA, cost, visual score, finished advertisement, retry, or human approval was invented. ARE-P01 preflight remained `GEOMETRY_UNRECORDED` for `LEFT_VERTICAL` and `BOTTOM_FULL`; the prototype was not scaled. Campaign ready is false and delivery is `NOT_SENT`. The consolidated result is in `CREATIVE-ACADEMY-AUTONOMOUS-ACCEPTANCE-REPORT.md`. Gate 1 records the roster but still has one missing file and incomplete metadata. Gates 2 and 3 do not pass. ACA-8 remains OPEN.
+
 ---
 
 ## J-1 — Joint acceptance
@@ -386,4 +390,4 @@ Catalog: OPEN / PENDING IMPLEMENTATION + END-TO-END EVIDENCE.
 
 Academy Reference Library: OPEN / PENDING IMPLEMENTATION + AUTONOMOUS CREATIVE ACCEPTANCE EVIDENCE.
 
-Phase 0, the upload dock, is in the repository. The draft catalog engine at `/api/operations/blueprint` and the operations view `/operations#/catalog` name the draft products, refuse unrecorded geometry, refuse an invented price, and retrieve Academy references only when a file is ACTIVE. Owner uploads are now registered: 49 candidate prototypes, one awaiting niche (used-car), eight unassigned inbox images, and three draft showcase illustrations. That registration does not mark ARE-11 or ACA-8 accepted. Both amendments remain OPEN until the owner reviews end-to-end evidence.
+Phase 0, the upload dock, is in the repository. The draft catalog engine at `/api/operations/blueprint` and the operations view `/operations#/catalog` name the draft products, refuse unrecorded geometry, refuse an invented price, and retrieve Academy references only when a file is ACTIVE. Adaptation of a known product reports `GEOMETRY_UNRECORDED` until a human records slot width and height, and a copied reference identity returns `REGENERATE`. Owner uploads are now registered: 49 candidate prototypes, one awaiting niche (used-car), eight unassigned inbox images, and three draft showcase illustrations. That registration does not mark ARE-11 or ACA-8 accepted. Both amendments remain OPEN until the owner reviews end-to-end evidence.

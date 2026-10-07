@@ -64,6 +64,30 @@ async function loadCatalog() {
   return board;
 }
 
+function renderAdaptation(result) {
+  const target = document.getElementById("catalog-adapt-result");
+  if (!target) return;
+  const adaptation = result.adaptation || {};
+  const similarity = result.similarity || {};
+  const slots = (adaptation.slots || []).map(slot => {
+    const size = slot.width && slot.height ? ` ${slot.width}×${slot.height}` : "";
+    return escapeCatalog(slot.slotId) + size;
+  }).join(", ");
+  const roles = (result.workers || []).map(worker => escapeCatalog(worker.role)).join(", ");
+  target.innerHTML = `<article><p class="eyebrow">${escapeCatalog(adaptation.status)} · ${escapeCatalog(similarity.status)}</p><p>${escapeCatalog(adaptation.notice)}</p><p>Slots ${slots || "none"}. Prototype scaled ${adaptation.scaledFromPrototype ? "Yes" : "No"}.</p><p>${escapeCatalog(similarity.notice)}</p><p>Workers ${roles}. None of these roles sets campaign ready.</p><p>Model calls ${result.modelCalls}. Campaign ready ${result.campaignReady ? "Yes" : "No"}. Delivery ${escapeCatalog(result.delivery)}.</p></article>`;
+}
+
+async function adaptCatalog(body) {
+  const result = await api("/api/operations/blueprint/adapt", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  renderAdaptation(result);
+  document.getElementById("catalog-adapt-result")?.scrollIntoView({ block: "center" });
+  return result;
+}
+
 async function askCatalog(message) {
   const body = await api("/api/operations/blueprint/ask", {
     method: "POST",
@@ -79,6 +103,48 @@ async function askCatalog(message) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  const adapt = document.getElementById("catalog-adapt");
+  const copied = document.getElementById("catalog-adapt-copy");
+  if (adapt) {
+    adapt.addEventListener("click", async () => {
+      adapt.disabled = true;
+      try {
+        await adaptCatalog({
+          productId: "ARE-P01",
+          scalePrototype: false,
+          brandName: "Norte Salud",
+          headline: "Retira tu receta",
+          face: "A local pharmacist",
+          product: "A neighborhood pharmacy"
+        });
+      } catch (error) {
+        const target = document.getElementById("catalog-adapt-result");
+        if (target) target.textContent = error.message;
+      } finally {
+        adapt.disabled = false;
+      }
+    });
+  }
+  if (copied) {
+    copied.addEventListener("click", async () => {
+      copied.disabled = true;
+      try {
+        await adaptCatalog({
+          productId: "ARE-P01",
+          scalePrototype: false,
+          brandName: "VidaCare Pharmacy",
+          headline: "Care for a Brighter You",
+          face: "VidaCare pharmacist",
+          product: "VidaCare"
+        });
+      } catch (error) {
+        const target = document.getElementById("catalog-adapt-result");
+        if (target) target.textContent = error.message;
+      } finally {
+        copied.disabled = false;
+      }
+    });
+  }
   document.querySelectorAll("[data-catalog-ask]").forEach(button => {
     button.addEventListener("click", async () => {
       button.disabled = true;

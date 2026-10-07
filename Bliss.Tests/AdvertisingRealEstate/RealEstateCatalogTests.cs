@@ -117,4 +117,76 @@ public sealed class RealEstateCatalogTests
         Assert.False(turn.InventedPrice);
         Assert.Equal(RealEstateCatalog.Unrecorded, turn.GeometryStatus);
     }
+
+    [Fact]
+    public void Live_adaptation_names_slots_and_does_not_scale_a_prototype()
+    {
+        var board = RealEstateCatalog.Board();
+        var product = board.Products.Single(item => item.ProductId == "ARE-P01");
+        var adaptation = RealEstateCatalog.Adapt(product, board.Slots, false);
+
+        Assert.Equal("GEOMETRY_UNRECORDED", adaptation.Status);
+        Assert.Equal(["LEFT_VERTICAL", "BOTTOM_FULL"], adaptation.Slots.Select(item => item.SlotId).ToArray());
+        Assert.All(adaptation.Slots, slot => Assert.Null(slot.Width));
+        Assert.All(adaptation.Slots, slot => Assert.Null(slot.Height));
+        Assert.False(adaptation.ScaledFromPrototype);
+        Assert.Equal(0, adaptation.ModelCalls);
+        Assert.False(adaptation.CampaignReady);
+        Assert.Equal("NOT_SENT", adaptation.Delivery);
+        Assert.Contains("not scaled", adaptation.Notice);
+        Assert.Contains("unrecorded", adaptation.Notice);
+    }
+
+    [Fact]
+    public void Recorded_slot_geometry_is_used_exactly_and_area_is_not_calculated()
+    {
+        var board = RealEstateCatalog.Board();
+        var product = board.Products.Single(item => item.ProductId == "ARE-P01");
+        var slots = board.Slots.Select(slot => slot.SlotId switch
+        {
+            "LEFT_VERTICAL" => slot with { Width = 180, Height = 640 },
+            "BOTTOM_FULL" => slot with { Width = 1280, Height = 160 },
+            _ => slot
+        }).ToList();
+
+        var adaptation = RealEstateCatalog.Adapt(product, slots, false);
+
+        Assert.Equal("RECOMPOSED", adaptation.Status);
+        Assert.Equal(180, adaptation.Slots[0].Width);
+        Assert.Equal(640, adaptation.Slots[0].Height);
+        Assert.Equal(1280, adaptation.Slots[1].Width);
+        Assert.Equal(160, adaptation.Slots[1].Height);
+        Assert.False(adaptation.ScaledFromPrototype);
+        Assert.Contains("Area was not calculated", adaptation.Notice);
+    }
+
+    [Fact]
+    public void A_missing_slot_dimension_keeps_the_whole_adaptation_unrecorded()
+    {
+        var board = RealEstateCatalog.Board();
+        var product = board.Products.Single(item => item.ProductId == "ARE-P01");
+        var slots = board.Slots.Select(slot =>
+            slot.SlotId == "LEFT_VERTICAL" ? slot with { Width = 180, Height = 640 } : slot).ToList();
+
+        var adaptation = RealEstateCatalog.Adapt(product, slots, false);
+
+        Assert.Equal("GEOMETRY_UNRECORDED", adaptation.Status);
+        Assert.Null(adaptation.Slots.Single(item => item.SlotId == "BOTTOM_FULL").Width);
+        Assert.Equal(180, adaptation.Slots.Single(item => item.SlotId == "LEFT_VERTICAL").Width);
+    }
+
+    [Fact]
+    public void Scaling_a_prototype_or_an_unknown_slot_is_refused()
+    {
+        var board = RealEstateCatalog.Board();
+        var product = board.Products.Single(item => item.ProductId == "ARE-P01");
+        var scaled = Assert.Throws<InvalidOperationException>(() => RealEstateCatalog.Adapt(product, board.Slots, true));
+        Assert.Equal(
+            "The Academy prototype was not scaled into the placement. Prototype dimensions are not podcast-advertising dimensions.",
+            scaled.Message);
+
+        var invented = product with { SlotIds = ["INVENTED_SLOT"] };
+        var missing = Assert.Throws<InvalidOperationException>(() => RealEstateCatalog.Adapt(invented, board.Slots, false));
+        Assert.Contains("None was invented", missing.Message);
+    }
 }

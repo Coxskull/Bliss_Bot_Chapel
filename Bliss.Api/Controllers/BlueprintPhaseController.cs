@@ -41,6 +41,35 @@ public sealed class BlueprintPhaseController(BlueprintPhaseService phases) : Con
         return Ok(Body(reading, null, turn));
     }
 
+    [HttpPost("adapt")]
+    [AllowAnonymous]
+    public async Task<ActionResult> Adapt([FromBody] BlueprintAdaptRequest? request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await phases.AdaptAsync(request, cancellationToken);
+            return Ok(new
+            {
+                adaptation = result.Adaptation,
+                similarity = result.Similarity,
+                workers = result.Workers,
+                modelCalls = result.ModelCalls,
+                campaignReady = result.CampaignReady,
+                delivery = result.Delivery
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new
+            {
+                error = ex.Message,
+                modelCalls = 0,
+                campaignReady = false,
+                delivery = "NOT_SENT"
+            });
+        }
+    }
+
     [HttpGet("references/{referenceId}/image")]
     [AllowAnonymous]
     public ActionResult ReferenceImage(string referenceId) => Image(phases.OpenReference(referenceId));

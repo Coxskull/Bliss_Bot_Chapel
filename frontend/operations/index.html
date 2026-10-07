@@ -17,8 +17,8 @@
   <script src="/operations/measure.js?v=measure-1" defer></script>
   <script src="/operations/handoff.js?v=handoff-1" defer></script>
   <script src="/operations/creative.js?v=creative-1" defer></script>
-  <script src="/operations/academy.js?v=academy-8" defer></script>
-  <script src="/operations/catalog.js?v=catalog-3" defer></script>
+  <script src="/operations/academy.js?v=academy-9" defer></script>
+  <script src="/operations/catalog.js?v=catalog-4" defer></script>
   <script src="/operations/learning.js?v=learning-1" defer></script>
   <script src="/operations/rotation.js?v=rotation-1" defer></script>
   <script src="/operations/acceptance.js?v=acceptance-1" defer></script>
@@ -825,6 +825,15 @@
             <p id="catalog-turn"></p>
           </section>
           <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">ADAPTATION</p><h3>Recompose into the purchased slots</h3></div></div>
+            <p>Adaptation reads the named slots on the stored product. It does not scale an Academy prototype. Live width and height stay unrecorded until a human supplies them. Copying a reference brand, face, product, or headline fails originality.</p>
+            <div class="form-actions">
+              <button class="secondary-button" type="button" id="catalog-adapt">Adapt ARE-P01</button>
+              <button class="secondary-button" type="button" id="catalog-adapt-copy">Check a copied VidaCare identity</button>
+            </div>
+            <div id="catalog-adapt-result"></div>
+          </section>
+          <section class="panel">
             <div class="panel-header"><div><p class="eyebrow">PRODUCTS</p><h3>Draft inventory</h3></div></div>
             <div class="table-wrap" id="catalog-products"></div>
           </section>
@@ -903,6 +912,14 @@
               <button class="secondary-button" type="button" id="academy-generate">Generate advertisement</button>
             </div>
             <div id="academy-production-result"><p>No production brief prepared. A production model is not configured.</p></div>
+          </section>
+          <section class="panel">
+            <div class="panel-header"><div><p class="eyebrow">AUTONOMOUS PRODUCTION ACCEPTANCE</p><h3>One complete voyage, or an honest stop</h3></div></div>
+            <p>This controlled run receives only a fictitious advertiser, city, market, niche, objective, and stored inventory product. It selects ACTIVE references itself. It does not promote candidates, invent reference intelligence, manufacture geometry, or replace a missing advertisement with a placeholder.</p>
+            <div class="form-actions">
+              <button class="primary-button" type="button" id="academy-voyage">Run one controlled voyage</button>
+            </div>
+            <div id="academy-voyage-result"><p>No acceptance voyage is loaded.</p></div>
           </section>
           <section class="panel">
             <div class="panel-header"><div><p class="eyebrow">GENERATED DRAFTS</p><h3>Pending instructor review</h3></div></div>

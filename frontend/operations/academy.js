@@ -49,6 +49,70 @@ function parityCard(item) {
   </article>`;
 }
 
+function acceptanceVoyageCard(item) {
+  const report = item?.report || item?.voyage?.report || item;
+  if (!report) return "<p>No stored voyage report is available.</p>";
+  const refs = report.referenceIntelligence?.activeReferences || [];
+  const trace = report.trace || [];
+  return `<article>
+    <p class="eyebrow">${escapeHtml(report.status)} · ${escapeHtml(report.amendmentStatus)}</p>
+    <h4>${escapeHtml(report.campaignBrief?.advertiserName)} · ${escapeHtml(report.campaignBrief?.city)}, ${escapeHtml(report.campaignBrief?.market)}</h4>
+    <p>Niche ${escapeHtml(report.campaignBrief?.niche)}. Objective ${escapeHtml(report.campaignBrief?.objective)}. Inventory ${escapeHtml(report.campaignBrief?.inventoryProductId)}.</p>
+    <h4>Reference intelligence</h4>
+    <p>${escapeHtml(report.referenceIntelligence?.status)}. Registered ${report.referenceIntelligence?.registered ?? 0}; uploaded ${report.referenceIntelligence?.uploaded ?? 0}; candidate ${report.referenceIntelligence?.candidate ?? 0}; ACTIVE ${report.referenceIntelligence?.active ?? 0}; ACTIVE with LEARN ${report.referenceIntelligence?.activeWithLearn ?? 0}; ACTIVE with DO NOT COPY ${report.referenceIntelligence?.activeWithDoNotCopy ?? 0}. Provenance ${escapeHtml(report.referenceIntelligence?.provenanceStatus)}.</p>
+    <p>${escapeHtml(report.referenceIntelligence?.notice)}</p>
+    <ul>${refs.map(reference => `<li><strong>${escapeHtml(reference.referenceId)}</strong> · ${escapeHtml(reference.niche)} · ${escapeHtml(reference.lifecycle)}<br>Strengths ${escapeHtml(reference.qualityStrengths)}<br>LEARN ${escapeHtml(reference.learn)}<br>DO NOT COPY ${escapeHtml(reference.doNotCopy)}<br>Quality DNA ${escapeHtml(reference.qualityDnaVersion)} · provenance ${escapeHtml(reference.provenance)}</li>`).join("") || "<li>No ACTIVE reference was available. Candidate files were not attached.</li>"}</ul>
+    <h4>Automatic retrieval</h4>
+    <p>${escapeHtml(report.productionBrief?.retrieval?.status)}. ${escapeHtml(report.productionBrief?.retrieval?.notice)}</p>
+    <ul>${(report.productionBrief?.retrieval?.selected || []).map(reference => `<li>${escapeHtml(reference.referenceId)} — ${escapeHtml(reference.reason)}<br>LEARN ${escapeHtml(reference.learn)}<br>DO NOT COPY ${escapeHtml(reference.doNotCopy)}</li>`).join("") || "<li>No reference selected.</li>"}</ul>
+    <p>Global Quality DNA ${escapeHtml(report.productionBrief?.qualityDnaVersion)}: ${escapeHtml((report.globalQualityDna || []).join(", "))}.</p>
+    <h4>Creative and provider evidence</h4>
+    <p>Brand DNA ${escapeHtml(report.brandDna?.status)} — ${escapeHtml(report.brandDna?.notice)}</p>
+    <p>Provider ${escapeHtml(report.providerJob?.provider)}. Model ${escapeHtml(report.providerJob?.model)}. Job ${escapeHtml(report.providerJob?.jobId)}. Attempts ${report.providerJob?.attempts ?? 0}. Cost ${escapeHtml(report.providerJob?.costStatus)}. ${escapeHtml(report.providerJob?.notice)}</p>
+    <p>Finished creative ${escapeHtml(report.finishedCreative?.status)} — ${escapeHtml(report.finishedCreative?.notice)}</p>
+    <h4>Adaptation and QA</h4>
+    <p>Inventory ${escapeHtml(report.inventoryPreflight?.status)}. Slots ${(report.inventoryPreflight?.slots || []).map(slot => escapeHtml(slot.slotId)).join(", ") || "none"}. Prototype scaled ${report.inventoryPreflight?.scaledFromPrototype ? "Yes" : "No"}.</p>
+    <p>Originality ${escapeHtml(report.originality?.status)}. Quality QA ${escapeHtml(report.qualityQa?.status)}. Inventory QA ${escapeHtml(report.inventoryQa?.status)}. Brand DNA compliance ${escapeHtml(report.brandDnaCompliance?.status)}. Do-not-copy compliance ${escapeHtml(report.doNotCopyCompliance?.status)}. Human review ${escapeHtml(report.humanReview?.status)}.</p>
+    <h4>Workflow trace</h4>
+    <ol>${trace.map(step => `<li><strong>${escapeHtml(step.step)} · ${escapeHtml(step.status)}</strong><br>${escapeHtml(step.evidence)}</li>`).join("")}</ol>
+    <h4>Open blockers</h4>
+    <ul>${lines(report.blockers)}</ul>
+    <p>${escapeHtml(report.notice)}</p>
+    <p>Model calls ${report.modelCalls}. Campaign ready ${report.campaignReady ? "Yes" : "No"}. Delivery ${escapeHtml(report.delivery)}.</p>
+  </article>`;
+}
+
+async function loadAcceptanceVoyages() {
+  const board = await api("/api/operations/academy/acceptance-voyages");
+  const latest = (board.voyages || [])[0];
+  const target = document.getElementById("academy-voyage-result");
+  if (target) target.innerHTML = latest
+    ? acceptanceVoyageCard(latest)
+    : "<p>No acceptance voyage is stored. The amendment remains OPEN.</p>";
+  return board;
+}
+
+async function runAcceptanceVoyage() {
+  const result = await api("/api/operations/academy/acceptance-voyages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      voyageKey: "one-voyage-panama-pharmacy-20261007",
+      advertiserName: "Harborlight Pharmacy",
+      city: "Panama City",
+      market: "Panama",
+      niche: "pharmacy",
+      objective: "Introduce prescription pickup to local customers",
+      inventoryProductId: "ARE-P01"
+    })
+  });
+  const target = document.getElementById("academy-voyage-result");
+  if (target) {
+    target.innerHTML = acceptanceVoyageCard(result.voyage);
+    target.scrollIntoView({ block: "start" });
+  }
+}
+
 function generationCard(item) {
   return `<article class="panel">
     <div class="panel-header"><div><p class="eyebrow">${escapeHtml(item.status)}</p><h3>${escapeHtml(item.brandName)}</h3></div></div>
@@ -106,6 +170,7 @@ async function loadAcademy() {
     ? `<table><thead><tr><th>Brand</th><th>Family</th><th>Teacher</th><th>On file</th><th>Distinct</th><th>Hero</th><th>Delivery</th></tr></thead><tbody>${dna.map(item =>
         `<tr><td>${escapeHtml(item.brandName)}</td><td>${escapeHtml(item.family)}</td><td>${escapeHtml(item.teacherKey || "None")}</td><td>${item.teacherOnFile ? "Yes" : "No"}</td><td>${item.distinct ? "Yes" : "No"}</td><td>${escapeHtml(item.hero)}</td><td>${escapeHtml(item.delivery)}</td></tr>`).join("")}</tbody></table>`
     : emptyState("No Creative DNA is stored.");
+  await loadAcceptanceVoyages();
   return board;
 }
 
@@ -218,6 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bind("academy-store", () => postAcademy("/api/operations/academy/curriculum", { curriculumKey: "creative-academy-2" }));
   bind("academy-production", () => prepareProductionBrief(false));
   bind("academy-generate", generateAdvertisement);
+  bind("academy-voyage", runAcceptanceVoyage);
   bind("academy-drift", () => evaluateParity(false));
   bind("academy-both-pass", () => evaluateParity(true));
   bind("academy-dna", () => postAcademy("/api/operations/academy/dna", {

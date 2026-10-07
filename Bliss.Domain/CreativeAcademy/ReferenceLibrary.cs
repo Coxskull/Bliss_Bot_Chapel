@@ -39,6 +39,15 @@ public sealed record OriginalityResult(
     bool CampaignReady,
     string Delivery);
 
+public sealed record SimilarityResult(
+    string Status,
+    string Notice,
+    string MatchedField,
+    string MatchedReferenceId,
+    int ModelCalls,
+    bool CampaignReady,
+    string Delivery);
+
 /// <summary>
 /// The 50 prototypes are quality references. Retrieval uses ACTIVE records only.
 /// A missing file stays awaiting upload. The library does not invent an image.
@@ -255,6 +264,106 @@ public static class ReferenceLibrary
             false,
             "NOT_SENT");
     }
+
+    public static SimilarityResult Compare(
+        string? brandName,
+        string? headline,
+        string? face,
+        string? product,
+        IReadOnlyList<AcademyReferenceRecord> library)
+    {
+        ArgumentNullException.ThrowIfNull(library);
+        var fields = new[]
+        {
+            ("brand", (brandName ?? string.Empty).Trim()),
+            ("headline", (headline ?? string.Empty).Trim()),
+            ("face", (face ?? string.Empty).Trim()),
+            ("product", (product ?? string.Empty).Trim())
+        };
+
+        if (fields.All(field => field.Item2.Length == 0))
+        {
+            return new SimilarityResult(
+                "HUMAN REVIEW",
+                "No brand, headline, face, or product was supplied. A human reviews the creative. This is not a visual score and not a pass. Delivery remains NOT_SENT.",
+                "",
+                "",
+                0,
+                false,
+                "NOT_SENT");
+        }
+
+        foreach (var field in fields)
+        {
+            if (field.Item2.Length > 0 && CreativeAcademy.NamesReferenceIdentity(field.Item2))
+            {
+                return Regenerate(field.Item1, "");
+            }
+        }
+
+        foreach (var reference in library)
+        {
+            foreach (var token in Tokens(reference.DoNotCopy))
+            {
+                foreach (var field in fields)
+                {
+                    if (field.Item2.Length > 0 && field.Item2.Contains(token, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Regenerate(field.Item1, reference.ReferenceId);
+                    }
+                }
+            }
+        }
+
+        if (fields.Any(field => CreativeAcademy.RequestsPrototypePlacement(field.Item2)))
+        {
+            return new SimilarityResult(
+                "RECOMPOSE",
+                "The creative asks to scale the Academy prototype into the placement. Recompose it into the purchased product's slot geometry. Prototype dimensions are not podcast-advertising dimensions. Delivery remains NOT_SENT.",
+                "",
+                "",
+                0,
+                false,
+                "NOT_SENT");
+        }
+
+        if (!library.Any(reference => Tokens(reference.DoNotCopy).Any()))
+        {
+            return new SimilarityResult(
+                "REVIEW REQUIRED",
+                "No stored do-not-copy note is on file. This is not a visual score. Prior Alpha demos and other advertiser creatives are not stored, so they were not compared. Campaign ready is false. Delivery remains NOT_SENT.",
+                "",
+                "",
+                0,
+                false,
+                "NOT_SENT");
+        }
+
+        return new SimilarityResult(
+            "PASS",
+            "Stored do-not-copy notes did not match this brand, headline, face, or product. This is not a visual score and not campaign ready. Delivery remains NOT_SENT.",
+            "",
+            "",
+            0,
+            false,
+            "NOT_SENT");
+    }
+
+    private static SimilarityResult Regenerate(string field, string referenceId) =>
+        new(
+            "REGENERATE",
+            "The " + field + " reproduces a reference identity. The Academy reference is not a template."
+            + (referenceId.Length == 0 ? "" : " Matched " + referenceId + ".")
+            + " Delivery remains NOT_SENT.",
+            field,
+            referenceId,
+            0,
+            false,
+            "NOT_SENT");
+
+    private static IEnumerable<string> Tokens(string notes) =>
+        notes.Split(new[] { ',', '\n', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(token => token.Length >= 3);
 
     private static OriginalityResult Fail(string referenceId, string field) =>
         new(

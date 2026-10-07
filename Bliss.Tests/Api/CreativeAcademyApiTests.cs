@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Bliss.Api.Operations;
+using Bliss.Domain.CreativeAcademy;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -225,6 +226,65 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal(0, refusal.GetProperty("modelCalls").GetInt32());
         Assert.False(refusal.GetProperty("campaignReady").GetBoolean());
         Assert.Equal("NOT_SENT", refusal.GetProperty("delivery").GetString());
+    }
+
+    [Fact]
+    public async Task One_acceptance_voyage_stops_at_the_missing_active_reference_gate()
+    {
+        await using var factory = new BlissApiFactory();
+        var client = factory.CreateClient();
+        var request = new
+        {
+            voyageKey = "one-voyage-panama-pharmacy-test",
+            advertiserName = "Harborlight Pharmacy",
+            city = "Panama City",
+            market = "Panama",
+            niche = "pharmacy",
+            objective = "Introduce prescription pickup to local customers",
+            inventoryProductId = "ARE-P01"
+        };
+
+        var firstResponse = await client.PostAsJsonAsync(
+            "/api/operations/academy/acceptance-voyages",
+            request);
+        var first = await firstResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var report = first.GetProperty("voyage").GetProperty("report");
+
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+        Assert.True(first.GetProperty("written").GetBoolean());
+        Assert.False(first.GetProperty("duplicate").GetBoolean());
+        Assert.Equal("BLOCKED", report.GetProperty("status").GetString());
+        Assert.Equal(0, report.GetProperty("referenceIntelligence").GetProperty("active").GetInt32());
+        Assert.Equal(
+            "REFERENCE_INTELLIGENCE_INCOMPLETE",
+            report.GetProperty("referenceIntelligence").GetProperty("status").GetString());
+        Assert.Equal(
+            "NICHE_REFERENCE_NOT_ACTIVE",
+            report.GetProperty("productionBrief").GetProperty("retrieval").GetProperty("status").GetString());
+        Assert.Equal("NOT_CREATED", report.GetProperty("brandDna").GetProperty("status").GetString());
+        Assert.Equal("BLOCKED_REFERENCE_GATE", report.GetProperty("providerJob").GetProperty("status").GetString());
+        Assert.Equal("NOT_CREATED", report.GetProperty("finishedCreative").GetProperty("status").GetString());
+        Assert.Equal("GEOMETRY_UNRECORDED", report.GetProperty("inventoryPreflight").GetProperty("status").GetString());
+        Assert.Equal("NOT_RUN", report.GetProperty("qualityQa").GetProperty("status").GetString());
+        Assert.Equal("NOT_REQUESTED", report.GetProperty("humanReview").GetProperty("status").GetString());
+        Assert.Equal(0, report.GetProperty("modelCalls").GetInt32());
+        Assert.False(report.GetProperty("campaignReady").GetBoolean());
+        Assert.Equal("NOT_SENT", report.GetProperty("delivery").GetString());
+
+        var duplicateResponse = await client.PostAsJsonAsync(
+            "/api/operations/academy/acceptance-voyages",
+            request);
+        var duplicate = await duplicateResponse.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(HttpStatusCode.OK, duplicateResponse.StatusCode);
+        Assert.True(duplicate.GetProperty("duplicate").GetBoolean());
+        Assert.False(duplicate.GetProperty("written").GetBoolean());
+
+        var history = await client.GetFromJsonAsync<JsonElement>(
+            "/api/operations/academy/acceptance-voyages");
+        Assert.Equal(CreativeAcceptance.Open, history.GetProperty("amendmentStatus").GetString());
+        Assert.Single(history.GetProperty("voyages").EnumerateArray());
+        Assert.False(history.GetProperty("campaignReady").GetBoolean());
+        Assert.Equal("NOT_SENT", history.GetProperty("delivery").GetString());
     }
 
     [Fact]
