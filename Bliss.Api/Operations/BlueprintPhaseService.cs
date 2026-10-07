@@ -130,6 +130,33 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
     public ReferenceRetrieval Retrieve(string? nicheKey, IReadOnlyList<AcademyReferenceRecord> library, IReadOnlyList<string>? reasons) =>
         ReferenceLibrary.Select(nicheKey, library, reasons);
 
+    public async Task<BlueprintAdaptation> AdaptAsync(BlueprintAdaptRequest? request, CancellationToken cancellationToken)
+    {
+        var reading = await ReadAsync(cancellationToken);
+        var productId = (request?.ProductId ?? string.Empty).Trim();
+        var product = reading.Catalog.Products.FirstOrDefault(item =>
+            item.ProductId.Equals(productId, StringComparison.OrdinalIgnoreCase));
+        if (product is null)
+        {
+            throw new InvalidOperationException("That inventory product is not stored. None was invented.");
+        }
+
+        var adaptation = RealEstateCatalog.Adapt(product, reading.Catalog.Slots, request?.ScalePrototype ?? false);
+        var similarity = ReferenceLibrary.Compare(
+            request?.BrandName,
+            request?.Headline,
+            request?.Face,
+            request?.Product,
+            reading.References);
+        return new BlueprintAdaptation(
+            adaptation,
+            similarity,
+            CreativeAcademy.WorkerDuties,
+            0,
+            false,
+            "NOT_SENT");
+    }
+
     private async Task<Dictionary<string, string>> LifecycleOverridesAsync(CancellationToken cancellationToken)
     {
         var rows = await database.RealEstateProducts.AsNoTracking().ToListAsync(cancellationToken);
@@ -306,3 +333,19 @@ public sealed record BlueprintReading(
 public sealed record UnassignedUpload(string FileName, string Reason);
 
 public sealed record BlueprintFile(string FullPath, string ContentType);
+
+public sealed record BlueprintAdaptRequest(
+    string? ProductId,
+    bool ScalePrototype,
+    string? BrandName,
+    string? Headline,
+    string? Face,
+    string? Product);
+
+public sealed record BlueprintAdaptation(
+    InventoryAdaptation Adaptation,
+    SimilarityResult Similarity,
+    IReadOnlyList<WorkerDuty> Workers,
+    int ModelCalls,
+    bool CampaignReady,
+    string Delivery);

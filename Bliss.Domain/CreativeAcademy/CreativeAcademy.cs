@@ -95,6 +95,11 @@ public sealed record ProductionLayer(
     string Name,
     string Content);
 
+public sealed record WorkerDuty(
+    string Role,
+    string Duty,
+    string Authority);
+
 public sealed record ParityDecision(
     string Status,
     IReadOnlyList<string> Defects,
@@ -172,6 +177,18 @@ public static class CreativeAcademy
             ["motorcycle"] = MotorcycleTeacher,
             ["patisserie"] = PatisserieTeacher
         };
+
+    public static IReadOnlyList<WorkerDuty> WorkerDuties { get; } =
+    [
+        new("CURATOR", "Research the actual market and the niche. Do not invent a market.", "Does not set campaign ready."),
+        new("BRAND_STRATEGIST", "Hold the advertiser Brand DNA. A reference brand is not the advertiser.", "Does not set campaign ready."),
+        new("ART_DIRECTOR", "Direct composition from the retrieved Academy notes. Do not attach all 50 references.", "Does not set campaign ready."),
+        new("COPYWRITER", "Write original language. A reference headline is not the copy.", "Does not set campaign ready."),
+        new("PRODUCTION", "Make an original asset. Do not scale an Academy prototype into the placement.", "Does not set campaign ready."),
+        new("CREATIVE_REVIEW", "Check quality, requirements, and originality.", "Does not set campaign ready."),
+        new("DETERMINISTIC_QA", "Run the mechanical checks that are already stored.", "Does not set campaign ready."),
+        new("HUMAN", "Final authority. Approval is not automatic.", "Does not set campaign ready.")
+    ];
 
     private static readonly string[] DefaultRetrievalReasons = ["product realism", "lighting and depth", "typography"];
 
@@ -728,6 +745,31 @@ public static class CreativeAcademy
 
     public static bool SameBrand(string? left, string? right) =>
         Fold(left ?? string.Empty) == Fold(right ?? string.Empty) && Fold(left ?? string.Empty).Length > 0;
+
+    public static bool NamesReferenceIdentity(string? text)
+    {
+        var folded = Fold(text ?? string.Empty);
+        if (folded.Length == 0)
+        {
+            return false;
+        }
+
+        return UsesReferenceIdentity(folded)
+            || folded.Contains("A SWEETER JOURNEY", StringComparison.Ordinal)
+            || folded.Contains("CARE FOR A BRIGHTER YOU", StringComparison.Ordinal)
+            || folded.Contains("TU PROXIMA RUTA EMPIEZA AQUI", StringComparison.Ordinal)
+            || folded.Contains("FRENCH ARTISTRY", StringComparison.Ordinal)
+            || folded.Contains("TU MEJOR VERSION COMIENZA AQUI", StringComparison.Ordinal)
+            || folded.Contains("TU AUTO EN BUENAS MANOS", StringComparison.Ordinal);
+    }
+
+    public static bool RequestsPrototypePlacement(string? text)
+    {
+        var folded = Fold(text ?? string.Empty);
+        return folded.Contains("SCALE THE PROTOTYPE", StringComparison.Ordinal)
+            || folded.Contains("SCALED PROTOTYPE", StringComparison.Ordinal)
+            || folded.Contains("PROTOTYPE DIMENSIONS", StringComparison.Ordinal);
+    }
 
     private static void AddGate(
         bool? gate,

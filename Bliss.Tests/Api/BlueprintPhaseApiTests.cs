@@ -123,4 +123,64 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
         Assert.Equal("NOT_SENT", turn.GetProperty("delivery").GetString());
         Assert.DoesNotContain("$", turn.GetProperty("reply").GetString());
     }
+
+    [Fact]
+    public async Task Adapt_reports_unrecorded_geometry_and_rejects_a_scaled_prototype()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/blueprint/adapt",
+            new
+            {
+                productId = "ARE-P01",
+                scalePrototype = false,
+                brandName = "Norte Salud",
+                headline = "Retira tu receta",
+                face = "A local pharmacist",
+                product = "A neighborhood pharmacy"
+            });
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var adaptation = body.GetProperty("adaptation");
+        var slots = adaptation.GetProperty("slots").EnumerateArray().Select(item => item.GetProperty("slotId").GetString()).ToArray();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("GEOMETRY_UNRECORDED", adaptation.GetProperty("status").GetString());
+        Assert.Equal(["LEFT_VERTICAL", "BOTTOM_FULL"], slots);
+        Assert.False(adaptation.GetProperty("scaledFromPrototype").GetBoolean());
+        Assert.Equal("REVIEW REQUIRED", body.GetProperty("similarity").GetProperty("status").GetString());
+        Assert.Equal(8, body.GetProperty("workers").GetArrayLength());
+        Assert.Equal(0, body.GetProperty("modelCalls").GetInt32());
+        Assert.False(body.GetProperty("campaignReady").GetBoolean());
+        Assert.Equal("NOT_SENT", body.GetProperty("delivery").GetString());
+
+        var copied = await client.PostAsJsonAsync(
+            "/api/operations/blueprint/adapt",
+            new
+            {
+                productId = "ARE-P01",
+                brandName = "VidaCare Pharmacy",
+                headline = "Care for a Brighter You",
+                face = "VidaCare pharmacist",
+                product = "VidaCare"
+            });
+        var copiedBody = await copied.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(HttpStatusCode.OK, copied.StatusCode);
+        Assert.Equal("REGENERATE", copiedBody.GetProperty("similarity").GetProperty("status").GetString());
+        Assert.False(copiedBody.GetProperty("campaignReady").GetBoolean());
+
+        var scaled = await client.PostAsJsonAsync(
+            "/api/operations/blueprint/adapt",
+            new { productId = "ARE-P01", scalePrototype = true });
+        var scaledBody = await scaled.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(HttpStatusCode.BadRequest, scaled.StatusCode);
+        Assert.Contains("not scaled", scaledBody.GetProperty("error").GetString());
+        Assert.Equal("NOT_SENT", scaledBody.GetProperty("delivery").GetString());
+
+        var unknown = await client.PostAsJsonAsync(
+            "/api/operations/blueprint/adapt",
+            new { productId = "ARE-NOPE" });
+        var unknownBody = await unknown.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(HttpStatusCode.BadRequest, unknown.StatusCode);
+        Assert.Contains("None was invented", unknownBody.GetProperty("error").GetString());
+    }
 }

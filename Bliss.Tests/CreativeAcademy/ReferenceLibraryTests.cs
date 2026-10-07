@@ -129,4 +129,39 @@ public sealed class ReferenceLibraryTests
         Assert.False(original.CampaignReady);
         Assert.Equal("NOT_SENT", original.Delivery);
     }
+
+    [Fact]
+    public void Similarity_fails_a_copied_identity_without_changing_the_judge()
+    {
+        var empty = new List<AcademyReferenceRecord>
+        {
+            new("ACA-001-V1", 1, "pharmacy", "Pharmacy", "Pharmacy.jpeg", "CANDIDATE", "UPLOADED", true, "", "")
+        };
+        var noted = new List<AcademyReferenceRecord>
+        {
+            new("ACA-001-V1", 1, "pharmacy", "Pharmacy", "Pharmacy.jpeg", "ACTIVE", "UPLOADED", true, "", "VidaCare")
+        };
+
+        var judged = ReferenceLibrary.Judge("Norte Salud", "Retira tu receta", empty);
+        var review = ReferenceLibrary.Compare("Norte Salud", "Retira tu receta", "A local pharmacist", "A neighborhood pharmacy", empty);
+        var copied = ReferenceLibrary.Compare("VidaCare Pharmacy", "Care for a Brighter You", "VidaCare pharmacist", "VidaCare", empty);
+        var passed = ReferenceLibrary.Compare("Norte Salud", "Retira tu receta", "A local pharmacist", "A neighborhood pharmacy", noted);
+        var blank = ReferenceLibrary.Compare("", "", "", "", noted);
+        var scaled = ReferenceLibrary.Compare("Norte Salud", "scale the prototype", "A local pharmacist", "A neighborhood pharmacy", noted);
+
+        Assert.Equal("PASS", judged.Status);
+        Assert.Equal("REVIEW REQUIRED", review.Status);
+        Assert.Contains("not a visual score", review.Notice);
+        Assert.Equal("REGENERATE", copied.Status);
+        Assert.Equal("brand", copied.MatchedField);
+        Assert.Equal("PASS", passed.Status);
+        Assert.False(passed.CampaignReady);
+        Assert.Equal(0, passed.ModelCalls);
+        Assert.Equal("NOT_SENT", passed.Delivery);
+        Assert.Equal("HUMAN REVIEW", blank.Status);
+        Assert.Equal("RECOMPOSE", scaled.Status);
+        Assert.Equal(8, CreativeAcademy.WorkerDuties.Count);
+        Assert.Equal("HUMAN", CreativeAcademy.WorkerDuties[^1].Role);
+        Assert.DoesNotContain(CreativeAcademy.WorkerDuties, duty => duty.Authority.Contains("campaign ready is true", StringComparison.OrdinalIgnoreCase));
+    }
 }

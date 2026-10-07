@@ -63,6 +63,21 @@ public sealed record OccupancyResult(
     string Status,
     string Notice);
 
+public sealed record AdaptedSlot(
+    string SlotId,
+    int? Width,
+    int? Height);
+
+public sealed record InventoryAdaptation(
+    string ProductId,
+    string Status,
+    IReadOnlyList<AdaptedSlot> Slots,
+    bool ScaledFromPrototype,
+    int ModelCalls,
+    bool CampaignReady,
+    string Delivery,
+    string Notice);
+
 public sealed record CatalogTurn(
     string Intent,
     string Reply,
@@ -194,6 +209,75 @@ public static class RealEstateCatalog
             false,
             false,
             "NOT_SENT");
+    }
+
+    public static InventoryAdaptation Adapt(
+        CatalogProduct product,
+        IReadOnlyList<CatalogSlot> slots,
+        bool scalePrototype)
+    {
+        ArgumentNullException.ThrowIfNull(product);
+        ArgumentNullException.ThrowIfNull(slots);
+        if (scalePrototype)
+        {
+            throw new InvalidOperationException(
+                "The Academy prototype was not scaled into the placement. Prototype dimensions are not podcast-advertising dimensions.");
+        }
+
+        if (product.SlotIds.Count == 0)
+        {
+            throw new InvalidOperationException("That inventory product is not stored. None was invented.");
+        }
+
+        var placed = new List<AdaptedSlot>();
+        var geometryRecorded = true;
+        foreach (var slotId in product.SlotIds)
+        {
+            var slot = slots.FirstOrDefault(item => item.SlotId.Equals(slotId, StringComparison.Ordinal));
+            if (slot is null)
+            {
+                throw new InvalidOperationException("That inventory product is not stored. None was invented.");
+            }
+
+            if (slot.Width is null || slot.Height is null || slot.Width <= 0 || slot.Height <= 0)
+            {
+                geometryRecorded = false;
+                placed.Add(new AdaptedSlot(slot.SlotId, null, null));
+                continue;
+            }
+
+            placed.Add(new AdaptedSlot(slot.SlotId, slot.Width, slot.Height));
+        }
+
+        if (!geometryRecorded)
+        {
+            var missing = placed.Where(item => item.Width is null || item.Height is null).Select(item => item.SlotId).ToList();
+            var geometry = missing.Count == placed.Count
+                ? "Width and height are unrecorded."
+                : "Width and height are unrecorded on " + string.Join(", ", missing) + ", so the product was not recomposed.";
+            return new InventoryAdaptation(
+                product.ProductId,
+                "GEOMETRY_UNRECORDED",
+                placed,
+                false,
+                0,
+                false,
+                "NOT_SENT",
+                "The Academy prototype was not scaled. " + geometry + " Named slots for "
+                + product.ProductId + " are " + string.Join(", ", placed.Select(item => item.SlotId))
+                + ". Missing dimensions were not invented. Area was not calculated. Campaign ready is false. Delivery remains NOT_SENT.");
+        }
+
+        return new InventoryAdaptation(
+            product.ProductId,
+            "RECOMPOSED",
+            placed,
+            false,
+            0,
+            false,
+            "NOT_SENT",
+            "Recomposed into the stored slot geometry for " + product.ProductId
+            + ". The Academy prototype was not scaled. Width and height are the stored slot values. Area was not calculated. Campaign ready is false. Delivery remains NOT_SENT.");
     }
 
     public static CatalogTurn Reply(string? message, CatalogBoard board)
