@@ -256,7 +256,7 @@ Registration then connects each file to a reference record: reference ID, protot
 
 **Done when.** Gate 1 can show 50 assets, 50 IDs, and a join from record to file. A directory listing alone is not done.
 
-**Progress.** Owner files in the inbox are registered by their uploaded names. 49 niches have a candidate file. Niche 5, used-car, has no file and stays awaiting. `Catalog.jpeg` and the seven podcast-with-ads images stay unassigned. Lifecycle remains `CANDIDATE`, so retrieval still returns `NICHE_REFERENCE_NOT_ACTIVE`. Gate 1 is not accepted: `learn`, do-not-copy, rights, and approval dates are still blank, and one niche has no asset.
+**Progress.** Owner files in the inbox are registered by their uploaded names. 49 niches have a candidate file. Niche 5, used-car, has no file and stays awaiting. `Catalog.jpeg` and the seven podcast-with-ads images stay unassigned. On 2026-10-07 the owner confirmed four filename bindings: `Automotive.jpeg` to new-car, `Italian restaurant.jpeg` to pizza, `Home renovation.jpeg` to furniture, and `Coffeee.jpeg` to coffee-brand. That confirmation does not change lifecycle. Lifecycle remains `CANDIDATE`, so retrieval still returns `NICHE_REFERENCE_NOT_ACTIVE`. Gate 1 is not accepted: `learn`, do-not-copy, rights, and approval dates are still blank, and one niche has no asset.
 
 **Reuse.** The niche roster already has these 50 niches. Registration binds a file to that niche. It does not create a second roster.
 
@@ -372,8 +372,7 @@ One path, still two systems:
 
 ## Evidence the owner still has to supply
 
-- A used-car prototype for `ACA-005-V1`. The other 49 niches have an owner file registered as `CANDIDATE`. `Catalog.jpeg` and the podcast-with-ads images are stored and were not forced into a niche.
-- Confirmation of four filename bindings before approval: `Automotive.jpeg` to new-car, `Italian restaurant.jpeg` to pizza, `Home renovation.jpeg` to furniture, and `Coffeee.jpeg` to coffee-brand.
+- A used-car prototype for `ACA-005-V1`. The other 49 niches have an owner file registered as `CANDIDATE`. `Catalog.jpeg` and the podcast-with-ads images are stored and were not forced into a niche. The owner confirmed the four filename bindings on 2026-10-07. Those references stay `CANDIDATE`.
 - The three showcase illustrations are on file as draft art. They are not an approved geometry specification.
 - Human `learn` / `doNotCopy` notes and quality classifications. They are not invented from the filename.
 - Review of the Catalog conversation recordings and the Academy production recording before either status leaves OPEN.

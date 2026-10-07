@@ -48,6 +48,16 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
         Assert.False(usedCar.GetProperty("assetPresent").GetBoolean());
         Assert.Equal("AWAITING_UPLOAD", usedCar.GetProperty("uploadStatus").GetString());
 
+        foreach (var referenceId in new[] { "ACA-004-V1", "ACA-014-V1", "ACA-033-V1", "ACA-044-V1" })
+        {
+            var confirmed = references.GetProperty("items").EnumerateArray()
+                .Single(item => item.GetProperty("referenceId").GetString() == referenceId);
+            Assert.Equal("CANDIDATE", confirmed.GetProperty("lifecycle").GetString());
+            Assert.Contains("Owner confirmed 2026-10-07", confirmed.GetProperty("mappingNote").GetString());
+            Assert.Equal(string.Empty, confirmed.GetProperty("learn").GetString());
+            Assert.Equal(string.Empty, confirmed.GetProperty("doNotCopy").GetString());
+        }
+
         foreach (var showcase in board.GetProperty("showcases").EnumerateArray())
         {
             Assert.True(showcase.GetProperty("assetPresent").GetBoolean());

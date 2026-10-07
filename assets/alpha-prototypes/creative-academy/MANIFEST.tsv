@@ -2,7 +2,7 @@ referenceId	nicheNumber	nicheKey	nicheName	expectedFile	lifecycle	status	learn	d
 ACA-001-V1	1	pharmacy	Pharmacy / Drugstore	Pharmacy.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-002-V1	2	supermarket	Supermarket / Hypermarket	Market.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-003-V1	3	shopping-mall	Shopping Mall / Shopping Center	Shopping Mall.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
-ACA-004-V1	4	new-car	New-Car Dealership	Automotive.jpeg	CANDIDATE	UPLOADED			Owner file Automotive.jpeg bound to new-car. Confirm this is not automotive service. Auto shop.jpeg is niche 8. Candidate only.
+ACA-004-V1	4	new-car	New-Car Dealership	Automotive.jpeg	CANDIDATE	UPLOADED			Owner confirmed 2026-10-07: Automotive.jpeg is new-car. Auto shop.jpeg remains niche 8. Candidate only. learn and doNotCopy stay blank.
 ACA-005-V1	5	used-car	Used-Car Dealership	ACA-005-V1.png	CANDIDATE	AWAITING_UPLOAD			No owner file matched used-car. Still awaiting upload.
 ACA-006-V1	6	restaurant	Restaurant / Casual Dining	Restaurant.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-007-V1	7	fitness	Gym / Fitness Center	Gym.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
@@ -12,7 +12,7 @@ ACA-010-V1	10	motorcycle	Motorcycle / Moped Dealership	Motorcycle.jpeg	CANDIDATE
 ACA-011-V1	11	auto-parts	Auto-Parts Store	Auto Parts.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-012-V1	12	gas-station	Gas Station / Convenience Store	Gas.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-013-V1	13	fast-food	Fast-Food Restaurant	Fast food.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
-ACA-014-V1	14	pizza	Pizza Restaurant	Italian restaurant.jpeg	CANDIDATE	UPLOADED			Owner file Italian restaurant.jpeg bound to pizza as the closest open restaurant niche. Confirm before approval. Candidate only.
+ACA-014-V1	14	pizza	Pizza Restaurant	Italian restaurant.jpeg	CANDIDATE	UPLOADED			Owner confirmed 2026-10-07: Italian restaurant.jpeg is the pizza niche. Candidate only. learn and doNotCopy stay blank.
 ACA-015-V1	15	coffee-shop	Coffee Shop / Cafe	Coffee.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-016-V1	16	bakery	Bakery / Patisserie	Bakery.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-017-V1	17	sports-bar	Sports Bar / Nightlife Venue	Bar.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
@@ -31,7 +31,7 @@ ACA-029-V1	29	sneakers	Athletic Shoes / Sneaker Retailer	Sneaker.jpeg	CANDIDATE	
 ACA-030-V1	30	jewelry	Jewelry / Watch Retailer	Jewelry.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-031-V1	31	electronics	Electronics Retailer	Tech store.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-032-V1	32	mobile-phone	Mobile-Phone / Accessories Store	Gadget.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
-ACA-033-V1	33	furniture	Furniture / Home Furnishing	Home renovation.jpeg	CANDIDATE	UPLOADED			Owner file Home renovation.jpeg bound to furniture as the closest open home niche. Confirm before approval. Candidate only.
+ACA-033-V1	33	furniture	Furniture / Home Furnishing	Home renovation.jpeg	CANDIDATE	UPLOADED			Owner confirmed 2026-10-07: Home renovation.jpeg is the furniture niche. Candidate only. learn and doNotCopy stay blank.
 ACA-034-V1	34	hardware	Home Improvement / Hardware	Hardware.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-035-V1	35	appliance	Appliance Retailer	Appliances.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-036-V1	36	department	Department / Variety Store	Department store.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
@@ -42,7 +42,7 @@ ACA-040-V1	40	financial	Financial Services / Insurance	Insurance.jpeg	CANDIDATE	
 ACA-041-V1	41	soda	Soda / Soft-Drink Brand	Soda.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-042-V1	42	bottled-water	Bottled-Water Brand	Water.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-043-V1	43	juice	Fruit-Juice / Beverage Brand	Fruit juice.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
-ACA-044-V1	44	coffee-brand	Coffee Product Brand	Coffeee.jpeg	CANDIDATE	UPLOADED			Owner file Coffeee.jpeg bound to coffee-brand. Coffee.jpeg is coffee-shop. Confirm before approval. Candidate only.
+ACA-044-V1	44	coffee-brand	Coffee Product Brand	Coffeee.jpeg	CANDIDATE	UPLOADED			Owner confirmed 2026-10-07: Coffeee.jpeg is the coffee product brand. Coffee.jpeg remains the coffee shop. Candidate only. learn and doNotCopy stay blank.
 ACA-045-V1	45	chocolate	Chocolate / Confectionery	Chocolate.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-046-V1	46	candy	Candy / Snack Brand	Snacks.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
 ACA-047-V1	47	packaged-bakery	Bread / Packaged Bakery	Panaderia.jpeg	CANDIDATE	UPLOADED			Owner file kept. Candidate only. learn and doNotCopy stay blank.
