@@ -77,7 +77,7 @@ def main() -> None:
         pdf,
         "ARE-P01 TEST RECOMPOSITION - NOT DELIVERED",
         attempt / "HV-001-adapted-preview.png",
-        "1920x1080 test preview. LEFT_VERTICAL is 320x1080; BOTTOM_FULL is 1280x180. The center is protected creator content. The incomplete bottom-banner crop is retained as a visible issue.",
+        "1920x1080 test preview. LEFT_VERTICAL contains the original brand panel at 320x1080. BOTTOM_FULL is a purpose-built 1280x180 banner with the complete headline. The center is protected creator content. This preview was not delivered.",
     )
 
     pdf.add_page()

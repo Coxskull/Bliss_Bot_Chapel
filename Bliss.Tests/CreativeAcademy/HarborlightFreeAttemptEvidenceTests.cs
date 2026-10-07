@@ -41,6 +41,14 @@ public sealed class HarborlightFreeAttemptEvidenceTests
             Sha256(adapted));
         Assert.Equal((1280, 720), ReadJpegDimensions(File.ReadAllBytes(original)));
         Assert.Equal((1920, 1080), ReadPngDimensions(File.ReadAllBytes(adapted)));
+        var adaptation = record.GetProperty("adaptation");
+        Assert.Equal("PURPOSE_BUILT_TEST_PREVIEW", adaptation.GetProperty("status").GetString());
+        Assert.False(adaptation.GetProperty("prototypeScaled").GetBoolean());
+        var banner = adaptation.GetProperty("bottomBanner");
+        Assert.Equal("PURPOSE_BUILT_FROM_ORIGINAL_MARK", banner.GetProperty("method").GetString());
+        Assert.Equal("Prescription pickup, ready when you are.", banner.GetProperty("headline").GetString());
+        Assert.True(banner.GetProperty("headlineComplete").GetBoolean());
+        Assert.False(banner.GetProperty("photographCrop").GetBoolean());
 
         var manifest = Path.Combine(
             root,

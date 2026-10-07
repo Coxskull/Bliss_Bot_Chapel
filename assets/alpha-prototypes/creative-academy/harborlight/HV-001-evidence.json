@@ -72,17 +72,23 @@
     "sha256": "3fa9e45467683c37b3d1fa356aa968bff5b2f0719fa2184ac31ab7f87c1ebd47"
   },
   "adaptation": {
-    "status": "RECOMPOSED_TEST_PREVIEW",
+    "status": "PURPOSE_BUILT_TEST_PREVIEW",
     "path": "assets/alpha-prototypes/creative-academy/harborlight/HV-001-adapted-preview.png",
     "width": 1920,
     "height": 1080,
-    "sha256": "8679e0d83f2a6734d793a80aafb14363833688cd8428bca09bcce33fce598201",
+    "sha256": "273f52bb10e954fc05cf712ec03d6f3000ababbccc980531d8f387dfd6463744",
     "slots": [
       { "slotId": "LEFT_VERTICAL", "width": 320, "height": 1080 },
       { "slotId": "BOTTOM_FULL", "width": 1280, "height": 180 }
     ],
     "prototypeScaled": false,
-    "notice": "The generated original, not an Academy prototype, was deterministically cropped and placed into ARE-P01. The center is a labeled protected-content placeholder. This is a test preview and was not delivered."
+    "bottomBanner": {
+      "method": "PURPOSE_BUILT_FROM_ORIGINAL_MARK",
+      "headline": "Prescription pickup, ready when you are.",
+      "headlineComplete": true,
+      "photographCrop": false
+    },
+    "notice": "LEFT_VERTICAL contains the original brand panel without stretching it. BOTTOM_FULL is a purpose-built 1280x180 banner using the original lighthouse mark and the complete headline; it is not a crop through the photograph. The center is a labeled protected-content placeholder. This is a test preview and was not delivered."
   },
   "checks": {
     "textIdentityOriginality": "PASS",
@@ -97,7 +103,7 @@
   "reviewNotes": [
     "Human review should assess commercial color, contrast, highlights, shadows, lighting, realism, depth, separation, typography, hierarchy, polish, screen impact, and Premium Dominant Presence.",
     "Human review should verify Panama-market authenticity and that the invented person, products, setting, composition, and identity do not copy an Academy reference.",
-    "The extreme bottom-banner crop is visibly incomplete and may require a purpose-built recomposition before acceptance."
+    "The bottom banner is a purpose-built 1280x180 layout. Human review must still accept the adapted layout, commercial quality, and Panama-market authenticity before any regression baseline."
   ],
   "amendments": {
     "creativeAcademy": "OPEN",

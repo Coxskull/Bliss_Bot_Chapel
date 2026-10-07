@@ -49,15 +49,15 @@ References were not manually selected to force a pass. Their image files were no
 
 `scripts/recompose-harborlight.py` deterministically creates a 1920×1080 test preview:
 
-- `LEFT_VERTICAL`: 320×1080
-- `BOTTOM_FULL`: 1280×180
+- `LEFT_VERTICAL`: 320×1080, the original brand panel contained without stretching
+- `BOTTOM_FULL`: 1280×180, a purpose-built banner
 - protected center: labeled and not occupied by the advertisement
 - Academy prototype scaled: no
 - delivered: no
 
 The preview is `assets/alpha-prototypes/creative-academy/harborlight/HV-001-adapted-preview.png`.
 
-This preview also reveals a real acceptance issue: the extreme bottom-banner crop is incomplete and likely needs a purpose-built recomposition. That issue is retained rather than hidden.
+The first preview cropped the 1280×720 original through the photograph, so the bottom headline was cut off. That crop is replaced. The current bottom banner uses the original lighthouse mark, the full headline “Prescription pickup, ready when you are.”, and “Panama City” on the brand navy field. It is not a photograph crop. Human review of the layout is still open.
 
 ## Current checks
 
