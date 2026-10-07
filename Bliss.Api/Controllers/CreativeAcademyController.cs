@@ -13,7 +13,8 @@ namespace Bliss.Api.Controllers;
 public sealed class CreativeAcademyController(
     CreativeAcademyService academy,
     CreativeGenerationService generation,
-    BlueprintPhaseService phases) : ControllerBase
+    BlueprintPhaseService phases,
+    CreativeAcceptanceVoyageService voyages) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
@@ -22,6 +23,34 @@ public sealed class CreativeAcademyController(
         var board = await academy.ReadAsync(cancellationToken);
         var generations = await generation.ReadAsync(cancellationToken);
         return Ok(Body(board, generations, generation.Configured, null));
+    }
+
+    [HttpGet("acceptance-voyages")]
+    [AllowAnonymous]
+    public async Task<ActionResult> AcceptanceVoyages(CancellationToken cancellationToken) =>
+        Ok(new
+        {
+            amendmentStatus = CreativeAcceptance.Open,
+            voyages = await voyages.ReadAsync(cancellationToken),
+            campaignReady = false,
+            delivery = "NOT_SENT"
+        });
+
+    [HttpPost("acceptance-voyages")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> RunAcceptanceVoyage(
+        [FromBody] CreativeAcceptanceVoyageRequest? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await voyages.RunAsync(request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Refuse(ex);
+        }
     }
 
     [HttpPost("curriculum")]
