@@ -334,6 +334,8 @@ A run that returns HTTP 200 and looks flatter, more generic, or more obviously s
 
 **Done when.** The suite names its briefs, the baseline assets, and the pass or fail for the latest run. The suite is not marked passed because the API responded.
 
+**Progress.** The sixteen rejection codes are stored, and an unknown code is refused. A geometry failure on the unrecorded ARE-P01 preflight is stored as `INVENTORY_GEOMETRY_FAILURE` and is not a positive reference. The twelve regression briefs are named. Every baseline asset is `BASELINE_NOT_RECORDED`, every case is not passed, and the suite status is `BASELINE_NOT_RECORDED`. No regression image was generated. This does not accept ACA-6.
+
 ### ACA-7 — Provenance, provider router, and cost
 
 Store source, generation provider, ownership, approval history, permitted internal use, permitted provider use, restrictions, version, lifecycle, dates, and approving authority where they are known.
@@ -345,6 +347,8 @@ Route generation through a replaceable provider adapter. The Academy record stay
 Follow the existing cost rules: reuse before generate, software before AI, cache known intelligence, retrieve a few references rather than all 50, use the least expensive capability that can do the job, and do not open a new subscription without a named capability gap.
 
 **Done when.** A generation job records provider, model, and cost, and a second job for the same ACTIVE reference reads the stored quality metadata instead of calling a model to re-analyze it.
+
+**Progress.** A stored generation records the configured provider and model. Cost stays `UNRECORDED` when the provider does not return a price; no amount is invented. Candidate provenance, rights, and approving authority stay unrecorded, and those reference assets are not authorized for a provider. Reading stored quality metadata makes no model call. Unclassified grades stay unclassified. This does not accept ACA-7.
 
 ### ACA-8 — Autonomous creative acceptance
 

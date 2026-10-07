@@ -12,6 +12,11 @@ public sealed class CreativeAcademyGenerationRow
     public string MediaType { get; set; } = string.Empty;
     public string ProviderRequestId { get; set; } = string.Empty;
     public string RecipeSha256 { get; set; } = string.Empty;
+    public string Provider { get; set; } = string.Empty;
+    public string Model { get; set; } = string.Empty;
+    public string CostStatus { get; set; } = "UNRECORDED";
+    public decimal? Cost { get; set; }
+    public string Currency { get; set; } = string.Empty;
     public int ModelCalls { get; set; }
     public bool CampaignReady { get; set; }
     public string Delivery { get; set; } = string.Empty;

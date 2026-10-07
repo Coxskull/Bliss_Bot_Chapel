@@ -270,6 +270,14 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal(0, report.GetProperty("modelCalls").GetInt32());
         Assert.False(report.GetProperty("campaignReady").GetBoolean());
         Assert.Equal("NOT_SENT", report.GetProperty("delivery").GetString());
+        Assert.Equal("INVENTORY_GEOMETRY_FAILURE", report.GetProperty("rejections")[0].GetProperty("code").GetString());
+        Assert.False(report.GetProperty("rejections")[0].GetProperty("positiveReference").GetBoolean());
+        Assert.Equal("BASELINE_NOT_RECORDED", report.GetProperty("regression").GetProperty("status").GetString());
+        Assert.False(report.GetProperty("regression").GetProperty("passed").GetBoolean());
+        Assert.Equal(12, report.GetProperty("regression").GetProperty("cases").GetArrayLength());
+        Assert.False(report.GetProperty("referenceAssetsSentToProvider").GetBoolean());
+        Assert.Equal("UNCLASSIFIED", report.GetProperty("storedQuality")[0].GetProperty("status").GetString());
+        Assert.Equal(0, report.GetProperty("storedQuality")[0].GetProperty("modelCalls").GetInt32());
 
         var duplicateResponse = await client.PostAsJsonAsync(
             "/api/operations/academy/acceptance-voyages",
@@ -317,6 +325,10 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal("image/png", first.GetProperty("mediaType").GetString());
         Assert.StartsWith("/operations/generated/", first.GetProperty("imagePath").GetString());
         Assert.Equal(1, first.GetProperty("modelCalls").GetInt32());
+        Assert.Equal("UNNAMED", first.GetProperty("provider").GetString());
+        Assert.Equal("gpt-image-1", first.GetProperty("model").GetString());
+        Assert.Equal("UNRECORDED", first.GetProperty("costStatus").GetString());
+        Assert.False(first.TryGetProperty("cost", out _));
         Assert.False(first.GetProperty("campaignReady").GetBoolean());
         Assert.Equal("NOT_SENT", first.GetProperty("delivery").GetString());
         Assert.False(first.GetProperty("duplicate").GetBoolean());

@@ -164,4 +164,31 @@ public sealed class ReferenceLibraryTests
         Assert.Equal("HUMAN", CreativeAcademy.WorkerDuties[^1].Role);
         Assert.DoesNotContain(CreativeAcademy.WorkerDuties, duty => duty.Authority.Contains("campaign ready is true", StringComparison.OrdinalIgnoreCase));
     }
+
+    [Fact]
+    public void Rejection_regression_provenance_and_stored_quality_do_not_invent_a_pass()
+    {
+        var reference = new AcademyReferenceRecord(
+            "ACA-001-V1", 1, "pharmacy", "Pharmacy", "Pharmacy.jpeg", "CANDIDATE", "UPLOADED", true, "", "");
+        var rejection = ReferenceLibrary.Reject("INVENTORY_GEOMETRY_FAILURE", "ARE-P01");
+        var suite = ReferenceLibrary.ReadRegression(null);
+        var provenance = ReferenceLibrary.ReadProvenance(reference);
+        var first = ReferenceLibrary.ReadStoredQuality(reference);
+        var second = ReferenceLibrary.ReadStoredQuality(reference);
+
+        Assert.False(rejection.PositiveReference);
+        Assert.Equal(0, rejection.ModelCalls);
+        Assert.Equal("NOT_SENT", rejection.Delivery);
+        Assert.Throws<InvalidOperationException>(() => ReferenceLibrary.Reject("MADE_UP", "ARE-P01"));
+        Assert.Equal(12, suite.Cases.Count);
+        Assert.Equal("BASELINE_NOT_RECORDED", suite.Status);
+        Assert.False(suite.Passed);
+        Assert.All(suite.Cases, item => Assert.False(item.Passed));
+        Assert.Equal("NOT_AUTHORIZED", provenance.PermittedProviderUse);
+        Assert.False(ReferenceLibrary.MaySendToProvider(provenance));
+        Assert.Equal("UNCLASSIFIED", first.Status);
+        Assert.Equal(0, first.ModelCalls);
+        Assert.Equal(0, second.ModelCalls);
+        Assert.Contains("not called", second.Notice);
+    }
 }

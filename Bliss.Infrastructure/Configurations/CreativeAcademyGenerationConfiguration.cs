@@ -19,6 +19,11 @@ public sealed class CreativeAcademyGenerationConfiguration : IEntityTypeConfigur
         builder.Property(x => x.MediaType).IsRequired().HasMaxLength(40);
         builder.Property(x => x.ProviderRequestId).IsRequired().HasMaxLength(200);
         builder.Property(x => x.RecipeSha256).IsRequired().HasMaxLength(64);
+        builder.Property(x => x.Provider).IsRequired().HasMaxLength(40);
+        builder.Property(x => x.Model).IsRequired().HasMaxLength(80);
+        builder.Property(x => x.CostStatus).IsRequired().HasMaxLength(40);
+        builder.Property(x => x.Cost).HasPrecision(12, 4);
+        builder.Property(x => x.Currency).IsRequired().HasMaxLength(8);
         builder.Property(x => x.Delivery).IsRequired().HasMaxLength(16);
         builder.Property(x => x.Notice).IsRequired().HasMaxLength(800);
         builder.HasIndex(x => x.RequestKey).IsUnique();

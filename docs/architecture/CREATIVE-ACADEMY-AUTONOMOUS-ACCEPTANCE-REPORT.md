@@ -201,3 +201,38 @@ The voyage key is unique and idempotent. Repeating the same request reads the st
 8. A human records the final review. Even approval does not imply delivery.
 
 Until those inputs exist, refusing to manufacture the missing evidence is the passing behavior.
+
+## Controls reading
+
+A second idempotent reading of the same scenario was stored after the rejection, regression, provenance, and cost controls existed. It is not a second advertisement.
+
+Voyage key: `one-voyage-panama-pharmacy-controls`  
+Stored voyage ID: `8805204b-a360-408d-a337-4fe2e0583df3`  
+Recorded at: `2026-10-07T01:36:41.5659903Z`
+
+Result: `BLOCKED`  
+Regression: `BASELINE_NOT_RECORDED`, passed false, 12 named briefs  
+Rejection: `INVENTORY_GEOMETRY_FAILURE` on ARE-P01, positive reference false  
+Reference assets sent to a provider: false  
+Stored quality: ACA-001-V1 `UNCLASSIFIED`, model calls 0  
+Provider job: `BLOCKED_REFERENCE_GATE`  
+Cost: `UNRECORDED`  
+Model calls: 0  
+Delivery: `NOT_SENT`  
+Trace length: 13, ending in rejection taxonomy, regression suite, provenance and cost, and delivery
+
+## ACA-6 and ACA-7 controls added before this PDF
+
+These controls were completed before the consolidated PDF was written. They do not close the voyage.
+
+Rejection taxonomy: the sixteen blueprint codes are stored. Unknown codes are refused. The unrecorded ARE-P01 preflight is stored as `INVENTORY_GEOMETRY_FAILURE` on ARE-P01. That rejection is not a positive Academy reference. There is no generated image to reject, so no retry image exists.
+
+Regression suite: RQ-01 through RQ-12 are named. Each baseline asset is `BASELINE_NOT_RECORDED`. Each latest run is `BASELINE_NOT_RECORDED`. The suite status is `BASELINE_NOT_RECORDED` and passed is false. No regression image was generated. An HTTP 200 is not a pass.
+
+Provenance: source, provider, ownership, approval history, permitted internal use, restrictions, dates, and approving authority are `UNRECORDED` on the candidate references. Permitted provider use is `NOT_AUTHORIZED`. Reference assets sent to a provider: No.
+
+Generation job record: when a configured provider creates a draft, the job stores provider and model. Cost status remains `UNRECORDED` unless a real cost is returned. No cost was invented. The live acceptance voyage made no generation request.
+
+Stored quality: ACA-001-V1 remains `UNCLASSIFIED`. Reading it twice records model calls 0 both times. Grades were not invented by a model.
+
+ACA-6, ACA-7, and ACA-8 remain unaccepted.

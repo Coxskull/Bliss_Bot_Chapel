@@ -39,6 +39,48 @@ public sealed record OriginalityResult(
     bool CampaignReady,
     string Delivery);
 
+public sealed record StoredRejection(
+    string Code,
+    string SubjectId,
+    string Notice,
+    bool PositiveReference,
+    int ModelCalls,
+    bool CampaignReady,
+    string Delivery);
+
+public sealed record RegressionCase(
+    string BriefId,
+    string Brief,
+    string BaselineAsset,
+    string LatestRun,
+    bool Passed);
+
+public sealed record RegressionSuiteResult(
+    string Status,
+    bool Passed,
+    IReadOnlyList<RegressionCase> Cases,
+    string Notice);
+
+public sealed record AssetProvenance(
+    string ReferenceId,
+    string Source,
+    string GenerationProvider,
+    string Ownership,
+    string ApprovalHistory,
+    string PermittedInternalUse,
+    string PermittedProviderUse,
+    string Restrictions,
+    string Lifecycle,
+    string Dates,
+    string ApprovingAuthority);
+
+public sealed record StoredQualityReading(
+    string ReferenceId,
+    string Status,
+    IReadOnlyList<QualityAttribute> Attributes,
+    int ModelCalls,
+    string Notice);
+
 public sealed record SimilarityResult(
     string Status,
     string Notice,
@@ -364,6 +406,85 @@ public static class ReferenceLibrary
     private static IEnumerable<string> Tokens(string notes) =>
         notes.Split(new[] { ',', '\n', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(token => token.Length >= 3);
+
+    public static StoredRejection Reject(string? code, string? subjectId)
+    {
+        var rejection = (code ?? string.Empty).Trim();
+        var subject = (subjectId ?? string.Empty).Trim();
+        if (!DoNotProduce.Contains(rejection, StringComparer.Ordinal) || subject.Length == 0)
+        {
+            throw new InvalidOperationException("A stored rejection code and subject are required. None was invented.");
+        }
+
+        return new StoredRejection(
+            rejection,
+            subject,
+            "Rejected work is stored for QA. It is not a positive Academy reference. Delivery remains NOT_SENT.",
+            false,
+            0,
+            false,
+            "NOT_SENT");
+    }
+
+    public static RegressionSuiteResult ReadRegression(IReadOnlyDictionary<string, string>? baselines)
+    {
+        var stored = baselines ?? new Dictionary<string, string>(StringComparer.Ordinal);
+        var cases = RegressionBriefs.Select(brief =>
+        {
+            var id = brief.Split(' ', 2)[0];
+            var baseline = stored.TryGetValue(id, out var asset) ? asset.Trim() : string.Empty;
+            var recorded = baseline.Length > 0;
+            return new RegressionCase(
+                id,
+                brief,
+                recorded ? baseline : "BASELINE_NOT_RECORDED",
+                recorded ? "NOT_COMPARED" : "BASELINE_NOT_RECORDED",
+                false);
+        }).ToList();
+        return new RegressionSuiteResult(
+            "BASELINE_NOT_RECORDED",
+            false,
+            cases,
+            "The suite names its briefs. No accepted baseline asset is stored, so the latest run is not passed. An API response is not a quality comparison. Delivery remains NOT_SENT.");
+    }
+
+    public static AssetProvenance ReadProvenance(AcademyReferenceRecord reference)
+    {
+        ArgumentNullException.ThrowIfNull(reference);
+        return new AssetProvenance(
+            reference.ReferenceId,
+            "UNRECORDED",
+            "UNRECORDED",
+            "UNRECORDED",
+            "UNRECORDED",
+            "UNRECORDED",
+            "NOT_AUTHORIZED",
+            "UNRECORDED",
+            reference.Lifecycle,
+            "UNRECORDED",
+            "UNRECORDED");
+    }
+
+    public static bool MaySendToProvider(AssetProvenance provenance)
+    {
+        ArgumentNullException.ThrowIfNull(provenance);
+        return provenance.PermittedProviderUse == "ALLOWED" && provenance.Restrictions == "NONE";
+    }
+
+    public static StoredQualityReading ReadStoredQuality(AcademyReferenceRecord reference)
+    {
+        ArgumentNullException.ThrowIfNull(reference);
+        var stored = !string.IsNullOrWhiteSpace(reference.QualityStatus)
+            && reference.QualityStatus != Unclassified;
+        return new StoredQualityReading(
+            reference.ReferenceId,
+            stored ? "STORED" : Unclassified,
+            UnclassifiedAttributes(),
+            0,
+            stored
+                ? "Stored quality status " + reference.QualityStatus + " was read. A model was not called to re-analyze it. Per-attribute grades were not invented."
+                : "Stored quality metadata is UNCLASSIFIED. A model was not called to re-analyze it. Grades were not invented.");
+    }
 
     private static OriginalityResult Fail(string referenceId, string field) =>
         new(

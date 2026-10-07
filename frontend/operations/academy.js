@@ -75,6 +75,10 @@ function acceptanceVoyageCard(item) {
     <p>Originality ${escapeHtml(report.originality?.status)}. Quality QA ${escapeHtml(report.qualityQa?.status)}. Inventory QA ${escapeHtml(report.inventoryQa?.status)}. Brand DNA compliance ${escapeHtml(report.brandDnaCompliance?.status)}. Do-not-copy compliance ${escapeHtml(report.doNotCopyCompliance?.status)}. Human review ${escapeHtml(report.humanReview?.status)}.</p>
     <h4>Workflow trace</h4>
     <ol>${trace.map(step => `<li><strong>${escapeHtml(step.step)} · ${escapeHtml(step.status)}</strong><br>${escapeHtml(step.evidence)}</li>`).join("")}</ol>
+    <h4>Rejection, regression, provenance, and stored quality</h4>
+    <p>Rejections ${(report.rejections || []).map(item => escapeHtml(item.code + " on " + item.subjectId)).join(", ") || "none"}. A rejection is not a positive reference.</p>
+    <p>Regression ${escapeHtml(report.regression?.status)}. Passed ${report.regression?.passed ? "Yes" : "No"}. Briefs ${(report.regression?.cases || []).length}. ${escapeHtml(report.regression?.notice || "")}</p>
+    <p>Reference assets sent to a provider: ${report.referenceAssetsSentToProvider ? "Yes" : "No"}. Stored quality ${(report.storedQuality || []).map(item => escapeHtml(item.referenceId + " " + item.status + ", model calls " + item.modelCalls)).join("; ") || "none"}.</p>
     <h4>Open blockers</h4>
     <ul>${lines(report.blockers)}</ul>
     <p>${escapeHtml(report.notice)}</p>
@@ -97,7 +101,7 @@ async function runAcceptanceVoyage() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      voyageKey: "one-voyage-panama-pharmacy-20261007",
+      voyageKey: "one-voyage-panama-pharmacy-controls",
       advertiserName: "Harborlight Pharmacy",
       city: "Panama City",
       market: "Panama",
