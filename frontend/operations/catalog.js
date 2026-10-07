@@ -15,6 +15,14 @@ async function loadCatalog() {
   if (!notice) return board;
   notice.textContent = board.notice;
   delivery.textContent = `Delivery ${board.delivery}. Model calls ${board.modelCalls}. Campaign ready ${board.campaignReady ? "Yes" : "No"}. Geometry ${board.geometryStatus}. Amendment ${board.amendmentStatus}.`;
+  const slots = board.slots || [];
+  const geometry = document.getElementById("catalog-geometry");
+  if (geometry) {
+    geometry.innerHTML = slots.length
+      ? `<table><thead><tr><th>Slot</th><th>Version</th><th>Size</th><th>Origin</th><th>Area</th><th>Status</th></tr></thead><tbody>${slots.map(slot =>
+          `<tr><td>${escapeCatalog(slot.slotId)}</td><td>${escapeCatalog(slot.version)}</td><td>${escapeCatalog(slot.width)}×${escapeCatalog(slot.height)}</td><td>${escapeCatalog(slot.originX)}, ${escapeCatalog(slot.originY)}</td><td>${escapeCatalog(slot.area)}</td><td>${escapeCatalog(slot.lifecycle)}</td></tr>`).join("")}</tbody></table>`
+      : "<p>No slot geometry is stored.</p>";
+  }
   const products = board.products || [];
   document.getElementById("catalog-products").innerHTML = products.length
     ? `<table><thead><tr><th>Product</th><th>Tier</th><th>Exclusivity</th><th>Lifecycle</th><th>Occupancy</th><th>Showcase</th></tr></thead><tbody>${products.map(item =>

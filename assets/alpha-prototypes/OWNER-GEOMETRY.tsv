@@ -1,0 +1,8 @@
+slotId	version	canvasWidth	canvasHeight	width	height	originX	originY	area	basis	approvedOn	approvingAuthority
+LEFT_VERTICAL	ARE-GEO-V1	1920	1080	320	1080	0	0	345600	Owner-authorized recommended 1920x1080 layout	2026-10-07	Owner
+RIGHT_VERTICAL	ARE-GEO-V1	1920	1080	320	1080	1600	0	345600	Owner-authorized recommended 1920x1080 layout	2026-10-07	Owner
+TOP_LEFT	ARE-GEO-V1	1920	1080	640	180	320	0	115200	Owner-authorized recommended 1920x1080 layout	2026-10-07	Owner
+TOP_RIGHT	ARE-GEO-V1	1920	1080	640	180	960	0	115200	Owner-authorized recommended 1920x1080 layout	2026-10-07	Owner
+BOTTOM_LEFT	ARE-GEO-V1	1920	1080	640	180	320	900	115200	Owner-authorized recommended 1920x1080 layout	2026-10-07	Owner
+BOTTOM_RIGHT	ARE-GEO-V1	1920	1080	640	180	960	900	115200	Owner-authorized recommended 1920x1080 layout	2026-10-07	Owner
+BOTTOM_FULL	ARE-GEO-V1	1920	1080	1280	180	320	900	230400	Owner-authorized recommended 1920x1080 layout	2026-10-07	Owner

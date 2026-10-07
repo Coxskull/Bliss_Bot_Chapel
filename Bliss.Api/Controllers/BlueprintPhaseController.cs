@@ -115,7 +115,10 @@ public sealed class BlueprintPhaseController(BlueprintPhaseService phases) : Con
             delivery = "NOT_SENT",
             economics = reading.Catalog.Economics,
             creatorAuthorized = reading.Catalog.CreatorAuthorized,
-            geometryStatus = RealEstateCatalog.Unrecorded,
+            geometryStatus = reading.Catalog.Slots.All(slot =>
+                slot.Width > 0 && slot.Height > 0 && slot.OriginX >= 0 && slot.OriginY >= 0 && slot.Area > 0)
+                ? RealEstateCatalog.Recorded
+                : RealEstateCatalog.Unrecorded,
             slots = reading.Catalog.Slots,
             products = reading.Catalog.Products,
             showcases = reading.Catalog.Showcases,

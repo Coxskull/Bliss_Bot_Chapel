@@ -161,6 +161,29 @@ public sealed class RealEstateCatalogTests
     }
 
     [Fact]
+    public void Owner_geometry_is_validated_and_applied_as_a_recommendation()
+    {
+        const string text = """
+            slotId	version	canvasWidth	canvasHeight	width	height	originX	originY	area	basis	approvedOn	approvingAuthority
+            LEFT_VERTICAL	ARE-GEO-V1	1920	1080	320	1080	0	0	345600	Owner-authorized recommended 1920x1080 layout	2026-10-07	Owner
+            BOTTOM_FULL	ARE-GEO-V1	1920	1080	1280	180	320	900	230400	Owner-authorized recommended 1920x1080 layout	2026-10-07	Owner
+            TOP_LEFT	ARE-GEO-V1	1920	1080	640	180	320	0	1	Invalid area	2026-10-07	Owner
+            """;
+
+        var geometry = OwnerGeometryFile.Read(text);
+        var board = RealEstateCatalog.Board(geometry: geometry);
+        var left = board.Slots.Single(slot => slot.SlotId == "LEFT_VERTICAL");
+
+        Assert.Equal(2, geometry.Count);
+        Assert.Equal("ARE-GEO-V1", left.Version);
+        Assert.Equal(320, left.Width);
+        Assert.Equal(1080, left.Height);
+        Assert.Equal(345600, left.Area);
+        Assert.Contains("not measured from the guide", left.Notice);
+        Assert.Null(board.Slots.Single(slot => slot.SlotId == "TOP_LEFT").Width);
+    }
+
+    [Fact]
     public void A_missing_slot_dimension_keeps_the_whole_adaptation_unrecorded()
     {
         var board = RealEstateCatalog.Board();
