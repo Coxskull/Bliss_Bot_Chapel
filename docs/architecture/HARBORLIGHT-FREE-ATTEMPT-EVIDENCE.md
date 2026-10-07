@@ -88,6 +88,8 @@ Human review remains `NOT_REQUESTED`. The sheet does not satisfy HV-4 and does n
 
 The apply gate accepts a supplied grade of `REFERENCE_STRENGTH`, `STRONG`, `SUPPORTING`, or `NOT_APPLICABLE` for one named attribute and returns that reading without writing the evidence file. No owner grade is on file. Acceptance is not inferred.
 
+The review can open the stored original, the purpose-built preview, and the four retrieved reference files only when each file hash matches the evidence. Showing them does not assign a grade or a copy judgment.
+
 ## Pixel similarity
 
 `scripts/measure-harborlight-similarity.py` compared the 1280×720 original with the four retrieved reference files. Each distance is a 32×18 grayscale mean absolute error and an 8×8 average-hash Hamming distance.
@@ -127,7 +129,7 @@ Model, job ID, and cost stay `UNREPORTED_BY_PROVIDER`. Both parent amendments st
 
 ```text
 dotnet test BlissBotChapel.sln --no-restore
-Passed: 528
+Passed: 530
 Failed: 0
 Skipped: 0
 ```

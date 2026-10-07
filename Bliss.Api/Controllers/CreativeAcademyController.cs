@@ -48,8 +48,32 @@ public sealed class CreativeAcademyController(
             {
                 reviewSheet = HarborlightReview.ParseEvidence(text),
                 pixelSimilarity = HarborlightPixelSimilarity.ParseEvidence(text),
-                workflowTrace = HarborlightWorkflow.ParseEvidence(text)
+                workflowTrace = HarborlightWorkflow.ParseEvidence(text),
+                images = HarborlightReviewImages.ParseEvidence(text).Select(item => new
+                {
+                    item.Role,
+                    item.Label,
+                    item.Sha256,
+                    item.Notice,
+                    url = "/api/operations/academy/harborlight-review/images/" + Uri.EscapeDataString(item.Role)
+                })
             });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Refuse(ex);
+        }
+    }
+
+    [HttpGet("harborlight-review/images/{role}")]
+    [AllowAnonymous]
+    public ActionResult HarborlightReviewImage(string role)
+    {
+        try
+        {
+            var text = System.IO.File.ReadAllText(HarborlightEvidencePath());
+            var path = HarborlightReviewImages.OpenVerified(text, HarborlightRepositoryRoot(), role);
+            return PhysicalFile(path, HarborlightReviewImages.MediaType(path));
         }
         catch (InvalidOperationException ex)
         {
@@ -263,6 +287,14 @@ public sealed class CreativeAcademyController(
         }
 
         throw new InvalidOperationException("The Harborlight review sheet is not stored. None was invented.");
+    }
+
+    private string HarborlightRepositoryRoot()
+    {
+        var evidence = new FileInfo(HarborlightEvidencePath());
+        var root = evidence.Directory?.Parent?.Parent?.Parent?.Parent
+            ?? throw new InvalidOperationException("The Harborlight image is not stored. None was substituted.");
+        return root.FullName;
     }
 
     private static ActionResult Refuse(InvalidOperationException ex) =>

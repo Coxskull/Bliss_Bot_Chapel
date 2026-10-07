@@ -410,6 +410,47 @@ public sealed class CreativeAcademyApiTests
     }
 
     [Fact]
+    public async Task Harborlight_review_images_are_the_stored_files()
+    {
+        await using var factory = new BlissApiFactory();
+        var client = factory.CreateClient();
+        var reading = await client.GetAsync("/api/operations/academy/harborlight-review");
+        var body = await reading.Content.ReadFromJsonAsync<JsonElement>();
+        var images = body.GetProperty("images").EnumerateArray().ToArray();
+
+        Assert.Equal(HttpStatusCode.OK, reading.StatusCode);
+        Assert.Equal(
+            ["original", "adapted", "ACA-001-V1", "ACA-002-V1", "ACA-006-V1", "ACA-008-V1"],
+            images.Select(item => item.GetProperty("role").GetString()).ToArray());
+        Assert.Contains("does not assign a grade", images[0].GetProperty("notice").GetString(), StringComparison.Ordinal);
+        Assert.Contains("not delivered", images[1].GetProperty("notice").GetString(), StringComparison.Ordinal);
+        Assert.All(
+            images.Skip(2),
+            item => Assert.Contains("not a copy judgment", item.GetProperty("notice").GetString(), StringComparison.Ordinal));
+
+        var original = await client.GetAsync(images[0].GetProperty("url").GetString());
+        var originalBytes = await original.Content.ReadAsByteArrayAsync();
+        Assert.Equal(HttpStatusCode.OK, original.StatusCode);
+        Assert.Equal("image/jpeg", original.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(0xFF, originalBytes[0]);
+        Assert.Equal(0xD8, originalBytes[1]);
+
+        var adapted = await client.GetAsync("/api/operations/academy/harborlight-review/images/adapted");
+        var adaptedBytes = await adapted.Content.ReadAsByteArrayAsync();
+        Assert.Equal(HttpStatusCode.OK, adapted.StatusCode);
+        Assert.Equal("image/png", adapted.Content.Headers.ContentType?.MediaType);
+        Assert.Equal(new byte[] { 137, 80, 78, 71 }, adaptedBytes[..4]);
+
+        var missing = await client.GetAsync("/api/operations/academy/harborlight-review/images/accepted");
+        Assert.Equal(HttpStatusCode.BadRequest, missing.StatusCode);
+
+        var stored = await client.GetAsync("/api/operations/academy/harborlight-review");
+        Assert.All(
+            (await stored.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("reviewSheet").GetProperty("attributes").EnumerateArray(),
+            item => Assert.Equal("UNCLASSIFIED", item.GetProperty("grade").GetString()));
+    }
+
+    [Fact]
     public async Task Harborlight_owner_grades_apply_in_memory_and_leave_the_file_unclassified()
     {
         await using var factory = new BlissApiFactory();

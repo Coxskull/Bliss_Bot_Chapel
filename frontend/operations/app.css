@@ -331,6 +331,14 @@ dialog::backdrop { background:rgba(7,16,13,.56);backdrop-filter:blur(3px); }
   .detail-grid { grid-template-columns:1fr; }
   .auth-gate-card { padding: 32px 24px; }
 }
+.harborlight-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin: 12px 0; }
+.harborlight-figure { margin: 0; }
+.harborlight-figure img { display: block; width: 100%; height: auto; max-height: 420px; object-fit: contain; background: #e7ece9; border-radius: 7px; }
+.harborlight-figure figcaption { margin-top: 6px; }
+.harborlight-figure strong, .harborlight-figure small { display: block; }
+.harborlight-figure small { color: var(--muted); }
+.harborlight-references { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.harborlight-references img { max-height: 180px; }
 .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 14px; }
 .catalog-tile { margin: 0; padding: 10px; overflow: hidden; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
 .catalog-tile img.catalog-thumb { display: block; width: 100%; max-width: 100%; height: 120px; max-height: 120px; object-fit: cover; border-radius: 7px; background: #e7ece9; }

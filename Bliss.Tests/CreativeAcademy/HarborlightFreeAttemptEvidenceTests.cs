@@ -134,6 +134,43 @@ public sealed class HarborlightFreeAttemptEvidenceTests
     }
 
     [Fact]
+    public void Review_images_open_only_the_stored_files()
+    {
+        var json = File.ReadAllText(EvidencePath());
+        var images = HarborlightReviewImages.ParseEvidence(json);
+        Assert.Equal(
+            ["original", "adapted", "ACA-001-V1", "ACA-002-V1", "ACA-006-V1", "ACA-008-V1"],
+            images.Select(item => item.Role).ToArray());
+        Assert.All(images, item => Assert.Contains("not", item.Notice, StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(HarborlightReviewImages.OriginalNotice, images[0].Notice);
+        Assert.Equal(HarborlightReviewImages.AdaptedNotice, images[1].Notice);
+        Assert.All(images.Skip(2), item => Assert.Equal(HarborlightReviewImages.ReferenceNotice, item.Notice));
+
+        var root = RepositoryRoot();
+        var original = HarborlightReviewImages.OpenVerified(json, root, "original");
+        var adapted = HarborlightReviewImages.OpenVerified(json, root, "adapted");
+        var reference = HarborlightReviewImages.OpenVerified(json, root, "ACA-001-V1");
+        Assert.Equal(Sha256(original), images[0].Sha256);
+        Assert.Equal(Sha256(adapted), images[1].Sha256);
+        Assert.Equal(Sha256(reference), images[2].Sha256);
+        Assert.Equal("image/jpeg", HarborlightReviewImages.MediaType(original));
+        Assert.Equal("image/png", HarborlightReviewImages.MediaType(adapted));
+
+        var unknown = Assert.Throws<InvalidOperationException>(() =>
+            HarborlightReviewImages.OpenVerified(json, root, "accepted"));
+        Assert.Contains("not stored", unknown.Message, StringComparison.OrdinalIgnoreCase);
+
+        var node = JsonNode.Parse(json)!;
+        var mismatchHash = new string('a', 64);
+        node["original"]!["sha256"] = mismatchHash;
+        node["pixelSimilarity"]!["originalSha256"] = mismatchHash;
+        var mismatch = Assert.Throws<InvalidOperationException>(() =>
+            HarborlightReviewImages.OpenVerified(node.ToJsonString(), root, "original"));
+        Assert.Contains("hash does not match", mismatch.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(json, File.ReadAllText(EvidencePath()));
+    }
+
+    [Fact]
     public void Owner_grade_gate_applies_only_supplied_attributes()
     {
         var json = File.ReadAllText(EvidencePath());
