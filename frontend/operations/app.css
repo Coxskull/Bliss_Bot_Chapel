@@ -332,7 +332,8 @@ dialog::backdrop { background:rgba(7,16,13,.56);backdrop-filter:blur(3px); }
   .auth-gate-card { padding: 32px 24px; }
 }
 .catalog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 14px; }
-.catalog-tile { margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
+.catalog-tile { margin: 0; padding: 10px; overflow: hidden; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
+.catalog-tile img.catalog-thumb { display: block; width: 100%; max-width: 100%; height: 120px; max-height: 120px; object-fit: cover; border-radius: 7px; background: #e7ece9; }
 .catalog-thumb { display: block; width: 100%; height: 120px; object-fit: cover; border-radius: 7px; background: #e7ece9; }
 .catalog-missing { display: grid; place-items: center; color: var(--muted); font-size: 11px; }
 .catalog-tile figcaption { margin-top: 8px; }
