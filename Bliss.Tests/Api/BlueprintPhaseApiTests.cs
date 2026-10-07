@@ -24,12 +24,12 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
         Assert.Equal(4, board.GetProperty("products").GetArrayLength());
         Assert.Equal(7, board.GetProperty("slots").GetArrayLength());
         Assert.Equal(50, references.GetProperty("registered").GetInt32());
-        Assert.Equal(49, references.GetProperty("uploaded").GetInt32());
-        Assert.Equal(1, references.GetProperty("awaitingUpload").GetInt32());
-        Assert.Equal(0, references.GetProperty("active").GetInt32());
+        Assert.Equal(50, references.GetProperty("uploaded").GetInt32());
+        Assert.Equal(0, references.GetProperty("awaitingUpload").GetInt32());
+        Assert.Equal(50, references.GetProperty("active").GetInt32());
         Assert.Contains("will not state a number", board.GetProperty("economics").GetString());
         Assert.Equal("BASELINE_NOT_RECORDED", board.GetProperty("regressionStatus").GetString());
-        Assert.Equal("NICHE_REFERENCE_NOT_ACTIVE", board.GetProperty("sampleRetrieval").GetProperty("status").GetString());
+        Assert.Equal("RETRIEVED", board.GetProperty("sampleRetrieval").GetProperty("status").GetString());
         Assert.Equal(8, board.GetProperty("unassigned").GetArrayLength());
         Assert.Contains(
             board.GetProperty("unassigned").EnumerateArray(),
@@ -38,24 +38,27 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
         var pharmacy = references.GetProperty("items").EnumerateArray()
             .Single(item => item.GetProperty("referenceId").GetString() == "ACA-001-V1");
         Assert.Equal("Pharmacy.jpeg", pharmacy.GetProperty("expectedFile").GetString());
-        Assert.Equal("CANDIDATE", pharmacy.GetProperty("lifecycle").GetString());
+        Assert.Equal("ACTIVE", pharmacy.GetProperty("lifecycle").GetString());
         Assert.Equal("UPLOADED", pharmacy.GetProperty("uploadStatus").GetString());
         Assert.True(pharmacy.GetProperty("assetPresent").GetBoolean());
-        Assert.Equal(string.Empty, pharmacy.GetProperty("learn").GetString());
+        Assert.Contains("product lighting", pharmacy.GetProperty("learn").GetString());
+        Assert.Contains("VidaCare", pharmacy.GetProperty("doNotCopy").GetString());
 
         var usedCar = references.GetProperty("items").EnumerateArray()
             .Single(item => item.GetProperty("referenceId").GetString() == "ACA-005-V1");
-        Assert.False(usedCar.GetProperty("assetPresent").GetBoolean());
-        Assert.Equal("AWAITING_UPLOAD", usedCar.GetProperty("uploadStatus").GetString());
+        Assert.True(usedCar.GetProperty("assetPresent").GetBoolean());
+        Assert.Equal("ACTIVE", usedCar.GetProperty("lifecycle").GetString());
+        Assert.Equal("UPLOADED", usedCar.GetProperty("uploadStatus").GetString());
+        Assert.Contains("DriveMax", usedCar.GetProperty("doNotCopy").GetString());
 
         foreach (var referenceId in new[] { "ACA-004-V1", "ACA-014-V1", "ACA-033-V1", "ACA-044-V1" })
         {
             var confirmed = references.GetProperty("items").EnumerateArray()
                 .Single(item => item.GetProperty("referenceId").GetString() == referenceId);
-            Assert.Equal("CANDIDATE", confirmed.GetProperty("lifecycle").GetString());
+            Assert.Equal("ACTIVE", confirmed.GetProperty("lifecycle").GetString());
             Assert.Contains("Owner confirmed 2026-10-07", confirmed.GetProperty("mappingNote").GetString());
-            Assert.Equal(string.Empty, confirmed.GetProperty("learn").GetString());
-            Assert.Equal(string.Empty, confirmed.GetProperty("doNotCopy").GetString());
+            Assert.False(string.IsNullOrWhiteSpace(confirmed.GetProperty("learn").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(confirmed.GetProperty("doNotCopy").GetString()));
         }
 
         var needs = board.GetProperty("ownerNeeds");
@@ -63,8 +66,8 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
         Assert.Contains(
             needs.GetProperty("items").EnumerateArray(),
             item => item.GetProperty("needId").GetString() == "ACA-005-FILE"
-                && item.GetProperty("status").GetString() == "OPEN"
-                && item.GetProperty("ownerEntry").GetString() == string.Empty);
+                && item.GetProperty("status").GetString() == "SUPPLIED"
+                && item.GetProperty("ownerEntry").GetString()!.Contains("ACA-005-V1.png"));
         Assert.Contains(
             needs.GetProperty("items").EnumerateArray(),
             item => item.GetProperty("needId").GetString() == "BIND-004"
@@ -77,7 +80,7 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
         var joint = await client.GetFromJsonAsync<JsonElement>("/api/operations/blueprint/joint-acceptance");
         Assert.Equal("BLOCKED", joint.GetProperty("status").GetString());
         Assert.Equal(7, joint.GetProperty("conversations").GetArrayLength());
-        Assert.Equal("NICHE_REFERENCE_NOT_ACTIVE", joint.GetProperty("retrievalStatus").GetString());
+        Assert.Equal("RETRIEVED", joint.GetProperty("retrievalStatus").GetString());
         Assert.Equal("GEOMETRY_UNRECORDED", joint.GetProperty("adaptationStatus").GetString());
         Assert.Equal("NO_AUTHORIZED_PRICE", joint.GetProperty("gates").EnumerateArray().Single(item => item.GetProperty("gateId").GetString() == "ECONOMICS").GetProperty("status").GetString());
         Assert.Equal("UNCLAIMED", joint.GetProperty("hostedAcceptance").GetString());
@@ -89,8 +92,10 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
         foreach (var showcase in board.GetProperty("showcases").EnumerateArray())
         {
             Assert.True(showcase.GetProperty("assetPresent").GetBoolean());
-            Assert.Equal("DRAFT", showcase.GetProperty("lifecycle").GetString());
+            var lifecycle = showcase.GetProperty("lifecycle").GetString();
+            Assert.Equal(showcase.GetProperty("showcaseId").GetString() == "ARE-GUIDE-001-V1" ? "DRAFT" : "ACTIVE", lifecycle);
         }
+
     }
 
     [Fact]
@@ -98,7 +103,7 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
     {
         var client = _factory.CreateClient();
         var pharmacy = await client.GetAsync("/api/operations/blueprint/references/ACA-001-V1/image");
-        var missing = await client.GetAsync("/api/operations/blueprint/references/ACA-005-V1/image");
+        var missing = await client.GetAsync("/api/operations/blueprint/references/ACA-999-V1/image");
         var showcase = await client.GetAsync("/api/operations/blueprint/showcases/ARE-001-V1/image");
         var catalog = await client.GetAsync("/api/operations/blueprint/unassigned/Catalog.jpeg");
         var claimedAsUnassigned = await client.GetAsync("/api/operations/blueprint/unassigned/Pharmacy.jpeg");
@@ -159,7 +164,7 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
         Assert.Equal("GEOMETRY_UNRECORDED", adaptation.GetProperty("status").GetString());
         Assert.Equal(["LEFT_VERTICAL", "BOTTOM_FULL"], slots);
         Assert.False(adaptation.GetProperty("scaledFromPrototype").GetBoolean());
-        Assert.Equal("REVIEW REQUIRED", body.GetProperty("similarity").GetProperty("status").GetString());
+        Assert.Equal("PASS", body.GetProperty("similarity").GetProperty("status").GetString());
         Assert.Equal(8, body.GetProperty("workers").GetArrayLength());
         Assert.Equal(0, body.GetProperty("modelCalls").GetInt32());
         Assert.False(body.GetProperty("campaignReady").GetBoolean());

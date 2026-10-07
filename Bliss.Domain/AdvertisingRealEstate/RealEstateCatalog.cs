@@ -161,7 +161,9 @@ public static class RealEstateCatalog
         bool creatorAuthorized = false,
         string? economics = null,
         IReadOnlyList<DeliveryFact>? deliveries = null,
-        IReadOnlyDictionary<string, string>? lifecycleOverrides = null)
+        IReadOnlyDictionary<string, string>? lifecycleOverrides = null,
+        string? deviceStatus = null,
+        string? platformStatus = null)
     {
         var files = assets ?? new Dictionary<string, bool>(StringComparer.Ordinal);
         var overrides = lifecycleOverrides ?? new Dictionary<string, string>(StringComparer.Ordinal);
@@ -179,13 +181,13 @@ public static class RealEstateCatalog
         var products = new List<CatalogProduct>
         {
             Product("ARE-P01", "PREMIUM", "EXCLUSIVE_WHEN_AUTHORIZED", 1, ["LEFT_VERTICAL", "BOTTOM_FULL"], "ARE-001-V1",
-                "Premium single advertiser. Left vertical plus the bottom remainder. The creator center stays protected.", overrides),
+                "Premium single advertiser. Left vertical plus the bottom remainder. The creator center stays protected.", overrides, deviceStatus, platformStatus),
             Product("ARE-P02", "PREMIUM", "SHARED", 2, ["LEFT_VERTICAL", "BOTTOM_LEFT", "RIGHT_VERTICAL", "BOTTOM_RIGHT"], "ARE-002-V1",
-                "Premium two-advertiser split. Shared inventory. Each advertiser keeps a separate brand identity.", overrides),
+                "Premium two-advertiser split. Shared inventory. Each advertiser keeps a separate brand identity.", overrides, deviceStatus, platformStatus),
             Product("ARE-S01", "ENTRY", "SHARED", 4, ["TOP_LEFT", "TOP_RIGHT", "BOTTOM_LEFT", "BOTTOM_RIGHT"], "ARE-003-V1",
-                "Entry and standard smaller rectangles for a lower screen presence.", overrides),
+                "Entry and standard smaller rectangles for a lower screen presence.", overrides, deviceStatus, platformStatus),
             Product("ARE-E01", "EXCLUSIVE", "EXCLUSIVE", 1, ["LEFT_VERTICAL", "BOTTOM_FULL"], "ARE-001-V1",
-                "Exclusive product. Sale still requires creator authorization, availability, and an Economics result.", overrides)
+                "Exclusive product. Sale still requires creator authorization, availability, and an Economics result.", overrides, deviceStatus, platformStatus)
         };
 
         var showcases = new List<ShowcaseRecord>
@@ -290,7 +292,8 @@ public static class RealEstateCatalog
         var active = matches.Where(item => item.Lifecycle == Active).ToList();
         var offered = active.Count > 0 ? active : matches;
         var showcaseIds = offered.Select(item => item.ShowcaseId).Distinct(StringComparer.Ordinal).ToList();
-        var displayed = active.Count > 0
+        var displayed = intent is not ("UNSUPPORTED" or "DEVICE" or "FREQUENCY" or "DELIVERY")
+            && active.Count > 0
             && board.CreatorAuthorized
             && offered.All(product => board.Showcases.Any(item =>
                 item.ShowcaseId == product.ShowcaseId
@@ -328,7 +331,9 @@ public static class RealEstateCatalog
         IReadOnlyList<string> slots,
         string showcaseId,
         string notice,
-        IReadOnlyDictionary<string, string> lifecycleOverrides)
+        IReadOnlyDictionary<string, string> lifecycleOverrides,
+        string? deviceStatus = null,
+        string? platformStatus = null)
     {
         var lifecycle = lifecycleOverrides.TryGetValue(id, out var overridden) ? overridden : Draft;
         return new CatalogProduct(
@@ -341,8 +346,8 @@ public static class RealEstateCatalog
             showcaseId,
             lifecycle,
             UnpricedDurations,
-            NeedsReview,
-            NeedsReview,
+            string.IsNullOrWhiteSpace(deviceStatus) ? NeedsReview : deviceStatus.Trim(),
+            string.IsNullOrWhiteSpace(platformStatus) ? NeedsReview : platformStatus.Trim(),
             Unrecorded,
             null,
             notice + " Lifecycle " + lifecycle + ". Occupancy UNRECORDED. Duration of 15 seconds is stored as an unpriced option.");

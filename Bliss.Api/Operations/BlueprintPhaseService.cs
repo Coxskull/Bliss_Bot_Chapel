@@ -27,8 +27,19 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
     public async Task<BlueprintReading> ReadAsync(CancellationToken cancellationToken)
     {
         var assets = ReadAssets();
-        var overrides = await LifecycleOverridesAsync(cancellationToken);
-        var board = RealEstateCatalog.Board(assets, lifecycleOverrides: overrides);
+        var approval = OwnerAuthorizationFile.Read(ReadAuthorization());
+        var overrides = new Dictionary<string, string>(approval.LifecycleOverrides, StringComparer.Ordinal);
+        foreach (var stored in await LifecycleOverridesAsync(cancellationToken))
+        {
+            overrides.TryAdd(stored.Key, stored.Value);
+        }
+
+        var board = RealEstateCatalog.Board(
+            assets,
+            approval.CreatorAuthorized,
+            lifecycleOverrides: overrides,
+            deviceStatus: approval.DeviceStatus,
+            platformStatus: approval.PlatformStatus);
         await MirrorProductsAsync(board, cancellationToken);
         var manifest = ReadManifest();
         var references = ReferenceLibrary.ParseManifest(manifest, name => AssetExists(name, assets));
@@ -109,7 +120,9 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
             reading.Catalog,
             reading.References,
             reading.Catalog.Slots,
-            null,
+            reading.Catalog.CreatorAuthorized
+                ? "Owner authorized the offer on 2026-10-07. A reservation count was not supplied."
+                : null,
             reading.OwnerNeeds.Count(item => item.Status == OwnerNeeds.Open));
     }
 
@@ -198,6 +211,14 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
                     Notice = product.Notice
                 });
             }
+            else if (row.Lifecycle != product.Lifecycle
+                || row.DeviceStatus != product.DeviceStatus
+                || row.PlatformStatus != product.PlatformStatus)
+            {
+                row.Lifecycle = product.Lifecycle;
+                row.DeviceStatus = product.DeviceStatus;
+                row.PlatformStatus = product.PlatformStatus;
+            }
         }
 
         if (database.ChangeTracker.HasChanges())
@@ -232,6 +253,12 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
 
         var inbox = Path.Combine(PrototypeRoot(), "creative-academy", "inbox", name);
         return File.Exists(inbox);
+    }
+
+    private string ReadAuthorization()
+    {
+        var path = Path.Combine(PrototypeRoot(), "OWNER-AUTHORIZATION.tsv");
+        return File.Exists(path) ? File.ReadAllText(path) : string.Empty;
     }
 
     private string ReadManifest()

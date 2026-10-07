@@ -260,7 +260,7 @@ Registration then connects each file to a reference record: reference ID, protot
 
 **Done when.** Gate 1 can show 50 assets, 50 IDs, and a join from record to file. A directory listing alone is not done.
 
-**Progress.** Owner files in the inbox are registered by their uploaded names. 49 niches have a candidate file. Niche 5, used-car, has no file and stays awaiting. `Catalog.jpeg` and the seven podcast-with-ads images stay unassigned. On 2026-10-07 the owner confirmed four filename bindings: `Automotive.jpeg` to new-car, `Italian restaurant.jpeg` to pizza, `Home renovation.jpeg` to furniture, and `Coffeee.jpeg` to coffee-brand. That confirmation does not change lifecycle. Lifecycle remains `CANDIDATE`, so retrieval still returns `NICHE_REFERENCE_NOT_ACTIVE`. Gate 1 is not accepted: `learn`, do-not-copy, rights, and approval dates are still blank, and one niche has no asset.
+**Progress.** All 50 niches have a file, including the DriveMax used-car prototype supplied on 2026-10-07. The owner approved those references ACTIVE and supplied learn and do-not-copy notes. Local teachers stay separate files: VidaCare for pharmacy, FreshMart for supermarket, Nova Fit for fitness, Taller Ruta for automotive service, and Brava Moto for motorcycle. `Catalog.jpeg` remains the educational catalog overview. The seven podcast-with-ads images remain placement illustrations. Neither set is an Academy niche or a geometry specification. Provenance records the owner upload and the 2026-10-07 approval. Provider use stays `NOT_AUTHORIZED`. Quality grades stay `UNCLASSIFIED`. Gate 1 is not accepted while per-attribute grades and a full rights license remain incomplete.
 
 **Reuse.** The niche roster already has these 50 niches. Registration binds a file to that niche. It does not create a second roster.
 
@@ -276,7 +276,7 @@ Each reference also stores `learn` and `doNotCopy`. Persist that classification.
 
 **Done when.** A reference can be retrieved with its learn list and its do-not-copy list, and a superseded version remains readable for historical jobs.
 
-**Progress.** The lifecycle names and the quality-grade names are stored. Every current reference stays `CANDIDATE`, and every quality attribute stays `UNCLASSIFIED`. Retrieval copies `learn` and `doNotCopy` only from an ACTIVE reference. A superseded row stays in the library and is not selected. The owner writes the actual notes in `assets/alpha-prototypes/OWNER-NEEDS.tsv`. This phase is not accepted while those notes are blank.
+**Progress.** The lifecycle names and the quality-grade names are stored. The owner approved the current references `ACTIVE` on 2026-10-07. Every quality attribute stays `UNCLASSIFIED`. Retrieval copies `learn` and `doNotCopy` only from an ACTIVE reference. A superseded row stays in the library and is not selected. The owner writes the actual notes in `assets/alpha-prototypes/OWNER-NEEDS.tsv`. This phase is not accepted while those notes are blank.
 
 ### ACA-3 — Global Alpha Quality DNA
 
@@ -305,7 +305,7 @@ Global Alpha Quality DNA + selected Academy references + niche intelligence + ma
 
 **Done when.** Gate 2 shows a brief, the reference IDs retrieved, and a stored reason for each ID, without a person attaching the files by hand.
 
-**Progress.** A production brief now keeps four separate layers: Global Quality DNA `GQD-1`, the niche roster entry, the named market, and the advertiser Brand DNA. Retrieval selects at most five ACTIVE references and stores a reason for each. Candidate uploads are not attached. The live library has no ACTIVE reference, so a real brief records `NICHE_REFERENCE_NOT_ACTIVE` until a human approves one. Gate 2 is not accepted.
+**Progress.** A production brief now keeps four separate layers: Global Quality DNA `GQD-1`, the niche roster entry, the named market, and the advertiser Brand DNA. Retrieval selects at most five ACTIVE references and stores a reason for each. Candidate uploads are not attached. The owner approved the library ACTIVE on 2026-10-07, so a pharmacy brief can retrieve references with stored reasons. Gate 2 is not accepted while quality grades stay unclassified.
 
 ### ACA-5 — Workers, adaptation, and originality
 
@@ -370,7 +370,7 @@ Required evidence includes the finished original, the inventory-adapted creative
 
 The Academy amendment stays OPEN until that evidence is reviewed.
 
-**Progress.** The voyage now authorizes one provider call only after the references it actually retrieved are already ACTIVE and already carry LEARN and DO NOT COPY notes, the image provider is configured, and the purchased slots already have width and height. A domain fixture with those inputs prepares advertiser Brand DNA, records a draft, adapts to the supplied slot sizes without scaling a prototype, and rejects a copied draft while keeping the failed attempt. Visual QA stays `NOT_RUN`, human review stays unclaimed, cost stays `UNRECORDED`, campaign ready stays false, and delivery stays `NOT_SENT`. The live Harborlight Pharmacy run still has 0 ACTIVE references and unrecorded ARE-P01 geometry, so it remains `BLOCKED` and does not call a provider. The premature consolidated report was withdrawn. No replacement report is issued until that live voyage completes. Gate 1 records the roster but still has one missing file and incomplete metadata. Gates 2 and 3 do not pass. ACA-8 remains OPEN.
+**Progress.** The voyage now authorizes one provider call only after the references it actually retrieved are already ACTIVE and already carry LEARN and DO NOT COPY notes, the image provider is configured, and the purchased slots already have width and height. A domain fixture with those inputs prepares advertiser Brand DNA, records a draft, adapts to the supplied slot sizes without scaling a prototype, and rejects a copied draft while keeping the failed attempt. Visual QA stays `NOT_RUN`, human review stays unclaimed, cost stays `UNRECORDED`, campaign ready stays false, and delivery stays `NOT_SENT`. The live Harborlight Pharmacy run now has ACTIVE references, and it remains `BLOCKED` because ARE-P01 geometry is unrecorded and the image provider is not configured. It does not call a provider. The premature consolidated report was withdrawn. No replacement report is issued until that live voyage completes. Gate 1 records the roster but still has one missing file and incomplete metadata. Gates 2 and 3 do not pass. ACA-8 remains OPEN.
 
 ---
 
@@ -400,4 +400,4 @@ Catalog: OPEN / PENDING IMPLEMENTATION + END-TO-END EVIDENCE.
 
 Academy Reference Library: OPEN / PENDING IMPLEMENTATION + AUTONOMOUS CREATIVE ACCEPTANCE EVIDENCE.
 
-Phase 0, the upload dock, is in the repository. The draft catalog engine at `/api/operations/blueprint` and the operations view `/operations#/catalog` name the draft products, refuse unrecorded geometry, refuse an invented price, and retrieve Academy references only when a file is ACTIVE. Adaptation of a known product reports `GEOMETRY_UNRECORDED` until a human records slot width and height, and a copied reference identity returns `REGENERATE`. Owner uploads are now registered: 49 candidate prototypes, one awaiting niche (used-car), eight unassigned inbox images, and three draft showcase illustrations. That registration does not mark ARE-11 or ACA-8 accepted. Both amendments remain OPEN until the owner reviews end-to-end evidence.
+Phase 0, the upload dock, is in the repository. The draft catalog engine at `/api/operations/blueprint` and the operations view `/operations#/catalog` name the draft products, refuse unrecorded geometry, refuse an invented price, and retrieve Academy references only when a file is ACTIVE. Adaptation of a known product reports `GEOMETRY_UNRECORDED` until a human records slot width and height, and a copied reference identity returns `REGENERATE`. Owner uploads are now registered: 50 ACTIVE prototypes, including the used-car file, eight unassigned inbox images, and three showcase illustrations the owner approved as ACTIVE offers. That registration does not mark ARE-11 or ACA-8 accepted. Both amendments remain OPEN until the owner reviews end-to-end evidence.
