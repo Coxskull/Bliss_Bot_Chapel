@@ -362,6 +362,8 @@ Required evidence includes the finished original, the inventory-adapted creative
 
 The Academy amendment stays OPEN until that evidence is reviewed.
 
+**Progress.** One controlled voyage is now idempotently stored with a ten-step audit trace. The fictitious Harborlight Pharmacy scenario supplied Panama City, pharmacy, its campaign objective, and ARE-P01; it did not name a reference. The live run found 50 registered records, 49 files, 50 candidates, 0 ACTIVE references, 0 ACTIVE LEARN notes, and 0 ACTIVE DO-NOT-COPY notes. Automatic retrieval returned `NICHE_REFERENCE_NOT_ACTIVE`. Creative reasoning and provider generation stopped before a model call. No Brand DNA, cost, visual score, finished advertisement, retry, or human approval was invented. ARE-P01 preflight remained `GEOMETRY_UNRECORDED` for `LEFT_VERTICAL` and `BOTTOM_FULL`; the prototype was not scaled. Campaign ready is false and delivery is `NOT_SENT`. The consolidated result is in `CREATIVE-ACADEMY-AUTONOMOUS-ACCEPTANCE-REPORT.md`. Gate 1 records the roster but still has one missing file and incomplete metadata. Gates 2 and 3 do not pass. ACA-8 remains OPEN.
+
 ---
 
 ## J-1 — Joint acceptance
