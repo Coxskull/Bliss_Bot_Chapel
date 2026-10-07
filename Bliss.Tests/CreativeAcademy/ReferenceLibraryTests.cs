@@ -28,6 +28,28 @@ public sealed class ReferenceLibraryTests
     }
 
     [Fact]
+    public void An_uploaded_jpeg_stays_candidate_and_is_not_retrieved()
+    {
+        const string manifest = """
+            referenceId	nicheNumber	nicheKey	nicheName	expectedFile	lifecycle	status	learn	doNotCopy	mappingNote
+            ACA-001-V1	1	pharmacy	Pharmacy	Pharmacy.jpeg	CANDIDATE	UPLOADED			Owner file kept.
+            """;
+
+        var library = ReferenceLibrary.ParseManifest(manifest, name => name == "Pharmacy.jpeg");
+        var retrieval = ReferenceLibrary.Select("pharmacy", library, ["lighting"]);
+
+        Assert.True(library[0].AssetPresent);
+        Assert.Equal(ReferenceLibrary.Uploaded, library[0].UploadStatus);
+        Assert.Equal(ReferenceLibrary.Candidate, library[0].Lifecycle);
+        Assert.Equal("Pharmacy.jpeg", library[0].ExpectedFile);
+        Assert.Equal(string.Empty, library[0].Learn);
+        Assert.Equal(string.Empty, library[0].DoNotCopy);
+        Assert.Equal("Owner file kept.", library[0].MappingNote);
+        Assert.Equal("NICHE_REFERENCE_NOT_ACTIVE", retrieval.Status);
+        Assert.Empty(retrieval.Selected);
+    }
+
+    [Fact]
     public void Retrieval_selects_only_active_files_and_records_why()
     {
         var library = new List<AcademyReferenceRecord>

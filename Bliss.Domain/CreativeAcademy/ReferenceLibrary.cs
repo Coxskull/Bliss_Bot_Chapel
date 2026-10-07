@@ -12,7 +12,8 @@ public sealed record AcademyReferenceRecord(
     string UploadStatus,
     bool AssetPresent,
     string Learn,
-    string DoNotCopy);
+    string DoNotCopy,
+    string MappingNote = "");
 
 public sealed record RetrievedReference(
     string ReferenceId,
@@ -44,6 +45,7 @@ public static class ReferenceLibrary
     public const string Candidate = "CANDIDATE";
     public const string Active = "ACTIVE";
     public const string QualityDnaVersion = "GQD-1";
+    public const string UnassignedReason = "Stored in the inbox and not forced into a niche. Not an ACTIVE reference.";
 
     public static IReadOnlyList<string> QualityDna { get; } = CreativeAcademy.ReferenceParityGate;
 
@@ -129,7 +131,8 @@ public static class ReferenceLibrary
                 upload,
                 present,
                 cells.Length > 7 ? cells[7].Trim() : string.Empty,
-                cells.Length > 8 ? cells[8].Trim() : string.Empty));
+                cells.Length > 8 ? cells[8].Trim() : string.Empty,
+                cells.Length > 9 ? cells[9].Trim() : string.Empty));
         }
 
         return rows;

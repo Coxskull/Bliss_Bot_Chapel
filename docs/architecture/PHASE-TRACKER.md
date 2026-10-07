@@ -82,7 +82,7 @@ Two controlling blueprints are open. They are not verified acquisition phases, a
 - Creative Academy Reference Library: phases ACA-1 through ACA-8.
 - Joint acceptance: J-1.
 
-The plan is `ALPHA-MASTER-BLUEPRINT-PHASES.md`. Prototype and showcase uploads go in `assets/alpha-prototypes/`. Both amendments stay OPEN / PENDING IMPLEMENTATION + END-TO-END EVIDENCE until the owner reviews the acceptance recordings. A folder of images is not that evidence.
+The plan is `ALPHA-MASTER-BLUEPRINT-PHASES.md`. Prototype and showcase uploads go in `assets/alpha-prototypes/`. Owner files are registered as candidates: 49 niches have a file, used-car is still awaiting, and catalog plus podcast images stay unassigned. None of those files is ACTIVE. Both amendments stay OPEN / PENDING IMPLEMENTATION + END-TO-END EVIDENCE until the owner reviews the acceptance recordings. A folder of images is not that evidence.
 
 ## Open conflicts
 

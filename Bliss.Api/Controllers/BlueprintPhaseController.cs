@@ -41,6 +41,33 @@ public sealed class BlueprintPhaseController(BlueprintPhaseService phases) : Con
         return Ok(Body(reading, null, turn));
     }
 
+    [HttpGet("references/{referenceId}/image")]
+    [AllowAnonymous]
+    public ActionResult ReferenceImage(string referenceId) => Image(phases.OpenReference(referenceId));
+
+    [HttpGet("showcases/{showcaseId}/image")]
+    [AllowAnonymous]
+    public ActionResult ShowcaseImage(string showcaseId) => Image(phases.OpenShowcase(showcaseId));
+
+    [HttpGet("unassigned/{*fileName}")]
+    [AllowAnonymous]
+    public ActionResult UnassignedImage(string fileName) => Image(phases.OpenUnassigned(fileName));
+
+    private ActionResult Image(BlueprintFile? file)
+    {
+        if (file is null)
+        {
+            return NotFound(new
+            {
+                error = "No stored image matches that id. Nothing was invented.",
+                invented = false,
+                delivery = "NOT_SENT"
+            });
+        }
+
+        return PhysicalFile(file.FullPath, file.ContentType);
+    }
+
     private static object Body(BlueprintReading reading, ReferenceRetrieval? retrieval, CatalogTurn? turn)
     {
         var uploaded = reading.References.Count(item => item.AssetPresent);
@@ -73,6 +100,7 @@ public sealed class BlueprintPhaseController(BlueprintPhaseService phases) : Con
                 active = reading.References.Count(item => item.Lifecycle == ReferenceLibrary.Active && item.AssetPresent),
                 items = reading.References
             },
+            unassigned = reading.Unassigned,
             sampleRetrieval = retrieval,
             turn
         };

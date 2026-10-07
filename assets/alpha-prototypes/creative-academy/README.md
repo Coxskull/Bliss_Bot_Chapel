@@ -1,22 +1,42 @@
 # Creative Academy prototype inbox
 
-Upload the 50 approved quality prototypes here.
+The owner uploaded prototype files into `inbox/`. Registration binds each file to the existing 50-niche roster. It does not approve the file.
 
 These images teach how strong an advertisement must look. They are quality benchmarks. They are not podcast placement templates, not inventory geometry, and not advertisements to copy.
 
-## How to upload
+## Registered files
 
-1. Save each prototype as `ACA-001-V1.png` through `ACA-050-V1.png`. JPEG or WebP is acceptable when the extension matches the file. Prefer PNG.
-2. Put the file in `inbox/`.
-3. In `MANIFEST.tsv`, set that row's `status` from `AWAITING_UPLOAD` to `UPLOADED`.
-4. Leave `learn` and `doNotCopy` blank until a human writes them. Do not let a model fill those fields unsupervised.
+`MANIFEST.tsv` maps each reference ID to one niche, in niche order. The `expectedFile` column is the owner filename that is actually in `inbox/`. Lifecycle stays `CANDIDATE`. `learn` and `doNotCopy` stay blank until a human writes them.
 
-`MANIFEST.tsv` already maps each reference ID to the existing 50-niche roster in niche order. Niche 1 is `ACA-001-V1` (pharmacy). Niche 50 is `ACA-050-V1` (household cleaning). If a supplied prototype belongs to a different niche, change `nicheKey` and `nicheName` on that row. Do not invent a 51st niche.
+49 niches have a file. Niche 5, used-car (`ACA-005-V1`), has no file and stays `AWAITING_UPLOAD`.
 
-## What upload does not do
+Four bindings are filename judgments and need a human confirmation before approval:
 
-- It does not mark the reference ACTIVE.
-- It does not replace the local teachers already stored by the Academy (VidaCare, FreshMart, Nova Fit, Taller Ruta, Brava Moto) until a human connects that file to the reference record.
+| Reference | Owner file | Bound niche | Confirm |
+| --- | --- | --- | --- |
+| ACA-004-V1 | `Automotive.jpeg` | new-car | This is not the auto-shop file. `Auto shop.jpeg` is niche 8. |
+| ACA-014-V1 | `Italian restaurant.jpeg` | pizza | Closest open restaurant niche. |
+| ACA-033-V1 | `Home renovation.jpeg` | furniture | Closest open home niche. |
+| ACA-044-V1 | `Coffeee.jpeg` | coffee-brand | `Coffee.jpeg` is the coffee shop. |
+
+## Not forced into a niche
+
+These inbox files stay unassigned. They are visible on the catalog page and are not ACTIVE references:
+
+- `Catalog.jpeg`
+- `Podcast with ads.jpeg`
+- `Podcast with ads 1.jpeg`
+- `Podcast with ads 2.jpeg`
+- `Podcast with ads 3.jpeg`
+- `podcast with ads 4.jpeg`
+- `Podcast with ads 5.jpeg`
+- `Podcast with ads 6.jpeg`
+
+## What registration does not do
+
+- It does not mark a reference ACTIVE.
+- It does not invent `learn` or `doNotCopy`.
+- It does not replace the local teachers already stored by the Academy (VidaCare, FreshMart, Nova Fit, Taller Ruta, Brava Moto).
 - It does not authorize image generation, a campaign, or a send.
 
-Lifecycle for a new file starts at `CANDIDATE`. The path to production use is: human review, Alpha approved, then ACTIVE. Only an ACTIVE reference may be retrieved for normal creative production. AI output may not promote itself into this library.
+The path to production use is: human review, Alpha approved, then ACTIVE. Only an ACTIVE reference may be retrieved for normal creative production. AI output may not promote itself into this library.
