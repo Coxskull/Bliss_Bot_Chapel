@@ -101,7 +101,7 @@ async function runAcceptanceVoyage() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      voyageKey: "one-voyage-panama-pharmacy-controls",
+      voyageKey: "one-voyage-panama-pharmacy-working",
       advertiserName: "Harborlight Pharmacy",
       city: "Panama City",
       market: "Panama",
