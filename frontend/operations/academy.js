@@ -187,11 +187,15 @@ async function loadAcademyBoard() {
 }
 
 async function loadHarborlightReview() {
-  const sheet = await api("/api/operations/academy/harborlight-review");
+  const reading = await api("/api/operations/academy/harborlight-review");
+  const sheet = reading?.reviewSheet;
+  const similarity = reading?.pixelSimilarity;
   const target = document.getElementById("harborlight-review");
   if (!target || !sheet) return;
   const rows = (items, valueName) => (items || []).map(item =>
     `<tr><td>${escapeHtml(item.name)}</td><td>${escapeHtml(item[valueName])}</td></tr>`).join("");
+  const distances = (similarity?.references || []).map(item =>
+    `<tr><td>${escapeHtml(item.referenceId)}</td><td>${escapeHtml(String(item.meanAbsoluteError))}</td><td>${escapeHtml(String(item.averageHashDistance))}</td></tr>`).join("");
   target.innerHTML = `<article>
     <p class="eyebrow">${escapeHtml(sheet.attemptId)} · ${escapeHtml(sheet.status)} · ${escapeHtml(sheet.qualityDnaVersion)}</p>
     <p>${escapeHtml(sheet.notice)}</p>
@@ -202,6 +206,9 @@ async function loadHarborlightReview() {
     <table><thead><tr><th>Check</th><th>Status</th></tr></thead><tbody>${rows(sheet.copyChecks, "status")}</tbody></table>
     <h4>Open questions</h4>
     <table><thead><tr><th>Question</th><th>Status</th></tr></thead><tbody>${rows(sheet.questions, "status")}</tbody></table>
+    <h4>Pixel similarity ${escapeHtml(similarity?.status || "NOT_RUN")}</h4>
+    <p>${escapeHtml(similarity?.notice || "No pixel measurement is stored.")} Judgment ${escapeHtml(similarity?.judgment || "NOT_JUDGED")}. Visual grade ${escapeHtml(similarity?.visualGrade || "NOT_ASSIGNED")}.</p>
+    <table><thead><tr><th>Reference</th><th>Mean absolute error</th><th>Average-hash distance</th></tr></thead><tbody>${distances}</tbody></table>
   </article>`;
 }
 

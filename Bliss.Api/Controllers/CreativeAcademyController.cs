@@ -43,8 +43,12 @@ public sealed class CreativeAcademyController(
     {
         try
         {
-            var path = HarborlightEvidencePath();
-            return Ok(HarborlightReview.ParseEvidence(System.IO.File.ReadAllText(path)));
+            var text = System.IO.File.ReadAllText(HarborlightEvidencePath());
+            return Ok(new
+            {
+                reviewSheet = HarborlightReview.ParseEvidence(text),
+                pixelSimilarity = HarborlightPixelSimilarity.ParseEvidence(text)
+            });
         }
         catch (InvalidOperationException ex)
         {
