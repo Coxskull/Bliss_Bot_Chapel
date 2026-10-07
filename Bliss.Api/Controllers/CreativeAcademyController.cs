@@ -49,6 +49,7 @@ public sealed class CreativeAcademyController(
                 reviewSheet = HarborlightReview.ParseEvidence(text),
                 pixelSimilarity = HarborlightPixelSimilarity.ParseEvidence(text),
                 workflowTrace = HarborlightWorkflow.ParseEvidence(text),
+                failuresAndRetries = HarborlightFailures.ParseEvidence(text),
                 images = HarborlightReviewImages.ParseEvidence(text).Select(item => new
                 {
                     item.Role,

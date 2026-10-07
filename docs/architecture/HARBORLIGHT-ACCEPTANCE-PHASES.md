@@ -73,7 +73,7 @@ The package contains the Harborlight brief, automatically retrieved references, 
 
 **Done when.** Every item above is either stored evidence or an explicit `NOT_RUN` / `UNRECORDED` fact. No item is filled with a placeholder image or an invented number.
 
-**Progress.** HV-001 now stores a thirteen-step workflow trace. Visual QA is `NOT_RUN`, human review is `NOT_REQUESTED`, delivery is `NOT_SENT`, and regression is `BASELINE_NOT_RECORDED`. Changing the human-review step to an acceptance is refused.
+**Progress.** HV-001 now stores a thirteen-step workflow trace. Visual QA is `NOT_RUN`, human review is `NOT_REQUESTED`, delivery is `NOT_SENT`, and regression is `BASELINE_NOT_RECORDED`. Changing the human-review step to an acceptance is refused. Failures and retries are `NONE_STORED`: one attempt is the original image, no failure file is stored, and a retry is `NOT_RUN`. The provider did not report a failure count.
 
 ## HV-4 — Human visual review and Quality DNA
 

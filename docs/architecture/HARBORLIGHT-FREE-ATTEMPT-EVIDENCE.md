@@ -39,6 +39,7 @@ References were not manually selected to force a pass. Their image files were no
 - Dimensions: 1280×720
 - SHA-256: `3fa9e45467683c37b3d1fa356aa968bff5b2f0719fa2184ac31ab7f87c1ebd47`
 - Attempts: 1
+- Failures and retries: `NONE_STORED`. No failed generation file is stored. A retry is `NOT_RUN`. The provider did not report a failure count.
 - Provider: Cursor `GenerateImage` capability
 - Model: `UNREPORTED_BY_PROVIDER`
 - Job ID: `UNREPORTED_BY_PROVIDER`
@@ -129,7 +130,7 @@ Model, job ID, and cost stay `UNREPORTED_BY_PROVIDER`. Both parent amendments st
 
 ```text
 dotnet test BlissBotChapel.sln --no-restore
-Passed: 530
+Passed: 531
 Failed: 0
 Skipped: 0
 ```

@@ -65,6 +65,13 @@
     "newSubscriptionPurchased": false,
     "note": "No separate subscription was purchased. The provider capability did not expose a model, job identifier, usage invoice, or price, so none was invented."
   },
+  "failuresAndRetries": {
+    "status": "NONE_STORED",
+    "storedAttempts": 1,
+    "storedFailureFiles": 0,
+    "retries": "NOT_RUN",
+    "notice": "One attempt is stored and it is the original image. No failed generation file is stored. A retry was not run. The provider did not report a failure count, so none was invented."
+  },
   "original": {
     "path": "assets/alpha-prototypes/creative-academy/harborlight/HV-001-original.jpg",
     "width": 1280,

@@ -171,6 +171,34 @@ public sealed class HarborlightFreeAttemptEvidenceTests
     }
 
     [Fact]
+    public void Failure_record_names_one_stored_attempt_and_refuses_an_invented_retry()
+    {
+        var json = File.ReadAllText(EvidencePath());
+        var record = HarborlightFailures.ParseEvidence(json);
+        Assert.Equal(HarborlightFailures.NoneStored, record.Status);
+        Assert.Equal(1, record.StoredAttempts);
+        Assert.Equal(0, record.StoredFailureFiles);
+        Assert.Equal(HarborlightFailures.RetriesNotRun, record.Retries);
+        Assert.Contains("none was invented", record.Notice, StringComparison.OrdinalIgnoreCase);
+
+        var storedNames = Directory.GetFiles(Path.GetDirectoryName(EvidencePath())!)
+            .Select(Path.GetFileName)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        Assert.Equal(
+            ["HV-001-adapted-preview.png", "HV-001-evidence.json", "HV-001-original.jpg"],
+            storedNames);
+
+        var node = JsonNode.Parse(json)!;
+        node["failuresAndRetries"]!["retries"] = "SUCCEEDED";
+        var error = Assert.Throws<InvalidOperationException>(() => HarborlightFailures.ParseEvidence(node.ToJsonString()));
+        Assert.Contains("None was invented", error.Message, StringComparison.Ordinal);
+        Assert.All(
+            HarborlightReview.ParseEvidence(json).Attributes,
+            item => Assert.Equal(ReferenceLibrary.Unclassified, item.Grade));
+    }
+
+    [Fact]
     public void Owner_grade_gate_applies_only_supplied_attributes()
     {
         var json = File.ReadAllText(EvidencePath());

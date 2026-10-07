@@ -62,6 +62,8 @@ def main() -> None:
     heading(pdf, "Provider and usage")
     provider = evidence["provider"]
     paragraph(pdf, f"Provider: {provider['name']}. Model: {provider['model']}. Job ID: {provider['jobId']}. Attempts: {provider['attempts']}. Usage: {provider['usage']}. Cost: {provider['costStatus']}. New subscription: No.")
+    failures = evidence["failuresAndRetries"]
+    paragraph(pdf, f"Failures and retries: {failures['status']}. Stored attempts: {failures['storedAttempts']}. Stored failure files: {failures['storedFailureFiles']}. Retries: {failures['retries']}. {failures['notice']}")
     heading(pdf, "Integrity")
     paragraph(pdf, f"Original SHA-256: {evidence['original']['sha256']}")
     paragraph(pdf, f"Adapted preview SHA-256: {evidence['adaptation']['sha256']}")
