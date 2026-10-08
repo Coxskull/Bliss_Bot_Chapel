@@ -19,7 +19,7 @@ The package folder in the local system of record is `02 — EVIDENCE SUBMITTED/{
 | 6 Traceability | A correction retest creates a new id linked to the parent. The original row stays. |
 | 7 Governance | Economics and the other owner categories require an owner decision. A non-owner pass is refused. A numeric cost is refused. |
 
-No new subscription is authorized. Random validation selects a name from the existing approved catalog and returns `NOT_RUN`. It does not create a new business rule and it does not mark itself passed.
+No new subscription is authorized. Selecting a name from the existing approved catalog returns `NOT_RUN` and does not create a package. Running one approved check executes that existing check, stores the observation as a log under a new evidence id, and leaves the review `NOT_REVIEWED`. A held check is claimed `OBSERVED`. A check that does not hold is claimed `FAIL`. Neither claim is a review, and neither authorizes a price. Drive upload stays `NOT_CONNECTED`.
 
 The owner message for a prepared local package is:
 
