@@ -9,6 +9,9 @@
 # Local demonstration renders and uploaded source slices
 App_Data/
 
+# Local Mission Control evidence packages. This folder is not the shared Drive.
+data/mission-control/
+
 # User-specific files
 *.rsuser
 *.suo

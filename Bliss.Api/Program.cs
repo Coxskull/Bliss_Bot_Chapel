@@ -104,6 +104,7 @@ builder.Services.AddScoped<CreativeAcademyService>();
 builder.Services.AddScoped<BlueprintPhaseService>();
 builder.Services.AddScoped<CreativeGenerationService>();
 builder.Services.AddScoped<CreativeAcceptanceVoyageService>();
+builder.Services.AddScoped<MissionControlEvidenceService>();
 builder.Services.AddHttpClient<ICreativeImageGenerator, ConfiguredCreativeImageGenerator>(client =>
 {
     client.Timeout = Timeout.InfiniteTimeSpan;

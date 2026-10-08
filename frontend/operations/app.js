@@ -1629,6 +1629,7 @@ function route() {
   if(view==="week"&&typeof loadWeek==="function")loadWeek().catch(error=>toast(error.message,true));
   if(view==="metrics"&&typeof loadMetrics==="function")loadMetrics().catch(error=>toast(error.message,true));
   if(view==="models"&&typeof loadModels==="function")loadModels().catch(error=>toast(error.message,true));
+  if(view==="status"&&typeof loadMissionControl==="function")loadMissionControl().catch(error=>toast(error.message,true));
   if(!state.loaded)return;
   if(view==="creators"&&parts[1])openCreator(parts[1]);
   else if(view==="matches"&&parts[1])openMatch(parts[1]);
