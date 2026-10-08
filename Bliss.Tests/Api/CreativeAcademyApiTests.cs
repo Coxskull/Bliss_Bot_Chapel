@@ -403,6 +403,14 @@ public sealed class CreativeAcademyApiTests
         Assert.All(
             sheet.GetProperty("questions").EnumerateArray(),
             item => Assert.Equal("UNRECORDED", item.GetProperty("status").GetString()));
+        var provider = body.GetProperty("providerRecord");
+        Assert.Equal("Cursor GenerateImage capability", provider.GetProperty("name").GetString());
+        Assert.Equal("UNREPORTED_BY_PROVIDER", provider.GetProperty("model").GetString());
+        Assert.Equal("UNREPORTED_BY_PROVIDER", provider.GetProperty("jobId").GetString());
+        Assert.Equal("UNREPORTED_BY_PROVIDER", provider.GetProperty("costStatus").GetString());
+        Assert.Equal("UNREPORTED", provider.GetProperty("actualCostState").GetString());
+        Assert.False(provider.TryGetProperty("actualCost", out _));
+        Assert.False(provider.GetProperty("newSubscriptionPurchased").GetBoolean());
         var failures = body.GetProperty("failuresAndRetries");
         Assert.Equal("NONE_STORED", failures.GetProperty("status").GetString());
         Assert.Equal(1, failures.GetProperty("storedAttempts").GetInt32());

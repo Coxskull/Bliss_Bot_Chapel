@@ -50,6 +50,7 @@ public sealed class CreativeAcademyController(
                 pixelSimilarity = HarborlightPixelSimilarity.ParseEvidence(text),
                 workflowTrace = HarborlightWorkflow.ParseEvidence(text),
                 failuresAndRetries = HarborlightFailures.ParseEvidence(text),
+                providerRecord = HarborlightProvider.ParseEvidence(text),
                 images = HarborlightReviewImages.ParseEvidence(text).Select(item => new
                 {
                     item.Role,

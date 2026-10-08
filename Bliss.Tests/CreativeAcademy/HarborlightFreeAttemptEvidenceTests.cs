@@ -199,6 +199,36 @@ public sealed class HarborlightFreeAttemptEvidenceTests
     }
 
     [Fact]
+    public void Provider_record_keeps_an_unreported_cost_unreported()
+    {
+        var json = File.ReadAllText(EvidencePath());
+        var record = HarborlightProvider.ParseEvidence(json);
+        Assert.Equal(HarborlightProvider.StoredName, record.Name);
+        Assert.Equal(HarborlightProvider.Unreported, record.Model);
+        Assert.Equal(HarborlightProvider.Unreported, record.JobId);
+        Assert.Equal(HarborlightProvider.Unreported, record.CostStatus);
+        Assert.Null(record.ActualCost);
+        Assert.Equal(HarborlightProvider.UnreportedCost, record.ActualCostState);
+        Assert.Equal(1, record.Attempts);
+        Assert.Equal(HarborlightProvider.StoredUsage, record.Usage);
+        Assert.False(record.NewSubscriptionPurchased);
+        Assert.Contains("stays unreported", record.Notice, StringComparison.Ordinal);
+
+        var zero = JsonNode.Parse(json)!;
+        zero["provider"]!["actualCost"] = 0;
+        var zeroError = Assert.Throws<InvalidOperationException>(() => HarborlightProvider.ParseEvidence(zero.ToJsonString()));
+        Assert.Contains("Zero was not invented", zeroError.Message, StringComparison.Ordinal);
+
+        var substituted = JsonNode.Parse(json)!;
+        substituted["provider"]!["model"] = "gpt-image-1";
+        var modelError = Assert.Throws<InvalidOperationException>(() => HarborlightProvider.ParseEvidence(substituted.ToJsonString()));
+        Assert.Contains("None was substituted", modelError.Message, StringComparison.Ordinal);
+        Assert.All(
+            HarborlightReview.ParseEvidence(json).Attributes,
+            item => Assert.Equal(ReferenceLibrary.Unclassified, item.Grade));
+    }
+
+    [Fact]
     public void Owner_grade_gate_applies_only_supplied_attributes()
     {
         var json = File.ReadAllText(EvidencePath());
