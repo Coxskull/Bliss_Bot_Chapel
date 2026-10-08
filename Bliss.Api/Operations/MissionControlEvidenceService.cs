@@ -91,6 +91,11 @@ public sealed class MissionControlEvidenceService(
             throw new InvalidOperationException("A retest must say RETEST AFTER CORRECTION. The original package was not overwritten.");
         }
 
+        if (parent.FinalReviewResult is not ("CORRECTION_REQUIRED" or "RETEST_REQUIRED"))
+        {
+            throw new InvalidOperationException("A retest follows a recorded correction. The original package was not overwritten.");
+        }
+
         var manifest = NewManifest(
             await NextIdAsync(cancellationToken),
             new EvidenceIssueRequest(

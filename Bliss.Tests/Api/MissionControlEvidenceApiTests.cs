@@ -52,6 +52,15 @@ public sealed class MissionControlEvidenceApiTests
         });
         var original = await issued.Content.ReadFromJsonAsync<JsonElement>();
         var originalId = original.GetProperty("evidenceId").GetString();
+        var early = await client.PostAsJsonAsync(
+            "/api/operations/mission-control/evidence/" + originalId + "/retest",
+            new { submittedBy = "Erwin", retestReason = "RETEST AFTER CORRECTION" });
+        Assert.Equal(HttpStatusCode.BadRequest, early.StatusCode);
+
+        var review = await client.PostAsJsonAsync(
+            "/api/operations/mission-control/evidence/" + originalId + "/review",
+            new { reviewer = "Independent", reviewerRole = "REVIEWER", result = "CORRECTION_REQUIRED" });
+        Assert.Equal(HttpStatusCode.OK, review.StatusCode);
         var retest = await client.PostAsJsonAsync(
             "/api/operations/mission-control/evidence/" + originalId + "/retest",
             new { submittedBy = "Erwin", retestReason = "RETEST AFTER CORRECTION" });
@@ -64,6 +73,7 @@ public sealed class MissionControlEvidenceApiTests
         Assert.Equal("NOT_REVIEWED", child.GetProperty("finalReviewResult").GetString());
 
         var still = await client.GetFromJsonAsync<JsonElement>("/api/operations/mission-control/evidence/" + originalId);
+        Assert.Equal("CORRECTION_REQUIRED", still.GetProperty("finalReviewResult").GetString());
         Assert.False(still.TryGetProperty("parentEvidenceId", out var parent) && parent.ValueKind == JsonValueKind.String);
     }
 
