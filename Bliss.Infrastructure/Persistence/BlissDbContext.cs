@@ -105,6 +105,7 @@ public class BlissDbContext : DbContext
         Set<CreativeAcceptanceVoyageRow>();
     public DbSet<RealEstateProductRow> RealEstateProducts => Set<RealEstateProductRow>();
     public DbSet<CatalogConversationRow> CatalogConversations => Set<CatalogConversationRow>();
+    public DbSet<EvidencePackageRow> EvidencePackages => Set<EvidencePackageRow>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
