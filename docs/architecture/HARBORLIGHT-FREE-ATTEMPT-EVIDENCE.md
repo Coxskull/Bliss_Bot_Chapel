@@ -43,7 +43,7 @@ References were not manually selected to force a pass. Their image files were no
 - Provider: Cursor `GenerateImage` capability
 - Model: `UNREPORTED_BY_PROVIDER`
 - Job ID: `UNREPORTED_BY_PROVIDER`
-- Actual cost: `UNREPORTED_BY_PROVIDER`
+- Actual cost: `UNREPORTED_BY_PROVIDER`. The review refuses a stored number, including zero.
 - New subscription: no
 
 ## Inventory preview
@@ -130,7 +130,7 @@ Model, job ID, and cost stay `UNREPORTED_BY_PROVIDER`. Both parent amendments st
 
 ```text
 dotnet test BlissBotChapel.sln --no-restore
-Passed: 531
+Passed: 532
 Failed: 0
 Skipped: 0
 ```
