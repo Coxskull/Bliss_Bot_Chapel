@@ -45,6 +45,25 @@ public sealed class EvidenceIdentityTests
         Assert.False(EvidenceIdentity.RequiresOwnerDecision("evidence-retrieval"));
     }
 
+    [Fact]
+    public void An_approved_check_observes_and_does_not_review_itself()
+    {
+        var retrieval = ApprovedValidation.Observe(EvidenceIdentity.Catalog[0]);
+        var originality = ApprovedValidation.Observe(EvidenceIdentity.Catalog[2]);
+        var economics = ApprovedValidation.Observe(EvidenceIdentity.Catalog[6]);
+        var invented = ApprovedValidation.Observe(new ApprovedValidationTest("invented-doctrine", "Invented", "Nowhere"));
+
+        Assert.True(retrieval.Held);
+        Assert.Equal(ApprovedValidation.Observed, retrieval.ClaimedResult);
+        Assert.Equal(ApprovedValidation.Observed, originality.ClaimedResult);
+        Assert.Contains("REFERENCE_TOO_SIMILAR", originality.Log);
+        Assert.Equal("economics", ApprovedValidation.Category(economics.Test));
+        Assert.True(EvidenceIdentity.RequiresOwnerDecision(ApprovedValidation.Category(economics.Test)));
+        Assert.False(invented.Held);
+        Assert.Equal(ApprovedValidation.Failed, invented.ClaimedResult);
+        Assert.NotEqual("PASS", invented.ClaimedResult);
+    }
+
     private static EvidenceManifest Sample() => new(
         "ALPHA-EV-20261007-H7K4Q9",
         "MC-EVIDENCE-ID",

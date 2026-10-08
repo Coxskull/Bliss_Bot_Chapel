@@ -134,6 +134,31 @@ public sealed class MissionControlEvidenceController(MissionControlEvidenceServi
             notice = "Selection does not run the test and does not record a pass."
         });
 
+    [HttpPost("validation-catalog/run")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> Run([FromBody] EvidenceSelectRequest? request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var manifest = await evidence.RunValidationAsync(request?.Seed, cancellationToken);
+            return Ok(new
+            {
+                message = "Mission Control evidence ready: " + manifest.EvidenceId,
+                manifest.EvidenceId,
+                manifest.ClaimedResult,
+                manifest.FinalReviewResult,
+                manifest.DriveStatus,
+                chatgptRetrieval = EvidenceIdentity.NotRun,
+                manifest
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Refuse(ex);
+        }
+    }
+
     [HttpPost("retrieval-probe")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
