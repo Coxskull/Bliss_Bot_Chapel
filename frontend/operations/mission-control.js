@@ -29,12 +29,17 @@ function age(createdAt) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const button = document.getElementById("mission-control-probe");
+  bind("mission-control-probe", "/api/operations/mission-control/retrieval-probe");
+  bind("mission-control-validation", "/api/operations/mission-control/validation-catalog/run");
+});
+
+function bind(id, path) {
+  const button = document.getElementById(id);
   if (!button) return;
   button.addEventListener("click", async () => {
     button.disabled = true;
     try {
-      const result = await api("/api/operations/mission-control/retrieval-probe", { method: "POST" });
+      const result = await api(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
       await loadMissionControl(result.message || "Evidence id issued.");
     } catch (error) {
       toast(error.message, true);
@@ -42,4 +47,4 @@ document.addEventListener("DOMContentLoaded", () => {
       button.disabled = false;
     }
   });
-});
+}

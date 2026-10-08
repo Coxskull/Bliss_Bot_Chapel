@@ -101,6 +101,36 @@ public sealed class MissionControlEvidenceApiTests
         Assert.Equal("NOT_RUN", choice.GetProperty("status").GetString());
         Assert.False(string.IsNullOrWhiteSpace(choice.GetProperty("test").GetProperty("name").GetString()));
     }
+
+    [Fact]
+    public async Task A_validation_run_files_an_observation_and_stays_unreviewed()
+    {
+        await using var factory = new MissionControlApiFactory();
+        var client = factory.CreateClient();
+        var run = await client.PostAsJsonAsync("/api/operations/mission-control/validation-catalog/run", new { seed = 0 });
+        var body = await run.Content.ReadFromJsonAsync<JsonElement>();
+        var manifest = body.GetProperty("manifest");
+        var evidenceId = manifest.GetProperty("evidenceId").GetString()!;
+        var logPath = Path.Combine(factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-LOG.txt");
+
+        Assert.Equal(HttpStatusCode.OK, run.StatusCode);
+        Assert.Equal("OBSERVED", body.GetProperty("claimedResult").GetString());
+        Assert.Equal("NOT_REVIEWED", body.GetProperty("finalReviewResult").GetString());
+        Assert.Equal("NOT_CONNECTED", body.GetProperty("driveStatus").GetString());
+        Assert.Equal("NOT_RUN", body.GetProperty("chatgptRetrieval").GetString());
+        Assert.Equal("LOG", manifest.GetProperty("files")[0].GetProperty("evidenceType").GetString());
+        Assert.Contains("RETRIEVED", await File.ReadAllTextAsync(logPath));
+
+        var economics = await client.PostAsJsonAsync("/api/operations/mission-control/validation-catalog/run", new { seed = 6 });
+        var priced = await economics.Content.ReadFromJsonAsync<JsonElement>();
+        var pricedManifest = priced.GetProperty("manifest");
+        Assert.True(pricedManifest.GetProperty("ownerDecisionRequired").GetBoolean());
+        Assert.Equal("NOT_REVIEWED", pricedManifest.GetProperty("finalReviewResult").GetString());
+        var review = await client.PostAsJsonAsync(
+            "/api/operations/mission-control/evidence/" + pricedManifest.GetProperty("evidenceId").GetString() + "/review",
+            new { reviewer = "ChatGPT", reviewerRole = "REVIEWER", result = "PASS" });
+        Assert.Equal(HttpStatusCode.BadRequest, review.StatusCode);
+    }
 }
 
 public sealed class MissionControlApiFactory : WebApplicationFactory<Program>

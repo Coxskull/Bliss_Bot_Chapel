@@ -144,6 +144,40 @@ public sealed class MissionControlEvidenceService(
     public ApprovedValidationTest Select(int? seed) =>
         EvidenceIdentity.SelectValidation(seed ?? Random.Shared.Next());
 
+    public async Task<EvidenceManifest> RunValidationAsync(int? seed, CancellationToken cancellationToken)
+    {
+        var selected = Select(seed);
+        var observation = ApprovedValidation.Observe(selected);
+        if (observation.ClaimedResult is not (ApprovedValidation.Observed or ApprovedValidation.Failed))
+        {
+            throw new InvalidOperationException("A validation run invented a review result. None was stored.");
+        }
+
+        var manifest = await IssueAsync(new EvidenceIssueRequest(
+            "MC-VALIDATION",
+            selected.Name,
+            ApprovedValidation.Category(selected),
+            "Erwin",
+            environment.EnvironmentName,
+            EvidenceIdentity.Unrecorded,
+            EvidenceIdentity.Unrecorded,
+            observation.ClaimedResult,
+            "Google Drive upload is NOT_CONNECTED. ChatGPT retrieval is NOT_RUN. This run is not a review.",
+            observation.Held ? string.Empty : observation.Log,
+            EvidenceIdentity.Unrecorded,
+            null), cancellationToken);
+        if (!string.Equals(manifest.FinalReviewResult, EvidenceIdentity.NotReviewed, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("A validation run reviewed itself. None was accepted.");
+        }
+
+        return await AttachAsync(
+            manifest.EvidenceId,
+            "LOG",
+            Encoding.UTF8.GetBytes(observation.Log),
+            cancellationToken);
+    }
+
     public async Task<EvidenceManifest> PrepareRetrievalProbeAsync(CancellationToken cancellationToken)
     {
         var manifest = await IssueAsync(new EvidenceIssueRequest(
