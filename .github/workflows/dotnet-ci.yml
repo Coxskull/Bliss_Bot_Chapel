@@ -42,6 +42,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes --no-install-recommends ffmpeg fonts-dejavu-core
+          ffmpeg -version
+          ffprobe -version
 
       - name: Run regression tests
         run: dotnet test Bliss.Tests/Bliss.Tests.csproj --configuration Release --no-build --no-restore --logger "console;verbosity=detailed" --logger "trx;LogFileName=bliss-tests.trx" --results-directory TestResults
