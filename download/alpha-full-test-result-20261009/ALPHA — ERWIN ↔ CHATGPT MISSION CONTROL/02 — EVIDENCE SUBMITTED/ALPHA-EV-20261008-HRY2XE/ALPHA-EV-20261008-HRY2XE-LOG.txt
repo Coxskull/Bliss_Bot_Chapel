@@ -1,0 +1,3 @@
+Observed a draft catalog reply with no price and no sale.
+Delivery NOT_SENT.
+This observation is not an Economics authorization.
