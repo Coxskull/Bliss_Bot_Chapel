@@ -2,8 +2,6 @@ name: .NET 8 CI
 
 on:
   pull_request:
-    branches:
-      - main
   push:
     branches:
       - main
