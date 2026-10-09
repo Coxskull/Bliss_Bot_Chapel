@@ -1,0 +1,66 @@
+{
+  "driveStatus": "NOT_CONNECTED",
+  "chatgptRetrieval": "NOT_RUN",
+  "uploadPerformed": false,
+  "assignmentEvidenceId": "ALPHA-EV-20261009-9HZLBJ",
+  "packages": [
+    {
+      "evidenceId": "ALPHA-EV-20261009-9HZLBJ",
+      "folder": "02 \u2014 EVIDENCE SUBMITTED",
+      "testName": "Mission Control retrieval probe",
+      "claimedResult": "NOT_READY_FOR_REVIEW",
+      "finalReviewResult": "NOT_REVIEWED",
+      "files": [
+        "ALPHA-EV-20261009-9HZLBJ-MANIFEST.json",
+        "ALPHA-EV-20261009-9HZLBJ-REPORT.pdf",
+        "ALPHA-EV-20261009-9HZLBJ-VIDEO.mp4"
+      ]
+    },
+    {
+      "evidenceId": "ALPHA-EV-20261008-HRY2XE",
+      "folder": "02 \u2014 EVIDENCE SUBMITTED",
+      "testName": "A draft catalog states no price",
+      "claimedResult": "OBSERVED",
+      "finalReviewResult": "NOT_REVIEWED",
+      "files": [
+        "ALPHA-EV-20261008-HRY2XE-LOG.txt",
+        "ALPHA-EV-20261008-HRY2XE-MANIFEST.json"
+      ]
+    },
+    {
+      "evidenceId": "ALPHA-EV-20261008-LXYTS3",
+      "folder": "02 \u2014 EVIDENCE SUBMITTED",
+      "testName": "Retrieval selects only active files and records why",
+      "claimedResult": "OBSERVED",
+      "finalReviewResult": "NOT_REVIEWED",
+      "files": [
+        "ALPHA-EV-20261008-LXYTS3-LOG.txt",
+        "ALPHA-EV-20261008-LXYTS3-MANIFEST.json"
+      ]
+    },
+    {
+      "evidenceId": "ALPHA-EV-20261008-D9WHZH",
+      "folder": "02 \u2014 EVIDENCE SUBMITTED",
+      "testName": "Mission Control retrieval probe",
+      "claimedResult": "NOT_READY_FOR_REVIEW",
+      "finalReviewResult": "NOT_REVIEWED",
+      "files": [
+        "ALPHA-EV-20261008-D9WHZH-MANIFEST.json",
+        "ALPHA-EV-20261008-D9WHZH-REPORT.pdf",
+        "ALPHA-EV-20261008-D9WHZH-VIDEO.mp4"
+      ]
+    },
+    {
+      "evidenceId": "ALPHA-EV-20261008-Z6P7WR",
+      "folder": "02 \u2014 EVIDENCE SUBMITTED",
+      "testName": "Mission Control retrieval probe",
+      "claimedResult": "NOT_READY_FOR_REVIEW",
+      "finalReviewResult": "NOT_REVIEWED",
+      "files": [
+        "ALPHA-EV-20261008-Z6P7WR-MANIFEST.json",
+        "ALPHA-EV-20261008-Z6P7WR-REPORT.pdf",
+        "ALPHA-EV-20261008-Z6P7WR-VIDEO.mp4"
+      ]
+    }
+  ]
+}

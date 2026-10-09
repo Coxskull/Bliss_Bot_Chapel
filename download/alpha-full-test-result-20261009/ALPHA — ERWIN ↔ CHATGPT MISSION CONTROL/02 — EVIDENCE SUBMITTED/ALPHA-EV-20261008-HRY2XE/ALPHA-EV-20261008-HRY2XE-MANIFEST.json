@@ -1,0 +1,32 @@
+{
+  "evidenceId": "ALPHA-EV-20261008-HRY2XE",
+  "taskId": "MC-VALIDATION",
+  "testName": "A draft catalog states no price",
+  "testCategory": "pricing",
+  "createdAt": "2026-10-08T01:08:48.1326718Z",
+  "submittedAt": "2026-10-08T01:08:48.1393106Z",
+  "submittedBy": "Erwin",
+  "environment": "Development",
+  "buildVersion": "UNRECORDED",
+  "commitId": "UNRECORDED",
+  "files": [
+    {
+      "fileName": "ALPHA-EV-20261008-HRY2XE-LOG.txt",
+      "evidenceType": "LOG",
+      "sha256": "a50d19590ada607e6dffa24243598a206dcdc87ea7f66d8c15ff47fdd407355b"
+    }
+  ],
+  "claimedResult": "OBSERVED",
+  "knownBlockers": "Google Drive upload is NOT_CONNECTED. ChatGPT retrieval is NOT_RUN. This run is not a review.",
+  "knownFailures": "",
+  "costStatus": "UNRECORDED",
+  "ownerDecisionRequired": true,
+  "reviewStatus": "NOT_REVIEWED",
+  "reviewer": "",
+  "reviewedAt": null,
+  "finalReviewResult": "NOT_REVIEWED",
+  "parentEvidenceId": null,
+  "retestReason": "",
+  "driveStatus": "NOT_CONNECTED",
+  "driveLocation": "02 \u2014 EVIDENCE SUBMITTED/ALPHA-EV-20261008-HRY2XE"
+}

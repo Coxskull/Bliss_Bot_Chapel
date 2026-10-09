@@ -1,0 +1,37 @@
+{
+  "evidenceId": "ALPHA-EV-20261008-D9WHZH",
+  "taskId": "MC-EVIDENCE-ID",
+  "testName": "Mission Control retrieval probe",
+  "testCategory": "evidence-retrieval",
+  "createdAt": "2026-10-08T00:29:38.2296013Z",
+  "submittedAt": "2026-10-08T00:29:38.3530122Z",
+  "submittedBy": "Erwin",
+  "environment": "Development",
+  "buildVersion": "UNRECORDED",
+  "commitId": "UNRECORDED",
+  "files": [
+    {
+      "fileName": "ALPHA-EV-20261008-D9WHZH-REPORT.pdf",
+      "evidenceType": "REPORT",
+      "sha256": "f799d7a431794cafbd2029fcb1ecc9fb17c2b9a5d34a7938170432186a1ec482"
+    },
+    {
+      "fileName": "ALPHA-EV-20261008-D9WHZH-VIDEO.mp4",
+      "evidenceType": "VIDEO",
+      "sha256": "696f7a6e8a3832da81598859f069fb7e0391366ff7331f7fe23e98e12659cf59"
+    }
+  ],
+  "claimedResult": "NOT_READY_FOR_REVIEW",
+  "knownBlockers": "Google Drive upload is NOT_CONNECTED. ChatGPT retrieval is NOT_RUN.",
+  "knownFailures": "",
+  "costStatus": "UNRECORDED",
+  "ownerDecisionRequired": false,
+  "reviewStatus": "NOT_REVIEWED",
+  "reviewer": "",
+  "reviewedAt": null,
+  "finalReviewResult": "NOT_REVIEWED",
+  "parentEvidenceId": null,
+  "retestReason": "",
+  "driveStatus": "NOT_CONNECTED",
+  "driveLocation": "02 \u2014 EVIDENCE SUBMITTED/ALPHA-EV-20261008-D9WHZH"
+}

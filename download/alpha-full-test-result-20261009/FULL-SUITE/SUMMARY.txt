@@ -1,0 +1,13 @@
+BLISS FULL TEST RESULT
+Date: 2026-10-09T00:39:41Z
+Command: dotnet test BlissBotChapel.sln
+Result: Passed 538, Failed 0, Skipped 0, Total 538
+Duration: 10 s
+Delivery: NOT_SENT
+Hosted acceptance: not claimed
+Google Drive upload: NOT_CONNECTED
+ChatGPT retrieval: NOT_RUN
+
+This file is the test runner result. It is not a ChatGPT review and it is not an owner acceptance.
+The raw results file was not included because it contained connection strings. EVERY-TEST.txt lists each executed test and its outcome. Four database-setting tests are listed with the connection string removed.
+A passing test does not send a campaign, invent a price, or connect Google Drive.

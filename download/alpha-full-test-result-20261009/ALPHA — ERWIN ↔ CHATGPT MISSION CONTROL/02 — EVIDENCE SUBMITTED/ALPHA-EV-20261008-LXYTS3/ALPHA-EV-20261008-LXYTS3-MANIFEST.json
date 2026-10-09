@@ -1,0 +1,32 @@
+{
+  "evidenceId": "ALPHA-EV-20261008-LXYTS3",
+  "taskId": "MC-VALIDATION",
+  "testName": "Retrieval selects only active files and records why",
+  "testCategory": "academy-retrieval",
+  "createdAt": "2026-10-08T01:07:08.1568Z",
+  "submittedAt": "2026-10-08T01:07:08.2627597Z",
+  "submittedBy": "Erwin",
+  "environment": "Development",
+  "buildVersion": "UNRECORDED",
+  "commitId": "UNRECORDED",
+  "files": [
+    {
+      "fileName": "ALPHA-EV-20261008-LXYTS3-LOG.txt",
+      "evidenceType": "LOG",
+      "sha256": "e21b789eb26150a66b7484e183c4a1e1ce397a0837caba08f807f508456fabb0"
+    }
+  ],
+  "claimedResult": "OBSERVED",
+  "knownBlockers": "Google Drive upload is NOT_CONNECTED. ChatGPT retrieval is NOT_RUN. This run is not a review.",
+  "knownFailures": "",
+  "costStatus": "UNRECORDED",
+  "ownerDecisionRequired": false,
+  "reviewStatus": "NOT_REVIEWED",
+  "reviewer": "",
+  "reviewedAt": null,
+  "finalReviewResult": "NOT_REVIEWED",
+  "parentEvidenceId": null,
+  "retestReason": "",
+  "driveStatus": "NOT_CONNECTED",
+  "driveLocation": "02 \u2014 EVIDENCE SUBMITTED/ALPHA-EV-20261008-LXYTS3"
+}
