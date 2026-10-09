@@ -183,6 +183,112 @@ public sealed class MissionControlEvidenceService(
             cancellationToken);
     }
 
+    public async Task<UploadFolderResult> ExportUploadAsync(CancellationToken cancellationToken)
+    {
+        var manifests = await ReadAsync(cancellationToken);
+        var root = Path.Combine(Root(), EvidenceIdentity.DriveRoot);
+        if (Directory.Exists(root))
+        {
+            Directory.Delete(root, true);
+        }
+
+        foreach (var folder in EvidenceIdentity.DriveFolders)
+        {
+            Directory.CreateDirectory(Path.Combine(root, folder));
+        }
+
+        var entries = new List<UploadPackageEntry>();
+        foreach (var manifest in manifests)
+        {
+            var folder = EvidenceIdentity.FolderFor(manifest);
+            var destination = Path.Combine(root, folder, manifest.EvidenceId);
+            Directory.CreateDirectory(destination);
+            var source = PackageDirectory(manifest.EvidenceId);
+            var copied = new List<string>();
+            if (Directory.Exists(source))
+            {
+                foreach (var file in Directory.GetFiles(source))
+                {
+                    var name = Path.GetFileName(file);
+                    if (!name.StartsWith(manifest.EvidenceId + "-", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    File.Copy(file, Path.Combine(destination, name), true);
+                    copied.Add(name);
+                }
+            }
+
+            var manifestName = manifest.EvidenceId + "-MANIFEST.json";
+            if (!copied.Contains(manifestName, StringComparer.Ordinal))
+            {
+                var json = EvidenceIdentity.Serialize(manifest);
+                EvidenceIdentity.RequireSafe(json, "manifest");
+                await File.WriteAllTextAsync(Path.Combine(destination, manifestName), json, cancellationToken);
+                copied.Add(manifestName);
+            }
+
+            entries.Add(new UploadPackageEntry(
+                manifest.EvidenceId,
+                folder,
+                manifest.TestName,
+                manifest.ClaimedResult,
+                manifest.FinalReviewResult,
+                manifest.CreatedAt,
+                copied.OrderBy(name => name, StringComparer.Ordinal).ToArray()));
+        }
+
+        var assignment = entries
+            .Where(item => item.Folder == EvidenceIdentity.SubmittedFolder
+                && item.Files.Any(name => name.EndsWith("-REPORT.pdf", StringComparison.Ordinal))
+                && item.Files.Any(name => name.EndsWith("-VIDEO.mp4", StringComparison.Ordinal)))
+            .OrderByDescending(item => item.CreatedAt)
+            .FirstOrDefault();
+        var assignmentText = AssignmentText(assignment?.EvidenceId, entries);
+        EvidenceIdentity.RequireSafe(assignmentText, "assignment");
+        await File.WriteAllTextAsync(
+            Path.Combine(root, EvidenceIdentity.CurrentAssignmentFolder, "CURRENT-ASSIGNMENT.txt"),
+            assignmentText,
+            cancellationToken);
+
+        var index = JsonSerializer.Serialize(new
+        {
+            driveStatus = EvidenceIdentity.NotConnected,
+            chatgptRetrieval = EvidenceIdentity.NotRun,
+            uploadPerformed = false,
+            assignmentEvidenceId = assignment?.EvidenceId,
+            packages = entries.Select(item => new
+            {
+                item.EvidenceId,
+                item.Folder,
+                item.TestName,
+                item.ClaimedResult,
+                item.FinalReviewResult,
+                item.Files
+            })
+        }, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true });
+        EvidenceIdentity.RequireSafe(index, "index");
+        await File.WriteAllTextAsync(Path.Combine(root, "EVIDENCE-INDEX.json"), index, cancellationToken);
+
+        foreach (var folder in EvidenceIdentity.DriveFolders)
+        {
+            var path = Path.Combine(root, folder);
+            if (!Directory.EnumerateFileSystemEntries(path).Any())
+            {
+                var note = "This folder is empty.\nNo evidence package has been placed here.\nGoogle Drive upload is NOT_CONNECTED.\nChatGPT retrieval is NOT_RUN.\n";
+                await File.WriteAllTextAsync(Path.Combine(path, "EMPTY.txt"), note, cancellationToken);
+            }
+        }
+
+        return new UploadFolderResult(
+            EvidenceIdentity.DriveRoot,
+            EvidenceIdentity.NotConnected,
+            EvidenceIdentity.NotRun,
+            assignment?.EvidenceId,
+            entries.Count);
+    }
+
     public async Task<EvidenceManifest> PrepareRetrievalProbeAsync(CancellationToken cancellationToken)
     {
         var manifest = await IssueAsync(new EvidenceIssueRequest(
@@ -333,6 +439,33 @@ public sealed class MissionControlEvidenceService(
         JsonSerializer.Deserialize<EvidenceManifest>(row.ManifestJson, JsonOptions)
         ?? throw new InvalidOperationException("The evidence manifest is not stored. None was invented.");
 
+    private static string AssignmentText(string? evidenceId, IReadOnlyList<UploadPackageEntry> entries)
+    {
+        var others = entries
+            .Select(item => item.EvidenceId)
+            .Where(id => !string.Equals(id, evidenceId, StringComparison.Ordinal))
+            .ToArray();
+        var otherLines = others.Length == 0
+            ? "No other evidence id is in this folder."
+            : "Other evidence ids are different packages. Do not assess them unless they are named:\n" + string.Join("\n", others);
+        if (string.IsNullOrWhiteSpace(evidenceId))
+        {
+            return "CURRENT ASSIGNMENT\n\nNo retrieval package with a report and a video is stored.\nGoogle Drive upload is NOT_CONNECTED.\nChatGPT retrieval is NOT_RUN.\nThis file is not a review.\n";
+        }
+
+        return "CURRENT ASSIGNMENT\n\nAssess this evidence id only:\n"
+            + evidenceId
+            + "\n\nMessage for ChatGPT:\nAssess "
+            + evidenceId
+            + ".\n\nPackage folder:\n"
+            + EvidenceIdentity.SubmittedFolder
+            + "/"
+            + evidenceId
+            + "\n\n"
+            + otherLines
+            + "\n\nGoogle Drive upload is NOT_CONNECTED.\nChatGPT retrieval is NOT_RUN.\nThis file is not a review.\n";
+    }
+
     private static string RequireToken(string? value, string label)
     {
         var token = (value ?? string.Empty).Trim();
@@ -377,6 +510,22 @@ public sealed class MissionControlEvidenceService(
         return await File.ReadAllBytesAsync(output, cancellationToken);
     }
 }
+
+public sealed record UploadFolderResult(
+    string DriveRoot,
+    string DriveStatus,
+    string ChatGptRetrieval,
+    string? AssignmentEvidenceId,
+    int PackageCount);
+
+public sealed record UploadPackageEntry(
+    string EvidenceId,
+    string Folder,
+    string TestName,
+    string ClaimedResult,
+    string FinalReviewResult,
+    DateTime CreatedAt,
+    IReadOnlyList<string> Files);
 
 public sealed record EvidenceIssueRequest(
     string? TaskId,

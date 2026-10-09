@@ -64,6 +64,16 @@ public sealed class EvidenceIdentityTests
         Assert.NotEqual("PASS", invented.ClaimedResult);
     }
 
+    [Fact]
+    public void A_correction_is_placed_apart_from_submitted_evidence()
+    {
+        var submitted = Sample();
+        var correction = submitted with { FinalReviewResult = "CORRECTION_REQUIRED" };
+        Assert.Equal(EvidenceIdentity.SubmittedFolder, EvidenceIdentity.FolderFor(submitted));
+        Assert.Equal(EvidenceIdentity.CorrectionsFolder, EvidenceIdentity.FolderFor(correction));
+        Assert.Equal(7, EvidenceIdentity.DriveFolders.Length);
+    }
+
     private static EvidenceManifest Sample() => new(
         "ALPHA-EV-20261007-H7K4Q9",
         "MC-EVIDENCE-ID",

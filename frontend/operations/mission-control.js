@@ -41,6 +41,7 @@ function age(createdAt) {
 document.addEventListener("DOMContentLoaded", () => {
   bind("mission-control-probe", "/api/operations/mission-control/retrieval-probe");
   bind("mission-control-validation", "/api/operations/mission-control/validation-catalog/run");
+  bind("mission-control-upload", "/api/operations/mission-control/upload-folder");
 });
 
 document.addEventListener("click", async (event) => {

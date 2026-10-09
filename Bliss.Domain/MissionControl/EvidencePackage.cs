@@ -43,7 +43,14 @@ public static class EvidenceIdentity
     public const string NotConnected = "NOT_CONNECTED";
     public const string NotRun = "NOT_RUN";
     public const string RetestReasonText = "RETEST AFTER CORRECTION";
+    public const string DriveRoot = "ALPHA — ERWIN ↔ CHATGPT MISSION CONTROL";
+    public const string CurrentAssignmentFolder = "01 — CURRENT ASSIGNMENT";
     public const string SubmittedFolder = "02 — EVIDENCE SUBMITTED";
+    public const string ReviewFolder = "03 — CHATGPT REVIEW";
+    public const string CorrectionsFolder = "04 — CORRECTIONS REQUIRED";
+    public const string AcceptedFolder = "05 — ACCEPTED EVIDENCE";
+    public const string OwnerDecisionFolder = "06 — OWNER DECISION REQUIRED";
+    public const string ArchiveFolder = "07 — ARCHIVE";
     private const string Alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
     public static readonly string[] ReviewResults =
@@ -144,6 +151,25 @@ public static class EvidenceIdentity
         var index = (int)((uint)seed % (uint)Catalog.Count);
         return Catalog[index];
     }
+
+    public static readonly string[] DriveFolders =
+    [
+        CurrentAssignmentFolder,
+        SubmittedFolder,
+        ReviewFolder,
+        CorrectionsFolder,
+        AcceptedFolder,
+        OwnerDecisionFolder,
+        ArchiveFolder
+    ];
+
+    public static string FolderFor(EvidenceManifest manifest) => manifest.FinalReviewResult switch
+    {
+        "CORRECTION_REQUIRED" or "RETEST_REQUIRED" => CorrectionsFolder,
+        "PASS" => AcceptedFolder,
+        "OWNER_DECISION_REQUIRED" => OwnerDecisionFolder,
+        _ => SubmittedFolder
+    };
 
     public static string FileName(string evidenceId, string evidenceType, int sequence = 1)
     {
