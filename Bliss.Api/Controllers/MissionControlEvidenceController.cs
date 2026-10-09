@@ -159,6 +159,34 @@ public sealed class MissionControlEvidenceController(MissionControlEvidenceServi
         }
     }
 
+    [HttpPost("upload-folder")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> UploadFolder(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var folder = await evidence.ExportUploadAsync(cancellationToken);
+            var ready = string.IsNullOrWhiteSpace(folder.AssignmentEvidenceId)
+                ? "Upload folder prepared locally. No retrieval package is ready."
+                : "Upload folder prepared locally. Assess " + folder.AssignmentEvidenceId + ".";
+            return Ok(new
+            {
+                message = ready + " Google Drive upload is NOT_CONNECTED.",
+                folder.DriveRoot,
+                folder.DriveStatus,
+                chatgptRetrieval = folder.ChatGptRetrieval,
+                folder.AssignmentEvidenceId,
+                folder.PackageCount,
+                uploadPerformed = false
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Refuse(ex);
+        }
+    }
+
     [HttpPost("retrieval-probe")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]

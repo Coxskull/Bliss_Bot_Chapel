@@ -1,0 +1,5 @@
+Observed RETRIEVED.
+Selected ACA-011-V1 (niche match), ACA-008-V1 (lighting craftsmanship), ACA-001-V1 (typography).
+Candidate ACA-016-V1 stayed out.
+Delivery NOT_SENT.
+This observation is not a review.

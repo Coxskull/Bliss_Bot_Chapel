@@ -1,0 +1,20 @@
+CURRENT ASSIGNMENT
+
+Assess this evidence id only:
+ALPHA-EV-20261009-9HZLBJ
+
+Message for ChatGPT:
+Assess ALPHA-EV-20261009-9HZLBJ.
+
+Package folder:
+02 — EVIDENCE SUBMITTED/ALPHA-EV-20261009-9HZLBJ
+
+Other evidence ids are different packages. Do not assess them unless they are named:
+ALPHA-EV-20261008-HRY2XE
+ALPHA-EV-20261008-LXYTS3
+ALPHA-EV-20261008-D9WHZH
+ALPHA-EV-20261008-Z6P7WR
+
+Google Drive upload is NOT_CONNECTED.
+ChatGPT retrieval is NOT_RUN.
+This file is not a review.

@@ -29,3 +29,5 @@ ALPHA-EV-YYYYMMDD-XXXXXX
 ```
 
 That message is not proof that ChatGPT found the package. Drive retrieval remains the open connection test.
+
+Preparing an upload folder writes `ALPHA — ERWIN ↔ CHATGPT MISSION CONTROL` on this machine. The retrieval package, with its report and video, is placed in `02 — EVIDENCE SUBMITTED/{Evidence ID}/`. A recorded correction is placed in `04 — CORRECTIONS REQUIRED`. The folder is not a Google Drive upload. `uploadPerformed` stays false.

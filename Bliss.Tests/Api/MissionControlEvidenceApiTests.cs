@@ -141,6 +141,52 @@ public sealed class MissionControlEvidenceApiTests
             new { reviewer = "ChatGPT", reviewerRole = "REVIEWER", result = "PASS" });
         Assert.Equal(HttpStatusCode.BadRequest, review.StatusCode);
     }
+
+    [Fact]
+    public async Task An_upload_folder_keeps_one_id_together_and_does_not_upload()
+    {
+        await using var factory = new MissionControlApiFactory();
+        var client = factory.CreateClient();
+        var probe = await client.PostAsync("/api/operations/mission-control/retrieval-probe", null);
+        var probeBody = await probe.Content.ReadFromJsonAsync<JsonElement>();
+        var evidenceId = probeBody.GetProperty("evidenceId").GetString()!;
+        var issued = await client.PostAsJsonAsync("/api/operations/mission-control/evidence", new
+        {
+            taskId = "MC-EVIDENCE-ID",
+            testName = "Correction sample",
+            testCategory = "evidence-retrieval",
+            submittedBy = "Erwin",
+            claimedResult = "BLOCKED"
+        });
+        var original = await issued.Content.ReadFromJsonAsync<JsonElement>();
+        var originalId = original.GetProperty("evidenceId").GetString()!;
+        var review = await client.PostAsJsonAsync(
+            "/api/operations/mission-control/evidence/" + originalId + "/review",
+            new { reviewer = "Independent", reviewerRole = "REVIEWER", result = "CORRECTION_REQUIRED" });
+        Assert.Equal(HttpStatusCode.OK, review.StatusCode);
+
+        var export = await client.PostAsync("/api/operations/mission-control/upload-folder", null);
+        var body = await export.Content.ReadFromJsonAsync<JsonElement>();
+        var root = Path.Combine(factory.Root, "ALPHA — ERWIN ↔ CHATGPT MISSION CONTROL");
+        var package = Path.Combine(root, "02 — EVIDENCE SUBMITTED", evidenceId);
+
+        Assert.Equal(HttpStatusCode.OK, export.StatusCode);
+        Assert.False(body.GetProperty("uploadPerformed").GetBoolean());
+        Assert.Equal("NOT_CONNECTED", body.GetProperty("driveStatus").GetString());
+        Assert.Equal("NOT_RUN", body.GetProperty("chatgptRetrieval").GetString());
+        Assert.Equal(evidenceId, body.GetProperty("assignmentEvidenceId").GetString());
+        Assert.True(File.Exists(Path.Combine(package, evidenceId + "-REPORT.pdf")));
+        Assert.True(File.Exists(Path.Combine(package, evidenceId + "-VIDEO.mp4")));
+        Assert.True(File.Exists(Path.Combine(package, evidenceId + "-MANIFEST.json")));
+        Assert.Contains("Assess " + evidenceId, await File.ReadAllTextAsync(Path.Combine(root, "01 — CURRENT ASSIGNMENT", "CURRENT-ASSIGNMENT.txt")));
+        Assert.True(File.Exists(Path.Combine(root, "04 — CORRECTIONS REQUIRED", originalId, originalId + "-MANIFEST.json")));
+        Assert.False(Directory.Exists(Path.Combine(root, "02 — EVIDENCE SUBMITTED", originalId)));
+        Assert.True(File.Exists(Path.Combine(root, "03 — CHATGPT REVIEW", "EMPTY.txt")));
+        var index = await File.ReadAllTextAsync(Path.Combine(root, "EVIDENCE-INDEX.json"));
+        Assert.Contains(evidenceId, index);
+        Assert.Contains("\"uploadPerformed\": false", index);
+        Assert.DoesNotContain("password=", index, StringComparison.OrdinalIgnoreCase);
+    }
 }
 
 public sealed class MissionControlApiFactory : WebApplicationFactory<Program>
