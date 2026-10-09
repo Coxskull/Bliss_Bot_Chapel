@@ -156,6 +156,9 @@ builder.Services
     .AddHealthChecks()
     .AddCheck<DatabaseReadinessHealthCheck>(
         "database",
+        tags: ["ready"])
+    .AddCheck<MediaRuntimeHealthCheck>(
+        "media",
         tags: ["ready"]);
 builder.Services.AddRateLimiter(options =>
 {
