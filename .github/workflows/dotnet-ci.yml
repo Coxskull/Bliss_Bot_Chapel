@@ -38,8 +38,15 @@ jobs:
       - name: Build Release
         run: dotnet build BlissBotChapel.sln --configuration Release --no-restore
 
+      - name: Install media runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ffmpeg fonts-dejavu-core
+          ffmpeg -version
+          ffprobe -version
+
       - name: Run regression tests
-        run: dotnet test Bliss.Tests/Bliss.Tests.csproj --configuration Release --no-build --no-restore --logger "trx;LogFileName=bliss-tests.trx" --results-directory TestResults
+        run: dotnet test Bliss.Tests/Bliss.Tests.csproj --configuration Release --no-build --no-restore --logger "console;verbosity=detailed" --logger "trx;LogFileName=bliss-tests.trx" --results-directory TestResults
 
       - name: Upload test results
         if: always()
