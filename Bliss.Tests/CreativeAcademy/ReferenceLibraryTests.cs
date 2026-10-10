@@ -73,6 +73,44 @@ public sealed class ReferenceLibraryTests
     }
 
     [Fact]
+    public void An_active_reference_without_both_human_notes_is_not_retrieved()
+    {
+        var library = new List<AcademyReferenceRecord>
+        {
+            new("ACA-011-V1", 11, "auto-parts", "Auto-Parts Store", "Auto Parts.jpeg",
+                "ACTIVE", "UPLOADED", true, "product realism", "  ")
+        };
+
+        var retrieval = ReferenceLibrary.Select("auto-parts", library, ["product realism"]);
+
+        Assert.Equal(ReferenceLibrary.ReferenceNotReady, retrieval.Status);
+        Assert.Empty(retrieval.Selected);
+        Assert.Equal(0, retrieval.ModelCalls);
+        Assert.False(retrieval.CampaignReady);
+        Assert.Equal("NOT_SENT", retrieval.Delivery);
+        Assert.Contains("both human-authored learn and doNotCopy instructions", retrieval.Notice);
+    }
+
+    [Fact]
+    public void Retrieval_skips_active_files_with_incomplete_instructions()
+    {
+        var library = new List<AcademyReferenceRecord>
+        {
+            new("ACA-011-V1", 11, "auto-parts", "Auto-Parts Store", "Auto Parts.jpeg",
+                "ACTIVE", "UPLOADED", true, "product realism", ""),
+            new("ACA-012-V1", 12, "gas-station", "Gas Station", "Gas.jpeg",
+                "ACTIVE", "UPLOADED", true, "night lighting", "the exact fuel brand and canopy")
+        };
+
+        var retrieval = ReferenceLibrary.Select("auto-parts", library, ["night lighting"]);
+
+        Assert.Equal("RETRIEVED", retrieval.Status);
+        Assert.Single(retrieval.Selected);
+        Assert.Equal("ACA-012-V1", retrieval.Selected[0].ReferenceId);
+        Assert.DoesNotContain(retrieval.Selected, item => item.ReferenceId == "ACA-011-V1");
+    }
+
+    [Fact]
     public void Owner_needs_keep_a_blank_entry_blank()
     {
         const string file = """
