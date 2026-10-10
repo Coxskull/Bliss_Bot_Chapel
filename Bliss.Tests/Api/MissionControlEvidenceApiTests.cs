@@ -63,6 +63,32 @@ public sealed class MissionControlEvidenceApiTests
     }
 
     [Fact]
+    public async Task Screenshot_upload_rejects_a_png_header_without_decodable_image_data()
+    {
+        await using var factory = new MissionControlApiFactory();
+        var client = factory.CreateClient();
+        var issued = await client.PostAsJsonAsync("/api/operations/mission-control/evidence", new
+        {
+            taskId = "MC-SCREENSHOT-DECODE",
+            testName = "PNG decoder validation",
+            testCategory = "visual-qa",
+            submittedBy = "Erwin",
+            claimedResult = "BLOCKED"
+        });
+        var manifest = await issued.Content.ReadFromJsonAsync<JsonElement>();
+        var evidenceId = manifest.GetProperty("evidenceId").GetString()!;
+        byte[] headerOnlyPng = [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1];
+
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/mission-control/evidence/" + evidenceId + "/files",
+            new { evidenceType = "SCREENSHOT", contentBase64 = Convert.ToBase64String(headerOnlyPng) });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.False(File.Exists(Path.Combine(
+            factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-SCREENSHOT-01.png")));
+    }
+
+    [Fact]
     public async Task Visual_artifact_verification_rejects_a_tampered_screenshot()
     {
         await using var factory = new MissionControlApiFactory();

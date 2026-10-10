@@ -57,9 +57,14 @@ public sealed class MissionControlEvidenceService(
             throw new InvalidOperationException("An evidence file is required. None was invented.");
         }
 
-        if (type.Equals("SCREENSHOT", StringComparison.OrdinalIgnoreCase) && !HasPngHeader(bytes))
+        if (type.Equals("SCREENSHOT", StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("A screenshot must contain a valid PNG signature and IHDR dimensions. None was stored.");
+            if (!HasPngHeader(bytes))
+            {
+                throw new InvalidOperationException("A screenshot must contain a valid PNG signature and IHDR dimensions. None was stored.");
+            }
+
+            await ValidatePngDecodingAsync(bytes, cancellationToken);
         }
 
         var sequence = manifest.Files.Count(item => item.EvidenceType.Equals("SCREENSHOT", StringComparison.OrdinalIgnoreCase)) + 1;
@@ -412,6 +417,70 @@ public sealed class MissionControlEvidenceService(
         }
 
         await database.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task ValidatePngDecodingAsync(byte[] bytes, CancellationToken cancellationToken)
+    {
+        var path = Path.Combine(Path.GetTempPath(), "bliss-screenshot-" + Guid.NewGuid().ToString("N") + ".png");
+        try
+        {
+            await File.WriteAllBytesAsync(path, bytes, cancellationToken);
+            var start = new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            start.ArgumentList.Add("-v");
+            start.ArgumentList.Add("error");
+            start.ArgumentList.Add("-xerror");
+            start.ArgumentList.Add("-i");
+            start.ArgumentList.Add(path);
+            start.ArgumentList.Add("-frames:v");
+            start.ArgumentList.Add("1");
+            start.ArgumentList.Add("-f");
+            start.ArgumentList.Add("null");
+            start.ArgumentList.Add("-");
+
+            using var process = Process.Start(start)
+                ?? throw new InvalidOperationException("PNG decoder could not start. The screenshot was not stored.");
+            var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(10));
+            try
+            {
+                await process.WaitForExitAsync(timeout.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+
+                throw new InvalidOperationException("PNG decoding exceeded the validation time limit. The screenshot was not stored.");
+            }
+
+            var error = await errorTask;
+            if (process.ExitCode != 0)
+            {
+                _ = error;
+                throw new InvalidOperationException("Screenshot bytes could not be decoded as a PNG image. None was stored.");
+            }
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
     }
 
     private static bool HasPngHeader(byte[] bytes)
