@@ -122,6 +122,12 @@ public sealed class MissionControlEvidenceService(
                 throw new InvalidOperationException("A screenshot listed in the evidence manifest is missing. None was verified.");
             }
 
+            var fileLength = new FileInfo(path).Length;
+            if (fileLength <= 0 || fileLength > 20_000_000)
+            {
+                throw new InvalidOperationException("A stored screenshot exceeds the evidence file size limit. None was verified.");
+            }
+
             var bytes = await File.ReadAllBytesAsync(path, cancellationToken);
             var actualHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
             if (!string.Equals(actualHash, screenshot.Sha256, StringComparison.OrdinalIgnoreCase))

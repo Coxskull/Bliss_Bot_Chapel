@@ -148,6 +148,26 @@ public sealed class MissionControlEvidenceApiTests
     }
 
     [Fact]
+    [Fact]
+    public async Task Visual_artifact_verification_rejects_an_oversized_file_before_reading_it()
+    {
+        await using var factory = new MissionControlApiFactory();
+        var client = factory.CreateClient();
+        var evidenceId = await UploadOnePixelScreenshotAsync(client);
+        var screenshotPath = Path.Combine(factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-SCREENSHOT-01.png");
+        await using (var stream = new FileStream(screenshotPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            stream.SetLength(20_000_001);
+        }
+
+        using var scope = factory.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<MissionControlEvidenceService>();
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.VerifyVisualArtifactAsync(evidenceId, CancellationToken.None));
+
+        Assert.Contains("size limit", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Visual_artifact_verification_rejects_a_missing_screenshot()
     {
         await using var factory = new MissionControlApiFactory();
