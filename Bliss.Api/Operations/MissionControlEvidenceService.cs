@@ -57,6 +57,16 @@ public sealed class MissionControlEvidenceService(
             throw new InvalidOperationException("An evidence file is required. None was invented.");
         }
 
+        if (type.Equals("SCREENSHOT", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!HasPngHeader(bytes))
+            {
+                throw new InvalidOperationException("A screenshot must contain a valid PNG signature and IHDR dimensions. None was stored.");
+            }
+
+            await ValidatePngDecodingAsync(bytes, cancellationToken);
+        }
+
         var sequence = manifest.Files.Count(item => item.EvidenceType.Equals("SCREENSHOT", StringComparison.OrdinalIgnoreCase)) + 1;
         var fileName = EvidenceIdentity.FileName(manifest.EvidenceId, type, sequence);
         EvidenceIdentity.RequireSafe(fileName, "file name");
@@ -77,6 +87,41 @@ public sealed class MissionControlEvidenceService(
         var updated = manifest with { Files = files, SubmittedAt = DateTime.UtcNow };
         await StoreAsync(updated, cancellationToken);
         return updated;
+    }
+
+    public async Task VerifyVisualArtifactAsync(string evidenceId, CancellationToken cancellationToken)
+    {
+        var manifest = ReadManifest(await FindAsync(evidenceId, cancellationToken));
+        var screenshots = manifest.Files
+            .Where(item => item.EvidenceType.Equals("SCREENSHOT", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (screenshots.Length == 0)
+        {
+            throw new InvalidOperationException("A stored screenshot artifact is required. None was verified.");
+        }
+
+        foreach (var screenshot in screenshots)
+        {
+            if (!string.Equals(Path.GetFileName(screenshot.FileName), screenshot.FileName, StringComparison.Ordinal)
+                || !screenshot.FileName.StartsWith(evidenceId + "-SCREENSHOT-", StringComparison.Ordinal)
+                || !screenshot.FileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("The screenshot manifest contains an unsafe file reference. None was verified.");
+            }
+
+            var path = Path.Combine(PackageDirectory(evidenceId), screenshot.FileName);
+            if (!File.Exists(path))
+            {
+                throw new InvalidOperationException("A screenshot listed in the evidence manifest is missing. None was verified.");
+            }
+
+            var bytes = await File.ReadAllBytesAsync(path, cancellationToken);
+            var actualHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+            if (!string.Equals(actualHash, screenshot.Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("A screenshot hash does not match its evidence manifest. None was verified.");
+            }
+        }
     }
 
     public async Task<EvidenceManifest> RetestAsync(
@@ -372,6 +417,90 @@ public sealed class MissionControlEvidenceService(
         }
 
         await database.SaveChangesAsync(cancellationToken);
+    }
+
+    private static async Task ValidatePngDecodingAsync(byte[] bytes, CancellationToken cancellationToken)
+    {
+        var path = Path.Combine(Path.GetTempPath(), "bliss-screenshot-" + Guid.NewGuid().ToString("N") + ".png");
+        try
+        {
+            await File.WriteAllBytesAsync(path, bytes, cancellationToken);
+            var start = new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            start.ArgumentList.Add("-v");
+            start.ArgumentList.Add("error");
+            start.ArgumentList.Add("-xerror");
+            start.ArgumentList.Add("-i");
+            start.ArgumentList.Add(path);
+            start.ArgumentList.Add("-frames:v");
+            start.ArgumentList.Add("1");
+            start.ArgumentList.Add("-f");
+            start.ArgumentList.Add("null");
+            start.ArgumentList.Add("-");
+
+            using var process = Process.Start(start)
+                ?? throw new InvalidOperationException("PNG decoder could not start. The screenshot was not stored.");
+            var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(10));
+            try
+            {
+                await process.WaitForExitAsync(timeout.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+
+                throw new InvalidOperationException("PNG decoding exceeded the validation time limit. The screenshot was not stored.");
+            }
+
+            var error = await errorTask;
+            if (process.ExitCode != 0)
+            {
+                _ = error;
+                throw new InvalidOperationException("Screenshot bytes could not be decoded as a PNG image. None was stored.");
+            }
+        }
+        finally
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+    }
+
+    private static bool HasPngHeader(byte[] bytes)
+    {
+        ReadOnlySpan<byte> signature = [137, 80, 78, 71, 13, 10, 26, 10];
+        if (bytes.Length < 24 || !bytes.AsSpan(0, 8).SequenceEqual(signature))
+        {
+            return false;
+        }
+
+        if (bytes[8] != 0 || bytes[9] != 0 || bytes[10] != 0 || bytes[11] != 13
+            || bytes[12] != (byte)'I' || bytes[13] != (byte)'H'
+            || bytes[14] != (byte)'D' || bytes[15] != (byte)'R')
+        {
+            return false;
+        }
+
+        var width = ((uint)bytes[16] << 24) | ((uint)bytes[17] << 16) | ((uint)bytes[18] << 8) | bytes[19];
+        var height = ((uint)bytes[20] << 24) | ((uint)bytes[21] << 16) | ((uint)bytes[22] << 8) | bytes[23];
+        return width > 0 && height > 0;
     }
 
     private string PackageDirectory(string evidenceId) =>

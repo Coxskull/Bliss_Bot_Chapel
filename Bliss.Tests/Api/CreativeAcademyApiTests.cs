@@ -41,6 +41,31 @@ public sealed class CreativeAcademyApiTests
     }
 
     [Fact]
+    public async Task Visual_review_requires_a_stored_screenshot_artifact_before_voyage_lookup()
+    {
+        await using var factory = new BlissApiFactory();
+        var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/academy/acceptance-voyages/not-created/visual-review",
+            new
+            {
+                reportedScore = 100,
+                defectCodes = Array.Empty<string>(),
+                visualEvidenceRecorded = true,
+                brandDnaCompliant = true,
+                originalityConfirmed = true,
+                inventoryGeometryVerified = true,
+                qrVerified = true,
+                evidenceReference = "ALPHA-EV-20261010-ABC234"
+            });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("not stored", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task The_curriculum_is_judged_once_and_does_not_send()
     {
         await using var factory = new BlissApiFactory();
