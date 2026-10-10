@@ -16,7 +16,9 @@ public sealed class VisualDnaAcceptanceIntegrationTests
         Assert.Equal("PASS", reviewed.QualityQa.Status);
         Assert.DoesNotContain("VISUAL_QUALITY_QA_REQUIRED", reviewed.Blockers);
         Assert.Contains("HUMAN_REVIEW_REQUIRED", reviewed.Blockers);
-        Assert.Contains("USAGE_COST_UNRECORDED", reviewed.Blockers);
+        Assert.DoesNotContain("USAGE_COST_UNRECORDED", reviewed.Blockers);
+        Assert.Equal("RECORDED", reviewed.ProviderJob.CostStatus);
+        Assert.Equal(0.05m, reviewed.ProviderJob.Cost);
         Assert.False(reviewed.CampaignReady);
         Assert.Equal("NOT_SENT", reviewed.Delivery);
         Assert.Equal("PASS", reviewed.Trace.Single(item => item.Sequence == 7).Status);
