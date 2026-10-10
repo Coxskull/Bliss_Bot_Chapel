@@ -15,6 +15,8 @@ public sealed class MissionControlEvidenceService(
     IConfiguration configuration)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private const uint MaxScreenshotDimension = 16_384;
+    private const ulong MaxScreenshotPixels = 40_000_000;
 
     public async Task<IReadOnlyList<EvidenceManifest>> ReadAsync(CancellationToken cancellationToken)
     {
@@ -62,6 +64,11 @@ public sealed class MissionControlEvidenceService(
             if (!HasPngHeader(bytes))
             {
                 throw new InvalidOperationException("A screenshot must contain a valid PNG signature and IHDR dimensions. None was stored.");
+            }
+
+            if (!HasSafePngDimensions(bytes))
+            {
+                throw new InvalidOperationException("Screenshot dimensions exceed the allowed validation limit. None was stored.");
             }
 
             await ValidatePngDecodingAsync(bytes, cancellationToken);
@@ -115,12 +122,25 @@ public sealed class MissionControlEvidenceService(
                 throw new InvalidOperationException("A screenshot listed in the evidence manifest is missing. None was verified.");
             }
 
+            var fileLength = new FileInfo(path).Length;
+            if (fileLength <= 0 || fileLength > 20_000_000)
+            {
+                throw new InvalidOperationException("A stored screenshot exceeds the evidence file size limit. None was verified.");
+            }
+
             var bytes = await File.ReadAllBytesAsync(path, cancellationToken);
             var actualHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
             if (!string.Equals(actualHash, screenshot.Sha256, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException("A screenshot hash does not match its evidence manifest. None was verified.");
             }
+
+            if (!HasPngHeader(bytes) || !HasSafePngDimensions(bytes))
+            {
+                throw new InvalidOperationException("A stored screenshot is not a valid, safely sized PNG. None was verified.");
+            }
+
+            await ValidatePngDecodingAsync(bytes, cancellationToken);
         }
     }
 
@@ -435,6 +455,8 @@ public sealed class MissionControlEvidenceService(
             start.ArgumentList.Add("-v");
             start.ArgumentList.Add("error");
             start.ArgumentList.Add("-xerror");
+            start.ArgumentList.Add("-threads");
+            start.ArgumentList.Add("1");
             start.ArgumentList.Add("-i");
             start.ArgumentList.Add(path);
             start.ArgumentList.Add("-frames:v");
@@ -501,6 +523,15 @@ public sealed class MissionControlEvidenceService(
         var width = ((uint)bytes[16] << 24) | ((uint)bytes[17] << 16) | ((uint)bytes[18] << 8) | bytes[19];
         var height = ((uint)bytes[20] << 24) | ((uint)bytes[21] << 16) | ((uint)bytes[22] << 8) | bytes[23];
         return width > 0 && height > 0;
+    }
+
+    private static bool HasSafePngDimensions(byte[] bytes)
+    {
+        var width = ((uint)bytes[16] << 24) | ((uint)bytes[17] << 16) | ((uint)bytes[18] << 8) | bytes[19];
+        var height = ((uint)bytes[20] << 24) | ((uint)bytes[21] << 16) | ((uint)bytes[22] << 8) | bytes[23];
+        return width <= MaxScreenshotDimension
+            && height <= MaxScreenshotDimension
+            && (ulong)width * height <= MaxScreenshotPixels;
     }
 
     private string PackageDirectory(string evidenceId) =>

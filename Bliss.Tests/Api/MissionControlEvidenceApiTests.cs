@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Security.Cryptography;
+using Bliss.Domain.MissionControl;
 using Bliss.Api.Operations;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
@@ -63,6 +65,33 @@ public sealed class MissionControlEvidenceApiTests
     }
 
     [Fact]
+    public async Task Evidence_upload_rejects_oversized_base64_before_decoding_or_writing()
+    {
+        await using var factory = new MissionControlApiFactory();
+        var client = factory.CreateClient();
+        var issued = await client.PostAsJsonAsync("/api/operations/mission-control/evidence", new
+        {
+            taskId = "MC-OVERSIZED-BASE64",
+            testName = "Encoded evidence size limit",
+            testCategory = "evidence-retrieval",
+            submittedBy = "Erwin",
+            claimedResult = "BLOCKED"
+        });
+        Assert.Equal(HttpStatusCode.OK, issued.StatusCode);
+        var manifest = await issued.Content.ReadFromJsonAsync<JsonElement>();
+        var evidenceId = manifest.GetProperty("evidenceId").GetString()!;
+        var encoded = new string('A', 26_666_672);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/mission-control/evidence/" + evidenceId + "/files",
+            new { evidenceType = "SCREENSHOT", contentBase64 = encoded });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.False(File.Exists(Path.Combine(
+            factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-SCREENSHOT-01.png")));
+    }
+
+    [Fact]
     public async Task Screenshot_upload_rejects_a_png_header_without_decodable_image_data()
     {
         await using var factory = new MissionControlApiFactory();
@@ -88,6 +117,49 @@ public sealed class MissionControlEvidenceApiTests
             factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-SCREENSHOT-01.png")));
     }
 
+    [Theory]
+    [InlineData(20_000u, 1u)]
+    [InlineData(10_000u, 10_000u)]
+    public async Task Screenshot_upload_rejects_dimensions_that_can_exhaust_decoder_resources(uint width, uint height)
+    {
+        await using var factory = new MissionControlApiFactory();
+        var client = factory.CreateClient();
+        var issued = await client.PostAsJsonAsync("/api/operations/mission-control/evidence", new
+        {
+            taskId = "MC-SCREENSHOT-DIMENSIONS",
+            testName = "PNG dimension limits",
+            testCategory = "visual-qa",
+            submittedBy = "Erwin",
+            claimedResult = "BLOCKED"
+        });
+        var manifest = await issued.Content.ReadFromJsonAsync<JsonElement>();
+        var evidenceId = manifest.GetProperty("evidenceId").GetString()!;
+        var oversizedHeader = PngHeader(width, height);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/mission-control/evidence/" + evidenceId + "/files",
+            new { evidenceType = "SCREENSHOT", contentBase64 = Convert.ToBase64String(oversizedHeader) });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("dimensions", await response.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+        Assert.False(File.Exists(Path.Combine(
+            factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-SCREENSHOT-01.png")));
+    }
+
+    private static byte[] PngHeader(uint width, uint height)
+    {
+        byte[] bytes = [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 0, 0, 0, 0, 0];
+        bytes[16] = (byte)(width >> 24);
+        bytes[17] = (byte)(width >> 16);
+        bytes[18] = (byte)(width >> 8);
+        bytes[19] = (byte)width;
+        bytes[20] = (byte)(height >> 24);
+        bytes[21] = (byte)(height >> 16);
+        bytes[22] = (byte)(height >> 8);
+        bytes[23] = (byte)height;
+        return bytes;
+    }
+
     [Fact]
     public async Task Visual_artifact_verification_rejects_a_tampered_screenshot()
     {
@@ -102,6 +174,56 @@ public sealed class MissionControlEvidenceApiTests
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.VerifyVisualArtifactAsync(evidenceId, CancellationToken.None));
 
         Assert.Contains("hash", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Visual_artifact_verification_rejects_an_oversized_file_before_reading_it()
+    {
+        await using var factory = new MissionControlApiFactory();
+        var client = factory.CreateClient();
+        var evidenceId = await UploadOnePixelScreenshotAsync(client);
+        var screenshotPath = Path.Combine(factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-SCREENSHOT-01.png");
+        await using (var stream = new FileStream(screenshotPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            stream.SetLength(20_000_001);
+        }
+
+        using var scope = factory.Services.CreateScope();
+        var service = scope.ServiceProvider.GetRequiredService<MissionControlEvidenceService>();
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.VerifyVisualArtifactAsync(evidenceId, CancellationToken.None));
+
+        Assert.Contains("size limit", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Visual_artifact_verification_rejects_invalid_png_even_if_manifest_hash_matches()
+    {
+        await using var factory = new MissionControlApiFactory();
+        var client = factory.CreateClient();
+        var evidenceId = await UploadOnePixelScreenshotAsync(client);
+        var screenshotPath = Path.Combine(factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-SCREENSHOT-01.png");
+        byte[] invalidPng = [0, 1, 2, 3];
+        await File.WriteAllBytesAsync(screenshotPath, invalidPng);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+            var row = await database.EvidencePackages.SingleAsync(item => item.EvidenceId == evidenceId);
+            var manifest = JsonSerializer.Deserialize<EvidenceManifest>(
+                row.ManifestJson, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+            var files = manifest.Files
+                .Select(item => item with { Sha256 = Convert.ToHexString(SHA256.HashData(invalidPng)).ToLowerInvariant() })
+                .ToArray();
+            row.ManifestJson = EvidenceIdentity.Serialize(manifest with { Files = files });
+            await database.SaveChangesAsync();
+        }
+
+        using var verificationScope = factory.Services.CreateScope();
+        var service = verificationScope.ServiceProvider.GetRequiredService<MissionControlEvidenceService>();
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.VerifyVisualArtifactAsync(evidenceId, CancellationToken.None));
+
+        Assert.Contains("valid", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
