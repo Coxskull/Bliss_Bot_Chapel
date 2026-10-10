@@ -322,6 +322,71 @@ public static class CreativeAcceptance
                 : "The voyage stopped at the first incomplete acceptance gate. Refusal to invent missing intelligence is a pass condition, but ACA-8 is not accepted. Delivery remains NOT_SENT.");
     }
 
+    /// <summary>
+    /// Records deterministic visual-release evidence after a generated image exists.
+    /// A passing result only advances the draft to human review; it never authorizes delivery.
+    /// </summary>
+    public static CreativeAcceptanceVoyage ApplyVisualQualityEvidence(
+        CreativeAcceptanceVoyage voyage,
+        int reportedScore,
+        IEnumerable<string>? defectCodes,
+        bool visualEvidenceRecorded,
+        bool brandDnaCompliant,
+        bool originalityConfirmed,
+        bool inventoryGeometryVerified,
+        bool qrVerified)
+    {
+        ArgumentNullException.ThrowIfNull(voyage);
+        if (voyage.FinishedCreative.Status != "GENERATED_PENDING_REVIEW")
+        {
+            throw new InvalidOperationException(
+                "Visual release evidence requires a stored generated draft. None was invented.");
+        }
+
+        var decision = GlobalVisualDnaGate.Evaluate(
+            reportedScore,
+            defectCodes,
+            visualEvidenceRecorded,
+            brandDnaCompliant,
+            originalityConfirmed,
+            inventoryGeometryVerified,
+            qrVerified);
+        var blockers = voyage.Blockers
+            .Where(item => item != "VISUAL_QUALITY_QA_REQUIRED"
+                && !item.StartsWith("GLOBAL_VISUAL_DNA_", StringComparison.Ordinal)
+                && !item.StartsWith("VISUAL_DEFECT_", StringComparison.Ordinal))
+            .ToList();
+        if (decision.Status != GlobalVisualDnaGate.Pass)
+        {
+            blockers.Add("VISUAL_QUALITY_QA_REQUIRED");
+            blockers.Add("GLOBAL_VISUAL_DNA_" + decision.Status);
+            blockers.AddRange(decision.BlockingDefects.Select(code => "VISUAL_DEFECT_" + code));
+        }
+
+        var trace = ReplaceSteps(
+            voyage.Trace,
+            new AcceptanceTraceStep(
+                7,
+                "QUALITY_QA",
+                decision.Status,
+                decision.Notice + " Score: " + decision.ReportedScore
+                + ". Blocking defects: "
+                + (decision.BlockingDefects.Count == 0 ? "none" : string.Join(", ", decision.BlockingDefects))
+                + ". Campaign ready remains false; delivery remains NOT_SENT."));
+        return voyage with
+        {
+            Status = decision.Status == GlobalVisualDnaGate.Pass ? "AWAITING_REVIEW" : "BLOCKED",
+            QualityQa = new AcceptanceEvidence(decision.Status, trace.Single(item => item.Sequence == 7).Evidence),
+            Blockers = blockers.Distinct(StringComparer.Ordinal).ToList(),
+            Trace = trace,
+            CampaignReady = false,
+            Delivery = "NOT_SENT",
+            Notice = decision.Status == GlobalVisualDnaGate.Pass
+                ? "Visual release checks passed. The draft is still awaiting human review and recorded usage cost. Delivery remains NOT_SENT."
+                : "Visual release checks did not pass. Repair or record missing evidence before human approval. Delivery remains NOT_SENT."
+        };
+    }
+
     public static CreativeAcceptanceVoyage WithGeneration(
         CreativeAcceptanceVoyage voyage,
         AcceptanceGenerationOutcome outcome,
