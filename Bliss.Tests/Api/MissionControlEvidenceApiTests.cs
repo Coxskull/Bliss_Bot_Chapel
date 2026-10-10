@@ -148,7 +148,6 @@ public sealed class MissionControlEvidenceApiTests
     }
 
     [Fact]
-    [Fact]
     public async Task Visual_artifact_verification_rejects_an_oversized_file_before_reading_it()
     {
         await using var factory = new MissionControlApiFactory();
