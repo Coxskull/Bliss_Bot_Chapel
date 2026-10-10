@@ -140,6 +140,50 @@ public sealed class VisualDnaAcceptanceIntegrationTests
         Assert.Equal("NOT_SENT", voyage.Delivery);
     }
 
+    [Fact]
+    public void Valid_reference_remains_eligible_when_another_active_reference_has_no_do_not_copy_note()
+    {
+        var board = RealEstateCatalog.Board();
+        var slots = board.Slots.Select(slot => slot.SlotId switch
+        {
+            "LEFT_VERTICAL" => slot with { Width = 180, Height = 640 },
+            "BOTTOM_FULL" => slot with { Width = 1280, Height = 160 },
+            _ => slot
+        }).ToList();
+        var references = new List<AcademyReferenceRecord>
+        {
+            Active("ACA-GATE-VALID-V1", 1, "pharmacy", "premium product lighting", "do not copy exact packaging"),
+            Active("ACA-GATE-INCOMPLETE-V1", 2, "pharmacy", "strong contrast", "   ")
+        };
+        var campaign = new AcceptanceCampaignBrief(
+            "visual-gate-valid-reference-with-incomplete-peer",
+            "Harborlight Pharmacy",
+            "Panama City",
+            "Panama",
+            "pharmacy",
+            "Introduce prescription pickup",
+            "ARE-P01");
+
+        var voyage = CreativeAcceptance.Run(
+            campaign,
+            references,
+            board.Products.Single(item => item.ProductId == "ARE-P01"),
+            slots,
+            "OpenAI",
+            "gpt-image-1",
+            providerConfigured: true);
+
+        Assert.Equal("READY_FOR_GENERATION", voyage.ProviderJob.Status);
+        Assert.Contains(voyage.ProductionBrief.Retrieval.Selected, item =>
+            item.ReferenceId == "ACA-GATE-VALID-V1");
+        Assert.DoesNotContain(voyage.ProductionBrief.Retrieval.Selected, item =>
+            item.ReferenceId == "ACA-GATE-INCOMPLETE-V1");
+        Assert.DoesNotContain("ACTIVE_REFERENCE_INTELLIGENCE_REQUIRED", voyage.Blockers);
+        Assert.False(voyage.ReferenceAssetsSentToProvider);
+        Assert.False(voyage.CampaignReady);
+        Assert.Equal("NOT_SENT", voyage.Delivery);
+    }
+
     private static CreativeAcceptanceVoyage GeneratedVoyage()
     {
         var board = RealEstateCatalog.Board();
