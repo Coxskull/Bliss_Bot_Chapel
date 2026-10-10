@@ -194,6 +194,37 @@ public sealed class MissionControlEvidenceApiTests
     }
 
     [Fact]
+    public async Task Visual_artifact_verification_rejects_invalid_png_even_if_manifest_hash_matches()
+    {
+        await using var factory = new MissionControlApiFactory();
+        var client = factory.CreateClient();
+        var evidenceId = await UploadOnePixelScreenshotAsync(client);
+        var screenshotPath = Path.Combine(factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-SCREENSHOT-01.png");
+        byte[] invalidPng = [0, 1, 2, 3];
+        await File.WriteAllBytesAsync(screenshotPath, invalidPng);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+            var row = await database.EvidencePackages.SingleAsync(item => item.EvidenceId == evidenceId);
+            var manifest = JsonSerializer.Deserialize<EvidenceManifest>(
+                row.ManifestJson, new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+            var files = manifest.Files
+                .Select(item => item with { Sha256 = Convert.ToHexString(SHA256.HashData(invalidPng)).ToLowerInvariant() })
+                .ToArray();
+            row.ManifestJson = EvidenceIdentity.Serialize(manifest with { Files = files });
+            await database.SaveChangesAsync();
+        }
+
+        using var verificationScope = factory.Services.CreateScope();
+        var service = verificationScope.ServiceProvider.GetRequiredService<MissionControlEvidenceService>();
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.VerifyVisualArtifactAsync(evidenceId, CancellationToken.None));
+
+        Assert.Contains("valid", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Visual_artifact_verification_rejects_a_missing_screenshot()
     {
         await using var factory = new MissionControlApiFactory();
