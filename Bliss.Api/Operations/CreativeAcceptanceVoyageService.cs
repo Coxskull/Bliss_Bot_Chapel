@@ -85,6 +85,83 @@ public sealed class CreativeAcceptanceVoyageService(
         return new CreativeAcceptanceVoyageWrite(ToHistory(row), false, true);
     }
 
+    public async Task<CreativeAcceptanceVoyageWrite> RecordVisualQualityAsync(
+        string voyageKey,
+        CreativeAcceptanceVisualReviewRequest? request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null)
+        {
+            throw new InvalidOperationException("Visual review evidence is required.");
+        }
+
+        var row = await FindVoyageAsync(voyageKey, cancellationToken);
+        var report = DeserializeReport(row);
+        report = CreativeAcceptance.ApplyVisualQualityEvidence(
+            report,
+            request.ReportedScore,
+            request.DefectCodes,
+            request.VisualEvidenceRecorded,
+            request.BrandDnaCompliant,
+            request.OriginalityConfirmed,
+            request.InventoryGeometryVerified,
+            request.QrVerified);
+        return await SaveReportAsync(row, report, cancellationToken);
+    }
+
+    public async Task<CreativeAcceptanceVoyageWrite> RecordHumanReviewAsync(
+        string voyageKey,
+        string reviewerId,
+        CreativeAcceptanceHumanReviewRequest? request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null)
+        {
+            throw new InvalidOperationException("Human review decision and notes are required.");
+        }
+
+        var row = await FindVoyageAsync(voyageKey, cancellationToken);
+        var report = DeserializeReport(row);
+        report = CreativeAcceptance.RecordHumanReview(
+            report,
+            reviewerId,
+            request.Decision ?? string.Empty,
+            request.Notes ?? string.Empty,
+            DateTimeOffset.UtcNow);
+        return await SaveReportAsync(row, report, cancellationToken);
+    }
+
+    private async Task<CreativeAcceptanceVoyageRow> FindVoyageAsync(
+        string voyageKey,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(voyageKey))
+        {
+            throw new InvalidOperationException("A voyage key is required.");
+        }
+
+        return await database.CreativeAcceptanceVoyages
+            .SingleOrDefaultAsync(item => item.VoyageKey == voyageKey.Trim(), cancellationToken)
+            ?? throw new InvalidOperationException("The acceptance voyage was not found.");
+    }
+
+    private static CreativeAcceptanceVoyage DeserializeReport(CreativeAcceptanceVoyageRow row) =>
+        JsonSerializer.Deserialize<CreativeAcceptanceVoyage>(row.ReportJson, JsonOptions)
+        ?? throw new InvalidOperationException("The stored voyage report is unreadable. None was invented.");
+
+    private async Task<CreativeAcceptanceVoyageWrite> SaveReportAsync(
+        CreativeAcceptanceVoyageRow row,
+        CreativeAcceptanceVoyage report,
+        CancellationToken cancellationToken)
+    {
+        row.Status = report.Status;
+        row.ReportJson = JsonSerializer.Serialize(report, JsonOptions);
+        row.CampaignReady = false;
+        row.Delivery = "NOT_SENT";
+        await database.SaveChangesAsync(cancellationToken);
+        return new CreativeAcceptanceVoyageWrite(ToHistory(row), false, true);
+    }
+
     private async Task<CreativeAcceptanceVoyage> ContinueGenerationAsync(
         CreativeAcceptanceVoyage report,
         AcceptanceCampaignBrief campaign,
@@ -154,6 +231,19 @@ public sealed record CreativeAcceptanceVoyageRequest(
     string? Niche,
     string? Objective,
     string? InventoryProductId);
+
+public sealed record CreativeAcceptanceVisualReviewRequest(
+    int ReportedScore,
+    IReadOnlyList<string>? DefectCodes,
+    bool VisualEvidenceRecorded,
+    bool BrandDnaCompliant,
+    bool OriginalityConfirmed,
+    bool InventoryGeometryVerified,
+    bool QrVerified);
+
+public sealed record CreativeAcceptanceHumanReviewRequest(
+    string? Decision,
+    string? Notes);
 
 public sealed record CreativeAcceptanceVoyageHistory(
     Guid Id,
