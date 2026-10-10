@@ -105,6 +105,48 @@ public sealed class CreativeAcademyController(
         }
     }
 
+    [HttpPost("acceptance-voyages/{voyageKey}/visual-review")]
+    [Authorize(Policy = BlissAuthorization.WritePolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> RecordAcceptanceVisualReview(
+        string voyageKey,
+        [FromBody] CreativeAcceptanceVisualReviewRequest? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await voyages.RecordVisualQualityAsync(voyageKey, request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Refuse(ex);
+        }
+    }
+
+    [HttpPost("acceptance-voyages/{voyageKey}/human-review")]
+    [Authorize(Policy = BlissAuthorization.ReviewPolicy)]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<ActionResult> RecordAcceptanceHumanReview(
+        string voyageKey,
+        [FromBody] CreativeAcceptanceHumanReviewRequest? request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var reviewerId = User.FindFirst("preferred_username")?.Value
+                ?? User.FindFirst("name")?.Value
+                ?? User.FindFirst("sub")?.Value
+                ?? User.Identity?.Name
+                ?? string.Empty;
+            return Ok(await voyages.RecordHumanReviewAsync(
+                voyageKey, reviewerId, request, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Refuse(ex);
+        }
+    }
+
     [HttpPost("curriculum")]
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]

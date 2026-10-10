@@ -303,6 +303,117 @@ public sealed class CreativeAcceptanceVoyageTests
         Assert.Equal("NOT_SENT", failed.Delivery);
     }
 
+    [Fact]
+    public void Visual_pass_then_human_approval_records_reviewer_but_never_releases_campaign()
+    {
+        var reviewed = ReadyForHumanReview(costRecorded: true);
+        var approved = CreativeAcceptance.RecordHumanReview(
+            reviewed, "reviewer-123", "APPROVE",
+            "Originality, brand DNA, product geometry, and QR destination reviewed.",
+            new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
+
+        Assert.Equal("HUMAN_APPROVED_PENDING_RELEASE", approved.Status);
+        Assert.Equal("APPROVE", approved.HumanReview.Status);
+        Assert.Contains("reviewer-123", approved.HumanReview.Notice);
+        Assert.Contains("EXPLICIT_RELEASE_AUTHORIZATION_REQUIRED", approved.Blockers);
+        Assert.DoesNotContain("HUMAN_REVIEW_REQUIRED", approved.Blockers);
+        Assert.False(approved.CampaignReady);
+        Assert.Equal("NOT_SENT", approved.Delivery);
+        Assert.Equal("APPROVE", approved.Trace.Single(item => item.Sequence == 9).Status);
+        Assert.Equal("NOT_SENT", approved.Trace.Single(item => item.Sequence == 10).Status);
+    }
+
+    [Fact]
+    public void Human_rejection_is_recorded_and_keeps_delivery_blocked()
+    {
+        var reviewed = ReadyForHumanReview(costRecorded: false);
+        var rejected = CreativeAcceptance.RecordHumanReview(
+            reviewed, "reviewer-456", "REJECT",
+            "QR destination could not be verified against the approved campaign.", DateTimeOffset.UtcNow);
+
+        Assert.Equal("HUMAN_REVIEW_REJECTED", rejected.Status);
+        Assert.Equal("REJECT", rejected.HumanReview.Status);
+        Assert.Contains("HUMAN_REVIEW_REJECTED", rejected.Blockers);
+        Assert.Contains("USAGE_COST_UNRECORDED", rejected.Blockers);
+        Assert.False(rejected.CampaignReady);
+        Assert.Equal("NOT_SENT", rejected.Delivery);
+    }
+
+    [Fact]
+    public void Human_approval_is_refused_when_usage_cost_is_unrecorded()
+    {
+        var reviewed = ReadyForHumanReview(costRecorded: false);
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            CreativeAcceptance.RecordHumanReview(
+                reviewed, "reviewer-123", "APPROVE", "Looks good.", DateTimeOffset.UtcNow));
+
+        Assert.Contains("acceptance blockers", error.Message);
+        Assert.False(reviewed.CampaignReady);
+        Assert.Equal("NOT_SENT", reviewed.Delivery);
+    }
+
+    [Fact]
+    public void Human_review_requires_a_reviewer_identity_and_notes()
+    {
+        var reviewed = ReadyForHumanReview(costRecorded: true);
+        var noIdentity = Assert.Throws<InvalidOperationException>(() =>
+            CreativeAcceptance.RecordHumanReview(reviewed, " ", "APPROVE", "Reviewed", DateTimeOffset.UtcNow));
+        Assert.Contains("reviewer identity", noIdentity.Message);
+        var noNotes = Assert.Throws<InvalidOperationException>(() =>
+            CreativeAcceptance.RecordHumanReview(reviewed, "reviewer-123", "APPROVE", " ", DateTimeOffset.UtcNow));
+        Assert.Contains("review notes", noNotes.Message);
+    }
+
+    [Fact]
+    public void Human_review_cannot_be_recorded_before_visual_quality_passes()
+    {
+        var board = RealEstateCatalog.Board();
+        var slots = board.Slots.Select(slot => slot.SlotId switch
+        {
+            "LEFT_VERTICAL" => slot with { Width = 180, Height = 640 },
+            "BOTTOM_FULL" => slot with { Width = 1280, Height = 160 },
+            _ => slot
+        }).ToList();
+        var references = AuthorizedReferences("VidaCare");
+        var started = CreativeAcceptance.Run(
+            Harborlight(), references, board.Products.Single(item => item.ProductId == "ARE-P01"),
+            slots, "OpenAI", "gpt-image-1", true);
+        var generated = CreativeAcceptance.WithGeneration(
+            started,
+            new AcceptanceGenerationOutcome(true, "job-review-gate", "/operations/generated/review.png",
+                1, "RECORDED", 0.05m, "USD", "Stored draft."), references);
+
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            CreativeAcceptance.RecordHumanReview(generated, "reviewer-123", "APPROVE", "Reviewed", DateTimeOffset.UtcNow));
+        Assert.Contains("passed visual QA", error.Message);
+        Assert.False(generated.CampaignReady);
+        Assert.Equal("NOT_SENT", generated.Delivery);
+    }
+
+    private static CreativeAcceptanceVoyage ReadyForHumanReview(bool costRecorded)
+    {
+        var board = RealEstateCatalog.Board();
+        var slots = board.Slots.Select(slot => slot.SlotId switch
+        {
+            "LEFT_VERTICAL" => slot with { Width = 180, Height = 640 },
+            "BOTTOM_FULL" => slot with { Width = 1280, Height = 160 },
+            _ => slot
+        }).ToList();
+        var references = AuthorizedReferences("VidaCare");
+        var started = CreativeAcceptance.Run(
+            Harborlight(), references, board.Products.Single(item => item.ProductId == "ARE-P01"),
+            slots, "OpenAI", "gpt-image-1", true);
+        var generated = CreativeAcceptance.WithGeneration(
+            started,
+            new AcceptanceGenerationOutcome(
+                true, "job-human-review", "/operations/generated/human-review.png", 1,
+                costRecorded ? "RECORDED" : "UNRECORDED",
+                costRecorded ? 0.05m : null, costRecorded ? "USD" : string.Empty, "Stored draft."),
+            references);
+        return CreativeAcceptance.ApplyVisualQualityEvidence(
+            generated, 100, [], true, true, true, true, true);
+    }
+
     private static AcceptanceCampaignBrief Harborlight() =>
         new(
             "one-voyage-authorized",

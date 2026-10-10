@@ -387,6 +387,89 @@ public static class CreativeAcceptance
         };
     }
 
+    /// <summary>
+    /// Records an explicit human decision after visual QA has passed.
+    /// Approval remains pending separate release authorization and never sends.
+    /// </summary>
+    public static CreativeAcceptanceVoyage RecordHumanReview(
+        CreativeAcceptanceVoyage voyage,
+        string reviewerId,
+        string decision,
+        string notes,
+        DateTimeOffset reviewedAt)
+    {
+        ArgumentNullException.ThrowIfNull(voyage);
+        if (!string.Equals(voyage.Status, "AWAITING_REVIEW", StringComparison.Ordinal)
+            || !string.Equals(voyage.FinishedCreative.Status, "GENERATED_PENDING_REVIEW", StringComparison.Ordinal)
+            || !string.Equals(voyage.QualityQa.Status, GlobalVisualDnaGate.Pass, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Human review requires a stored draft that passed visual QA and is awaiting review.");
+        }
+
+        if (string.IsNullOrWhiteSpace(reviewerId) || reviewerId.Trim().Length > 128)
+        {
+            throw new InvalidOperationException("A verified reviewer identity of 1–128 characters is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(notes) || notes.Trim().Length > 2000)
+        {
+            throw new InvalidOperationException("Human review notes of 1–2000 characters are required.");
+        }
+
+        var normalizedDecision = decision?.Trim().ToUpperInvariant();
+        if (normalizedDecision is not ("APPROVE" or "REJECT"))
+        {
+            throw new InvalidOperationException("Human review decision must be APPROVE or REJECT.");
+        }
+
+        var blockers = voyage.Blockers
+            .Where(item => item is not "HUMAN_REVIEW_REQUIRED"
+                and not "EXPLICIT_RELEASE_AUTHORIZATION_REQUIRED"
+                and not "HUMAN_REVIEW_REJECTED")
+            .ToList();
+
+        if (normalizedDecision == "APPROVE")
+        {
+            if (blockers.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    "Human approval is blocked until all non-review acceptance blockers are cleared: "
+                    + string.Join(", ", blockers));
+            }
+
+            blockers.Add("EXPLICIT_RELEASE_AUTHORIZATION_REQUIRED");
+        }
+        else
+        {
+            blockers.Add("HUMAN_REVIEW_REJECTED");
+        }
+
+        var status = normalizedDecision == "APPROVE"
+            ? "HUMAN_APPROVED_PENDING_RELEASE"
+            : "HUMAN_REVIEW_REJECTED";
+        var evidence = status + " by " + reviewerId.Trim()
+            + " at " + reviewedAt.ToUniversalTime().ToString("O")
+            + ". Notes: " + notes.Trim()
+            + ". CampaignReady remains false; Delivery remains NOT_SENT.";
+        return voyage with
+        {
+            Status = status,
+            HumanReview = new AcceptanceEvidence(normalizedDecision, evidence),
+            Blockers = blockers.Distinct(StringComparer.Ordinal).ToList(),
+            Trace = ReplaceSteps(
+                voyage.Trace,
+                new AcceptanceTraceStep(9, "HUMAN_REVIEW", normalizedDecision, evidence),
+                new AcceptanceTraceStep(10, "DELIVERY", "NOT_SENT",
+                    "Human review does not authorize release. CampaignReady remains false; Delivery remains NOT_SENT.")),
+            CampaignReady = false,
+            Delivery = "NOT_SENT",
+            Notice = normalizedDecision == "APPROVE"
+                ? "Human review was recorded. Explicit release authorization is still required; delivery remains NOT_SENT."
+                : "Human review rejected this draft. Repair and a new review are required; delivery remains NOT_SENT."
+        };
+    }
+
     public static CreativeAcceptanceVoyage WithGeneration(
         CreativeAcceptanceVoyage voyage,
         AcceptanceGenerationOutcome outcome,
