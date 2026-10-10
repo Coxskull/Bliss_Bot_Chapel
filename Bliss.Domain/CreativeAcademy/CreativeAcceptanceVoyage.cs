@@ -343,6 +343,12 @@ public static class CreativeAcceptance
                 "Visual release evidence requires a stored generated draft. None was invented.");
         }
 
+        if (voyage.HumanReview.Status is "APPROVE" or "REJECT")
+        {
+            throw new InvalidOperationException(
+                "Visual QA cannot overwrite a recorded human decision. An explicit reopen workflow is required.");
+        }
+
         var decision = GlobalVisualDnaGate.Evaluate(
             reportedScore,
             defectCodes,
