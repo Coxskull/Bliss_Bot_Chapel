@@ -15,6 +15,8 @@ public sealed class MissionControlEvidenceService(
     IConfiguration configuration)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private const uint MaxScreenshotDimension = 16_384;
+    private const ulong MaxScreenshotPixels = 40_000_000;
 
     public async Task<IReadOnlyList<EvidenceManifest>> ReadAsync(CancellationToken cancellationToken)
     {
@@ -62,6 +64,11 @@ public sealed class MissionControlEvidenceService(
             if (!HasPngHeader(bytes))
             {
                 throw new InvalidOperationException("A screenshot must contain a valid PNG signature and IHDR dimensions. None was stored.");
+            }
+
+            if (!HasSafePngDimensions(bytes))
+            {
+                throw new InvalidOperationException("Screenshot dimensions exceed the allowed validation limit. None was stored.");
             }
 
             await ValidatePngDecodingAsync(bytes, cancellationToken);
@@ -501,6 +508,15 @@ public sealed class MissionControlEvidenceService(
         var width = ((uint)bytes[16] << 24) | ((uint)bytes[17] << 16) | ((uint)bytes[18] << 8) | bytes[19];
         var height = ((uint)bytes[20] << 24) | ((uint)bytes[21] << 16) | ((uint)bytes[22] << 8) | bytes[23];
         return width > 0 && height > 0;
+    }
+
+    private static bool HasSafePngDimensions(byte[] bytes)
+    {
+        var width = ((uint)bytes[16] << 24) | ((uint)bytes[17] << 16) | ((uint)bytes[18] << 8) | bytes[19];
+        var height = ((uint)bytes[20] << 24) | ((uint)bytes[21] << 16) | ((uint)bytes[22] << 8) | bytes[23];
+        return width <= MaxScreenshotDimension
+            && height <= MaxScreenshotDimension
+            && (ulong)width * height <= MaxScreenshotPixels;
     }
 
     private string PackageDirectory(string evidenceId) =>

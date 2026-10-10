@@ -88,6 +88,49 @@ public sealed class MissionControlEvidenceApiTests
             factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-SCREENSHOT-01.png")));
     }
 
+    [Theory]
+    [InlineData(20_000u, 1u)]
+    [InlineData(10_000u, 10_000u)]
+    public async Task Screenshot_upload_rejects_dimensions_that_can_exhaust_decoder_resources(uint width, uint height)
+    {
+        await using var factory = new MissionControlApiFactory();
+        var client = factory.CreateClient();
+        var issued = await client.PostAsJsonAsync("/api/operations/mission-control/evidence", new
+        {
+            taskId = "MC-SCREENSHOT-DIMENSIONS",
+            testName = "PNG dimension limits",
+            testCategory = "visual-qa",
+            submittedBy = "Erwin",
+            claimedResult = "BLOCKED"
+        });
+        var manifest = await issued.Content.ReadFromJsonAsync<JsonElement>();
+        var evidenceId = manifest.GetProperty("evidenceId").GetString()!;
+        var oversizedHeader = PngHeader(width, height);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/mission-control/evidence/" + evidenceId + "/files",
+            new { evidenceType = "SCREENSHOT", contentBase64 = Convert.ToBase64String(oversizedHeader) });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("dimensions", await response.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+        Assert.False(File.Exists(Path.Combine(
+            factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-SCREENSHOT-01.png")));
+    }
+
+    private static byte[] PngHeader(uint width, uint height)
+    {
+        byte[] bytes = [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 0, 0, 0, 0, 0];
+        bytes[16] = (byte)(width >> 24);
+        bytes[17] = (byte)(width >> 16);
+        bytes[18] = (byte)(width >> 8);
+        bytes[19] = (byte)width;
+        bytes[20] = (byte)(height >> 24);
+        bytes[21] = (byte)(height >> 16);
+        bytes[22] = (byte)(height >> 8);
+        bytes[23] = (byte)height;
+        return bytes;
+    }
+
     [Fact]
     public async Task Visual_artifact_verification_rejects_a_tampered_screenshot()
     {
