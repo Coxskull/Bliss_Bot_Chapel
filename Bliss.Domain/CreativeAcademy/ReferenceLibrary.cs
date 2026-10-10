@@ -271,7 +271,7 @@ public static class ReferenceLibrary
 
         if (selected.Count == 0)
         {
-            var missingInstructions = activeFiles.Count > 0;
+            var missingInstructions = active.Count == 0 && activeFiles.Count > 0;
             return new ReferenceRetrieval(
                 missingInstructions ? ReferenceNotReady : "NICHE_REFERENCE_NOT_ACTIVE",
                 missingInstructions
