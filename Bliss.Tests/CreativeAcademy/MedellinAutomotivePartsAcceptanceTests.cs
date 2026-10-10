@@ -75,13 +75,13 @@ public sealed class MedellinAutomotivePartsAcceptanceTests
 
         var references = new List<AcademyReferenceRecord>
         {
-            Active("ACA-MDE-001-V1", 1, "automotive-parts",
+            Active("ACA-MDE-001-V1", 1, "automotive",
                 "clear product hierarchy and accurate mechanical detail",
                 "copying exact competitor packaging, logos, or catalog photography"),
-            Active("ACA-MDE-002-V1", 2, "auto-repair",
+            Active("ACA-MDE-002-V1", 2, "automotive",
                 "legible typography and believable workshop lighting",
                 "copying the reference headline or exact layout"),
-            Active("ACA-MDE-003-V1", 3, "retail",
+            Active("ACA-MDE-003-V1", 3, "automotive",
                 "high contrast between product and background",
                 "copying brand marks or distinctive product arrangements")
         };
@@ -91,7 +91,7 @@ public sealed class MedellinAutomotivePartsAcceptanceTests
             "Andina Motor Supply",
             "Medellín",
             "Colombia",
-            "automotive-parts",
+            "automotive",
             "Promote locally stocked replacement parts with a verified QR destination",
             "ARE-P01");
 
