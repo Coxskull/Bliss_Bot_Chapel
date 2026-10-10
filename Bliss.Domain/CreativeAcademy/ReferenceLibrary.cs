@@ -110,6 +110,7 @@ public static class ReferenceLibrary
     public const string Superseded = "SUPERSEDED";
     public const string Retired = "RETIRED";
     public const string Unclassified = "UNCLASSIFIED";
+    public const string ReferenceNotReady = "REFERENCE_NOT_READY";
     public const string QualityDnaVersion = "GQD-1";
 
     public static IReadOnlyList<string> Lifecycles { get; } =
@@ -238,7 +239,12 @@ public static class ReferenceLibrary
         IReadOnlyList<string>? extraReasons = null)
     {
         var niche = (nicheKey ?? string.Empty).Trim().ToLowerInvariant();
-        var active = library.Where(item => item.Lifecycle == Active && item.AssetPresent).ToList();
+        var activeFiles = library.Where(item => item.Lifecycle == Active && item.AssetPresent).ToList();
+        // An ACTIVE label alone is not enough: each reference needs human-authored
+        // learning and do-not-copy instructions before it can guide production.
+        var active = activeFiles.Where(item =>
+            !string.IsNullOrWhiteSpace(item.Learn)
+            && !string.IsNullOrWhiteSpace(item.DoNotCopy)).ToList();
         var selected = new List<RetrievedReference>();
         var nicheHit = active.FirstOrDefault(item => item.NicheKey.Equals(niche, StringComparison.OrdinalIgnoreCase));
         if (nicheHit is not null)
@@ -265,9 +271,12 @@ public static class ReferenceLibrary
 
         if (selected.Count == 0)
         {
+            var missingInstructions = activeFiles.Count > 0;
             return new ReferenceRetrieval(
-                "NICHE_REFERENCE_NOT_ACTIVE",
-                "No ACTIVE Academy reference with a stored file matches this brief. Awaiting upload is not retrieval. No image was invented. Delivery remains NOT_SENT.",
+                missingInstructions ? ReferenceNotReady : "NICHE_REFERENCE_NOT_ACTIVE",
+                missingInstructions
+                    ? "ACTIVE reference files exist, but none is eligible for retrieval until both human-authored learn and doNotCopy instructions are present. The reference library was not changed. No image was invented. Delivery remains NOT_SENT."
+                    : "No ACTIVE Academy reference with a stored file matches this brief. Awaiting upload is not retrieval. No image was invented. Delivery remains NOT_SENT.",
                 selected,
                 0,
                 false,
