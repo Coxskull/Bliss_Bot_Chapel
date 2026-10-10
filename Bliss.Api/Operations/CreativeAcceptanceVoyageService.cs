@@ -12,7 +12,8 @@ public sealed class CreativeAcceptanceVoyageService(
     BlueprintPhaseService phases,
     BlissRuntimeOptions runtime,
     ICreativeImageGenerator generator,
-    CreativeGenerationService generation)
+    CreativeGenerationService generation,
+    MissionControlEvidenceService evidence)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -103,6 +104,8 @@ public sealed class CreativeAcceptanceVoyageService(
             throw new InvalidOperationException(
                 "A stable visual evidence reference of 1–500 printable characters is required.");
         }
+
+        await evidence.VerifyVisualArtifactAsync(evidenceReference, cancellationToken);
 
         var row = await FindVoyageAsync(voyageKey, cancellationToken);
         var report = DeserializeReport(row);

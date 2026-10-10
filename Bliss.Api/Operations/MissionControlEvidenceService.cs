@@ -79,6 +79,41 @@ public sealed class MissionControlEvidenceService(
         return updated;
     }
 
+    public async Task VerifyVisualArtifactAsync(string evidenceId, CancellationToken cancellationToken)
+    {
+        var manifest = ReadManifest(await FindAsync(evidenceId, cancellationToken));
+        var screenshots = manifest.Files
+            .Where(item => item.EvidenceType.Equals("SCREENSHOT", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        if (screenshots.Length == 0)
+        {
+            throw new InvalidOperationException("A stored screenshot artifact is required. None was verified.");
+        }
+
+        foreach (var screenshot in screenshots)
+        {
+            if (!string.Equals(Path.GetFileName(screenshot.FileName), screenshot.FileName, StringComparison.Ordinal)
+                || !screenshot.FileName.StartsWith(evidenceId + "-SCREENSHOT-", StringComparison.Ordinal)
+                || !screenshot.FileName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("The screenshot manifest contains an unsafe file reference. None was verified.");
+            }
+
+            var path = Path.Combine(PackageDirectory(evidenceId), screenshot.FileName);
+            if (!File.Exists(path))
+            {
+                throw new InvalidOperationException("A screenshot listed in the evidence manifest is missing. None was verified.");
+            }
+
+            var bytes = await File.ReadAllBytesAsync(path, cancellationToken);
+            var actualHash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+            if (!string.Equals(actualHash, screenshot.Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("A screenshot hash does not match its evidence manifest. None was verified.");
+            }
+        }
+    }
+
     public async Task<EvidenceManifest> RetestAsync(
         string parentId,
         EvidenceIssueRequest? request,
