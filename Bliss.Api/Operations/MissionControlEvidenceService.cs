@@ -134,6 +134,13 @@ public sealed class MissionControlEvidenceService(
             {
                 throw new InvalidOperationException("A screenshot hash does not match its evidence manifest. None was verified.");
             }
+
+            if (!HasPngHeader(bytes) || !HasSafePngDimensions(bytes))
+            {
+                throw new InvalidOperationException("A stored screenshot is not a valid, safely sized PNG. None was verified.");
+            }
+
+            await ValidatePngDecodingAsync(bytes, cancellationToken);
         }
     }
 
