@@ -95,6 +95,15 @@ public sealed class CreativeAcceptanceVoyageService(
             throw new InvalidOperationException("Visual review evidence is required.");
         }
 
+        var evidenceReference = request.EvidenceReference?.Trim();
+        if (string.IsNullOrWhiteSpace(evidenceReference)
+            || evidenceReference.Length > 500
+            || evidenceReference.Any(char.IsControl))
+        {
+            throw new InvalidOperationException(
+                "A stable visual evidence reference of 1–500 printable characters is required.");
+        }
+
         var row = await FindVoyageAsync(voyageKey, cancellationToken);
         var report = DeserializeReport(row);
         report = CreativeAcceptance.ApplyVisualQualityEvidence(
@@ -106,6 +115,17 @@ public sealed class CreativeAcceptanceVoyageService(
             request.OriginalityConfirmed,
             request.InventoryGeometryVerified,
             request.QrVerified);
+        var evidenceNote = " Evidence reference: " + evidenceReference + ".";
+        report = report with
+        {
+            QualityQa = report.QualityQa with
+            {
+                Notice = report.QualityQa.Notice + evidenceNote
+            },
+            Trace = report.Trace.Select(step => step.Sequence == 7
+                ? step with { Evidence = step.Evidence + evidenceNote }
+                : step).ToList()
+        };
         return await SaveReportAsync(row, report, cancellationToken);
     }
 
@@ -239,7 +259,8 @@ public sealed record CreativeAcceptanceVisualReviewRequest(
     bool BrandDnaCompliant,
     bool OriginalityConfirmed,
     bool InventoryGeometryVerified,
-    bool QrVerified);
+    bool QrVerified,
+    string? EvidenceReference);
 
 public sealed record CreativeAcceptanceHumanReviewRequest(
     string? Decision,

@@ -15,6 +15,32 @@ namespace Bliss.Tests.Api;
 public sealed class CreativeAcademyApiTests
 {
     [Fact]
+    public async Task Visual_review_requires_a_stable_evidence_reference_before_lookup()
+    {
+        await using var factory = new BlissApiFactory();
+        var client = factory.CreateClient();
+
+        foreach (var reference in new string?[] { null, "", "   ", new string('x', 501), "bad\u0001reference" })
+        {
+            var response = await client.PostAsJsonAsync(
+                "/api/operations/academy/acceptance-voyages/not-created/visual-review",
+                new
+                {
+                    reportedScore = 100,
+                    defectCodes = Array.Empty<string>(),
+                    visualEvidenceRecorded = true,
+                    brandDnaCompliant = true,
+                    originalityConfirmed = true,
+                    inventoryGeometryVerified = true,
+                    qrVerified = true,
+                    evidenceReference = reference
+                });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+    }
+
+    [Fact]
     public async Task The_curriculum_is_judged_once_and_does_not_send()
     {
         await using var factory = new BlissApiFactory();
