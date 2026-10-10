@@ -390,6 +390,33 @@ public sealed class CreativeAcceptanceVoyageTests
         Assert.Equal("NOT_SENT", generated.Delivery);
     }
 
+    [Fact]
+    public void Visual_qa_cannot_overwrite_a_recorded_human_decision()
+    {
+        var ready = ReadyForHumanReview(costRecorded: true);
+        var approved = CreativeAcceptance.RecordHumanReview(
+            ready, "reviewer-123", "APPROVE", "Approved after review.", DateTimeOffset.UtcNow);
+
+        var approvalError = Assert.Throws<InvalidOperationException>(() =>
+            CreativeAcceptance.ApplyVisualQualityEvidence(approved, 100, [], true, true, true, true, true));
+
+        Assert.Contains("cannot overwrite a recorded human decision", approvalError.Message);
+        Assert.Equal("APPROVE", approved.HumanReview.Status);
+        Assert.False(approved.CampaignReady);
+        Assert.Equal("NOT_SENT", approved.Delivery);
+
+        var rejectedReady = ReadyForHumanReview(costRecorded: false);
+        var rejected = CreativeAcceptance.RecordHumanReview(
+            rejectedReady, "reviewer-456", "REJECT", "Rejected after review.", DateTimeOffset.UtcNow);
+        var rejectionError = Assert.Throws<InvalidOperationException>(() =>
+            CreativeAcceptance.ApplyVisualQualityEvidence(rejected, 100, [], true, true, true, true, true));
+
+        Assert.Contains("cannot overwrite a recorded human decision", rejectionError.Message);
+        Assert.Equal("REJECT", rejected.HumanReview.Status);
+        Assert.False(rejected.CampaignReady);
+        Assert.Equal("NOT_SENT", rejected.Delivery);
+    }
+
     private static CreativeAcceptanceVoyage ReadyForHumanReview(bool costRecorded)
     {
         var board = RealEstateCatalog.Board();
