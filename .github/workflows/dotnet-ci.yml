@@ -34,6 +34,14 @@ jobs:
       - name: Show SDK version
         run: dotnet --info
 
+      - name: Install media runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core
+          ffmpeg -version
+          test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+          test -f /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+
       - name: Restore solution
         run: dotnet restore BlissBotChapel.sln
 
