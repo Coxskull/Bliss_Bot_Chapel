@@ -69,6 +69,42 @@ public sealed class VisualDnaAcceptanceIntegrationTests
         Assert.Contains("stored generated draft", error.Message);
     }
 
+    [Fact]
+    public void Unrecorded_catalog_geometry_blocks_generation_before_any_provider_call()
+    {
+        var board = RealEstateCatalog.Board();
+        var references = new List<AcademyReferenceRecord>
+        {
+            Active("ACA-GEOM-001-V1", 1, "pharmacy", "clear product hierarchy", "exact packaging"),
+            Active("ACA-GEOM-002-V1", 2, "retail", "strong contrast", "exact brand marks")
+        };
+        var campaign = new AcceptanceCampaignBrief(
+            "visual-gate-unrecorded-geometry",
+            "Harborlight Pharmacy",
+            "Panama City",
+            "Panama",
+            "pharmacy",
+            "Introduce prescription pickup",
+            "ARE-P01");
+
+        var voyage = CreativeAcceptance.Run(
+            campaign,
+            references,
+            board.Products.Single(item => item.ProductId == "ARE-P01"),
+            board.Slots,
+            "OpenAI",
+            "gpt-image-1",
+            providerConfigured: true);
+
+        Assert.Equal("GEOMETRY_UNRECORDED", voyage.InventoryPreflight.Status);
+        Assert.Equal("BLOCKED_INVENTORY_GEOMETRY", voyage.ProviderJob.Status);
+        Assert.Equal("NOT_STARTED", voyage.ProviderJob.JobId);
+        Assert.Equal(0, voyage.ProviderJob.ModelCalls);
+        Assert.Contains("INVENTORY_GEOMETRY_REQUIRED", voyage.Blockers);
+        Assert.False(voyage.CampaignReady);
+        Assert.Equal("NOT_SENT", voyage.Delivery);
+    }
+
     private static CreativeAcceptanceVoyage GeneratedVoyage()
     {
         var board = RealEstateCatalog.Board();
