@@ -442,6 +442,8 @@ public sealed class MissionControlEvidenceService(
             start.ArgumentList.Add("-v");
             start.ArgumentList.Add("error");
             start.ArgumentList.Add("-xerror");
+            start.ArgumentList.Add("-threads");
+            start.ArgumentList.Add("1");
             start.ArgumentList.Add("-i");
             start.ArgumentList.Add(path);
             start.ArgumentList.Add("-frames:v");
