@@ -63,6 +63,33 @@ public sealed class MissionControlEvidenceApiTests
     }
 
     [Fact]
+    public async Task Evidence_upload_rejects_oversized_base64_before_decoding_or_writing()
+    {
+        await using var factory = new MissionControlApiFactory();
+        var client = factory.CreateClient();
+        var issued = await client.PostAsJsonAsync("/api/operations/mission-control/evidence", new
+        {
+            taskId = "MC-OVERSIZED-BASE64",
+            testName = "Encoded evidence size limit",
+            testCategory = "evidence-retrieval",
+            submittedBy = "Erwin",
+            claimedResult = "BLOCKED"
+        });
+        Assert.Equal(HttpStatusCode.OK, issued.StatusCode);
+        var manifest = await issued.Content.ReadFromJsonAsync<JsonElement>();
+        var evidenceId = manifest.GetProperty("evidenceId").GetString()!;
+        var encoded = new string('A', 26_666_672);
+
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/mission-control/evidence/" + evidenceId + "/files",
+            new { evidenceType = "SCREENSHOT", contentBase64 = encoded });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.False(File.Exists(Path.Combine(
+            factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-SCREENSHOT-01.png")));
+    }
+
+    [Fact]
     public async Task Screenshot_upload_rejects_a_png_header_without_decodable_image_data()
     {
         await using var factory = new MissionControlApiFactory();
