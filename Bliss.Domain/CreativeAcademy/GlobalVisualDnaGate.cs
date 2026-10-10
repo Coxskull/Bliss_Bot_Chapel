@@ -64,16 +64,7 @@ public static class GlobalVisualDnaGate
                 "Unknown visual defect code(s): " + string.Join(", ", unknown) + ". None were invented.");
         }
 
-        var blocking = defects
-            .Where(code => HardFailures.Contains(code)
-                || code == "FLAT_LIGHTING"
-                || code == "MUDDY_COLORS"
-                || code == "WEAK_CONTRAST"
-                || code == "GENERIC_AI_LOOK"
-                || code == "POOR_HIERARCHY"
-                || code == "OVERLOADED_COMPOSITION"
-                || code == "WEAK_SCREEN_IMPACT")
-            .ToArray();
+        var blocking = defects;
 
         var status = !visualEvidenceRecorded
             ? Withheld
