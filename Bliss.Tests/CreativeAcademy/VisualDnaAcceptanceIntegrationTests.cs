@@ -105,6 +105,41 @@ public sealed class VisualDnaAcceptanceIntegrationTests
         Assert.Equal("NOT_SENT", voyage.Delivery);
     }
 
+    [Fact]
+    public void Active_reference_without_human_do_not_copy_note_blocks_generation()
+    {
+        var board = RealEstateCatalog.Board();
+        var references = new List<AcademyReferenceRecord>
+        {
+            Active("ACA-GATE-001-V1", 1, "pharmacy", "premium product lighting", "   ")
+        };
+        var campaign = new AcceptanceCampaignBrief(
+            "visual-gate-incomplete-reference",
+            "Harborlight Pharmacy",
+            "Panama City",
+            "Panama",
+            "pharmacy",
+            "Introduce prescription pickup",
+            "ARE-P01");
+
+        var voyage = CreativeAcceptance.Run(
+            campaign,
+            references,
+            board.Products.Single(item => item.ProductId == "ARE-P01"),
+            board.Slots,
+            "OpenAI",
+            "gpt-image-1",
+            providerConfigured: true);
+
+        Assert.Equal("BLOCKED_REFERENCE_GATE", voyage.ProviderJob.Status);
+        Assert.Equal("NOT_STARTED", voyage.ProviderJob.JobId);
+        Assert.Equal(0, voyage.ProviderJob.ModelCalls);
+        Assert.Contains("ACTIVE_REFERENCE_INTELLIGENCE_REQUIRED", voyage.Blockers);
+        Assert.False(voyage.ReferenceAssetsSentToProvider);
+        Assert.False(voyage.CampaignReady);
+        Assert.Equal("NOT_SENT", voyage.Delivery);
+    }
+
     private static CreativeAcceptanceVoyage GeneratedVoyage()
     {
         var board = RealEstateCatalog.Board();
