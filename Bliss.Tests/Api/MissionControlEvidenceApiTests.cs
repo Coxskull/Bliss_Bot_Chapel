@@ -38,6 +38,30 @@ public sealed class MissionControlEvidenceApiTests
     }
 
     [Fact]
+    public async Task Screenshot_upload_rejects_non_png_bytes_before_writing()
+    {
+        await using var factory = new MissionControlApiFactory();
+        var client = factory.CreateClient();
+        var issued = await client.PostAsJsonAsync("/api/operations/mission-control/evidence", new
+        {
+            taskId = "MC-SCREENSHOT",
+            testName = "Screenshot validation",
+            testCategory = "evidence-retrieval",
+            submittedBy = "Erwin",
+            claimedResult = "BLOCKED"
+        });
+        var manifest = await issued.Content.ReadFromJsonAsync<JsonElement>();
+        var evidenceId = manifest.GetProperty("evidenceId").GetString()!;
+        var response = await client.PostAsJsonAsync(
+            "/api/operations/mission-control/evidence/" + evidenceId + "/files",
+            new { evidenceType = "SCREENSHOT", contentBase64 = Convert.ToBase64String([1, 2, 3, 4, 5, 6, 7, 8]) });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.False(File.Exists(Path.Combine(
+            factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-SCREENSHOT-01.png")));
+    }
+
+    [Fact]
     public async Task A_retest_keeps_a_new_id_linked_to_the_original()
     {
         await using var factory = new MissionControlApiFactory();

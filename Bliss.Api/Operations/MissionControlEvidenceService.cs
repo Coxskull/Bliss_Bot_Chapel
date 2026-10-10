@@ -57,6 +57,11 @@ public sealed class MissionControlEvidenceService(
             throw new InvalidOperationException("An evidence file is required. None was invented.");
         }
 
+        if (type.Equals("SCREENSHOT", StringComparison.OrdinalIgnoreCase) && !HasPngHeader(bytes))
+        {
+            throw new InvalidOperationException("A screenshot must contain a valid PNG signature and IHDR dimensions. None was stored.");
+        }
+
         var sequence = manifest.Files.Count(item => item.EvidenceType.Equals("SCREENSHOT", StringComparison.OrdinalIgnoreCase)) + 1;
         var fileName = EvidenceIdentity.FileName(manifest.EvidenceId, type, sequence);
         EvidenceIdentity.RequireSafe(fileName, "file name");
@@ -407,6 +412,26 @@ public sealed class MissionControlEvidenceService(
         }
 
         await database.SaveChangesAsync(cancellationToken);
+    }
+
+    private static bool HasPngHeader(byte[] bytes)
+    {
+        ReadOnlySpan<byte> signature = [137, 80, 78, 71, 13, 10, 26, 10];
+        if (bytes.Length < 24 || !bytes.AsSpan(0, 8).SequenceEqual(signature))
+        {
+            return false;
+        }
+
+        if (bytes[8] != 0 || bytes[9] != 0 || bytes[10] != 0 || bytes[11] != 13
+            || bytes[12] != (byte)'I' || bytes[13] != (byte)'H'
+            || bytes[14] != (byte)'D' || bytes[15] != (byte)'R')
+        {
+            return false;
+        }
+
+        var width = ((uint)bytes[16] << 24) | ((uint)bytes[17] << 16) | ((uint)bytes[18] << 8) | bytes[19];
+        var height = ((uint)bytes[20] << 24) | ((uint)bytes[21] << 16) | ((uint)bytes[22] << 8) | bytes[23];
+        return width > 0 && height > 0;
     }
 
     private string PackageDirectory(string evidenceId) =>
