@@ -396,6 +396,24 @@ public sealed class WeddingPlannerService
             throw new WeddingPlannerForbiddenException("Advertisers may only append ADVERTISER messages.");
         }
 
+        // PostgreSQL row-locking serializes sequence allocation for this session.
+        // Re-check idempotency only after taking the lock so simultaneous retries
+        // of the same request return the one durable message instead of colliding.
+        var isPostgres = string.Equals(
+            _db.Database.ProviderName,
+            "Npgsql.EntityFrameworkCore.PostgreSQL",
+            StringComparison.Ordinal);
+        await using var transaction = isPostgres
+            ? await _db.Database.BeginTransactionAsync(cancellationToken)
+            : null;
+
+        if (isPostgres)
+        {
+            await _db.Database.SqlQuery<Guid>(
+                    $"SELECT \"Id\" AS \"Value\" FROM \"WeddingPlannerPlanningSessions\" WHERE \"Id\" = {sessionId} FOR UPDATE")
+                .SingleAsync(cancellationToken);
+        }
+
         var replay = await _db.WeddingPlannerConversationMessages
             .SingleOrDefaultAsync(
                 x => x.SourceSystem == source && x.IdempotencyKey == key,
@@ -405,6 +423,11 @@ public sealed class WeddingPlannerService
             if (replay.SessionId != session.Id || replay.AdvertiserId != session.AdvertiserId)
             {
                 throw new WeddingPlannerNotFoundException("Conversation message was not found.");
+            }
+
+            if (transaction is not null)
+            {
+                await transaction.CommitAsync(cancellationToken);
             }
 
             return ToMessageResult(replay, true);
@@ -444,6 +467,11 @@ public sealed class WeddingPlannerService
             requestId,
             $"Sequence {message.SequenceNumber}.");
         await _db.SaveChangesAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
+
         return ToMessageResult(message, false);
     }
 
