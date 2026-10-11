@@ -16,21 +16,8 @@ for name in BLISS_HOSTED_DB_HOST BLISS_HOSTED_DB_PORT BLISS_HOSTED_DB_NAME BLISS
   fi
 done
 
-for tool in psql sha256sum; do
-  if ! command -v "$tool" >/dev/null 2>&1; then
-    echo "Hosted TLS acceptance refused: ${tool} is not installed." >&2
-    exit 2
-  fi
-done
-
 host="$BLISS_HOSTED_DB_HOST"
 port="$BLISS_HOSTED_DB_PORT"
-case "${host,,}" in
-  localhost|127.*|::1|0.0.0.0|host.docker.internal)
-    echo "Hosted TLS acceptance refused: loopback/local hosts are not hosted targets." >&2
-    exit 2
-    ;;
-esac
 if [[ "$host" =~ [[:space:]] || ! "$port" =~ ^[0-9]{1,5}$ ]] || (( port < 1 || port > 65535 )); then
   echo "Hosted TLS acceptance refused: host or port format is invalid." >&2
   exit 2
@@ -39,6 +26,46 @@ if [[ ! -s "$BLISS_PROVIDER_CA_FILE" || ! -r "$BLISS_PROVIDER_CA_FILE" ]]; then
   echo "Hosted TLS acceptance refused: provider CA file is missing, empty, or unreadable." >&2
   exit 2
 fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Hosted TLS acceptance refused: python3 is not installed for safe endpoint validation." >&2
+  exit 2
+fi
+
+# Reject loopback/unspecified IP literals, including bracketed and IPv4-mapped IPv6,
+# and common local hostnames before checking for psql. This allows CI to test the guard
+# without having database client tools or any credentials.
+if ! python3 - "$host" <<'PY'
+import ipaddress
+import sys
+
+raw = sys.argv[1].strip().rstrip(".")
+normalized = raw.strip("[]").lower()
+if normalized in {"localhost", "localhost.localdomain", "host.docker.internal"}:
+    print("local", file=sys.stderr)
+    raise SystemExit(1)
+try:
+    address = ipaddress.ip_address(normalized)
+except ValueError:
+    raise SystemExit(0)
+mapped = getattr(address, "ipv4_mapped", None)
+if address.is_loopback or address.is_unspecified or (
+    mapped is not None and (mapped.is_loopback or mapped.is_unspecified)
+):
+    print("local", file=sys.stderr)
+    raise SystemExit(1)
+PY
+then
+  echo "Hosted TLS acceptance refused: loopback/local or unspecified hosts are not hosted targets." >&2
+  exit 2
+fi
+
+for tool in psql sha256sum; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "Hosted TLS acceptance refused: ${tool} is not installed." >&2
+    exit 2
+  fi
+done
 
 # Ignore ambient libpq settings so this probe uses only the explicit inputs below.
 unset PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD PGSSLMODE PGSSLROOTCERT PGOPTIONS PGCONNECT_TIMEOUT || true

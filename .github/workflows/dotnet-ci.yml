@@ -26,8 +26,57 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Validate hosted TLS probe syntax
-        run: bash -n scripts/postgres-hosted-verifyfull-acceptance.sh
+      - name: Validate hosted TLS probe safety guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          script=scripts/postgres-hosted-verifyfull-acceptance.sh
+          bash -n "$script"
+          ca_file="$(mktemp)"
+          output="$(mktemp)"
+          trap 'rm -f "$ca_file" "$output"' EXIT
+          printf 'synthetic-ca-placeholder\n' > "$ca_file"
+
+          expect_refusal() {
+            local label="$1"
+            shift
+            local code=0
+            "$@" >"$output" 2>&1 || code=$?
+            if [[ "$code" -ne 2 ]]; then
+              echo "Expected safe refusal for $label; got exit $code." >&2
+              cat "$output" >&2
+              exit 1
+            fi
+          }
+
+          expect_refusal "missing explicit opt-in" env \
+            BLISS_HOSTED_TLS_ACCEPTANCE=0 BLISS_HOSTED_TLS_TARGET=hosted bash "$script"
+          grep -q "explicit hosted opt-in" "$output"
+
+          for host in localhost localhost. 127.0.0.1 127.55.1.2 ::1 '[::1]' '0:0:0:0:0:0:0:1' '::ffff:127.0.0.1' 0.0.0.0 host.docker.internal; do
+            expect_refusal "local host $host" env \
+              BLISS_HOSTED_TLS_ACCEPTANCE=1 \
+              BLISS_HOSTED_TLS_TARGET=hosted \
+              BLISS_HOSTED_DB_HOST="$host" \
+              BLISS_HOSTED_DB_PORT=5432 \
+              BLISS_HOSTED_DB_NAME=probe \
+              BLISS_HOSTED_DB_USER=probe \
+              BLISS_HOSTED_DB_PASSWORD=nonempty-test-only-placeholder \
+              BLISS_PROVIDER_CA_FILE="$ca_file" \
+              bash "$script"
+            grep -q "loopback/local or unspecified hosts" "$output"
+          done
+
+          expect_refusal "missing required secret" env \
+            BLISS_HOSTED_TLS_ACCEPTANCE=1 \
+            BLISS_HOSTED_TLS_TARGET=hosted \
+            BLISS_HOSTED_DB_HOST=db.example.test \
+            BLISS_HOSTED_DB_PORT=5432 \
+            BLISS_HOSTED_DB_NAME=probe \
+            BLISS_HOSTED_DB_USER=probe \
+            BLISS_PROVIDER_CA_FILE="$ca_file" \
+            bash "$script"
+          grep -q "BLISS_HOSTED_DB_PASSWORD is missing" "$output"
 
       - name: Set up .NET 8 SDK
         uses: actions/setup-dotnet@v4
