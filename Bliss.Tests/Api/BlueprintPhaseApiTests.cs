@@ -167,7 +167,7 @@ public sealed class BlueprintPhaseApiTests : IClassFixture<BlissApiFactory>
             });
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         var adaptation = body.GetProperty("adaptation");
-        var slots = adaptation.GetProperty("slots").EnumerateArray().Select(item => item.GetProperty("slotId").GetString()).ToArray();
+        var slots = adaptation.GetProperty("slots").EnumerateArray().Select(item => item.GetProperty("slotId").GetString() ?? string.Empty).ToArray();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("RECOMPOSED", adaptation.GetProperty("status").GetString());

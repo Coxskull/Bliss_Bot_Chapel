@@ -55,7 +55,7 @@ public sealed class InstructionAmendmentEndToEndApiTests
         AssertReference(references, "ACA-010-V1", "Motorcycle.jpeg", "motorcycle", "Brava Moto");
 
         var unassigned = board.GetProperty("unassigned").EnumerateArray()
-            .Select(item => item.GetProperty("fileName").GetString())
+            .Select(item => item.GetProperty("fileName").GetString() ?? string.Empty)
             .OrderBy(name => name, StringComparer.Ordinal)
             .ToArray();
         Assert.Equal(
@@ -110,7 +110,7 @@ public sealed class InstructionAmendmentEndToEndApiTests
         }
 
         var openNeeds = needs.Where(item => item.GetProperty("status").GetString() == "OPEN")
-            .Select(item => item.GetProperty("needId").GetString())
+            .Select(item => item.GetProperty("needId").GetString() ?? string.Empty)
             .OrderBy(id => id, StringComparer.Ordinal)
             .ToArray();
         Assert.Equal(
