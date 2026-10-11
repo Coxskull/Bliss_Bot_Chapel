@@ -44,3 +44,14 @@ Production-style credentials were found **committed** in Alpha Auto repositories
 Checked out and writable: **Coxskull/Bliss_Bot_Chapel** only.
 
 Alpha Auto repositories were **cloned read-only** to `/tmp/alpha-audit/` for inspection. They were **not** copied into this repository.
+
+
+## Scope correction — Creator Fleet (2026-10-11)
+
+The current coordinated engineering program includes **Creator Fleet** as part of the Bliss Bot Chapel project scope, alongside Bliss Chapel and The Wedding Planner. The canonical repository to use for this coordinated in-repo work is `Coxskull/Bliss_Bot_Chapel`.
+
+The links `Moddaveel/creator-fleet-hq` and `Moddaveel/creator-fleet-processor` are external references provided in chat; their source trees were not found nested in this repository's recursive `main` tree. Do not treat these separate repositories as the required write targets for this scope. First map the Creator Fleet product requirements to this repository's actual files, current architecture, and approved contracts. Existing Mission 001 notes describe platform adapters, identity resolution, deduplication, snapshots, freshness, and verification missions as missing/planned components; confirm each gap against current source before implementation.
+
+Preserve existing bounded contexts: do not duplicate Creator entities, create a second Campaign model, merge Alpha Auto order finance into Bliss media finance, or split the Wedding Planner module without an architecture decision. Keep `CampaignReady=false` and `Delivery=NOT_SENT` until separate release approval.
+
+Evidence ID for this clarification: `ALPHA-EV-20261011-P2-CREATOR-FLEET-SCOPE`.
