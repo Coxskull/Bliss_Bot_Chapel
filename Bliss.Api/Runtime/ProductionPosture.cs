@@ -462,11 +462,31 @@ public static class ProductionPostureEvaluator
         }
 
         var normalized = host.Trim().Trim('[', ']');
-        return normalized.Equals("localhost", StringComparison.OrdinalIgnoreCase)
-            || normalized.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase)
-            || normalized.Equals("::1", StringComparison.OrdinalIgnoreCase)
-            || normalized.Equals("0.0.0.0", StringComparison.OrdinalIgnoreCase)
-            || normalized.Equals("host.docker.internal", StringComparison.OrdinalIgnoreCase);
+        if (normalized.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("host.docker.internal", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!IPAddress.TryParse(normalized, out var address))
+        {
+            return false;
+        }
+
+        if (IPAddress.IsLoopback(address)
+            || address.Equals(IPAddress.Any)
+            || address.Equals(IPAddress.IPv6Any))
+        {
+            return true;
+        }
+
+        if (!address.IsIPv4MappedToIPv6)
+        {
+            return false;
+        }
+
+        var mapped = address.MapToIPv4();
+        return IPAddress.IsLoopback(mapped) || mapped.Equals(IPAddress.Any);
     }
 
     private static bool IsCertificateFile(string path) =>
