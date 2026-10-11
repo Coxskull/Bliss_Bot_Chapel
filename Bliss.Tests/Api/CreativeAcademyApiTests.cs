@@ -508,6 +508,37 @@ public sealed class CreativeAcademyApiTests
     }
 
     [Fact]
+    public async Task Academy_operations_reads_require_authentication_when_oidc_is_enabled()
+    {
+        await using var factory = new WeddingPlannerOidcFactory();
+        var anonymous = factory.CreateSecureClient();
+        foreach (var path in new[]
+        {
+            "/api/operations/academy",
+            "/api/operations/academy/acceptance-voyages",
+            "/api/operations/academy/harborlight-review"
+        })
+        {
+            var response = await anonymous.GetAsync(path);
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        var authenticated = factory.CreateSecureClient();
+        authenticated.DefaultRequestHeaders.Add("X-Test-Name", "Academy Security Test");
+        authenticated.DefaultRequestHeaders.Add("X-Test-Roles", "bliss.viewer");
+        foreach (var path in new[]
+        {
+            "/api/operations/academy",
+            "/api/operations/academy/acceptance-voyages",
+            "/api/operations/academy/harborlight-review"
+        })
+        {
+            var response = await authenticated.GetAsync(path);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+    }
+
+    [Fact]
     public void Operations_read_and_review_endpoints_use_the_fallback_authorization_policy()
     {
         var controller = typeof(CreativeAcademyController);
