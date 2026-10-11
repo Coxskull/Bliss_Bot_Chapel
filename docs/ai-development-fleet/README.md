@@ -46,28 +46,17 @@ Checked out and writable: **Coxskull/Bliss_Bot_Chapel** only.
 Alpha Auto repositories were **cloned read-only** to `/tmp/alpha-audit/` for inspection. They were **not** copied into this repository.
 
 
-## Scope correction — Creator Fleet (2026-10-11)
-
-The current coordinated engineering program includes **Creator Fleet** as part of the Bliss Bot Chapel project scope, alongside Bliss Chapel and The Wedding Planner. The canonical repository to use for this coordinated in-repo work is `Coxskull/Bliss_Bot_Chapel`.
-
-The links `Moddaveel/creator-fleet-hq` and `Moddaveel/creator-fleet-processor` are external references provided in chat; their source trees were not found nested in this repository's recursive `main` tree. Do not treat these separate repositories as the required write targets for this scope. First map the Creator Fleet product requirements to this repository's actual files, current architecture, and approved contracts. Existing Mission 001 notes describe platform adapters, identity resolution, deduplication, snapshots, freshness, and verification missions as missing/planned components; confirm each gap against current source before implementation.
-
-Preserve existing bounded contexts: do not duplicate Creator entities, create a second Campaign model, merge Alpha Auto order finance into Bliss media finance, or split the Wedding Planner module without an architecture decision. Keep `CampaignReady=false` and `Delivery=NOT_SENT` until separate release approval.
-
-Evidence ID for this clarification: `ALPHA-EV-20261011-P2-CREATOR-FLEET-SCOPE`.
-
-
 ## Alpha four-system scope — owner clarification (2026-10-11)
 
 The four systems in the coordinated Alpha engineering program are:
 
 1. **Alpha Auto** — canonical backend `Coxskull/alpha-backend`.
 2. **Bliss Bot Chapel** — implemented in `Coxskull/Bliss_Bot_Chapel`.
-3. **Creator Academy** — implemented as an in-repository system within `Coxskull/Bliss_Bot_Chapel`, including `Bliss.Api/Controllers/CreativeAcademyController.cs`, `Bliss.Api/Operations/CreativeAcademyService.cs`, `Bliss.Domain/CreativeAcademy/`, persistence entities/configurations/migrations, tests, and the `docs/architecture/contracts/CREATIVE-ACADEMY-CONTRACT.md` contract.
-4. **The Wedding Planner** — implemented as an in-repository module within `Coxskull/Bliss_Bot_Chapel`.
+3. **Creator Academy** — a distinct system implemented inside `Coxskull/Bliss_Bot_Chapel`, including its API controller/service, domain, persistence, migrations, tests, and contract.
+4. **The Wedding Planner** — a distinct module implemented inside `Coxskull/Bliss_Bot_Chapel`.
 
-Therefore, **Bliss Bot Chapel, Creator Academy, and The Wedding Planner share the Bliss Bot Chapel repository**. They are distinct product/system workstreams within that repository, not separate repositories. Creator Fleet is not one of the four named systems in this program scope; do not substitute it for Creator Academy. Treat any Creator Fleet/Fishing Fleet references in older architecture documents as separate planned capabilities unless the owner explicitly expands the scope.
+Bliss Bot Chapel, Creator Academy, and The Wedding Planner share the Bliss Bot Chapel repository. Track them as separate system workstreams within that repository, not as separate repositories. **Creator Fleet is not one of the four systems named for this program** and must not replace Creator Academy in the scope. Treat older Creator/Fishing Fleet references as background/planned capabilities unless the owner explicitly expands the scope.
 
-Keep the work organized by system and evidence ID while preserving shared repository architecture, tests, and migrations. Do not split these systems into repositories or conflate their data domains without an approved architecture decision. Maintain `CampaignReady=false` and `Delivery=NOT_SENT` where the release guard applies.
+Keep system boundaries and shared architecture intact. Do not split these systems into repositories, duplicate creator/campaign models, or merge Alpha Auto order-finance data into Bliss media-finance concepts without an approved architecture decision. Preserve `CampaignReady=false` and `Delivery=NOT_SENT` where the release guard applies.
 
 Evidence ID: `ALPHA-EV-20261011-SCOPE-FOUR-SYSTEMS`.
