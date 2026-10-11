@@ -26,6 +26,9 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Validate hosted TLS probe syntax
+        run: bash -n scripts/postgres-hosted-verifyfull-acceptance.sh
+
       - name: Set up .NET 8 SDK
         uses: actions/setup-dotnet@v4
         with:
