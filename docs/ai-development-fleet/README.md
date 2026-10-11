@@ -55,3 +55,19 @@ The links `Moddaveel/creator-fleet-hq` and `Moddaveel/creator-fleet-processor` a
 Preserve existing bounded contexts: do not duplicate Creator entities, create a second Campaign model, merge Alpha Auto order finance into Bliss media finance, or split the Wedding Planner module without an architecture decision. Keep `CampaignReady=false` and `Delivery=NOT_SENT` until separate release approval.
 
 Evidence ID for this clarification: `ALPHA-EV-20261011-P2-CREATOR-FLEET-SCOPE`.
+
+
+## Alpha four-system scope — owner clarification (2026-10-11)
+
+The four systems in the coordinated Alpha engineering program are:
+
+1. **Alpha Auto** — canonical backend `Coxskull/alpha-backend`.
+2. **Bliss Bot Chapel** — implemented in `Coxskull/Bliss_Bot_Chapel`.
+3. **Creator Academy** — implemented as an in-repository system within `Coxskull/Bliss_Bot_Chapel`, including `Bliss.Api/Controllers/CreativeAcademyController.cs`, `Bliss.Api/Operations/CreativeAcademyService.cs`, `Bliss.Domain/CreativeAcademy/`, persistence entities/configurations/migrations, tests, and the `docs/architecture/contracts/CREATIVE-ACADEMY-CONTRACT.md` contract.
+4. **The Wedding Planner** — implemented as an in-repository module within `Coxskull/Bliss_Bot_Chapel`.
+
+Therefore, **Bliss Bot Chapel, Creator Academy, and The Wedding Planner share the Bliss Bot Chapel repository**. They are distinct product/system workstreams within that repository, not separate repositories. Creator Fleet is not one of the four named systems in this program scope; do not substitute it for Creator Academy. Treat any Creator Fleet/Fishing Fleet references in older architecture documents as separate planned capabilities unless the owner explicitly expands the scope.
+
+Keep the work organized by system and evidence ID while preserving shared repository architecture, tests, and migrations. Do not split these systems into repositories or conflate their data domains without an approved architecture decision. Maintain `CampaignReady=false` and `Delivery=NOT_SENT` where the release guard applies.
+
+Evidence ID: `ALPHA-EV-20261011-SCOPE-FOUR-SYSTEMS`.
