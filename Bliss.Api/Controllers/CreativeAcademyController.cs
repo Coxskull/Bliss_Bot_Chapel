@@ -55,6 +55,7 @@ public sealed class CreativeAcademyController(
     }
 
     [HttpPost("harborlight-review")]
+    [Authorize(Policy = BlissAuthorization.ReviewPolicy)]
     public ActionResult ApplyHarborlightOwnerGrades([FromBody] HarborlightOwnerGradeRequest? request)
     {
         try
