@@ -28,7 +28,7 @@ public sealed class MissionControlEvidenceApiTests
         Assert.Equal("NOT_CONNECTED", body.GetProperty("driveStatus").GetString());
         Assert.Equal("NOT_RUN", body.GetProperty("chatgptRetrieval").GetString());
         Assert.Equal("NOT_REVIEWED", manifest.GetProperty("finalReviewResult").GetString());
-        Assert.Equal(["REPORT", "VIDEO"], files.Select(item => item.GetProperty("evidenceType").GetString()).ToArray());
+        Assert.Equal(new[] { "REPORT", "VIDEO" }, files.Select(item => item.GetProperty("evidenceType").GetString() ?? string.Empty).ToArray());
         Assert.All(files, item => Assert.StartsWith(evidenceId + "-", item.GetProperty("fileName").GetString(), StringComparison.Ordinal));
         Assert.True(File.Exists(Path.Combine(factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-REPORT.pdf")));
         Assert.True(File.Exists(Path.Combine(factory.Root, "02 — EVIDENCE SUBMITTED", evidenceId, evidenceId + "-VIDEO.mp4")));
