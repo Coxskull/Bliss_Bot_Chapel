@@ -18,7 +18,6 @@ public sealed class CreativeAcademyController(
     IWebHostEnvironment environment) : ControllerBase
 {
     [HttpGet]
-    [AllowAnonymous]
     public async Task<ActionResult> Read(CancellationToken cancellationToken)
     {
         var board = await academy.ReadAsync(cancellationToken);
@@ -27,7 +26,6 @@ public sealed class CreativeAcademyController(
     }
 
     [HttpGet("acceptance-voyages")]
-    [AllowAnonymous]
     public async Task<ActionResult> AcceptanceVoyages(CancellationToken cancellationToken) =>
         Ok(new
         {
@@ -38,7 +36,6 @@ public sealed class CreativeAcademyController(
         });
 
     [HttpGet("harborlight-review")]
-    [AllowAnonymous]
     public ActionResult ReadHarborlightReview()
     {
         try
@@ -58,7 +55,7 @@ public sealed class CreativeAcademyController(
     }
 
     [HttpPost("harborlight-review")]
-    [AllowAnonymous]
+    [Authorize(Policy = BlissAuthorization.ReviewPolicy)]
     public ActionResult ApplyHarborlightOwnerGrades([FromBody] HarborlightOwnerGradeRequest? request)
     {
         try

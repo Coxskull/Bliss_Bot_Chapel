@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Bliss.Api.Operations;
+using Bliss.Api.Controllers;
+using Microsoft.AspNetCore.Authorization;
 using Bliss.Domain.CreativeAcademy;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
@@ -503,6 +505,75 @@ public sealed class CreativeAcademyApiTests
             "/api/operations/academy/harborlight-review",
             new { grades = new[] { new { name = "color power", grade = "ACCEPTED" } } });
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+    }
+
+    [Fact]
+    public async Task Academy_operations_reads_require_authentication_when_oidc_is_enabled()
+    {
+        await using var factory = new WeddingPlannerOidcFactory();
+        var anonymous = factory.CreateSecureClient();
+        foreach (var path in new[]
+        {
+            "/api/operations/academy",
+            "/api/operations/academy/acceptance-voyages",
+            "/api/operations/academy/harborlight-review"
+        })
+        {
+            var response = await anonymous.GetAsync(path);
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        var authenticated = factory.CreateSecureClient();
+        authenticated.DefaultRequestHeaders.Add("X-Test-Name", "Academy Security Test");
+        authenticated.DefaultRequestHeaders.Add("X-Test-Roles", "bliss.viewer");
+        foreach (var path in new[]
+        {
+            "/api/operations/academy",
+            "/api/operations/academy/acceptance-voyages",
+            "/api/operations/academy/harborlight-review"
+        })
+        {
+            var response = await authenticated.GetAsync(path);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task Academy_owner_grade_preview_requires_reviewer_role()
+    {
+        await using var factory = new WeddingPlannerOidcFactory();
+        var viewer = factory.CreateSecureClient();
+        viewer.DefaultRequestHeaders.Add("X-Test-Name", "Academy Viewer");
+        viewer.DefaultRequestHeaders.Add("X-Test-Roles", "bliss.viewer");
+        var session = await viewer.GetFromJsonAsync<SessionResponse>("/api/auth/session");
+        Assert.NotNull(session?.CsrfToken);
+        viewer.DefaultRequestHeaders.Add("X-CSRF-TOKEN", session!.CsrfToken);
+
+        var response = await viewer.PostAsJsonAsync(
+            "/api/operations/academy/harborlight-review",
+            new { grades = Array.Empty<object>() });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public void Operations_read_and_review_endpoints_use_the_fallback_authorization_policy()
+    {
+        var controller = typeof(CreativeAcademyController);
+        var methods = new[]
+        {
+            nameof(CreativeAcademyController.Read),
+            nameof(CreativeAcademyController.AcceptanceVoyages),
+            nameof(CreativeAcademyController.ReadHarborlightReview),
+            nameof(CreativeAcademyController.ApplyHarborlightOwnerGrades)
+        };
+
+        foreach (var name in methods)
+        {
+            var method = controller.GetMethod(name);
+            Assert.NotNull(method);
+            Assert.Empty(method!.GetCustomAttributes(typeof(AllowAnonymousAttribute), inherit: true));
+        }
     }
 
     private static JsonElement Lesson(JsonElement board, string key)
