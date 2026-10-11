@@ -72,6 +72,12 @@ public sealed class Phase20ProductionPostureEvaluatorTests
     [Theory]
     [InlineData("Host=localhost;Port=5432;Database=bliss;Username=bliss_app;Password=phase20-db-password-do-not-leak;SSL Mode=Require", "Loopback")]
     [InlineData("Host=127.0.0.1;Port=5432;Database=bliss;Username=bliss_app;Password=phase20-db-password-do-not-leak;SSL Mode=Require", "Loopback")]
+    [InlineData("Host=127.0.0.2;Port=5432;Database=bliss;Username=bliss_app;Password=phase20-db-password-do-not-leak;SSL Mode=Require", "Loopback")]
+    [InlineData("Host=127.55.1.2;Port=5432;Database=bliss;Username=bliss_app;Password=phase20-db-password-do-not-leak;SSL Mode=Require", "Loopback")]
+    [InlineData("Host=0.0.0.0;Port=5432;Database=bliss;Username=bliss_app;Password=phase20-db-password-do-not-leak;SSL Mode=Require", "Loopback")]
+    [InlineData("Host=::;Port=5432;Database=bliss;Username=bliss_app;Password=phase20-db-password-do-not-leak;SSL Mode=Require", "Loopback")]
+    [InlineData("Host=0:0:0:0:0:0:0:1;Port=5432;Database=bliss;Username=bliss_app;Password=phase20-db-password-do-not-leak;SSL Mode=Require", "Loopback")]
+    [InlineData("Host=::ffff:127.0.0.1;Port=5432;Database=bliss;Username=bliss_app;Password=phase20-db-password-do-not-leak;SSL Mode=Require", "Loopback")]
     [InlineData("Host=db.phase20.example.test;Port=5432;Database=bliss;Username=bliss_app;Password=phase20-db-password-do-not-leak;SSL Mode=Disable", "SSL Mode")]
     [InlineData("Host=db.phase20.example.test;Port=5432;Database=bliss;Username=bliss_app;Password=short;SSL Mode=Require", "secret store")]
     public void Production_rejects_unsafe_database_settings(string connectionString, string expected)
@@ -101,6 +107,9 @@ public sealed class Phase20ProductionPostureEvaluatorTests
     [InlineData("http://identity.example.test")]
     [InlineData("https://localhost/realms/bliss")]
     [InlineData("https://127.0.0.1/realms/bliss")]
+    [InlineData("https://127.0.0.2/realms/bliss")]
+    [InlineData("https://[::1]/realms/bliss")]
+    [InlineData("https://[::ffff:127.0.0.1]/realms/bliss")]
     public void Production_rejects_a_non_hosted_identity_provider(string authority)
     {
         var exception = Assert.Throws<InvalidOperationException>(() =>
