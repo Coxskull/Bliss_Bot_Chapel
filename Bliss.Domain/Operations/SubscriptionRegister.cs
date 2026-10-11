@@ -345,6 +345,12 @@ public static class SubscriptionRegister
                 "A currency is a three-letter code. None is invented.");
         }
 
-        return new Money(amount.Value, code);
+        if (amount is not decimal recordedAmount || code is null)
+        {
+            throw new InvalidOperationException(
+                "A price needs both an amount and a currency. None is invented.");
+        }
+
+        return new Money(recordedAmount, code);
     }
 }

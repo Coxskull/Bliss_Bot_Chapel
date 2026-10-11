@@ -51,12 +51,24 @@ jobs:
       - name: Run regression tests
         run: dotnet test Bliss.Tests/Bliss.Tests.csproj --configuration Release --no-build --no-restore --logger "trx;LogFileName=bliss-tests.trx" --results-directory TestResults
 
+      - name: Audit vulnerable NuGet dependencies
+        shell: bash
+        run: |
+          set -o pipefail
+          dotnet list BlissBotChapel.sln package --vulnerable --include-transitive | tee nuget-vulnerability-audit.txt
+          if grep -Eiq 'GHSA-[A-Z0-9-]+|CVE-[0-9]{4}-[0-9]+' nuget-vulnerability-audit.txt; then
+            echo "::error::The NuGet audit output contains one or more vulnerability advisories."
+            exit 1
+          fi
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bliss-test-results-${{ github.run_number }}
-          path: TestResults/**/*.trx
+          path: |
+            TestResults/**/*.trx
+            nuget-vulnerability-audit.txt
           if-no-files-found: warn
           retention-days: 14
 
