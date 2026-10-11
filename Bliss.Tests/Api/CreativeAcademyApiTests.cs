@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Bliss.Api.Operations;
+using Bliss.Api.Controllers;
+using Microsoft.AspNetCore.Authorization;
 using Bliss.Domain.CreativeAcademy;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
@@ -503,6 +505,26 @@ public sealed class CreativeAcademyApiTests
             "/api/operations/academy/harborlight-review",
             new { grades = new[] { new { name = "color power", grade = "ACCEPTED" } } });
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+    }
+
+    [Fact]
+    public void Operations_read_and_review_endpoints_use_the_fallback_authorization_policy()
+    {
+        var controller = typeof(CreativeAcademyController);
+        var methods = new[]
+        {
+            nameof(CreativeAcademyController.Read),
+            nameof(CreativeAcademyController.AcceptanceVoyages),
+            nameof(CreativeAcademyController.ReadHarborlightReview),
+            nameof(CreativeAcademyController.ApplyHarborlightOwnerGrades)
+        };
+
+        foreach (var name in methods)
+        {
+            var method = controller.GetMethod(name);
+            Assert.NotNull(method);
+            Assert.Empty(method!.GetCustomAttributes(typeof(AllowAnonymousAttribute), inherit: true));
+        }
     }
 
     private static JsonElement Lesson(JsonElement board, string key)
