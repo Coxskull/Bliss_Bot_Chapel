@@ -12,6 +12,7 @@ namespace Bliss.Api.Controllers;
 [Route("api/operations/mission-control")]
 public sealed class MissionControlEvidenceController(MissionControlEvidenceService evidence) : ControllerBase
 {
+    private const int MaxEvidenceBase64Length = 26_666_668;
     [HttpGet("evidence")]
     [AllowAnonymous]
     public async Task<ActionResult> Read(CancellationToken cancellationToken) =>
@@ -62,9 +63,15 @@ public sealed class MissionControlEvidenceController(MissionControlEvidenceServi
     {
         try
         {
-            var bytes = string.IsNullOrWhiteSpace(request?.ContentBase64)
+            var encoded = request?.ContentBase64;
+            if (!string.IsNullOrWhiteSpace(encoded) && encoded.Length > MaxEvidenceBase64Length)
+            {
+                return Refuse(new InvalidOperationException("The encoded evidence file exceeds the upload size limit. None was stored."));
+            }
+
+            var bytes = string.IsNullOrWhiteSpace(encoded)
                 ? []
-                : Convert.FromBase64String(request.ContentBase64);
+                : Convert.FromBase64String(encoded);
             return Ok(await evidence.AttachAsync(evidenceId, request?.EvidenceType, bytes, cancellationToken));
         }
         catch (FormatException)
