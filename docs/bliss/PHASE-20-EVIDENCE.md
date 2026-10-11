@@ -2,11 +2,6 @@
 
 > **Evidence reconciliation — 2026-10-10:** The production-shaped capture below is historical and must not be treated as current production-posture acceptance. It used `SSL Mode=Require`, which does not verify the server certificate. The current `ProductionPostureEvaluator` requires `SSL Mode=VerifyFull` with `Trust Server Certificate=false`, and `Phase20ProductionPostureTests` explicitly reject `Require`, `VerifyCA`, and `VerifyFull;Trust Server Certificate=true`. Consequently, the historical capture's `productionGatesApplied: true` is inconsistent with the current evaluator and is not valid evidence that the current source passes the hosted gate. A fresh production-shaped run must use `VerifyFull` and the provider CA before deployment posture can be signed off. No hosted environment is asserted to have been tested by this correction.
 
-
-The dock contract later requires `SSL Mode=VerifyFull` outside Development.
-The production-shaped probe recorded below used `SSL Mode=Require` and did
-not verify the server certificate. That historical result is unchanged.
-
 ## Acceptance result
 
 Phase 20 adds a fail-closed production posture on top of the BLISS-SYS-NEGREG-001
@@ -23,7 +18,7 @@ Command:
 dotnet test Bliss.Tests/Bliss.Tests.csproj --verbosity minimal
 ```
 
-Result: **200 passed, 0 failed, 0 skipped**.
+Recorded evidence snapshot: **200 passed, 0 failed, 0 skipped**. This is the historical Phase 20 test record, not a claim about a fresh local run or the current source head. Current source validation should be taken from the corresponding exact-head GitHub Actions run.
 
 The previous regression total was 172. Phase 20 adds the production-posture,
 role-claim, request-log, certificate, startup-rejection, and backup-drill
