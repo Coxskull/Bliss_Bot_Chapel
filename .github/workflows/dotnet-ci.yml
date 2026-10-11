@@ -53,7 +53,7 @@ jobs:
             BLISS_HOSTED_TLS_ACCEPTANCE=0 BLISS_HOSTED_TLS_TARGET=hosted bash "$script"
           grep -q "explicit hosted opt-in" "$output"
 
-          for host in localhost localhost. 127.0.0.1 127.55.1.2 ::1 '[::1]' '0:0:0:0:0:0:0:1' '::ffff:127.0.0.1' 0.0.0.0 host.docker.internal; do
+          for host in localhost localhost. 127.0.0.1 127.55.1.2 ::1 '[::1]' '0:0:0:0:0:0:0:1' '::ffff:127.0.0.1' 0.0.0.0 host.docker.internal /var/run/postgresql ./socket 'postgresql://db.example.test' 'db.example.test:5432' 'bad..hostname'; do
             expect_refusal "local host $host" env \
               BLISS_HOSTED_TLS_ACCEPTANCE=1 \
               BLISS_HOSTED_TLS_TARGET=hosted \
@@ -64,7 +64,7 @@ jobs:
               BLISS_HOSTED_DB_PASSWORD=nonempty-test-only-placeholder \
               BLISS_PROVIDER_CA_FILE="$ca_file" \
               bash "$script"
-            grep -q "loopback/local or unspecified hosts" "$output"
+            grep -q "non-hosted, loopback/local-path, or unspecified targets" "$output"
           done
 
           expect_refusal "missing required secret" env \

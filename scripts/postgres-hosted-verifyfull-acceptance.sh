@@ -37,16 +37,34 @@ fi
 # without having database client tools or any credentials.
 if ! python3 - "$host" <<'PY'
 import ipaddress
+import re
 import sys
 
 raw = sys.argv[1].strip().rstrip(".")
 normalized = raw.strip("[]").lower()
+if (
+    not raw
+    or "/" in raw
+    or "\\" in raw
+    or "://" in raw
+    or normalized.startswith("unix:")
+):
+    print("non-hosted", file=sys.stderr)
+    raise SystemExit(1)
 if normalized in {"localhost", "localhost.localdomain", "host.docker.internal"}:
     print("local", file=sys.stderr)
     raise SystemExit(1)
 try:
     address = ipaddress.ip_address(normalized)
 except ValueError:
+    # Permit DNS hostnames only. Refuse socket paths, URL/host:port forms,
+    # malformed labels, and other values that libpq could interpret locally.
+    label = r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?"
+    if ":" in normalized or not re.fullmatch(
+        rf"(?=.{1,253}$){label}(?:\.{label})*", normalized
+    ):
+        print("non-hosted", file=sys.stderr)
+        raise SystemExit(1)
     raise SystemExit(0)
 mapped = getattr(address, "ipv4_mapped", None)
 if address.is_loopback or address.is_unspecified or (
@@ -56,7 +74,7 @@ if address.is_loopback or address.is_unspecified or (
     raise SystemExit(1)
 PY
 then
-  echo "Hosted TLS acceptance refused: loopback/local or unspecified hosts are not hosted targets." >&2
+  echo "Hosted TLS acceptance refused: non-hosted, loopback/local-path, or unspecified targets are not allowed." >&2
   exit 2
 fi
 
