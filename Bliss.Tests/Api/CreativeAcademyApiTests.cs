@@ -539,6 +539,24 @@ public sealed class CreativeAcademyApiTests
     }
 
     [Fact]
+    public async Task Academy_owner_grade_preview_requires_reviewer_role()
+    {
+        await using var factory = new WeddingPlannerOidcFactory();
+        var viewer = factory.CreateSecureClient();
+        viewer.DefaultRequestHeaders.Add("X-Test-Name", "Academy Viewer");
+        viewer.DefaultRequestHeaders.Add("X-Test-Roles", "bliss.viewer");
+        var session = await viewer.GetFromJsonAsync<SessionResponse>("/api/auth/session");
+        Assert.NotNull(session?.CsrfToken);
+        viewer.DefaultRequestHeaders.Add("X-CSRF-TOKEN", session!.CsrfToken);
+
+        var response = await viewer.PostAsJsonAsync(
+            "/api/operations/academy/harborlight-review",
+            new { grades = Array.Empty<object>() });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
     public void Operations_read_and_review_endpoints_use_the_fallback_authorization_policy()
     {
         var controller = typeof(CreativeAcademyController);
