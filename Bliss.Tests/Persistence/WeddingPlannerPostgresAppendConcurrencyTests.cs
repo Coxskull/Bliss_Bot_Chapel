@@ -7,8 +7,8 @@ namespace Bliss.Tests.Persistence;
 
 /// <summary>
 /// PostgreSQL integration coverage for concurrent Wedding Planner message appends.
-/// CI sets BLISS_TEST_POSTGRES_CONNECTION; local runs without that opt-in return
-/// without exercising PostgreSQL.
+/// CI requires BLISS_TEST_POSTGRES_CONNECTION; local runs without that opt-in
+/// return without exercising PostgreSQL.
 /// </summary>
 public sealed class WeddingPlannerPostgresAppendConcurrencyTests
 {
@@ -18,7 +18,10 @@ public sealed class WeddingPlannerPostgresAppendConcurrencyTests
         var baseConnectionString = Environment.GetEnvironmentVariable("BLISS_TEST_POSTGRES_CONNECTION");
         if (string.IsNullOrWhiteSpace(baseConnectionString))
         {
-            return;
+            // Never report an unexecuted PostgreSQL integration test as passed in CI.
+            Assert.False(string.Equals(Environment.GetEnvironmentVariable("CI"), "true", StringComparison.OrdinalIgnoreCase),
+                "BLISS_TEST_POSTGRES_CONNECTION must be configured for CI PostgreSQL concurrency coverage.");
+            return; // Local developer runs may omit the optional PostgreSQL fixture.
         }
 
         var schema = $"wp_append_ci_{Guid.NewGuid():N}";
