@@ -101,8 +101,8 @@ public sealed class WeddingPlannerPostgresAppendConcurrencyTests
                 Append(sharedKey, "same logical request"));
 
             Assert.Equal(sameKeyResults[0].MessageId, sameKeyResults[1].MessageId);
-            Assert.Single(sameKeyResults.Where(result => result.IsReplay));
-            Assert.Single(sameKeyResults.Where(result => !result.IsReplay));
+            Assert.Single(sameKeyResults, result => result.IsReplay);
+            Assert.Single(sameKeyResults, result => !result.IsReplay);
 
             var distinctKeyResults = await Task.WhenAll(
                 Append("distinct-request-a", "first distinct request"),
