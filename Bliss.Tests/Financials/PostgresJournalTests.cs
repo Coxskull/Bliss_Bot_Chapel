@@ -2,12 +2,16 @@ using Bliss.Domain.Financials;
 using Bliss.Infrastructure.Financials;
 using Npgsql;
 namespace Bliss.Tests.Financials;
+public sealed class FinancialPostgresFactAttribute : FactAttribute
+{
+ public FinancialPostgresFactAttribute(){if(string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("BLISS_FINANCIAL_TEST_POSTGRES"))) Skip="Requires explicit isolated financial PostgreSQL fixture.";}
+}
 public sealed class PostgresJournalTests
 {
- [Fact] public async Task Concurrent_retries_conflicts_reversals_and_raw_mutation_are_enforced()
+ [FinancialPostgresFact] public async Task Concurrent_retries_conflicts_reversals_and_raw_mutation_are_enforced()
  {
-  var connection=Environment.GetEnvironmentVariable("BLISS_FINANCIAL_TEST_POSTGRES");
-  if (string.IsNullOrWhiteSpace(connection)) return; // Opt-in, matching existing repository PostgreSQL tests; report opt-in separately.
+  var connection=Environment.GetEnvironmentVariable("BLISS_FINANCIAL_TEST_POSTGRES") ?? throw new InvalidOperationException("Explicit PostgreSQL fixture required.");
+  var fixture=new NpgsqlConnectionStringBuilder(connection);Assert.Equal("127.0.0.1",fixture.Host);Assert.Equal("financial_test",fixture.Database);
   await using var data=NpgsqlDataSource.Create(connection);
   var scope=new FinancialScope(Guid.NewGuid(),FinancialModule.BlissBot,Guid.NewGuid());
   JournalLine[] lines=[new(Guid.NewGuid(),Guid.NewGuid(),"advertiser",JournalSide.Debit,100),new(Guid.NewGuid(),Guid.NewGuid(),"creator",JournalSide.Credit,100)];
