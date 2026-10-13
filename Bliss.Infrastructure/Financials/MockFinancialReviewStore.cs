@@ -9,7 +9,7 @@ namespace Bliss.Infrastructure.Financials;
 
 public sealed record MockReviewAuthority(Guid QuoteVersionId,FinancialScope Scope,Guid RecipientAccountId,string AdvertiserSubject);
 public sealed record MockReviewQueueItem(Guid OperationId,FinancialScope Scope,string Currency,[property:JsonNumberHandling(JsonNumberHandling.WriteAsString|JsonNumberHandling.AllowReadingFromString)]long AmountMinor,string Reason,long NoteCount);
-public sealed record MockReviewPage(IReadOnlyList<MockReviewQueueItem> Items,Guid? NextAfter);
+public sealed record MockReviewPage(IReadOnlyList<MockReviewQueueItem> Items,[property:JsonIgnore(Condition=JsonIgnoreCondition.Never)]Guid? NextAfter);
 public sealed record MockReviewNote(Guid Id,Guid OperationId,string ActorSubject,string EvidenceFingerprint,string Note,DateTimeOffset RecordedAt);
 public sealed record MockReviewCase(Guid OperationId,bool RequiresReview,string Reason,string EvidenceFingerprint,string EvidenceJson,IReadOnlyList<MockReviewNote> Notes,bool NotesTruncated=false);
 public sealed record MockReviewNoteEvidence(MockReviewNote Note,string EvidenceJson);
