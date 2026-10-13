@@ -48,8 +48,8 @@ public static class StripeSandboxVerifier
   {try {var candidate=Convert.FromHexString(h[1]);valid|=candidate.Length==actual.Length&&CryptographicOperations.FixedTimeEquals(candidate,actual);}catch(FormatException){}}
   if(!valid) throw new ArgumentException("Invalid webhook signature.");
   var document=JsonDocument.Parse(body);var e=document.RootElement;
-  if(e.GetProperty("livemode").GetBoolean() || e.TryGetProperty("account",out _)) {document.Dispose();throw new ArgumentException("Only platform sandbox events are supported; Connect is not authorized.");}
-  return document;
+  try {if(e.GetProperty("livemode").GetBoolean() || e.TryGetProperty("account",out _))throw new ArgumentException("Only platform sandbox events are supported; Connect is not authorized.");return document;}
+  catch {document.Dispose();throw;}
  }
 
 }
