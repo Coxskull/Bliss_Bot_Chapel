@@ -8,6 +8,7 @@ public sealed class FinancialPreparationOptions
 {
  public bool Enabled {get;set;}
  public string Mode {get;set;}="Mock";
+ public string MockSigningSecret {get;set;}="";
  public string FixtureConnection {get;set;}="";
  public List<FundingBinding> Bindings {get;set;}=[];
 }

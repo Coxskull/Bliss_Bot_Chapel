@@ -4,10 +4,10 @@ using Npgsql;
 namespace Bliss.Infrastructure.Financials;
 public sealed record ReservedRefund(Guid Id,Guid OriginalJournalId,string PaymentIntentId,long AmountMinor);
 // Trusted internal/test gateway only. A real signed refund-event adapter is required before external activation.
-public sealed class RefundReconciliationStore(NpgsqlDataSource data)
+public sealed class RefundReconciliationStore(NpgsqlDataSource data,string operatorRole="bliss.operator",string adminRole="bliss.admin")
 {
- private static string Operator(ClaimsPrincipal actor)
- {var subject=PaymentOperationStore.AuthenticatedSubject(actor);if(!actor.IsInRole("bliss.operator")&&!actor.IsInRole("bliss.admin"))throw new UnauthorizedAccessException("Financial operator required.");return subject;}
+ private string Operator(ClaimsPrincipal actor)
+ {var subject=PaymentOperationStore.AuthenticatedSubject(actor);if(!actor.IsInRole(operatorRole)&&!actor.IsInRole(adminRole))throw new UnauthorizedAccessException("Financial operator required.");return subject;}
  public async Task<ReservedRefund> Reserve(ClaimsPrincipal actor,FinancialScope scope,string paymentIntent,long amount,string key,CancellationToken ct=default)
  {
   var subject=Operator(actor);if(amount<=0||string.IsNullOrWhiteSpace(key)||key.Length>120)throw new ArgumentException("Positive amount and bounded key required.");

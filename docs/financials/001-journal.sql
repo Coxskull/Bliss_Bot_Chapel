@@ -91,3 +91,6 @@ CREATE TRIGGER refund_results_no_truncate BEFORE TRUNCATE ON financials.refund_r
 CREATE TABLE financials.refund_provider_ids(provider_refund_id varchar(120) PRIMARY KEY,request_id uuid NOT NULL UNIQUE REFERENCES financials.refund_requests(id));
 CREATE TRIGGER refund_ids_no_mutation BEFORE UPDATE OR DELETE ON financials.refund_provider_ids FOR EACH ROW EXECUTE FUNCTION financials.reject_mutation();
 CREATE TRIGGER refund_ids_no_truncate BEFORE TRUNCATE ON financials.refund_provider_ids FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();
+CREATE TABLE financials.payment_captures(operation_id uuid PRIMARY KEY REFERENCES financials.payment_operations(id),journal_id uuid NOT NULL UNIQUE REFERENCES financials.journals(id),payment_intent_id varchar(120) NOT NULL UNIQUE,recorded_at timestamptz NOT NULL DEFAULT now());
+CREATE TRIGGER captures_no_mutation BEFORE UPDATE OR DELETE ON financials.payment_captures FOR EACH ROW EXECUTE FUNCTION financials.reject_mutation();
+CREATE TRIGGER captures_no_truncate BEFORE TRUNCATE ON financials.payment_captures FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();

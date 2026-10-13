@@ -87,6 +87,7 @@ builder.Services.AddScoped<EconomicsAcceptedPriceReader>();
 builder.Services.AddSingleton(builder.Configuration.GetSection("FinancialPreparation").Get<Bliss.Api.Financials.FinancialPreparationOptions>() ?? new Bliss.Api.Financials.FinancialPreparationOptions());
 builder.Services.AddScoped<Bliss.Api.Financials.AcceptedFinancialQuoteImporter>();
 builder.Services.AddScoped<Bliss.Api.Financials.IFinancialPreparation, Bliss.Api.Financials.FinancialPreparationService>();
+builder.Services.AddScoped<Bliss.Api.Financials.FinancialMockWorkflow>();
 builder.Services.AddScoped<EconomicsNegotiationGate>();
 builder.Services.AddScoped<BlissRematchGate>();
 builder.Services.AddScoped<WeddingPlannerWakeGate>();
