@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Bliss.Domain\Bliss.Domain.csproj" />
@@ -19,4 +19,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Migrations/FinancialFoundationV1.sql" LogicalName="Bliss.FinancialFoundationV1.sql" />
+  </ItemGroup>
 </Project>
