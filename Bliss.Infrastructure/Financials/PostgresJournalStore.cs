@@ -33,6 +33,7 @@ public sealed class PostgresJournalStore(NpgsqlDataSource dataSource)
             await using var gate = new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtextextended(@key,0))", connection, transaction);
             gate.Parameters.AddWithValue("key", "stripe-sandbox:" + payment.EventId);
             await gate.ExecuteNonQueryAsync(cancellationToken);
+            await using(var statusEvent=new NpgsqlCommand("SELECT EXISTS(SELECT 1 FROM financials.mock_payment_status_events WHERE event_id=@e)",connection,transaction)){statusEvent.Parameters.AddWithValue("e",payment.EventId);if(await statusEvent.ExecuteScalarAsync(cancellationToken) is true)throw new InvalidOperationException("Event already attributed to mock status evidence.");}
             await using var receipt = new NpgsqlCommand("SELECT journal_id,fingerprint FROM financials.stripe_receipts WHERE event_id=@e", connection, transaction);
             receipt.Parameters.AddWithValue("e", payment.EventId);
             await using var reader = await receipt.ExecuteReaderAsync(cancellationToken);

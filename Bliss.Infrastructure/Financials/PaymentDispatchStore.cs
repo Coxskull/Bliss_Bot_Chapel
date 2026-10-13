@@ -37,7 +37,7 @@ public sealed class PaymentDispatchStore(NpgsqlDataSource data)
             operation = new(operationId, reader.GetGuid(0), new(reader.GetGuid(1), Enum.Parse<FinancialModule>(reader.GetString(2)), reader.GetGuid(3)),
                 reader.GetGuid(4), reader.GetInt64(5), reader.GetString(6), reader.GetString(7));
         }
-        await using (var bound = new NpgsqlCommand("SELECT payment_intent_id,provider_status FROM financials.payment_dispatch_results WHERE operation_id=@i AND state='BOUND'", connection, transaction))
+        await using (var bound = new NpgsqlCommand("SELECT payment_intent_id,provider_status FROM financials.payment_dispatch_results WHERE operation_id=@i AND state='BOUND' UNION ALL SELECT payment_intent_id,provider_status FROM financials.mock_payment_recoveries WHERE operation_id=@i", connection, transaction))
         {
             bound.Parameters.AddWithValue("i", operationId);
             await using var reader = await bound.ExecuteReaderAsync(ct);
@@ -72,12 +72,17 @@ public sealed class PaymentDispatchStore(NpgsqlDataSource data)
         await using var connection = await data.OpenConnectionAsync(ct);
         await using var transaction = await connection.BeginTransactionAsync(ct);
         await Lock(connection, transaction, claim.Operation.Id, ct);
+        if (intent is not null)
+        {
+            await using var identity = new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtextextended(@k,0))", connection, transaction);identity.Parameters.AddWithValue("k", "mock-intent:" + intent.Id);await identity.ExecuteNonQueryAsync(ct);
+        }
         // Fence stale responses, expired leases and altered snapshots against immutable persisted authority.
         await using var insert = new NpgsqlCommand("""
             INSERT INTO financials.payment_dispatch_results(attempt_id,operation_id,state,payment_intent_id,provider_status)
             SELECT a.id,a.operation_id,@state,@pi,@status FROM financials.payment_dispatch_attempts a
             JOIN financials.payment_operations o ON o.id=a.operation_id JOIN financials.authorized_quotes q ON q.id=o.quote_id
-            WHERE a.id=@a AND a.operation_id=@i AND a.lease_until>clock_timestamp()
+            WHERE NOT EXISTS(SELECT 1 FROM financials.mock_payment_recoveries WHERE payment_intent_id=@pi AND operation_id<>@i)
+              AND a.id=@a AND a.operation_id=@i AND a.lease_until>clock_timestamp()
               AND NOT EXISTS(SELECT 1 FROM financials.payment_dispatch_attempts n WHERE n.operation_id=a.operation_id AND n.sequence>a.sequence)
               AND o.quote_id=@q AND o.provider_key=@k AND q.merchant_id=@m AND q.module=@module AND q.campaign_id=@c
               AND q.recipient_account=@recipient AND q.amount_minor=@amount AND q.currency=@currency

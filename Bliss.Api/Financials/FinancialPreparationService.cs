@@ -13,10 +13,12 @@ public sealed class FinancialPreparationOptions
  public string FixtureConnection {get;set;}="";
  public List<FundingBinding> Bindings {get;set;}=[];
  public List<MockAccountProfile> MockAccountProfiles {get;set;}=[];
+ public List<MockRecoveryFixture> MockRecoveryFixtures {get;set;}=[];
  public string StripeAccountStatus => FinancialAccountPolicy.StripeAccountStatus;
 }
 // Configurable fixture labels and synthetic signing material; never a real Stripe account/credential.
 public sealed record MockAccountProfile(string Id,string SigningSecret);
+public sealed record MockRecoveryFixture(PreparedPaymentOperation ExpectedOperation,string ProfileId,string PaymentIntentId,string ProviderStatus);
 public interface IFinancialPreparation
 {
  Task<PreparedPaymentOperation> Prepare(ClaimsPrincipal user,Guid sourceQuoteId,string retryKey,CancellationToken ct);
