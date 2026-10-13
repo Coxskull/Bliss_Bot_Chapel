@@ -36,5 +36,13 @@ public sealed class MockFinancialReviewTests
   await Assert.ThrowsAsync<InvalidOperationException>(()=>store.AddNote(prepared.Op.Id,authorities,"qa-stale",snapshot.EvidenceFingerprint,"Old snapshot new request.","stale"));
   Assert.Equal(note.Id,(await store.AddNote(prepared.Op.Id,authorities,"qa-stale",snapshot.EvidenceFingerprint,"Original evidence observed.","first")).Id);
   Assert.Equal(snapshot.EvidenceJson,(await store.ReadNote(note.Id,authorities)).EvidenceJson);Assert.Single(changed.Notes);
+  // Capture/refund facts must also change the evidence version while prior snapshots remain intact.
+  var pi="pi_fixture_"+prepared.Op.Id.ToString("N");await new MockPaymentReconciliationStore(data).Recover(prepared.Op,"mock-review",pi,"processing","qa");
+  var capture=new MockPaymentCaptureStore(data);var journal=await capture.CaptureBound(prepared.Op,new("evt_"+Guid.NewGuid().ToString("N"),pi,500,"USD"),Guid.NewGuid(),Guid.NewGuid(),"mock-review",new string('A',64));
+  await new MockPaymentReconciliationStore(data).Observe(prepared.Op,"mock-review","evt_"+Guid.NewGuid().ToString("N"),pi,"CANCELED",new string('B',64));
+  var paidSnapshot=await store.Read(prepared.Op.Id,authorities);var paidNote=await store.AddNote(prepared.Op.Id,authorities,"qa-stale",paidSnapshot.EvidenceFingerprint,"Captured fixture requires review.","paid");
+  var actor=new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub","review-refund"),new Claim(ClaimTypes.Role,"bliss.operator")],"fixture"));var refunds=new RefundReconciliationStore(data);var refund=await refunds.Reserve(actor,prepared.Op.Scope,pi,100,"review-partial");await refunds.Reconcile(actor,prepared.Op.Scope,refund.Id,"re_fixture_"+refund.Id.ToString("N"),"SUCCEEDED");
+  var refundedSnapshot=await store.Read(prepared.Op.Id,authorities);Assert.NotEqual(paidSnapshot.EvidenceFingerprint,refundedSnapshot.EvidenceFingerprint);using var document=System.Text.Json.JsonDocument.Parse(refundedSnapshot.EvidenceJson);Assert.Equal(2,document.RootElement.GetProperty("journals").GetArrayLength());Assert.Equal("100",document.RootElement.GetProperty("refund_requests")[0].GetProperty("amount_minor").GetString());
+  await Assert.ThrowsAsync<InvalidOperationException>(()=>store.AddNote(prepared.Op.Id,authorities,"qa-stale",paidSnapshot.EvidenceFingerprint,"Refund changed evidence.","paid-stale"));Assert.Equal(paidSnapshot.EvidenceJson,(await store.ReadNote(paidNote.Id,authorities)).EvidenceJson);Assert.Equal(journal,await capture.Captured(prepared.Op.Id));Assert.True(refundedSnapshot.RequiresReview);
  }
 }
