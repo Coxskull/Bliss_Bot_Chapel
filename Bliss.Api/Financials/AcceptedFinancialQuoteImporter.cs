@@ -6,7 +6,7 @@ namespace Bliss.Api.Financials;
 
 // Registry entries are owner/server-controlled, never supplied by payment request bodies.
 public sealed record FundingBinding(Guid SourceQuoteId, Guid SourceVersionId, FinancialScope Scope,
- string AdvertiserSubject, Guid AdvertiserId, Guid RecipientAccountId, Guid? PayerAccountId=null, Guid? RecipientOwnerId=null);
+ string AdvertiserSubject, Guid AdvertiserId, Guid RecipientAccountId, Guid? PayerAccountId=null, Guid? RecipientOwnerId=null,string MockProfileId="mock-default");
 public sealed class AcceptedFinancialQuoteImporter(BlissDbContext db)
 {
  public async Task<AuthorizedQuoteSnapshot> Read(FundingBinding binding, CancellationToken ct=default)
