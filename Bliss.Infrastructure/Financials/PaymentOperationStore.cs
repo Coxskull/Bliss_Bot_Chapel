@@ -10,21 +10,28 @@ public sealed record PreparedPaymentOperation(Guid Id, Guid QuoteId, FinancialSc
  Guid RecipientAccountId, long AmountMinor, string Currency, string ProviderKey);
 public sealed class PaymentOperationStore(NpgsqlDataSource data)
 {
+ public static string AuthenticatedSubject(ClaimsPrincipal principal)
+ {
+  var subjects=principal.Identities.Where(x=>x.IsAuthenticated).SelectMany(x=>x.Claims).Where(x=>x.Type==ClaimTypes.NameIdentifier||x.Type=="sub").Select(x=>x.Value).Distinct().ToArray();
+  if(subjects.Length!=1||string.IsNullOrWhiteSpace(subjects[0]))throw new UnauthorizedAccessException("Authenticated stable subject required.");return subjects[0];
+ }
  public async Task FreezeQuote(AuthorizedQuoteSnapshot quote, CancellationToken ct=default)
  {
   if(quote.Id==Guid.Empty||quote.SourceQuoteVersionId==Guid.Empty||quote.Scope.MerchantId==Guid.Empty||quote.Scope.CampaignId==Guid.Empty||!Enum.IsDefined(quote.Scope.Module)||quote.RecipientAccountId==Guid.Empty||quote.AmountMinor<=0||quote.Currency!="USD"||string.IsNullOrWhiteSpace(quote.AdvertiserSubject)||quote.AdvertiserSubject.Length>200)throw new ArgumentException("Authorized USD quote and recipient binding required.");
   await using var c=data.CreateCommand("""
    INSERT INTO financials.authorized_quotes(id,source_version,merchant_id,module,campaign_id,advertiser_subject,recipient_account,amount_minor,currency)
-   VALUES(@i,@v,@m,@o,@c,@s,@r,@a,@u)
+   VALUES(@i,@v,@m,@o,@c,@s,@r,@a,@u) ON CONFLICT DO NOTHING RETURNING id
    """);
-  c.Parameters.AddWithValue("i",quote.Id);c.Parameters.AddWithValue("v",quote.SourceQuoteVersionId);c.Parameters.AddWithValue("m",quote.Scope.MerchantId);c.Parameters.AddWithValue("o",quote.Scope.Module.ToString());c.Parameters.AddWithValue("c",quote.Scope.CampaignId);c.Parameters.AddWithValue("s",quote.AdvertiserSubject);c.Parameters.AddWithValue("r",quote.RecipientAccountId);c.Parameters.AddWithValue("a",quote.AmountMinor);c.Parameters.AddWithValue("u",quote.Currency);await c.ExecuteNonQueryAsync(ct);
+  c.Parameters.AddWithValue("i",quote.Id);c.Parameters.AddWithValue("v",quote.SourceQuoteVersionId);c.Parameters.AddWithValue("m",quote.Scope.MerchantId);c.Parameters.AddWithValue("o",quote.Scope.Module.ToString());c.Parameters.AddWithValue("c",quote.Scope.CampaignId);c.Parameters.AddWithValue("s",quote.AdvertiserSubject);c.Parameters.AddWithValue("r",quote.RecipientAccountId);c.Parameters.AddWithValue("a",quote.AmountMinor);c.Parameters.AddWithValue("u",quote.Currency);if(await c.ExecuteScalarAsync(ct) is null)
+  {
+   await using var existing=data.CreateCommand("SELECT source_version,merchant_id,module,campaign_id,advertiser_subject,recipient_account,amount_minor,currency FROM financials.authorized_quotes WHERE id=@i");existing.Parameters.AddWithValue("i",quote.Id);
+   await using var reader=await existing.ExecuteReaderAsync(ct);
+   if(!await reader.ReadAsync(ct)||reader.GetGuid(0)!=quote.SourceQuoteVersionId||reader.GetGuid(1)!=quote.Scope.MerchantId||reader.GetString(2)!=quote.Scope.Module.ToString()||reader.GetGuid(3)!=quote.Scope.CampaignId||reader.GetString(4)!=quote.AdvertiserSubject||reader.GetGuid(5)!=quote.RecipientAccountId||reader.GetInt64(6)!=quote.AmountMinor||reader.GetString(7)!=quote.Currency)throw new InvalidOperationException("Frozen quote conflicts with original evidence.");
+  }
  }
  public async Task<PreparedPaymentOperation> Prepare(ClaimsPrincipal principal, Guid quoteId, string retryKey, CancellationToken ct=default)
  {
-  var identities=principal.Identities.Where(x=>x.IsAuthenticated).ToArray();
-  var subjects=identities.SelectMany(x=>x.FindAll(ClaimTypes.NameIdentifier)).Select(x=>x.Value).Distinct().ToArray();
-  if(subjects.Length!=1||string.IsNullOrWhiteSpace(subjects[0]))throw new UnauthorizedAccessException("Authenticated stable subject required.");
-  var subject=subjects[0];
+  var subject=AuthenticatedSubject(principal);
   if(quoteId==Guid.Empty||string.IsNullOrWhiteSpace(retryKey)||retryKey.Length>120||retryKey.Any(char.IsControl))throw new ArgumentException("Quote reference and bounded retry key required.");
   await using var connection=await data.OpenConnectionAsync(ct);await using var tx=await connection.BeginTransactionAsync(ct);
   await using(var gate=new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtextextended(@k,0))",connection,tx)){gate.Parameters.AddWithValue("k",subject+":"+retryKey);await gate.ExecuteNonQueryAsync(ct);}

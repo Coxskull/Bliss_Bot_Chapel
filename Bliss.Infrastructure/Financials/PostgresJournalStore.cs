@@ -19,8 +19,13 @@ public sealed class PostgresJournalStore(NpgsqlDataSource dataSource)
 
     private async Task<Guid> AppendCore(FinancialJournal journal, VerifiedSandboxPayment? payment, CancellationToken cancellationToken)
     {
-        await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
-        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await using var connection=await dataSource.OpenConnectionAsync(cancellationToken);
+        await using var transaction=await connection.BeginTransactionAsync(cancellationToken);
+        var id=await AppendWithin(connection,transaction,journal,payment,cancellationToken);
+        await transaction.CommitAsync(cancellationToken);return id;
+    }
+    internal async Task<Guid> AppendWithin(NpgsqlConnection connection,NpgsqlTransaction transaction,FinancialJournal journal,VerifiedSandboxPayment? payment,CancellationToken cancellationToken)
+    {
         string? receiptFingerprint = null;
         if (payment is not null)
         {
@@ -34,7 +39,7 @@ public sealed class PostgresJournalStore(NpgsqlDataSource dataSource)
             if (await reader.ReadAsync(cancellationToken))
             {
                 if (reader.GetString(1) != receiptFingerprint) throw new InvalidOperationException("Event replay conflicts with original financial evidence.");
-                var storedId=reader.GetGuid(0);await reader.DisposeAsync();await transaction.CommitAsync(cancellationToken);return storedId;
+                var storedId=reader.GetGuid(0);await reader.DisposeAsync();return storedId;
             }
         }
 
@@ -70,7 +75,7 @@ public sealed class PostgresJournalStore(NpgsqlDataSource dataSource)
                 throw new InvalidOperationException("Idempotency key conflicts with immutable journal content.");
             var id = reader.GetGuid(0);
             await reader.DisposeAsync();
-            await RecordReceipt(id); await transaction.CommitAsync(cancellationToken); return id;
+            await RecordReceipt(id);  return id;
         }
         for (var i = 0; i < journal.Lines.Length; i++)
         {
@@ -84,7 +89,7 @@ public sealed class PostgresJournalStore(NpgsqlDataSource dataSource)
             command.Parameters.AddWithValue("r", line.Role); command.Parameters.AddWithValue("s", line.Side.ToString());
             command.Parameters.AddWithValue("v", line.MinorUnits); await command.ExecuteNonQueryAsync(cancellationToken);
         }
-        await RecordReceipt(journal.Id); await transaction.CommitAsync(cancellationToken); return journal.Id;
+        await RecordReceipt(journal.Id);  return journal.Id;
 
         async Task RecordReceipt(Guid journalId)
         {

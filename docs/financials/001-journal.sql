@@ -71,3 +71,23 @@ CREATE TRIGGER operations_no_truncate BEFORE TRUNCATE ON financials.payment_oper
 CREATE TABLE financials.payment_retry_keys(advertiser_subject varchar(200) NOT NULL,retry_key varchar(120) NOT NULL,operation_id uuid NOT NULL REFERENCES financials.payment_operations(id),PRIMARY KEY(advertiser_subject,retry_key));
 CREATE TRIGGER retry_no_mutation BEFORE UPDATE OR DELETE ON financials.payment_retry_keys FOR EACH ROW EXECUTE FUNCTION financials.reject_mutation();
 CREATE TRIGGER retry_no_truncate BEFORE TRUNCATE ON financials.payment_retry_keys FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();
+CREATE TABLE financials.refund_requests(
+ id uuid PRIMARY KEY,payment_intent_id varchar(120) NOT NULL REFERENCES financials.stripe_receipts(payment_intent_id),
+ journal_id uuid NOT NULL REFERENCES financials.journals(id),amount_minor bigint NOT NULL CHECK(amount_minor>0),
+ retry_key varchar(120) NOT NULL,actor_subject varchar(200) NOT NULL,recorded_at timestamptz NOT NULL DEFAULT now(),
+ UNIQUE(payment_intent_id,retry_key)
+);
+CREATE TABLE financials.refund_results(
+ request_id uuid NOT NULL REFERENCES financials.refund_requests(id),provider_refund_id varchar(120) NOT NULL,
+ status text NOT NULL CHECK(status IN ('PENDING','SUCCEEDED','FAILED')),
+ refund_journal_id uuid REFERENCES financials.journals(id),recorded_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(request_id,status),CHECK((status='SUCCEEDED')=(refund_journal_id IS NOT NULL))
+);
+CREATE UNIQUE INDEX refund_provider_identity ON financials.refund_results(provider_refund_id) WHERE status='SUCCEEDED';
+CREATE TRIGGER refund_requests_no_mutation BEFORE UPDATE OR DELETE ON financials.refund_requests FOR EACH ROW EXECUTE FUNCTION financials.reject_mutation();
+CREATE TRIGGER refund_results_no_mutation BEFORE UPDATE OR DELETE ON financials.refund_results FOR EACH ROW EXECUTE FUNCTION financials.reject_mutation();
+CREATE TRIGGER refund_requests_no_truncate BEFORE TRUNCATE ON financials.refund_requests FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();
+CREATE TRIGGER refund_results_no_truncate BEFORE TRUNCATE ON financials.refund_results FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();
+CREATE TABLE financials.refund_provider_ids(provider_refund_id varchar(120) PRIMARY KEY,request_id uuid NOT NULL UNIQUE REFERENCES financials.refund_requests(id));
+CREATE TRIGGER refund_ids_no_mutation BEFORE UPDATE OR DELETE ON financials.refund_provider_ids FOR EACH ROW EXECUTE FUNCTION financials.reject_mutation();
+CREATE TRIGGER refund_ids_no_truncate BEFORE TRUNCATE ON financials.refund_provider_ids FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();
