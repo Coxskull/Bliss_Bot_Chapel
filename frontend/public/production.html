@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Creative Academy workspace · Bliss Chapel</title><link rel="stylesheet" href="/brand-intake.css"><link rel="stylesheet" href="/production.css"><script src="/production.js" defer></script></head>
+<body>
+<header><a href="/">ALPHA · BLISS CHAPEL</a><a href="/brand-intake.html">Brand direction</a><a href="/ai-workspace.html">AI workspace</a></header>
+<main>
+  <p><a href="/campaign-handoff.html">Review approvals and plan a campaign handoff →</a></p>
+  <p class="eyebrow">CREATIVE ACADEMY · PRODUCTION WORKSPACE</p><h1>Turn your brand direction into a creative brief.</h1>
+  <p>Use your confirmed brand direction and an available quality reference. Save a brief, submit candidate images, and keep every revision and human assessment together.</p>
+  <p id="status" role="status" aria-live="polite">Connecting…</p><a id="login" href="/api/auth/login?returnUrl=%2Fproduction.html" hidden>Continue with SSO</a>
+  <section><h2>Your workspace</h2><label>Workspace <select id="workspace"></select></label><button id="open" type="button" disabled>Open production workspace</button><p id="brand">Confirm your direction in Brand intake before preparing a new brief.</p></section>
+  <form id="brief-form"><fieldset id="brief-fields" disabled><legend>Prepare a production brief</legend>
+    <label>Quality reference family <select id="family" required></select></label>
+    <p id="reference-note"></p>
+    <label>Headline <input id="headline" maxlength="500" required></label><label>Call to action <input id="cta" maxlength="500" required></label>
+    <button type="submit">Save production brief</button><p>This prepares instructions. It does not generate an image.</p>
+  </fieldset></form>
+  <section><h2>Saved briefs</h2><label>Production brief <select id="brief"></select></label><button id="resume" type="button" disabled>Resume brief</button><button id="reload" type="button" disabled>Refresh saved history</button><div id="brief-details"></div></section>
+  <form id="candidate-form"><fieldset id="candidate-fields" disabled><legend>Submit a candidate revision</legend>
+    <label>Candidate label <input id="candidate-label" maxlength="200" required></label><label>Production notes <textarea id="notes" maxlength="2000" rows="3"></textarea></label>
+    <label>Candidate image <input id="image" type="file" accept="image/png" required></label><p>PNG up to 1 MiB, 2048 × 2048, noninterlaced 8-bit grayscale, RGB, grayscale-alpha, or RGBA. Your candidate stays private to this workspace.</p>
+    <button type="submit">Save candidate revision</button>
+  </fieldset></form>
+  <section><h2>Candidate and review history</h2><div id="history"></div></section>
+  <form id="review-form" hidden><fieldset id="review-fields" disabled><legend>Record a human instructor assessment</legend>
+    <p>Review the latest candidate. Each gate is an independent human observation. PASS records an assessment; creative approval and campaign activation happen separately.</p>
+    <div class="grid">
+      <label>Customization <select name="customization" required><option value="">Choose</option><option>PASS</option><option>FAIL</option></select></label>
+      <label>Quality parity <select name="qualityParity" required><option value="">Choose</option><option>PASS</option><option>FAIL</option></select></label>
+      <label>Originality <select name="originality" required><option value="">Choose</option><option>PASS</option><option>FAIL</option></select></label>
+      <label>Geographic authenticity <select name="geographicAuthenticity" required><option value="">Choose</option><option>PASS</option><option>FAIL</option></select></label>
+    </div>
+    <label class="consent"><input id="critical" type="checkbox"> A critical defect is present</label>
+    <label>Assessment <select id="decision"><option>REVISE</option><option>FAIL</option><option>PASS</option></select></label>
+    <label>Rationale <textarea id="rationale" rows="3" maxlength="2000" required></textarea></label>
+    <label>Preserve <textarea id="preserve" rows="2" maxlength="2000"></textarea></label><label>Repair <textarea id="repair" rows="2" maxlength="2000"></textarea></label>
+    <button type="submit">Record assessment</button>
+  </fieldset></form>
+</main>
+</body></html>

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AI planning workspace · Bliss Chapel</title><link rel="stylesheet" href="/brand-intake.css"><link rel="stylesheet" href="/production.css"><script src="/ai-workspace.js" defer></script></head>
+<body><header><a href="/">ALPHA · BLISS CHAPEL</a><a href="/production.html">Creative Academy</a></header><main>
+<p class="eyebrow">WEDDING PLANNER · CONTROLLED AI WORKERS</p><h1>Explore ideas. Keep the decisions yours.</h1>
+<p>AI offers draft suggestions and creative candidates. Your confirmed brand direction guides the work; human review and campaign approval remain separate.</p>
+<p id="status" role="status" aria-live="polite">Connecting…</p><a id="login" href="/api/auth/login?returnUrl=%2Fai-workspace.html" hidden>Continue with SSO</a>
+<section><h2>Your workspace</h2><label>Workspace <select id="workspace"></select></label><button id="open" type="button" disabled>Open AI workspace</button><p id="readiness">AI calls are disabled until a provider and usage budget are configured.</p><button id="refresh" type="button" disabled>Refresh run history</button></section>
+<section><h2>Your planning conversation</h2><label>Planning session <select id="session"></select></label><button id="new-session" type="button" disabled>Create planning session</button><label>Previous suggestion to include (optional) <select id="previous"><option value="">None</option></select></label></section>
+<label class="consent"><input id="consent" type="checkbox"> I allow the selected provider to receive this message and my confirmed Brand DNA, with the previous suggestion I select. Image requests share only the saved brief recipe, not reference or candidate images.</label>
+<button id="fresh-key" type="button" disabled>Start a fresh AI request</button><p>Identical requests reuse their saved result, including after reload. Starting a fresh request makes the next submission use another usage reservation.</p>
+<form id="text-form"><fieldset id="text-fields" disabled><legend>Ask for a planning suggestion</legend><label>Your message <textarea id="prompt" maxlength="2000" rows="4" required></textarea></label><button type="submit">Request AI suggestion</button></fieldset></form>
+<form id="image-form"><fieldset id="image-fields" disabled><legend>Request a creative candidate</legend><label>Saved production brief <select id="brief" required></select></label><button type="submit">Request AI image draft</button><p>Generated images remain private drafts. Attach a successful draft to Creative Academy when you want to begin human assessment.</p></fieldset></form>
+<section id="history"><h2>AI run history</h2><div id="runs"></div></section>
+</main></body></html>

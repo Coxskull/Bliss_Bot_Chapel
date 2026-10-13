@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "checks": [
+    "database readiness",
+    "message create 201",
+    "changed text 409",
+    "changed actor 409",
+    "identical replay 200",
+    "original message preserved",
+    "audit count preserved"
+  ],
+  "sessionId": "cee91c0d-9396-44e8-b66c-8311736a1d51"
+}

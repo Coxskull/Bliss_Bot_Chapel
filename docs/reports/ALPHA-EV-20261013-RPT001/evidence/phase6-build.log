@@ -1,0 +1,10 @@
+  Bliss.Domain -> /workspace/Bliss_Bot_Chapel/Bliss.Domain/bin/Release/net8.0/Bliss.Domain.dll
+  Bliss.Infrastructure -> /workspace/Bliss_Bot_Chapel/Bliss.Infrastructure/bin/Release/net8.0/Bliss.Infrastructure.dll
+  Bliss.Api -> /workspace/Bliss_Bot_Chapel/Bliss.Api/bin/Release/net8.0/Bliss.Api.dll
+  Bliss.Tests -> /workspace/Bliss_Bot_Chapel/Bliss.Tests/bin/Release/net8.0/Bliss.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:53.16

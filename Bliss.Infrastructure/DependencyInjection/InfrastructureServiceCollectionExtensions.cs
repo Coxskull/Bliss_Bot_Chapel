@@ -20,6 +20,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<MatchReviewService>();
         services.AddScoped<CampaignPlacementService>();
         services.AddScoped<WeddingPlannerService>();
+        services.AddScoped<WeddingPlannerBrandDnaService>();
         services.AddScoped<WeddingPlannerEconomicsHandshakeService>();
         services.AddScoped<WeddingPlannerDataSeeder>();
         services.AddScoped<EconomicsDataSeeder>();

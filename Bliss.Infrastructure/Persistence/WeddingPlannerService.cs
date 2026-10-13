@@ -407,6 +407,13 @@ public sealed class WeddingPlannerService
                 throw new WeddingPlannerNotFoundException("Conversation message was not found.");
             }
 
+            if (!string.Equals(replay.Body, text, StringComparison.Ordinal)
+                || !string.Equals(replay.ActorType, requestedActor, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new WeddingPlannerConflictException(
+                    "This idempotency key already belongs to a different message. Use a new key for a new message.");
+            }
+
             return ToMessageResult(replay, true);
         }
 

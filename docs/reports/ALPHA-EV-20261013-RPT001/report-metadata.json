@@ -1,0 +1,30 @@
+{
+  "report_id": "ALPHA-EV-20261013-RPT001",
+  "work_date": "2026-10-12",
+  "issued_date": "2026-10-13",
+  "timezone": "Asia/Taipei",
+  "repository": "Coxskull/Bliss_Bot_Chapel",
+  "base_commit": "2a9a7782014ef5110220af52360ad0e8f7303c7e",
+  "change_count": 100,
+  "created": 84,
+  "updated": 16,
+  "baseline_tests": 592,
+  "final_tests": 673,
+  "new_test_cases": 81,
+  "migrations": 5,
+  "new_tables": 13,
+  "new_workspaces": 5,
+  "phase_totals": [
+    596,
+    602,
+    612,
+    633,
+    654,
+    673
+  ],
+  "external_ai_calls": 0,
+  "external_ai_spend_usd": 0,
+  "local_recovery_seconds": 10,
+  "restored_tables": 15,
+  "scope": "Development phases 1\u20136 and their local validation. Excludes pre-existing platform development and report packaging files from change counts."
+}

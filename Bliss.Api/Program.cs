@@ -102,6 +102,15 @@ builder.Services.AddScoped<MarketplaceMetricsService>();
 builder.Services.AddScoped<ClosedModelsService>();
 builder.Services.AddScoped<CreativeAcademyService>();
 builder.Services.AddScoped<BlueprintPhaseService>();
+builder.Services.AddScoped<AcademyProductionService>();
+builder.Services.AddScoped<CreativeHandoffService>();
+builder.Services.AddScoped<CampaignMeasurementService>();
+builder.Services.AddScoped<ControlledAiService>();
+builder.Services.AddHostedService<ControlledAiWorker>();
+builder.Services.AddHttpClient<IControlledAiProvider, ConfiguredControlledAiProvider>(client =>
+{
+    client.Timeout = Timeout.InfiniteTimeSpan;
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddScoped<CreativeGenerationService>();
 builder.Services.AddScoped<CreativeAcceptanceVoyageService>();
 builder.Services.AddScoped<MissionControlEvidenceService>();

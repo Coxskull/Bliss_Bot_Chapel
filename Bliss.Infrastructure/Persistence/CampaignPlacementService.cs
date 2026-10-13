@@ -46,6 +46,20 @@ public sealed class CampaignPlacementService
         CampaignPlacementCommand command,
         CancellationToken cancellationToken = default)
     {
+        var prepared = await PrepareAsync(command, cancellationToken);
+        if (prepared.IsReplay) return prepared;
+        await using var transaction = _db.Database.IsRelational() && _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(cancellationToken) : null;
+        await _db.SaveChangesAsync(cancellationToken);
+        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
+        return prepared;
+    }
+
+    /// <summary>Validates and stages intent so a caller can atomically commit related lineage and audit.</summary>
+    public async Task<CampaignPlacementResult> PrepareAsync(
+        CampaignPlacementCommand command,
+        CancellationToken cancellationToken = default)
+    {
         var normalized = Normalize(command);
         var replay = await _db.CampaignPlacementRuns
             .AsNoTracking()
@@ -116,10 +130,6 @@ public sealed class CampaignPlacementService
         }
 
         var startedAt = DateTime.UtcNow;
-        await using var transaction = _db.Database.IsRelational()
-            ? await _db.Database.BeginTransactionAsync(cancellationToken)
-            : null;
-
         campaign.AdvertiserOpportunityId ??= match.AdvertiserOpportunityId;
         var placement = new CampaignPlacement
         {
@@ -151,12 +161,6 @@ public sealed class CampaignPlacementService
         };
         _db.CampaignPlacements.Add(placement);
         _db.CampaignPlacementRuns.Add(run);
-        await _db.SaveChangesAsync(cancellationToken);
-        if (transaction is not null)
-        {
-            await transaction.CommitAsync(cancellationToken);
-        }
-
         return ToResult(run, false);
     }
 
