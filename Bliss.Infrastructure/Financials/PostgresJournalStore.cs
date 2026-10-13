@@ -14,7 +14,7 @@ public sealed class PostgresJournalStore(NpgsqlDataSource dataSource)
         await using var insert = new NpgsqlCommand("""
             INSERT INTO financials.journals(id, merchant_id, module, campaign_id, currency, retry_key, evidence, fingerprint, reverses_id)
             VALUES (@id,@merchant,@module,@campaign,@currency,@key,@evidence,@fingerprint,@reverses)
-            ON CONFLICT (merchant_id,module,campaign_id,currency,retry_key) DO NOTHING RETURNING id
+            ON CONFLICT DO NOTHING RETURNING id
             """, connection, transaction);
         insert.Parameters.AddWithValue("id", journal.Id);
         insert.Parameters.AddWithValue("merchant", journal.Scope.MerchantId);
