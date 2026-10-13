@@ -18,6 +18,15 @@ public sealed class PostgresJournalTests
   var planner=new FinancialJournal(scope with {Module=FinancialModule.WeddingPlanner},"USD","retry","quote",lines);Assert.NotEqual(journal.Id,await store.Append(planner));
   var php=new FinancialJournal(scope,"PHP","retry","quote",lines);Assert.NotEqual(journal.Id,await store.Append(php));
   var merchant=new FinancialJournal(scope with {MerchantId=Guid.NewGuid()},"USD","retry","quote",lines);Assert.NotEqual(journal.Id,await store.Append(merchant));
+  var eventJournal = new FinancialJournal(scope,"USD","stripe-operation","stripe-event",lines);
+  var payment = new VerifiedSandboxPayment("evt_"+Guid.NewGuid().ToString("N"),"pi_"+Guid.NewGuid().ToString("N"),100,"USD");
+  var eventIds=await Task.WhenAll(Enumerable.Range(0,10).Select(_=>store.AppendVerifiedPayment(eventJournal,payment)));
+  Assert.All(eventIds,id=>Assert.Equal(eventJournal.Id,id));
+  await Assert.ThrowsAsync<InvalidOperationException>(()=>store.AppendVerifiedPayment(new FinancialJournal(scope with{Module=FinancialModule.WeddingPlanner},"USD","stripe-other","stripe-event",lines),payment));
+  await Assert.ThrowsAsync<ArgumentException>(()=>store.AppendVerifiedPayment(eventJournal,payment with{AmountMinor=99}));
+  await Assert.ThrowsAsync<PostgresException>(()=>store.AppendVerifiedPayment(new FinancialJournal(scope,"USD","duplicate-pi","stripe-event",lines),payment with{EventId="evt_"+Guid.NewGuid().ToString("N")}));
+  await using(var count=data.CreateCommand("SELECT count(*) FROM financials.stripe_receipts WHERE event_id=@e")){count.Parameters.AddWithValue("e",payment.EventId);Assert.Equal(1L,await count.ExecuteScalarAsync());}
+  await using(var mutation=data.CreateCommand("UPDATE financials.stripe_receipts SET fingerprint='tamper'")){await Assert.ThrowsAsync<PostgresException>(async()=>await mutation.ExecuteNonQueryAsync());}
   await store.Append(journal.Reverse("refund","refund1"));
   await Assert.ThrowsAsync<InvalidOperationException>(()=>store.Append(journal.Reverse("refund2","refund2")));
   foreach(var sql in new[]{"UPDATE financials.journals SET evidence='changed'","DELETE FROM financials.lines","TRUNCATE financials.lines","INSERT INTO financials.lines SELECT journal_id,99,account_id,owner_id,role,side,minor_units FROM financials.lines LIMIT 1","INSERT INTO financials.journals(id,merchant_id,module,campaign_id,currency,retry_key,evidence,fingerprint) VALUES(gen_random_uuid(),gen_random_uuid(),'BlissBot',gen_random_uuid(),'USD','empty','e','f')"})

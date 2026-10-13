@@ -6,10 +6,38 @@ namespace Bliss.Infrastructure.Financials;
 // Inactive foundation: no public endpoints or application DI registration yet.
 public sealed class PostgresJournalStore(NpgsqlDataSource dataSource)
 {
-    public async Task<Guid> Append(FinancialJournal journal, CancellationToken cancellationToken = default)
+    public Task<Guid> Append(FinancialJournal journal, CancellationToken cancellationToken = default) => AppendCore(journal, null, cancellationToken);
+
+    public Task<Guid> AppendVerifiedPayment(FinancialJournal journal, VerifiedSandboxPayment payment, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(payment.EventId) || payment.EventId.Length > 120 || !payment.EventId.StartsWith("evt_", StringComparison.Ordinal) ||
+            string.IsNullOrWhiteSpace(payment.PaymentIntentId) || payment.Currency != journal.Currency || payment.AmountMinor <= 0 ||
+            journal.Lines.Where(x => x.Side == JournalSide.Debit).Sum(x => x.MinorUnits) != payment.AmountMinor || journal.ReversesId is not null)
+            throw new ArgumentException("Verified payment and journal must agree.");
+        return AppendCore(journal, payment, cancellationToken);
+    }
+
+    private async Task<Guid> AppendCore(FinancialJournal journal, VerifiedSandboxPayment? payment, CancellationToken cancellationToken)
     {
         await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        string? receiptFingerprint = null;
+        if (payment is not null)
+        {
+            receiptFingerprint = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new { journal.Fingerprint, payment })));
+            await using var gate = new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtextextended(@key,0))", connection, transaction);
+            gate.Parameters.AddWithValue("key", "stripe-sandbox:" + payment.EventId);
+            await gate.ExecuteNonQueryAsync(cancellationToken);
+            await using var receipt = new NpgsqlCommand("SELECT journal_id,fingerprint FROM financials.stripe_receipts WHERE event_id=@e", connection, transaction);
+            receipt.Parameters.AddWithValue("e", payment.EventId);
+            await using var reader = await receipt.ExecuteReaderAsync(cancellationToken);
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                if (reader.GetString(1) != receiptFingerprint) throw new InvalidOperationException("Event replay conflicts with original financial evidence.");
+                var storedId=reader.GetGuid(0);await reader.DisposeAsync();await transaction.CommitAsync(cancellationToken);return storedId;
+            }
+        }
+
         // Scope-qualified unique key arbitrates concurrent inserts; retries must match content.
         await using var insert = new NpgsqlCommand("""
             INSERT INTO financials.journals(id, merchant_id, module, campaign_id, currency, retry_key, evidence, fingerprint, reverses_id)
@@ -42,7 +70,7 @@ public sealed class PostgresJournalStore(NpgsqlDataSource dataSource)
                 throw new InvalidOperationException("Idempotency key conflicts with immutable journal content.");
             var id = reader.GetGuid(0);
             await reader.DisposeAsync();
-            await transaction.CommitAsync(cancellationToken); return id;
+            await RecordReceipt(id); await transaction.CommitAsync(cancellationToken); return id;
         }
         for (var i = 0; i < journal.Lines.Length; i++)
         {
@@ -56,6 +84,15 @@ public sealed class PostgresJournalStore(NpgsqlDataSource dataSource)
             command.Parameters.AddWithValue("r", line.Role); command.Parameters.AddWithValue("s", line.Side.ToString());
             command.Parameters.AddWithValue("v", line.MinorUnits); await command.ExecuteNonQueryAsync(cancellationToken);
         }
-        await transaction.CommitAsync(cancellationToken); return journal.Id;
+        await RecordReceipt(journal.Id); await transaction.CommitAsync(cancellationToken); return journal.Id;
+
+        async Task RecordReceipt(Guid journalId)
+        {
+            if (payment is null) return;
+            await using var command = new NpgsqlCommand("INSERT INTO financials.stripe_receipts(event_id,payment_intent_id,journal_id,fingerprint) VALUES(@e,@p,@j,@f)", connection, transaction);
+            command.Parameters.AddWithValue("e", payment.EventId);command.Parameters.AddWithValue("p", payment.PaymentIntentId);
+            command.Parameters.AddWithValue("j",journalId);command.Parameters.AddWithValue("f",receiptFingerprint!);
+            await command.ExecuteNonQueryAsync(cancellationToken);
+        }
     }
 }

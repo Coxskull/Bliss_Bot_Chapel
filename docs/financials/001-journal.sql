@@ -44,3 +44,10 @@ END $$;
 CREATE TRIGGER lines_no_late_append BEFORE INSERT ON financials.lines FOR EACH ROW EXECUTE FUNCTION financials.check_line_insert();
 CREATE TRIGGER journals_no_truncate BEFORE TRUNCATE ON financials.journals FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();
 CREATE TRIGGER lines_no_truncate BEFORE TRUNCATE ON financials.lines FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();
+CREATE TABLE financials.stripe_receipts (
+ event_id varchar(120) PRIMARY KEY, payment_intent_id varchar(120) NOT NULL UNIQUE,
+ journal_id uuid NOT NULL REFERENCES financials.journals(id),fingerprint varchar(64) NOT NULL,
+ recorded_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TRIGGER receipts_no_mutation BEFORE UPDATE OR DELETE ON financials.stripe_receipts FOR EACH ROW EXECUTE FUNCTION financials.reject_mutation();
+CREATE TRIGGER receipts_no_truncate BEFORE TRUNCATE ON financials.stripe_receipts FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();
