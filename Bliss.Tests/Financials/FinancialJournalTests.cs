@@ -12,4 +12,9 @@ public sealed class FinancialJournalTests
     [Fact] public void Reversal_preserves_scope_and_attribution() {var j=new FinancialJournal(Scope,"USD","a","q",Lines());var r=j.Reverse("r","refund");Assert.Equal(j.Id,r.ReversesId);Assert.Equal(j.Scope,r.Scope);Assert.Equal(j.Lines[0].OwnerId,r.Lines[0].OwnerId);Assert.Equal(JournalSide.Credit,r.Lines[0].Side);}
     [Fact] public void Missing_trusted_scope_is_refused()=>Assert.Throws<ArgumentException>(()=>new FinancialJournal(Scope with {MerchantId=Guid.Empty},"USD","a","q",Lines()));
     [Fact] public void Fingerprint_detects_payee_and_evidence_changes() {var l=Lines();var a=new FinancialJournal(Scope,"USD","a","q",l);Assert.Equal(a.Fingerprint,new FinancialJournal(Scope,"USD","a","q",l).Fingerprint);l[1]=l[1] with {OwnerId=Guid.NewGuid()};Assert.NotEqual(a.Fingerprint,new FinancialJournal(Scope,"USD","a","q",l).Fingerprint);}
+    [Fact] public void Api_minor_units_serialize_as_exact_strings_above_javascript_safe_integer()
+    {
+        var op=new Bliss.Infrastructure.Financials.PreparedPaymentOperation(Guid.NewGuid(),Guid.NewGuid(),Scope,Guid.NewGuid(),long.MaxValue,"USD","key");
+        var json=System.Text.Json.JsonSerializer.Serialize(op);using var parsed=System.Text.Json.JsonDocument.Parse(json);Assert.Equal(long.MaxValue.ToString(System.Globalization.CultureInfo.InvariantCulture),parsed.RootElement.GetProperty("AmountMinor").GetString());Assert.Equal(long.MaxValue,System.Text.Json.JsonSerializer.Deserialize<Bliss.Infrastructure.Financials.PreparedPaymentOperation>(json)!.AmountMinor);
+    }
 }

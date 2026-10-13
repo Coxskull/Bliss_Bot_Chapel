@@ -1,8 +1,9 @@
+using System.Text.Json.Serialization;
 using System.Security.Claims;
 using Bliss.Domain.Financials;
 using Npgsql;
 namespace Bliss.Infrastructure.Financials;
-public sealed record ReservedRefund(Guid Id,Guid OriginalJournalId,string PaymentIntentId,long AmountMinor);
+public sealed record ReservedRefund(Guid Id,Guid OriginalJournalId,string PaymentIntentId,[property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)] long AmountMinor);
 // Trusted internal/test gateway only. A real signed refund-event adapter is required before external activation.
 public sealed class RefundReconciliationStore(NpgsqlDataSource data,string operatorRole="bliss.operator",string adminRole="bliss.admin")
 {

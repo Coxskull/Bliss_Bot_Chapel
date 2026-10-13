@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Security.Claims;
 using Bliss.Domain.Financials;
 using Npgsql;
@@ -7,7 +8,7 @@ namespace Bliss.Infrastructure.Financials;
 public sealed record AuthorizedQuoteSnapshot(Guid Id, Guid SourceQuoteVersionId, FinancialScope Scope,
  string AdvertiserSubject, Guid RecipientAccountId, long AmountMinor, string Currency);
 public sealed record PreparedPaymentOperation(Guid Id, Guid QuoteId, FinancialScope Scope,
- Guid RecipientAccountId, long AmountMinor, string Currency, string ProviderKey);
+ Guid RecipientAccountId, [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)] long AmountMinor, string Currency, string ProviderKey);
 public sealed class PaymentOperationStore(NpgsqlDataSource data)
 {
  public static string AuthenticatedSubject(ClaimsPrincipal principal)
