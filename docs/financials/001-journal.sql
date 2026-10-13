@@ -51,3 +51,23 @@ CREATE TABLE financials.stripe_receipts (
 );
 CREATE TRIGGER receipts_no_mutation BEFORE UPDATE OR DELETE ON financials.stripe_receipts FOR EACH ROW EXECUTE FUNCTION financials.reject_mutation();
 CREATE TRIGGER receipts_no_truncate BEFORE TRUNCATE ON financials.stripe_receipts FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();
+CREATE TABLE financials.authorized_quotes (
+ id uuid PRIMARY KEY,source_version uuid NOT NULL,merchant_id uuid NOT NULL,
+ module text NOT NULL CHECK(module IN ('BlissBot','CreatorAcademy','WeddingPlanner')),
+ campaign_id uuid NOT NULL,advertiser_subject varchar(200) NOT NULL,recipient_account uuid NOT NULL,
+ amount_minor bigint NOT NULL CHECK(amount_minor>0),currency text NOT NULL CHECK(currency='USD'),
+ UNIQUE(merchant_id,source_version)
+);
+CREATE TABLE financials.payment_operations (
+ id uuid PRIMARY KEY,quote_id uuid NOT NULL UNIQUE REFERENCES financials.authorized_quotes(id),
+ advertiser_subject varchar(200) NOT NULL,retry_key varchar(120) NOT NULL,provider_key varchar(120) NOT NULL UNIQUE,
+ recorded_at timestamptz NOT NULL DEFAULT now(),UNIQUE(advertiser_subject,retry_key)
+);
+CREATE TRIGGER quotes_no_mutation BEFORE UPDATE OR DELETE ON financials.authorized_quotes FOR EACH ROW EXECUTE FUNCTION financials.reject_mutation();
+CREATE TRIGGER quotes_no_truncate BEFORE TRUNCATE ON financials.authorized_quotes FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();
+CREATE TRIGGER operations_no_mutation BEFORE UPDATE OR DELETE ON financials.payment_operations FOR EACH ROW EXECUTE FUNCTION financials.reject_mutation();
+CREATE TRIGGER operations_no_truncate BEFORE TRUNCATE ON financials.payment_operations FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();
+
+CREATE TABLE financials.payment_retry_keys(advertiser_subject varchar(200) NOT NULL,retry_key varchar(120) NOT NULL,operation_id uuid NOT NULL REFERENCES financials.payment_operations(id),PRIMARY KEY(advertiser_subject,retry_key));
+CREATE TRIGGER retry_no_mutation BEFORE UPDATE OR DELETE ON financials.payment_retry_keys FOR EACH ROW EXECUTE FUNCTION financials.reject_mutation();
+CREATE TRIGGER retry_no_truncate BEFORE TRUNCATE ON financials.payment_retry_keys FOR EACH STATEMENT EXECUTE FUNCTION financials.reject_mutation();
