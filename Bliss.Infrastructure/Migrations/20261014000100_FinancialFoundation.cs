@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Bliss.Infrastructure.Migrations;
 [DbContext(typeof(BlissDbContext))]
 [Migration("20261014000100_FinancialFoundation")]
-public sealed class FinancialFoundation:Migration
+public sealed partial class FinancialFoundation:Migration
 {
  protected override void Up(MigrationBuilder migrationBuilder)
  {
