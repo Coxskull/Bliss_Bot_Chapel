@@ -1,0 +1,14 @@
+# AGM-LAUNCH-010-SUB-001 — journal foundation
+
+Foundation only, not financial activation. No new API/DI registration or Stripe calls.
+Trusted application code must bind merchant/module/campaign and account-owner-role identities from authorized persisted records before constructing a journal. The store is not an authorization boundary. No payout entitlement, amount/quote validation or Connect funds flow is inferred from this generic journal primitive.
+
+Initial explicit currency catalog: USD/PHP/MYR/IDR/COP/PAB/DOP. Values are integer minor units, never floats; no FX or provider currency-exponent conversion is implemented. Module and currency are part of retry scope. Same retry key/content returns the original journal; changed content conflicts. Account IDs/owner IDs/roles are immutable evidence, but authoritative ownership resolution is pending module adapters.
+
+`001-journal.sql` is an explicit isolated schema rehearsal, NOT an EF migration and NOT run automatically at startup. Review target migration integration under SUB-001 before activation. It creates schema financials, balanced journals/lines, attributed full reversals, and mutation/late-append rejection triggers. Full reversal is not a Stripe refund state; partial refund allocation is future work. Table owner/superuser can disable triggers; production least-privilege role and privileged-tamper acceptance remain pending.
+
+Pending: legal merchant/payees/currency/funds-flow under AGM-LAUNCH-004-DEC-001; exposed test-key replacement under BLK-001; Stripe adapter/webhooks/refunds SUB-002; authoritative module adapters SUB-003; independent activation acceptance SUB-004. No commission rates, recipients or prices are invented.
+
+SUB-002 initial verifier: validates HMAC-SHA256 against exact raw body, ±300s timestamp tolerance, test-mode platform payment_intent.succeeded only and authoritative payment ID/amount/currency/merchant/campaign/module. Synthetic fixtures only. Connect events are refused until its funds flow is approved. This is NOT a webhook endpoint; durable event receipt/dedup, Checkout/PaymentIntent creation, Stripe HTTP calls and refund lifecycle remain pending. No live-mode events are accepted.
+
+Owner target-market steering: Colombia, Dominican Republic, Panama, Philippines, Malaysia, Thailand. THB added to internal currency catalog; this catalog is not a claim of Stripe account/currency capability. Settlement currencies, merchant entity and payee/fee allocation remain unconfirmed. Existing Indonesia video inventory is unchanged.
