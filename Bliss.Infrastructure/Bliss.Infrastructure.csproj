@@ -19,4 +19,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Migrations/FinancialFoundationV1.sql" LogicalName="Bliss.FinancialFoundationV1.sql" />
+  </ItemGroup>
 </Project>

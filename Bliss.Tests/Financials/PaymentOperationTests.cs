@@ -16,7 +16,7 @@ public sealed class PaymentOperationTests
   var operations=await Task.WhenAll(Enumerable.Range(0,10).Select(i=>store.Prepare(user,quote.Id,"retry-"+i)));Assert.All(operations,x=>{Assert.Equal(operations[0].Id,x.Id);Assert.Equal(12345,x.AmountMinor);Assert.Equal(quote.RecipientAccountId,x.RecipientAccountId);Assert.Equal("USD",x.Currency);});
   var second=quote with{Id=Guid.NewGuid(),SourceQuoteVersionId=Guid.NewGuid()};await store.FreezeQuote(second);
   await Assert.ThrowsAsync<InvalidOperationException>(()=>store.Prepare(user,second.Id,"retry-0"));
-  await Assert.ThrowsAsync<PostgresException>(()=>store.FreezeQuote(quote with{Id=Guid.NewGuid(),Scope=quote.Scope with{Module=FinancialModule.BlissBot}}));
+  await Assert.ThrowsAsync<InvalidOperationException>(()=>store.FreezeQuote(quote with{Id=Guid.NewGuid(),Scope=quote.Scope with{Module=FinancialModule.BlissBot}}));
   await using var mutation=data.CreateCommand("UPDATE financials.authorized_quotes SET amount_minor=1");await Assert.ThrowsAsync<PostgresException>(async()=>await mutation.ExecuteNonQueryAsync());
  }
 }
