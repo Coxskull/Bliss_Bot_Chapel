@@ -19,7 +19,7 @@ public sealed class PostgresJournalTests
   var php=new FinancialJournal(scope,"PHP","retry","quote",lines);Assert.NotEqual(journal.Id,await store.Append(php));
   var merchant=new FinancialJournal(scope with {MerchantId=Guid.NewGuid()},"USD","retry","quote",lines);Assert.NotEqual(journal.Id,await store.Append(merchant));
   await store.Append(journal.Reverse("refund","refund1"));
-  await Assert.ThrowsAsync<PostgresException>(()=>store.Append(journal.Reverse("refund2","refund2")));
+  await Assert.ThrowsAsync<InvalidOperationException>(()=>store.Append(journal.Reverse("refund2","refund2")));
   foreach(var sql in new[]{"UPDATE financials.journals SET evidence='changed'","DELETE FROM financials.lines","TRUNCATE financials.lines","INSERT INTO financials.lines SELECT journal_id,99,account_id,owner_id,role,side,minor_units FROM financials.lines LIMIT 1","INSERT INTO financials.journals(id,merchant_id,module,campaign_id,currency,retry_key,evidence,fingerprint) VALUES(gen_random_uuid(),gen_random_uuid(),'BlissBot',gen_random_uuid(),'USD','empty','e','f')"})
   {await using var cmd=data.CreateCommand(sql);await Assert.ThrowsAsync<PostgresException>(async()=>await cmd.ExecuteNonQueryAsync());}
  }
