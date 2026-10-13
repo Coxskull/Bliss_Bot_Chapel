@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Bliss.Api.Security;
+using Bliss.Domain.Financials;
 using Bliss.Infrastructure.Financials;
 using Npgsql;
 namespace Bliss.Api.Financials;
@@ -11,7 +12,11 @@ public sealed class FinancialPreparationOptions
  public string MockSigningSecret {get;set;}="";
  public string FixtureConnection {get;set;}="";
  public List<FundingBinding> Bindings {get;set;}=[];
+ public List<MockAccountProfile> MockAccountProfiles {get;set;}=[];
+ public string StripeAccountStatus => FinancialAccountPolicy.StripeAccountStatus;
 }
+// Configurable fixture labels and synthetic signing material; never a real Stripe account/credential.
+public sealed record MockAccountProfile(string Id,string SigningSecret);
 public interface IFinancialPreparation
 {
  Task<PreparedPaymentOperation> Prepare(ClaimsPrincipal user,Guid sourceQuoteId,string retryKey,CancellationToken ct);
