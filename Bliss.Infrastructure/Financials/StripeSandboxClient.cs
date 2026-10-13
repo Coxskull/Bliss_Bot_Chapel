@@ -37,7 +37,7 @@ public sealed class StripeSandboxClient
   if(length>65536)throw new InvalidOperationException("Sandbox provider response exceeds limit.");
   using var document=JsonDocument.Parse(buffer.AsMemory(0,length));var o=document.RootElement;
   var id=o.GetProperty("id").GetString();var status=o.GetProperty("status").GetString();var metadata=o.GetProperty("metadata");
-  if(o.GetProperty("object").GetString()!="payment_intent"||o.GetProperty("livemode").GetBoolean()||string.IsNullOrWhiteSpace(id)||!id.StartsWith("pi_",StringComparison.Ordinal)||
+  if(o.GetProperty("object").GetString()!="payment_intent"||o.GetProperty("livemode").GetBoolean()||string.IsNullOrWhiteSpace(id)||!id.StartsWith("pi_",StringComparison.Ordinal)||id.Length>120||id.Any(char.IsControl)||
    status is not ("requires_payment_method" or "requires_confirmation" or "requires_action" or "processing" or "requires_capture" or "canceled" or "succeeded")||o.GetProperty("amount").GetInt64()!=charge.AmountMinor||o.GetProperty("currency").GetString()!=charge.Currency.ToLowerInvariant()||
    metadata.GetProperty("merchant_id").GetString()!=charge.Scope.MerchantId.ToString()||metadata.GetProperty("campaign_id").GetString()!=charge.Scope.CampaignId.ToString()||metadata.GetProperty("module").GetString()!=charge.Scope.Module.ToString()||metadata.GetProperty("funding_reference").GetString()!=charge.FundingReference)
    throw new InvalidOperationException("Sandbox payment response does not match authorized operation.");
