@@ -31,7 +31,8 @@ public sealed class FinancialBoundMockApiTests(WeddingPlannerOidcFactory factory
             using var client = app.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new("https://localhost"), HandleCookies = true });
             client.DefaultRequestHeaders.Add("X-Test-Name", "ModeQA"); client.DefaultRequestHeaders.Add("X-Test-Roles", "bliss.operator");
             var session = await client.GetFromJsonAsync<SessionResponse>("/api/auth/session"); client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", session!.CsrfToken);
-            Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync("/api/financials/mock-bound-webhooks", new { operationId = Guid.NewGuid(), rawJson = "{}", signature = "invalid" })).StatusCode);
+            foreach(var route in new[]{"mock-bound-webhooks","mock-status-webhooks"})Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync("/api/financials/"+route, new { operationId = Guid.NewGuid(), rawJson = "{}", signature = "invalid" })).StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict,(await client.PostAsJsonAsync("/api/financials/mock-payments/reconcile",new{operationId=Guid.NewGuid()})).StatusCode);
         }
     }
     [FinancialPostgresFact]

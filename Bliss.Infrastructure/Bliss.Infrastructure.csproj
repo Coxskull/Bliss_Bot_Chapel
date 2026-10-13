@@ -23,5 +23,6 @@
     <EmbeddedResource Include="Migrations/FinancialFoundationV1.sql" LogicalName="Bliss.FinancialFoundationV1.sql" />
     <EmbeddedResource Include="Migrations/FinancialDispatchV1.sql" LogicalName="Bliss.FinancialDispatchV1.sql" />
     <EmbeddedResource Include="Migrations/FinancialMockCallbacksV1.sql" LogicalName="Bliss.FinancialMockCallbacksV1.sql" />
+    <EmbeddedResource Include="Migrations/FinancialMockReconciliationV1.sql" LogicalName="Bliss.FinancialMockReconciliationV1.sql" />
   </ItemGroup>
 </Project>

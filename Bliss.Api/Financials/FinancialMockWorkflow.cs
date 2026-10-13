@@ -6,7 +6,7 @@ using Bliss.Domain.Financials;
 using Bliss.Infrastructure.Financials;
 using Npgsql;
 namespace Bliss.Api.Financials;
-public sealed record ModuleFinancialReading(PreparedPaymentOperation Operation,bool SourceApprovalCurrent,bool SimulatedCaptureRecorded,bool PaymentCompleted=false);
+public sealed record ModuleFinancialReading(PreparedPaymentOperation Operation,bool SourceApprovalCurrent,bool SimulatedCaptureRecorded,bool PaymentCompleted=false,MockReconciliationReading? MockReconciliation=null);
 public sealed class FinancialMockWorkflow(FinancialPreparationOptions options,BlissAuthenticationOptions auth,AcceptedFinancialQuoteImporter importer)
 {
  private NpgsqlDataSource Data(ClaimsPrincipal user,bool staff)
@@ -38,9 +38,25 @@ public sealed class FinancialMockWorkflow(FinancialPreparationOptions options,Bl
  }
  public async Task<Guid?> Reconcile(ClaimsPrincipal user,Guid refund,string status,CancellationToken ct)
  {await using var data=Data(user,true);var store=new MockPaymentCaptureStore(data);var op=await store.Operation(await store.OperationForRefund(refund,ct),ct);Binding(op);return await new RefundReconciliationStore(data,auth.OperatorRole,auth.AdminRole).Reconcile(user,op.Scope,refund,"re_mock_"+refund.ToString("N"),status,ct);}
+ private MockAccountProfile Profile(FundingBinding b)
+ {var profiles=options.MockAccountProfiles.Where(x=>x.Id==b.MockProfileId).ToArray();if(profiles.Length!=1||string.IsNullOrWhiteSpace(profiles[0].SigningSecret)||!profiles[0].SigningSecret.StartsWith("whsec_fixture_",StringComparison.Ordinal))throw new InvalidOperationException("Explicit synthetic mock profile required.");return profiles[0];}
+ public async Task<Guid> Recover(ClaimsPrincipal user,Guid operationId,CancellationToken ct)
+ {
+  await using var data=Data(user,true);var op=await new MockPaymentCaptureStore(data).Operation(operationId,ct);var b=Binding(op);var current=await importer.Read(b,ct);var profile=Profile(b);
+  var fixtures=options.MockRecoveryFixtures.Where(x=>x.ExpectedOperation.Id==op.Id&&x.ProfileId==profile.Id).ToArray();
+  if(current.AmountMinor!=op.AmountMinor||fixtures.Length!=1)throw new InvalidOperationException("Current authority and one server-configured mock lookup fixture required.");
+  return await new MockPaymentReconciliationStore(data).Recover(fixtures[0].ExpectedOperation,profile.Id,fixtures[0].PaymentIntentId,fixtures[0].ProviderStatus,PaymentOperationStore.AuthenticatedSubject(user),ct);
+ }
+ public async Task<MockReconciliationReading> StatusWebhook(ClaimsPrincipal user,Guid operationId,string rawJson,string signature,CancellationToken ct)
+ {
+  await using var data=Data(user,true);var store=new MockPaymentCaptureStore(data);var op=await store.Operation(operationId,ct);var profile=Profile(Binding(op));var intent=await store.BoundMockIntent(op.Id,ct);var bytes=Encoding.UTF8.GetBytes(rawJson);
+  var payment=StripeSandboxVerifier.VerifyStatus(bytes,signature,profile.SigningSecret,DateTimeOffset.UtcNow,new(intent,op.Scope,op.Currency,op.AmountMinor));
+  using var document=JsonDocument.Parse(bytes);var metadata=document.RootElement.GetProperty("data").GetProperty("object").GetProperty("metadata");if(metadata.GetProperty("funding_reference").GetString()!=op.QuoteId.ToString("N")||metadata.GetProperty("account_profile").GetString()!=profile.Id)throw new ArgumentException("Status account/source mismatch.");
+  var reconciliation=new MockPaymentReconciliationStore(data);await reconciliation.Observe(op,profile.Id,payment.EventId,intent,payment.State,Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)),ct);return await reconciliation.Read(op.Id,ct);
+ }
  public async Task<IReadOnlyList<ModuleFinancialReading>> Read(ClaimsPrincipal user,FinancialModule module,CancellationToken ct)
  {
   await using var data=Data(user,false);if(!Guid.TryParse(user.FindFirst(auth.AdvertiserIdClaimType)?.Value,out var advertiser))throw new UnauthorizedAccessException("Advertiser binding required.");var subject=PaymentOperationStore.AuthenticatedSubject(user);var store=new MockPaymentCaptureStore(data);var results=new List<ModuleFinancialReading>();
-  foreach(var op in await store.Owned(subject,module,ct)){var b=Binding(op);if(b.AdvertiserId!=advertiser||b.AdvertiserSubject!=subject)continue;var approved=true;try{await importer.Read(b,ct);}catch(InvalidOperationException){approved=false;}results.Add(new(op,approved,await store.Captured(op.Id,ct)!=null));}return results;
+  foreach(var op in await store.Owned(subject,module,ct)){var b=Binding(op);if(b.AdvertiserId!=advertiser||b.AdvertiserSubject!=subject)continue;var approved=true;try{await importer.Read(b,ct);}catch(InvalidOperationException){approved=false;}results.Add(new(op,approved,await store.Captured(op.Id,ct)!=null,MockReconciliation:await new MockPaymentReconciliationStore(data).Read(op.Id,ct)));}return results;
  }
 }
