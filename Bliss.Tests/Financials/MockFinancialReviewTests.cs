@@ -14,6 +14,16 @@ public sealed class MockFinancialReviewTests
   var subject="review-owner-"+Guid.NewGuid();var id=Guid.NewGuid();var q=new AuthorizedQuoteSnapshot(id,id,new(Guid.NewGuid(),FinancialModule.CreatorAcademy,Guid.NewGuid()),subject,Guid.NewGuid(),amount,"USD");var quotes=new PaymentOperationStore(data);await quotes.FreezeQuote(q);var user=new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub",subject)],"fixture"));var op=await quotes.Prepare(user,id,"fixture");
   await using var seed=data.CreateCommand("INSERT INTO financials.payment_dispatch_attempts(id,operation_id,started_at,lease_until) VALUES(@a,@i,clock_timestamp()-interval '21 hours',clock_timestamp()-interval '20 hours')");seed.Parameters.AddWithValue("a",Guid.NewGuid());seed.Parameters.AddWithValue("i",op.Id);await seed.ExecuteNonQueryAsync();return(op,new(id,q.Scope,q.RecipientAccountId,subject));
  }
+ [FinancialPostgresFact]public async Task Note_history_pages_preserve_order_scope_and_case_bound_cursors()
+ {
+  await using var data=Data();var prepared=await Prepare(data);var store=new MockFinancialReviewStore(data);MockReviewAuthority[] authorities=[prepared.Authority];var evidence=await store.Read(prepared.Op.Id,authorities);
+  var created=new List<MockReviewNote>();for(var i=0;i<5;i++)created.Add(await store.AddNote(prepared.Op.Id,authorities,"history-reader",evidence.EvidenceFingerprint,"Note "+i,"history-"+i));
+  var all=new List<MockReviewNote>();Guid? cursor=null;do{var page=await store.Notes(prepared.Op.Id,authorities,2,cursor);Assert.InRange(page.Items.Count,1,2);all.AddRange(page.Items);cursor=page.NextAfter;}while(cursor is not null);
+  Assert.Equal(created.Select(n=>n.Id),all.Select(n=>n.Id));Assert.Equal(5,all.Select(n=>n.Id).Distinct().Count());Assert.Empty((await store.Notes(prepared.Op.Id,authorities,2,all[^1].Id)).Items);
+  await Assert.ThrowsAsync<ArgumentException>(()=>store.Notes(prepared.Op.Id,authorities,0,null));await Assert.ThrowsAsync<ArgumentException>(()=>store.Notes(prepared.Op.Id,authorities,101,null));await Assert.ThrowsAsync<ArgumentException>(()=>store.Notes(prepared.Op.Id,authorities,2,Guid.NewGuid()));
+  var other=await Prepare(data);await Assert.ThrowsAsync<ArgumentException>(()=>store.Notes(other.Op.Id,[other.Authority],2,created[0].Id));await Assert.ThrowsAsync<UnauthorizedAccessException>(()=>store.Notes(prepared.Op.Id,[other.Authority],2,null));
+  Assert.True((await store.Read(prepared.Op.Id,authorities)).RequiresReview);Assert.Null(await new MockPaymentCaptureStore(data).Captured(prepared.Op.Id));
+ }
  [FinancialPostgresFact]public async Task Scoped_evidence_notes_are_concurrent_idempotent_immutable_and_never_clear_review()
  {
   await using var data=Data();var prepared=await Prepare(data,9007199254740993);var store=new MockFinancialReviewStore(data);MockReviewAuthority[] authorities=[prepared.Authority];var snapshot=await store.Read(prepared.Op.Id,authorities);Assert.True(snapshot.RequiresReview);Assert.Contains("\"amount_minor\": \"9007199254740993\"",snapshot.EvidenceJson);

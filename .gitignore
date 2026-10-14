@@ -488,3 +488,7 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Separate local Bliss frontend build artifacts
+bliss-frontend/node_modules/
+bliss-frontend/dist/
