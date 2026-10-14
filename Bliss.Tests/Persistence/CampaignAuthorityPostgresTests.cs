@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql;
+using System.Net;
 
 namespace Bliss.Tests.Persistence;
 
@@ -19,12 +20,35 @@ public sealed class CampaignAuthorityPostgresFactAttribute : FactAttribute
 
 public sealed class CampaignAuthorityPostgresTests
 {
+    private static void RequireDisposableFixture(NpgsqlConnectionStringBuilder builder)
+    {
+        var loopback = string.Equals(builder.Host, "localhost", StringComparison.OrdinalIgnoreCase)
+            || IPAddress.TryParse(builder.Host, out var address) && IPAddress.IsLoopback(address);
+        if (!loopback || builder.Database is not ("campaign_test" or "bliss_ci"))
+            throw new InvalidOperationException("Campaign migration tests require a loopback campaign_test or bliss_ci fixture.");
+    }
+
+    [Theory]
+    [InlineData("localhost", "bliss_ci", true)]
+    [InlineData("127.0.0.1", "campaign_test", true)]
+    [InlineData("::1", "campaign_test", true)]
+    [InlineData("localhost", "production", false)]
+    [InlineData("db.example.test", "campaign_test", false)]
+    [InlineData("127.0.0.1,db.example.test", "campaign_test", false)]
+    [InlineData("0.0.0.0", "campaign_test", false)]
+    public void Fixture_guard_accepts_only_known_disposable_loopback_targets(string host, string database, bool allowed)
+    {
+        var builder = new NpgsqlConnectionStringBuilder { Host = host, Database = database };
+        if (allowed) RequireDisposableFixture(builder);
+        else Assert.Throws<InvalidOperationException>(() => RequireDisposableFixture(builder));
+    }
+
     [CampaignAuthorityPostgresFact]
     public async Task Upgrade_marks_only_known_fixtures_and_database_rejects_unknown_authority()
     {
         var connection = Environment.GetEnvironmentVariable("BLISS_TEST_POSTGRES_CONNECTION")!;
         var builder = new NpgsqlConnectionStringBuilder(connection);
-        Assert.Equal("127.0.0.1", builder.Host);
+        RequireDisposableFixture(builder);
         var database = "campaign_authority_" + Guid.NewGuid().ToString("N");
         await using var admin = new NpgsqlConnection(connection);
         await admin.OpenAsync();
