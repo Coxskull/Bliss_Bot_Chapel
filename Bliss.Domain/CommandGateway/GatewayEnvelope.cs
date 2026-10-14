@@ -7,7 +7,7 @@ public enum GatewayMessageType { TaskAssignment, Ack, EvidenceSubmission, Defect
 public sealed record GatewayEnvelope(string Protocol, Guid MessageId, Guid CorrelationId, Guid? CausationId, string TaskId, Guid TenantId, Guid SenderAgentId, Guid RecipientAgentId, GatewayMessageType Type, string Environment, string PolicyRef, string IdempotencyKey, DateTimeOffset CreatedAt, DateTimeOffset ExpiresAt, string PayloadJson);
 // These grants come from a trusted adapter, never the submitted envelope or payload.
 public sealed record GatewayPrincipal(bool Authenticated, Guid TenantId, Guid AgentId);
-public sealed record GatewayPolicy(bool Enabled, Guid TenantId, string PolicyRef, IReadOnlySet<Guid> Recipients, IReadOnlySet<GatewayMessageType> Types);
+public sealed record GatewayPolicy(bool Enabled, Guid TenantId, Guid AgentId, string PolicyRef, IReadOnlySet<Guid> Recipients, IReadOnlySet<GatewayMessageType> Types);
 public sealed record ValidatedGatewayMessage(GatewayEnvelope Envelope, string CanonicalJson, string ContentHash);
 
 public static class GatewayEnvelopeValidator
@@ -16,8 +16,8 @@ public static class GatewayEnvelopeValidator
  public static ValidatedGatewayMessage Validate(GatewayEnvelope e, GatewayPrincipal principal, GatewayPolicy policy, DateTimeOffset now)
  {
   if(!policy.Enabled)throw new InvalidOperationException("Local gateway preparation is disabled.");
-  if(!principal.Authenticated||principal.TenantId==Guid.Empty||principal.AgentId==Guid.Empty||principal.TenantId!=policy.TenantId||e.TenantId!=principal.TenantId||e.SenderAgentId!=principal.AgentId||!policy.Recipients.Contains(e.RecipientAgentId)||!policy.Types.Contains(e.Type))throw new UnauthorizedAccessException("Registered workload identity and message grants required.");
-  if(e.Protocol!="AGM-A2A/1"||e.Environment!="LOCAL_MOCK"||e.MessageId==Guid.Empty||e.CorrelationId==Guid.Empty||e.RecipientAgentId==Guid.Empty||e.CausationId==Guid.Empty||!Enum.IsDefined(e.Type)||e.PolicyRef!=policy.PolicyRef||!Bounded(e.TaskId,80)||!Bounded(e.IdempotencyKey,120)||e.CreatedAt>now.AddSeconds(30)||e.ExpiresAt<=now||e.ExpiresAt<=e.CreatedAt||e.ExpiresAt-e.CreatedAt>TimeSpan.FromMinutes(30))throw new ArgumentException("Invalid bounded local envelope.");
+  if(!principal.Authenticated||principal.TenantId==Guid.Empty||principal.AgentId==Guid.Empty||principal.TenantId!=policy.TenantId||principal.AgentId!=policy.AgentId||e.TenantId!=principal.TenantId||e.SenderAgentId!=principal.AgentId||!policy.Recipients.Contains(e.RecipientAgentId)||!policy.Types.Contains(e.Type))throw new UnauthorizedAccessException("Registered workload identity and message grants required.");
+  if(e.Protocol!="AGM-A2A/1"||e.Environment!="LOCAL_MOCK"||e.MessageId==Guid.Empty||e.CorrelationId==Guid.Empty||e.RecipientAgentId==Guid.Empty||e.CausationId==Guid.Empty||e.CausationId==e.MessageId||!Enum.IsDefined(e.Type)||e.PolicyRef!=policy.PolicyRef||!Bounded(e.TaskId,80)||!Bounded(e.IdempotencyKey,120)||e.CreatedAt>now.AddSeconds(30)||e.ExpiresAt<=now||e.ExpiresAt<=e.CreatedAt||e.ExpiresAt-e.CreatedAt>TimeSpan.FromMinutes(30))throw new ArgumentException("Invalid bounded local envelope.");
   if(e.CausationId is null && e.Type is not (GatewayMessageType.TaskAssignment or GatewayMessageType.DefectReport))throw new ArgumentException("Follow-up messages require causation.");
   if(e.Type is GatewayMessageType.ApprovalDecision)throw new UnauthorizedAccessException("Owner approval is not an agent message permission.");
   if(e.PayloadJson is null||Encoding.UTF8.GetByteCount(e.PayloadJson)>16384)throw new ArgumentException("Bounded payload required.");
