@@ -14,6 +14,6 @@ public sealed class LocalGatewayTransport
   var identity=verifier.Verify(request,clock.GetUtcNow());if(identity.Principal.TenantId!=tenant)throw new UnauthorizedAccessException("Gateway tenant mismatch.");var accepted=await inbox.Accept(request.Envelope,identity.Principal,identity.Policy,ct);var now=clock.GetUtcNow();var receipt=new GatewaySignedReceipt(new(accepted.MessageId,accepted.ContentHash,accepted.AcceptedAt,accepted.Replay,tenant,request.Envelope.SenderAgentId,request.Envelope.RecipientAgentId,gatewayAgent),keyId,now,now.AddMinutes(2),"");
   // Receipt signing follows durable acceptance. Signer/response failure may leave an accepted message;
   // exact authenticated retry retrieves the original acceptance, never executes twice.
-  return receipt with{Signature=Convert.ToBase64String(signer.SignData(GatewayTransportCodec.ReceiptBytes(receipt,audience),HashAlgorithmName.SHA256,RSASignaturePadding.Pkcs1))};
+  lock(signer){return receipt with{Signature=Convert.ToBase64String(signer.SignData(GatewayTransportCodec.ReceiptBytes(receipt,audience),HashAlgorithmName.SHA256,RSASignaturePadding.Pkcs1))};}
  }
 }
