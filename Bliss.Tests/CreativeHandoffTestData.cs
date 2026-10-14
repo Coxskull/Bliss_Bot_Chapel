@@ -34,7 +34,7 @@ internal static class CreativeHandoffTestData
         var review = (await production.ReviewAsync(workspace, brief.Id, candidate.Id,
             new RecordProductionReview(0, "PASS", "PASS", "PASS", "PASS", "PASS", false, "Synthetic instructor decision for authority tests", "", "", "fixture-review"),
             "OPERATOR", "Fixture QA", "fixture", default)).Row;
-        var campaign = new Campaign { Id = Guid.NewGuid(), AdvertiserOpportunityId = Phase2DataSeeder.OpportunityBrId, Name = "TEST handoff campaign", CreatedAt = DateTime.UtcNow };
+        var campaign = new Campaign { Id = Guid.NewGuid(), AdvertiserOpportunityId = Phase2DataSeeder.OpportunityBrId, Name = "TEST handoff campaign", AuthorityStatus = Bliss.Domain.Common.RecordAuthorityStatuses.SyntheticFixture, CreatedAt = DateTime.UtcNow };
         db.Add(campaign); await db.SaveChangesAsync();
         // Explicitly fictional overlay benchmark; never modify or invent production Economics data.
         var baseline = await db.InventoryRateBenchmarks.AsNoTracking().FirstAsync(x => x.GeographicMarketId == EconomicsDataSeeder.ManilaId

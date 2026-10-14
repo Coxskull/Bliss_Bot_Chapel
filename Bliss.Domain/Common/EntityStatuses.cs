@@ -34,6 +34,18 @@ public static class ConfidenceLevels
     public const string Unknown = "UNKNOWN";
 }
 
+/// <summary>
+/// Records whether commercial-party authority is verified or the record is a
+/// controlled fictional fixture. UNKNOWN/UNVERIFIED records cannot advance to
+/// campaign placement.
+/// </summary>
+public static class RecordAuthorityStatuses
+{
+    public const string Unverified = "UNVERIFIED";
+    public const string Verified = "VERIFIED";
+    public const string SyntheticFixture = "SYNTHETIC_FIXTURE";
+}
+
 public static class InventorySlotTypes
 {
     public const string PreRoll = "PRE_ROLL";

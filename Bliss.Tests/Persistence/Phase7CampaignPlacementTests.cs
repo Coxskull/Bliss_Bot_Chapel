@@ -1,3 +1,4 @@
+using Bliss.Domain.Common;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +22,11 @@ public sealed class Phase7CampaignPlacementTests
         Assert.Equal("PLANNED", result.Outcome);
         Assert.Equal(placementsBefore + 1, await db.CampaignPlacements.CountAsync());
         Assert.Equal(1, await db.CampaignPlacementRuns.CountAsync());
+
+        var audit = await db.CampaignPlacementRuns.SingleAsync();
+        Assert.Contains("SYNTHETIC_FIXTURE", audit.InputSnapshot);
+        Assert.Contains("SYNTHETIC_ONLY", audit.InputSnapshot);
+        Assert.Contains("NOT_SENT", audit.InputSnapshot);
 
         var placement = await db.CampaignPlacements.SingleAsync(x => x.Id == result.CampaignPlacementId);
         Assert.Equal(Phase2DataSeeder.MatchBrazilApprovedId, placement.BlissMatchId);
@@ -100,6 +106,54 @@ public sealed class Phase7CampaignPlacementTests
         Assert.Equal(placementsBefore, await db.CampaignPlacements.CountAsync());
         Assert.Equal(0, await db.CampaignPlacementRuns.CountAsync());
         Assert.Null((await db.Campaigns.SingleAsync(x => x.Id == Phase2DataSeeder.Campaign2Id)).AdvertiserOpportunityId);
+    }
+
+    [Fact]
+    public async Task Unverified_or_mixed_party_authority_cannot_create_a_planned_campaign()
+    {
+        await using var db = await SeedAsync();
+        var service = new CampaignPlacementService(db);
+        var creator = await db.Creators.SingleAsync(x => x.Id == Phase2DataSeeder.BrazilCreatorId);
+
+        creator.AuthorityStatus = RecordAuthorityStatuses.Unverified;
+        await db.SaveChangesAsync();
+
+        var unverified = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.BindAsync(Command("authority-unverified")));
+
+        creator.AuthorityStatus = RecordAuthorityStatuses.Verified;
+        await db.SaveChangesAsync();
+
+        var mixed = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.BindAsync(Command("authority-mixed")));
+
+        Assert.Contains("Mixed and unverified lineage is refused", unverified.Message);
+        Assert.Contains("Mixed and unverified lineage is refused", mixed.Message);
+        Assert.Empty(await db.CampaignPlacementRuns.ToListAsync());
+    }
+
+    [Fact]
+    public async Task Verified_parties_require_a_verified_campaign_lineage()
+    {
+        await using var db = await SeedAsync();
+        var service = new CampaignPlacementService(db);
+        var creator = await db.Creators.SingleAsync(x => x.Id == Phase2DataSeeder.BrazilCreatorId);
+        var opportunity = await db.AdvertiserOpportunities.SingleAsync(x => x.Id == Phase2DataSeeder.OpportunityBrId);
+        var campaign = await db.Campaigns.SingleAsync(x => x.Id == Phase2DataSeeder.Campaign2Id);
+        creator.AuthorityStatus = RecordAuthorityStatuses.Verified;
+        opportunity.AuthorityStatus = RecordAuthorityStatuses.Verified;
+        await db.SaveChangesAsync();
+
+        var mismatch = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.BindAsync(Command("campaign-authority-mismatch")));
+        Assert.Contains("Campaign authority must match", mismatch.Message);
+
+        campaign.AuthorityStatus = RecordAuthorityStatuses.Verified;
+        await db.SaveChangesAsync();
+        var result = await service.BindAsync(Command("authority-verified"));
+
+        Assert.Equal("PLANNED", result.Outcome);
+        Assert.Single(await db.CampaignPlacementRuns.ToListAsync());
     }
 
     private static CampaignPlacementCommand Command(string key) => new(

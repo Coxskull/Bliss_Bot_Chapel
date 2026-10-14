@@ -90,7 +90,8 @@ public sealed class Phase2DataSeeder
             CommissionPercentage = 8m,
             CommissionType = "PERCENTAGE",
             ExternalOpportunityId = "OPP-TEST-BR",
-            Status = EntityStatuses.Active
+            Status = EntityStatuses.Active,
+            AuthorityStatus = RecordAuthorityStatuses.SyntheticFixture
         };
 
         var opportunityPhFromAdvertiser2 = new AdvertiserOpportunity
@@ -105,7 +106,8 @@ public sealed class Phase2DataSeeder
             CommissionPercentage = 9m,
             CommissionType = "PERCENTAGE",
             ExternalOpportunityId = "OPP-TEST-PH-HARBOR",
-            Status = EntityStatuses.Active
+            Status = EntityStatuses.Active,
+            AuthorityStatus = RecordAuthorityStatuses.SyntheticFixture
         };
 
         var brazilCreator = new Creator
@@ -120,6 +122,7 @@ public sealed class Phase2DataSeeder
             PrimaryAgeRange = "18-34",
             PrimaryGeography = "São Paulo",
             EngagementLevel = "STRONG",
+            AuthorityStatus = RecordAuthorityStatuses.SyntheticFixture,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -228,6 +231,7 @@ public sealed class Phase2DataSeeder
             Id = Campaign2Id,
             Name = "Phase 2 Overlay Inventory Campaign",
             Status = EntityStatuses.Draft,
+            AuthorityStatus = RecordAuthorityStatuses.SyntheticFixture,
             CreatedAt = now
         };
 
