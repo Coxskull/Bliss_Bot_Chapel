@@ -21,10 +21,17 @@ public sealed class LocalGatewayInbox
   await using(var gate=new NpgsqlCommand("SELECT pg_advisory_xact_lock(hashtextextended(@key,0))",connection,tx)){gate.Parameters.AddWithValue("key",$"gateway:{principal.TenantId}:{principal.AgentId}:{envelope.IdempotencyKey}");await gate.ExecuteNonQueryAsync(ct);}
   // Revalidate after waiting for the key: expiry/permissions cannot be bypassed by lock delay.
   valid=GatewayEnvelopeValidator.Validate(envelope,principal,policy,clock.GetUtcNow());
+  GatewayAcceptance? replay=null;
   await using(var prior=new NpgsqlCommand("SELECT message_id,content_hash,canonical_json,accepted_at FROM command_gateway.messages WHERE tenant_id=@tenant AND sender_agent_id=@sender AND idempotency_key=@key",connection,tx))
   {
    prior.Parameters.AddWithValue("tenant",principal.TenantId);prior.Parameters.AddWithValue("sender",principal.AgentId);prior.Parameters.AddWithValue("key",envelope.IdempotencyKey);
-   await using var reader=await prior.ExecuteReaderAsync(ct);if(await reader.ReadAsync(ct)){if(reader.GetString(1)!=valid.ContentHash||reader.GetString(2)!=valid.CanonicalJson)throw new InvalidOperationException("Retry conflicts with immutable envelope.");return new(reader.GetGuid(0),reader.GetString(1),new DateTimeOffset(reader.GetDateTime(3)),true);}
+   await using var reader=await prior.ExecuteReaderAsync(ct);if(await reader.ReadAsync(ct)){if(reader.GetString(1)!=valid.ContentHash||reader.GetString(2)!=valid.CanonicalJson)throw new InvalidOperationException("Retry conflicts with immutable envelope.");if(reader.GetGuid(0)!=envelope.MessageId)throw new InvalidOperationException("Stored message identity mismatch.");replay=new(reader.GetGuid(0),reader.GetString(1),new DateTimeOffset(reader.GetDateTime(3)),true);}
+  }
+  if(replay is not null)
+  {
+   await using var proof=new NpgsqlCommand("SELECT count(*) FROM command_gateway.acceptance_audit a JOIN command_gateway.outbox_intents o ON o.message_id=a.message_id AND o.tenant_id=a.tenant_id WHERE a.message_id=@id AND a.tenant_id=@tenant AND a.actor_agent_id=@actor AND a.content_hash=@hash AND o.recipient_agent_id=@recipient",connection,tx);
+   proof.Parameters.AddWithValue("id",replay.MessageId);proof.Parameters.AddWithValue("tenant",principal.TenantId);proof.Parameters.AddWithValue("actor",principal.AgentId);proof.Parameters.AddWithValue("hash",valid.ContentHash);proof.Parameters.AddWithValue("recipient",envelope.RecipientAgentId);
+   if((long)(await proof.ExecuteScalarAsync(ct))! !=1)throw new InvalidOperationException("Acceptance evidence is incomplete; no acknowledgment.");return replay;
   }
   if(envelope.CausationId is Guid cause)
   {

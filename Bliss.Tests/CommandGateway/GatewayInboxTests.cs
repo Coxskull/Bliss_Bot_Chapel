@@ -39,5 +39,16 @@ public sealed class GatewayInboxTests
   foreach(var table in new[]{"acceptance_audit","outbox_intents"})foreach(var statement in new[]{"DELETE FROM command_gateway."+table,"TRUNCATE command_gateway."+table,"UPDATE command_gateway."+table+" SET tenant_id=tenant_id"}){await using var mutate=data.CreateCommand(statement);await Assert.ThrowsAsync<PostgresException>(async()=>await mutate.ExecuteNonQueryAsync());}
   await Assert.ThrowsAsync<ArgumentException>(()=>new LocalGatewayInbox(data,new FixedClock(f.Envelope.ExpiresAt.AddSeconds(1))).Accept(f.Envelope,f.Principal,f.Policy));
  }
+ [GatewayPostgresFact]public async Task Outbox_failure_rolls_back_audit_and_incomplete_historical_receipts_are_not_acknowledged()
+ {
+  await using var data=Data();var f=await Fixture(data);var inbox=new LocalGatewayInbox(data);
+  await using(var check=data.CreateCommand("ALTER TABLE command_gateway.outbox_intents ADD CONSTRAINT fixture_reject_outbox CHECK(message_id<>'"+f.Envelope.MessageId+"') NOT VALID"))await check.ExecuteNonQueryAsync();
+  try{await Assert.ThrowsAsync<PostgresException>(()=>inbox.Accept(f.Envelope,f.Principal,f.Policy));foreach(var table in new[]{"messages","acceptance_audit","outbox_intents"})Assert.Equal(0,await Count(data,table,f.Envelope.MessageId));}
+  finally{await using var drop=data.CreateCommand("ALTER TABLE command_gateway.outbox_intents DROP CONSTRAINT fixture_reject_outbox");await drop.ExecuteNonQueryAsync();}
+  var valid=GatewayEnvelopeValidator.Validate(f.Envelope,f.Principal,f.Policy,DateTimeOffset.UtcNow);
+  await using var raw=data.CreateCommand("INSERT INTO command_gateway.messages(message_id,tenant_id,sender_agent_id,recipient_agent_id,task_id,correlation_id,idempotency_key,content_hash,canonical_json,environment) VALUES(@id,@tenant,@sender,@recipient,@task,@correlation,@key,@hash,@json,'LOCAL_MOCK')");
+  raw.Parameters.AddWithValue("id",f.Envelope.MessageId);raw.Parameters.AddWithValue("tenant",f.Principal.TenantId);raw.Parameters.AddWithValue("sender",f.Principal.AgentId);raw.Parameters.AddWithValue("recipient",f.Envelope.RecipientAgentId);raw.Parameters.AddWithValue("task",f.Envelope.TaskId);raw.Parameters.AddWithValue("correlation",f.Envelope.CorrelationId);raw.Parameters.AddWithValue("key",f.Envelope.IdempotencyKey);raw.Parameters.AddWithValue("hash",valid.ContentHash);raw.Parameters.AddWithValue("json",valid.CanonicalJson);await raw.ExecuteNonQueryAsync();
+  await Assert.ThrowsAsync<InvalidOperationException>(()=>inbox.Accept(f.Envelope,f.Principal,f.Policy));Assert.Equal(0,await Count(data,"acceptance_audit",f.Envelope.MessageId));Assert.Equal(0,await Count(data,"outbox_intents",f.Envelope.MessageId));
+ }
  [Fact]public void Hosted_or_wrong_database_store_is_refused(){foreach(var connection in new[]{"Host=database.example.test;Database=gateway_test","Host=127.0.0.1;Database=production"}){using var data=NpgsqlDataSource.Create(connection);Assert.Throws<InvalidOperationException>(()=>new LocalGatewayInbox(data));}}
 }
