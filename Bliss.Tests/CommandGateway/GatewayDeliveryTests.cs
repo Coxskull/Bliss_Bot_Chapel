@@ -6,11 +6,11 @@ namespace Bliss.Tests.CommandGateway;
 public sealed class GatewayDeliveryTests
 {
  private sealed class FixedClock(DateTimeOffset now):TimeProvider{public override DateTimeOffset GetUtcNow()=>now;}
- private sealed record Fixture(GatewayEnvelope Envelope,GatewayPrincipal Sender,GatewayPrincipal Recipient,GatewayDeliveryPolicy SenderPolicy,GatewayDeliveryPolicy RecipientPolicy);
+ internal sealed record Fixture(GatewayEnvelope Envelope,GatewayPrincipal Sender,GatewayPrincipal Recipient,GatewayDeliveryPolicy SenderPolicy,GatewayDeliveryPolicy RecipientPolicy);
  private static NpgsqlDataSource Data()=>NpgsqlDataSource.Create(Environment.GetEnvironmentVariable("BLISS_GATEWAY_TEST_POSTGRES")!);
- private static async Task<Fixture> Prepare(NpgsqlDataSource data,bool expired=false)
+ internal static async Task<Fixture> Prepare(NpgsqlDataSource data,bool expired=false)
  {
-  var tenant=Guid.NewGuid();var sender=Guid.NewGuid();var recipient=Guid.NewGuid();await using var seed=data.CreateCommand("INSERT INTO command_gateway.agents VALUES(@tenant,@sender),(@tenant,@recipient)");seed.Parameters.AddWithValue("tenant",tenant);seed.Parameters.AddWithValue("sender",sender);seed.Parameters.AddWithValue("recipient",recipient);await seed.ExecuteNonQueryAsync();var now=expired?DateTimeOffset.UtcNow.AddMinutes(-2):DateTimeOffset.UtcNow;
+  var tenant=Guid.NewGuid();var sender=Guid.NewGuid();var recipient=Guid.NewGuid();await using var seed=data.CreateCommand("INSERT INTO command_gateway.agents VALUES(@tenant,@sender),(@tenant,@recipient)");seed.Parameters.AddWithValue("tenant",tenant);seed.Parameters.AddWithValue("sender",sender);seed.Parameters.AddWithValue("recipient",recipient);await seed.ExecuteNonQueryAsync();await using(var control=data.CreateCommand("INSERT INTO command_gateway.execution_control(tenant_id,owner_agent_id,capacity) VALUES(@tenant,@owner,100)")){control.Parameters.AddWithValue("tenant",tenant);control.Parameters.AddWithValue("owner",sender);await control.ExecuteNonQueryAsync();}var now=expired?DateTimeOffset.UtcNow.AddMinutes(-2):DateTimeOffset.UtcNow;
   var envelope=new GatewayEnvelope("AGM-A2A/1",Guid.NewGuid(),Guid.NewGuid(),null,"AGM-LAUNCH-011",tenant,sender,recipient,GatewayMessageType.TaskAssignment,"LOCAL_MOCK","fixture-v1",Guid.NewGuid().ToString(),now,expired?now.AddMinutes(1):now.AddMinutes(10),"{\"fixture\":\"local only\"}");var principal=new GatewayPrincipal(true,tenant,sender);var policy=new GatewayPolicy(true,tenant,sender,"fixture-v1",new HashSet<Guid>{recipient},new HashSet<GatewayMessageType>{GatewayMessageType.TaskAssignment});await new LocalGatewayInbox(data,expired?new FixedClock(now):null).Accept(envelope,principal,policy);
   return new(envelope,principal,new(true,tenant,recipient),new(true,tenant,sender,new HashSet<Guid>{recipient},true),new(true,tenant,recipient,new HashSet<Guid>{sender},true));
  }

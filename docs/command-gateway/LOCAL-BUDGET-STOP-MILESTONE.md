@@ -1,0 +1,15 @@
+# AGM-LAUNCH-011 / AGM-A2A-010 local synthetic budget and stop
+
+Builds on merged PR178. SQL004 applies only to disposable gateway_test after001–003, no EF/hosted migration. Store remains unregistered; no endpoints, OAuth, provider/transport/Codex calls or actual pilot.
+
+Inspected existing ControlledAiService reservations: retain its conservative worst-case and unknown-cost hold principle. Its EF global USD creative-generation quota is not reused as a tenant-specific gateway ledger. Existing financial/creative code stays unchanged.
+
+An explicitly seeded tenant control row holds an owner, finite synthetic integer capacity and permanent stop epoch. Unit is SYNTHETIC_TEST_UNIT, not USD; $300 planning ceiling grants no authority and is not configured here. Every recipient delivery claim locks control before message state and atomically reserves server policy units per lease attempt. New attempts reserve anew; timed-out/unknown reservations remain held. Active duplicate claims add nothing. Missing control, exhausted quota, nonpositive units or event insert failure prevent a lease. No external I/O inside locks.
+
+Explicit reconciliation grant plus reservation-owning actor is required. Unknown retains full hold; known actual within reservation transfers actual to spent and releases unused units exactly once. Changed settled retries are refused. Synthetic caller evidence is not a provider receipt. Actual above reserve fails closed and holds funds; no automated debt or bill reconciliation. Mutable quota/reservation state is local coordination metadata; immutable control events record each transition. Database owner can bypass trigger protections.
+
+Registered tenant owner plus separate CanStop grant permanently stops all gateway delivery claims/completions in that tenant; shared row lock serializes stop against reservation/claim/finish. Existing leases remain visibly LEASED with held reservations, but cannot finish or be reclaimed after stop. Tenant-wide stop is not a cross-tenant platform switch. No resume endpoint is implemented. Completed delivery history is preserved; stop cannot undo an already-sent external request. Reconciliation/cancellation/receipt remain available after stop for accounting and investigation. No external abort is asserted.
+
+Tests cover concurrent distinct-message quota contention, same-claim retries, unknown holds, scoped reconciliation and concurrent exact settlements, owner stop and tenant isolation, queued stop/claims and post-stop completion rejection, control audit rollback and immutability, missing quota and invalid units. These are local PostgreSQL fixtures, not real spend, workload OAuth, DB/process crash certification, transport delivery or independent Executive QA.
+
+Next: authenticated transport boundary and bounded local orchestration/evidence loop, then separately approved real agent pilot. Preserve financials, hosted readiness, campaign readiness and SEC001. Real pilot still needs isolated target, distinct approved identities, bounded tools/execution/cost and owner acceptance. No paid activation/provisioning, production, credential changes, merge or deploy authorized.
