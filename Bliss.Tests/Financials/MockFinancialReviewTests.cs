@@ -14,6 +14,13 @@ public sealed class MockFinancialReviewTests
   var subject="review-owner-"+Guid.NewGuid();var id=Guid.NewGuid();var q=new AuthorizedQuoteSnapshot(id,id,new(Guid.NewGuid(),FinancialModule.CreatorAcademy,Guid.NewGuid()),subject,Guid.NewGuid(),amount,"USD");var quotes=new PaymentOperationStore(data);await quotes.FreezeQuote(q);var user=new ClaimsPrincipal(new ClaimsIdentity([new Claim("sub",subject)],"fixture"));var op=await quotes.Prepare(user,id,"fixture");
   await using var seed=data.CreateCommand("INSERT INTO financials.payment_dispatch_attempts(id,operation_id,started_at,lease_until) VALUES(@a,@i,clock_timestamp()-interval '21 hours',clock_timestamp()-interval '20 hours')");seed.Parameters.AddWithValue("a",Guid.NewGuid());seed.Parameters.AddWithValue("i",op.Id);await seed.ExecuteNonQueryAsync();return(op,new(id,q.Scope,q.RecipientAccountId,subject));
  }
+ [FinancialPostgresFact]public async Task Exact_note_retry_lookup_is_actor_and_case_scoped_and_never_changes_financial_state()
+ {
+  await using var data=Data();var prepared=await Prepare(data);var store=new MockFinancialReviewStore(data);MockReviewAuthority[] authorities=[prepared.Authority];var snapshot=await store.Read(prepared.Op.Id,authorities);var key=Guid.NewGuid();
+  Assert.Null(await store.FindRetry(prepared.Op.Id,authorities,"retry-owner",key));var note=await store.AddNote(prepared.Op.Id,authorities,"retry-owner",snapshot.EvidenceFingerprint,"Immutable observation",key.ToString());
+  Assert.Equal(note,await store.FindRetry(prepared.Op.Id,authorities,"retry-owner",key));Assert.Null(await store.FindRetry(prepared.Op.Id,authorities,"different-actor",key));var other=await Prepare(data);Assert.Null(await store.FindRetry(other.Op.Id,[other.Authority],"retry-owner",key));
+  await Assert.ThrowsAsync<UnauthorizedAccessException>(()=>store.FindRetry(prepared.Op.Id,[other.Authority],"retry-owner",key));Assert.True((await store.Read(prepared.Op.Id,authorities)).RequiresReview);Assert.Null(await new MockPaymentCaptureStore(data).Captured(prepared.Op.Id));
+ }
  [FinancialPostgresFact]public async Task Note_history_pages_preserve_order_scope_and_case_bound_cursors()
  {
   await using var data=Data();var prepared=await Prepare(data);var store=new MockFinancialReviewStore(data);MockReviewAuthority[] authorities=[prepared.Authority];var evidence=await store.Read(prepared.Op.Id,authorities);
