@@ -7,6 +7,8 @@ const modules = ['BlissBot', 'CreatorAcademy', 'WeddingPlanner'];
 const boundString = (v, max) => typeof v === 'string' && v.length <= max;
 const noteValid = n => n && uuid.test(n.id) && uuid.test(n.operationId) && boundString(n.actorSubject,200) && fingerprint.test(n.evidenceFingerprint) && boundString(n.note,2000) && typeof n.recordedAt === 'string';
 export function validateResult(kind, value) {
+  if (kind === 'export') return value && boundString(value.artifactJson,2000000) && fingerprint.test(value.sha256);
+  if (kind === 'recovery') return value && fingerprint.test(value.actorKey);
   if (kind === 'queue') return value && Array.isArray(value.items) && value.items.length <= 100 && (value.nextAfter === null || uuid.test(value.nextAfter)) && value.items.every(i => uuid.test(i.operationId) && i.scope && uuid.test(i.scope.merchantId) && uuid.test(i.scope.campaignId) && (modules.includes(i.scope.module) || [0,1,2].includes(i.scope.module)) && i.currency === 'USD' && /^\d+$/.test(i.amountMinor) && typeof i.amountMinor === 'string' && boundString(i.reason,200));
   if (kind === 'case') return value && uuid.test(value.operationId) && typeof value.requiresReview === 'boolean' && fingerprint.test(value.evidenceFingerprint) && boundString(value.evidenceJson,1000000) && boundString(value.reason,200);
   if (kind === 'notes') return value && Array.isArray(value.items) && value.items.length <= 100 && value.items.every(noteValid) && (value.nextAfter === null || uuid.test(value.nextAfter));
@@ -37,10 +39,12 @@ export function createReviewApi(fetcher = fetch) {
       if (!session || typeof session.authenticationEnabled !== 'boolean' || typeof session.isAuthenticated !== 'boolean' || !Array.isArray(session.roles)) throw new ReviewError('Invalid session response.');
       return session;
     },
+    recoveryContext: () => request('/api/financials/mock-review/recovery-context','recovery'),
     queue: (module, after) => request('/api/financials/mock-review/queue?limit=25'+(module?'&module='+encodeURIComponent(module):'')+(after?'&after='+encodeURIComponent(after):''),'queue'),
     case: id => request('/api/financials/mock-review/cases/'+encodeURIComponent(id),'case'),
     notes: (id,after) => request('/api/financials/mock-review/cases/'+encodeURIComponent(id)+'/notes?limit=25'+(after?'&after='+encodeURIComponent(after):''),'notes'),
     retry: (id,key) => request('/api/financials/mock-review/cases/'+encodeURIComponent(id)+'/note-retries/'+encodeURIComponent(key),'retry'),
+    exportEvidence: (id,version) => request('/api/financials/mock-review/cases/'+encodeURIComponent(id)+'/evidence-export?evidenceFingerprint='+encodeURIComponent(version),'export'),
     history: id => request('/api/financials/mock-review/notes/'+encodeURIComponent(id),'history'),
     add: (operationId,evidenceFingerprint,note,idempotencyKey,csrfToken) => {
       if (!csrfToken || !uuid.test(operationId) || !fingerprint.test(evidenceFingerprint) || !note.trim() || note.length>2000 || !uuid.test(idempotencyKey)) throw new ReviewError('Fresh session, case and bounded note required.');
