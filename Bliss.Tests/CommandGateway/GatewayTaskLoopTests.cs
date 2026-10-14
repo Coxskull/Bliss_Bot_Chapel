@@ -110,5 +110,40 @@ public sealed class GatewayTaskLoopTests
   await using(var cmd=data.CreateCommand("UPDATE command_gateway.task_runs SET passed=2 WHERE tenant_id=@tenant")){cmd.Parameters.AddWithValue("tenant",f.Tenant);await cmd.ExecuteNonQueryAsync();}
   await Assert.ThrowsAsync<InvalidOperationException>(()=>reader.Read("AGM-LAUNCH-011",f.Correlation,f.Principal(true),f.TaskPolicy(true)));
  }
+ [GatewayPostgresFact]public async Task Mission_presentation_is_scoped_encoded_and_has_no_approval_authority()
+ {
+  await using var data=Data();using var f=await Prepare(data);await ToEvidence(data,f);await f.Step(data,GatewayMessageType.ReviewVerdict,true,Identity("\"verdict\":\"PASS\""));await f.Step(data,GatewayMessageType.ApprovalRequest,true,Identity());
+  var packet=await new LocalGatewayMissionReview(data).Read("AGM-LAUNCH-011",f.Correlation,f.Principal(true),f.TaskPolicy(true));
+  var html=GatewayMissionPresentation.Render(packet,f.Principal(true),f.TaskPolicy(true),"AGM-LAUNCH-011",f.Correlation);
+  Assert.Contains("LOCAL MOCK — NOT OWNER APPROVAL",html);Assert.Contains("Owner review requested in ledger; not delivered or accepted.",html);
+  Assert.Contains("Approval granted: false",html);Assert.Contains("Execution authorized: false",html);Assert.Contains("Delivered to owner: false",html);
+  Assert.Contains(Commit,html);Assert.Contains(Evidence,html);Assert.Contains("Content-Security-Policy",html);
+  Assert.DoesNotContain("<script",html,StringComparison.OrdinalIgnoreCase);Assert.DoesNotContain("payload",html,StringComparison.OrdinalIgnoreCase);
+  Assert.Equal(8,await Turns(data,f));
+ }
+ [GatewayPostgresFact]public async Task Mission_presentation_rejects_tamper_wrong_scope_and_event_attribution()
+ {
+  await using var data=Data();using var f=await Prepare(data);await ToEvidence(data,f);await f.Step(data,GatewayMessageType.ReviewVerdict,true,Identity("\"verdict\":\"PASS\""));await f.Step(data,GatewayMessageType.ApprovalRequest,true,Identity());
+  var packet=await new LocalGatewayMissionReview(data).Read("AGM-LAUNCH-011",f.Correlation,f.Principal(true),f.TaskPolicy(true));
+  Assert.Throws<ArgumentException>(()=>GatewayMissionPresentation.Render(packet with{ArtifactJson=packet.ArtifactJson+" "},f.Principal(true),f.TaskPolicy(true),"AGM-LAUNCH-011",f.Correlation));
+  Assert.Throws<UnauthorizedAccessException>(()=>GatewayMissionPresentation.Render(packet,f.Principal(true),f.TaskPolicy(true),"OTHER",f.Correlation));
+  Assert.Throws<UnauthorizedAccessException>(()=>GatewayMissionPresentation.Render(packet,f.Principal(true),f.TaskPolicy(true),"AGM-LAUNCH-011",Guid.NewGuid()));
+  Assert.Throws<UnauthorizedAccessException>(()=>GatewayMissionPresentation.Render(packet,f.Principal(true) with{AgentId=Guid.NewGuid()},f.TaskPolicy(true),"AGM-LAUNCH-011",f.Correlation));
+  using var document=JsonDocument.Parse(packet.ArtifactJson);var status=document.RootElement.GetProperty("status").Deserialize<GatewayMissionStatus>()!;
+  var events=status.Events.ToArray();events[0]=events[0] with{ActorAgentId=f.Engineering};var changed=status with{Events=events};
+  var artifact=JsonSerializer.Serialize(new{schema="AGM-MISSION-STATUS/1",mode="LOCAL_MOCK",status=changed,independentlyVerified=false,approvalGranted=false,executionAuthorized=false,deliveredToOwner=false});
+  var altered=new GatewayMissionPacket(changed,artifact,Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(artifact))));
+  Assert.Throws<ArgumentException>(()=>GatewayMissionPresentation.Render(altered,f.Principal(true),f.TaskPolicy(true),"AGM-LAUNCH-011",f.Correlation));
+  Assert.Equal(8,await Turns(data,f));
+ }
+ [GatewayPostgresFact]public async Task Mission_presentation_marks_stopped_history_without_ready_request()
+ {
+  await using var data=Data();using var f=await Prepare(data);await ToEvidence(data,f);await f.Step(data,GatewayMessageType.ReviewVerdict,true,Identity("\"verdict\":\"PASS\""));await f.Step(data,GatewayMessageType.ApprovalRequest,true,Identity());
+  Assert.True(await new LocalGatewayBudget(data).Stop(f.Principal(true),new(true,f.Tenant,f.Executive,true,false)));
+  var packet=await new LocalGatewayMissionReview(data).Read("AGM-LAUNCH-011",f.Correlation,f.Principal(true),f.TaskPolicy(true));
+  var html=GatewayMissionPresentation.Render(packet,f.Principal(true),f.TaskPolicy(true),"AGM-LAUNCH-011",f.Correlation);
+  Assert.Contains("Tenant stopped: True",html);Assert.Contains("No ready owner-review request in this snapshot.",html);
+  Assert.DoesNotContain("Owner review requested in ledger",html);
+ }
  [Fact]public void Task_store_rejects_hosted_connection(){using var data=NpgsqlDataSource.Create("Host=database.example.test;Database=gateway_test");Assert.Throws<InvalidOperationException>(()=>new LocalGatewayTaskLoop(data));Assert.Throws<InvalidOperationException>(()=>new LocalGatewayMissionReview(data));using var wrong=NpgsqlDataSource.Create("Host=127.0.0.1;Database=postgres");Assert.Throws<InvalidOperationException>(()=>new LocalGatewayMissionReview(wrong));}
 }
