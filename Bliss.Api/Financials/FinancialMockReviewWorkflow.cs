@@ -24,6 +24,8 @@ public sealed class FinancialMockReviewWorkflow(FinancialPreparationOptions opti
  }
  public async Task<MockReviewCase> Read(ClaimsPrincipal user,Guid operation,CancellationToken ct)
  {var context=Context(user);await using var data=context.Data;return await new MockFinancialReviewStore(data).Read(operation,context.Authorities,ct);}
+ public async Task<MockReviewNotesPage> Notes(ClaimsPrincipal user,Guid operation,int limit,Guid? after,CancellationToken ct)
+ {var context=Context(user);await using var data=context.Data;return await new MockFinancialReviewStore(data).Notes(operation,context.Authorities,limit,after,ct);}
  public async Task<MockReviewNoteEvidence> NoteEvidence(ClaimsPrincipal user,Guid note,CancellationToken ct)
  {var context=Context(user);await using var data=context.Data;return await new MockFinancialReviewStore(data).ReadNote(note,context.Authorities,ct);}
  public async Task<MockReviewNote> AddNote(ClaimsPrincipal user,Guid operation,string fingerprint,string note,string key,CancellationToken ct)

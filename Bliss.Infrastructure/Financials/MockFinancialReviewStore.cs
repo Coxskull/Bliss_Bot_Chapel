@@ -12,6 +12,7 @@ public sealed record MockReviewQueueItem(Guid OperationId,FinancialScope Scope,s
 public sealed record MockReviewPage(IReadOnlyList<MockReviewQueueItem> Items,[property:JsonIgnore(Condition=JsonIgnoreCondition.Never)]Guid? NextAfter);
 public sealed record MockReviewNote(Guid Id,Guid OperationId,string ActorSubject,string EvidenceFingerprint,string Note,DateTimeOffset RecordedAt);
 public sealed record MockReviewCase(Guid OperationId,bool RequiresReview,string Reason,string EvidenceFingerprint,string EvidenceJson,IReadOnlyList<MockReviewNote> Notes,bool NotesTruncated=false);
+public sealed record MockReviewNotesPage(IReadOnlyList<MockReviewNote> Items,[property:JsonIgnore(Condition=JsonIgnoreCondition.Never)]Guid? NextAfter);
 public sealed record MockReviewNoteEvidence(MockReviewNote Note,string EvidenceJson);
 
 // All authorities/actors are resolved by the authenticated application adapter, never payment DTOs.
@@ -56,6 +57,22 @@ public sealed class MockFinancialReviewStore(NpgsqlDataSource data)
   var evidence=await Evidence(connection,tx,operation,authorities,ct);var notes=new List<MockReviewNote>();
   await using(var command=new NpgsqlCommand("SELECT id,operation_id,actor_subject,evidence_fingerprint,note_text,recorded_at FROM financials.mock_review_notes WHERE operation_id=@i ORDER BY recorded_at,id LIMIT 201",connection,tx)){command.Parameters.AddWithValue("i",operation);await using var r=await command.ExecuteReaderAsync(ct);while(await r.ReadAsync(ct))notes.Add(Note(r));}
   var truncated=notes.Count>200;if(truncated)notes.RemoveAt(notes.Count-1);await tx.CommitAsync(ct);return Case(operation,evidence,notes) with{NotesTruncated=truncated};
+ }
+ public async Task<MockReviewNotesPage> Notes(Guid operation,IReadOnlyList<MockReviewAuthority> authorities,int limit,Guid? after,CancellationToken ct=default)
+ {
+  if(limit is <1 or >100)throw new ArgumentException("Bounded note page required.");
+  await using var connection=await data.OpenConnectionAsync(ct);await using var tx=await connection.BeginTransactionAsync(IsolationLevel.RepeatableRead,ct);
+  await Evidence(connection,tx,operation,authorities,ct);
+  DateTime? cursorTime=null;
+  if(after is not null)
+  {
+   await using var cursor=new NpgsqlCommand("SELECT recorded_at FROM financials.mock_review_notes WHERE id=@id AND operation_id=@op",connection,tx);cursor.Parameters.AddWithValue("id",after.Value);cursor.Parameters.AddWithValue("op",operation);
+   cursorTime=await cursor.ExecuteScalarAsync(ct) as DateTime? ?? throw new ArgumentException("Cursor does not belong to this case.");
+  }
+  await using var command=new NpgsqlCommand("SELECT id,operation_id,actor_subject,evidence_fingerprint,note_text,recorded_at FROM financials.mock_review_notes WHERE operation_id=@op AND (@after IS NULL OR (recorded_at,id)>(@time,@after)) ORDER BY recorded_at,id LIMIT @count",connection,tx);
+  command.Parameters.AddWithValue("op",operation);command.Parameters.AddWithValue("after",NpgsqlTypes.NpgsqlDbType.Uuid,(object?)after??DBNull.Value);command.Parameters.AddWithValue("time",NpgsqlTypes.NpgsqlDbType.TimestampTz,(object?)cursorTime??DBNull.Value);command.Parameters.AddWithValue("count",limit+1);
+  var notes=new List<MockReviewNote>();await using(var reader=await command.ExecuteReaderAsync(ct)){while(await reader.ReadAsync(ct))notes.Add(Note(reader));}
+  var more=notes.Count>limit;if(more)notes.RemoveAt(notes.Count-1);await tx.CommitAsync(ct);return new(notes,more?notes[^1].Id:null);
  }
  public async Task<MockReviewNoteEvidence> ReadNote(Guid id,IReadOnlyList<MockReviewAuthority> authorities,CancellationToken ct=default)
  {

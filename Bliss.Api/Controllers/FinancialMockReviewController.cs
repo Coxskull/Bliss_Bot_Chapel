@@ -14,6 +14,7 @@ public sealed class FinancialMockReviewController(FinancialMockReviewWorkflow wo
 {
  [HttpGet("queue")]public Task<ActionResult> Queue(string? module=null,int limit=25,Guid? after=null,CancellationToken ct=default)=>Execute(async()=>await workflow.Queue(User,module,limit,after,ct));
  [HttpGet("cases/{operationId:guid}")]public Task<ActionResult> Case(Guid operationId,CancellationToken ct)=>Execute(async()=>await workflow.Read(User,operationId,ct));
+ [HttpGet("cases/{operationId:guid}/notes")]public Task<ActionResult> Notes(Guid operationId,int limit=25,Guid? after=null,CancellationToken ct=default)=>Execute(async()=>await workflow.Notes(User,operationId,limit,after,ct));
  [HttpGet("notes/{noteId:guid}")]public Task<ActionResult> Note(Guid noteId,CancellationToken ct)=>Execute(async()=>await workflow.NoteEvidence(User,noteId,ct));
  [HttpPost("notes")][EnableRateLimiting(BlissRateLimitPolicies.Writes)]public Task<ActionResult> AddNote(AddMockReviewNote request,CancellationToken ct)=>Execute(async()=>await workflow.AddNote(User,request.OperationId,request.EvidenceFingerprint,request.Note,request.IdempotencyKey,ct));
  private async Task<ActionResult> Execute(Func<Task<object>> run)
