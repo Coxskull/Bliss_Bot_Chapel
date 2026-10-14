@@ -1,0 +1,9 @@
+# AGM-LAUNCH-011 — local contract preparation milestone
+
+SUB-001 feasibility/design is accepted in Operations. This milestone implements authorized local protocol/security preparation, not SUB-002 genuine AI pilot acceptance.
+
+Domain-only AGM-A2A/1 envelope validator binds submitted tenant/sender to a trusted authenticated principal and server policy, registered recipient/type/policy version, LOCAL_MOCK environment, bounded lifetime/IDs/text/JSON. Canonical payload sorting rejects duplicate keys, oversized structures, fractional numbers and reserved execution/permission fields; whole-envelope SHA256 binds replay content. Prompt-injection text remains data. Owner decisions cannot be granted by agent messages. No API, production registration, model/provider adapter, execution, owner approval, outbox dispatcher or autonomous tool call is added.
+
+`001-local-inbox.sql` is a local draft artifact only, not an EF/hosted migration. It defines tenant-bound agent/message references, immutable accepted messages and sender-scoped retry uniqueness. It is not yet an implemented inbox/outbox processing service. Hash/canonical content validation belongs to the adapter; SQL alone does not certify message authenticity. Full causation/task/tenant graph constraints, least-privilege roles, durable leases, replay response handling, audit/task/outbox atomicity, budgets and cancellation remain next work.
+
+Existing ControlledAi patterns are reused as reference; gateway does not inherit creative-worker privileges. Actual API-agent/Codex pilot requires distinct approved workload identities, isolated target, bounded tools, independently reviewed execution and explicit spend authorization. No new paid calls, subscriptions, provisioned services, production access, credentials changed, merge or deployment. $300/month is planning only. Existing financial/hosted/campaign/SEC001 tasks remain active.
