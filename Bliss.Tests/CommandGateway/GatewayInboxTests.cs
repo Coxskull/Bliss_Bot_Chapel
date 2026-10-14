@@ -7,6 +7,7 @@ public sealed class GatewayPostgresFactAttribute:FactAttribute{public GatewayPos
 [Collection("Gateway inbox isolation")]
 public sealed class GatewayInboxTests
 {
+ private sealed class FixedClock(DateTimeOffset now):TimeProvider{public override DateTimeOffset GetUtcNow()=>now;}
  private static NpgsqlDataSource Data()=>NpgsqlDataSource.Create(Environment.GetEnvironmentVariable("BLISS_GATEWAY_TEST_POSTGRES")!);
  private static async Task<(GatewayEnvelope Envelope,GatewayPrincipal Principal,GatewayPolicy Policy)> Fixture(NpgsqlDataSource data)
  {
@@ -35,8 +36,8 @@ public sealed class GatewayInboxTests
  [GatewayPostgresFact]public async Task Accepted_audit_and_outbox_are_immutable_and_expired_replay_is_refused()
  {
   await using var data=Data();var f=await Fixture(data);await new LocalGatewayInbox(data).Accept(f.Envelope,f.Principal,f.Policy);
-  foreach(var table in new[]{"acceptance_audit","outbox_intents"})foreach(var verb in new[]{"DELETE FROM ","TRUNCATE "}){await using var mutate=data.CreateCommand(verb+"command_gateway."+table);await Assert.ThrowsAsync<PostgresException>(async()=>await mutate.ExecuteNonQueryAsync());}
-  await Assert.ThrowsAsync<ArgumentException>(()=>new LocalGatewayInbox(data).Accept(f.Envelope with{ExpiresAt=DateTimeOffset.UtcNow.AddSeconds(-1)},f.Principal,f.Policy));
+  foreach(var table in new[]{"acceptance_audit","outbox_intents"})foreach(var statement in new[]{"DELETE FROM command_gateway."+table,"TRUNCATE command_gateway."+table,"UPDATE command_gateway."+table+" SET tenant_id=tenant_id"}){await using var mutate=data.CreateCommand(statement);await Assert.ThrowsAsync<PostgresException>(async()=>await mutate.ExecuteNonQueryAsync());}
+  await Assert.ThrowsAsync<ArgumentException>(()=>new LocalGatewayInbox(data,new FixedClock(f.Envelope.ExpiresAt.AddSeconds(1))).Accept(f.Envelope,f.Principal,f.Policy));
  }
  [Fact]public void Hosted_or_wrong_database_store_is_refused(){foreach(var connection in new[]{"Host=database.example.test;Database=gateway_test","Host=127.0.0.1;Database=production"}){using var data=NpgsqlDataSource.Create(connection);Assert.Throws<InvalidOperationException>(()=>new LocalGatewayInbox(data));}}
 }
