@@ -26,6 +26,13 @@ public sealed class FinancialMockReviewWorkflow(FinancialPreparationOptions opti
  }
  public async Task<MockReviewCase> Read(ClaimsPrincipal user,Guid operation,CancellationToken ct)
  {var context=Context(user);await using var data=context.Data;return await new MockFinancialReviewStore(data).Read(operation,context.Authorities,ct);}
+ public async Task<object> ExportEvidence(ClaimsPrincipal user,Guid operation,string version,CancellationToken ct)
+ {
+  if(version is null||version.Length!=64||version.Any(c=>!(c>='0'&&c<='9'||c>='A'&&c<='F')))throw new ArgumentException("Bounded evidence version required.");
+  var snapshot=await Read(user,operation,ct);if(snapshot.EvidenceFingerprint!=version)throw new InvalidOperationException("Evidence changed; refresh case before export.");
+  var artifact=System.Text.Json.JsonSerializer.Serialize(new{schema="BLISS-MOCK-CASE-EVIDENCE/1",mode="MOCK",stripeAccountStatus=FinancialAccountPolicy.StripeAccountStatus,paymentCompleted=false,approvalGranted=false,holdReleased=false,operationId=snapshot.OperationId,evidenceFingerprint=snapshot.EvidenceFingerprint,evidenceJson=snapshot.EvidenceJson,includesNotes=false});
+  return new{artifactJson=artifact,sha256=Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(artifact)))};
+ }
  public async Task<MockReviewNotesPage> Notes(ClaimsPrincipal user,Guid operation,int limit,Guid? after,CancellationToken ct)
  {var context=Context(user);await using var data=context.Data;return await new MockFinancialReviewStore(data).Notes(operation,context.Authorities,limit,after,ct);}
  public async Task<MockReviewNoteEvidence> NoteEvidence(ClaimsPrincipal user,Guid note,CancellationToken ct)
