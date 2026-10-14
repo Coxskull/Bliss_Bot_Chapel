@@ -51,10 +51,14 @@ public sealed class CampaignAuthorityPostgresTests
             Assert.Equal(3, await db.Creators.CountAsync(x => x.AuthorityStatus == RecordAuthorityStatuses.SyntheticFixture));
             Assert.Equal(5, await db.AdvertiserOpportunities.CountAsync(x => x.AuthorityStatus == RecordAuthorityStatuses.SyntheticFixture));
             Assert.Equal(2, await db.Campaigns.CountAsync(x => x.AuthorityStatus == RecordAuthorityStatuses.SyntheticFixture));
-            foreach (var table in new[] { "Creators", "AdvertiserOpportunities", "Campaigns" })
+            foreach (var statement in new[]
             {
-                var error = await Assert.ThrowsAsync<PostgresException>(() => db.Database.ExecuteSqlRawAsync(
-                    $"UPDATE \"{table}\" SET \"AuthorityStatus\" = 'APPROVED_BY_REQUEST'"));
+                "UPDATE \"Creators\" SET \"AuthorityStatus\" = 'APPROVED_BY_REQUEST'",
+                "UPDATE \"AdvertiserOpportunities\" SET \"AuthorityStatus\" = 'APPROVED_BY_REQUEST'",
+                "UPDATE \"Campaigns\" SET \"AuthorityStatus\" = 'APPROVED_BY_REQUEST'"
+            })
+            {
+                var error = await Assert.ThrowsAsync<PostgresException>(() => db.Database.ExecuteSqlRawAsync(statement));
                 Assert.Equal(PostgresErrorCodes.CheckViolation, error.SqlState);
             }
             var result = await new CampaignPlacementService(db).BindAsync(new("POSTGRES_FIXTURE", "fixture-plan", "Fixture operator",
