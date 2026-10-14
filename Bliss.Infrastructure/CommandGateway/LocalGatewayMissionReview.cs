@@ -10,7 +10,7 @@ public sealed record GatewayMissionEvent(Guid MessageId, Guid ActorAgentId, Gate
 public sealed record GatewayOwnerReviewRequest(string Schema, string Mode, string TaskId, Guid CorrelationId,
  Guid RequestMessageId, string CommitHash, string EvidenceHash, int ReportedPassed, int ReportedFailed,
  bool ApprovalGranted = false, bool ExecutionAuthorized = false, bool DeliveredToOwner = false);
-public sealed record GatewayMissionStatus(string TaskId, Guid CorrelationId, GatewayTaskSnapshot Snapshot,
+public sealed record GatewayMissionStatus(Guid TenantId, string TaskId, Guid CorrelationId, GatewayTaskSnapshot Snapshot,
  bool TenantStopped, IReadOnlyList<GatewayMissionEvent> Events, GatewayOwnerReviewRequest? OwnerReviewRequest);
 public sealed record GatewayMissionPacket(GatewayMissionStatus Status, string ArtifactJson, string Sha256);
 
@@ -70,7 +70,7 @@ public sealed class LocalGatewayMissionReview
    state.CommitHash is string commit && state.EvidenceHash is string evidence)
    request = new("AGM-OWNER-REVIEW-REQUEST/1", "LOCAL_MOCK", taskId, correlationId, message, commit, evidence,
     state.Passed.Value, state.Failed.Value);
-  var status = new GatewayMissionStatus(taskId, correlationId, state, stopped, events.AsReadOnly(), request);
+  var status = new GatewayMissionStatus(principal.TenantId, taskId, correlationId, state, stopped, events.AsReadOnly(), request);
   var artifact = JsonSerializer.Serialize(new { schema = "AGM-MISSION-STATUS/1", mode = "LOCAL_MOCK", status,
    independentlyVerified = false, approvalGranted = false, executionAuthorized = false, deliveredToOwner = false });
   await tx.CommitAsync(ct);
