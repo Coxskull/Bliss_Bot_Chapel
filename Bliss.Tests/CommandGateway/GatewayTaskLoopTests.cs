@@ -119,6 +119,7 @@ public sealed class GatewayTaskLoopTests
   Assert.Contains("Approval granted: false",html);Assert.Contains("Execution authorized: false",html);Assert.Contains("Delivered to owner: false",html);
   Assert.Contains(Commit,html);Assert.Contains(Evidence,html);Assert.Contains("Content-Security-Policy",html);
   Assert.DoesNotContain("<script",html,StringComparison.OrdinalIgnoreCase);Assert.DoesNotContain("payload",html,StringComparison.OrdinalIgnoreCase);
+  if(Environment.GetEnvironmentVariable("AGM_MISSION_HTML_PATH") is string path)await File.WriteAllTextAsync(path,html);
   Assert.Equal(8,await Turns(data,f));
  }
  [GatewayPostgresFact]public async Task Mission_presentation_rejects_tamper_wrong_scope_and_event_attribution()
