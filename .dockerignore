@@ -11,3 +11,10 @@
 **/App_Data
 **/*.dump
 docs/architecture/evidence
+**/node_modules
+bliss-frontend/dist
+frontend/operations/financial-review
+**/.env.*
+**/.secrets
+work
+output
