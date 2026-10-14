@@ -1,0 +1,11 @@
+# AGM-LAUNCH-005-GAP-001 — local durable lineage proposals
+
+This development increment stores selected PR191 synthetic lineage reports as append-only `PENDING_REVIEW` proposals. It does not approve evidence or grant creator consent, advertiser authority, creative rights, payments or campaign activation.
+
+`LocalLineageProposalStore` is unregistered and has no API route. A trusted advertiser-scoped evidence-read grant and a separate proposal-write grant are required. The caller supplies explicit intake, formation and placement audit IDs, a canonical UUIDv4 evidence ID, a request UUID and the SHA256 of a previously inspected report. A new proposal rebuilds the selected report and rejects a stale hash. Parameterized SQL and the unique advertiser/actor/request constraint serialize concurrent retries; exact replays return the frozen original report and changed intent is refused.
+
+The explicit `FixtureSchemaSql` is only for a disposable loopback PostgreSQL database named `bliss_ci` or `campaign_test`. There is no production migration, schema installer, dependency injection registration or hosted access. PostgreSQL UPDATE, DELETE and TRUNCATE triggers refuse mutations. Database owners/superusers can still alter schema or disable triggers; this is application-level append-only storage, not a cryptographic signature or privileged-administrator tamper proofing.
+
+The frozen report proves correlation at capture time only. Source records remain mutable and may change between the repeatable-read snapshot and insertion. Replay deliberately returns historical evidence even after source changes; it is never current eligibility or approval. A revision requires a new request/evidence ID and a freshly inspected hash. The module validates evidence-ID syntax, not global Drive registry uniqueness. The evidence pipeline performs registry checks separately.
+
+Acceptance tests use eight independent concurrent PostgreSQL contexts, permission and advertiser denial, stale hashes, changed-intent conflicts, historical replay, append-only mutation refusal and a distinct revision. Creator inventory consent, advertiser authority, creative rights and Executive review remain separate open work. No production, paid-provider or campaign-publication actions are involved.
