@@ -16,6 +16,8 @@ public sealed class FinancialMockReviewWorkflow(FinancialPreparationOptions opti
   if(authorities.Length is <1 or >128)throw new UnauthorizedAccessException("Explicit registered review scopes required.");
   var c=new NpgsqlConnectionStringBuilder(options.FixtureConnection);if(c.Host!="127.0.0.1"||c.Database!="financial_test")throw new InvalidOperationException("Only explicit loopback review fixture is supported.");return(NpgsqlDataSource.Create(c.ConnectionString),authorities,subject);
  }
+ public async Task<object> RecoveryContext(ClaimsPrincipal user)
+ {var context=Context(user);await using var data=context.Data;return new{actorKey=Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("financial-review-recovery-v1\0"+context.Subject)))};}
  public async Task<MockReviewPage> Queue(ClaimsPrincipal user,string? module,int limit,Guid? after,CancellationToken ct)
  {
   var context=Context(user);await using var data=context.Data;FinancialModule? selected=null;
