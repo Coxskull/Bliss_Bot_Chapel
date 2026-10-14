@@ -13,8 +13,8 @@ CREATE TABLE command_gateway.task_runs(
 );
 CREATE TABLE command_gateway.task_events(
  message_id uuid PRIMARY KEY, tenant_id uuid NOT NULL, task_id varchar(80) NOT NULL, correlation_id uuid NOT NULL,
- actor_agent_id uuid NOT NULL, turn integer NOT NULL CHECK(turn BETWEEN 1 AND 8), stage text NOT NULL,
- commit_hash text, evidence_hash text, passed integer, failed integer, verdict text,
+ actor_agent_id uuid NOT NULL, turn integer NOT NULL CHECK(turn BETWEEN 1 AND 8), stage text NOT NULL CHECK(stage IN ('DETECTED','ASSIGNED','CORRECTION_PROPOSED','TEST_REQUESTED','TEST_REPORTED','EVIDENCE_SUBMITTED','REVIEWED','APPROVAL_REQUESTED')),
+ commit_hash text CHECK(commit_hash ~ '^[0-9a-f]{40}$'), evidence_hash text CHECK(evidence_hash ~ '^[0-9A-F]{64}$'), passed integer CHECK(passed BETWEEN 0 AND 10000), failed integer CHECK(failed BETWEEN 0 AND 10000), verdict text CHECK(verdict IN ('PASS','FAIL')),
  recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  FOREIGN KEY(tenant_id,task_id,correlation_id) REFERENCES command_gateway.task_runs(tenant_id,task_id,correlation_id),
  FOREIGN KEY(tenant_id,message_id) REFERENCES command_gateway.messages(tenant_id,message_id),
