@@ -78,6 +78,13 @@ public sealed class MockFinancialReviewStore(NpgsqlDataSource data)
  {
   await using var command=data.CreateCommand();var scope=Scope(command,authorities);command.CommandText=$"SELECT n.id,n.operation_id,n.actor_subject,n.evidence_fingerprint,n.note_text,n.recorded_at,n.evidence_json::text FROM financials.mock_review_notes n JOIN financials.payment_operations o ON o.id=n.operation_id JOIN financials.authorized_quotes q ON q.id=o.quote_id WHERE n.id=@i AND {scope}";command.Parameters.AddWithValue("i",id);await using var r=await command.ExecuteReaderAsync(ct);if(!await r.ReadAsync(ct))throw new UnauthorizedAccessException("Note outside registered authority.");return new(Note(r),r.GetString(6));
  }
+ public async Task<MockReviewNote?> FindRetry(Guid operation,IReadOnlyList<MockReviewAuthority> authorities,string actor,Guid retryKey,CancellationToken ct=default)
+ {
+  await using var connection=await data.OpenConnectionAsync(ct);await using var tx=await connection.BeginTransactionAsync(IsolationLevel.RepeatableRead,ct);await Evidence(connection,tx,operation,authorities,ct);
+  await using var command=new NpgsqlCommand("SELECT id,operation_id,actor_subject,evidence_fingerprint,note_text,recorded_at FROM financials.mock_review_notes WHERE operation_id=@i AND actor_subject=@actor AND retry_key=@key",connection,tx);
+  command.Parameters.AddWithValue("i",operation);command.Parameters.AddWithValue("actor",actor);command.Parameters.AddWithValue("key",retryKey.ToString());MockReviewNote? note=null;
+  await using(var r=await command.ExecuteReaderAsync(ct)){if(await r.ReadAsync(ct))note=Note(r);}await tx.CommitAsync(ct);return note;
+ }
  public async Task<MockReviewNote> AddNote(Guid operation,IReadOnlyList<MockReviewAuthority> authorities,string actor,string version,string note,string retryKey,CancellationToken ct=default)
  {
   if(string.IsNullOrWhiteSpace(actor)||actor.Length>200||actor.Any(char.IsControl)||string.IsNullOrWhiteSpace(version)||version.Length!=64||version.Any(x=>!Uri.IsHexDigit(x))||string.IsNullOrWhiteSpace(note)||note.Length>2000||note.Any(x=>char.IsControl(x)&&x is not ('\n' or '\r' or '\t'))||string.IsNullOrWhiteSpace(retryKey)||retryKey.Length>120||retryKey.Any(char.IsControl))throw new ArgumentException("Bounded versioned annotation required.");

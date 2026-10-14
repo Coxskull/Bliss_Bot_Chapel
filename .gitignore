@@ -492,3 +492,5 @@ $RECYCLE.BIN/
 # Separate local Bliss frontend build artifacts
 bliss-frontend/node_modules/
 bliss-frontend/dist/
+
+frontend/operations/financial-review/
