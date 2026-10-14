@@ -330,6 +330,13 @@ namespace Bliss.Infrastructure.Migrations
                     b.Property<Guid>("AdvertiserProgramId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AuthorityStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("UNVERIFIED");
+
                     b.Property<string>("Category")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
@@ -382,11 +389,16 @@ namespace Bliss.Infrastructure.Migrations
 
                     b.HasIndex("AdvertiserProgramId");
 
+                    b.HasIndex("AuthorityStatus");
+
                     b.HasIndex("ExternalOpportunityId");
 
                     b.HasIndex("Status");
 
-                    b.ToTable("AdvertiserOpportunities", (string)null);
+                    b.ToTable("AdvertiserOpportunities", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_AdvertiserOpportunities_AuthorityStatus", "\"AuthorityStatus\" IN ('UNVERIFIED', 'VERIFIED', 'SYNTHETIC_FIXTURE')");
+                        });
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.AdvertiserProgram", b =>
@@ -588,6 +600,13 @@ namespace Bliss.Infrastructure.Migrations
                     b.Property<Guid?>("AdvertiserOpportunityId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AuthorityStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("UNVERIFIED");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -607,9 +626,14 @@ namespace Bliss.Infrastructure.Migrations
 
                     b.HasIndex("AdvertiserOpportunityId");
 
+                    b.HasIndex("AuthorityStatus");
+
                     b.HasIndex("Status");
 
-                    b.ToTable("Campaigns", (string)null);
+                    b.ToTable("Campaigns", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Campaigns_AuthorityStatus", "\"AuthorityStatus\" IN ('UNVERIFIED', 'VERIFIED', 'SYNTHETIC_FIXTURE')");
+                        });
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.CampaignLearningProposal", b =>
@@ -2312,6 +2336,13 @@ namespace Bliss.Infrastructure.Migrations
                     b.Property<int?>("AudienceSize")
                         .HasColumnType("integer");
 
+                    b.Property<string>("AuthorityStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("UNVERIFIED");
+
                     b.Property<string>("CountryCode")
                         .HasMaxLength(8)
                         .HasColumnType("character varying(8)");
@@ -2353,9 +2384,14 @@ namespace Bliss.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AuthorityStatus");
+
                     b.HasIndex("Name");
 
-                    b.ToTable("Creators", (string)null);
+                    b.ToTable("Creators", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Creators_AuthorityStatus", "\"AuthorityStatus\" IN ('UNVERIFIED', 'VERIFIED', 'SYNTHETIC_FIXTURE')");
+                        });
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.CreatorAudienceSnapshot", b =>

@@ -51,7 +51,7 @@ public sealed class CreativeHandoffService(BlissDbContext db, AcademyProductionS
     {
         if (request.CampaignId == Guid.Empty) throw new InvalidOperationException("A stable campaign request UUID is required.");
         var name = Text(request.Name, 200);
-        var match = await db.BlissMatches.AsNoTracking().SingleOrDefaultAsync(x => x.Id == request.BlissMatchId
+        var match = await db.BlissMatches.AsNoTracking().Include(x => x.AdvertiserOpportunity).SingleOrDefaultAsync(x => x.Id == request.BlissMatchId
             && x.Status == EntityStatuses.Approved && x.AdvertiserOpportunity.Status == EntityStatuses.Active
             && x.AdvertiserOpportunity.AdvertiserProgram.AdvertiserId == workspace.AdvertiserId, ct)
             ?? throw new WeddingPlannerNotFoundException("This advertiser's approved match was not found.");
@@ -62,7 +62,7 @@ public sealed class CreativeHandoffService(BlissDbContext db, AcademyProductionS
             if (existing.Name != name || existing.Status != EntityStatuses.Draft) throw new WeddingPlannerConflictException("This campaign UUID belongs to different planning intent.");
             return (existing, true);
         }
-        var campaign = new Campaign { Id = request.CampaignId, AdvertiserOpportunityId = match.AdvertiserOpportunityId, Name = name, Status = EntityStatuses.Draft, CreatedAt = DateTime.UtcNow };
+        var campaign = new Campaign { Id = request.CampaignId, AdvertiserOpportunityId = match.AdvertiserOpportunityId, Name = name, Status = EntityStatuses.Draft, AuthorityStatus = match.AdvertiserOpportunity.AuthorityStatus, CreatedAt = DateTime.UtcNow };
         db.Add(campaign); db.Add(Audit(workspace, "HANDOFF_CAMPAIGN_DRAFT_CREATED", label, campaign.Id));
         try { await db.SaveChangesAsync(ct); }
         catch (Exception ex) when (RetryConflict(ex)) { throw new WeddingPlannerConflictException("Campaign creation raced another request. Retry the same UUID."); }

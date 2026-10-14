@@ -39,7 +39,8 @@ public sealed class EconomicsPhase7WorkflowTests
         while (current is not null)
         {
             if (Directory.Exists(Path.Combine(current.FullName, ".git"))
-                || File.Exists(Path.Combine(current.FullName, "Bliss.sln")))
+                || File.Exists(Path.Combine(current.FullName, ".git"))
+                || File.Exists(Path.Combine(current.FullName, "BlissBotChapel.sln")))
             {
                 return current.FullName;
             }
