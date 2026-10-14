@@ -7,6 +7,7 @@ if [[ -z "$package_output" || "$package_output" != /* || -e "$package_output" ]]
   echo "Pass a new absolute output directory; existing paths are refused." >&2
   exit 2
 fi
+[[ -z "$(git -C "$repo_root" status --porcelain)" ]] || { echo "Package refused: source must be a clean committed checkout." >&2; exit 2; }
 node -e 'const [major,minor]=process.versions.node.split(".").map(Number);if(major<22||(major===22&&minor<12))process.exit(1)' || { echo "Node22.12+ required; Node24 recommended." >&2; exit 2; }
 [[ "$(dotnet --version)" == 8.* ]] || { echo ".NET8 SDK required." >&2; exit 2; }
 cd "$repo_root/bliss-frontend"
