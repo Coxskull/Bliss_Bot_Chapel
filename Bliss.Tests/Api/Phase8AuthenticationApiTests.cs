@@ -178,6 +178,14 @@ public sealed class TestAuthenticationHandler(
         {
             claims.Add(new Claim("advertiser_id", advertiserId.ToString()));
         }
+        // Simulate verified identity-provider claims; never enabled outside
+        // this test-only authentication handler.
+        if (Request.Headers.TryGetValue("X-Test-Review-Workspaces", out var workspaces))
+        {
+            claims.AddRange(workspaces.ToString()
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(workspace => new Claim("bliss_review_workspace_id", workspace)));
+        }
 
         var identity = new ClaimsIdentity(claims, SchemeName, "name", ClaimTypes.Role);
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName);
