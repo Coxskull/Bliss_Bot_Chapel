@@ -65,8 +65,17 @@ const png = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAYAAAB3AH1ZAAAAI0lEQVR4nGMI0Oj5P5C
       await page.locator("#stage").selectOption(stage);
       await page.locator("#rationale").fill("TEST <script>fixture</script> human workflow decision");
       if (stage === "INVENTORY_FIT") for (const id of ["dimensions", "format", "safe-area"]) await page.locator(`#${id}`).check();
-      await page.getByRole("button", { name: "Record approval decision", exact: true }).click();
-      await page.waitForFunction(() => document.querySelector("#status").textContent.includes("human decision saved") || document.querySelector("#status").dataset.error === "true");
+      // A deliberately rejected plan leaves #status in error state. Await the
+      // actual approval POST plus a newly rendered audit row instead of reading
+      // a stale status message from the earlier negative test.
+      const previousApprovalCount = await page.locator("#approvals h3").count();
+      const [approvalResponse] = await Promise.all([
+        page.waitForResponse(response => response.request().method() === "POST" &&
+          response.url().includes(`/handoff/candidates/${candidate.candidate.id}/approvals`)),
+        page.getByRole("button", { name: "Record approval decision", exact: true }).click()
+      ]);
+      assert(approvalResponse.ok(), `Approval ${stage} failed: ${approvalResponse.status()} ${await approvalResponse.text()}`);
+      await page.waitForFunction(count => document.querySelectorAll("#approvals h3").length > count, previousApprovalCount);
       assert.equal(await page.locator("#status").getAttribute("data-error"), "false", await page.locator("#status").textContent());
     }
     assert.equal(await page.locator("#approvals script").count(), 0);
@@ -77,8 +86,15 @@ const png = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAYAAAB3AH1ZAAAAI0lEQVR4nGMI0Oj5P5C
     await page.reload(); await open(); assert.match(await page.locator("#plans").textContent(), /PLANNED · NOT_SENT/);
     assert.equal(await page.locator("#approvals h3").count(), 3);
     await page.locator("#stage").selectOption("ADVERTISER"); await page.locator("#decision").selectOption("WITHHOLD");
-    await page.locator("#rationale").fill("TEST revoke new planning authority"); await page.getByRole("button", { name: "Record approval decision", exact: true }).click();
-    await page.waitForFunction(() => document.querySelector("#status").textContent.includes("human decision saved"));
+    await page.locator("#rationale").fill("TEST revoke new planning authority");
+    const previousRevokeCount = await page.locator("#approvals h3").count();
+    const [revocationResponse] = await Promise.all([
+      page.waitForResponse(response => response.request().method() === "POST" &&
+        response.url().includes(`/handoff/candidates/${candidate.candidate.id}/approvals`)),
+      page.getByRole("button", { name: "Record approval decision", exact: true }).click()
+    ]);
+    assert(revocationResponse.ok(), `Withdrawal failed: ${revocationResponse.status()} ${await revocationResponse.text()}`);
+    await page.waitForFunction(count => document.querySelectorAll("#approvals h3").length > count, previousRevokeCount);
     await page.locator("#plan-consent").check(); await page.getByRole("button", { name: "Record planned handoff", exact: true }).click();
     await page.waitForFunction(() => document.querySelector("#status").dataset.error === "true"); assert.match(await page.locator("#status").textContent(), /all be approved/);
     assert.equal((await api(root + "/handoff/plans")).length, 1);
