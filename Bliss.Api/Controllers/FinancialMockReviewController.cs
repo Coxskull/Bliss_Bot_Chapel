@@ -17,6 +17,9 @@ public sealed class FinancialMockReviewController(FinancialMockReviewWorkflow wo
  [HttpGet("recovery-context")]public Task<ActionResult> RecoveryContext()=>Execute(async()=>await workflow.RecoveryContext(User));
  [HttpGet("queue")]public Task<ActionResult> Queue(string? module=null,int limit=25,Guid? after=null,CancellationToken ct=default)=>Execute(async()=>await workflow.Queue(User,module,limit,after,ct));
  [HttpGet("cases/{operationId:guid}")]public Task<ActionResult> Case(Guid operationId,CancellationToken ct)=>Execute(async()=>await workflow.Read(User,operationId,ct));
+ [HttpGet("cases/{operationId:guid}/campaign-evidence")]
+ public Task<ActionResult> CampaignEvidence(Guid operationId,CancellationToken ct)=>
+     Execute(async()=>await workflow.CampaignEvidence(User,operationId,ct));
  [HttpGet("cases/{operationId:guid}/notes")]public Task<ActionResult> Notes(Guid operationId,int limit=25,Guid? after=null,CancellationToken ct=default)=>Execute(async()=>await workflow.Notes(User,operationId,limit,after,ct));
  [HttpGet("cases/{operationId:guid}/evidence-export")]public Task<ActionResult> ExportEvidence(Guid operationId,string evidenceFingerprint,CancellationToken ct)=>Execute(async()=>await workflow.ExportEvidence(User,operationId,evidenceFingerprint,ct));
  [HttpGet("notes/{noteId:guid}")]public Task<ActionResult> Note(Guid noteId,CancellationToken ct)=>Execute(async()=>await workflow.NoteEvidence(User,noteId,ct));
