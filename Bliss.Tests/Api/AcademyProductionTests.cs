@@ -25,12 +25,13 @@ public sealed class AcademyProductionTests : IClassFixture<WeddingPlannerOidcFac
     private sealed record History(AcademyProductionBrief Brief, List<AcademyProductionCandidate> Candidates,
         List<AcademyProductionReview> Reviews, bool CampaignReady, string Delivery);
     private static string Path(Guid workspace) => $"/api/wedding-planner/workspaces/{workspace}/production";
-    private async Task<HttpClient> Client(string roles, Guid? advertiser = null)
+    private async Task<HttpClient> Client(string roles, Guid? advertiser = null, Guid? reviewWorkspace = null)
     {
         var client = factory.CreateSecureClient();
         client.DefaultRequestHeaders.Add("X-Test-Name", $"Production Tester {Guid.NewGuid():N}");
         client.DefaultRequestHeaders.Add("X-Test-Roles", roles);
         if (advertiser.HasValue) client.DefaultRequestHeaders.Add("X-Test-Advertiser-Id", advertiser.Value.ToString());
+        if (reviewWorkspace.HasValue) client.DefaultRequestHeaders.Add("X-Test-Review-Workspaces", reviewWorkspace.Value.ToString());
         var session = await client.GetFromJsonAsync<SessionResponse>("/api/auth/session");
         client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", session!.CsrfToken);
         return client;
@@ -189,12 +190,28 @@ public sealed class AcademyProductionTests : IClassFixture<WeddingPlannerOidcFac
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var candidate = (await created.Content.ReadFromJsonAsync<CandidateWrite>())!.Candidate;
 
-        using var reviewer = await Client("bliss.reviewer"); // no advertiser_id claim
-        using var viewer = await Client("bliss.viewer", advertiser);
+        using var reviewer = await Client("bliss.reviewer", reviewWorkspace: workspace); // explicitly assigned, no advertiser_id
+        using var unassigned = await Client("bliss.reviewer");
+        using var wrongAssignment = await Client("bliss.reviewer", reviewWorkspace: otherWorkspace);
+        using var viewer = await Client("bliss.viewer", advertiser, reviewWorkspace: workspace);
         using var unknown = await Client("bliss.unrecognized", advertiser);
         var reviewPath = $"{basePath}/candidates/{candidate.Id}/reviews";
         var historyPath = $"{Path(workspace)}/review/briefs/{brief.Id}";
         var previewPath = historyPath + $"/candidates/{candidate.Id}/image";
+
+        // An unassigned reviewer (or one assigned to a different workspace)
+        // must not read private media or record a judgment. Binding a tenant
+        // or passing a workspace UUID in the URL never supplies authority.
+        Assert.Equal(HttpStatusCode.Forbidden, (await unassigned.GetAsync(historyPath)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await unassigned.GetAsync(previewPath)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await unassigned.PostAsJsonAsync(reviewPath, Review(0, "PASS", "unassigned"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await wrongAssignment.GetAsync(historyPath)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await wrongAssignment.GetAsync(previewPath)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await wrongAssignment.PostAsJsonAsync(reviewPath, Review(0, "PASS", "wrong-workspace"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await reviewer.GetAsync($"{Path(otherWorkspace)}/review/briefs/{otherBrief.Id}")).StatusCode);
 
         Assert.Equal(HttpStatusCode.NotFound, (await reviewer.GetAsync(basePath)).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound,
