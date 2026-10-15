@@ -34,7 +34,7 @@ public static class StripeSandboxVerifier
  }
  private static JsonDocument VerifyEnvelope(byte[] body,string signature,string webhookSecret,DateTimeOffset now)
  {
-  if (body.Length > 1_000_000 || string.IsNullOrWhiteSpace(webhookSecret)) throw new ArgumentException("Bounded body and signing secret required.");
+  if (body is null || body.Length > 1_000_000 || string.IsNullOrWhiteSpace(signature) || signature.Length > 4096 || string.IsNullOrWhiteSpace(webhookSecret)) throw new ArgumentException("Bounded body and signing secret required.");
   var parts=signature.Split(',').Select(x=>x.Split('=',2)).Where(x=>x.Length==2).ToArray();
   var timestamps=parts.Where(x=>x[0]=="t").Select(x=>x[1]).ToArray();
   if(timestamps.Length!=1 || !long.TryParse(timestamps[0],NumberStyles.None,CultureInfo.InvariantCulture,out var timestamp)) throw new ArgumentException("Invalid signature timestamp.");
