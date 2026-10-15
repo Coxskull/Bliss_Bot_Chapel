@@ -115,13 +115,34 @@ public sealed class WeddingPlannerPostgresAppendConcurrencyTests
 
             Assert.NotEqual(distinctKeyResults[0].MessageId, distinctKeyResults[1].MessageId);
 
+            // Two different bodies racing under one request key must never both commit.
+            // A successful append wins the lock; the loser receives a conflict.
+            async Task<bool> TryConflictingAppend(string payload)
+            {
+                try
+                {
+                    await Append("conflicting-concurrent-request", payload);
+                    return true;
+                }
+                catch (Bliss.Domain.WeddingPlanner.WeddingPlannerConflictException)
+                {
+                    return false;
+                }
+            }
+
+            var conflictingResults = await Task.WhenAll(
+                TryConflictingAppend("first new body"),
+                TryConflictingAppend("second new body"));
+            Assert.Single(conflictingResults.Where(success => success));
+
+
             await using var verify = new BlissDbContext(options);
             var messages = await verify.WeddingPlannerConversationMessages
                 .Where(message => message.SessionId == sessionId)
                 .OrderBy(message => message.SequenceNumber)
                 .ToListAsync();
-            Assert.Equal(new[] { 1, 2, 3 }, messages.Select(message => message.SequenceNumber));
-            Assert.Equal(3, await verify.WeddingPlannerAuditEvents.CountAsync(
+            Assert.Equal(new[] { 1, 2, 3, 4 }, messages.Select(message => message.SequenceNumber));
+            Assert.Equal(4, await verify.WeddingPlannerAuditEvents.CountAsync(
                 audit => audit.SessionId == sessionId && audit.Action == "MESSAGE_APPENDED"));
 
             var persistedSession = await verify.WeddingPlannerPlanningSessions
