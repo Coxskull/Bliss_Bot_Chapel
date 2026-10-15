@@ -68,9 +68,11 @@ public sealed class CreativeHandoffController(CreativeHandoffService handoff, We
     {
         // This helper is deliberately called only by the explicitly checked
         // ALPHA_QA / INVENTORY_FIT decision branch, not advertiser/planning APIs.
+        if (!BlissAuthorization.CanReviewWorkspace(User, authentication, id))
+            throw new WeddingPlannerForbiddenException("This reviewer is not assigned to this workspace.");
         var actor = access.Resolve(User);
         return planner.GetWorkspaceAsync(id,
-            actor.IsChapelStaff || User.IsInRole(authentication.ReviewerRole),
+            true,
             actor.BoundAdvertiserId, actor.ActorType, actor.ActorLabel, null, ct);
     }
     private bool AdvertiserAuthority(WeddingPlannerWorkspaceResult workspace) => !authentication.Enabled

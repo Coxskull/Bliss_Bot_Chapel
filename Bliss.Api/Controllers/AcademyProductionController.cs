@@ -89,9 +89,11 @@ public sealed class AcademyProductionController(WeddingPlannerService planner, W
     // Other tenant GET/POST routes continue to use ordinary workspace binding.
     private Task<WeddingPlannerWorkspaceResult> ReviewerWorkspace(Guid id, CancellationToken ct)
     {
+        if (!BlissAuthorization.CanReviewWorkspace(User, authentication, id))
+            throw new WeddingPlannerForbiddenException("This reviewer is not assigned to this workspace.");
         var actor = access.Resolve(User);
         return planner.GetWorkspaceAsync(id,
-            actor.IsChapelStaff || User.IsInRole(authentication.ReviewerRole),
+            true,
             actor.BoundAdvertiserId, actor.ActorType, actor.ActorLabel,
             RequestCorrelation.Resolve(HttpContext), ct);
     }

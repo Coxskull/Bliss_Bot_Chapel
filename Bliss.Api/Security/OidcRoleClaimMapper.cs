@@ -13,6 +13,7 @@ public static class OidcRoleClaimMapper
             if (context.Principal?.Identity is ClaimsIdentity identity)
             {
                 Normalize(identity, authentication.RoleClaimType);
+                NormalizeReviewerWorkspaceAssignments(identity, authentication.ReviewerWorkspaceClaimType);
             }
 
             return Task.CompletedTask;
@@ -22,6 +23,7 @@ public static class OidcRoleClaimMapper
             if (context.Principal?.Identity is ClaimsIdentity identity && context.User is not null)
             {
                 Apply(identity, context.User.RootElement, authentication.RoleClaimType);
+                ApplyReviewerWorkspaceAssignments(identity, context.User.RootElement, authentication.ReviewerWorkspaceClaimType);
             }
 
             return Task.CompletedTask;
@@ -68,6 +70,34 @@ public static class OidcRoleClaimMapper
         foreach (var role in expanded)
         {
             identity.AddClaim(new Claim(roleClaimType, role));
+        }
+    }
+
+    // Accept one workspace GUID per verified claim or an array supplied by the
+    // identity provider. Never accept wildcards, empty/invalid GUIDs, or user
+    // request values as reviewer assignments.
+    public static void NormalizeReviewerWorkspaceAssignments(ClaimsIdentity identity, string claimType)
+    {
+        if (string.IsNullOrWhiteSpace(claimType)) return;
+        var authorized = identity.FindAll(claimType)
+            .SelectMany(claim => Expand(claim.Value))
+            .Select(value => Guid.TryParse(value, out var parsed) ? parsed : Guid.Empty)
+            .Where(value => value != Guid.Empty)
+            .Distinct()
+            .ToArray();
+        foreach (var existing in identity.FindAll(claimType).ToList()) identity.RemoveClaim(existing);
+        foreach (var workspace in authorized) identity.AddClaim(new Claim(claimType, workspace.ToString("D")));
+    }
+
+    public static void ApplyReviewerWorkspaceAssignments(ClaimsIdentity identity, JsonElement user, string claimType)
+    {
+        if (string.IsNullOrWhiteSpace(claimType) || user.ValueKind != JsonValueKind.Object
+            || !user.TryGetProperty(claimType, out var property)) return;
+        foreach (var value in ReadProperty(property))
+        {
+            if (Guid.TryParse(value, out var parsed) && parsed != Guid.Empty
+                && !identity.HasClaim(claimType, parsed.ToString("D")))
+                identity.AddClaim(new Claim(claimType, parsed.ToString("D")));
         }
     }
 

@@ -16,6 +16,22 @@ public static class BlissAuthorization
         !options.Enabled
         || user.IsInRole(options.ReviewerRole)
         || user.IsInRole(options.AdminRole);
+
+    // An authenticated reviewer is never implicitly assigned to all tenants.
+    // The workspace claim must originate in a verified OIDC principal; the
+    // request path, advertiser_id claim, or any HTTP header is not an assignment.
+    // Administrators retain their pre-existing explicitly privileged scope.
+    public static bool CanReviewWorkspace(ClaimsPrincipal user, BlissAuthenticationOptions options, Guid workspaceId)
+    {
+        if (!options.Enabled) return true; // local Development fixture only
+        if (workspaceId == Guid.Empty || user.Identity?.IsAuthenticated != true) return false;
+        if (user.IsInRole(options.AdminRole)) return true;
+        return user.IsInRole(options.ReviewerRole)
+            && !string.IsNullOrWhiteSpace(options.ReviewerWorkspaceClaimType)
+            && user.FindAll(options.ReviewerWorkspaceClaimType)
+                .Any(claim => Guid.TryParse(claim.Value, out var parsed)
+                    && parsed != Guid.Empty && parsed == workspaceId);
+    }
 }
 
 public sealed class OperatorIdentity(BlissAuthenticationOptions options)
