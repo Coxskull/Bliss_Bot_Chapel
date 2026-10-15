@@ -13,6 +13,7 @@ public sealed class BlissRuntimeOptions
     public int RateLimitWindowSeconds { get; set; } = 60;
     public BackupDeclarationOptions Backup { get; set; } = new();
     public CreativeGenerationOptions CreativeGeneration { get; set; } = new();
+    public ControlledAiOptions ControlledAi { get; set; } = new();
 }
 
 public sealed class BackupDeclarationOptions

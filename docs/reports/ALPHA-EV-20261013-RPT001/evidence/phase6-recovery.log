@@ -1,0 +1,11 @@
+ ?column? 
+----------
+        1
+(1 row)
+
+INSERT 0 1
+PASS: private candidate preview, missing-gate refusal, draft campaign, three manual approvals, explicit PLANNED/NOT_SENT handoff using Economics amount, reload history, revocation, safe text, and mobile layout. No paid AI calls.
+PASS: sourced observation, frozen handoff lineage, research proposal/review, reload history, safe text, staff readiness and mobile layout. No real traffic or paid AI calls.
+PASS: restored application serves identical observation, frozen lineage, proposal and research review; database/migration readiness healthy.
+PASS: 15 lineage/history table manifests match after restore. Local fixture recovery: 10 seconds. Hosted RPO/RTO remain unvalidated.
+Fixture logs: /workspace/.bliss-runtime/phase6-fixture-pYR3wa

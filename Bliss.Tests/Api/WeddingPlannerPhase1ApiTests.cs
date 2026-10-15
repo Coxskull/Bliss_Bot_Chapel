@@ -16,6 +16,73 @@ public sealed class WeddingPlannerPhase1ApiTests : IClassFixture<BlissApiFactory
 
     public WeddingPlannerPhase1ApiTests(BlissApiFactory factory) => _factory = factory;
 
+    [Theory]
+    [InlineData("OPERATOR", "Changed note")]
+    [InlineData("SYSTEM", "Original note")]
+    public async Task Changed_message_retry_returns_conflict_and_new_key_allows_a_new_message(string actor, string body)
+    {
+        var advertiserId = Guid.NewGuid();
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+            db.Advertisers.Add(new Bliss.Domain.Entities.Advertiser
+            {
+                Id = advertiserId,
+                Name = "TEST Message integrity",
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+        var client = _factory.CreateClient();
+        var key = $"integrity-{Guid.NewGuid():N}";
+        var workspaceResponse = await client.PostAsJsonAsync("/api/wedding-planner/workspaces",
+            OpenRequest(advertiserId, key));
+        workspaceResponse.EnsureSuccessStatusCode();
+        var workspace = await workspaceResponse.Content.ReadFromJsonAsync<WeddingPlannerWorkspaceDto>();
+        var sessionResponse = await client.PostAsJsonAsync(
+            $"/api/wedding-planner/workspaces/{workspace!.WorkspaceId}/sessions",
+            new CreateWeddingPlannerSessionRequest("INTEGRITY_TEST", key));
+        sessionResponse.EnsureSuccessStatusCode();
+        var session = await sessionResponse.Content.ReadFromJsonAsync<WeddingPlannerSessionDto>();
+        var url = $"/api/wedding-planner/sessions/{session!.SessionId}/messages";
+        var originalResponse = await client.PostAsJsonAsync(url,
+            new AppendWeddingPlannerMessageRequest("OPERATOR", "Original note", "INTEGRITY_TEST", key));
+        Assert.Equal(HttpStatusCode.Created, originalResponse.StatusCode);
+        var original = await originalResponse.Content.ReadFromJsonAsync<WeddingPlannerMessageDto>();
+
+        var conflict = await client.PostAsJsonAsync(url,
+            new AppendWeddingPlannerMessageRequest(actor, body, "INTEGRITY_TEST", key));
+        Assert.Equal(HttpStatusCode.Conflict, conflict.StatusCode);
+        Assert.Contains("Use a new key", await conflict.Content.ReadAsStringAsync());
+        var saved = await client.GetFromJsonAsync<List<WeddingPlannerMessageDto>>(url);
+        Assert.Single(saved!);
+        Assert.Equal(original!.MessageId, saved![0].MessageId);
+        Assert.Equal("Original note", saved[0].Body);
+
+        var replayResponse = await client.PostAsJsonAsync(url,
+            new AppendWeddingPlannerMessageRequest("operator", "  Original note  ", "INTEGRITY_TEST", key));
+        Assert.Equal(HttpStatusCode.OK, replayResponse.StatusCode);
+        var replay = await replayResponse.Content.ReadFromJsonAsync<WeddingPlannerMessageDto>();
+        Assert.True(replay!.IsReplay);
+        Assert.Equal(original.MessageId, replay.MessageId);
+
+        var newResponse = await client.PostAsJsonAsync(url,
+            new AppendWeddingPlannerMessageRequest(actor, body, "INTEGRITY_TEST", $"new-{key}"));
+        Assert.Equal(HttpStatusCode.Created, newResponse.StatusCode);
+        var next = await newResponse.Content.ReadFromJsonAsync<WeddingPlannerMessageDto>();
+        Assert.Equal(2, next!.SequenceNumber);
+
+        var otherSessionResponse = await client.PostAsJsonAsync(
+            $"/api/wedding-planner/workspaces/{workspace.WorkspaceId}/sessions",
+            new CreateWeddingPlannerSessionRequest("INTEGRITY_TEST", $"other-{key}"));
+        otherSessionResponse.EnsureSuccessStatusCode();
+        var other = await otherSessionResponse.Content.ReadFromJsonAsync<WeddingPlannerSessionDto>();
+        var wrongSession = await client.PostAsJsonAsync(
+            $"/api/wedding-planner/sessions/{other!.SessionId}/messages",
+            new AppendWeddingPlannerMessageRequest(actor, body, "INTEGRITY_TEST", key));
+        Assert.Equal(HttpStatusCode.NotFound, wrongSession.StatusCode);
+    }
+
     [Fact]
     public async Task Authorized_advertiser_can_open_session_and_resume_durable_messages()
     {

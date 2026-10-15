@@ -1,0 +1,9 @@
+# AGM-LAUNCH-005-GAP-001 — exact stored handoff correlation
+
+This unregistered, local read-only builder reuses PR193-196 lineage/inspection/checklist/actual-byte identity checks and existing CreativeCampaignHandoff, Academy review/decision and Economics quote records. Caller selects an exact frozen proposal, workspace/candidate/version/hash and handoff UUID. Same advertiser scope, exact placement/run/candidate, planned-unsent status, bounded snapshot, candidate image SHA, review/approval/fit references, rule/match/content/slot/campaign IDs and quote recommendation association must agree.
+
+The report states STORED_PLANNED_HANDOFF_CORRELATED. This proves correlation of the selected stored synthetic records only. Approval IDs are references, not real-party consent or revalidation of latest policy/decisions, image quality, money authorization or legal rights. All authority/acceptance flags remain false; NOT_SENT. Separate lineage/creative/handoff snapshots can change later. Hashes are not signatures; privileged DB owners can alter schema/data.
+
+No route, DI registration, new schema, handoff write, approval decision, legal evidence upload, activation, payment or production access is added. Actual scope/policy, real creator/advertiser/creative authority and independent Executive review remain open.
+
+The PostgreSQL acceptance fixture creates actual intake and formation through existing services, then an Academy candidate, fictional approvals, an accepted fictional Economics quote for that exact newly formed match and a planned unsent handoff through the existing service. It builds the frozen proposal from that service-produced placement run. The reader is tested for deterministic non-mutating correlation, foreign advertiser/role, wrong handoff, same-advertiser unrelated lineage and snapshot mismatch. The fixture is synthetic; its service-produced technical relationships do not establish real legal or independent acceptance.

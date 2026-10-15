@@ -40,6 +40,19 @@ public class BlissDbContext : DbContext
     public DbSet<MatchEvaluationRun> MatchEvaluationRuns => Set<MatchEvaluationRun>();
 
     public DbSet<WeddingPlannerWorkspace> WeddingPlannerWorkspaces => Set<WeddingPlannerWorkspace>();
+    public DbSet<WeddingPlannerBrandDna> WeddingPlannerBrandDna => Set<WeddingPlannerBrandDna>();
+    public DbSet<AcademyProductionBrief> AcademyProductionBriefs => Set<AcademyProductionBrief>();
+    public DbSet<AcademyProductionCandidate> AcademyProductionCandidates => Set<AcademyProductionCandidate>();
+    public DbSet<AcademyProductionReview> AcademyProductionReviews => Set<AcademyProductionReview>();
+    public DbSet<ControlledAiRun> ControlledAiRuns => Set<ControlledAiRun>();
+    public DbSet<ControlledAiDailyUsage> ControlledAiDailyUsage => Set<ControlledAiDailyUsage>();
+    public DbSet<ControlledAiEvent> ControlledAiEvents => Set<ControlledAiEvent>();
+    public DbSet<ControlledAiBudgetLedger> ControlledAiBudgetLedgers => Set<ControlledAiBudgetLedger>();
+    public DbSet<CandidateApprovalDecision> CandidateApprovalDecisions => Set<CandidateApprovalDecision>();
+    public DbSet<CreativeCampaignHandoff> CreativeCampaignHandoffs => Set<CreativeCampaignHandoff>();
+    public DbSet<CampaignObservation> CampaignObservations => Set<CampaignObservation>();
+    public DbSet<CampaignLearningProposal> CampaignLearningProposals => Set<CampaignLearningProposal>();
+    public DbSet<CampaignLearningReview> CampaignLearningReviews => Set<CampaignLearningReview>();
     public DbSet<WeddingPlannerPlanningSession> WeddingPlannerPlanningSessions => Set<WeddingPlannerPlanningSession>();
     public DbSet<WeddingPlannerConversationMessage> WeddingPlannerConversationMessages => Set<WeddingPlannerConversationMessage>();
     public DbSet<WeddingPlannerAuditEvent> WeddingPlannerAuditEvents => Set<WeddingPlannerAuditEvent>();
@@ -111,5 +124,35 @@ public class BlissDbContext : DbContext
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BlissDbContext).Assembly);
         base.OnModelCreating(modelBuilder);
+    }
+
+    private void ProtectBrandHistory()
+    {
+        if (ChangeTracker.Entries().Any(entry =>
+            (entry.Entity is Bliss.Domain.Entities.WeddingPlannerBrandDna or AcademyProductionBrief or AcademyProductionCandidate or AcademyProductionReview or ControlledAiEvent or CandidateApprovalDecision or CreativeCampaignHandoff or CampaignObservation or CampaignLearningProposal or CampaignLearningReview)
+            && (entry.State is EntityState.Modified or EntityState.Deleted)))
+            throw new InvalidOperationException("Brand and production revisions are immutable. Append a new revision instead.");
+        var frozenRunFields = new[] { "WorkspaceId", "SessionId", "BriefId", "Kind", "Provider", "Model", "PromptVersion",
+            "InputSnapshotJson", "InputSha256", "RequestSha256", "ExecutionConfigSha256", "IdempotencyKey", "ActorLabel", "ReservedUsd", "CreatedAt" };
+        foreach (var entry in ChangeTracker.Entries<ControlledAiRun>())
+            if (entry.State == EntityState.Deleted || frozenRunFields.Any(name => entry.Property(name).IsModified))
+                throw new InvalidOperationException("AI run inputs and reservations cannot be changed or deleted.");
+        foreach (var entry in ChangeTracker.Entries().Where(x => x.Entity is Bliss.Domain.Entities.ControlledAiDailyUsage or ControlledAiBudgetLedger))
+            if (entry.State == EntityState.Deleted || entry.State == EntityState.Modified
+                && ((decimal)entry.Property("ReservedUsd").CurrentValue! < (decimal)entry.Property("ReservedUsd").OriginalValue!
+                    || (int)entry.Property("Calls").CurrentValue! < (int)entry.Property("Calls").OriginalValue!))
+                throw new InvalidOperationException("AI usage reservations cannot be deleted or reduced.");
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        ProtectBrandHistory();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        ProtectBrandHistory();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
     }
 }

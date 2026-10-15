@@ -1,0 +1,12 @@
+{
+  "dotnet_sdk": "8.0.425",
+  "postgresql_client": "17.11",
+  "chromium": "154.0.8037.57",
+  "evidence": "Versions observed during report preparation; original successful workflow logs retained separately.",
+  "helpers": [
+    "/workspace/.bliss-tools/activate.sh",
+    "/workspace/.bliss-tools/install.sh",
+    "/workspace/.bliss-tools/start-db.sh"
+  ],
+  "secrets_included": false
+}

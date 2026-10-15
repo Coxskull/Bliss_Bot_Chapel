@@ -1,0 +1,70 @@
+// Run against a local Development API with fictional seed data only.
+// Requires Playwright on NODE_PATH; use CHROMIUM_PATH for an installed browser.
+const { chromium } = require("playwright");
+const assert = require("node:assert/strict");
+
+(async () => {
+  const base = process.env.BLISS_SMOKE_BASE || "http://127.0.0.1:5082";
+  const url = new URL(base);
+  assert(["127.0.0.1", "localhost"].includes(url.hostname), "Smoke test is restricted to local development");
+  const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium", headless: true });
+  try {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    const errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    const session = await (await context.request.get(`${base}/api/auth/session`)).json();
+    assert.equal(session.authenticationEnabled, false, "Use Development without hosted authentication");
+    await page.goto(base);
+    await page.getByRole("link", { name: "Start or resume brand intake" }).click();
+    await page.getByRole("button", { name: "Open or resume workspace" }).click();
+    await page.waitForFunction(() => !document.querySelector("#fields").disabled);
+    const label = `TEST Phase 2 ${Date.now()}`;
+    await page.locator('[name="brandName"]').fill(label);
+    await page.locator('[name="niche"]').fill("Bakery");
+    await page.locator('[name="market"]').fill("Taipei, Taiwan");
+    await page.locator('[name="language"]').fill("English");
+    await page.locator('[name="goals"]').fill("");
+    const initialHistory = await page.locator("#history details").count();
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await page.waitForFunction(() => document.querySelector("#status").textContent.includes("Draft saved"));
+    await page.reload();
+    await page.getByRole("button", { name: "Open or resume workspace" }).click();
+    await page.waitForFunction(() => !document.querySelector("#fields").disabled);
+    assert.equal(await page.locator('[name="brandName"]').inputValue(), label);
+    await page.locator("#consent").check();
+    assert.equal(await page.locator("#confirm").isDisabled(), true, "Incomplete draft cannot be confirmed");
+    await page.locator('[name="goals"]').fill("Grow local awareness");
+    await page.locator('[name="colors"]').fill('<script>alert("unsafe")</script>');
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await page.waitForFunction(() => document.querySelector("#status").textContent.includes("Draft saved"));
+    await page.locator("#consent").check();
+    await page.getByRole("button", { name: "Confirm brand direction", exact: true }).click();
+    await page.waitForFunction(() => document.querySelector("#status").textContent.includes("Brand direction confirmed"));
+    assert.equal(await page.locator("#history details").count(), initialHistory + 3);
+    assert.equal(await page.locator("#history script").count(), 0, "History renders user content as text");
+    const other = await context.newPage();
+    await other.goto(`${base}/brand-intake.html`);
+    await other.getByRole("button", { name: "Open or resume workspace" }).click();
+    await other.waitForFunction(() => !document.querySelector("#fields").disabled);
+    await page.locator('[name="colors"]').fill("Gold");
+    await page.getByRole("button", { name: "Save draft", exact: true }).click();
+    await page.waitForFunction(() => document.querySelector("#status").textContent.includes("Draft saved"));
+    await other.locator('[name="colors"]').fill("Burgundy");
+    await other.getByRole("button", { name: "Save draft", exact: true }).click();
+    await other.waitForFunction(() => document.querySelector("#status").dataset.error === "true");
+    assert.match(await other.locator("#status").textContent(), /changed/);
+    assert.equal(await other.locator('[name="colors"]').inputValue(), "Burgundy", "Conflict preserves entered text");
+    assert.equal(await other.locator("#save").isDisabled(), true);
+    other.once("dialog", dialog => dialog.accept());
+    await other.getByRole("button", { name: "Reload saved direction" }).click();
+    await other.waitForFunction(() => document.querySelector('[name="colors"]').value === "Gold");
+    assert.equal(await other.locator("#save").isDisabled(), false);
+    assert.match(await page.locator("#version").textContent(), /DRAFT/);
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "Mobile page must not overflow horizontally");
+    assert.deepEqual(errors, []);
+    console.log("PASS: save, reload/resume, required fields, explicit confirmation, history, safe text rendering, stale-tab conflict, mobile layout.");
+    await context.close();
+  } finally { await browser.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; });

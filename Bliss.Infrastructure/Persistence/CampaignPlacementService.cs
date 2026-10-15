@@ -46,6 +46,20 @@ public sealed class CampaignPlacementService
         CampaignPlacementCommand command,
         CancellationToken cancellationToken = default)
     {
+        var prepared = await PrepareAsync(command, cancellationToken);
+        if (prepared.IsReplay) return prepared;
+        await using var transaction = _db.Database.IsRelational() && _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync(cancellationToken) : null;
+        await _db.SaveChangesAsync(cancellationToken);
+        if (transaction is not null) await transaction.CommitAsync(cancellationToken);
+        return prepared;
+    }
+
+    /// <summary>Validates and stages intent so a caller can atomically commit related lineage and audit.</summary>
+    public async Task<CampaignPlacementResult> PrepareAsync(
+        CampaignPlacementCommand command,
+        CancellationToken cancellationToken = default)
+    {
         var normalized = Normalize(command);
         var replay = await _db.CampaignPlacementRuns
             .AsNoTracking()
@@ -75,6 +89,23 @@ public sealed class CampaignPlacementService
             throw new InvalidOperationException("The match opportunity must remain ACTIVE.");
         }
 
+        var creatorAuthority = await _db.Creators
+            .AsNoTracking()
+            .Where(x => x.Id == match.CreatorId)
+            .Select(x => x.AuthorityStatus)
+            .SingleAsync(cancellationToken);
+        var opportunityAuthority = match.AdvertiserOpportunity.AuthorityStatus;
+        var isVerifiedLineage = creatorAuthority == RecordAuthorityStatuses.Verified
+            && opportunityAuthority == RecordAuthorityStatuses.Verified;
+        var isSyntheticLineage = creatorAuthority == RecordAuthorityStatuses.SyntheticFixture
+            && opportunityAuthority == RecordAuthorityStatuses.SyntheticFixture;
+        if (!isVerifiedLineage && !isSyntheticLineage)
+        {
+            throw new InvalidOperationException(
+                "Campaign placement requires either independently VERIFIED creator and advertiser authority "
+                + "or an entirely SYNTHETIC_FIXTURE lineage. Mixed and unverified lineage is refused.");
+        }
+
         var campaign = await _db.Campaigns
             .SingleOrDefaultAsync(x => x.Id == normalized.CampaignId, cancellationToken);
         if (campaign is null)
@@ -84,6 +115,10 @@ public sealed class CampaignPlacementService
         if (!string.Equals(campaign.Status, EntityStatuses.Draft, StringComparison.Ordinal))
         {
             throw new InvalidOperationException("CampaignId must reference a DRAFT campaign.");
+        }
+        if (!string.Equals(campaign.AuthorityStatus, creatorAuthority, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Campaign authority must match the creator and advertiser lineage.");
         }
         if (campaign.AdvertiserOpportunityId is { } campaignOpportunityId
             && campaignOpportunityId != match.AdvertiserOpportunityId)
@@ -116,10 +151,6 @@ public sealed class CampaignPlacementService
         }
 
         var startedAt = DateTime.UtcNow;
-        await using var transaction = _db.Database.IsRelational()
-            ? await _db.Database.BeginTransactionAsync(cancellationToken)
-            : null;
-
         campaign.AdvertiserOpportunityId ??= match.AdvertiserOpportunityId;
         var placement = new CampaignPlacement
         {
@@ -147,16 +178,19 @@ public sealed class CampaignPlacementService
             Outcome = EntityStatuses.Planned,
             StartedAt = startedAt,
             CompletedAt = DateTime.UtcNow,
-            InputSnapshot = JsonSerializer.Serialize(normalized, SnapshotOptions)
+            InputSnapshot = JsonSerializer.Serialize(new
+            {
+                normalized.SourceSystem, normalized.IdempotencyKey, normalized.OperatorLabel,
+                normalized.BlissMatchId, normalized.CampaignId, normalized.ContentItemId, normalized.AdInventorySlotId,
+                creatorAuthorityStatus = creatorAuthority,
+                advertiserAuthorityStatus = opportunityAuthority,
+                campaignAuthorityStatus = campaign.AuthorityStatus,
+                lineageReadiness = isSyntheticLineage ? "SYNTHETIC_ONLY" : "VERIFIED_READY",
+                delivery = "NOT_SENT"
+            }, SnapshotOptions)
         };
         _db.CampaignPlacements.Add(placement);
         _db.CampaignPlacementRuns.Add(run);
-        await _db.SaveChangesAsync(cancellationToken);
-        if (transaction is not null)
-        {
-            await transaction.CommitAsync(cancellationToken);
-        }
-
         return ToResult(run, false);
     }
 

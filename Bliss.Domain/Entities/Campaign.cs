@@ -9,6 +9,7 @@ public class Campaign
     public Guid? AdvertiserOpportunityId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Status { get; set; } = "DRAFT";
+    public string AuthorityStatus { get; set; } = "UNVERIFIED";
     public DateTime CreatedAt { get; set; }
 
     public AdvertiserOpportunity? AdvertiserOpportunity { get; set; }

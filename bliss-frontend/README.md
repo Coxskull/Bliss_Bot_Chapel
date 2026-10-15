@@ -1,0 +1,9 @@
+# Bliss financial operator — AGM-LAUNCH-010 R10
+
+Separate React frontend for Bliss Bot, Creator Academy and Wedding Planner. Same-origin cookie session and server CSRF flow are reused. Mock financial routes remain disabled by default, registered-scope protected and loopback PostgreSQL only. No payment activation, approval or hold release.
+
+Node24 recommended: `npm ci`, `npm test`, `npm run build`. Build writes ignored assets under `frontend/operations/financial-review`; existing .NET static host serves `/operations/financial-review/index.html`. Build the frontend before .NET publish/package. No generated assets are committed; this milestone does not deploy, publish or change production routing/configuration.
+
+The screen reads `/api/auth/session`, requires enabled authenticated staff session with CSRF token, then obtains scoped queue, current case, paginated notes and stored historical evidence. It sends only operation/version/text/random retry key; actor/scope/amount/recipient are server-owned. Session tokens and CSRF are never put in browser storage. Unknown write outcomes block new notes until an exact actor/key lookup confirms the stored record. A missing lookup result remains unknown, not proof of failure. Retry correlation is in memory; reloading loses the pending reference. No write is automatically retried on reload or network failure; inspect persisted case history after navigation before intentionally submitting another observation.
+
+Use only the documented disposable local rehearsal. The test identity adapter is outside the product and never provides production authentication. Real OIDC onboarding, hosted identity, isolated owner-approved hosting, cancellation-policy acceptance and operator acceptance remain pending. Legal merchant/payees/fees and Stripe account verification remain unresolved; no supplied keys used.

@@ -1,6 +1,7 @@
 using Bliss.Domain.Entities;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Npgsql;
 
 namespace Bliss.Tests.Persistence;
@@ -43,7 +44,7 @@ public sealed class WeddingPlannerPostgresConcurrencyTests
 
             await using (var setup = new BlissDbContext(options))
             {
-                await setup.Database.EnsureCreatedAsync();
+                await setup.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>().CreateTablesAsync();
                 setup.Advertisers.Add(new Advertiser
                 {
                     Id = _advertiserId,

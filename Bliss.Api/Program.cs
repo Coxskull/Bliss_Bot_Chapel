@@ -84,6 +84,11 @@ builder.Services.AddSingleton<ProspectDemonstrationStore>();
 builder.Services.AddSingleton<DemonstrationVideoStudio>();
 builder.Services.AddSingleton<ProspectDemonstrationService>();
 builder.Services.AddScoped<EconomicsAcceptedPriceReader>();
+builder.Services.AddSingleton(builder.Configuration.GetSection("FinancialPreparation").Get<Bliss.Api.Financials.FinancialPreparationOptions>() ?? new Bliss.Api.Financials.FinancialPreparationOptions());
+builder.Services.AddScoped<Bliss.Api.Financials.AcceptedFinancialQuoteImporter>();
+builder.Services.AddScoped<Bliss.Api.Financials.IFinancialPreparation, Bliss.Api.Financials.FinancialPreparationService>();
+builder.Services.AddScoped<Bliss.Api.Financials.FinancialMockWorkflow>();
+builder.Services.AddScoped<Bliss.Api.Financials.FinancialMockReviewWorkflow>();
 builder.Services.AddScoped<EconomicsNegotiationGate>();
 builder.Services.AddScoped<BlissRematchGate>();
 builder.Services.AddScoped<WeddingPlannerWakeGate>();
@@ -102,6 +107,15 @@ builder.Services.AddScoped<MarketplaceMetricsService>();
 builder.Services.AddScoped<ClosedModelsService>();
 builder.Services.AddScoped<CreativeAcademyService>();
 builder.Services.AddScoped<BlueprintPhaseService>();
+builder.Services.AddScoped<AcademyProductionService>();
+builder.Services.AddScoped<CreativeHandoffService>();
+builder.Services.AddScoped<CampaignMeasurementService>();
+builder.Services.AddScoped<ControlledAiService>();
+builder.Services.AddHostedService<ControlledAiWorker>();
+builder.Services.AddHttpClient<IControlledAiProvider, ConfiguredControlledAiProvider>(client =>
+{
+    client.Timeout = Timeout.InfiniteTimeSpan;
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddScoped<CreativeGenerationService>();
 builder.Services.AddScoped<CreativeAcceptanceVoyageService>();
 builder.Services.AddScoped<MissionControlEvidenceService>();

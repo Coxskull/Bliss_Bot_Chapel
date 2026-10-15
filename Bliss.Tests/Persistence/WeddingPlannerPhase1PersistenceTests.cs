@@ -1,4 +1,5 @@
 using Bliss.Domain.Entities;
+using Bliss.Domain.WeddingPlanner;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,6 +7,37 @@ namespace Bliss.Tests.Persistence;
 
 public sealed class WeddingPlannerPhase1PersistenceTests
 {
+    [Theory]
+    [InlineData("OPERATOR", "Changed note")]
+    [InlineData("SYSTEM", "Original note")]
+    public async Task Conflicting_retry_preserves_message_session_and_append_audit(string requestedActor, string body)
+    {
+        await using var db = TestDb.CreateContext();
+        var advertiser = new Advertiser { Id = Guid.NewGuid(), Name = "TEST Retry", CreatedAt = DateTime.UtcNow };
+        db.Advertisers.Add(advertiser);
+        await db.SaveChangesAsync();
+        var service = new WeddingPlannerService(db);
+        var workspace = await service.OpenPrimaryWorkspaceAsync(
+            advertiser.Id, "TEST", "workspace", true, null, "OPERATOR", "tester", "request");
+        var session = await service.CreateSessionAsync(
+            workspace.WorkspaceId, "TEST", "session", true, null, "OPERATOR", "tester", "request");
+        var original = await service.AppendMessageAsync(
+            session.SessionId, "OPERATOR", "Original note", "TEST", "message", true, null, "OPERATOR", "tester", "request");
+        var timestamp = (await db.WeddingPlannerPlanningSessions.SingleAsync()).UpdatedAt;
+        var auditCount = await db.WeddingPlannerAuditEvents.CountAsync();
+
+        await Assert.ThrowsAsync<WeddingPlannerConflictException>(() => service.AppendMessageAsync(
+            session.SessionId, requestedActor, body, "TEST", "message", true, null, "OPERATOR", "tester", "retry"));
+
+        db.ChangeTracker.Clear();
+        var saved = await db.WeddingPlannerConversationMessages.SingleAsync();
+        Assert.Equal(original.MessageId, saved.Id);
+        Assert.Equal("Original note", saved.Body);
+        Assert.Equal("OPERATOR", saved.ActorType);
+        Assert.Equal(timestamp, (await db.WeddingPlannerPlanningSessions.SingleAsync()).UpdatedAt);
+        Assert.Equal(auditCount, await db.WeddingPlannerAuditEvents.CountAsync());
+    }
+
     [Fact]
     public async Task Advertiser_keeps_one_primary_workspace_and_append_only_messages()
     {

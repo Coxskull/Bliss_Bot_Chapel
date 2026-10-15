@@ -130,6 +130,42 @@ frontend source inside `Bliss.Api`.
 
 ## Documentation
 
+Next development work: [phased roadmap](docs/development/ROADMAP.md) and
+[delivery increment 1 evidence](docs/development/INCREMENT-1-EVIDENCE.md).
+
+Phase 2 advertiser intake is available at `/brand-intake.html`. See the
+[Brand DNA contract](docs/development/PHASE-2-CONTRACT.md) and
+[Phase 2 evidence](docs/development/PHASE-2-EVIDENCE.md).
+
+Phase 3 connects confirmed Brand DNA to Creative Academy at `/production.html`,
+with saved brief provenance, private candidate revisions, and human assessment
+history. See the [contract](docs/development/PHASE-3-CONTRACT.md) and
+[validation evidence](docs/development/PHASE-3-EVIDENCE.md).
+
+Phase 4 controlled AI requests and draft history are at `/ai-workspace.html`.
+Live calls default to disabled. See [provider setup](docs/development/PHASE-4-PROVIDER-SETUP.md)
+and [local validation / live-test limitations](docs/development/PHASE-4-EVIDENCE.md).
+
+Phase 5 creative approval and campaign planning are at `/campaign-handoff.html`.
+Candidate-specific advertiser, independent QA, and inventory fit decisions must
+agree with an approved Bliss match and accepted Economics quote. Handoffs record
+PLANNED intent and immutable evidence. See the
+[contract](docs/development/PHASE-5-CONTRACT.md) and
+[validation evidence](docs/development/PHASE-5-EVIDENCE.md).
+
+Phase 6 measurement and reviewed research are at `/campaign-measurement.html`.
+Sourced observations retain the handoff's frozen creative and pricing lineage;
+independent research reviews preserve their decisions without applying production
+changes. Staff can inspect operating readiness. See the
+[contract](docs/development/PHASE-6-CONTRACT.md),
+[local validation and recovery evidence](docs/development/PHASE-6-EVIDENCE.md),
+and [recommended Azure deployment runbook](docs/development/PHASE-6-HOSTED-RUNBOOK.md).
+
+Consolidated client report for the 12 October 2026 development work (issued
+13 October): [ALPHA-EV-20261013-RPT001](docs/reports/ALPHA-EV-20261013-RPT001/ALPHA-EV-20261013-RPT001.pdf).
+The report directory includes a source-change inventory, retained test/recovery
+evidence, and SHA-256 checksums.
+
 See `docs/bliss/` for Phase 1 architecture, requirements, and migration review.
 
 Phase 1 final acceptance evidence: `docs/bliss/PHASE-1-FINAL-ACCEPTANCE.md`.

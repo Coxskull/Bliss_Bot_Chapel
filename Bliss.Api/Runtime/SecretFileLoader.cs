@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 namespace Bliss.Api.Runtime;
 
 /// <summary>
-/// Reads three deployment secrets from mounted files. The file path is configuration.
+/// Reads deployment secrets from mounted files. The file path is configuration.
 /// The file contents are not written to appsettings.
 /// </summary>
 public static class SecretFileLoader
@@ -15,7 +15,8 @@ public static class SecretFileLoader
         "ConnectionStrings:DefaultConnection",
         "Authentication:ClientSecret",
         "Runtime:DataProtectionCertificatePassword",
-        "Runtime:CreativeGeneration:ApiToken"
+        "Runtime:CreativeGeneration:ApiToken",
+        "Runtime:ControlledAi:ApiToken"
     ];
 
     public static void Apply(ConfigurationManager configuration, string contentRoot)

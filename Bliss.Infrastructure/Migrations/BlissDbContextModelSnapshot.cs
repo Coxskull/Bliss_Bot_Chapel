@@ -22,6 +22,238 @@ namespace Bliss.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Bliss.Domain.Entities.AcademyProductionBrief", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorLabel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("BrandDnaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BrandSnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Cta")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Family")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Headline")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ProductionBriefJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RecipeSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ReferenceId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ReferenceSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ReferenceSnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RequestSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BrandDnaId");
+
+                    b.HasIndex("WorkspaceId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("AcademyProductionBriefs");
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.AcademyProductionCandidate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorLabel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("BriefId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ExpectedVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<byte[]>("ImageBytes")
+                        .IsRequired()
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("ImageSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("RequestSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BriefId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("BriefId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("AcademyProductionCandidates");
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.AcademyProductionReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorLabel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("CriticalDefect")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Customization")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<int>("ExpectedVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("GeographicAuthenticity")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Originality")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Preserve")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("QualityParity")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Rationale")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Repair")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("RequestSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CandidateId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("CandidateId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("AcademyProductionReviews");
+                });
+
             modelBuilder.Entity("Bliss.Domain.Entities.AdInventorySlot", b =>
                 {
                     b.Property<Guid>("Id")
@@ -98,6 +330,13 @@ namespace Bliss.Infrastructure.Migrations
                     b.Property<Guid>("AdvertiserProgramId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AuthorityStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("UNVERIFIED");
+
                     b.Property<string>("Category")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
@@ -150,11 +389,16 @@ namespace Bliss.Infrastructure.Migrations
 
                     b.HasIndex("AdvertiserProgramId");
 
+                    b.HasIndex("AuthorityStatus");
+
                     b.HasIndex("ExternalOpportunityId");
 
                     b.HasIndex("Status");
 
-                    b.ToTable("AdvertiserOpportunities", (string)null);
+                    b.ToTable("AdvertiserOpportunities", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_AdvertiserOpportunities_AuthorityStatus", "\"AuthorityStatus\" IN ('UNVERIFIED', 'VERIFIED', 'SYNTHETIC_FIXTURE')");
+                        });
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.AdvertiserProgram", b =>
@@ -356,6 +600,13 @@ namespace Bliss.Infrastructure.Migrations
                     b.Property<Guid?>("AdvertiserOpportunityId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AuthorityStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("UNVERIFIED");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -375,9 +626,227 @@ namespace Bliss.Infrastructure.Migrations
 
                     b.HasIndex("AdvertiserOpportunityId");
 
+                    b.HasIndex("AuthorityStatus");
+
                     b.HasIndex("Status");
 
-                    b.ToTable("Campaigns", (string)null);
+                    b.ToTable("Campaigns", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Campaigns_AuthorityStatus", "\"AuthorityStatus\" IN ('UNVERIFIED', 'VERIFIED', 'SYNTHETIC_FIXTURE')");
+                        });
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.CampaignLearningProposal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorLabel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ActorSubject")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Experiment")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Hypothesis")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("ObservationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RequestSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("SuccessCriterion")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ObservationId");
+
+                    b.HasIndex("WorkspaceId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("CampaignLearningProposals");
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.CampaignLearningReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorLabel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ActorSubject")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("ProposalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Rationale")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("RequestSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProposalId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("ProposalId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("CampaignLearningReviews");
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.CampaignObservation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorLabel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ActorSubject")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<long?>("Clicks")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("Conversions")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Evidence")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("EvidenceStatus")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("HandoffId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<long?>("Impressions")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("LineageSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("LineageSnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ObservedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RequestSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("SourceLabel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime?>("WindowEnd")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("WindowStart")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HandoffId");
+
+                    b.HasIndex("WorkspaceId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("CampaignObservations");
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.CampaignPerformanceEconomics", b =>
@@ -605,6 +1074,102 @@ namespace Bliss.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("CampaignPlacementRuns", (string)null);
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.CandidateApprovalDecision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorLabel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ActorSubject")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<Guid?>("AdInventorySlotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("CreatorSafeAreaVerified")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<bool>("DimensionsVerified")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("FormatVerified")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("ImageHeight")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ImageWidth")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Rationale")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("RequestSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid?>("ReviewId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ScopeKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Stage")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdInventorySlotId");
+
+                    b.HasIndex("ReviewId");
+
+                    b.HasIndex("CandidateId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("CandidateId", "ScopeKey", "Version")
+                        .IsUnique();
+
+                    b.ToTable("CandidateApprovalDecisions");
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.CatalogConversationRow", b =>
@@ -990,6 +1555,221 @@ namespace Bliss.Infrastructure.Migrations
                     b.HasIndex("ExternalContentId");
 
                     b.ToTable("ContentItems", (string)null);
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.ControlledAiBudgetLedger", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Calls")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ReservedUsd")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ControlledAiBudgetLedgers");
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.ControlledAiDailyUsage", b =>
+                {
+                    b.Property<DateTime>("Day")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Calls")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ReservedUsd")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.Property<int>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Day");
+
+                    b.ToTable("ControlledAiDailyUsage");
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.ControlledAiEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ActorLabel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RunId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RunId", "Action")
+                        .IsUnique();
+
+                    b.ToTable("ControlledAiEvents");
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.ControlledAiRun", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorLabel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<decimal?>("ActualUsd")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.Property<Guid?>("AttachedCandidateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BriefId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CostStatus")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeadlineAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ExecutionConfigSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("FailureCode")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("InputSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("InputSnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("InputTokens")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<byte[]>("OutputImage")
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("OutputSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("OutputText")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<int?>("OutputTokens")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PromptVersion")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("ProviderRequestId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("RequestSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<decimal>("ReservedUsd")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.Property<Guid?>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttachedCandidateId");
+
+                    b.HasIndex("BriefId");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("Status", "CreatedAt");
+
+                    b.HasIndex("WorkspaceId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("ControlledAiRuns");
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.CoverageWeekRow", b =>
@@ -1457,6 +2237,96 @@ namespace Bliss.Infrastructure.Migrations
                     b.ToTable("CreativeApprovals", (string)null);
                 });
 
+            modelBuilder.Entity("Bliss.Domain.Entities.CreativeCampaignHandoff", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorLabel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("AdvertiserApprovalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AlphaQaApprovalId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CampaignPlacementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CampaignPlacementRunId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Delivery")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("InventoryFitId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("QuoteLineItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RequestSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid>("ReviewId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SnapshotJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdvertiserApprovalId");
+
+                    b.HasIndex("AlphaQaApprovalId");
+
+                    b.HasIndex("CampaignPlacementId");
+
+                    b.HasIndex("CampaignPlacementRunId");
+
+                    b.HasIndex("CandidateId");
+
+                    b.HasIndex("InventoryFitId");
+
+                    b.HasIndex("QuoteLineItemId")
+                        .IsUnique();
+
+                    b.HasIndex("ReviewId");
+
+                    b.HasIndex("WorkspaceId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.ToTable("CreativeCampaignHandoffs");
+                });
+
             modelBuilder.Entity("Bliss.Domain.Entities.Creator", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1465,6 +2335,13 @@ namespace Bliss.Infrastructure.Migrations
 
                     b.Property<int?>("AudienceSize")
                         .HasColumnType("integer");
+
+                    b.Property<string>("AuthorityStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("UNVERIFIED");
 
                     b.Property<string>("CountryCode")
                         .HasMaxLength(8)
@@ -1507,9 +2384,14 @@ namespace Bliss.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AuthorityStatus");
+
                     b.HasIndex("Name");
 
-                    b.ToTable("Creators", (string)null);
+                    b.ToTable("Creators", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Creators_AuthorityStatus", "\"AuthorityStatus\" IN ('UNVERIFIED', 'VERIFIED', 'SYNTHETIC_FIXTURE')");
+                        });
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.CreatorAudienceSnapshot", b =>
@@ -4544,6 +5426,90 @@ namespace Bliss.Infrastructure.Migrations
                     b.ToTable("WeddingPlannerAuditEvents", (string)null);
                 });
 
+            modelBuilder.Entity("Bliss.Domain.Entities.WeddingPlannerBrandDna", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorLabel")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("BrandName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Colors")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ExpectedVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Font")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Goals")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Market")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Niche")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Restrictions")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId", "IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("WorkspaceId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("WeddingPlannerBrandDna", (string)null);
+                });
+
             modelBuilder.Entity("Bliss.Domain.Entities.WeddingPlannerConversationMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4791,6 +5757,39 @@ namespace Bliss.Infrastructure.Migrations
                     b.ToTable("WeddingPlannerWorkspaces", (string)null);
                 });
 
+            modelBuilder.Entity("Bliss.Domain.Entities.AcademyProductionBrief", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.WeddingPlannerBrandDna", null)
+                        .WithMany()
+                        .HasForeignKey("BrandDnaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Bliss.Domain.Entities.WeddingPlannerWorkspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.AcademyProductionCandidate", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.AcademyProductionBrief", null)
+                        .WithMany()
+                        .HasForeignKey("BriefId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.AcademyProductionReview", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.AcademyProductionCandidate", null)
+                        .WithMany()
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Bliss.Domain.Entities.AdInventorySlot", b =>
                 {
                     b.HasOne("Bliss.Domain.Entities.ContentItem", "ContentItem")
@@ -4859,6 +5858,45 @@ namespace Bliss.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("AdvertiserOpportunity");
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.CampaignLearningProposal", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.CampaignObservation", null)
+                        .WithMany()
+                        .HasForeignKey("ObservationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Bliss.Domain.Entities.WeddingPlannerWorkspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.CampaignLearningReview", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.CampaignLearningProposal", null)
+                        .WithMany()
+                        .HasForeignKey("ProposalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.CampaignObservation", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.CreativeCampaignHandoff", null)
+                        .WithMany()
+                        .HasForeignKey("HandoffId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Bliss.Domain.Entities.WeddingPlannerWorkspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.CampaignPerformanceEconomics", b =>
@@ -4972,6 +6010,25 @@ namespace Bliss.Infrastructure.Migrations
                     b.Navigation("Creator");
                 });
 
+            modelBuilder.Entity("Bliss.Domain.Entities.CandidateApprovalDecision", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.AdInventorySlot", null)
+                        .WithMany()
+                        .HasForeignKey("AdInventorySlotId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Bliss.Domain.Entities.AcademyProductionCandidate", null)
+                        .WithMany()
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Bliss.Domain.Entities.AcademyProductionReview", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("Bliss.Domain.Entities.CompensationIllustration", b =>
                 {
                     b.HasOne("Bliss.Domain.Entities.CompensationRuleVersion", "CompensationRuleVersion")
@@ -5048,6 +6105,39 @@ namespace Bliss.Infrastructure.Migrations
                     b.Navigation("Creator");
                 });
 
+            modelBuilder.Entity("Bliss.Domain.Entities.ControlledAiEvent", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.ControlledAiRun", null)
+                        .WithMany()
+                        .HasForeignKey("RunId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.ControlledAiRun", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.AcademyProductionCandidate", null)
+                        .WithMany()
+                        .HasForeignKey("AttachedCandidateId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Bliss.Domain.Entities.AcademyProductionBrief", null)
+                        .WithMany()
+                        .HasForeignKey("BriefId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Bliss.Domain.Entities.WeddingPlannerPlanningSession", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Bliss.Domain.Entities.WeddingPlannerWorkspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Bliss.Domain.Entities.CreativeApprovalRow", b =>
                 {
                     b.HasOne("Bliss.Domain.Entities.WeddingPlannerWorkspace", "Workspace")
@@ -5057,6 +6147,63 @@ namespace Bliss.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Workspace");
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.CreativeCampaignHandoff", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.CandidateApprovalDecision", null)
+                        .WithMany()
+                        .HasForeignKey("AdvertiserApprovalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Bliss.Domain.Entities.CandidateApprovalDecision", null)
+                        .WithMany()
+                        .HasForeignKey("AlphaQaApprovalId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Bliss.Domain.Entities.CampaignPlacement", null)
+                        .WithMany()
+                        .HasForeignKey("CampaignPlacementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Bliss.Domain.Entities.CampaignPlacementRun", null)
+                        .WithMany()
+                        .HasForeignKey("CampaignPlacementRunId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Bliss.Domain.Entities.AcademyProductionCandidate", null)
+                        .WithMany()
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Bliss.Domain.Entities.CandidateApprovalDecision", null)
+                        .WithMany()
+                        .HasForeignKey("InventoryFitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Bliss.Domain.Entities.QuoteLineItem", null)
+                        .WithMany()
+                        .HasForeignKey("QuoteLineItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Bliss.Domain.Entities.AcademyProductionReview", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Bliss.Domain.Entities.WeddingPlannerWorkspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.CreatorAudienceSnapshot", b =>
@@ -5713,6 +6860,15 @@ namespace Bliss.Infrastructure.Migrations
                     b.Navigation("Session");
 
                     b.Navigation("Workspace");
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.WeddingPlannerBrandDna", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.WeddingPlannerWorkspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.WeddingPlannerConversationMessage", b =>
