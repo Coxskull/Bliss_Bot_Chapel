@@ -140,6 +140,25 @@ public sealed class CreativeHandoffTests : IClassFixture<WeddingPlannerOidcFacto
         Assert.False(matched.CampaignDeliveryAuthorized);
         Assert.Equal("NOT_SENT", matched.Delivery);
 
+        // HTTP positive path: actual persisted local prospect source metadata,
+        // exact stored workspace/session and the frozen accepted quote.
+        db.WeddingPlannerPlanningSessions.Add(session);
+        await db.SaveChangesAsync();
+        s.App.Services.GetRequiredService<ProspectDemonstrationStore>().Update(document =>
+        {
+            document.Demonstrations.RemoveAll(x => x.Slug == prospect.Slug);
+            document.Demonstrations.Add(prospect);
+        });
+        var linkedUrl = $"{s.Path}/plans/{handoff.Id}/ask-alpha-preflight?slug={prospect.Slug}";
+        var linked = await owner.GetFromJsonAsync<AskAlphaLineagePreflightReading>(linkedUrl);
+        Assert.NotNull(linked);
+        Assert.Equal("SOURCE_REFERENCES_MATCH_CONSENT_REQUIRED", linked.Status);
+        Assert.True(linked.SourceMetadataMatched);
+        Assert.False(linked.TranscriptLinked);
+        Assert.False(linked.TranscriptExportAuthorized);
+        Assert.Equal("NOT_SENT", linked.Delivery);
+        Assert.Equal(HttpStatusCode.NotFound, (await stranger.GetAsync(linkedUrl)).StatusCode);
+
         var foreign = prospect.WeddingPlannerWorkspaceId;
         prospect.WeddingPlannerWorkspaceId = Guid.NewGuid().ToString("D");
         Assert.Equal("NOT_LINKED", Inspect(prospect).Status);
