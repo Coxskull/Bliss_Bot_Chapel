@@ -142,11 +142,19 @@ jobs:
           set -euo pipefail
           node scripts/phase2-brand-intake-smoke.cjs 2>&1 | tee BrowserEvidence/phase2-brand-intake.txt
 
+      - name: Reset only the local fixture API rate-limit window after Brand Intake
+        shell: bash
+        run: bash scripts/restart-browser-fixture-api.sh phase2
+
       - name: Browser journey — Creative Academy production
         shell: bash
         run: |
           set -euo pipefail
           node scripts/phase3-production-smoke.cjs 2>&1 | tee BrowserEvidence/phase3-production.txt
+
+      - name: Reset only the local fixture API rate-limit window after Academy
+        shell: bash
+        run: bash scripts/restart-browser-fixture-api.sh phase3
 
       - name: Browser journey — Bliss handoff remains PLANNED and NOT_SENT
         shell: bash
