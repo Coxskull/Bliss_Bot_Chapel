@@ -41,6 +41,9 @@ test('read-only mock commercial evidence verifies balanced exact minor units and
     {lines:[...base.lines.slice(0,1),{...base.lines[1],amountMinor:'1'}]},
     {lines:[...base.lines.slice(0,1),{...base.lines[1],side:'Debit'}]},
     {captureJournalId:null},
+    {lines:[{...base.lines[0],role:'TEST_OTHER'},base.lines[1]]},
+    {lines:[base.lines[1],base.lines[0]]},
+    {lines:[...base.lines,{...base.lines[0],amountMinor:'0'}]},
     {scope:{...base.scope,merchantId:'not-a-guid'}}
   ]) assert.equal(validateResult('campaignEvidence',{...base,...changed}),false);
   assert.throws(()=>api.campaignEvidence('not-a-uuid'),/Exact campaign funding operation ID required/);
