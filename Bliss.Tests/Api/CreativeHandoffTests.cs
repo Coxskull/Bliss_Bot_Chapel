@@ -38,12 +38,13 @@ public sealed class CreativeHandoffTests : IClassFixture<WeddingPlannerOidcFacto
         var fixture = await CreativeHandoffTestData.Seed(scope.ServiceProvider.GetRequiredService<BlissDbContext>(), scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>());
         return new(app, fixture);
     }
-    private async Task<HttpClient> Client(Scenario s, string roles, Guid? advertiser = null, string? identity = null)
+    private async Task<HttpClient> Client(Scenario s, string roles, Guid? advertiser = null, string? identity = null, Guid? reviewWorkspace = null)
     {
         var client = s.App.CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost"), HandleCookies = true });
         client.DefaultRequestHeaders.Add("X-Test-Name", identity ?? $"Handoff {Guid.NewGuid():N}");
         client.DefaultRequestHeaders.Add("X-Test-Roles", roles);
         if (advertiser.HasValue) client.DefaultRequestHeaders.Add("X-Test-Advertiser-Id", advertiser.Value.ToString());
+        if (reviewWorkspace.HasValue) client.DefaultRequestHeaders.Add("X-Test-Review-Workspaces", reviewWorkspace.Value.ToString());
         var session = await client.GetFromJsonAsync<SessionResponse>("/api/auth/session"); client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", session!.CsrfToken); return client;
     }
     private async Task<PlanCreativeHandoff> Approve(Scenario s, HttpClient owner, HttpClient reviewer)
@@ -83,13 +84,23 @@ public sealed class CreativeHandoffTests : IClassFixture<WeddingPlannerOidcFacto
     {
         await using var s = await Setup();
         using var owner = await Client(s, "bliss.advertiser", Phase2DataSeeder.Advertiser2Id);
-        using var reviewer = await Client(s, "bliss.reviewer"); // reviewer has no advertiser_id
-        using var reader = await Client(s, "bliss.viewer", Phase2DataSeeder.Advertiser2Id);
+        using var reviewer = await Client(s, "bliss.reviewer", reviewWorkspace: s.Fixture.Workspace.WorkspaceId); // assigned, no advertiser_id
+        using var unassigned = await Client(s, "bliss.reviewer");
+        using var wrongAssignment = await Client(s, "bliss.reviewer", reviewWorkspace: Guid.NewGuid());
+        using var reader = await Client(s, "bliss.viewer", Phase2DataSeeder.Advertiser2Id, reviewWorkspace: s.Fixture.Workspace.WorkspaceId);
         var decisionsPath = $"{s.Path}/candidates/{s.Fixture.Candidate}/approvals";
 
         // Review scope does not widen normal workspace options or grant planner rights.
         Assert.Equal(HttpStatusCode.NotFound, (await reviewer.GetAsync(s.Path + "/options")).StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await reviewer.GetAsync(decisionsPath)).StatusCode);
+        // Both scope and the actual reviewer role are required; role alone and
+        // another tenant assignment cannot append any audit/approval evidence.
+        foreach (var unauthorized in new[] { unassigned, wrongAssignment, reader })
+        {
+            Assert.Equal(HttpStatusCode.Forbidden,
+                (await unauthorized.PostAsJsonAsync(decisionsPath,
+                    CreativeHandoffTestData.Approval(s.Fixture, "ALPHA_QA", Guid.NewGuid().ToString("N")))).StatusCode);
+        }
         Assert.Equal(HttpStatusCode.Forbidden,
             (await reader.PostAsJsonAsync(decisionsPath,
                 CreativeHandoffTestData.Approval(s.Fixture, "ALPHA_QA", "viewer-qa"))).StatusCode);
