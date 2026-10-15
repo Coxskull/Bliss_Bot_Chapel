@@ -72,6 +72,8 @@ jobs:
           done
           # Fixture-only consent audit. This is NOT a hosted migration.
           pg -d financial_test -f Bliss.Infrastructure/Migrations/AskAlphaConsentFixtureV1.sql
+          # Synthetic session-at-creation ownership proof, isolated/test-only.
+          pg -d financial_test -f Bliss.Infrastructure/Migrations/AskAlphaOwnershipFixtureV1.sql
           for script in \
             docs/command-gateway/001-local-inbox.sql \
             docs/command-gateway/002-local-acceptance.sql \
