@@ -70,8 +70,8 @@ public sealed class AskAlphaAuthoritativeEnrollmentPlannerTests
         Assert.False(result.CampaignDeliveryAuthorized);
         Assert.Equal("NOT_SENT",result.Delivery);
         Assert.Equal(before,await db.WeddingPlannerPlanningSessions.CountAsync());
-        Assert.Empty(db.ChangeTracker.Entries().Where(e=>e.State is
-            EntityState.Added or EntityState.Modified or EntityState.Deleted));
+        Assert.DoesNotContain(db.ChangeTracker.Entries(),
+            e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
     }
 
     [Fact]
