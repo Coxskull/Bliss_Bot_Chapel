@@ -12,7 +12,7 @@ namespace Bliss.Api.Controllers;
 
 [ApiController]
 [Route("api/wedding-planner/workspaces/{workspaceId:guid}/handoff")]
-public sealed class CreativeHandoffController(CreativeHandoffService handoff, WeddingPlannerService planner,
+public sealed class CreativeHandoffController(CreativeHandoffService handoff, AskAlphaLineagePreflightService askAlpha, WeddingPlannerService planner,
     WeddingPlannerAccess access, BlissAuthenticationOptions authentication) : ControllerBase
 {
     [HttpGet("options")]
