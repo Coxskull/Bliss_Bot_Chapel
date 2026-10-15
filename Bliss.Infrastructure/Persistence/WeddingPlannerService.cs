@@ -425,6 +425,14 @@ public sealed class WeddingPlannerService
                 throw new WeddingPlannerNotFoundException("Conversation message was not found.");
             }
 
+            // Reject changed-input retries after acquiring the per-session lock.
+            if (!string.Equals(replay.Body, text, StringComparison.Ordinal)
+                || !string.Equals(replay.ActorType, requestedActor, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new WeddingPlannerConflictException(
+                    "This idempotency key already belongs to a different message. Use a new key for a new message.");
+            }
+
             if (transaction is not null)
             {
                 await transaction.CommitAsync(cancellationToken);
@@ -472,94 +480,6 @@ public sealed class WeddingPlannerService
             await transaction.CommitAsync(cancellationToken);
         }
 
-        return ToMessageResult(message, false);
-    }
-
-    public async Task<WeddingPlannerMessageResult> AppendMessageAsync(
-        Guid sessionId,
-        string actorTypeRequested,
-        string body,
-        string sourceSystem,
-        string idempotencyKey,
-        bool isChapelStaff,
-        Guid? boundAdvertiserId,
-        string actorType,
-        string actorLabel,
-        string? requestId,
-        CancellationToken cancellationToken = default)
-    {
-        var session = await RequireSessionAsync(
-            sessionId, isChapelStaff, boundAdvertiserId, actorType, actorLabel, requestId, cancellationToken);
-        var source = Required(sourceSystem, nameof(sourceSystem), 64);
-        var key = Required(idempotencyKey, nameof(idempotencyKey), 128);
-        var text = Required(body, nameof(body), 8000);
-        var requestedActor = Required(actorTypeRequested, "actorType", 32);
-        if (!AllowedMessageActors.Contains(requestedActor))
-        {
-            throw new InvalidOperationException(
-                "Phase 1 conversation messages may only use ADVERTISER, OPERATOR, or SYSTEM actors. AI planner messages are out of scope.");
-        }
-
-        if (!isChapelStaff && !requestedActor.Equals(WeddingPlannerActorTypes.Advertiser, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new WeddingPlannerForbiddenException("Advertisers may only append ADVERTISER messages.");
-        }
-
-        var replay = await _db.WeddingPlannerConversationMessages
-            .SingleOrDefaultAsync(
-                x => x.SourceSystem == source && x.IdempotencyKey == key,
-                cancellationToken);
-        if (replay is not null)
-        {
-            if (replay.SessionId != session.Id || replay.AdvertiserId != session.AdvertiserId)
-            {
-                throw new WeddingPlannerNotFoundException("Conversation message was not found.");
-            }
-
-            if (!string.Equals(replay.Body, text, StringComparison.Ordinal)
-                || !string.Equals(replay.ActorType, requestedActor, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new WeddingPlannerConflictException(
-                    "This idempotency key already belongs to a different message. Use a new key for a new message.");
-            }
-
-            return ToMessageResult(replay, true);
-        }
-
-        var nextSequence = await _db.WeddingPlannerConversationMessages
-            .Where(x => x.SessionId == session.Id)
-            .Select(x => (int?)x.SequenceNumber)
-            .MaxAsync(cancellationToken) ?? 0;
-
-        var now = DateTime.UtcNow;
-        var message = new WeddingPlannerConversationMessage
-        {
-            Id = Guid.NewGuid(),
-            SessionId = session.Id,
-            WorkspaceId = session.WorkspaceId,
-            AdvertiserId = session.AdvertiserId,
-            SequenceNumber = nextSequence + 1,
-            ActorType = requestedActor.ToUpperInvariant(),
-            ActorLabel = actorLabel,
-            Body = text,
-            SourceSystem = source,
-            IdempotencyKey = key,
-            CreatedAt = now
-        };
-        session.UpdatedAt = now;
-        _db.WeddingPlannerConversationMessages.Add(message);
-        AddAudit(
-            session.AdvertiserId,
-            session.WorkspaceId,
-            session.Id,
-            message.Id,
-            WeddingPlannerAuditActions.MessageAppended,
-            actorType,
-            actorLabel,
-            WeddingPlannerOutcomes.Appended,
-            requestId,
-            $"Sequence {message.SequenceNumber}.");
-        await _db.SaveChangesAsync(cancellationToken);
         return ToMessageResult(message, false);
     }
 
