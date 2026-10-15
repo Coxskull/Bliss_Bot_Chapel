@@ -132,7 +132,10 @@ public sealed class FinancialBoundMockApiTests(WeddingPlannerOidcFactory factory
             Assert.Equal(2, lines.Length);
             Assert.Equal(op.AmountMinor, long.Parse(lines.Single(x => x.GetProperty("side").GetString()=="Debit").GetProperty("amountMinor").GetString()!));
             Assert.Equal(op.AmountMinor, long.Parse(lines.Single(x => x.GetProperty("side").GetString()=="Credit").GetProperty("amountMinor").GetString()!));
-            Assert.All(lines, x => Assert.StartsWith("TEST_", x.GetProperty("role").GetString()));
+            Assert.Equal("TEST_CASH", lines[0].GetProperty("role").GetString());
+            Assert.Equal("Debit", lines[0].GetProperty("side").GetString());
+            Assert.Equal("TEST_RECIPIENT", lines[1].GetProperty("role").GetString());
+            Assert.Equal("Credit", lines[1].GetProperty("side").GetString());
             Assert.Matches("^[0-9A-F]{64}$", campaignEvidence.GetProperty("sourceEvidenceSha256").GetString()!);
             var second = await staff.PostAsJsonAsync("/api/financials/mock-bound-webhooks", Request(Raw("evt_" + Guid.NewGuid().ToString("N"), profile.Id), profile.SigningSecret));
             Assert.Equal(HttpStatusCode.OK, second.StatusCode); Assert.Equal(journal, (await second.Content.ReadFromJsonAsync<Journal>())!.JournalId);
