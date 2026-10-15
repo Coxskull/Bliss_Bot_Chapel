@@ -36,6 +36,24 @@ export function validateResult(kind, value) {
       BigInt(debit.amountMinor) === BigInt(value.amountMinor) &&
       BigInt(credit.amountMinor) === BigInt(value.amountMinor);
   }
+  if (kind === 'campaignDossier') return value &&
+    ['operationId','campaignId','handoffId','quoteVersionId','candidateId',
+     'campaignPlacementId','campaignPlacementRunId'].every(k => uuid.test(value[k])) &&
+    value.currency === 'USD' && typeof value.amountMinor === 'string' &&
+    /^\d+$/.test(value.amountMinor) && BigInt(value.amountMinor) > 0n &&
+    fingerprint.test(value.sourceEvidenceSha256) && fingerprint.test(value.candidateImageSha256) &&
+    fingerprint.test(value.handoffSnapshotSha256) &&
+    Number.isSafeInteger(value.imageWidth) && value.imageWidth > 1 &&
+    Number.isSafeInteger(value.imageHeight) && value.imageHeight > 1 &&
+    value.correlationStatus === 'STORED_PLANNED_HANDOFF_CORRELATED' &&
+    value.askAlphaTranscriptStatus === 'NOT_LINKED' &&
+    value.placementPreviewStatus === 'NOT_INDEPENDENTLY_VERIFIED' &&
+    value.creativeQualityStatus === 'HISTORICAL_FIXTURE_REVIEW_ONLY' &&
+    value.alphaCommissionStatus === 'NO_APPROVED_ALLOCATION' &&
+    value.creatorCompensationStatus === 'NO_APPROVED_ALLOCATION' &&
+    value.paymentCompleted === false && value.providerCalled === false &&
+    value.creatorPayoutAuthorized === false && value.campaignReady === false &&
+    value.campaignDeliveryAuthorized === false && value.delivery === 'NOT_SENT';
   if (kind === 'case') return value && uuid.test(value.operationId) && typeof value.requiresReview === 'boolean' && fingerprint.test(value.evidenceFingerprint) && boundString(value.evidenceJson,1000000) && boundString(value.reason,200);
   if (kind === 'notes') return value && Array.isArray(value.items) && value.items.length <= 100 && value.items.every(noteValid) && (value.nextAfter === null || uuid.test(value.nextAfter));
   if (kind === 'retry') return value === null || noteValid(value);
@@ -71,6 +89,12 @@ export function createReviewApi(fetcher = fetch) {
     campaignEvidence: id => {
       if (!uuid.test(id)) throw new ReviewError('Exact campaign funding operation ID required.');
       return request('/api/financials/mock-review/cases/'+encodeURIComponent(id)+'/campaign-evidence','campaignEvidence');
+    },
+    campaignDossier: (operationId,handoffId) => {
+      if (!uuid.test(operationId) || !uuid.test(handoffId))
+        throw new ReviewError('Exact funding operation and stored handoff UUIDs required.');
+      return request('/api/financials/mock-review/cases/'+encodeURIComponent(operationId) +
+        '/campaign-dossier/'+encodeURIComponent(handoffId),'campaignDossier');
     },
     notes: (id,after) => request('/api/financials/mock-review/cases/'+encodeURIComponent(id)+'/notes?limit=25'+(after?'&after='+encodeURIComponent(after):''),'notes'),
     retry: (id,key) => request('/api/financials/mock-review/cases/'+encodeURIComponent(id)+'/note-retries/'+encodeURIComponent(key),'retry'),
