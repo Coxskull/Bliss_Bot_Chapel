@@ -22,8 +22,10 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
             return;
         }
         var parsed=new NpgsqlConnectionStringBuilder(cs);
-        Assert.Equal("127.0.0.1",parsed.Host);
-        Assert.Equal("planner_lineage_ci",parsed.Database);
+        Assert.True(
+            parsed.Host == "127.0.0.1" && parsed.Database == "planner_lineage_ci" ||
+            parsed.Host == "localhost" && parsed.Database == "bliss_ci",
+            "Only dedicated loopback CI databases may run Stage J schema tests.");
         var schema=$"agm_j_{Guid.NewGuid():N}";
         await using(var conn=new NpgsqlConnection(cs))
         {
