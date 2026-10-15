@@ -35,7 +35,8 @@ public static class AskAlphaOwnershipFixtureSignature
         DateTimeOffset now, ReadOnlySpan<byte> fixtureKey)
     {
         ValidateScope(scope);
-        if (!Regex.IsMatch(syntheticSubject ?? "", @"\Afixture-visitor-[a-z0-9-]{8,108}\z",
+        if (string.IsNullOrEmpty(syntheticSubject) ||
+            !Regex.IsMatch(syntheticSubject, @"\Afixture-visitor-[a-z0-9-]{8,108}\z",
                 RegexOptions.CultureInvariant) || fixtureKey.Length < 32 || fixtureKey.Length > 128)
             throw new ArgumentException("Only trusted synthetic visitor fixtures and strong fixture-only keys are accepted.");
         var record = new AskAlphaOwnershipFixtureReceipt(
@@ -56,12 +57,15 @@ public static class AskAlphaOwnershipFixtureSignature
             record.ExpiresAt <= now.ToUniversalTime() ||
             record.ExpiresAt <= record.IssuedAt ||
             record.ExpiresAt > record.IssuedAt.AddHours(1) ||
-            !Regex.IsMatch(record.SignatureSha256 ?? "", @"\A[0-9A-F]{64}\z") ||
-            !Regex.IsMatch(record.SubjectSha256 ?? "", @"\A[0-9A-F]{64}\z"))
+            string.IsNullOrEmpty(record.SignatureSha256) ||
+            !Regex.IsMatch(record.SignatureSha256, @"\A[0-9A-F]{64}\z") ||
+            string.IsNullOrEmpty(record.SubjectSha256) ||
+            !Regex.IsMatch(record.SubjectSha256, @"\A[0-9A-F]{64}\z"))
             return false;
         try { ValidateScope(expected); }
         catch (ArgumentException) { return false; }
-        if (!Regex.IsMatch(syntheticSubject ?? "", @"\Afixture-visitor-[a-z0-9-]{8,108}\z",
+        if (string.IsNullOrEmpty(syntheticSubject) ||
+            !Regex.IsMatch(syntheticSubject, @"\Afixture-visitor-[a-z0-9-]{8,108}\z",
                 RegexOptions.CultureInvariant))
             return false;
         var expectedSubject = SubjectDigest(expected.Issuer,syntheticSubject);
