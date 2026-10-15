@@ -1,0 +1,123 @@
+name: Isolated Wedding Planner PostgreSQL concurrency
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wedding-planner-postgres:
+    name: Planner, Brand DNA and handoff concurrency
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: planner_lineage_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d planner_lineage_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Isolated CI-only fixture; NEVER inject a hosted or production connection.
+      BLISS_TEST_POSTGRES_CONNECTION: Host=127.0.0.1;Port=5432;Database=planner_lineage_ci;Username=postgres;Password=postgres
+      PGPASSWORD: postgres
+      ASPNETCORE_ENVIRONMENT: Development
+      Authentication__Enabled: 'false'
+      Runtime__ControlledAi__Enabled: 'false'
+      FinancialPreparation__Enabled: 'false'
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Refuse anything but the disposable local PostgreSQL fixture
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$BLISS_TEST_POSTGRES_CONNECTION" = 'Host=127.0.0.1;Port=5432;Database=planner_lineage_ci;Username=postgres;Password=postgres'
+          test "$PGPASSWORD" = postgres
+          test "$ASPNETCORE_ENVIRONMENT" = Development
+          test "$Authentication__Enabled" = false
+          test "$Runtime__ControlledAi__Enabled" = false
+          test "$FinancialPreparation__Enabled" = false
+          test -f Bliss.Tests/Persistence/WeddingPlannerPostgresAppendConcurrencyTests.cs
+          test -f Bliss.Tests/Persistence/WeddingPlannerPostgresConcurrencyTests.cs
+          test -f Bliss.Tests/Persistence/BrandDnaPostgresTests.cs
+          test -f Bliss.Tests/Persistence/CreativeHandoffPersistenceTests.cs
+          mkdir -p PlannerEvidence
+
+      - name: Install pinned SDK and media test dependencies
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Install image/media fixtures
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client ffmpeg fonts-dejavu-core
+          PGPASSWORD=postgres psql -h 127.0.0.1 -p 5432 -U postgres -d planner_lineage_ci -Atc 'SELECT current_database()' | grep -Fx 'planner_lineage_ci'
+
+      - name: Build Release without a production database
+        run: |
+          dotnet restore BlissBotChapel.sln
+          dotnet build BlissBotChapel.sln --configuration Release --no-restore
+
+      - name: Exercise planner, DNA, and creative PostgreSQL concurrency twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture_filter='FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresAppendConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.BrandDnaPostgresTests|FullyQualifiedName~Bliss.Tests.Persistence.CreativeHandoffPersistenceTests'
+
+          for iteration in 1 2; do
+            echo "Running disposable PostgreSQL planner iteration $iteration"
+            # CI=true means the message-append test rejects a missing PostgreSQL
+            # fixture instead of silently passing without exercising concurrency.
+            CI=true dotnet test Bliss.Tests/Bliss.Tests.csproj \
+              --configuration Release --no-build --no-restore \
+              --filter "$fixture_filter" \
+              --logger 'console;verbosity=minimal' \
+              --logger "trx;LogFileName=planner-lineage-$iteration.trx" \
+              --results-directory PlannerEvidence | tee "PlannerEvidence/iteration-$iteration.txt"
+          done
+
+      - name: Reject skipped, failed or missing PostgreSQL concurrency tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          for iteration in (1, 2):
+              output = Path(f"PlannerEvidence/iteration-{iteration}.txt").read_text()
+              summary = re.search(
+                  r"Passed!\s*-\s*Failed:\s*(\d+),\s*Passed:\s*(\d+),\s*Skipped:\s*(\d+),\s*Total:\s*(\d+)",
+                  output,
+              )
+              if not summary:
+                  raise SystemExit(f"FAIL: planner run {iteration} has no complete test summary")
+              failed, passed, skipped, total = map(int, summary.groups())
+              print(f"Planner PostgreSQL iteration {iteration}: {passed} passed, {failed} failed, {skipped} skipped; total {total}.")
+              if failed or skipped or passed < 8 or total != passed:
+                  raise SystemExit(f"FAIL: missing/skipped/failed PostgreSQL concurrency coverage in iteration {iteration}")
+          PY
+
+      - name: Save independent PostgreSQL proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-wedding-planner-postgres-evidence
+          path: PlannerEvidence/
+          if-no-files-found: warn
+          retention-days: 14
