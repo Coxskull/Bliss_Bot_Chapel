@@ -27,10 +27,12 @@ Explicit response states:
 
 ## Acceptance checks
 
-- In-memory service-created handoff test asserts positive exact correlation, corrupt snapshot/image denial, withdrawn or sent status refusal, campaign mismatch, quote-amount mismatch and multi-line quote rejection.
+- The existing handoff service's synthetic Manila quote is PHP. Its attempted USD mock correlation is explicitly rejected; no FX conversion is assumed. A separate, fully synthetic USD-only object projection unit test exercises the positive verifier contract plus corrupt snapshot/image denial, attempted send, campaign/amount mismatch and multi-line quote rejection. **This is not yet a persisted USD end-to-end demonstration.**
 - Disposable PostgreSQL bound-mock HTTP tests exercise operator scope, denial to advertiser, refusal of unknown handoff and unregistered operation.
 - Frontend tests refuse forged/live authority and malformed amounts; the existing CI workflows must run on the **exact** new head: .NET 8/Docker, isolated financial/gateway PostgreSQL, Wedding Planner PostgreSQL and three-system browser.
 
 ## Still required for commercial demonstration
 
 Persist and bind one consented Ask Alpha fictional transcript, generate a new Medellín automotive-parts advertisement, independently assess visual quality and true inventory dimensions, obtain collecting merchant/payee identity and explicit fee split approvals, securely connect a rotated Stripe **test** key and separate signed webhook, run actual test-mode receipt/refund/reconciliation checks, and receive independent Executive AI acceptance. No live checkout, campaign send, creator payout, or production release is authorized by this work.
+
+**Newly verified integration gap (2026-10-15):** the service-produced six-market Economics fixtures use local market currencies (e.g., Manila PHP), while AGM-LAUNCH-010's accepted financial importer strictly requires an accepted USD quote. Do not relabel a PHP quote as USD or fabricate an FX rate. A separately approved USD quote path or approved conversion/settlement design is required before this new endpoint can return a genuine cross-system dossier for that fixture.
