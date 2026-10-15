@@ -78,6 +78,52 @@ public sealed class CreativeHandoffTests : IClassFixture<WeddingPlannerOidcFacto
         Assert.True((await db.AdInventorySlots.SingleAsync(x => x.Id == CreativeHandoffFixture.Slot)).IsAvailable);
     }
     [Fact]
+    public async Task Withholding_after_planning_preserves_one_not_sent_economics_snapshot()
+    {
+        await using var s = await Setup();
+        using var owner = await Client(s, "bliss.advertiser", Phase2DataSeeder.Advertiser2Id);
+        using var reviewer = await Client(s, "bliss.admin");
+        var request = await Approve(s, owner, reviewer);
+        var planned = await reviewer.PostAsJsonAsync(s.Path + "/plans", request);
+        Assert.Equal(HttpStatusCode.Created, planned.StatusCode);
+        var original = await planned.Content.ReadFromJsonAsync<PlanResponse>();
+        Assert.NotNull(original);
+        Assert.False(original.CampaignActivated);
+        var originalSnapshot = original.Handoff.SnapshotJson;
+        using (var economics = JsonDocument.Parse(originalSnapshot))
+            Assert.Equal(s.Fixture.Amount, economics.RootElement.GetProperty("lineAmount").GetDecimal());
+
+        // The advertiser may revoke future use, but must not edit past audited
+        // pricing or silently send/re-activate a previously planned placement.
+        var withdrawal = await owner.PostAsJsonAsync(
+            $"{s.Path}/candidates/{s.Fixture.Candidate}/approvals",
+            CreativeHandoffTestData.Approval(s.Fixture, "ADVERTISER", "withdraw-after-plan", 1, "WITHHOLD"));
+        Assert.Equal(HttpStatusCode.Created, withdrawal.StatusCode);
+        var attemptedSecondPlan = await reviewer.PostAsJsonAsync(
+            s.Path + "/plans", request with { IdempotencyKey = "new-plan-after-withdrawal" });
+        Assert.False(attemptedSecondPlan.IsSuccessStatusCode);
+
+        var history = await reviewer.GetFromJsonAsync<List<CreativeCampaignHandoff>>(s.Path + "/plans");
+        var retained = Assert.Single(history!);
+        Assert.Equal(original.Handoff.Id, retained.Id);
+        Assert.Equal(originalSnapshot, retained.SnapshotJson);
+        Assert.Equal(original.Handoff.CampaignPlacementId, retained.CampaignPlacementId);
+
+        using var scope = s.App.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+        Assert.Single(await db.CreativeCampaignHandoffs.ToListAsync());
+        Assert.Single(await db.CampaignPlacementRuns.Where(x => x.SourceSystem == "CREATIVE_HANDOFF_V1").ToListAsync());
+        Assert.Single(await db.WeddingPlannerAuditEvents.Where(x => x.Action == "CREATIVE_HANDOFF_PLANNED").ToListAsync());
+        Assert.Equal(2, await db.CandidateApprovalDecisions.CountAsync(x => x.Stage == "ADVERTISER"));
+        var placement = await db.CampaignPlacements.SingleAsync(x => x.Id == retained.CampaignPlacementId);
+        Assert.Equal("PLANNED", placement.Status);
+        Assert.Null(placement.StartAt);
+        Assert.Null(placement.EndAt);
+        Assert.Equal("DRAFT", (await db.Campaigns.SingleAsync(x => x.Id == s.Fixture.Campaign)).Status);
+        Assert.True((await db.AdInventorySlots.SingleAsync(x => x.Id == CreativeHandoffFixture.Slot)).IsAvailable);
+    }
+
+    [Fact]
     public async Task Advertiser_cannot_self_qa_or_plan_and_cross_tenant_anonymous_csrf_are_refused()
     {
         await using var s = await Setup(); var owner = await Client(s, "bliss.advertiser", Phase2DataSeeder.Advertiser2Id);
