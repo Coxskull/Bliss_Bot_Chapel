@@ -28,7 +28,10 @@ public sealed class StripeSandboxClient
   request.Headers.Add("Idempotency-Key",scopedKey);
   request.Headers.Add("Stripe-Version","2024-06-20");
   request.Content=new FormUrlEncodedContent(new Dictionary<string,string>{["amount"]=charge.AmountMinor.ToString(System.Globalization.CultureInfo.InvariantCulture),["currency"]=charge.Currency.ToLowerInvariant(),["automatic_payment_methods[enabled]"]="true",["metadata[merchant_id]"]=charge.Scope.MerchantId.ToString(),["metadata[campaign_id]"]=charge.Scope.CampaignId.ToString(),["metadata[module]"]=charge.Scope.Module.ToString(),["metadata[funding_reference]"]=charge.FundingReference});
-  // Bound provider I/O even if the injected HttpClient has no timeout configured.\n  using var deadline=CancellationTokenSource.CreateLinkedTokenSource(token);\n  deadline.CancelAfter(TimeSpan.FromSeconds(30));\n  using var response=await http.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,deadline.Token);
+  // Bound provider I/O even if the injected HttpClient has no timeout configured.
+  using var deadline=CancellationTokenSource.CreateLinkedTokenSource(token);
+  deadline.CancelAfter(TimeSpan.FromSeconds(30));
+  using var response=await http.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,deadline.Token);
   if(!response.IsSuccessStatusCode)throw new InvalidOperationException("Sandbox provider refused request; reconcile operation before retry.");
   await using var stream=await response.Content.ReadAsStreamAsync(deadline.Token);
   // Bounded response prevents a provider/proxy response from consuming unbounded memory.
