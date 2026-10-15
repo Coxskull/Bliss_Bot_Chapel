@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
+using System.Text.Json;
 using Bliss.Api.Security;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
@@ -45,6 +46,51 @@ public sealed class Phase8DevelopmentAuthenticationTests : IClassFixture<BlissAp
             .ResolveLabel(new ClaimsPrincipal(identity), "UNTRUSTED_BROWSER_LABEL");
 
         Assert.Equal("OIDC Operator", label);
+    }
+}
+
+
+public sealed class Phase8ReviewerWorkspaceScopeTests
+{
+    [Fact]
+    public void Reviewer_requires_explicit_matching_verified_workspace_scope()
+    {
+        var options = new BlissAuthenticationOptions { Enabled = true };
+        var target = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var other = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        ClaimsPrincipal Principal(string role, params string[] assignments)
+        {
+            var claims = new List<Claim> { new(ClaimTypes.Role, role) };
+            claims.AddRange(assignments.Select(x => new Claim(options.ReviewerWorkspaceClaimType, x)));
+            return new ClaimsPrincipal(new ClaimsIdentity(claims, "test", "name", ClaimTypes.Role));
+        }
+
+        Assert.False(BlissAuthorization.CanReviewWorkspace(Principal(options.ReviewerRole), options, target));
+        Assert.False(BlissAuthorization.CanReviewWorkspace(Principal(options.ReviewerRole, other.ToString()), options, target));
+        Assert.False(BlissAuthorization.CanReviewWorkspace(Principal(options.ReviewerRole, "*"), options, target));
+        Assert.False(BlissAuthorization.CanReviewWorkspace(Principal(options.ReviewerRole, "not-a-guid"), options, target));
+        Assert.False(BlissAuthorization.CanReviewWorkspace(Principal(options.ViewerRole, target.ToString()), options, target));
+        Assert.False(BlissAuthorization.CanReviewWorkspace(Principal(options.AdvertiserRole, target.ToString()), options, target));
+        Assert.False(BlissAuthorization.CanReviewWorkspace(Principal(options.ReviewerRole, target.ToString()), options, Guid.Empty));
+        Assert.True(BlissAuthorization.CanReviewWorkspace(Principal(options.ReviewerRole, other.ToString(), target.ToString()), options, target));
+        Assert.True(BlissAuthorization.CanReviewWorkspace(Principal(options.AdminRole), options, target));
+    }
+
+    [Fact]
+    public void Oidc_reviewer_workspace_mapping_discards_invalid_scope_and_preserves_multiple_valid_assignments()
+    {
+        const string claimType = "bliss_review_workspace_id";
+        const string first = "11111111-1111-1111-1111-111111111111";
+        const string second = "22222222-2222-2222-2222-222222222222";
+        var identity = new ClaimsIdentity(
+            [new Claim(claimType, $"[\\\"{first}\\\",\\\"*\\\",\\\"{second}\\\"]"),
+             new Claim(claimType, "not-a-guid")], "test");
+        OidcRoleClaimMapper.NormalizeReviewerWorkspaceAssignments(identity, claimType);
+        Assert.Equal(new[] { first, second }, identity.FindAll(claimType).Select(x => x.Value).OrderBy(x => x).ToArray());
+
+        using var userInfo = JsonDocument.Parse($"{{\\\"{claimType}\\\":[\\\"{second}\\\",\\\"not-a-guid\\\",\\\"{first}\\\"]}}");
+        OidcRoleClaimMapper.ApplyReviewerWorkspaceAssignments(identity, userInfo.RootElement, claimType);
+        Assert.Equal(2, identity.FindAll(claimType).Count());
     }
 }
 
