@@ -26,6 +26,10 @@ public sealed class FinancialMockReviewWorkflow(FinancialPreparationOptions opti
  }
  public async Task<MockReviewCase> Read(ClaimsPrincipal user,Guid operation,CancellationToken ct)
  {var context=Context(user);await using var data=context.Data;return await new MockFinancialReviewStore(data).Read(operation,context.Authorities,ct);}
+ // Read-only evidence for the first fictional campaign. No provider calls,
+ // commission calculation, creator entitlement, or settlement is authorized.
+ public async Task<MockCampaignFinancialEvidence> CampaignEvidence(ClaimsPrincipal user,Guid operation,CancellationToken ct)
+ {var context=Context(user);await using var data=context.Data;return await new MockFinancialReviewStore(data).CampaignEvidence(operation,context.Authorities,ct);}
  public async Task<object> ExportEvidence(ClaimsPrincipal user,Guid operation,string version,CancellationToken ct)
  {
   if(version is null||version.Length!=64||version.Any(c=>!(c>='0'&&c<='9'||c>='A'&&c<='F')))throw new ArgumentException("Bounded evidence version required.");

@@ -7,6 +7,14 @@ using Bliss.Domain.Financials;
 using Npgsql;
 namespace Bliss.Infrastructure.Financials;
 
+// This is an observed mock capture, not a real Stripe settlement or a creator payable.
+public sealed record MockCampaignLedgerLine(Guid AccountId,Guid OwnerId,string Role,string Side,[property:JsonNumberHandling(JsonNumberHandling.WriteAsString|JsonNumberHandling.AllowReadingFromString)]long AmountMinor);
+public sealed record MockCampaignFinancialEvidence(Guid OperationId,Guid QuoteVersionId,FinancialScope Scope,
+    string Currency,[property:JsonNumberHandling(JsonNumberHandling.WriteAsString|JsonNumberHandling.AllowReadingFromString)]long AmountMinor,[property:JsonIgnore(Condition=JsonIgnoreCondition.Never)]Guid? CaptureJournalId,IReadOnlyList<MockCampaignLedgerLine> Lines,
+    string SourceEvidenceSha256,string Mode="MOCK",bool PaymentCompleted=false,bool ProviderCalled=false,
+    string AlphaCommissionStatus="NO_APPROVED_ALLOCATION",string CreatorCompensationStatus="NO_APPROVED_ALLOCATION",
+    bool CreatorPayoutAuthorized=false,bool CampaignDeliveryAuthorized=false);
+
 public sealed record MockReviewAuthority(Guid QuoteVersionId,FinancialScope Scope,Guid RecipientAccountId,string AdvertiserSubject);
 public sealed record MockReviewQueueItem(Guid OperationId,FinancialScope Scope,string Currency,[property:JsonNumberHandling(JsonNumberHandling.WriteAsString|JsonNumberHandling.AllowReadingFromString)]long AmountMinor,string Reason,long NoteCount);
 public sealed record MockReviewPage(IReadOnlyList<MockReviewQueueItem> Items,[property:JsonIgnore(Condition=JsonIgnoreCondition.Never)]Guid? NextAfter);
@@ -29,6 +37,65 @@ public sealed class MockFinancialReviewStore(NpgsqlDataSource data)
   }
   return "("+string.Join(" OR ",conditions)+")";
  }
+ // Read-only Mission Control evidence. Uses the same explicitly registered
+ // operator/merchant/quote scope as the mock review workflow, never an ID-only
+ // read. Ledger and capture are observed in one PostgreSQL snapshot.
+ public async Task<MockCampaignFinancialEvidence> CampaignEvidence(
+     Guid operation,IReadOnlyList<MockReviewAuthority> authorities,CancellationToken ct=default)
+ {
+  await using var connection=await data.OpenConnectionAsync(ct);
+  await using var tx=await connection.BeginTransactionAsync(IsolationLevel.RepeatableRead,ct);
+  var evidence=await Evidence(connection,tx,operation,authorities,ct);
+  var fingerprint=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(evidence)));
+  await using var command=new NpgsqlCommand("""
+   SELECT q.id,q.merchant_id,q.module,q.campaign_id,q.currency,q.amount_minor,
+          c.journal_id,l.account_id,l.owner_id,l.role,l.side,l.minor_units
+   FROM financials.payment_operations o
+   JOIN financials.authorized_quotes q ON q.id=o.quote_id
+   LEFT JOIN financials.payment_captures c ON c.operation_id=o.id
+   LEFT JOIN financials.lines l ON l.journal_id=c.journal_id
+   WHERE o.id=@operation ORDER BY l.ordinal
+   """,connection,tx);
+  command.Parameters.AddWithValue("operation",operation);
+  Guid quote=Guid.Empty;FinancialScope? scope=null;string? currency=null;
+  long amount=0;Guid? journal=null;var lines=new List<MockCampaignLedgerLine>();
+  await using(var reader=await command.ExecuteReaderAsync(ct))
+  {
+   while(await reader.ReadAsync(ct))
+   {
+    if(scope is null)
+    {
+     quote=reader.GetGuid(0);
+     scope=new FinancialScope(reader.GetGuid(1),Enum.Parse<FinancialModule>(reader.GetString(2)),
+         reader.GetGuid(3));
+     currency=reader.GetString(4);amount=reader.GetInt64(5);
+     journal=reader.IsDBNull(6)?null:reader.GetGuid(6);
+    }
+    if(!reader.IsDBNull(7))
+    {
+     if(journal is null)throw new InvalidOperationException("Mock ledger line has no capture.");
+     lines.Add(new(reader.GetGuid(7),reader.GetGuid(8),reader.GetString(9),
+         reader.GetString(10),reader.GetInt64(11)));
+    }
+   }
+  }
+  if(scope is null||currency is null)throw new InvalidOperationException("Registered mock operation is missing.");
+  if(journal is not null)
+  {
+   // A capture without an immutable balanced journal must not look complete.
+   // The bound mock capture writer creates exactly one TEST_CASH debit and
+   // one TEST_RECIPIENT credit. A merely balanced but extra/non-test line
+   // must never be displayed as trustworthy fictional capture evidence.
+   if(amount<=0 || lines.Count!=2 ||
+       lines[0].Role!="TEST_CASH" || lines[0].Side!="Debit" || lines[0].AmountMinor!=amount ||
+       lines[1].Role!="TEST_RECIPIENT" || lines[1].Side!="Credit" || lines[1].AmountMinor!=amount)
+    throw new InvalidOperationException("Mock capture journal has missing or unexpected test-only entries.");
+  }
+  else if(lines.Count!=0)throw new InvalidOperationException("Uncaptured mock operation has journal entries.");
+  await tx.CommitAsync(ct);
+  return new(operation,quote,scope,currency,amount,journal,lines,fingerprint);
+ }
+
  public async Task<MockReviewPage> Queue(IReadOnlyList<MockReviewAuthority> authorities,FinancialModule? module,int limit,Guid? after,CancellationToken ct=default)
  {
   if(limit is <1 or >100||module is not null&&!Enum.IsDefined(module.Value))throw new ArgumentException("Bounded queue page/module required.");

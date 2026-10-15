@@ -47,7 +47,8 @@ public sealed class FinancialBoundMockApiTests(WeddingPlannerOidcFactory factory
             services.RemoveAll<FinancialPreparationOptions>(); services.AddSingleton(new FinancialPreparationOptions
             {
                 Enabled = true, Mode = "Mock", FixtureConnection = Environment.GetEnvironmentVariable("BLISS_FINANCIAL_TEST_POSTGRES")!,
-                Bindings = bindings, MockAccountProfiles = profiles.ToList(), MockSigningSecret = "whsec_fixture_legacy"
+                Bindings = bindings, MockAccountProfiles = profiles.ToList(), MockSigningSecret = "whsec_fixture_legacy",
+                MockReviewers = bindings.Select(x => new MockReviewerScope("test-BoundQA-" + x.Scope.Module, x.Scope)).ToList()
             });
         }));
         using (var scope = app.Services.CreateScope())
@@ -95,6 +96,20 @@ public sealed class FinancialBoundMockApiTests(WeddingPlannerOidcFactory factory
             using (var scope = app.Services.CreateScope()) { var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>(); (await db.Quotes.FindAsync(b.SourceQuoteId))!.Status = "REJECTED"; await db.SaveChangesAsync(); }
             Assert.Equal(HttpStatusCode.Conflict, (await staff.PostAsJsonAsync("/api/financials/mock-bound-webhooks", request)).StatusCode);
             using (var scope = app.Services.CreateScope()) { var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>(); (await db.Quotes.FindAsync(b.SourceQuoteId))!.Status = "ACCEPTED"; await db.SaveChangesAsync(); }
+            // BEFORE the signed mock callback, the new read-only Mission Control
+            // endpoint must show the stored operation but no journal, revenue,
+            // commission or creator-payable entitlement.
+            var evidencePath = "/api/financials/mock-review/cases/" + op.Id + "/campaign-evidence";
+            Assert.Equal(HttpStatusCode.Forbidden, (await owner.GetAsync(evidencePath)).StatusCode);
+            var beforePayment = (await staff.GetFromJsonAsync<JsonElement>(evidencePath)).GetProperty("result");
+            Assert.Equal(op.Id, beforePayment.GetProperty("operationId").GetGuid());
+            Assert.Equal(op.Scope.CampaignId, beforePayment.GetProperty("scope").GetProperty("campaignId").GetGuid());
+            Assert.Equal(op.AmountMinor, long.Parse(beforePayment.GetProperty("amountMinor").GetString()!));
+            Assert.Equal(JsonValueKind.Null, beforePayment.GetProperty("captureJournalId").ValueKind);
+            Assert.Empty(beforePayment.GetProperty("lines").EnumerateArray());
+            Assert.False(beforePayment.GetProperty("paymentCompleted").GetBoolean());
+            Assert.False(beforePayment.GetProperty("creatorPayoutAuthorized").GetBoolean());
+            Assert.Equal("NO_APPROVED_ALLOCATION", beforePayment.GetProperty("alphaCommissionStatus").GetString());
             var captures = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => staff.PostAsJsonAsync("/api/financials/mock-bound-webhooks", request)));
             Guid journal = Guid.Empty;
             foreach (var capture in captures)
@@ -103,6 +118,25 @@ public sealed class FinancialBoundMockApiTests(WeddingPlannerOidcFactory factory
                 if (journal == Guid.Empty) journal = result.JournalId; Assert.Equal(journal, result.JournalId);
                 Assert.False(result.PaymentCompleted); Assert.False(result.ProviderCalled); Assert.Equal(FinancialAccountPolicy.StripeAccountStatus, result.StripeAccountStatus); capture.Dispose();
             }
+            // AFTER eight concurrent exact signed callbacks, there is still
+            // one capture and one balanced mock journal (not 8 transactions).
+            var campaignEvidence = (await staff.GetFromJsonAsync<JsonElement>(evidencePath)).GetProperty("result");
+            Assert.Equal(journal, campaignEvidence.GetProperty("captureJournalId").GetGuid());
+            Assert.Equal("MOCK", campaignEvidence.GetProperty("mode").GetString());
+            Assert.False(campaignEvidence.GetProperty("paymentCompleted").GetBoolean());
+            Assert.False(campaignEvidence.GetProperty("providerCalled").GetBoolean());
+            Assert.False(campaignEvidence.GetProperty("campaignDeliveryAuthorized").GetBoolean());
+            Assert.Equal("NO_APPROVED_ALLOCATION", campaignEvidence.GetProperty("alphaCommissionStatus").GetString());
+            Assert.Equal("NO_APPROVED_ALLOCATION", campaignEvidence.GetProperty("creatorCompensationStatus").GetString());
+            var lines = campaignEvidence.GetProperty("lines").EnumerateArray().ToArray();
+            Assert.Equal(2, lines.Length);
+            Assert.Equal(op.AmountMinor, long.Parse(lines.Single(x => x.GetProperty("side").GetString()=="Debit").GetProperty("amountMinor").GetString()!));
+            Assert.Equal(op.AmountMinor, long.Parse(lines.Single(x => x.GetProperty("side").GetString()=="Credit").GetProperty("amountMinor").GetString()!));
+            Assert.Equal("TEST_CASH", lines[0].GetProperty("role").GetString());
+            Assert.Equal("Debit", lines[0].GetProperty("side").GetString());
+            Assert.Equal("TEST_RECIPIENT", lines[1].GetProperty("role").GetString());
+            Assert.Equal("Credit", lines[1].GetProperty("side").GetString());
+            Assert.Matches("^[0-9A-F]{64}$", campaignEvidence.GetProperty("sourceEvidenceSha256").GetString()!);
             var second = await staff.PostAsJsonAsync("/api/financials/mock-bound-webhooks", Request(Raw("evt_" + Guid.NewGuid().ToString("N"), profile.Id), profile.SigningSecret));
             Assert.Equal(HttpStatusCode.OK, second.StatusCode); Assert.Equal(journal, (await second.Content.ReadFromJsonAsync<Journal>())!.JournalId);
             // A valid re-signed but changed body with the original event ID conflicts with immutable evidence.
