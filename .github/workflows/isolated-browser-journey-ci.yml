@@ -163,6 +163,13 @@ jobs:
           node scripts/phase5-handoff-smoke.cjs 2>&1 | tee BrowserEvidence/phase5-handoff.txt
           grep -Fq 'No paid AI calls.' BrowserEvidence/phase5-handoff.txt
 
+      - name: Browser journey — Ask Alpha consent/withdrawal preview never persists or authorizes
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/phase7-consent-preview-smoke.cjs 2>&1 | tee BrowserEvidence/phase7-consent-preview.txt
+          grep -Fq 'real consent NOT RECORDED' BrowserEvidence/phase7-consent-preview.txt
+
       - name: Verify no sent placement or activated fixture campaign
         shell: bash
         run: |
