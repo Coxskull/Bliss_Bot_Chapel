@@ -8,7 +8,7 @@ using Npgsql;
 namespace Bliss.Infrastructure.Financials;
 
 // This is an observed mock capture, not a real Stripe settlement or a creator payable.
-public sealed record MockCampaignLedgerLine(Guid AccountId,Guid OwnerId,string Role,JournalSide Side,long AmountMinor);
+public sealed record MockCampaignLedgerLine(Guid AccountId,Guid OwnerId,string Role,string Side,long AmountMinor);
 public sealed record MockCampaignFinancialEvidence(Guid OperationId,Guid QuoteVersionId,FinancialScope Scope,
     string Currency,long AmountMinor,Guid? CaptureJournalId,IReadOnlyList<MockCampaignLedgerLine> Lines,
     string SourceEvidenceSha256,string Mode="MOCK",bool PaymentCompleted=false,bool ProviderCalled=false,
@@ -75,7 +75,7 @@ public sealed class MockFinancialReviewStore(NpgsqlDataSource data)
     {
      if(journal is null)throw new InvalidOperationException("Mock ledger line has no capture.");
      lines.Add(new(reader.GetGuid(7),reader.GetGuid(8),reader.GetString(9),
-         Enum.Parse<JournalSide>(reader.GetString(10)),reader.GetInt64(11)));
+         reader.GetString(10),reader.GetInt64(11)));
     }
    }
   }
@@ -83,8 +83,8 @@ public sealed class MockFinancialReviewStore(NpgsqlDataSource data)
   if(journal is not null)
   {
    // A capture without an immutable balanced journal must not look complete.
-   if(lines.Count<2 || lines.Where(x=>x.Side==JournalSide.Debit).Sum(x=>x.AmountMinor)!=amount ||
-       lines.Where(x=>x.Side==JournalSide.Credit).Sum(x=>x.AmountMinor)!=amount)
+   if(lines.Count<2 || lines.Where(x=>x.Side=="Debit").Sum(x=>x.AmountMinor)!=amount ||
+       lines.Where(x=>x.Side=="Credit").Sum(x=>x.AmountMinor)!=amount)
     throw new InvalidOperationException("Mock capture journal is incomplete or unbalanced.");
   }
   else if(lines.Count!=0)throw new InvalidOperationException("Uncaptured mock operation has journal entries.");
