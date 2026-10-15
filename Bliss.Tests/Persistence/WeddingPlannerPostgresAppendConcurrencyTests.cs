@@ -1,6 +1,7 @@
 using Bliss.Domain.Entities;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Npgsql;
 
 namespace Bliss.Tests.Persistence;
@@ -47,7 +48,7 @@ public sealed class WeddingPlannerPostgresAppendConcurrencyTests
             Guid sessionId;
             await using (var setup = new BlissDbContext(options))
             {
-                await setup.Database.EnsureCreatedAsync();
+                await setup.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>().CreateTablesAsync();
                 setup.Advertisers.Add(new Advertiser
                 {
                     Id = advertiserId,
@@ -103,6 +104,10 @@ public sealed class WeddingPlannerPostgresAppendConcurrencyTests
             Assert.Equal(sameKeyResults[0].MessageId, sameKeyResults[1].MessageId);
             Assert.Single(sameKeyResults, result => result.IsReplay);
             Assert.Single(sameKeyResults, result => !result.IsReplay);
+
+            // Changed input must conflict even after concurrent same-key replay.
+            await Assert.ThrowsAsync<Bliss.Domain.WeddingPlanner.WeddingPlannerConflictException>(
+                () => Append(sharedKey, "Changed_input_after_concurrent_replay"));
 
             var distinctKeyResults = await Task.WhenAll(
                 Append("distinct-request-a", "first distinct request"),
