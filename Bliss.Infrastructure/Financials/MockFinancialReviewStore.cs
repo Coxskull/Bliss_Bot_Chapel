@@ -8,9 +8,9 @@ using Npgsql;
 namespace Bliss.Infrastructure.Financials;
 
 // This is an observed mock capture, not a real Stripe settlement or a creator payable.
-public sealed record MockCampaignLedgerLine(Guid AccountId,Guid OwnerId,string Role,string Side,long AmountMinor);
+public sealed record MockCampaignLedgerLine(Guid AccountId,Guid OwnerId,string Role,string Side,[property:JsonNumberHandling(JsonNumberHandling.WriteAsString|JsonNumberHandling.AllowReadingFromString)]long AmountMinor);
 public sealed record MockCampaignFinancialEvidence(Guid OperationId,Guid QuoteVersionId,FinancialScope Scope,
-    string Currency,long AmountMinor,Guid? CaptureJournalId,IReadOnlyList<MockCampaignLedgerLine> Lines,
+    string Currency,[property:JsonNumberHandling(JsonNumberHandling.WriteAsString|JsonNumberHandling.AllowReadingFromString)]long AmountMinor,Guid? CaptureJournalId,IReadOnlyList<MockCampaignLedgerLine> Lines,
     string SourceEvidenceSha256,string Mode="MOCK",bool PaymentCompleted=false,bool ProviderCalled=false,
     string AlphaCommissionStatus="NO_APPROVED_ALLOCATION",string CreatorCompensationStatus="NO_APPROVED_ALLOCATION",
     bool CreatorPayoutAuthorized=false,bool CampaignDeliveryAuthorized=false);
