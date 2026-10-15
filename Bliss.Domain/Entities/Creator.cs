@@ -25,6 +25,7 @@ public class Creator
     public string? PrimaryAgeRange { get; set; }
     public string? PrimaryGeography { get; set; }
     public string? EngagementLevel { get; set; }
+    public string AuthorityStatus { get; set; } = "UNVERIFIED";
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 

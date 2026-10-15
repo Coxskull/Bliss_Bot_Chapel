@@ -50,6 +50,7 @@ public sealed class Phase1DataSeeder
             PrimaryAgeRange = "18-34",
             PrimaryGeography = "Metro Manila",
             EngagementLevel = "STRONG",
+            AuthorityStatus = RecordAuthorityStatuses.SyntheticFixture,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -130,7 +131,8 @@ public sealed class Phase1DataSeeder
             CommissionPercentage = 12.5m,
             CommissionType = "PERCENTAGE",
             ExternalOpportunityId = "OPP-TEST-A",
-            Status = EntityStatuses.Active
+            Status = EntityStatuses.Active,
+            AuthorityStatus = RecordAuthorityStatuses.SyntheticFixture
         };
 
         var opportunityB = new AdvertiserOpportunity
@@ -145,7 +147,8 @@ public sealed class Phase1DataSeeder
             CommissionPercentage = 10m,
             CommissionType = "PERCENTAGE",
             ExternalOpportunityId = "OPP-TEST-B",
-            Status = EntityStatuses.Active
+            Status = EntityStatuses.Active,
+            AuthorityStatus = RecordAuthorityStatuses.SyntheticFixture
         };
 
         var opportunityC = new AdvertiserOpportunity
@@ -160,7 +163,8 @@ public sealed class Phase1DataSeeder
             FixedFee = 250m,
             CommissionType = "FIXED",
             ExternalOpportunityId = "OPP-TEST-C",
-            Status = EntityStatuses.Active
+            Status = EntityStatuses.Active,
+            AuthorityStatus = RecordAuthorityStatuses.SyntheticFixture
         };
 
         var network = new AffiliateNetwork
@@ -269,6 +273,7 @@ public sealed class Phase1DataSeeder
             Id = Guid.Parse("dddddddd-dddd-dddd-dddd-ddddddddddd1"),
             Name = "Phase 1 Foundation Campaign",
             Status = EntityStatuses.Draft,
+            AuthorityStatus = RecordAuthorityStatuses.SyntheticFixture,
             CreatedAt = now
         };
 
@@ -298,7 +303,8 @@ public sealed class Phase1DataSeeder
             CreatedAt = now,
             UpdatedAt = now,
             FemalePercentage = null,
-            MalePercentage = null
+            MalePercentage = null,
+            AuthorityStatus = RecordAuthorityStatuses.SyntheticFixture
         };
 
         _db.Creators.AddRange(creator, unknownCreator);

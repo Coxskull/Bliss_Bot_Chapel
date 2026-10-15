@@ -24,6 +24,7 @@ public class AdvertiserOpportunity
     public string? CommissionType { get; set; }
     public string? ExternalOpportunityId { get; set; }
     public string Status { get; set; } = "ACTIVE";
+    public string AuthorityStatus { get; set; } = "UNVERIFIED";
 
     public AdvertiserProgram AdvertiserProgram { get; set; } = null!;
     public ICollection<BlissMatch> BlissMatches { get; set; } = new List<BlissMatch>();

@@ -1,0 +1,9 @@
+# AGM-LAUNCH-005-GAP-001 — proposed creative identity
+
+This read-only local proposal reuses AcademyProductionCandidate/Brief and WeddingPlannerWorkspace rather than adding an asset store. An exact scoped lineage proposal must pass PR195's checklist. A distinct trusted inspector selects workspace, candidate, expected version and image SHA256. A read-only repeatable-read transaction validates active advertiser ownership, candidate-to-brief-to-workspace scope, latest candidate version and the SHA256 of actual bounded stored bytes (not just the stored hash label).
+
+The report pins the checklist SHA and selected creative identity. It is PROPOSED_ONLY: selecting a same-advertiser candidate does not prove that any existing CreativeCampaignHandoff assigns it to the campaign. Existing handoff correlation, real usage rights, creator consent and advertiser authority remain missing. Candidate byte verification is not image quality, independent QA or legal authority. All assignment/authority/acceptance flags remain false; NOT_SENT.
+
+No route, DI registration, new table, upload, decision persistence, handoff write or activation integration is added. Existing local fixture guards, trusted canonical identity assumptions and synthetic-only lineage apply. Lineage and creative reads use separate snapshots; this does not lock against subsequent changes. Real-party documents and exact handoff proof remain future evidence work, not fabricated approvals.
+
+Tests use actual PostgreSQL and existing Academy fixture submission: scoped selection, actual byte hash and version, malformed expectations, foreign workspace/advertiser, missing inspection permission, stale source, corrupt stored bytes/hash, newer candidate revision and unchanged proposal/handoff records. Release, regression, dependency audit and model parity remain required. Engineering logs the milestone in G18/I18, preserving Executive fields and history.

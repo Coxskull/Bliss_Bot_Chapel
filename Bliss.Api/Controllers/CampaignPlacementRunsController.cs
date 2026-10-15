@@ -172,8 +172,17 @@ public sealed class CampaignBindingsController : ControllerBase
                 x.Id,
                 x.CreatorId,
                 x.Creator.Name,
+                x.Creator.AuthorityStatus,
                 x.AdvertiserOpportunityId,
                 x.AdvertiserOpportunity.Name,
+                x.AdvertiserOpportunity.AuthorityStatus,
+                x.Creator.AuthorityStatus == RecordAuthorityStatuses.Verified
+                    && x.AdvertiserOpportunity.AuthorityStatus == RecordAuthorityStatuses.Verified
+                    ? "VERIFIED_READY"
+                    : x.Creator.AuthorityStatus == RecordAuthorityStatuses.SyntheticFixture
+                        && x.AdvertiserOpportunity.AuthorityStatus == RecordAuthorityStatuses.SyntheticFixture
+                        ? "SYNTHETIC_ONLY"
+                        : "AUTHORITY_REQUIRED",
                 x.OverallScore,
                 x.ConfidenceScore,
                 _db.ContentItems.Count(content => content.CreatorId == x.CreatorId),
