@@ -56,6 +56,8 @@ jobs:
           test -f Bliss.Tests/Persistence/WeddingPlannerPostgresConcurrencyTests.cs
           test -f Bliss.Tests/Persistence/BrandDnaPostgresTests.cs
           test -f Bliss.Tests/Persistence/CreativeHandoffPersistenceTests.cs
+          test -f Bliss.Infrastructure/Migrations/AskAlphaVisitorOwnershipStagingV1.sql
+          test -f Bliss.Tests/Persistence/AskAlphaVisitorOwnershipStagingPostgresTests.cs
           mkdir -p PlannerEvidence
 
       - name: Install pinned SDK and media test dependencies
@@ -78,7 +80,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          fixture_filter='FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresAppendConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.BrandDnaPostgresTests|FullyQualifiedName~Bliss.Tests.Persistence.CreativeHandoffPersistenceTests'
+          fixture_filter='FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresAppendConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.BrandDnaPostgresTests|FullyQualifiedName~Bliss.Tests.Persistence.CreativeHandoffPersistenceTests|FullyQualifiedName~Bliss.Tests.Persistence.AskAlphaVisitorOwnershipStagingPostgresTests'
 
           for iteration in 1 2; do
             echo "Running disposable PostgreSQL planner iteration $iteration"
