@@ -85,7 +85,9 @@ public sealed class AskAlphaOwnershipFixtureTests
     [Fact]
     public void Issuance_refuses_unbounded_or_untrusted_fixture_input()
     {
-        var s=Scope(),key=RandomNumberGenerator.GetBytes(32),now=DateTimeOffset.UtcNow;
+        var s=Scope();
+        var key=RandomNumberGenerator.GetBytes(32);
+        var now=DateTimeOffset.UtcNow;
         Assert.Throws<ArgumentException>(()=>AskAlphaOwnershipFixtureSignature.SignSyntheticAtCreation(
             s,"advertiser-owner",now,key));
         Assert.Throws<ArgumentException>(()=>AskAlphaOwnershipFixtureSignature.SignSyntheticAtCreation(
