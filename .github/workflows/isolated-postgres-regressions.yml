@@ -76,6 +76,8 @@ jobs:
           pg -d financial_test -f Bliss.Infrastructure/Migrations/AskAlphaOwnershipFixtureV1.sql
           # Stage E atomic server-generated synthetic session + signed receipt.
           pg -d financial_test -f Bliss.Infrastructure/Migrations/AskAlphaAtomicEnrollmentFixtureV1.sql
+          # Stage G visitor consent state machine: strictly synthetic, not a hosted migration.
+          pg -d financial_test -f Bliss.Infrastructure/Migrations/AskAlphaConsentBoundaryFixtureV1.sql
           for script in \
             docs/command-gateway/001-local-inbox.sql \
             docs/command-gateway/002-local-acceptance.sql \
