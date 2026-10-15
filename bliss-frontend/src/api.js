@@ -10,6 +10,28 @@ export function validateResult(kind, value) {
   if (kind === 'export') return value && boundString(value.artifactJson,2000000) && fingerprint.test(value.sha256);
   if (kind === 'recovery') return value && fingerprint.test(value.actorKey);
   if (kind === 'queue') return value && Array.isArray(value.items) && value.items.length <= 100 && (value.nextAfter === null || uuid.test(value.nextAfter)) && value.items.every(i => uuid.test(i.operationId) && i.scope && uuid.test(i.scope.merchantId) && uuid.test(i.scope.campaignId) && (modules.includes(i.scope.module) || [0,1,2].includes(i.scope.module)) && i.currency === 'USD' && /^\d+$/.test(i.amountMinor) && typeof i.amountMinor === 'string' && boundString(i.reason,200));
+  if (kind === 'campaignEvidence') {
+    if (!value || !uuid.test(value.operationId) || !uuid.test(value.quoteVersionId) ||
+        !value.scope || !uuid.test(value.scope.merchantId) || !uuid.test(value.scope.campaignId) ||
+        !(modules.includes(value.scope.module) || [0,1,2].includes(value.scope.module)) ||
+        value.currency !== 'USD' || typeof value.amountMinor !== 'string' || !/^\\d+$/.test(value.amountMinor) ||
+        !fingerprint.test(value.sourceEvidenceSha256) || value.mode !== 'MOCK' ||
+        value.paymentCompleted !== false || value.providerCalled !== false ||
+        value.creatorPayoutAuthorized !== false || value.campaignDeliveryAuthorized !== false ||
+        value.alphaCommissionStatus !== 'NO_APPROVED_ALLOCATION' ||
+        value.creatorCompensationStatus !== 'NO_APPROVED_ALLOCATION' ||
+        !(value.captureJournalId === null || uuid.test(value.captureJournalId)) ||
+        !Array.isArray(value.lines) || value.lines.length > 100) return false;
+    if (value.lines.some(line => !uuid.test(line.accountId) || !uuid.test(line.ownerId) ||
+        !boundString(line.role,64) || !line.role.startsWith('TEST_') ||
+        !['Debit','Credit'].includes(line.side) || typeof line.amountMinor !== 'string' ||
+        !/^\\d+$/.test(line.amountMinor))) return false;
+    if (value.captureJournalId === null) return value.lines.length === 0;
+    if (value.lines.length < 2) return false;
+    const sum = side => value.lines.filter(line=>line.side===side)
+      .reduce((amount,line)=>amount+BigInt(line.amountMinor),0n);
+    return sum('Debit') === BigInt(value.amountMinor) && sum('Credit') === BigInt(value.amountMinor);
+  }
   if (kind === 'case') return value && uuid.test(value.operationId) && typeof value.requiresReview === 'boolean' && fingerprint.test(value.evidenceFingerprint) && boundString(value.evidenceJson,1000000) && boundString(value.reason,200);
   if (kind === 'notes') return value && Array.isArray(value.items) && value.items.length <= 100 && value.items.every(noteValid) && (value.nextAfter === null || uuid.test(value.nextAfter));
   if (kind === 'retry') return value === null || noteValid(value);
@@ -42,6 +64,10 @@ export function createReviewApi(fetcher = fetch) {
     recoveryContext: () => request('/api/financials/mock-review/recovery-context','recovery'),
     queue: (module, after) => request('/api/financials/mock-review/queue?limit=25'+(module?'&module='+encodeURIComponent(module):'')+(after?'&after='+encodeURIComponent(after):''),'queue'),
     case: id => request('/api/financials/mock-review/cases/'+encodeURIComponent(id),'case'),
+    campaignEvidence: id => {
+      if (!uuid.test(id)) throw new ReviewError('Exact campaign funding operation ID required.');
+      return request('/api/financials/mock-review/cases/'+encodeURIComponent(id)+'/campaign-evidence','campaignEvidence');
+    },
     notes: (id,after) => request('/api/financials/mock-review/cases/'+encodeURIComponent(id)+'/notes?limit=25'+(after?'&after='+encodeURIComponent(after):''),'notes'),
     retry: (id,key) => request('/api/financials/mock-review/cases/'+encodeURIComponent(id)+'/note-retries/'+encodeURIComponent(key),'retry'),
     exportEvidence: (id,version) => request('/api/financials/mock-review/cases/'+encodeURIComponent(id)+'/evidence-export?evidenceFingerprint='+encodeURIComponent(version),'export'),
