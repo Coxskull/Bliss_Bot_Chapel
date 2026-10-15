@@ -40,17 +40,18 @@ const png = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAYAAAB3AH1ZAAAAI0lEQVR4nGMI0Oj5P5C
       await page.locator("#workspace").selectOption(workspace.workspaceId);
       await page.getByRole("button", { name: "Open handoff workspace", exact: true }).click();
       await page.waitForFunction(() => document.querySelector("#status").textContent.includes("Handoff workspace loaded"));
+      // Re-select the exact test-owned approved brief/candidate on every open,
+      // including after reload. A workspace can contain older REVISE candidates.
+      await page.locator("#brief").selectOption(brief.brief.id);
+      await page.getByRole("button", { name: "Load candidate history", exact: true }).click();
+      await page.waitForFunction(id => [...document.querySelector("#candidate").options].some(option => option.value === id), candidate.candidate.id);
+      await page.locator("#candidate").selectOption(candidate.candidate.id);
+      await page.waitForFunction(id => document.querySelector("#creative img")?.getAttribute("src")?.includes(id), candidate.candidate.id);
+      assert.match(await page.locator("#creative").textContent(), /PASS/);
+      await page.locator("#match").selectOption(match);
+      await page.locator("#slot").selectOption(slot);
     }
     await open();
-    // The earlier synthetic Brand Intake/Academy journeys can leave multiple
-    // briefs in the primary workspace. Select only the new PASS-reviewed asset,
-    // never an unrelated or unapproved candidate from a previous fixture.
-    await page.locator("#brief").selectOption(brief.brief.id);
-    await page.getByRole("button", { name: "Load candidate history", exact: true }).click();
-    await page.waitForFunction(id => [...document.querySelector("#candidate").options].some(option => option.value === id), candidate.candidate.id);
-    await page.locator("#candidate").selectOption(candidate.candidate.id);
-    assert.match(await page.locator("#creative").textContent(), /PASS/);
-    await page.locator("#match").selectOption(match); await page.locator("#slot").selectOption(slot);
     assert.match(await page.locator("#price").textContent(), new RegExp(String(quote.versions[0].lineItems[0].lineAmount).replace('.', '\\.')));
     await page.locator("#creative img").evaluate(image => image.decode());
     assert.match(await page.locator("#identity").textContent(), /separate authenticated principals/);
