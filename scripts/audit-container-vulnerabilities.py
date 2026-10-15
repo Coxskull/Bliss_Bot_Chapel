@@ -19,7 +19,7 @@ SCANNER_ARCHIVE_SHA256 = "0a9ee97ef5ae2ee953b0a80098105052e846cdbe319a57d808b519
 def validate_database(status, now):
     if status.get("valid") is not True or status.get("error"):
         raise ValueError("Vulnerability database is not valid")
-    if not str(status.get("schemaVersion", "")).startswith("6."):
+    if not re.fullmatch(r"v?6\.[0-9]+\.[0-9]+", str(status.get("schemaVersion", ""))):
         raise ValueError("Unexpected vulnerability database schema")
     built = dt.datetime.fromisoformat(status["built"].replace("Z", "+00:00"))
     if built.tzinfo is None:

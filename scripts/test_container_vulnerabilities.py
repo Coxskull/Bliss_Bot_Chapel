@@ -14,9 +14,12 @@ class VulnerabilityEvidenceTests(unittest.TestCase):
     def test_database_requires_hash_valid_recent_timestamp_and_expected_schema(self):
         valid = {"valid": True, "built": "2026-10-14T10:00:00Z", "schemaVersion": "6.0.0"}
         gate["validate_database"](valid, NOW)
+        # Actual Grype0.120.1 DB status prefixes its semantic version with v.
+        gate["validate_database"]({**valid, "schemaVersion": "v6.1.10"}, NOW)
         for update in [{"valid": False}, {"error": "download failed"}, {"schemaVersion": "5.0.0"},
                        {"built": "2026-10-12T00:00:00Z"}, {"built": "2026-10-16T00:00:00Z"},
-                       {"built": "2026-10-14T10:00:00"}]:
+                       {"built": "2026-10-14T10:00:00"}, {"schemaVersion": "6.bad"},
+                       {"schemaVersion": "v7.1.10"}]:
             with self.subTest(update=update), self.assertRaises(ValueError):
                 gate["validate_database"]({**valid, **update}, NOW)
 
