@@ -1,0 +1,131 @@
+name: Isolated financial and gateway PostgreSQL regressions
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-postgres-regressions:
+    name: Financial and gateway fixture verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Synthetic CI-only fixtures. Production credentials and connected
+      # databases must never be passed to this workflow.
+      BLISS_FINANCIAL_TEST_POSTGRES: Host=127.0.0.1;Port=5432;Database=financial_test;Username=postgres;Password=postgres
+      BLISS_GATEWAY_TEST_POSTGRES: Host=127.0.0.1;Port=5432;Database=gateway_test;Username=postgres;Password=postgres
+      PGPASSWORD: postgres
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Guard disposable fixture identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$BLISS_FINANCIAL_TEST_POSTGRES" = 'Host=127.0.0.1;Port=5432;Database=financial_test;Username=postgres;Password=postgres'
+          test "$BLISS_GATEWAY_TEST_POSTGRES" = 'Host=127.0.0.1;Port=5432;Database=gateway_test;Username=postgres;Password=postgres'
+          test "$PGPASSWORD" = postgres
+          test -f Bliss.Infrastructure/Migrations/FinancialFoundationV1.sql
+          test -f docs/command-gateway/001-local-inbox.sql
+
+      - name: Install fixture and media dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client ffmpeg fonts-dejavu-core
+
+      - name: Create two disposable loopback databases and apply local-only schemas
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg() { psql --no-password -h 127.0.0.1 -p 5432 -U postgres -v ON_ERROR_STOP=1 "$@"; }
+          pg -d postgres -c 'CREATE DATABASE financial_test;'
+          pg -d postgres -c 'CREATE DATABASE gateway_test;'
+          for script in \
+            Bliss.Infrastructure/Migrations/FinancialFoundationV1.sql \
+            Bliss.Infrastructure/Migrations/FinancialDispatchV1.sql \
+            Bliss.Infrastructure/Migrations/FinancialMockCallbacksV1.sql \
+            Bliss.Infrastructure/Migrations/FinancialMockReconciliationV1.sql \
+            Bliss.Infrastructure/Migrations/FinancialMockReviewV1.sql; do
+            pg -d financial_test -f "$script"
+          done
+          for script in \
+            docs/command-gateway/001-local-inbox.sql \
+            docs/command-gateway/002-local-acceptance.sql \
+            docs/command-gateway/003-local-delivery.sql \
+            docs/command-gateway/004-local-budget-stop.sql \
+            docs/command-gateway/005-local-task-loop.sql \
+            docs/command-gateway/006-local-observability.sql; do
+            pg -d gateway_test -f "$script"
+          done
+          test "$(pg -d financial_test -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='financials'")" -gt 5
+          test "$(pg -d gateway_test -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='command_gateway'")" -gt 5
+
+      - name: Set up .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore and build Release
+        run: |
+          dotnet restore BlissBotChapel.sln
+          dotnet build BlissBotChapel.sln --configuration Release --no-restore
+
+      - name: Run previously skipped financial and gateway regression families
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet test Bliss.Tests/Bliss.Tests.csproj \
+            --configuration Release --no-build --no-restore \
+            --filter 'FullyQualifiedName~Bliss.Tests.Financials|FullyQualifiedName~Bliss.Tests.CommandGateway|FullyQualifiedName~Bliss.Tests.Api.Financial' \
+            --logger 'console;verbosity=minimal' \
+            --logger 'trx;LogFileName=isolated-fixtures.trx' \
+            --results-directory IsolatedFixtureResults | tee isolated-fixture-console.txt
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          output = Path("isolated-fixture-console.txt").read_text()
+          results = re.search(
+              r"Passed!\s*-\s*Failed:\s*(\d+),\s*Passed:\s*(\d+),\s*Skipped:\s*(\d+),\s*Total:\s*(\d+)",
+              output,
+          )
+          if results is None:
+              raise SystemExit("FAIL: missing complete isolated regression summary")
+          failed, passed, skipped, total = map(int, results.groups())
+          print(f"Fixture regressions: {passed} passed, {failed} failed, {skipped} skipped, {total} total.")
+          if failed != 0 or skipped != 0 or passed < 50:
+              raise SystemExit("FAIL: fixture coverage not fully exercised or verification too small")
+          PY
+
+      - name: Upload isolated regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-postgres-regression-evidence
+          path: |
+            IsolatedFixtureResults/**/*.trx
+            isolated-fixture-console.txt
+          if-no-files-found: warn
+          retention-days: 14
