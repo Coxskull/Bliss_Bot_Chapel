@@ -12,7 +12,7 @@ namespace Bliss.Api.Controllers;
 
 [ApiController]
 [Route("api/wedding-planner/workspaces/{workspaceId:guid}/handoff")]
-public sealed class CreativeHandoffController(CreativeHandoffService handoff, WeddingPlannerService planner,
+public sealed class CreativeHandoffController(CreativeHandoffService handoff, AskAlphaLineagePreflightService askAlpha, WeddingPlannerService planner,
     WeddingPlannerAccess access, BlissAuthenticationOptions authentication) : ControllerBase
 {
     [HttpGet("options")]
@@ -52,6 +52,14 @@ public sealed class CreativeHandoffController(CreativeHandoffService handoff, We
         await Workspace(workspaceId, ct);
         Response.Headers.CacheControl = "private, no-store";
         return Ok(await handoff.FundingPreflight(workspaceId, handoffId, ct));
+    });
+    [HttpGet("plans/{handoffId:guid}/ask-alpha-preflight")]
+    public Task<ActionResult> AskAlphaPreflight(Guid workspaceId, Guid handoffId, [FromQuery] string slug,
+        CancellationToken ct) => Execute(async () =>
+    {
+        await Workspace(workspaceId, ct);
+        Response.Headers.CacheControl = "private, no-store";
+        return Ok(await askAlpha.Inspect(workspaceId, handoffId, slug, ct));
     });
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]

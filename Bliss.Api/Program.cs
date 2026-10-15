@@ -109,6 +109,7 @@ builder.Services.AddScoped<CreativeAcademyService>();
 builder.Services.AddScoped<BlueprintPhaseService>();
 builder.Services.AddScoped<AcademyProductionService>();
 builder.Services.AddScoped<CreativeHandoffService>();
+builder.Services.AddScoped<AskAlphaLineagePreflightService>();
 builder.Services.AddScoped<CampaignMeasurementService>();
 builder.Services.AddScoped<ControlledAiService>();
 builder.Services.AddHostedService<ControlledAiWorker>();
