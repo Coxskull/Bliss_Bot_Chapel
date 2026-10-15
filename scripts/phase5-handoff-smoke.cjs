@@ -19,7 +19,11 @@ const png = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAYAAAB3AH1ZAAAAI0lEQVR4nGMI0Oj5P5C
     const slot = "99999999-9999-9999-9999-999999999995";
     const workspace = await api("/api/wedding-planner/workspaces", { advertiserId, sourceSystem: "PHASE5_SMOKE", idempotencyKey: crypto.randomUUID() });
     const root = `/api/wedding-planner/workspaces/${workspace.workspaceId}`;
-    const draft = await api(root + "/brand-dna", { expectedVersion: 0, idempotencyKey: crypto.randomUUID(), fields: {
+    // Brand Intake and Academy may already have authored append-only revisions
+    // in this same fictional workspace; never assume a fresh version-zero state.
+    const existingDna = await api(root + "/brand-dna");
+    const currentDnaVersion = existingDna.at(-1)?.version || 0;
+    const draft = await api(root + "/brand-dna", { expectedVersion: currentDnaVersion, idempotencyKey: crypto.randomUUID(), fields: {
       brandName: "TEST handoff pharmacy", niche: "pharmacy", market: "São Paulo, Brazil", language: "Portuguese", colors: "Burgundy", font: "Montserrat", goals: "Fictional awareness", restrictions: "Workflow fixture only" } });
     const confirmed = await api(root + "/brand-dna/confirm", { expectedVersion: draft.revision.version, idempotencyKey: crypto.randomUUID() });
     const brief = await api(root + "/production/briefs", { brandDnaId: confirmed.revision.id, family: "pharmacy", headline: "TEST handoff brief", cta: "TEST visit", idempotencyKey: crypto.randomUUID() });
