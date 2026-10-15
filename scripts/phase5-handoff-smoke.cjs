@@ -84,6 +84,30 @@ const png = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAYAAAB3AH1ZAAAAI0lEQVR4nGMI0Oj5P5C
     await page.waitForFunction(() => document.querySelector("#status").textContent.includes("handoff recorded as PLANNED"));
     const plans = await api(root + "/handoff/plans"); assert.equal(plans.length, 1); assert.equal(plans[0].status, "PLANNED"); assert.equal(plans[0].delivery, "NOT_SENT");
     const snapshot = JSON.parse(plans[0].snapshotJson); assert.equal(snapshot.lineAmount, quote.versions[0].lineItems[0].lineAmount); assert.equal(snapshot.imageWidth, 32); assert.equal(snapshot.imageHeight, 16);
+    // A client can bypass the browser's disabled controls. The API must refuse
+    // an invented Economics quote line even after all three human gates passed.
+    const planPath = root + "/handoff/plans";
+    const originalPlan = plans[0];
+    const originalSnapshot = originalPlan.snapshotJson;
+    const directPlan = {
+      candidateId: originalPlan.candidateId, reviewId: originalPlan.reviewId,
+      advertiserApprovalId: originalPlan.advertiserApprovalId,
+      alphaQaApprovalId: originalPlan.alphaQaApprovalId,
+      inventoryFitId: originalPlan.inventoryFitId,
+      blissMatchId: snapshot.matchId, campaignId: snapshot.campaignId,
+      adInventorySlotId: snapshot.slotId,
+      quoteLineItemId: originalPlan.quoteLineItemId,
+      idempotencyKey: crypto.randomUUID()
+    };
+    const forgedQuote = await context.request.post(base + planPath, {
+      data: { ...directPlan, quoteLineItemId: crypto.randomUUID() }
+    });
+    assert.equal(forgedQuote.status(), 404,
+      `Direct plan with invented Economics line was not rejected: ${await forgedQuote.text()}`);
+    let unchangedPlans = await api(planPath);
+    assert.equal(unchangedPlans.length, 1, "Rejected quote must not add a handoff");
+    assert.equal(unchangedPlans[0].snapshotJson, originalSnapshot,
+      "Rejected quote must not change persisted Economics evidence");
     await page.reload(); await open(); assert.match(await page.locator("#plans").textContent(), /PLANNED · NOT_SENT/);
     assert.equal(await page.locator("#approvals h3").count(), 3);
     await page.locator("#stage").selectOption("ADVERTISER"); await page.locator("#decision").selectOption("WITHHOLD");
@@ -98,7 +122,21 @@ const png = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAYAAAB3AH1ZAAAAI0lEQVR4nGMI0Oj5P5C
     await page.waitForFunction(count => document.querySelectorAll("#approvals h3").length > count, previousRevokeCount);
     await page.locator("#plan-consent").check(); await page.getByRole("button", { name: "Record planned handoff", exact: true }).click();
     await page.waitForFunction(() => document.querySelector("#status").dataset.error === "true"); assert.match(await page.locator("#status").textContent(), /all be approved/);
-    assert.equal((await api(root + "/handoff/plans")).length, 1);
+    // WITHHOLD must be enforced server-side, not just by the UI. Re-submit
+    // the previously valid decision IDs with a fresh operation key to simulate
+    // a forged direct API client after the advertiser has revoked authority.
+    const afterWithdrawal = await context.request.post(base + planPath, {
+      data: { ...directPlan, idempotencyKey: crypto.randomUUID() }
+    });
+    assert.equal(afterWithdrawal.status(), 400,
+      `Revoked approvals unexpectedly authorized direct planning: ${await afterWithdrawal.text()}`);
+    unchangedPlans = await api(planPath);
+    assert.equal(unchangedPlans.length, 1, "Withdrawal cannot create a second handoff");
+    assert.equal(unchangedPlans[0].id, originalPlan.id, "Original handoff ID changed");
+    assert.equal(unchangedPlans[0].snapshotJson, originalSnapshot,
+      "Withdrawal must not rewrite original Economics evidence");
+    assert.equal(unchangedPlans[0].status, "PLANNED");
+    assert.equal(unchangedPlans[0].delivery, "NOT_SENT");
     await page.setViewportSize({ width: 390, height: 844 }); assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
     assert.deepEqual(errors, []);
     console.log("PASS: private candidate preview, missing-gate refusal, draft campaign, three manual approvals, explicit PLANNED/NOT_SENT handoff using Economics amount, reload history, revocation, safe text, and mobile layout. No paid AI calls.");
