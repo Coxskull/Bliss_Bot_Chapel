@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ask Alpha · Visitor consent prototype</title>
+<style>
+:root{color-scheme:light;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#17253b;background:#f4f7fb}
+*{box-sizing:border-box}body{margin:0}header{background:#102340;color:#fff;padding:1rem max(1rem,calc((100vw - 860px)/2))}
+header strong{letter-spacing:.08em}main{max-width:860px;margin:2rem auto;padding:0 1rem 3rem}
+h1{font-size:clamp(1.7rem,4vw,2.5rem);line-height:1.15;margin:.2rem 0 1rem}h2{font-size:1.2rem;margin:0 0 .75rem}
+.card{background:white;border:1px solid #dbe2ec;border-radius:14px;padding:1.3rem;margin:1rem 0;box-shadow:0 6px 25px #1023400b}
+.notice{border-left:4px solid #c48118;background:#fff7e7;padding:.8rem 1rem;border-radius:7px}
+.eyebrow{color:#355e96;text-transform:uppercase;letter-spacing:.13em;font-size:.76rem;font-weight:750}
+button{font:inherit;background:#164c88;color:white;border:0;border-radius:8px;padding:.8rem 1.1rem;cursor:pointer;min-height:44px}
+button:disabled{background:#8c98a8;cursor:not-allowed}
+button.secondary{background:#fff;color:#823b3b;border:1px solid #b18c8c}
+label.choice{display:flex;align-items:flex-start;gap:.8rem;padding:1rem;border:1px solid #cad6e3;border-radius:10px;margin:1rem 0}
+input[type=checkbox]{width:1.3rem;height:1.3rem;flex:none;margin:.15rem 0;accent-color:#164c88}
+.actions{display:flex;flex-wrap:wrap;gap:.8rem}p,li{line-height:1.6}ul{padding-left:1.3rem}
+small,.muted{color:#56667a}#state{font-weight:700;margin:0}#timeline{white-space:pre-wrap;overflow-wrap:anywhere}
+:focus-visible{outline:3px solid #fa9b38;outline-offset:3px}
+</style>
+<script src="/ask-alpha-consent-preview.js" defer></script>
+</head>
+<body>
+<header><strong>ALPHA · ASK ALPHA</strong></header>
+<main>
+<p class="eyebrow">AGM-LAUNCH-015 · STAGE H</p>
+<h1>Control how your conversation may be used.</h1>
+<p class="notice" id="preview-warning" role="note"><strong>NON-PRODUCTION DEMONSTRATION.</strong> This page does not verify identity, save consent, link transcripts, call an API, or authorize sharing. All choices disappear when the page reloads.</p>
+<section class="card" aria-labelledby="purpose-heading">
+<h2 id="purpose-heading">Proposed permission: creative preview only</h2>
+<p>Version <strong>AGM-CONSENT-PREVIEW-V1</strong> · Purpose <strong>CREATIVE_PREVIEW_ONLY</strong></p>
+<p>If a real consent service is approved in future, we would ask permission to use specifically selected conversation content to prepare a fictional advertising concept for your review. This is not permission to publish it.</p>
+<ul>
+<li>You can say no and continue without granting this optional permission.</li>
+<li>Your chat would not be shared with advertisers or creators through this prototype.</li>
+<li>No automatic marketing outreach, transcript export, live payment, creator payout, or campaign delivery is permitted.</li>
+<li>A production version must explain what content is included, who can access it, how long it is kept, and how withdrawal works before seeking your real consent.</li>
+</ul>
+</section>
+<section class="card" aria-labelledby="choice-heading">
+<h2 id="choice-heading">Preview the consent interaction</h2>
+<p class="muted">The box is intentionally unchecked. Choosing it only demonstrates a possible future consent workflow in this browser tab.</p>
+<label class="choice"><input type="checkbox" id="opt-in"><span>I choose to preview an optional, purpose-limited opt-in for a fictional creative concept. I understand nothing is submitted or stored.</span></label>
+<div class="actions">
+<button type="button" id="accept" disabled>Preview opt-in</button>
+<button type="button" id="withdraw" class="secondary" disabled>Preview withdrawal</button>
+</div>
+</section>
+<section class="card" aria-labelledby="status-heading">
+<h2 id="status-heading">Local demonstration status</h2>
+<p id="state" role="status" aria-live="polite">No preview opt-in selected. Real visitor consent: NOT RECORDED.</p>
+<p id="timeline" class="muted" aria-live="polite">No demonstration actions yet.</p>
+<p class="notice"><strong>Security boundary:</strong> Even after selecting opt-in in this preview, real identity verified: NO. Server consent recorded: NO. Transcript export: DENIED. Payment: DENIED. Delivery: NOT_SENT.</p>
+</section>
+</main>
+</body>
+</html>
