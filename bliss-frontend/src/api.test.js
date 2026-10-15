@@ -12,3 +12,36 @@ test('unknown writes and stale/denied responses are not automatically retried',a
 test('exact retry lookup is read-only and explicit null remains unresolved',async()=>{let call;const api=createReviewApi(async(path,options)=>{call={path,options};return response(envelope(null));});assert.equal(await api.retry(id,key),null);assert.ok(call.path.endsWith('/note-retries/'+key));assert.equal(call.options.method,undefined);});
 
 test('recovery context is read-only and refuses missing actor or live authority',async()=>{let call;const api=createReviewApi(async(path,options)=>{call={path,options};return response(envelope({actorKey:fp}));});assert.equal((await api.recoveryContext()).actorKey,fp);assert.equal(call.options.method,undefined);for(const data of [envelope({}),envelope({actorKey:'subject'}),{...envelope({actorKey:fp}),paymentCompleted:true}])await assert.rejects(()=>createReviewApi(async()=>response(data)).recoveryContext());});
+
+
+test('read-only mock commercial evidence verifies balanced exact minor units and no unapproved payouts',async()=>{
+  const large='9007199254740993';
+  const base={operationId:id,quoteVersionId:key,scope:{merchantId:id,campaignId:key,module:1},
+    currency:'USD',amountMinor:large,captureJournalId:id,sourceEvidenceSha256:fp,mode:'MOCK',
+    paymentCompleted:false,providerCalled:false,alphaCommissionStatus:'NO_APPROVED_ALLOCATION',
+    creatorCompensationStatus:'NO_APPROVED_ALLOCATION',creatorPayoutAuthorized:false,
+    campaignDeliveryAuthorized:false,lines:[
+      {accountId:id,ownerId:key,role:'TEST_CASH',side:'Debit',amountMinor:large},
+      {accountId:key,ownerId:id,role:'TEST_RECIPIENT',side:'Credit',amountMinor:large}
+    ]};
+  let called;
+  const api=createReviewApi(async(path,options)=>{called={path,options};return response(envelope(base));});
+  const result=await api.campaignEvidence(id);
+  assert.equal(result.amountMinor,large);
+  assert.ok(called.path.endsWith('/'+id+'/campaign-evidence'));
+  assert.equal(called.options.method,undefined);
+  assert.equal(called.options.credentials,'same-origin');
+  assert.equal(validateResult('campaignEvidence',base),true);
+  assert.equal(validateResult('campaignEvidence',{...base,captureJournalId:null,lines:[]}),true);
+  for (const changed of [
+    {amountMinor:9007199254740993},
+    {creatorPayoutAuthorized:true},
+    {alphaCommissionStatus:'PAID'},
+    {paymentCompleted:true},
+    {lines:[...base.lines.slice(0,1),{...base.lines[1],amountMinor:'1'}]},
+    {lines:[...base.lines.slice(0,1),{...base.lines[1],side:'Debit'}]},
+    {captureJournalId:null},
+    {scope:{...base.scope,merchantId:'not-a-guid'}}
+  ]) assert.equal(validateResult('campaignEvidence',{...base,...changed}),false);
+  await assert.rejects(()=>api.campaignEvidence('not-a-uuid'));
+});
