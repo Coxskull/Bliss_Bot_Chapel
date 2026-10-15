@@ -216,7 +216,8 @@ public sealed class AcademyProductionTests : IClassFixture<WeddingPlannerOidcFac
             (await viewer.PostAsJsonAsync(reviewPath, Review(0, "PASS", "viewer-review"))).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden,
             (await owner.PostAsJsonAsync(reviewPath, Review(0, "PASS", "owner-review"))).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound,
+        // Brand/candidate creation checks role-based write permission first.
+        Assert.Equal(HttpStatusCode.Forbidden,
             (await reviewer.PostAsJsonAsync(Path(workspace) + "/briefs",
                 new CreateProductionBrief(brand, "pharmacy", "Forbidden", "CTA", "reviewer-write"))).StatusCode);
 
