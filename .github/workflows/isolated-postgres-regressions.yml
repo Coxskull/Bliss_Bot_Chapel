@@ -70,6 +70,8 @@ jobs:
             Bliss.Infrastructure/Migrations/FinancialMockReviewV1.sql; do
             pg -d financial_test -f "$script"
           done
+          # Fixture-only consent audit. This is NOT a hosted migration.
+          pg -d financial_test -f Bliss.Infrastructure/Migrations/AskAlphaConsentFixtureV1.sql
           for script in \
             docs/command-gateway/001-local-inbox.sql \
             docs/command-gateway/002-local-acceptance.sql \
