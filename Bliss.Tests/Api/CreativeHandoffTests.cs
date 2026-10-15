@@ -5,6 +5,7 @@ using Bliss.Domain.Financials;
 using Bliss.Infrastructure.Financials;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Bliss.Api.Operations;
 using Bliss.Domain.Common;
 using Bliss.Domain.Entities;
@@ -114,9 +115,44 @@ public sealed class CreativeHandoffTests : IClassFixture<WeddingPlannerOidcFacto
             [new(Guid.NewGuid(),Guid.NewGuid(),"TEST_CASH","Debit",minor),
              new(Guid.NewGuid(),Guid.NewGuid(),"TEST_RECIPIENT","Credit",minor)],
             new string('A', 64));
+        // The service-produced handoff uses the Manila PHP Economics fixture.
+        // Its native stored quote MUST be rejected by the USD-only mock funding
+        // policy: there is no approved FX conversion or USD payment authority.
+        Assert.NotEqual("USD", quote.CurrencyCode);
+        Assert.Throws<InvalidOperationException>(() =>
+            MockCampaignDossierVerifier.Correlate(receipt, binding, stored, workspace,
+                campaign, placement, run, quote, version, line, 1, brief, candidate, fit));
+
+        // Independently model an internally consistent USD-only unit fixture
+        // without rewriting, reapproving, or claiming payment for the PHP records.
+        // A future accepted actual USD quote/handoff must satisfy these same checks.
+        var syntheticSnapshot = JsonNode.Parse(stored.SnapshotJson)!.AsObject();
+        syntheticSnapshot["currencyCode"] = "USD";
+        var usdHandoff = new CreativeCampaignHandoff {
+            Id = stored.Id, WorkspaceId = stored.WorkspaceId,
+            CandidateId = stored.CandidateId, ReviewId = stored.ReviewId,
+            InventoryFitId = stored.InventoryFitId, QuoteLineItemId = stored.QuoteLineItemId,
+            CampaignPlacementId = stored.CampaignPlacementId,
+            CampaignPlacementRunId = stored.CampaignPlacementRunId,
+            Status = stored.Status, Delivery = stored.Delivery,
+            SnapshotJson = syntheticSnapshot.ToJsonString()
+        };
+        var usdQuote = new Quote {
+            Id = quote.Id, Status = quote.Status, CurrencyCode = "USD",
+            AdvertiserOpportunityId = quote.AdvertiserOpportunityId,
+            CurrentVersionNumber = quote.CurrentVersionNumber
+        };
+        var usdVersion = new QuoteVersion {
+            Id = version.Id, QuoteId = quote.Id, VersionNumber = version.VersionNumber,
+            CurrencyCode = "USD", TotalAmount = version.TotalAmount
+        };
+        var usdLine = new QuoteLineItem {
+            Id = line.Id, QuoteVersionId = line.QuoteVersionId,
+            CurrencyCode = "USD", Quantity = line.Quantity, LineAmount = line.LineAmount
+        };
         MockCampaignDossier Project(MockCampaignFinancialEvidence current) =>
-            MockCampaignDossierVerifier.Correlate(current, binding, stored, workspace,
-                campaign, placement, run, quote, version, line, 1, brief, candidate, fit);
+            MockCampaignDossierVerifier.Correlate(current, binding, usdHandoff, workspace,
+                campaign, placement, run, usdQuote, usdVersion, usdLine, 1, brief, candidate, fit);
         var dossier = Project(receipt);
         Assert.Equal("STORED_PLANNED_HANDOFF_CORRELATED", dossier.CorrelationStatus);
         Assert.Equal(campaign.Id, dossier.CampaignId);
@@ -140,15 +176,15 @@ public sealed class CreativeHandoffTests : IClassFixture<WeddingPlannerOidcFacto
             PaymentCompleted = true
         }));
         Assert.Throws<InvalidOperationException>(() =>
-            MockCampaignDossierVerifier.Correlate(receipt,binding,stored,workspace,
-                campaign,placement,run,quote,version,line,2,brief,candidate,fit));
-        stored.Delivery = "SENT";
+            MockCampaignDossierVerifier.Correlate(receipt,binding,usdHandoff,workspace,
+                campaign,placement,run,usdQuote,usdVersion,usdLine,2,brief,candidate,fit));
+        usdHandoff.Delivery = "SENT";
         Assert.Throws<InvalidOperationException>(() => Project(receipt));
-        stored.Delivery = "NOT_SENT";
-        var originalSnapshot = stored.SnapshotJson;
-        stored.SnapshotJson = "{}";
+        usdHandoff.Delivery = "NOT_SENT";
+        var originalSnapshot = usdHandoff.SnapshotJson;
+        usdHandoff.SnapshotJson = "{}";
         Assert.Throws<InvalidOperationException>(() => Project(receipt));
-        stored.SnapshotJson = originalSnapshot;
+        usdHandoff.SnapshotJson = originalSnapshot;
         var originalImage = candidate.ImageBytes;
         candidate.ImageBytes = [.. originalImage];
         candidate.ImageBytes[^1] ^= 1;
