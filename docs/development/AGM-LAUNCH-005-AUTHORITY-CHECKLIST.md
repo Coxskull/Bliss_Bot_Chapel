@@ -1,0 +1,11 @@
+# AGM-LAUNCH-005-GAP-001 — bound authority evidence requests
+
+The local read-only checklist reuses PR194 inspection and PR193 frozen proposals. A distinct trusted inspector with advertiser-scoped read and separate inspection permission selects an exact proposal UUID. Current lineage must match the captured report. Changed/unavailable lineage is refused, and a second scoped frozen-byte read must match the inspected SHA256.
+
+The deterministic `AGM-LOCAL-AUTHORITY-CHECKLIST/1` report binds creator inventory consent requests to the captured creator/platform/content/slot/campaign/placement; advertiser authority requests to advertiser/opportunity/campaign/placement; and creative rights requests to the captured content/slot/campaign/placement. The captured lineage does not identify an advertiser creative asset/version. Those bindings are explicitly null and listed missing; creator content must not be mistaken for an approved advertiser creative.
+
+Each requirement remains EVIDENCE_REQUIRED and unverified. Requested document references, hashes, issuer/signatory authority, subject bindings, permitted scope/dates and revocation conditions are a development template requiring owner policy review, not a legal sufficiency rule. The software receives no actual consent documents and verifies no external parties. All authority/acceptance flags remain false and delivery is NOT_SENT.
+
+There is no route, DI registration, schema change, consent uploader, verification endpoint, reviewer decision, financial recipient, activation integration or outreach. The loopback disposable-fixture guards and canonical trusted identity assumptions from PR194 remain. Matching means a snapshot at inspection only, not a lock against subsequent source changes. DB owners can alter schema; hashes are not signatures. Real evidence, explicit creative asset/version mapping, policy review and Executive acceptance remain outstanding.
+
+PostgreSQL tests cover bound IDs, repeatable output/hash, false flags, missing creative bindings, scoped/role/self-inspection denial, stale/unavailable sources and unchanged durable proposals. Owner requested engineering spreadsheet updates: append evidence and next action while preserving historical entries and Executive approval/status fields; read back after writing.
