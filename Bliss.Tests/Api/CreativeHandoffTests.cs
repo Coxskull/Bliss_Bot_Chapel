@@ -1,6 +1,7 @@
 using System.Net;
 using System.Security.Cryptography;
 using Bliss.Api.Financials;
+using Bliss.Api.Demonstrations;
 using Bliss.Domain.Financials;
 using Bliss.Infrastructure.Financials;
 using System.Net.Http.Json;
@@ -82,6 +83,91 @@ public sealed class CreativeHandoffTests : IClassFixture<WeddingPlannerOidcFacto
         Assert.Equal("PLANNED", placement.Status); Assert.Null(placement.StartAt); Assert.Null(placement.EndAt);
         Assert.Equal("DRAFT", (await db.Campaigns.SingleAsync(x => x.Id == s.Fixture.Campaign)).Status);
         Assert.True((await db.AdInventorySlots.SingleAsync(x => x.Id == CreativeHandoffFixture.Slot)).IsAvailable);
+    }
+
+    [Fact]
+    public async Task Launch_013_Ask_Alpha_metadata_preflight_requires_exact_workspace_session_quote_and_never_consent()
+    {
+        await using var s = await Setup();
+        using var owner = await Client(s, "bliss.advertiser", Phase2DataSeeder.Advertiser2Id);
+        using var reviewer = await Client(s, "bliss.admin");
+        using var stranger = await Client(s, "bliss.advertiser", Guid.NewGuid());
+        var request = await Approve(s, owner, reviewer);
+        var posted = await reviewer.PostAsJsonAsync(s.Path + "/plans", request);
+        Assert.Equal(HttpStatusCode.Created, posted.StatusCode);
+        var handoff = (await posted.Content.ReadFromJsonAsync<PlanResponse>())!.Handoff;
+        using var scope = s.App.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+        var workspace = await db.WeddingPlannerWorkspaces.SingleAsync(x => x.Id == handoff.WorkspaceId);
+        var run = await db.CampaignPlacementRuns.SingleAsync(x => x.Id == handoff.CampaignPlacementRunId);
+        var placement = await db.CampaignPlacements.SingleAsync(x => x.Id == handoff.CampaignPlacementId);
+        var campaign = await db.Campaigns.SingleAsync(x => x.Id == run.CampaignId);
+        var line = await db.QuoteLineItems.SingleAsync(x => x.Id == handoff.QuoteLineItemId);
+        var version = await db.QuoteVersions.SingleAsync(x => x.Id == line.QuoteVersionId);
+        var quote = await db.Quotes.SingleAsync(x => x.Id == version.QuoteId);
+        var session = new WeddingPlannerPlanningSession
+        {
+            Id = Guid.NewGuid(), WorkspaceId = workspace.Id, AdvertiserId = workspace.AdvertiserId,
+            SourceSystem = "FICTIONAL_ASK_ALPHA_WAKE", Status = "OPEN"
+        };
+        var prospect = new DemonstrationRecord
+        {
+            Slug = "sample-local-fictional-prospect", Illustrative = true,
+            WeddingPlannerWorkspaceId = workspace.Id.ToString("D"),
+            WeddingPlannerSessionId = session.Id.ToString("D"),
+            EconomicsQuoteId = quote.Id.ToString("D"),
+            Messages = [
+                new ChatRecord { Role = "VISITOR", Text = "Fictional question" },
+                new ChatRecord { Role = "ASSISTANT", Text = "Fictional answer" }
+            ]
+        };
+        AskAlphaLineagePreflightReading Inspect(DemonstrationRecord? source, WeddingPlannerPlanningSession? target = null) =>
+            AskAlphaLineagePolicy.Inspect(handoff, campaign, placement, run,
+                quote, version, line, workspace, target ?? session, source);
+
+        var matched = Inspect(prospect);
+        Assert.Equal("SOURCE_REFERENCES_MATCH_CONSENT_REQUIRED", matched.Status);
+        Assert.True(matched.SourceMetadataMatched);
+        Assert.Equal(1, matched.VisitorTurnCount);
+        Assert.Equal(1, matched.AssistantTurnCount);
+        Assert.Equal("UNRECORDED", matched.ConsentStatus);
+        Assert.False(matched.TranscriptLinked);
+        Assert.False(matched.TranscriptExportAuthorized);
+        Assert.False(matched.ProspectOutreachAuthorized);
+        Assert.False(matched.PaymentAuthorized);
+        Assert.False(matched.CreatorPayoutAuthorized);
+        Assert.False(matched.CampaignReady);
+        Assert.False(matched.CampaignDeliveryAuthorized);
+        Assert.Equal("NOT_SENT", matched.Delivery);
+
+        var foreign = prospect.WeddingPlannerWorkspaceId;
+        prospect.WeddingPlannerWorkspaceId = Guid.NewGuid().ToString("D");
+        Assert.Equal("NOT_LINKED", Inspect(prospect).Status);
+        Assert.Equal(0, Inspect(prospect).VisitorTurnCount);
+        prospect.WeddingPlannerWorkspaceId = foreign;
+
+        var oldQuote = prospect.EconomicsQuoteId;
+        prospect.EconomicsQuoteId = Guid.NewGuid().ToString("D");
+        Assert.Equal("NOT_LINKED", Inspect(prospect).Status);
+        prospect.EconomicsQuoteId = oldQuote;
+        prospect.Suppressed = true;
+        Assert.Equal("NOT_LINKED", Inspect(prospect).Status);
+        prospect.Suppressed = false;
+        Assert.Equal("NOT_LINKED", Inspect(prospect, new WeddingPlannerPlanningSession {
+            Id=session.Id,WorkspaceId=Guid.NewGuid(), AdvertiserId=workspace.AdvertiserId }).Status);
+        prospect.Messages.Clear();
+        Assert.Equal("NOT_LINKED", Inspect(prospect).Status);
+
+        var baseUrl = $"{s.Path}/plans/{handoff.Id}/ask-alpha-preflight?slug=not-a-real-source";
+        Assert.Equal(HttpStatusCode.NotFound, (await stranger.GetAsync(baseUrl)).StatusCode);
+        var result = await owner.GetFromJsonAsync<AskAlphaLineagePreflightReading>(baseUrl);
+        Assert.NotNull(result);
+        Assert.Equal("NOT_LINKED", result.Status);
+        Assert.False(result.TranscriptLinked);
+        Assert.Equal(HttpStatusCode.NotFound, (await owner.GetAsync(
+            $"{s.Path}/plans/{Guid.NewGuid()}/ask-alpha-preflight?slug=not-a-real-source")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await owner.GetAsync(
+            $"{s.Path}/plans/{handoff.Id}/ask-alpha-preflight?slug=../../external")).StatusCode);
     }
 
     [Fact]
