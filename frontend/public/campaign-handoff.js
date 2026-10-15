@@ -58,7 +58,32 @@ async function refresh() {
   const briefs = await api(`/api/wedding-planner/workspaces/${workspace}/production/briefs`);
   choices("#brief", briefs, x => x.id, x => x.headline); await loadBrief();
   const plans = await api(`${path()}/plans`), view = $("#plans"); view.replaceChildren();
-  for (const plan of plans) { const snapshot = JSON.parse(plan.snapshotJson); text(view, "h3", `${plan.status} · ${plan.delivery}`); text(view, "p", `Economics quote: ${snapshot.lineAmount} ${snapshot.currencyCode}. Asset: ${snapshot.imageSha256}. Placement: ${plan.campaignPlacementId}.`); const details = document.createElement("details"); view.append(details); text(details, "summary", "Approval and Economics evidence"); text(details, "pre", JSON.stringify(snapshot, null, 2)).style.whiteSpace = "pre-wrap"; }
+  for (const plan of plans) {
+    const snapshot = JSON.parse(plan.snapshotJson);
+    text(view, "h3", `${plan.status} · ${plan.delivery}`);
+    text(view, "p", `Economics quote: ${snapshot.lineAmount} ${snapshot.currencyCode}. Asset: ${snapshot.imageSha256}. Placement: ${plan.campaignPlacementId}.`);
+    const details = document.createElement("details"); view.append(details);
+    text(details, "summary", "Approval and Economics evidence");
+    text(details, "pre", JSON.stringify(snapshot, null, 2)).style.whiteSpace = "pre-wrap";
+    const inspect = document.createElement("button");
+    inspect.type = "button"; inspect.textContent = "Check funding currency (read-only)";
+    const result = document.createElement("p");
+    view.append(inspect, result);
+    inspect.addEventListener("click", () => action(async () => {
+      result.textContent = "Inspecting saved Economics evidence…";
+      const reading = await api(`${path()}/plans/${plan.id}/funding-preflight`);
+      if (reading.handoffId !== plan.id ||
+          reading.requiredMockCurrency !== "USD" ||
+          reading.mockPaymentAuthorized !== false || reading.providerCalled !== false ||
+          reading.paymentCompleted !== false || reading.commissionAllocated !== false ||
+          reading.creatorPayoutAuthorized !== false || reading.campaignReady !== false ||
+          reading.campaignDeliveryAuthorized !== false || reading.delivery !== "NOT_SENT" ||
+          !["QUOTE_AUTHORITY_CHANGED", "SOURCE_CURRENCY_NOT_USD",
+            "USD_QUOTE_STILL_REQUIRES_FINANCIAL_AUTHORITY"].includes(reading.status))
+        throw new Error("Unexpected funding preflight response; no action authorized.");
+      result.textContent = `${reading.status}: original Economics quote ${reading.sourceAmount} ${reading.sourceCurrency}. ${reading.nextRequirement} No FX conversion, settlement or delivery.`;
+    }));
+  }
 }
 $("#open").addEventListener("click", () => action(async () => { workspace = $("#workspace").value; production = null; approvals = []; $("#brief").replaceChildren(); await refresh(); tell("Handoff workspace loaded. Review the latest evidence before acting."); }));
 $("#refresh").addEventListener("click", () => action(async () => { await refresh(); tell("Saved approvals and planning history refreshed."); }));

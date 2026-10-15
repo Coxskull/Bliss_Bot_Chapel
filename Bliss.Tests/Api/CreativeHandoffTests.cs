@@ -85,6 +85,108 @@ public sealed class CreativeHandoffTests : IClassFixture<WeddingPlannerOidcFacto
     }
 
     [Fact]
+    public async Task Launch_012_reports_original_PHP_quote_without_inventing_USD_or_leaking_other_workspaces()
+    {
+        await using var s = await Setup();
+        using var owner = await Client(s, "bliss.advertiser", Phase2DataSeeder.Advertiser2Id);
+        using var reviewer = await Client(s, "bliss.admin");
+        using var stranger = await Client(s, "bliss.advertiser", Guid.NewGuid());
+        var request = await Approve(s, owner, reviewer);
+        var planned = await reviewer.PostAsJsonAsync(s.Path + "/plans", request);
+        Assert.Equal(HttpStatusCode.Created, planned.StatusCode);
+        var handoff = (await planned.Content.ReadFromJsonAsync<PlanResponse>())!.Handoff;
+        var url = $"{s.Path}/plans/{handoff.Id}/funding-preflight";
+        var preflight = await owner.GetFromJsonAsync<CampaignFundingPreflightReading>(url);
+        Assert.NotNull(preflight);
+        Assert.Equal("PHP", preflight.SourceCurrency);
+        Assert.Equal("USD", preflight.RequiredMockCurrency);
+        Assert.Equal("SOURCE_CURRENCY_NOT_USD", preflight.Status);
+        Assert.Equal(handoff.Id, preflight.HandoffId);
+        Assert.False(preflight.MockPaymentAuthorized);
+        Assert.False(preflight.ProviderCalled);
+        Assert.False(preflight.PaymentCompleted);
+        Assert.False(preflight.CommissionAllocated);
+        Assert.False(preflight.CreatorPayoutAuthorized);
+        Assert.False(preflight.CampaignReady);
+        Assert.False(preflight.CampaignDeliveryAuthorized);
+        Assert.Equal("NOT_SENT", preflight.Delivery);
+        Assert.Equal("NOT_APPROVED", preflight.FxPolicyStatus);
+        Assert.Equal(HttpStatusCode.NotFound,(await stranger.GetAsync(url)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,(await owner.GetAsync(
+            $"{s.Path}/plans/{Guid.NewGuid()}/funding-preflight")).StatusCode);
+
+        using var scope = s.App.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+        Assert.Single(await db.CreativeCampaignHandoffs.ToListAsync());
+        Assert.Single(await db.CampaignPlacements.Where(x => x.Id == handoff.CampaignPlacementId).ToListAsync());
+        Assert.Equal("DRAFT",(await db.Campaigns.SingleAsync(x => x.Id == request.CampaignId)).Status);
+        Assert.Equal("PLANNED",(await db.CampaignPlacements.SingleAsync(x => x.Id == handoff.CampaignPlacementId)).Status);
+    }
+
+    [Fact]
+    public async Task Launch_012_currency_preflight_is_read_only_and_rejects_tampered_lineage_and_stale_authority()
+    {
+        await using var s = await Setup();
+        using var owner = await Client(s, "bliss.advertiser", Phase2DataSeeder.Advertiser2Id);
+        using var reviewer = await Client(s, "bliss.admin");
+        var request = await Approve(s, owner, reviewer);
+        var posted = await reviewer.PostAsJsonAsync(s.Path + "/plans", request);
+        Assert.Equal(HttpStatusCode.Created, posted.StatusCode);
+        var handoff = (await posted.Content.ReadFromJsonAsync<PlanResponse>())!.Handoff;
+        using var scope = s.App.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+        var run = await db.CampaignPlacementRuns.SingleAsync(x => x.Id == handoff.CampaignPlacementRunId);
+        var placement = await db.CampaignPlacements.SingleAsync(x => x.Id == handoff.CampaignPlacementId);
+        var campaign = await db.Campaigns.SingleAsync(x => x.Id == run.CampaignId);
+        var line = await db.QuoteLineItems.SingleAsync(x => x.Id == handoff.QuoteLineItemId);
+        var version = await db.QuoteVersions.SingleAsync(x => x.Id == line.QuoteVersionId);
+        var quote = await db.Quotes.SingleAsync(x => x.Id == version.QuoteId);
+        CampaignFundingPreflightReading Inspect(bool approval=true,bool outcome=true) =>
+            CampaignFundingPreflight.Inspect(handoff,campaign,placement,run,quote,version,line,approval,outcome);
+        Assert.Equal("SOURCE_CURRENCY_NOT_USD",Inspect().Status);
+        Assert.Equal("QUOTE_AUTHORITY_CHANGED",Inspect(false).Status);
+        Assert.Equal("QUOTE_AUTHORITY_CHANGED",Inspect(true,false).Status);
+        var snapshot = handoff.SnapshotJson;
+        handoff.SnapshotJson = "{}";
+        Assert.Throws<InvalidOperationException>(()=>Inspect());
+        handoff.SnapshotJson = snapshot;
+        var originalAmount = line.LineAmount;
+        line.LineAmount++;
+        Assert.Throws<InvalidOperationException>(()=>Inspect());
+        line.LineAmount = originalAmount;
+        var originalDelivery = handoff.Delivery;
+        handoff.Delivery = "SENT";
+        Assert.Throws<InvalidOperationException>(()=>Inspect());
+        handoff.Delivery = originalDelivery;
+        var clone = JsonNode.Parse(handoff.SnapshotJson)!.AsObject();
+        clone["currencyCode"] = "USD";
+        var usdHandoff = new CreativeCampaignHandoff {
+            Id=handoff.Id,WorkspaceId=handoff.WorkspaceId,Status=handoff.Status,Delivery=handoff.Delivery,
+            CampaignPlacementId=handoff.CampaignPlacementId,CampaignPlacementRunId=handoff.CampaignPlacementRunId,
+            QuoteLineItemId=handoff.QuoteLineItemId,SnapshotJson=clone.ToJsonString()
+        };
+        var usdQuote = new Quote {
+            Id=quote.Id,Status=quote.Status,CurrentVersionNumber=quote.CurrentVersionNumber,
+            AdvertiserOpportunityId=quote.AdvertiserOpportunityId,CurrencyCode="USD"
+        };
+        var usdVersion = new QuoteVersion {
+            Id=version.Id,QuoteId=version.QuoteId,VersionNumber=version.VersionNumber,
+            TotalAmount=version.TotalAmount,CurrencyCode="USD"
+        };
+        var usdLine = new QuoteLineItem {
+            Id=line.Id,QuoteVersionId=line.QuoteVersionId,
+            Quantity=line.Quantity,LineAmount=line.LineAmount,CurrencyCode="USD"
+        };
+        // Pure synthetic USD projection: not an authorized change to the PHP quote.
+        var reading = CampaignFundingPreflight.Inspect(usdHandoff,campaign,placement,run,
+            usdQuote,usdVersion,usdLine,true,true);
+        Assert.Equal("USD_QUOTE_STILL_REQUIRES_FINANCIAL_AUTHORITY",reading.Status);
+        Assert.False(reading.MockPaymentAuthorized);
+        Assert.False(reading.CampaignDeliveryAuthorized);
+        Assert.Equal("PHP",quote.CurrencyCode);
+    }
+
+    [Fact]
     public async Task Launch_011_only_correlates_exact_unsent_handoff_and_mock_financial_quote()
     {
         await using var s = await Setup();

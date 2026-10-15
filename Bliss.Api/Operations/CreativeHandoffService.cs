@@ -47,6 +47,46 @@ public sealed class CreativeHandoffService(BlissDbContext db, AcademyProductionS
     }
     public Task<List<CreativeCampaignHandoff>> Handoffs(Guid workspace, CancellationToken ct) => db.CreativeCampaignHandoffs.AsNoTracking()
         .Where(x => x.WorkspaceId == workspace).OrderByDescending(x => x.CreatedAt).ToListAsync(ct);
+    // Authorized workspace is checked by the controller before this scoped read.
+    // No payment subsystem, external provider, writes or currency conversion.
+    public async Task<CampaignFundingPreflightReading> FundingPreflight(Guid workspaceId, Guid handoffId, CancellationToken ct)
+    {
+        var handoff = await db.CreativeCampaignHandoffs.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == handoffId && x.WorkspaceId == workspaceId, ct)
+            ?? throw new WeddingPlannerNotFoundException("This workspace's planned handoff was not found.");
+        var run = await db.CampaignPlacementRuns.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == handoff.CampaignPlacementRunId, ct)
+            ?? throw new InvalidOperationException("Handoff placement run is missing.");
+        var placement = await db.CampaignPlacements.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == handoff.CampaignPlacementId, ct)
+            ?? throw new InvalidOperationException("Handoff placement is missing.");
+        var campaign = await db.Campaigns.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == run.CampaignId, ct)
+            ?? throw new InvalidOperationException("Handoff campaign is missing.");
+        var line = await db.QuoteLineItems.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == handoff.QuoteLineItemId, ct)
+            ?? throw new InvalidOperationException("Handoff Economics quote line is missing.");
+        var version = await db.QuoteVersions.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == line.QuoteVersionId, ct)
+            ?? throw new InvalidOperationException("Handoff Economics quote version is missing.");
+        var quote = await db.Quotes.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == version.QuoteId, ct)
+            ?? throw new InvalidOperationException("Handoff Economics quote is missing.");
+        var latestApproval = await db.QuoteApprovalDecisions.AsNoTracking()
+            .Where(x => x.QuoteId == quote.Id)
+            .OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id)
+            .FirstOrDefaultAsync(ct);
+        var latestOutcome = await db.QuoteOutcomes.AsNoTracking()
+            .Where(x => x.QuoteId == quote.Id)
+            .OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id)
+            .FirstOrDefaultAsync(ct);
+        return CampaignFundingPreflight.Inspect(handoff, campaign, placement, run,
+            quote, version, line,
+            latestApproval?.QuoteVersionId == version.Id && latestApproval.Decision == "APPROVED",
+            latestOutcome?.QuoteVersionId == version.Id && latestOutcome.Response == "ACCEPTED" &&
+            latestOutcome.Amount == version.TotalAmount && latestOutcome.CurrencyCode == version.CurrencyCode);
+    }
+
     public async Task<(Campaign Campaign, bool Replay)> CreateCampaign(WeddingPlannerWorkspaceResult workspace, CreateHandoffCampaign request, string label, CancellationToken ct)
     {
         if (request.CampaignId == Guid.Empty) throw new InvalidOperationException("A stable campaign request UUID is required.");
