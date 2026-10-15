@@ -93,7 +93,8 @@ public sealed class CreativeHandoffTests : IClassFixture<WeddingPlannerOidcFacto
         Assert.Equal(HttpStatusCode.Forbidden,
             (await reader.PostAsJsonAsync(decisionsPath,
                 CreativeHandoffTestData.Approval(s.Fixture, "ALPHA_QA", "viewer-qa"))).StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden,
+        // No advertiser tenant binding: conceal the workspace before approval checks.
+        Assert.Equal(HttpStatusCode.NotFound,
             (await reviewer.PostAsJsonAsync(decisionsPath,
                 CreativeHandoffTestData.Approval(s.Fixture, "ADVERTISER", "reviewer-owner"))).StatusCode);
 
