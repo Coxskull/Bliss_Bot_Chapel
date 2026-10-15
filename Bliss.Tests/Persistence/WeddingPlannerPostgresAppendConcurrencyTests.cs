@@ -133,7 +133,7 @@ public sealed class WeddingPlannerPostgresAppendConcurrencyTests
             var conflictingResults = await Task.WhenAll(
                 TryConflictingAppend("first new body"),
                 TryConflictingAppend("second new body"));
-            Assert.Single(conflictingResults.Where(success => success));
+            Assert.Single(conflictingResults, success => success);
 
 
             await using var verify = new BlissDbContext(options);
