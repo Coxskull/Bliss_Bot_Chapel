@@ -15,6 +15,12 @@ public sealed class BlissAuthenticationOptions
     public string ReviewerRole { get; set; } = "bliss.reviewer";
     public string AdminRole { get; set; } = "bliss.admin";
     public string AdvertiserRole { get; set; } = "bliss.advertiser";
+    // Requires explicit issuer configuration; defaults cannot enable visitor
+    // claims as trusted evidence of historic conversation ownership.
+    public string AskAlphaVisitorRole { get; set; } = "bliss.ask_alpha_visitor";
+    public string AskAlphaVisitorSessionClaimType { get; set; } = "ask_alpha_session_id";
+    public string AskAlphaVisitorIssuer { get; set; } = string.Empty;
+
     public string AdvertiserIdClaimType { get; set; } = "advertiser_id";
     // A reviewer needs an issuer-assigned workspace scope. Each claim value
     // must be one workspace UUID; multiple assignments use repeated claims.
