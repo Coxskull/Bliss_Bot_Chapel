@@ -1,0 +1,190 @@
+name: Isolated three-system browser journeys
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  three-system-browser-smoke:
+    name: Fictional Brand Intake, Academy and handoff browser checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: bliss_browser_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d bliss_browser_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      ConnectionStrings__DefaultConnection: Host=127.0.0.1;Port=5432;Database=bliss_browser_ci;Username=postgres;Password=postgres
+      PGPASSWORD: postgres
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://127.0.0.1:5086
+      Authentication__Enabled: 'false'
+      Runtime__ControlledAi__Enabled: 'false'
+      FinancialPreparation__Enabled: 'false'
+      BLISS_SMOKE_BASE: http://127.0.0.1:5086
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Enforce disposable fixture, loopback, and disabled external providers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$ConnectionStrings__DefaultConnection" = 'Host=127.0.0.1;Port=5432;Database=bliss_browser_ci;Username=postgres;Password=postgres'
+          test "$ASPNETCORE_ENVIRONMENT" = Development
+          test "$ASPNETCORE_URLS" = 'http://127.0.0.1:5086'
+          test "$BLISS_SMOKE_BASE" = "$ASPNETCORE_URLS"
+          test "$Authentication__Enabled" = false
+          test "$Runtime__ControlledAi__Enabled" = false
+          test "$FinancialPreparation__Enabled" = false
+          test -f scripts/phase2-brand-intake-smoke.cjs
+          test -f scripts/phase3-production-smoke.cjs
+          test -f scripts/phase5-handoff-smoke.cjs
+          mkdir -p BrowserEvidence
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install PostgreSQL client and media dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-client ffmpeg fonts-dejavu-core
+          command -v psql
+          command -v google-chrome || command -v chromium
+
+      - name: Install pinned Playwright client without downloading browsers
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/bliss-playwright" --ignore-scripts --no-package-lock --no-audit --no-fund playwright@1.56.1
+          echo "NODE_PATH=$RUNNER_TEMP/bliss-playwright/node_modules" >> "$GITHUB_ENV"
+          if command -v google-chrome >/dev/null; then
+            echo "CHROMIUM_PATH=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          else
+            echo "CHROMIUM_PATH=$(command -v chromium)" >> "$GITHUB_ENV"
+          fi
+
+      - name: Restore and build Release
+        run: |
+          dotnet restore BlissBotChapel.sln
+          dotnet build BlissBotChapel.sln --configuration Release --no-restore
+
+      - name: Migrate an isolated database and run Development fixture API
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd Bliss.Api && dotnet bin/Release/net8.0/Bliss.Api.dll --migrate) > BrowserEvidence/migrate.log 2>&1
+          (cd Bliss.Api && exec dotnet bin/Release/net8.0/Bliss.Api.dll) > BrowserEvidence/api.log 2>&1 &
+          api_pid=$!
+          echo "$api_pid" > BrowserEvidence/fixture-api.pid
+          python3 - <<'PY'
+          import time
+          import urllib.request
+          for attempt in range(100):
+              try:
+                  with urllib.request.urlopen("http://127.0.0.1:5086/health/ready", timeout=1) as response:
+                      if response.status == 200:
+                          print("Disposable fixture API is ready")
+                          break
+              except Exception:
+                  time.sleep(.4)
+          else:
+              raise SystemExit("FAIL: local disposable API readiness timed out")
+          PY
+
+      - name: Seed a synthetic overlay Economics benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -p 5432 -U postgres -d bliss_browser_ci -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO "InventoryRateBenchmarks"
+            ("Id", "GeographicMarketId", "PricingModelId", "ResearchSourceId", "InventorySlotType",
+             "DurationSecondsLow", "DurationSecondsHigh", "RangeLow", "RangeHigh", "CurrencyCode",
+             "ConfidenceLevel", "VerificationStatus", "EffectiveAt", "CreatedAt")
+          SELECT gen_random_uuid(), "GeographicMarketId", "PricingModelId", "ResearchSourceId",
+            'PERIMETER_OVERLAY', 1, 300, "RangeLow", "RangeHigh", "CurrencyCode", 'TEST',
+            'TEST_ONLY', CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_TIMESTAMP
+          FROM "InventoryRateBenchmarks"
+          WHERE "GeographicMarketId" = 'ec000001-0000-0000-0000-000000000001'
+            AND "InventorySlotType" = 'MID_ROLL'
+          LIMIT 1;
+          SQL
+          test "$(psql -h 127.0.0.1 -p 5432 -U postgres -d bliss_browser_ci -Atc "SELECT count(*) FROM \"InventoryRateBenchmarks\" WHERE \"InventorySlotType\"='PERIMETER_OVERLAY' AND \"VerificationStatus\"='TEST_ONLY'")" -ge 1
+
+      - name: Browser journey — Wedding Planner Brand Intake
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/phase2-brand-intake-smoke.cjs 2>&1 | tee BrowserEvidence/phase2-brand-intake.txt
+
+      - name: Browser journey — Creative Academy production
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/phase3-production-smoke.cjs 2>&1 | tee BrowserEvidence/phase3-production.txt
+
+      - name: Browser journey — Bliss handoff remains PLANNED and NOT_SENT
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/phase5-handoff-smoke.cjs 2>&1 | tee BrowserEvidence/phase5-handoff.txt
+          grep -Fq 'No paid AI calls.' BrowserEvidence/phase5-handoff.txt
+
+      - name: Verify no sent placement or activated fixture campaign
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -p 5432 -U postgres -d bliss_browser_ci -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$
+          BEGIN
+            IF EXISTS(SELECT 1 FROM "Campaigns" WHERE "Status" <> 'DRAFT' AND "Name" LIKE 'TEST browser campaign%') THEN
+              RAISE EXCEPTION 'Fixture campaign activated unexpectedly';
+            END IF;
+            IF EXISTS(SELECT 1 FROM "CreativeCampaignHandoffs" WHERE "Status" <> 'PLANNED' OR "Delivery" <> 'NOT_SENT') THEN
+              RAISE EXCEPTION 'Fixture handoff changed from PLANNED/NOT_SENT';
+            END IF;
+          END $$;
+          SQL
+
+      - name: Stop local API and upload synthetic browser evidence
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f BrowserEvidence/fixture-api.pid ]]; then
+            kill -TERM "$(cat BrowserEvidence/fixture-api.pid)" 2>/dev/null || true
+            rm -f BrowserEvidence/fixture-api.pid
+          fi
+
+      - name: Retain browser test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-three-system-browser-evidence
+          path: BrowserEvidence/
+          if-no-files-found: warn
+          retention-days: 14
