@@ -83,6 +83,37 @@ async function refresh() {
         throw new Error("Unexpected funding preflight response; no action authorized.");
       result.textContent = `${reading.status}: original Economics quote ${reading.sourceAmount} ${reading.sourceCurrency}. ${reading.nextRequirement} No FX conversion, settlement or delivery.`;
     }));
+    const sourceForm = document.createElement("form");
+    sourceForm.setAttribute("aria-label", "Ask Alpha source metadata preflight");
+    const sourceLabel = document.createElement("label");
+    sourceLabel.textContent = "Ask Alpha demonstration slug (not customer consent) ";
+    const sourceSlug = document.createElement("input");
+    sourceSlug.maxLength = 96; sourceSlug.required = true;
+    sourceSlug.pattern = "[a-z0-9]+(-[a-z0-9]+)*";
+    sourceLabel.append(sourceSlug);
+    const sourceCheck = document.createElement("button");
+    sourceCheck.type = "submit"; sourceCheck.textContent = "Check source references (read-only)";
+    const sourceResult = document.createElement("p");
+    sourceForm.append(sourceLabel, sourceCheck, sourceResult);
+    view.append(sourceForm);
+    sourceForm.addEventListener("submit", event => {
+      event.preventDefault();
+      action(async () => {
+        sourceResult.textContent = "Inspecting metadata only; no conversation text is exported…";
+        const row = await api(`${path()}/plans/${plan.id}/ask-alpha-preflight?slug=${encodeURIComponent(sourceSlug.value.trim())}`);
+        if (row.handoffId !== plan.id ||
+            row.consentStatus !== "UNRECORDED" || row.transcriptLinked !== false ||
+            row.transcriptExportAuthorized !== false || row.prospectOutreachAuthorized !== false ||
+            row.paymentAuthorized !== false || row.creatorPayoutAuthorized !== false ||
+            row.campaignReady !== false || row.campaignDeliveryAuthorized !== false ||
+            row.delivery !== "NOT_SENT" ||
+            !["NOT_LINKED", "SOURCE_REFERENCES_MATCH_CONSENT_REQUIRED"].includes(row.status))
+          throw new Error("Unexpected source authority claim; linkage refused.");
+        sourceResult.textContent = row.sourceMetadataMatched
+          ? `Source metadata matches (${row.visitorTurnCount} visitor / ${row.assistantTurnCount} assistant turns); consent remains UNRECORDED. No transcript is linked or authorized for export.`
+          : "NOT_LINKED: no compatible source metadata. No transcript or customer approval is assumed.";
+      });
+    });
   }
 }
 $("#open").addEventListener("click", () => action(async () => { workspace = $("#workspace").value; production = null; approvals = []; $("#brief").replaceChildren(); await refresh(); tell("Handoff workspace loaded. Review the latest evidence before acting."); }));
