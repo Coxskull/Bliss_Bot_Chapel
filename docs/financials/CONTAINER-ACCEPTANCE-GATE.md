@@ -1,8 +1,10 @@
 # AGM-LAUNCH-010 container acceptance gate
 
-PR175 remains a development draft. Refresh against current main includes case
-export and reload recovery; the original seven-test Node result does not verify
-these additions. Record exact source revision and clean git-archive context.
+PR175 was merged externally at 53bcae1d8a4eeb12d861a15952e4cb1d9e6be94b.
+Merge does not establish runtime acceptance. The original seven-test Node result
+does not verify subsequent case export/reload recovery. Record exact source
+revision and clean build context. R18 adds the partial offline CI gate described
+in CONTAINER-RUNTIME-CI.md; the full acceptance sequence below remains required.
 
 Required isolated acceptance sequence:
 1. Build financial-ui target with the supplied public CA secret; execute current
