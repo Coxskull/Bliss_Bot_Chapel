@@ -16,12 +16,12 @@ public sealed class StripeSandboxClient
  public StripeSandboxClient(HttpClient http, string testSecret)
  {
   this.http=http ?? throw new ArgumentNullException(nameof(http));
-  if(string.IsNullOrWhiteSpace(testSecret)||!testSecret.StartsWith("sk_test_",StringComparison.Ordinal)) throw new ArgumentException("Test-mode secret required.");
+  if(string.IsNullOrWhiteSpace(testSecret)||!testSecret.StartsWith("sk_test_",StringComparison.Ordinal)||testSecret.Length<9||testSecret.Any(char.IsWhiteSpace)||testSecret.Any(char.IsControl)) throw new ArgumentException("Test-mode secret required.");
   secret=testSecret;
  }
  public async Task<SandboxPaymentIntent> CreatePaymentIntent(SandboxChargeRequest charge, string operationKey, CancellationToken token=default)
  {
-  if(charge.Scope.MerchantId==Guid.Empty||charge.Scope.CampaignId==Guid.Empty||!Enum.IsDefined(charge.Scope.Module)||charge.AmountMinor<=0||charge.Currency != "USD"||string.IsNullOrWhiteSpace(charge.FundingReference)||charge.FundingReference.Length>120||string.IsNullOrWhiteSpace(operationKey)||operationKey.Length>120||operationKey.Any(char.IsControl))throw new ArgumentException("Validated quote scope, amount, currency and operation key required.");
+  if(charge.Scope.MerchantId==Guid.Empty||charge.Scope.CampaignId==Guid.Empty||!Enum.IsDefined(charge.Scope.Module)||charge.AmountMinor<=0||charge.Currency != "USD"||string.IsNullOrWhiteSpace(charge.FundingReference)||charge.FundingReference.Length>120||charge.FundingReference.Any(char.IsControl)||string.IsNullOrWhiteSpace(operationKey)||operationKey.Length>120||operationKey.Any(char.IsControl))throw new ArgumentException("Validated quote scope, amount, currency and operation key required.");
   using var request=new HttpRequestMessage(HttpMethod.Post,"https://api.stripe.com/v1/payment_intents");
   request.Headers.Authorization=new AuthenticationHeaderValue("Basic",Convert.ToBase64String(Encoding.UTF8.GetBytes(secret+":")));
   var scopedKey="agm-"+Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new{charge.Scope,charge.FundingReference,operationKey})));
