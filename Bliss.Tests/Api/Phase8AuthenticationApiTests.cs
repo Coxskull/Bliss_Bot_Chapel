@@ -83,12 +83,12 @@ public sealed class Phase8ReviewerWorkspaceScopeTests
         const string first = "11111111-1111-1111-1111-111111111111";
         const string second = "22222222-2222-2222-2222-222222222222";
         var identity = new ClaimsIdentity(
-            [new Claim(claimType, $"[\\\"{first}\\\",\\\"*\\\",\\\"{second}\\\"]"),
+            [new Claim(claimType, $"""["{first}","*","{second}"]"""),
              new Claim(claimType, "not-a-guid")], "test");
         OidcRoleClaimMapper.NormalizeReviewerWorkspaceAssignments(identity, claimType);
         Assert.Equal(new[] { first, second }, identity.FindAll(claimType).Select(x => x.Value).OrderBy(x => x).ToArray());
 
-        using var userInfo = JsonDocument.Parse($"{{\\\"{claimType}\\\":[\\\"{second}\\\",\\\"not-a-guid\\\",\\\"{first}\\\"]}}");
+        using var userInfo = JsonDocument.Parse($$"""{"{{claimType}}":["{{second}}","not-a-guid","{{first}}"]}""");
         OidcRoleClaimMapper.ApplyReviewerWorkspaceAssignments(identity, userInfo.RootElement, claimType);
         Assert.Equal(2, identity.FindAll(claimType).Count());
     }
