@@ -53,6 +53,14 @@ public sealed class CreativeHandoffController(CreativeHandoffService handoff, As
         Response.Headers.CacheControl = "private, no-store";
         return Ok(await handoff.FundingPreflight(workspaceId, handoffId, ct));
     });
+    [HttpGet("plans/{handoffId:guid}/ask-alpha-preflight")]
+    public Task<ActionResult> AskAlphaPreflight(Guid workspaceId, Guid handoffId, [FromQuery] string slug,
+        CancellationToken ct) => Execute(async () =>
+    {
+        await Workspace(workspaceId, ct);
+        Response.Headers.CacheControl = "private, no-store";
+        return Ok(await askAlpha.Inspect(workspaceId, handoffId, slug, ct));
+    });
     [Authorize(Policy = BlissAuthorization.WritePolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [HttpPost("campaigns")]
