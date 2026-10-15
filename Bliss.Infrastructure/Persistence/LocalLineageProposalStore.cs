@@ -38,7 +38,7 @@ public sealed class LocalLineageProposalStore(BlissDbContext db)
         """;
 
     private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
-    private NpgsqlConnection Connection(LocalLineageGrant grant)
+    internal NpgsqlConnection Connection(LocalLineageGrant grant)
     {
         if (!grant.Authenticated || !grant.EvidenceReadGranted || string.IsNullOrWhiteSpace(grant.Subject)
             || grant.Subject.Length > 128 || grant.AdvertiserId == Guid.Empty)
