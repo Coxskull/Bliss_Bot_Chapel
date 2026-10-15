@@ -81,6 +81,13 @@ def verify_refusal(exit_code, logs):
         raise ValueError("Application served before refusing unauthenticated Production")
 
 
+def verify_media_probe(probe):
+    streams = probe.get("streams", [])
+    if len(streams) != 1 or any(streams[0].get(k) != v for k, v in
+                                {"codec_name": "h264", "width": 160, "height": 90}.items()):
+        raise ValueError("Synthetic media encode/probe did not preserve expected H264 geometry")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image", required=True)
@@ -114,6 +121,18 @@ def main():
                    "test -s /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf; "
                    "if command -v node || command -v npm; then exit 1; fi; "
                    "test ! -e /run/secrets/proxy_ca")
+    perl_version = docker("run", "--rm", *isolation, "--entrypoint", "sh", image_id, "-ec",
+                          "dpkg --compare-versions \"$(dpkg-query -W -f='${Version}' perl-base)\" "
+                          "ge '5.36.0-7+deb12u4'; dpkg-query -W -f='${Version}' perl-base")
+    # Real media codec/font exercise as the non-root user, entirely in bounded tmpfs.
+    probe = json.loads(docker("run", "--rm", *isolation, "--entrypoint", "sh", image_id, "-ec",
+                             "ffmpeg -nostdin -loglevel error -f lavfi -i color=c=black:s=160x90:d=0.2 "
+                             "-vf 'drawtext=fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf:"
+                             "text=AGM-fixture:x=4:y=4:fontsize=10:fontcolor=white' "
+                             "-c:v libx264 -threads 1 -pix_fmt yuv420p -an -y /tmp/agm-media-fixture.mp4; "
+                             "ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height "
+                             "-of json /tmp/agm-media-fixture.mp4"))
+    verify_media_probe(probe)
     container = docker("create", *isolation, image_id)
     try:
         with tempfile.TemporaryDirectory(prefix="agm-runtime-assets-") as temp:
@@ -132,6 +151,8 @@ def main():
                   "source_revision": args.revision, "image_id": image_id,
                   "configured_uid": uid, "observed_uid": actual_uid,
                   "production_auth_refusal_exit": exit_code, "financial_assets_sha256": hashes,
+                  "perl_base_version": perl_version, "perl_base_minimum_verified": "5.36.0-7+deb12u4",
+                  "synthetic_media_probe": probe,
                   "media_path": media, "network": "none", "published_ports": [],
                   "readonly_root": True, "host_credentials_forwarded": False,
                   "authenticated_mock_workflow_verified": False,
