@@ -48,3 +48,37 @@ test('read-only mock commercial evidence verifies balanced exact minor units and
   ]) assert.equal(validateResult('campaignEvidence',{...base,...changed}),false);
   assert.throws(()=>api.campaignEvidence('not-a-uuid'),/Exact campaign funding operation ID required/);
 });
+
+
+test('AGM-LAUNCH-011 dossier is read-only and cannot forge payment, creative acceptance, or delivery',async()=>{
+  const specimen={
+    operationId:id,campaignId:key,handoffId:id,quoteVersionId:key,
+    candidateId:id,campaignPlacementId:key,campaignPlacementRunId:id,
+    currency:'USD',amountMinor:'1000',sourceEvidenceSha256:fp,
+    candidateImageSha256:fp,handoffSnapshotSha256:fp,imageWidth:32,imageHeight:16,
+    correlationStatus:'STORED_PLANNED_HANDOFF_CORRELATED',
+    askAlphaTranscriptStatus:'NOT_LINKED',
+    placementPreviewStatus:'NOT_INDEPENDENTLY_VERIFIED',
+    creativeQualityStatus:'HISTORICAL_FIXTURE_REVIEW_ONLY',
+    alphaCommissionStatus:'NO_APPROVED_ALLOCATION',
+    creatorCompensationStatus:'NO_APPROVED_ALLOCATION',
+    paymentCompleted:false,providerCalled:false,creatorPayoutAuthorized:false,
+    campaignReady:false,campaignDeliveryAuthorized:false,delivery:'NOT_SENT'
+  };
+  let actual;
+  const api=createReviewApi(async(path,opts)=>{actual={path,opts};return response(envelope(specimen));});
+  assert.equal((await api.campaignDossier(id,key)).campaignId,key);
+  assert.ok(actual.path.endsWith('/'+id+'/campaign-dossier/'+key));
+  assert.equal(actual.opts.method,undefined);
+  assert.equal(actual.opts.credentials,'same-origin');
+  assert.equal(validateResult('campaignDossier',specimen),true);
+  for(const change of [
+    {amountMinor:1000},{campaignReady:true},{paymentCompleted:true},
+    {creatorPayoutAuthorized:true},{campaignDeliveryAuthorized:true},{delivery:'SENT'},
+    {alphaCommissionStatus:'APPROVED'},{askAlphaTranscriptStatus:'CONNECTED'},
+    {placementPreviewStatus:'PASSED'},{correlationStatus:'CAMPAIGN_READY'},
+    {imageWidth:0},{campaignId:'forged'}
+  ]) assert.equal(validateResult('campaignDossier',{...specimen,...change}),false);
+  assert.throws(()=>api.campaignDossier('bad',key),/Exact funding operation/);
+  assert.throws(()=>api.campaignDossier(id,'bad'),/Exact funding operation/);
+});

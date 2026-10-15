@@ -11,9 +11,9 @@ const modules={BlissBot:'Bliss Bot',CreatorAcademy:'Creator Academy',WeddingPlan
 function App(){
  const [session,setSession]=useState(null),[filter,setFilter]=useState(''),[queue,setQueue]=useState(null),[selected,setSelected]=useState(null),[snapshot,setSnapshot]=useState(null),[notes,setNotes]=useState(null),[history,setHistory]=useState(null),[text,setText]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[uncertain,setUncertain]=useState(false),[ready,setReady]=useState(false);
  const generation=useRef(0),pending=useRef(null),actor=useRef(null);
- const [commercialId,setCommercialId]=useState(''),[commercialEvidence,setCommercialEvidence]=useState(null);
- function failure(e){setError(e.message);if(e.status===401||e.status===403){generation.current++;setBusy(false);if(e.status===401)setSession(s=>s?{...s,isAuthenticated:false,csrfToken:null}:s);setReady(false);setUncertain(false);setSnapshot(null);setNotes(null);setHistory(null);setQueue(null);setCommercialEvidence(null);pending.current=null;setText('');}}
- async function start(){const g=++generation.current;setBusy(true);setError('');setReady(false);setSelected(null);setQueue(null);setSnapshot(null);setNotes(null);setHistory(null);setCommercialEvidence(null);pending.current=null;setUncertain(false);try{const s=await api.session();if(g!==generation.current)return;setSession(s);if(!s.authenticationEnabled||!s.isAuthenticated||!s.canWrite||typeof s.csrfToken!=='string'||!s.csrfToken)return;const context=await api.recoveryContext();if(g!==generation.current)return;actor.current=context.actorKey;const saved=recovery.load(context.actorKey);const q=await api.queue(filter,null);if(g!==generation.current)return;setQueue(q);setReady(true);if(saved){pending.current=saved;setSelected(saved.operationId);setUncertain(true);setError('A pending note survived reload. Check its exact history before submitting another.');}}catch(e){if(g===generation.current)failure(e);}finally{if(g===generation.current)setBusy(false);}}
+ const [commercialId,setCommercialId]=useState(''),[commercialEvidence,setCommercialEvidence]=useState(null),[handoffId,setHandoffId]=useState(''),[dossier,setDossier]=useState(null);
+ function failure(e){setError(e.message);if(e.status===401||e.status===403){generation.current++;setBusy(false);if(e.status===401)setSession(s=>s?{...s,isAuthenticated:false,csrfToken:null}:s);setReady(false);setUncertain(false);setSnapshot(null);setNotes(null);setHistory(null);setQueue(null);setCommercialEvidence(null);setDossier(null);pending.current=null;setText('');}}
+ async function start(){const g=++generation.current;setBusy(true);setError('');setReady(false);setSelected(null);setQueue(null);setSnapshot(null);setNotes(null);setHistory(null);setCommercialEvidence(null);setDossier(null);pending.current=null;setUncertain(false);try{const s=await api.session();if(g!==generation.current)return;setSession(s);if(!s.authenticationEnabled||!s.isAuthenticated||!s.canWrite||typeof s.csrfToken!=='string'||!s.csrfToken)return;const context=await api.recoveryContext();if(g!==generation.current)return;actor.current=context.actorKey;const saved=recovery.load(context.actorKey);const q=await api.queue(filter,null);if(g!==generation.current)return;setQueue(q);setReady(true);if(saved){pending.current=saved;setSelected(saved.operationId);setUncertain(true);setError('A pending note survived reload. Check its exact history before submitting another.');}}catch(e){if(g===generation.current)failure(e);}finally{if(g===generation.current)setBusy(false);}}
  useEffect(()=>{start();return()=>{generation.current++;};},[filter]);
  async function inspect(id){const g=++generation.current;setBusy(true);setError('');setSelected(id);setSnapshot(null);setNotes(null);setHistory(null);setText('');pending.current=null;setUncertain(false);try{const [c,n]=await Promise.all([api.case(id),api.notes(id,null)]);if(g!==generation.current)return;if(c.operationId!==id||n.items.some(x=>x.operationId!==id))throw Error('Case identity mismatch; actions stopped.');setSnapshot(c);setNotes(n);}catch(e){if(g===generation.current)failure(e);}finally{if(g===generation.current)setBusy(false);}}
  async function nextQueue(){const g=++generation.current;setBusy(true);setSnapshot(null);setNotes(null);setHistory(null);setSelected(null);pending.current=null;setUncertain(false);setText('');try{const q=await api.queue(filter,queue.nextAfter);if(g===generation.current)setQueue(q);}catch(e){if(g===generation.current)failure(e);}finally{if(g===generation.current)setBusy(false);}}
@@ -24,10 +24,25 @@ function App(){
  async function exportCase(){if(busy||uncertain||!ready||!snapshot)return;const g=generation.current;const expected={operationId:selected,evidenceFingerprint:snapshot.evidenceFingerprint};setBusy(true);setError('');try{const result=await api.exportEvidence(expected.operationId,expected.evidenceFingerprint);await verifyExport(result,expected);if(g!==generation.current)return;downloadExport(result,expected.operationId);}catch(e){if(g===generation.current)failure(e);}finally{if(g===generation.current)setBusy(false);}}
  async function inspectCommercial(e){
   e.preventDefault();if(busy||!ready||uncertain)return;
-  const g=generation.current;setBusy(true);setError('');setCommercialEvidence(null);
+  const g=generation.current;setBusy(true);setError('');setCommercialEvidence(null);setDossier(null);
   try{const proof=await api.campaignEvidence(commercialId.trim());if(g!==generation.current)return;
    if(proof.operationId!==commercialId.trim())throw Error('Campaign evidence identity mismatch.');
    setCommercialEvidence(proof);
+  }catch(err){if(g===generation.current)failure(err);}
+  finally{if(g===generation.current)setBusy(false);}
+ }
+ async function inspectDossier(e){
+  e.preventDefault();if(busy||!ready||uncertain||!commercialEvidence)return;
+  const g=generation.current;setBusy(true);setError('');setDossier(null);
+  try{const proof=await api.campaignDossier(commercialEvidence.operationId,handoffId.trim());
+   if(g!==generation.current)return;
+   if(proof.operationId!==commercialEvidence.operationId ||
+      proof.campaignId!==commercialEvidence.scope.campaignId ||
+      proof.quoteVersionId!==commercialEvidence.quoteVersionId ||
+      proof.amountMinor!==commercialEvidence.amountMinor ||
+      proof.sourceEvidenceSha256!==commercialEvidence.sourceEvidenceSha256)
+     throw Error('Cross-system evidence mismatch; no campaign acceptance.');
+   setDossier(proof);
   }catch(err){if(g===generation.current)failure(err);}
   finally{if(g===generation.current)setBusy(false);}
  }
@@ -49,7 +64,7 @@ function App(){
  <p>Read-only Mission Control view for a known funding operation in your server-registered review scope. No Stripe payment, ALPHA commission, creator payout or campaign activation is authorized here.</p>
  <form onSubmit={inspectCommercial}>
  <label htmlFor="funding-operation">Funding operation UUID</label>
- <input id="funding-operation" value={commercialId} onChange={e=>{setCommercialId(e.target.value);setCommercialEvidence(null);}} required maxLength={36} placeholder="00000000-0000-0000-0000-000000000000" disabled={busy||uncertain}/>
+ <input id="funding-operation" value={commercialId} onChange={e=>{setCommercialId(e.target.value);setCommercialEvidence(null);setDossier(null);}} required maxLength={36} placeholder="00000000-0000-0000-0000-000000000000" disabled={busy||uncertain}/>
  <button disabled={busy||uncertain}>Inspect mock ledger</button>
  </form>
  {commercialEvidence&&<div role="region" aria-label="Stored campaign funding proof">
@@ -64,7 +79,30 @@ function App(){
  <h3>Immutable mock journal lines</h3>
  <ul className="notes">{commercialEvidence.lines.map((line,i)=><li key={i}><strong>{line.side} · {usd(line.amountMinor)}</strong><p>{line.role} · {line.ownerId}</p></li>)}</ul>
  </div>}
+ {commercialEvidence&&<div className="policy" aria-label="Correlate stored creative handoff">
+ <h3>Match stored creative handoff to mock funding</h3>
+ <p>Requires an exact, locally stored PLANNED / NOT_SENT handoff. This inspection cannot approve creative, conduct a Stripe charge, or send a campaign.</p>
+ <form onSubmit={inspectDossier}>
+ <label htmlFor="commercial-handoff">Handoff UUID</label>
+ <input id="commercial-handoff" value={handoffId} onChange={e=>{setHandoffId(e.target.value);setDossier(null);}}
+ required maxLength={36} disabled={busy||uncertain}/>
+ <button disabled={busy||uncertain}>Correlate fictional campaign</button>
+ </form>
+ {dossier&&<div role="region" aria-label="Correlated fictional campaign evidence">
+ <p><strong>{dossier.correlationStatus}</strong> · {dossier.delivery}</p>
+ <dl><div><dt>Campaign</dt><dd>{dossier.campaignId}</dd></div>
+ <div><dt>Creative candidate</dt><dd>{dossier.candidateId}</dd></div>
+ <div><dt>Stored PNG dimensions</dt><dd>{dossier.imageWidth} × {dossier.imageHeight}</dd></div>
+ <div><dt>Matched mock USD quote</dt><dd>{usd(dossier.amountMinor)}</dd></div>
+ <div><dt>Ask Alpha transcript</dt><dd>{dossier.askAlphaTranscriptStatus}</dd></div>
+ <div><dt>Placement preview QA</dt><dd>{dossier.placementPreviewStatus}</dd></div>
+ <div><dt>Creator compensation</dt><dd>{dossier.creatorCompensationStatus}</dd></div>
+ <div><dt>ALPHA commission</dt><dd>{dossier.alphaCommissionStatus}</dd></div>
+ <div><dt>Payment, payout, delivery</dt><dd>NOT AUTHORIZED</dd></div>
+ <div><dt>Stored handoff fingerprint</dt><dd className="fingerprint">{dossier.handoffSnapshotSha256}</dd></div></dl>
+ </div>}
+ </div>}
  </section>}
- <footer>AGM-LAUNCH-010 · Development continues · No live processing</footer></main>;
+ <footer>AGM-LAUNCH-011 · Development continues · No live processing</footer></main>;
 }
 createRoot(document.getElementById('root')).render(<App/>);

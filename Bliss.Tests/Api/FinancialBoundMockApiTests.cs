@@ -101,6 +101,14 @@ public sealed class FinancialBoundMockApiTests(WeddingPlannerOidcFactory factory
             // commission or creator-payable entitlement.
             var evidencePath = "/api/financials/mock-review/cases/" + op.Id + "/campaign-evidence";
             Assert.Equal(HttpStatusCode.Forbidden, (await owner.GetAsync(evidencePath)).StatusCode);
+            // The joined dossier refuses advertiser reads, unknown local handoffs,
+            // and a mismatched operation even if the caller has another valid scope.
+            var dossierPath = evidencePath.Replace("/campaign-evidence", "/campaign-dossier/" + Guid.NewGuid());
+            Assert.Equal(HttpStatusCode.Forbidden, (await owner.GetAsync(dossierPath)).StatusCode);
+            Assert.Equal(HttpStatusCode.Conflict, (await staff.GetAsync(dossierPath)).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await staff.GetAsync(
+                "/api/financials/mock-review/cases/" + Guid.NewGuid() +
+                "/campaign-dossier/" + Guid.NewGuid())).StatusCode);
             var beforePayment = (await staff.GetFromJsonAsync<JsonElement>(evidencePath)).GetProperty("result");
             Assert.Equal(op.Id, beforePayment.GetProperty("operationId").GetGuid());
             Assert.Equal(op.Scope.CampaignId, beforePayment.GetProperty("scope").GetProperty("campaignId").GetGuid());
