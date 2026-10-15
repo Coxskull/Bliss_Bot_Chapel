@@ -14,7 +14,7 @@ export function validateResult(kind, value) {
     if (!value || !uuid.test(value.operationId) || !uuid.test(value.quoteVersionId) ||
         !value.scope || !uuid.test(value.scope.merchantId) || !uuid.test(value.scope.campaignId) ||
         !(modules.includes(value.scope.module) || [0,1,2].includes(value.scope.module)) ||
-        value.currency !== 'USD' || typeof value.amountMinor !== 'string' || !/^\\d+$/.test(value.amountMinor) ||
+        value.currency !== 'USD' || typeof value.amountMinor !== 'string' || !/^\d+$/.test(value.amountMinor) ||
         !fingerprint.test(value.sourceEvidenceSha256) || value.mode !== 'MOCK' ||
         value.paymentCompleted !== false || value.providerCalled !== false ||
         value.creatorPayoutAuthorized !== false || value.campaignDeliveryAuthorized !== false ||
@@ -25,7 +25,7 @@ export function validateResult(kind, value) {
     if (value.lines.some(line => !uuid.test(line.accountId) || !uuid.test(line.ownerId) ||
         !boundString(line.role,64) || !line.role.startsWith('TEST_') ||
         !['Debit','Credit'].includes(line.side) || typeof line.amountMinor !== 'string' ||
-        !/^\\d+$/.test(line.amountMinor))) return false;
+        !/^\d+$/.test(line.amountMinor))) return false;
     if (value.captureJournalId === null) return value.lines.length === 0;
     if (value.lines.length < 2) return false;
     const sum = side => value.lines.filter(line=>line.side===side)
