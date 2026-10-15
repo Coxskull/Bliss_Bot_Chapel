@@ -6,7 +6,8 @@ public sealed record WeddingPlannerActor(
     bool IsChapelStaff,
     Guid? BoundAdvertiserId,
     string ActorType,
-    string ActorLabel);
+    string ActorLabel,
+    bool HasAdvertiserWriteRole = false);
 
 public sealed class WeddingPlannerAccess(BlissAuthenticationOptions options, OperatorIdentity operatorIdentity)
 {
@@ -27,9 +28,12 @@ public sealed class WeddingPlannerAccess(BlissAuthenticationOptions options, Ope
 
         var label = operatorIdentity.ResolveLabel(user, "UNKNOWN");
         var actorType = isStaff ? "OPERATOR" : "ADVERTISER";
-        return new WeddingPlannerActor(isStaff, advertiserId, actorType, label);
+        // A tenant-binding claim scopes access but cannot grant write rights.
+        // Viewer/reviewer identities may read their tenant without changing it.
+        return new WeddingPlannerActor(isStaff, advertiserId, actorType, label,
+            user.IsInRole(options.AdvertiserRole));
     }
 
     public bool CanWrite(WeddingPlannerActor actor) =>
-        actor.IsChapelStaff || actor.BoundAdvertiserId.HasValue;
+        actor.IsChapelStaff || (actor.HasAdvertiserWriteRole && actor.BoundAdvertiserId.HasValue);
 }

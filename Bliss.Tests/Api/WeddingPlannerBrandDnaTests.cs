@@ -119,4 +119,59 @@ public sealed class WeddingPlannerBrandDnaTests : IClassFixture<WeddingPlannerOi
         Assert.Equal(HttpStatusCode.Forbidden, (await viewer.PostAsJsonAsync(path, draft)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await viewer.PostAsJsonAsync(path + "/confirm", new ConfirmBrandDnaRequest(1, "viewer"))).StatusCode);
     }
+
+    [Theory]
+    [InlineData("bliss.viewer")]
+    [InlineData("bliss.reviewer")]
+    [InlineData("bliss.unrecognized")]
+    public async Task Tenant_bound_read_only_identity_cannot_mutate_planner_or_brand_dna(string role)
+    {
+        var (owner, workspace) = await Owner();
+        var brandPath = Path(workspace);
+        var saved = await owner.PostAsJsonAsync(brandPath,
+            new SaveBrandDnaRequest(Complete, 0, "owner-approved-draft"));
+        Assert.Equal(HttpStatusCode.Created, saved.StatusCode);
+
+        var workspaceDetails = await owner.GetFromJsonAsync<WeddingPlannerWorkspaceDto>(
+            $"/api/wedding-planner/workspaces/{workspace}");
+        Assert.NotNull(workspaceDetails);
+        var (_, foreignWorkspace) = await Owner();
+
+        // A signed-in user can have an advertiser_id claim for tenant-scoped
+        // reads while lacking the advertiser WRITE role. The claim alone must
+        // never authorize a mutation, even when the CSRF token is valid.
+        using var readOnly = factory.CreateSecureClient();
+        readOnly.DefaultRequestHeaders.Add("X-Test-Name", $"TEST {role} bound reader");
+        readOnly.DefaultRequestHeaders.Add("X-Test-Roles", role);
+        readOnly.DefaultRequestHeaders.Add("X-Test-Advertiser-Id", workspaceDetails!.AdvertiserId.ToString());
+        var session = await readOnly.GetFromJsonAsync<SessionResponse>("/api/auth/session");
+        Assert.NotNull(session?.CsrfToken);
+        readOnly.DefaultRequestHeaders.Add("X-CSRF-TOKEN", session!.CsrfToken);
+
+        Assert.Equal(HttpStatusCode.OK, (await readOnly.GetAsync(brandPath)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await readOnly.GetAsync(Path(foreignWorkspace))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await readOnly.PostAsJsonAsync(brandPath,
+                new SaveBrandDnaRequest(Complete with { Colors = "Unauthorized" }, 1, $"viewer-{role}"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await readOnly.PostAsJsonAsync(brandPath + "/confirm",
+                new ConfirmBrandDnaRequest(1, $"confirm-{role}"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await readOnly.PostAsJsonAsync("/api/wedding-planner/workspaces",
+                new OpenWeddingPlannerWorkspaceRequest(workspaceDetails.AdvertiserId, "READ_ONLY_TEST", $"open-{role}"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await readOnly.PostAsJsonAsync($"/api/wedding-planner/workspaces/{workspace}/sessions",
+                new CreateWeddingPlannerSessionRequest("READ_ONLY_TEST", $"session-{role}"))).StatusCode);
+
+        var history = await owner.GetFromJsonAsync<List<WeddingPlannerBrandDna>>(brandPath);
+        Assert.Single(history!);
+        Assert.Equal("DRAFT", history![0].Status);
+        Assert.Equal("Gold", history[0].Colors);
+        var audit = await owner.GetFromJsonAsync<List<WeddingPlannerAuditEventDto>>(
+            $"/api/wedding-planner/workspaces/{workspace}/audit");
+        Assert.Single(audit!, row => row.Action == "BRAND_DNA_DRAFT_SAVED");
+        Assert.DoesNotContain(audit!, row => row.Action == "BRAND_DNA_CONFIRMED");
+    }
+
 }
