@@ -84,7 +84,7 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
             async Task Rejected(Func<Task> fn)
             {
                 var ex=await Assert.ThrowsAsync<PostgresException>(fn);
-                Assert.Contains(ex.SqlState,new[]{"23514","23505","23503"});
+                Assert.Contains(ex.SqlState,new[]{"23514","23505","23503","0A000"});
             }
             const string ownership="""
                 INSERT INTO "AskAlphaVisitorOwnershipStaging"
@@ -147,6 +147,7 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
                 "UPDATE \"AskAlphaVisitorOwnershipStaging\" SET \"Issuer\"='https://other.invalid'",
                 "DELETE FROM \"AskAlphaVisitorOwnershipStaging\"",
                 "TRUNCATE \"AskAlphaVisitorOwnershipStaging\"",
+                "TRUNCATE \"AskAlphaVisitorOwnershipStaging\" CASCADE",
                 "UPDATE \"AskAlphaVisitorConsentStaging\" SET \"Action\"='OPT_IN'",
                 "DELETE FROM \"AskAlphaVisitorConsentStaging\"",
                 "TRUNCATE \"AskAlphaVisitorConsentStaging\""
