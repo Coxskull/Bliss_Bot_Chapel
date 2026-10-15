@@ -27,10 +27,14 @@ export function validateResult(kind, value) {
         !['Debit','Credit'].includes(line.side) || typeof line.amountMinor !== 'string' ||
         !/^\d+$/.test(line.amountMinor))) return false;
     if (value.captureJournalId === null) return value.lines.length === 0;
-    if (value.lines.length < 2) return false;
-    const sum = side => value.lines.filter(line=>line.side===side)
-      .reduce((amount,line)=>amount+BigInt(line.amountMinor),0n);
-    return sum('Debit') === BigInt(value.amountMinor) && sum('Credit') === BigInt(value.amountMinor);
+    // This mock capture is exactly the TEST_CASH / TEST_RECIPIENT pair.
+    // Balancing alone cannot validate a forged extra accounting line.
+    if (value.lines.length !== 2 || BigInt(value.amountMinor) <= 0n) return false;
+    const [debit, credit] = value.lines;
+    return debit.role === 'TEST_CASH' && debit.side === 'Debit' &&
+      credit.role === 'TEST_RECIPIENT' && credit.side === 'Credit' &&
+      BigInt(debit.amountMinor) === BigInt(value.amountMinor) &&
+      BigInt(credit.amountMinor) === BigInt(value.amountMinor);
   }
   if (kind === 'case') return value && uuid.test(value.operationId) && typeof value.requiresReview === 'boolean' && fingerprint.test(value.evidenceFingerprint) && boundString(value.evidenceJson,1000000) && boundString(value.reason,200);
   if (kind === 'notes') return value && Array.isArray(value.items) && value.items.length <= 100 && value.items.every(noteValid) && (value.nextAfter === null || uuid.test(value.nextAfter));
