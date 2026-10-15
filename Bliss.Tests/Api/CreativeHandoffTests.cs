@@ -77,6 +77,41 @@ public sealed class CreativeHandoffTests : IClassFixture<WeddingPlannerOidcFacto
         Assert.Equal("DRAFT", (await db.Campaigns.SingleAsync(x => x.Id == s.Fixture.Campaign)).Status);
         Assert.True((await db.AdInventorySlots.SingleAsync(x => x.Id == CreativeHandoffFixture.Slot)).IsAvailable);
     }
+
+    [Fact]
+    public async Task Standalone_reviewer_can_record_qa_and_inventory_fit_but_cannot_impersonate_advertiser_or_plan()
+    {
+        await using var s = await Setup();
+        using var owner = await Client(s, "bliss.advertiser", Phase2DataSeeder.Advertiser2Id);
+        using var reviewer = await Client(s, "bliss.reviewer"); // reviewer has no advertiser_id
+        using var reader = await Client(s, "bliss.viewer", Phase2DataSeeder.Advertiser2Id);
+        var decisionsPath = $"{s.Path}/candidates/{s.Fixture.Candidate}/approvals";
+
+        // Review scope does not widen normal workspace options or grant planner rights.
+        Assert.Equal(HttpStatusCode.NotFound, (await reviewer.GetAsync(s.Path + "/options")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await reviewer.GetAsync(decisionsPath)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await reader.PostAsJsonAsync(decisionsPath,
+                CreativeHandoffTestData.Approval(s.Fixture, "ALPHA_QA", "viewer-qa"))).StatusCode);
+        // No advertiser tenant binding: conceal the workspace before approval checks.
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await reviewer.PostAsJsonAsync(decisionsPath,
+                CreativeHandoffTestData.Approval(s.Fixture, "ADVERTISER", "reviewer-owner"))).StatusCode);
+
+        var request = await Approve(s, owner, reviewer);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await reviewer.PostAsJsonAsync(s.Path + "/plans", request)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await reviewer.PostAsJsonAsync(s.Path + "/campaigns",
+                new CreateHandoffCampaign(Guid.NewGuid(), Phase2DataSeeder.MatchBrazilApprovedId, "No reviewer campaign"))).StatusCode);
+
+        using var scope = s.App.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+        Assert.Equal(3, await db.CandidateApprovalDecisions.CountAsync());
+        Assert.Empty(await db.CreativeCampaignHandoffs.ToListAsync());
+        Assert.Empty(await db.CampaignPlacementRuns.Where(x => x.SourceSystem == "CREATIVE_HANDOFF_V1").ToListAsync());
+    }
+
     [Fact]
     public async Task Withholding_after_planning_preserves_one_not_sent_economics_snapshot()
     {

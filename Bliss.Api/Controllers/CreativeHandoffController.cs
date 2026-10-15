@@ -31,10 +31,14 @@ public sealed class CreativeHandoffController(CreativeHandoffService handoff, We
     [HttpPost("candidates/{candidateId:guid}/approvals")]
     public Task<ActionResult> Decide(Guid workspaceId, Guid candidateId, DecideCandidateApproval request, CancellationToken ct) => Execute(async () =>
     {
-        var workspace = await Workspace(workspaceId, ct);
-        if (string.Equals(request.Stage?.Trim(), "ADVERTISER", StringComparison.OrdinalIgnoreCase))
-        { if (!AdvertiserAuthority(workspace)) throw new WeddingPlannerForbiddenException("Only this advertiser's authenticated principal can record advertiser approval."); }
-        else if (!BlissAuthorization.CanReview(User, authentication)) throw new WeddingPlannerForbiddenException("Alpha QA and inventory fit require reviewer authority.");
+        // Only QA and inventory-fit decisions may be made by a reviewer without
+        // an advertiser binding. An ADVERTISER decision never uses this bypass.
+        var advertiserStage = string.Equals(request.Stage?.Trim(), "ADVERTISER", StringComparison.OrdinalIgnoreCase);
+        if (!advertiserStage && !BlissAuthorization.CanReview(User, authentication))
+            throw new WeddingPlannerForbiddenException("Alpha QA and inventory fit require reviewer authority.");
+        var workspace = advertiserStage ? await Workspace(workspaceId, ct) : await ReviewerWorkspace(workspaceId, ct);
+        if (advertiserStage && !AdvertiserAuthority(workspace))
+            throw new WeddingPlannerForbiddenException("Only this advertiser's authenticated principal can record advertiser approval.");
         var actor = access.Resolve(User);
         var result = await handoff.Decide(workspace, candidateId, request, Subject(), actor.ActorLabel, authentication.Enabled, ct);
         return StatusCode(result.Replay ? 200 : 201, new { decision = result.Row, isReplay = result.Replay, delivery = "NOT_SENT" });
@@ -60,6 +64,15 @@ public sealed class CreativeHandoffController(CreativeHandoffService handoff, We
         var result = await handoff.Plan(workspace, request, Subject(), actor.ActorLabel, authentication.Enabled, ct);
         return StatusCode(result.Replay ? 200 : 201, new { handoff = result.Row, isReplay = result.Replay, delivery = "NOT_SENT", campaignActivated = false });
     });
+    private Task<WeddingPlannerWorkspaceResult> ReviewerWorkspace(Guid id, CancellationToken ct)
+    {
+        // This helper is deliberately called only by the explicitly checked
+        // ALPHA_QA / INVENTORY_FIT decision branch, not advertiser/planning APIs.
+        var actor = access.Resolve(User);
+        return planner.GetWorkspaceAsync(id,
+            actor.IsChapelStaff || User.IsInRole(authentication.ReviewerRole),
+            actor.BoundAdvertiserId, actor.ActorType, actor.ActorLabel, null, ct);
+    }
     private bool AdvertiserAuthority(WeddingPlannerWorkspaceResult workspace) => !authentication.Enabled
         || User.IsInRole(authentication.AdvertiserRole) && access.Resolve(User).BoundAdvertiserId == workspace.AdvertiserId;
     private string Subject() => !authentication.Enabled ? "DEV_OPERATOR" : User.FindFirst("sub")?.Value

@@ -12,7 +12,7 @@ namespace Bliss.Api.Controllers;
 [ApiController]
 [Route("api/wedding-planner/workspaces/{workspaceId:guid}/production")]
 public sealed class AcademyProductionController(WeddingPlannerService planner, WeddingPlannerAccess access,
-    AcademyProductionService production) : ControllerBase
+    AcademyProductionService production, BlissAuthenticationOptions authentication) : ControllerBase
 {
     [HttpGet("references")]
     public Task<ActionResult> References(Guid workspaceId, CancellationToken ct) => Execute(async () =>
@@ -57,15 +57,44 @@ public sealed class AcademyProductionController(WeddingPlannerService planner, W
         Response.Headers.CacheControl = "private, no-store";
         return File(candidate.ImageBytes, "image/png");
     });
+    // Only the Review policy can read evidence from an unrelated tenant.
+    // These routes do not widen ordinary advertiser-scoped brief/image reads.
+    [Authorize(Policy = BlissAuthorization.ReviewPolicy)]
+    [HttpGet("review/briefs/{briefId:guid}")]
+    public Task<ActionResult> ReviewHistory(Guid workspaceId, Guid briefId, CancellationToken ct) => Execute(async () =>
+    {
+        await ReviewerWorkspace(workspaceId, ct);
+        return Ok(await production.HistoryAsync(workspaceId, briefId, ct));
+    });
+    [Authorize(Policy = BlissAuthorization.ReviewPolicy)]
+    [HttpGet("review/briefs/{briefId:guid}/candidates/{candidateId:guid}/image")]
+    public Task<ActionResult> ReviewImage(Guid workspaceId, Guid briefId, Guid candidateId, CancellationToken ct) => Execute(async () =>
+    {
+        await ReviewerWorkspace(workspaceId, ct);
+        await production.BriefAsync(workspaceId, briefId, ct);
+        var candidate = await production.CandidateAsync(briefId, candidateId, ct);
+        Response.Headers.CacheControl = "private, no-store";
+        return File(candidate.ImageBytes, "image/png");
+    });
     [Authorize(Policy = BlissAuthorization.ReviewPolicy)]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [HttpPost("briefs/{briefId:guid}/candidates/{candidateId:guid}/reviews")]
     public Task<ActionResult> Review(Guid workspaceId, Guid briefId, Guid candidateId, RecordProductionReview request, CancellationToken ct) => Execute(async () =>
     {
-        var workspace = await Workspace(workspaceId, false, ct); var actor = access.Resolve(User);
+        var workspace = await ReviewerWorkspace(workspaceId, ct); var actor = access.Resolve(User);
         var result = await production.ReviewAsync(workspace, briefId, candidateId, request, actor.ActorType, actor.ActorLabel, RequestCorrelation.Resolve(HttpContext), ct);
         return StatusCode(result.Replay ? 200 : 201, new { review = result.Row, isReplay = result.Replay, campaignReady = false, delivery = "NOT_SENT" });
     });
+    // Reviewer-role bypass is restricted to ReviewPolicy endpoints above.
+    // Other tenant GET/POST routes continue to use ordinary workspace binding.
+    private Task<WeddingPlannerWorkspaceResult> ReviewerWorkspace(Guid id, CancellationToken ct)
+    {
+        var actor = access.Resolve(User);
+        return planner.GetWorkspaceAsync(id,
+            actor.IsChapelStaff || User.IsInRole(authentication.ReviewerRole),
+            actor.BoundAdvertiserId, actor.ActorType, actor.ActorLabel,
+            RequestCorrelation.Resolve(HttpContext), ct);
+    }
     private async Task<WeddingPlannerWorkspaceResult> Workspace(Guid id, bool write, CancellationToken ct)
     {
         var actor = access.Resolve(User);
