@@ -22,5 +22,30 @@ public sealed class StripeSandboxClientTests
  [Theory][InlineData("sk_test_")][InlineData("sk_test_bad\\nvalue")][InlineData("sk_test_bad value")]public void Malformed_test_secret_is_refused(string secret)=>Assert.Throws<ArgumentException>(()=>new StripeSandboxClient(new HttpClient(new Handler()),secret.Replace("\\n", "\n")));
  [Fact]public async Task Control_characters_in_funding_reference_are_refused_before_provider(){var h=new Handler();var c=new StripeSandboxClient(new HttpClient(h),"sk_test_fixture_not_a_credential");await Assert.ThrowsAsync<ArgumentException>(()=>c.CreatePaymentIntent(Charge with{FundingReference="quote" + (char)10 + "unsafe"},"operation"));Assert.Equal(0,h.Calls);}
  [Theory][InlineData("quote with space","operation")][InlineData("quote-v1","operation with space")]public async Task Whitespace_in_funding_reference_or_operation_key_is_refused(string reference,string key){var h=new Handler();var c=new StripeSandboxClient(new HttpClient(h),"sk_test_fixture_not_a_credential");await Assert.ThrowsAsync<ArgumentException>(()=>c.CreatePaymentIntent(Charge with{FundingReference=reference},key));Assert.Equal(0,h.Calls);}
+ private sealed class CanceledHandler:HttpMessageHandler
+ {
+  protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken token)=>Task.FromCanceled<HttpResponseMessage>(new CancellationToken(true));
+ }
+ [Fact]public async Task Canceled_provider_call_never_returns_a_payment_intent(){var c=new StripeSandboxClient(new HttpClient(new CanceledHandler()),"sk_test_fixture_not_a_credential");await Assert.ThrowsAnyAsync<OperationCanceledException>(()=>c.CreatePaymentIntent(Charge,"canceled"));}
+ private sealed class DelayedHandler:HttpMessageHandler
+ {
+  public readonly TaskCompletionSource<bool> Started=new(TaskCreationOptions.RunContinuationsAsynchronously);
+  protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken token)
+  {
+   Started.TrySetResult(true);
+   await Task.Delay(Timeout.InfiniteTimeSpan,token);
+   throw new InvalidOperationException("Canceled provider must never return a response.");
+  }
+ }
+ [Fact]public async Task Caller_cancellation_interrupts_an_inflight_provider_request()
+ {
+  var h=new DelayedHandler();
+  var c=new StripeSandboxClient(new HttpClient(h),"sk_test_fixture_not_a_credential");
+  using var cts=new CancellationTokenSource();
+  var operation=c.CreatePaymentIntent(Charge,"cancel-during-headers",cts.Token);
+  await h.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
+  cts.Cancel();
+  await Assert.ThrowsAnyAsync<OperationCanceledException>(()=>operation);
+ }
  [Fact]public async Task Initial_non_usd_payment_is_refused_before_provider(){var h=new Handler();var c=new StripeSandboxClient(new HttpClient(h),"sk_test_fixture_not_a_credential");await Assert.ThrowsAsync<ArgumentException>(()=>c.CreatePaymentIntent(Charge with{Currency="PHP"},"a"));Assert.Equal(0,h.Calls);}
 }
