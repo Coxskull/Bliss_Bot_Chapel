@@ -63,6 +63,15 @@ class ContainerEvidenceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 gate["verify_assets"](root)
 
+    def test_media_probe_requires_actual_expected_codec_and_geometry(self):
+        valid = {"streams": [{"codec_name": "h264", "width": 160, "height": 90}]}
+        gate["verify_media_probe"](valid)
+        for invalid in [{}, {"streams": []}, {"streams": valid["streams"] * 2},
+                        {"streams": [{"codec_name": "mpeg4", "width": 160, "height": 90}]},
+                        {"streams": [{"codec_name": "h264", "width": 1920, "height": 1080}]}]:
+            with self.subTest(probe=invalid), self.assertRaises(ValueError):
+                gate["verify_media_probe"](invalid)
+
 
 if __name__ == "__main__":
     unittest.main()

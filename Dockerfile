@@ -21,7 +21,10 @@ RUN --mount=type=secret,id=proxy_ca \
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core \
+    && apt-cache policy perl-base \
+    && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core perl-base \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' perl-base)" ge '5.36.0-7+deb12u4' \
+    && dpkg-query -W -f='perl-base installed: ${Version}\n' perl-base \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/publish .
 ARG SOURCE_REVISION=unknown
