@@ -20,6 +20,10 @@ public sealed class BlissAuthenticationOptions
     public string AskAlphaVisitorRole { get; set; } = "bliss.ask_alpha_visitor";
     public string AskAlphaVisitorSessionClaimType { get; set; } = "ask_alpha_session_id";
     public string AskAlphaVisitorIssuer { get; set; } = string.Empty;
+    // Off in every environment unless approved independently. This flag
+    // enables only a *prerequisite check*, never a visitor registration route.
+    public bool AskAlphaVisitorEnrollmentRequested { get; set; }
+
 
     public string AdvertiserIdClaimType { get; set; } = "advertiser_id";
     // A reviewer needs an issuer-assigned workspace scope. Each claim value
