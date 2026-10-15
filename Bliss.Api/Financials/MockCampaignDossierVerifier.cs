@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Bliss.Domain.Entities;
+using Bliss.Domain.CreativeAcademy;
 using Bliss.Infrastructure.Financials;
 
 namespace Bliss.Api.Financials;
@@ -40,6 +41,11 @@ public static class MockCampaignDossierVerifier
             funding.AlphaCommissionStatus != "NO_APPROVED_ALLOCATION" ||
             funding.CreatorCompensationStatus != "NO_APPROVED_ALLOCATION" ||
             funding.Currency != "USD" || funding.AmountMinor <= 0 ||
+            funding.CaptureJournalId is null || funding.Lines.Count != 2 ||
+            funding.Lines[0].Role != "TEST_CASH" || funding.Lines[0].Side != "Debit" ||
+            funding.Lines[0].AmountMinor != funding.AmountMinor ||
+            funding.Lines[1].Role != "TEST_RECIPIENT" || funding.Lines[1].Side != "Credit" ||
+            funding.Lines[1].AmountMinor != funding.AmountMinor ||
             binding.Scope != funding.Scope || binding.SourceVersionId != funding.QuoteVersionId ||
             binding.AdvertiserId != workspace.AdvertiserId || binding.SourceQuoteId != quote.Id)
             throw new InvalidOperationException("Mock funding identity/authority is not correlated.");
@@ -51,9 +57,13 @@ public static class MockCampaignDossierVerifier
             placement.StartAt is not null || placement.EndAt is not null ||
             run.Id != handoff.CampaignPlacementRunId ||
             run.CampaignPlacementId != placement.Id || run.CampaignId != campaign.Id ||
+            run.ContentItemId != placement.ContentItemId ||
+            placement.BlissMatchId != run.BlissMatchId ||
             run.SourceSystem != "CREATIVE_HANDOFF_V1" || run.Outcome != "PLANNED" ||
             run.AdInventorySlotId != placement.AdInventorySlotId ||
             quote.Id != version.QuoteId || quote.Status != "ACCEPTED" ||
+            campaign.AdvertiserOpportunityId is null ||
+            quote.AdvertiserOpportunityId != campaign.AdvertiserOpportunityId ||
             quote.CurrentVersionNumber != version.VersionNumber ||
             version.Id != funding.QuoteVersionId || quote.CurrencyCode != "USD" ||
             version.CurrencyCode != "USD" || line.QuoteVersionId != version.Id ||
@@ -73,6 +83,7 @@ public static class MockCampaignDossierVerifier
         if (bytes is null || bytes.Length < 24 || bytes.Length > 1_048_576 ||
             !bytes.AsSpan(0, 8).SequenceEqual(new byte[] {137,80,78,71,13,10,26,10}))
             throw new InvalidOperationException("Stored fictional creative image is missing or malformed.");
+        CandidatePng.Validate(bytes);
         var width = checked((int)BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(16, 4)));
         var height = checked((int)BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(20, 4)));
         var actualHash = Convert.ToHexString(SHA256.HashData(bytes));
