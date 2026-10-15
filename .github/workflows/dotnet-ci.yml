@@ -106,11 +106,40 @@ jobs:
       - name: Verify isolated container runtime and authentication refusal
         run: python3 scripts/verify-container-runtime.py --image bliss-bot-chapel:ci --revision "$(git rev-parse HEAD)" --output ContainerEvidence
 
+      - name: Test vulnerability evidence guardrails
+        run: python3 -m unittest discover -s scripts -p 'test_container_vulnerabilities.py' -v
+
+      - name: Install checksum-pinned Grype scanner
+        shell: bash
+        run: |
+          set -euo pipefail
+          scanner_dir="$(mktemp -d "$RUNNER_TEMP/agm-grype.XXXXXXXX")"
+          curl --fail --show-error --silent --location --proto '=https' --tlsv1.2 \
+            https://github.com/anchore/grype/releases/download/v0.120.1/grype_0.120.1_linux_amd64.tar.gz \
+            --output "$scanner_dir/grype.tar.gz"
+          printf '%s  %s\n' '0a9ee97ef5ae2ee953b0a80098105052e846cdbe319a57d808b519c33cd1343d' "$scanner_dir/grype.tar.gz" | sha256sum --check
+          tar -xzf "$scanner_dir/grype.tar.gz" -C "$scanner_dir" grype
+          echo "AGM_GRYPE_PATH=$scanner_dir/grype" >> "$GITHUB_ENV"
+
+      - name: Collect container vulnerability findings for review
+        run: python3 scripts/audit-container-vulnerabilities.py --image bliss-bot-chapel:ci --revision "$(git rev-parse HEAD)" --scanner "$AGM_GRYPE_PATH" --output ContainerVulnerabilities
+
+      - name: Remove task scanner
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${AGM_GRYPE_PATH:-}" && "$AGM_GRYPE_PATH" == "$RUNNER_TEMP"/agm-grype.*/grype ]]; then
+            rm -f -- "$AGM_GRYPE_PATH" "${AGM_GRYPE_PATH%/grype}/grype.tar.gz"
+            rmdir -- "${AGM_GRYPE_PATH%/grype}"
+          fi
+
       - name: Upload partial container acceptance evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bliss-container-evidence-${{ github.run_number }}
-          path: ContainerEvidence/
+          path: |
+            ContainerEvidence/
+            ContainerVulnerabilities/
           if-no-files-found: warn
           retention-days: 14
