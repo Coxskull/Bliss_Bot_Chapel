@@ -83,9 +83,13 @@ public sealed class MockFinancialReviewStore(NpgsqlDataSource data)
   if(journal is not null)
   {
    // A capture without an immutable balanced journal must not look complete.
-   if(lines.Count<2 || lines.Where(x=>x.Side=="Debit").Sum(x=>x.AmountMinor)!=amount ||
-       lines.Where(x=>x.Side=="Credit").Sum(x=>x.AmountMinor)!=amount)
-    throw new InvalidOperationException("Mock capture journal is incomplete or unbalanced.");
+   // The bound mock capture writer creates exactly one TEST_CASH debit and
+   // one TEST_RECIPIENT credit. A merely balanced but extra/non-test line
+   // must never be displayed as trustworthy fictional capture evidence.
+   if(amount<=0 || lines.Count!=2 ||
+       lines[0].Role!="TEST_CASH" || lines[0].Side!="Debit" || lines[0].AmountMinor!=amount ||
+       lines[1].Role!="TEST_RECIPIENT" || lines[1].Side!="Credit" || lines[1].AmountMinor!=amount)
+    throw new InvalidOperationException("Mock capture journal has missing or unexpected test-only entries.");
   }
   else if(lines.Count!=0)throw new InvalidOperationException("Uncaptured mock operation has journal entries.");
   await tx.CommitAsync(ct);
