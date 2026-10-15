@@ -35,9 +35,10 @@ public static class StripeSandboxVerifier
  private static JsonDocument VerifyEnvelope(byte[] body,string signature,string webhookSecret,DateTimeOffset now)
  {
   if (body is null || body.Length > 1_000_000 || string.IsNullOrWhiteSpace(signature) || signature.Length > 4096 || string.IsNullOrWhiteSpace(webhookSecret)) throw new ArgumentException("Bounded body and signing secret required.");
-  var parts=signature.Split(',').Select(x=>x.Split('=',2)).Where(x=>x.Length==2).ToArray();
+  var parts=signature.Split(',').Select(x=>x.Trim().Split('=',2)).ToArray();
+  if(parts.Any(x=>x.Length!=2 || string.IsNullOrWhiteSpace(x[0]) || string.IsNullOrWhiteSpace(x[1]) || (x[0]!="t" && x[0]!="v1")))throw new ArgumentException("Malformed webhook signature header.");
   var timestamps=parts.Where(x=>x[0]=="t").Select(x=>x[1]).ToArray();
-  if(timestamps.Length!=1 || !long.TryParse(timestamps[0],NumberStyles.None,CultureInfo.InvariantCulture,out var timestamp)) throw new ArgumentException("Invalid signature timestamp.");
+  if(timestamps.Length!=1 || parts.Count(x=>x[0]=="v1") is < 1 or > 8 || !long.TryParse(timestamps[0],NumberStyles.None,CultureInfo.InvariantCulture,out var timestamp)) throw new ArgumentException("Invalid signature timestamp.");
   var age=(decimal)now.ToUnixTimeSeconds()-timestamp;
   if(age< -300 || age>300) throw new ArgumentException("Expired signature.");
   var prefix=Encoding.UTF8.GetBytes(timestamp.ToString(CultureInfo.InvariantCulture)+".");
