@@ -1,4 +1,8 @@
 using System.Net;
+using System.Security.Cryptography;
+using Bliss.Api.Financials;
+using Bliss.Domain.Financials;
+using Bliss.Infrastructure.Financials;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Bliss.Api.Operations;
@@ -77,6 +81,80 @@ public sealed class CreativeHandoffTests : IClassFixture<WeddingPlannerOidcFacto
         Assert.Equal("PLANNED", placement.Status); Assert.Null(placement.StartAt); Assert.Null(placement.EndAt);
         Assert.Equal("DRAFT", (await db.Campaigns.SingleAsync(x => x.Id == s.Fixture.Campaign)).Status);
         Assert.True((await db.AdInventorySlots.SingleAsync(x => x.Id == CreativeHandoffFixture.Slot)).IsAvailable);
+    }
+
+    [Fact]
+    public async Task Launch_011_only_correlates_exact_unsent_handoff_and_mock_financial_quote()
+    {
+        await using var s = await Setup();
+        using var owner = await Client(s, "bliss.advertiser", Phase2DataSeeder.Advertiser2Id);
+        using var reviewer = await Client(s, "bliss.admin");
+        var request = await Approve(s, owner, reviewer);
+        var response = await reviewer.PostAsJsonAsync(s.Path + "/plans", request);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var stored = (await response.Content.ReadFromJsonAsync<PlanResponse>())!.Handoff;
+        using var scope = s.App.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+        var workspace = await db.WeddingPlannerWorkspaces.SingleAsync(x => x.Id == stored.WorkspaceId);
+        var campaign = await db.Campaigns.SingleAsync(x => x.Id == s.Fixture.Campaign);
+        var placement = await db.CampaignPlacements.SingleAsync(x => x.Id == stored.CampaignPlacementId);
+        var run = await db.CampaignPlacementRuns.SingleAsync(x => x.Id == stored.CampaignPlacementRunId);
+        var quote = await db.Quotes.SingleAsync(x => x.Id == s.Fixture.Quote);
+        var line = await db.QuoteLineItems.SingleAsync(x => x.Id == s.Fixture.QuoteLine);
+        var version = await db.QuoteVersions.SingleAsync(x => x.Id == line.QuoteVersionId);
+        var candidate = await db.AcademyProductionCandidates.SingleAsync(x => x.Id == stored.CandidateId);
+        var brief = await db.AcademyProductionBriefs.SingleAsync(x => x.Id == candidate.BriefId);
+        var fit = await db.CandidateApprovalDecisions.SingleAsync(x => x.Id == stored.InventoryFitId);
+        var fundingScope = new FinancialScope(Guid.NewGuid(), FinancialModule.BlissBot, campaign.Id);
+        var binding = new FundingBinding(quote.Id, version.Id, fundingScope, "test-owner",
+            workspace.AdvertiserId, Guid.NewGuid());
+        var minor = checked((long)(version.TotalAmount * 100m));
+        var receipt = new MockCampaignFinancialEvidence(Guid.NewGuid(), version.Id,
+            fundingScope, "USD", minor, Guid.NewGuid(),
+            [new(Guid.NewGuid(),Guid.NewGuid(),"TEST_CASH","Debit",minor),
+             new(Guid.NewGuid(),Guid.NewGuid(),"TEST_RECIPIENT","Credit",minor)],
+            new string('A', 64));
+        MockCampaignDossier Project(MockCampaignFinancialEvidence current) =>
+            MockCampaignDossierVerifier.Correlate(current, binding, stored, workspace,
+                campaign, placement, run, quote, version, line, 1, brief, candidate, fit);
+        var dossier = Project(receipt);
+        Assert.Equal("STORED_PLANNED_HANDOFF_CORRELATED", dossier.CorrelationStatus);
+        Assert.Equal(campaign.Id, dossier.CampaignId);
+        Assert.Equal(minor.ToString(), dossier.AmountMinor);
+        Assert.Equal("NOT_LINKED", dossier.AskAlphaTranscriptStatus);
+        Assert.Equal("NOT_INDEPENDENTLY_VERIFIED", dossier.PlacementPreviewStatus);
+        Assert.False(dossier.PaymentCompleted);
+        Assert.False(dossier.ProviderCalled);
+        Assert.False(dossier.CampaignDeliveryAuthorized);
+        Assert.False(dossier.CampaignReady);
+        Assert.Equal("NOT_SENT", dossier.Delivery);
+        Assert.Equal(32, dossier.ImageWidth);
+        Assert.Equal(16, dossier.ImageHeight);
+        Assert.Throws<InvalidOperationException>(() => Project(receipt with {
+            Scope = fundingScope with { CampaignId = Guid.NewGuid() }
+        }));
+        Assert.Throws<InvalidOperationException>(() => Project(receipt with {
+            AmountMinor = minor + 1
+        }));
+        Assert.Throws<InvalidOperationException>(() => Project(receipt with {
+            PaymentCompleted = true
+        }));
+        Assert.Throws<InvalidOperationException>(() =>
+            MockCampaignDossierVerifier.Correlate(receipt,binding,stored,workspace,
+                campaign,placement,run,quote,version,line,2,brief,candidate,fit));
+        stored.Delivery = "SENT";
+        Assert.Throws<InvalidOperationException>(() => Project(receipt));
+        stored.Delivery = "NOT_SENT";
+        var originalSnapshot = stored.SnapshotJson;
+        stored.SnapshotJson = "{}";
+        Assert.Throws<InvalidOperationException>(() => Project(receipt));
+        stored.SnapshotJson = originalSnapshot;
+        var originalImage = candidate.ImageBytes;
+        candidate.ImageBytes = [.. originalImage];
+        candidate.ImageBytes[^1] ^= 1;
+        Assert.Throws<InvalidOperationException>(() => Project(receipt));
+        candidate.ImageBytes = originalImage;
+        Assert.Equal(dossier, Project(receipt));
     }
 
     [Fact]
