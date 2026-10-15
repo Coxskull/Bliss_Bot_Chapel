@@ -175,4 +175,58 @@ public sealed class AcademyProductionTests : IClassFixture<WeddingPlannerOidcFac
         owner.DefaultRequestHeaders.Remove("X-CSRF-TOKEN");
         Assert.Equal(HttpStatusCode.BadRequest, (await owner.PostAsJsonAsync(path + "/candidates", upload)).StatusCode);
     }
+
+    [Fact]
+    public async Task Standalone_reviewer_may_assess_only_scoped_candidate_evidence_not_advertiser_writes()
+    {
+        var (owner, workspace, brand, advertiser) = await Setup();
+        var (other, otherWorkspace, otherBrand, _) = await Setup();
+        var brief = await Brief(owner, workspace, brand);
+        var otherBrief = await Brief(other, otherWorkspace, otherBrand);
+        var basePath = $"{Path(workspace)}/briefs/{brief.Id}";
+        var created = await owner.PostAsJsonAsync(basePath + "/candidates",
+            new SubmitProductionCandidate(0, "Review sample", "", Pixel, "review-sample"));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var candidate = (await created.Content.ReadFromJsonAsync<CandidateWrite>())!.Candidate;
+
+        using var reviewer = await Client("bliss.reviewer"); // no advertiser_id claim
+        using var viewer = await Client("bliss.viewer", advertiser);
+        using var unknown = await Client("bliss.unrecognized", advertiser);
+        var reviewPath = $"{basePath}/candidates/{candidate.Id}/reviews";
+        var historyPath = $"{Path(workspace)}/review/briefs/{brief.Id}";
+        var previewPath = historyPath + $"/candidates/{candidate.Id}/image";
+
+        Assert.Equal(HttpStatusCode.NotFound, (await reviewer.GetAsync(basePath)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await reviewer.GetAsync($"{basePath}/candidates/{candidate.Id}/image")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await reviewer.GetAsync(historyPath)).StatusCode);
+        var image = await reviewer.GetAsync(previewPath);
+        Assert.Equal(HttpStatusCode.OK, image.StatusCode);
+        Assert.Contains("no-store", image.Headers.CacheControl!.ToString());
+        Assert.Equal(Convert.FromBase64String(Pixel), await image.Content.ReadAsByteArrayAsync());
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await reviewer.GetAsync($"{Path(workspace)}/review/briefs/{otherBrief.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await reviewer.GetAsync($"{Path(workspace)}/review/briefs/{otherBrief.Id}/candidates/{candidate.Id}/image")).StatusCode);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await owner.GetAsync(historyPath)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await viewer.GetAsync(historyPath)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await unknown.GetAsync(previewPath)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await viewer.PostAsJsonAsync(reviewPath, Review(0, "PASS", "viewer-review"))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await owner.PostAsJsonAsync(reviewPath, Review(0, "PASS", "owner-review"))).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await reviewer.PostAsJsonAsync(Path(workspace) + "/briefs",
+                new CreateProductionBrief(brand, "pharmacy", "Forbidden", "CTA", "reviewer-write"))).StatusCode);
+
+        var passed = await reviewer.PostAsJsonAsync(reviewPath, Review(0, "PASS", "real-reviewer"));
+        Assert.Equal(HttpStatusCode.Created, passed.StatusCode);
+        var history = await owner.GetFromJsonAsync<History>(basePath);
+        Assert.Single(history!.Reviews);
+        Assert.Equal("PASS", history.Reviews[0].Decision);
+        Assert.False(history.CampaignReady);
+        Assert.Equal("NOT_SENT", history.Delivery);
+    }
+
 }
