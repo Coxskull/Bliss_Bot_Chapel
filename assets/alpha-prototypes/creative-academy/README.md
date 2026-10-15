@@ -4,20 +4,37 @@ The owner uploaded prototype files into `inbox/`. Registration binds each file t
 
 These images teach how strong an advertisement must look. They are quality benchmarks. They are not podcast placement templates, not inventory geometry, and not advertisements to copy.
 
-## Registered files
+## Approved reference roster (verified 2026-10-15)
 
-`MANIFEST.tsv` maps each reference ID to one niche, in niche order. The `expectedFile` column is the owner filename that is actually in `inbox/`. Lifecycle stays `CANDIDATE`. `learn` and `doNotCopy` stay blank until a human writes them.
+The source of record is [MANIFEST.tsv](MANIFEST.tsv), not an earlier
+registration snapshot. The consolidated catalog decision is documented in
+[Consolidated Academy + Catalog Readiness](../../../docs/architecture/CONSOLIDATED-ACADEMY-CATALOG-REPORT.md).
 
-49 niches have a file. Niche 5, used-car (`ACA-005-V1`), has no file and stays `AWAITING_UPLOAD`.
+The 50-niche roster is **50/50 UPLOADED and 50/50 ACTIVE**. All 50 expected
+files exist in `inbox/`, including `ACA-005-V1.png` (used-car). Every
+reference records owner-supplied provenance/rights, human approval metadata,
+approved permitted **internal Academy quality-reference use**, and LEARN /
+DO NOT COPY guidance. Approved reference **retrieval** does not authorize
+transmission of any reference to a model provider, use of the pictured brand,
+identity or composition in generated advertising, or campaign delivery.
 
-The owner confirmed these four filename bindings on 2026-10-07. Confirmation names the niche. It does not mark the reference ACTIVE.
+The initial registration-only inventory of 49 files and pending used-car asset
+was superseded by the owner-approved active 50-file manifest on 2026-10-07.
+Do not reset ACTIVE rows to CANDIDATE from that superseded snapshot.
 
-| Reference | Owner file | Bound niche | Owner confirmation |
-| --- | --- | --- | --- |
-| ACA-004-V1 | `Automotive.jpeg` | new-car | Confirmed. `Auto shop.jpeg` remains niche 8. |
-| ACA-014-V1 | `Italian restaurant.jpeg` | pizza | Confirmed. |
-| ACA-033-V1 | `Home renovation.jpeg` | furniture | Confirmed. |
-| ACA-044-V1 | `Coffeee.jpeg` | coffee-brand | Confirmed. `Coffee.jpeg` remains the coffee shop. |
+The non-destructive repository gate `scripts/verify-academy-manifest.py` checks
+file presence, a safe one-to-one mapping, approval metadata and basic actual-file
+signature. It does not inspect advertising quality, copyrighted contents,
+geographic fidelity or approve any new asset. Those remain separate human gates.
+
+### Owner-confirmed filename bindings
+
+| Reference | Owner file | Niche |
+| --- | --- | --- |
+| ACA-004-V1 | `Automotive.jpeg` | New-car dealership |
+| ACA-014-V1 | `Italian restaurant.jpeg` | Pizza restaurant |
+| ACA-033-V1 | `Home renovation.jpeg` | Furniture retailer |
+| ACA-044-V1 | `Coffeee.jpeg` | Coffee-brand products |
 
 ## Not forced into a niche
 

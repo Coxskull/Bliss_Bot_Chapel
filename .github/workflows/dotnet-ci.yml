@@ -110,6 +110,13 @@ jobs:
           test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
           test -f /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
 
+      - name: Verify 50 owner-approved Academy references and metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts -p 'test_academy_manifest.py' -v
+          python3 scripts/verify-academy-manifest.py
+
       - name: Restore solution
         run: dotnet restore BlissBotChapel.sln
 
