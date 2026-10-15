@@ -104,6 +104,10 @@ public sealed class WeddingPlannerPostgresAppendConcurrencyTests
             Assert.Single(sameKeyResults, result => result.IsReplay);
             Assert.Single(sameKeyResults, result => !result.IsReplay);
 
+            // Changed input must conflict even after concurrent same-key replay.
+            await Assert.ThrowsAsync<Bliss.Domain.WeddingPlanner.WeddingPlannerConflictException>(
+                () => Append(sharedKey, "Changed_input_after_concurrent_replay"));
+
             var distinctKeyResults = await Task.WhenAll(
                 Append("distinct-request-a", "first distinct request"),
                 Append("distinct-request-b", "second distinct request"));
