@@ -104,7 +104,7 @@ public sealed class FinancialBoundMockApiTests(WeddingPlannerOidcFactory factory
             var beforePayment = (await staff.GetFromJsonAsync<JsonElement>(evidencePath)).GetProperty("result");
             Assert.Equal(op.Id, beforePayment.GetProperty("operationId").GetGuid());
             Assert.Equal(op.Scope.CampaignId, beforePayment.GetProperty("scope").GetProperty("campaignId").GetGuid());
-            Assert.Equal(op.AmountMinor, beforePayment.GetProperty("amountMinor").GetInt64());
+            Assert.Equal(op.AmountMinor, long.Parse(beforePayment.GetProperty("amountMinor").GetString()!));
             Assert.Equal(JsonValueKind.Null, beforePayment.GetProperty("captureJournalId").ValueKind);
             Assert.Empty(beforePayment.GetProperty("lines").EnumerateArray());
             Assert.False(beforePayment.GetProperty("paymentCompleted").GetBoolean());
@@ -130,8 +130,8 @@ public sealed class FinancialBoundMockApiTests(WeddingPlannerOidcFactory factory
             Assert.Equal("NO_APPROVED_ALLOCATION", campaignEvidence.GetProperty("creatorCompensationStatus").GetString());
             var lines = campaignEvidence.GetProperty("lines").EnumerateArray().ToArray();
             Assert.Equal(2, lines.Length);
-            Assert.Equal(op.AmountMinor, lines.Single(x => x.GetProperty("side").GetString()=="Debit").GetProperty("amountMinor").GetInt64());
-            Assert.Equal(op.AmountMinor, lines.Single(x => x.GetProperty("side").GetString()=="Credit").GetProperty("amountMinor").GetInt64());
+            Assert.Equal(op.AmountMinor, long.Parse(lines.Single(x => x.GetProperty("side").GetString()=="Debit").GetProperty("amountMinor").GetString()!));
+            Assert.Equal(op.AmountMinor, long.Parse(lines.Single(x => x.GetProperty("side").GetString()=="Credit").GetProperty("amountMinor").GetString()!));
             Assert.All(lines, x => Assert.StartsWith("TEST_", x.GetProperty("role").GetString()));
             Assert.Matches("^[0-9A-F]{64}$", campaignEvidence.GetProperty("sourceEvidenceSha256").GetString()!);
             var second = await staff.PostAsJsonAsync("/api/financials/mock-bound-webhooks", Request(Raw("evt_" + Guid.NewGuid().ToString("N"), profile.Id), profile.SigningSecret));
