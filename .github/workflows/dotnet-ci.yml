@@ -71,9 +71,18 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          dotnet list BlissBotChapel.sln package --vulnerable --include-transitive | tee nuget-vulnerability-audit.txt
+          audit_output="$(dotnet list BlissBotChapel.sln package --vulnerable --include-transitive 2>&1)" || {
+            printf '%s\n' "$audit_output" | tee nuget-vulnerability-audit.txt
+            echo "::error::NuGet vulnerability audit command failed."
+            exit 1
+          }
+          printf '%s\n' "$audit_output" | tee nuget-vulnerability-audit.txt
           if grep -Eiq 'GHSA-[A-Z0-9-]+|CVE-[0-9]{4}-[0-9]+' nuget-vulnerability-audit.txt; then
             echo "::error::The NuGet audit output contains one or more vulnerability advisories."
+            exit 1
+          fi
+          if ! grep -Fq 'has no vulnerable packages' nuget-vulnerability-audit.txt; then
+            echo "::error::NuGet audit did not confirm a clean dependency graph."
             exit 1
           fi
 
