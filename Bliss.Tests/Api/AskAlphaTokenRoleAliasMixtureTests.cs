@@ -48,13 +48,19 @@ public sealed class AskAlphaTokenRoleAliasMixtureTests
         var extra = new Claim(alias, "bliss.admin", ClaimValueTypes.String, Foreign, Foreign);
         identity.AddClaim(extra);
 
-        Project(identity, options);
+        // Exercise the projection guard directly. In the active OIDC callback
+        // Normalize already folds case-variant role names into the configured
+        // claim type, so this is defense-in-depth for direct/future callers.
+        OidcRoleClaimMapper.ProjectValidatedVisitorRole(identity, options);
 
         Assert.Empty(identity.FindAll(ClaimTypes.Role));
-        var untouched = Assert.Single(identity.FindAll(alias));
+        // ClaimsIdentity.FindAll matches claim types case-insensitively:
+        // inspect the exact source types for this compatibility assertion.
+        var untouched = Assert.Single(identity.Claims.Where(c => c.Type == alias));
         Assert.Equal("bliss.admin", untouched.Value);
         Assert.Equal(Foreign, untouched.OriginalIssuer);
-        Assert.Equal(Trusted, Assert.Single(identity.FindAll(options.RoleClaimType)).Issuer);
+        Assert.Equal(Trusted, Assert.Single(
+            identity.Claims.Where(c => c.Type == options.RoleClaimType)).Issuer);
     }
 
     [Fact]
