@@ -127,11 +127,15 @@ public static class OidcRoleClaimMapper
             // Fail closed rather than silently projecting it as a trusted
             // ClaimTypes.Role visitor grant. This does not activate enrollment.
             roles[0].OriginalIssuer != authentication.AskAlphaVisitorIssuer ||
-            // Do not silently turn a staff or mixed-role principal into a
-            // dedicated visitor identity.
-            identity.HasClaim(c => c.Type == ClaimTypes.Role ||
-                (c.Type == "role" && authentication.RoleClaimType != "role") ||
-                (c.Type == "roles" && authentication.RoleClaimType != "roles")))
+            // A case-variant claim-type alias (ROLES/Role) is still a
+            // second role source, even if its value is not in the configured
+            // role-claim namespace. Deny mixed visitors before projection.
+            // Do not trust claim issuer text as proof of token signature.
+            identity.Claims.Any(claim =>
+                !string.Equals(claim.Type, authentication.RoleClaimType, StringComparison.Ordinal)
+                && (string.Equals(claim.Type, "role", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(claim.Type, "roles", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(claim.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase))))
             return;
 
         identity.AddClaim(new Claim(ClaimTypes.Role,
