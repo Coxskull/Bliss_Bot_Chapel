@@ -59,6 +59,12 @@ public static class AskAlphaVisitorEnrollmentGate
             IdpConfigurationDeclared = true
         };
         if (principal?.Identity?.IsAuthenticated != true ||
+            // A visitor is a dedicated identity: no extra or foreign-issuer roles.
+            // Never accept a visitor claim grafted onto a staff identity.
+            principal.FindAll(ClaimTypes.Role).Count() != 1 ||
+            principal.FindAll(ClaimTypes.Role).Any(role =>
+                role.Value != config.AskAlphaVisitorRole ||
+                role.Issuer != config.AskAlphaVisitorIssuer) ||
             !principal.IsInRole(config.AskAlphaVisitorRole) ||
             principal.IsInRole(config.AdvertiserRole) ||
             principal.IsInRole(config.OperatorRole) ||
