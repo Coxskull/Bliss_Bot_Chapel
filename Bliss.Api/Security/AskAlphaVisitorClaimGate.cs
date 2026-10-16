@@ -26,16 +26,28 @@ public sealed class AskAlphaVisitorClaimGate
         Guid expectedSessionId)
     {
         var blocked = new AskAlphaVisitorIdentityReadiness("VISITOR_IDENTITY_PREREQUISITES_MISSING", expectedSessionId);
+        // The whole ClaimsPrincipal may aggregate several identities. Never
+        // combine one identity's authentication flag with another's issuer-
+        // controlled role, subject or session claim; reject foreign roles.
+        // Still only a claim-shape check, NOT actual historic ownership proof.
         if (expectedSessionId == Guid.Empty || !options.Enabled ||
-            user?.Identity?.IsAuthenticated != true ||
-            !user.IsInRole(options.AskAlphaVisitorRole) ||
-            user.IsInRole(options.AdvertiserRole) ||
-            user.IsInRole(options.OperatorRole) ||
-            user.IsInRole(options.AdminRole) ||
-            user.IsInRole(options.ReviewerRole) ||
+            user is null || user.Identities.Count() != 1 ||
+            user.Identity?.IsAuthenticated != true ||
             string.IsNullOrWhiteSpace(options.AskAlphaVisitorIssuer) ||
             string.IsNullOrWhiteSpace(options.AskAlphaVisitorSessionClaimType) ||
-            string.IsNullOrWhiteSpace(options.AskAlphaVisitorRole))
+            string.IsNullOrWhiteSpace(options.AskAlphaVisitorRole) ||
+            options.AskAlphaVisitorRole == options.AdvertiserRole ||
+            options.AskAlphaVisitorRole == options.OperatorRole ||
+            options.AskAlphaVisitorRole == options.AdminRole ||
+            options.AskAlphaVisitorRole == options.ReviewerRole ||
+            options.AskAlphaVisitorRole == options.ViewerRole ||
+            // One exclusive, correctly issued visitor role. No extra role,
+            // including one that is unknown to today's staff role registry.
+            user.FindAll(ClaimTypes.Role).Count() != 1 ||
+            user.FindAll(ClaimTypes.Role).Any(role =>
+                role.Value != options.AskAlphaVisitorRole ||
+                role.Issuer != options.AskAlphaVisitorIssuer) ||
+            !user.IsInRole(options.AskAlphaVisitorRole))
             return blocked;
 
         // Require one issuer-controlled subject AND one issuer-controlled
