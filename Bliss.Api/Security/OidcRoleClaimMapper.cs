@@ -127,6 +127,11 @@ public static class OidcRoleClaimMapper
         if (roles.Length != 1 ||
             roles[0].Value != authentication.AskAlphaVisitorRole ||
             roles[0].Issuer != authentication.AskAlphaVisitorIssuer ||
+            // Issuer alone is insufficient: a role may retain an original
+            // foreign claim source after normalization/cookie alignment.
+            // Fail closed rather than silently projecting it as a trusted
+            // ClaimTypes.Role visitor grant. This does not activate enrollment.
+            roles[0].OriginalIssuer != authentication.AskAlphaVisitorIssuer ||
             // Do not silently turn a staff or mixed-role principal into a
             // dedicated visitor identity.
             identity.HasClaim(c => c.Type == ClaimTypes.Role ||
