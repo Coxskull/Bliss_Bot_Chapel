@@ -342,7 +342,7 @@ public sealed class Phase20RoleClaimTests
     }
 
     [Fact]
-    public async Task OpenIdConnect_userinfo_event_applies_roles()
+    public async Task OpenIdConnect_userinfo_event_never_grants_staff_roles()
     {
         var options = new OpenIdConnectOptions();
         OidcRoleClaimMapper.Configure(options, Options);
@@ -361,9 +361,10 @@ public sealed class Phase20RoleClaimTests
 
         await options.Events.OnUserInformationReceived(context);
 
-        Assert.True(principal.IsInRole("bliss.reviewer"));
+        Assert.False(principal.IsInRole("bliss.viewer"));
+        Assert.False(principal.IsInRole("bliss.reviewer"));
         Assert.False(BlissAuthorization.CanWrite(principal, Options));
-        Assert.True(BlissAuthorization.CanReview(principal, Options));
+        Assert.False(BlissAuthorization.CanReview(principal, Options));
     }
 }
 
