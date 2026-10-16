@@ -128,9 +128,9 @@ public sealed class AskAlphaVisitorOidcRoleMappingTests
     }
 
     [Theory]
-    [InlineData("{\\\"roles\\\":[\\\"brand.unknown_staff_role\\\"]}")]
-    [InlineData("{\\\"roles\\\":[\\\"bliss.ask_alpha_visitor\\\"]}")]
-    [InlineData("{\\\"roles\\\":null}")]
+    [InlineData("{\"roles\":[\"brand.unknown_staff_role\"]}")]
+    [InlineData("{\"roles\":[\"bliss.ask_alpha_visitor\"]}")]
+    [InlineData("{\"roles\":null}")]
     public void Later_userinfo_roles_invalidate_previously_signed_visitor_projection(
         string userInfo)
     {
@@ -161,7 +161,7 @@ public sealed class AskAlphaVisitorOidcRoleMappingTests
     {
         var id=SignedIdentity(SignedRole());
         OidcRoleClaimMapper.ProjectValidatedVisitorRole(id,Configuration());
-        using var json=JsonDocument.Parse("{\\\"nickname\\\":\\\"fictional visitor\\\"}");
+        using var json=JsonDocument.Parse("{\"nickname\":\"fictional visitor\"}");
         OidcRoleClaimMapper.InvalidateVisitorProjectionIfUserInfoContainsRoles(
             id,json.RootElement,Configuration());
         var visitor=Assert.Single(id.FindAll(ClaimTypes.Role));
@@ -175,7 +175,7 @@ public sealed class AskAlphaVisitorOidcRoleMappingTests
         var id=SignedIdentity(SignedRole());
         id.AddClaim(new Claim(ClaimTypes.Role,"bliss.operator",
             ClaimValueTypes.String,Issuer));
-        using var json=JsonDocument.Parse("{\\\"roles\\\":[\\\"brand.unknown_staff_role\\\"]}");
+        using var json=JsonDocument.Parse("{\"roles\":[\"brand.unknown_staff_role\"]}");
         OidcRoleClaimMapper.InvalidateVisitorProjectionIfUserInfoContainsRoles(
             id,json.RootElement,Configuration());
         Assert.Equal("bliss.operator",
