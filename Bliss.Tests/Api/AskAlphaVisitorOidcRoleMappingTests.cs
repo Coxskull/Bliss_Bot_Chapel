@@ -127,6 +127,61 @@ public sealed class AskAlphaVisitorOidcRoleMappingTests
         Assert.Empty(other.FindAll(ClaimTypes.Role));
     }
 
+    [Theory]
+    [InlineData("{\\\"roles\\\":[\\\"brand.unknown_staff_role\\\"]}")]
+    [InlineData("{\\\"roles\\\":[\\\"bliss.ask_alpha_visitor\\\"]}")]
+    [InlineData("{\\\"roles\\\":null}")]
+    public void Later_userinfo_roles_invalidate_previously_signed_visitor_projection(
+        string userInfo)
+    {
+        var id=SignedIdentity(SignedRole());
+        OidcRoleClaimMapper.ProjectValidatedVisitorRole(id,Configuration());
+        Assert.Single(id.FindAll(ClaimTypes.Role));
+
+        using var json=JsonDocument.Parse(userInfo);
+        OidcRoleClaimMapper.Apply(id,json.RootElement,"roles");
+        OidcRoleClaimMapper.InvalidateVisitorProjectionIfUserInfoContainsRoles(
+            id,json.RootElement,Configuration());
+
+        Assert.Empty(id.FindAll(ClaimTypes.Role));
+        var readiness=AskAlphaVisitorEnrollmentGate.Inspect(
+            new ClaimsPrincipal(id),Configuration());
+        Assert.False(readiness.IssuerSubjectClaimsConsistent);
+        Assert.False(readiness.RealVisitorIdentityAccepted);
+        Assert.False(readiness.VisitorConsentRecorded);
+        Assert.False(readiness.TranscriptExportAuthorized);
+        Assert.False(readiness.PaymentAuthorized);
+        Assert.False(readiness.CreatorPayoutAuthorized);
+        Assert.False(readiness.CampaignDeliveryAuthorized);
+        Assert.Equal("NOT_SENT",readiness.Delivery);
+    }
+
+    [Fact]
+    public void Unrelated_userinfo_does_not_remove_signed_visitor_projection()
+    {
+        var id=SignedIdentity(SignedRole());
+        OidcRoleClaimMapper.ProjectValidatedVisitorRole(id,Configuration());
+        using var json=JsonDocument.Parse("{\\\"nickname\\\":\\\"fictional visitor\\\"}");
+        OidcRoleClaimMapper.InvalidateVisitorProjectionIfUserInfoContainsRoles(
+            id,json.RootElement,Configuration());
+        var visitor=Assert.Single(id.FindAll(ClaimTypes.Role));
+        Assert.Equal(Role,visitor.Value);
+        Assert.Equal(Issuer,visitor.Issuer);
+    }
+
+    [Fact]
+    public void Visitor_userinfo_invalidation_does_not_remove_existing_staff_roles()
+    {
+        var id=SignedIdentity(SignedRole());
+        id.AddClaim(new Claim(ClaimTypes.Role,"bliss.operator",
+            ClaimValueTypes.String,Issuer));
+        using var json=JsonDocument.Parse("{\\\"roles\\\":[\\\"brand.unknown_staff_role\\\"]}");
+        OidcRoleClaimMapper.InvalidateVisitorProjectionIfUserInfoContainsRoles(
+            id,json.RootElement,Configuration());
+        Assert.Equal("bliss.operator",
+            Assert.Single(id.FindAll(ClaimTypes.Role)).Value);
+    }
+
     [Fact]
     public void Unauthenticated_identity_never_receives_projected_visitor_role()
     {
