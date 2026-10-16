@@ -58,7 +58,13 @@ public static class AskAlphaVisitorEnrollmentGate
             Status = "PROVIDER_DECLARED_NEW_VISITOR_ENROLLMENT_NOT_ACTIVE",
             IdpConfigurationDeclared = true
         };
-        if (principal?.Identity?.IsAuthenticated != true ||
+        // ClaimsPrincipal can combine multiple ClaimsIdentity instances.
+        // Never borrow the authenticated flag from one identity and visitor
+        // role/subject claims from another (including an unauthenticated one).
+        // This prerequisite check deliberately requires one authenticated
+        // identity; actual token validation is still the hosting middleware's job.
+        if (principal is null || principal.Identities.Count() != 1 ||
+            principal.Identity?.IsAuthenticated != true ||
             // A visitor is a dedicated identity: no extra or foreign-issuer roles.
             // Never accept a visitor claim grafted onto a staff identity.
             principal.FindAll(ClaimTypes.Role).Count() != 1 ||
