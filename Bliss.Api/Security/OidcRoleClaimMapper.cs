@@ -97,7 +97,23 @@ public static class OidcRoleClaimMapper
     public static void ProjectValidatedVisitorRole(
         ClaimsIdentity identity, BlissAuthenticationOptions authentication)
     {
-        if (!identity.IsAuthenticated ||
+        // Visitor-role projection is a prerequisite only, and must not
+        // create visitor-role claims when the dedicated feature is disabled
+        // or the configured authority differs from the visitor issuer.
+        if (!authentication.Enabled ||
+            !authentication.AskAlphaVisitorEnrollmentRequested ||
+            string.IsNullOrWhiteSpace(authentication.ClientId) ||
+            !Uri.TryCreate(authentication.Authority, UriKind.Absolute, out var authority) ||
+            !Uri.TryCreate(authentication.AskAlphaVisitorIssuer, UriKind.Absolute, out var visitorIssuer) ||
+            authority.Scheme != Uri.UriSchemeHttps ||
+            visitorIssuer.Scheme != Uri.UriSchemeHttps ||
+            authority.UserInfo.Length != 0 || visitorIssuer.UserInfo.Length != 0 ||
+            authority.Query.Length != 0 || visitorIssuer.Query.Length != 0 ||
+            authority.Fragment.Length != 0 || visitorIssuer.Fragment.Length != 0 ||
+            Uri.Compare(authority, visitorIssuer,
+                UriComponents.SchemeAndServer | UriComponents.Path,
+                UriFormat.Unescaped, StringComparison.Ordinal) != 0 ||
+            !identity.IsAuthenticated ||
             string.IsNullOrWhiteSpace(authentication.AskAlphaVisitorIssuer) ||
             string.IsNullOrWhiteSpace(authentication.AskAlphaVisitorRole) ||
             string.IsNullOrWhiteSpace(authentication.RoleClaimType) ||
