@@ -83,6 +83,36 @@ public sealed class AskAlphaVisitorConsentBoundaryRegressionTests
         Assert.Equal("NOT_SENT", result.Delivery);
     }
 
+
+    [Theory]
+    [InlineData("bliss.external_untrusted_role")]
+    [InlineData("bliss.advertiser")]
+    public void Additional_roles_from_any_issuer_cannot_create_visitor_identity(string extraRole)
+    {
+        var principal = Principal(new Claim(ClaimTypes.Role, extraRole,
+            ClaimValueTypes.String, "https://other-idp.example.invalid"));
+        var readiness = AskAlphaVisitorEnrollmentGate.Inspect(principal, Options());
+        Assert.False(readiness.IssuerSubjectClaimsConsistent);
+        var result = AskAlphaVisitorConsentCommandGate.Inspect(principal, Options(), Intent(), false);
+        Assert.Equal("VISITOR_IDENTITY_PREREQUISITES_MISSING", result.Status);
+        Assert.False(result.AuthenticatedVisitorConsentRecorded);
+    }
+
+    [Fact]
+    public void Forged_visitor_role_issuer_is_not_accepted()
+    {
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role, "bliss.ask_alpha_visitor", ClaimValueTypes.String,
+                "https://other-idp.example.invalid"),
+            new Claim("sub", "visitor-subject-12345", ClaimValueTypes.String, Issuer)
+        }, "fictional-cookie-auth"));
+        Assert.False(AskAlphaVisitorEnrollmentGate.Inspect(principal, Options())
+            .IssuerSubjectClaimsConsistent);
+        Assert.Equal("VISITOR_IDENTITY_PREREQUISITES_MISSING",
+            AskAlphaVisitorConsentCommandGate.Inspect(principal, Options(), Intent(), false).Status);
+    }
+
     [Fact]
     public void No_visitor_consent_backend_is_ever_implied_by_matching_claims()
     {
