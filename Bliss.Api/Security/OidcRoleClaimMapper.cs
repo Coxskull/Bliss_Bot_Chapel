@@ -26,13 +26,11 @@ public static class OidcRoleClaimMapper
         {
             if (context.Principal?.Identity is ClaimsIdentity identity && context.User is not null)
             {
-                Apply(identity, context.User.RootElement, authentication.RoleClaimType);
-                // UserInfo arrives AFTER token validation. An unverified
-                // UserInfo role must never preserve a previously projected
-                // dedicated visitor identity, even if the role value matches.
-                InvalidateVisitorProjectionIfUserInfoContainsRoles(
+                // UserInfo is a profile source, never a second source of
+                // staff roles or reviewer workspace authorization. Only
+                // token-validated claims may grant these scopes.
+                IgnoreUntrustedUserInfoAuthorizationClaims(
                     identity, context.User.RootElement, authentication);
-                ApplyReviewerWorkspaceAssignments(identity, context.User.RootElement, authentication.ReviewerWorkspaceClaimType);
             }
 
             return Task.CompletedTask;
@@ -161,6 +159,20 @@ public static class OidcRoleClaimMapper
                 claim.OriginalIssuer == authentication.AskAlphaVisitorIssuer)
             .ToArray())
             identity.RemoveClaim(projected);
+    }
+
+    // Run ONLY on the later UserInfo callback. UserInfo may carry display
+    // profile fields but must not add operator/admin/reviewer role grants or
+    // tenant workspace access to the authenticated cookie. Preserve roles
+    // already derived from validated signed claims. A UserInfo roles field
+    // additionally invalidates the dedicated Ask Alpha visitor projection.
+    public static void IgnoreUntrustedUserInfoAuthorizationClaims(
+        ClaimsIdentity identity, JsonElement user, BlissAuthenticationOptions authentication)
+    {
+        InvalidateVisitorProjectionIfUserInfoContainsRoles(identity, user, authentication);
+        // Deliberately do NOT call Apply() or ApplyReviewerWorkspaceAssignments().
+        // A future IdP-specific authorization policy requires independent
+        // security approval before changing this default-denied boundary.
     }
 
     // Accept one workspace GUID per verified claim or an array supplied by the
