@@ -126,6 +126,53 @@ public sealed class AskAlphaVisitorConsentHttpPipelineTests
             && values.Any(v=>v.Contains("no-store",StringComparison.OrdinalIgnoreCase)));
     }
 
+    [Theory]
+    [InlineData("opt-in", true)]
+    [InlineData("withdraw", false)]
+    public async Task Tampered_csrf_token_with_real_test_cookie_fails_closed(
+        string action, bool selected)
+    {
+        using var client=TestVisitor();
+        var genuine=await CsrfToken(client);
+        // Keep the genuine antiforgery cookie but deliberately corrupt the
+        // request token. This tests middleware verification, not controller.
+        var tampered=(genuine[0]=='A' ? "B" : "A")+genuine[1..];
+        client.DefaultRequestHeaders.Add("X-CSRF-TOKEN",tampered);
+        using var response=await client.PostAsJsonAsync(Base+"/"+action,Consent(selected));
+        await AssertDenied(response,HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [InlineData("opt-in", true)]
+    [InlineData("withdraw", false)]
+    public async Task Csrf_header_borrowed_from_another_client_without_its_cookie_is_denied(
+        string action, bool selected)
+    {
+        using var first=TestVisitor();
+        var borrowed=await CsrfToken(first);
+        // The receiving HttpClient has a distinct browser-cookie container.
+        // A request token alone is not proof of a valid same-browser session.
+        using var second=TestVisitor();
+        second.DefaultRequestHeaders.Add("X-CSRF-TOKEN",borrowed);
+        using var response=await second.PostAsJsonAsync(Base+"/"+action,Consent(selected));
+        await AssertDenied(response,HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [InlineData("opt-in", true)]
+    [InlineData("withdraw", false)]
+    public async Task Untrusted_bearer_header_cannot_substitute_for_authenticated_cookie(
+        string action, bool selected)
+    {
+        using var client=factory.CreateSecureClient();
+        // The isolated fake auth scheme deliberately does not trust Bearer:
+        // this is NOT a JWT signature validation test.
+        client.DefaultRequestHeaders.Authorization=
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer","not-a-real-token");
+        using var response=await client.PostAsJsonAsync(Base+"/"+action,Consent(selected));
+        Assert.Equal(HttpStatusCode.Unauthorized,response.StatusCode);
+    }
+
     [Fact]
     public async Task Staff_claims_do_not_turn_consent_into_an_export_or_payment()
     {
