@@ -393,6 +393,77 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
                 ("retry","raw_sql_reoptin_123"),
                 ("at",DateTimeOffset.UtcNow)));
 
+            // Concurrent requests with distinct retry keys must all fail
+            // after the same synthetic identity has been withdrawn.
+            var deniedRetries=await Task.WhenAll(Enumerable.Range(0,8)
+                .Select(async i => {
+                    await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                        enrollment.CreateNewAsync(newRequest with {
+                            RequestKey=$"post_revoke_parallel_{i:D2}_123"
+                        }));
+                    return i;
+                }));
+            Assert.Equal(8,deniedRetries.Length);
+            Assert.Equal(4,await check.WeddingPlannerPlanningSessions
+                .AsNoTracking().CountAsync());
+
+            // Simulate a bypass of the application enrollment writer:
+            // insert a fresh synthetic planning session in the SAME SQL
+            // transaction, then try to attach ownership through direct SQL.
+            // The disposable ownership trigger must reject it. Rolling back
+            // the transaction must also remove the session inserted first.
+            var bypassSession=Guid.NewGuid();
+            var bypassOwner=Guid.NewGuid();
+            await using(var rawTxn=await db.BeginTransactionAsync())
+            {
+                await using(var addSession=new NpgsqlCommand("""
+                    INSERT INTO "WeddingPlannerPlanningSessions"
+                      ("Id","WorkspaceId","AdvertiserId","Status",
+                       "SourceSystem","IdempotencyKey","CreatedAt","UpdatedAt")
+                    VALUES (@session,@ws,@advertiser,'OPEN',
+                            'STAGING_SYNTHETIC_VISITOR_NEW_SESSION',
+                            @key,@created,@created)
+                    """,db,rawTxn))
+                {
+                    addSession.Parameters.AddWithValue("session",bypassSession);
+                    addSession.Parameters.AddWithValue("ws",workspace);
+                    addSession.Parameters.AddWithValue("advertiser",advertiser);
+                    addSession.Parameters.AddWithValue("key",Guid.NewGuid().ToString("N"));
+                    addSession.Parameters.AddWithValue("created",DateTime.UtcNow);
+                    Assert.Equal(1,await addSession.ExecuteNonQueryAsync());
+                }
+                await using(var addOwner=new NpgsqlCommand("""
+                    INSERT INTO "AskAlphaVisitorOwnershipStaging"
+                      ("Id","WorkspaceId","SessionId","AdvertiserId",
+                       "Issuer","SubjectSha256","RequestKey","CreatedAt")
+                    VALUES (@owner,@ws,@session,@advertiser,
+                            @issuer,@subject,@key,@created)
+                    """,db,rawTxn))
+                {
+                    addOwner.Parameters.AddWithValue("owner",bypassOwner);
+                    addOwner.Parameters.AddWithValue("ws",workspace);
+                    addOwner.Parameters.AddWithValue("session",bypassSession);
+                    addOwner.Parameters.AddWithValue("advertiser",advertiser);
+                    addOwner.Parameters.AddWithValue("issuer",issuer);
+                    addOwner.Parameters.AddWithValue("subject",newRequest.SubjectSha256);
+                    addOwner.Parameters.AddWithValue("key","direct_session_bypass_123");
+                    addOwner.Parameters.AddWithValue("created",DateTime.UtcNow);
+                    var denied=await Assert.ThrowsAsync<PostgresException>(
+                        async()=>await addOwner.ExecuteNonQueryAsync());
+                    Assert.Equal("23514",denied.SqlState);
+                }
+                await rawTxn.RollbackAsync();
+            }
+            Assert.Equal(4,await check.WeddingPlannerPlanningSessions
+                .AsNoTracking().CountAsync());
+            await using(var noOrphan=new NpgsqlCommand("""
+                SELECT count(*) FROM "WeddingPlannerPlanningSessions" WHERE "Id"=@id
+                """,db))
+            {
+                noOrphan.Parameters.AddWithValue("id",bypassSession);
+                Assert.Equal(0L,await noOrphan.ExecuteScalarAsync());
+            }
+
             // Cross-tenant isolation: the same synthetic OIDC issuer/subject
             // and identical retry key in another actual advertiser/workspace
             // must never adopt the first workspace's visitor session or
