@@ -265,11 +265,11 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
             // inside the disposable schema and is dropped with that schema.
             await using(var injectFailure = new NpgsqlCommand("""
                 CREATE FUNCTION agm_j_reject_test_ownership()
-                RETURNS trigger LANGUAGE plpgsql AS $
+                RETURNS trigger LANGUAGE plpgsql AS $agm$
                 BEGIN
                   RAISE EXCEPTION 'synthetic ownership insert rejected'
                     USING ERRCODE='23514';
-                END $;
+                END $agm$;
                 CREATE TRIGGER agm_j_force_test_owner_rejection
                   BEFORE INSERT ON "AskAlphaVisitorOwnershipStaging"
                   FOR EACH ROW
