@@ -161,6 +161,27 @@ public sealed class AskAlphaVisitorConsentHttpPipelineTests
     [Theory]
     [InlineData("opt-in", true)]
     [InlineData("withdraw", false)]
+    public async Task Csrf_token_borrowed_by_browser_with_its_own_valid_cookie_is_denied(
+        string action, bool selected)
+    {
+        using var first=TestVisitor();
+        var stolen=await CsrfToken(first);
+
+        // The receiver possesses a legitimate but DIFFERENT antiforgery
+        // cookie; a matching fictional identity alone cannot authorize the
+        // first browser's request token. This covers more than a missing cookie.
+        using var second=TestVisitor();
+        var itsOwn=await CsrfToken(second);
+        Assert.False(string.IsNullOrWhiteSpace(itsOwn));
+        Assert.NotEqual(stolen,itsOwn);
+        second.DefaultRequestHeaders.Add("X-CSRF-TOKEN",stolen);
+        using var response=await second.PostAsJsonAsync(Base+"/"+action,Consent(selected));
+        await AssertDenied(response,HttpStatusCode.BadRequest);
+    }
+
+    [Theory]
+    [InlineData("opt-in", true)]
+    [InlineData("withdraw", false)]
     public async Task Untrusted_bearer_header_cannot_substitute_for_authenticated_cookie(
         string action, bool selected)
     {
