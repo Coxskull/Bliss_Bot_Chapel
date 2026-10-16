@@ -183,6 +183,34 @@ public sealed class AskAlphaVisitorOidcRoleMappingTests
     }
 
     [Fact]
+    public void Visitor_projection_requires_explicit_feature_and_matching_https_oidc_authority()
+    {
+        Action<BlissAuthenticationOptions>[] disallowed =
+        [
+            o => o.Enabled = false,
+            o => o.AskAlphaVisitorEnrollmentRequested = false,
+            o => o.ClientId = string.Empty,
+            o => o.Authority = string.Empty,
+            o => o.Authority = "https://unapproved.example.invalid/realm",
+            o => o.Authority = "http://idp.example.invalid/realms/agm",
+            o => o.AskAlphaVisitorIssuer = "http://idp.example.invalid/realms/agm",
+            o => o.Authority = Issuer + "?callback=unsafe",
+            o => o.AskAlphaVisitorIssuer = Issuer + "#unsafe"
+        ];
+
+        foreach (var disallow in disallowed)
+        {
+            var options = Configuration();
+            disallow(options);
+            var identity = SignedIdentity(SignedRole());
+            OidcRoleClaimMapper.ProjectValidatedVisitorRole(identity, options);
+            Assert.Empty(identity.FindAll(ClaimTypes.Role));
+            Assert.False(AskAlphaVisitorEnrollmentGate.Inspect(
+                new ClaimsPrincipal(identity), options).IssuerSubjectClaimsConsistent);
+        }
+    }
+
+    [Fact]
     public void Unauthenticated_identity_never_receives_projected_visitor_role()
     {
         var id=new ClaimsIdentity(new[]
