@@ -39,6 +39,22 @@ END $$;
 CREATE FUNCTION agm_staging_check_ownership() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE session_info record;
 BEGIN
+  -- Align fixture enrollment and consent on a single identity/workspace
+  -- lock, not a caller-supplied request key. No bypass through NEW sessions.
+  PERFORM pg_advisory_xact_lock(hashtextextended(
+    replace(NEW."WorkspaceId"::text,'-','') || '|' ||
+    NEW."Issuer" || '|' || NEW."SubjectSha256"::text, 5018));
+  IF EXISTS (
+    SELECT 1 FROM "AskAlphaVisitorOwnershipStaging" o
+    JOIN "AskAlphaVisitorConsentStaging" c ON c."OwnershipId"=o."Id"
+    WHERE o."WorkspaceId"=NEW."WorkspaceId"
+      AND o."Issuer"=NEW."Issuer"
+      AND o."SubjectSha256"=NEW."SubjectSha256"
+      AND c."Action"='REVOKE'
+  ) THEN
+    RAISE EXCEPTION 'synthetic identity has terminal withdrawal'
+      USING ERRCODE='23514';
+  END IF;
   -- A marker on an existing staff-created session is not cryptographic proof
   -- of visitor ownership. This is a **synthetic** isolated test precondition.
   SELECT s."WorkspaceId",s."AdvertiserId",s."Status",s."SourceSystem",
@@ -63,7 +79,21 @@ DECLARE opened timestamptz;
 DECLARE optin timestamptz;
 DECLARE revoked boolean;
 BEGIN
+  PERFORM pg_advisory_xact_lock(hashtextextended(
+    replace(NEW."WorkspaceId"::text,'-','') || '|' ||
+    NEW."Issuer" || '|' || NEW."SubjectSha256"::text, 5018));
   PERFORM pg_advisory_xact_lock(hashtextextended(NEW."OwnershipId"::text, 5017));
+  IF NEW."Action"='OPT_IN' AND EXISTS (
+    SELECT 1 FROM "AskAlphaVisitorOwnershipStaging" o
+    JOIN "AskAlphaVisitorConsentStaging" c ON c."OwnershipId"=o."Id"
+    WHERE o."WorkspaceId"=NEW."WorkspaceId"
+      AND o."Issuer"=NEW."Issuer"
+      AND o."SubjectSha256"=NEW."SubjectSha256"
+      AND c."Action"='REVOKE'
+  ) THEN
+    RAISE EXCEPTION 'synthetic identity-wide re-opt-in denied'
+      USING ERRCODE='23514';
+  END IF;
   SELECT "CreatedAt" INTO opened FROM "AskAlphaVisitorOwnershipStaging"
     WHERE "Id"=NEW."OwnershipId" FOR SHARE;
   SELECT "RecordedAt" INTO optin FROM "AskAlphaVisitorConsentStaging"
