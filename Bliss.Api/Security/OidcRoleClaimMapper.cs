@@ -13,6 +13,10 @@ public static class OidcRoleClaimMapper
             if (context.Principal?.Identity is ClaimsIdentity identity)
             {
                 Normalize(identity, authentication.RoleClaimType);
+                // Only this post-signature-validation callback can project a
+                // visitor role whose source issuer matches the approved IdP.
+                // Never trust a user-info claim or caller-supplied role alone.
+                ProjectValidatedVisitorRole(identity, authentication);
                 NormalizeReviewerWorkspaceAssignments(identity, authentication.ReviewerWorkspaceClaimType);
             }
 
@@ -53,9 +57,16 @@ public static class OidcRoleClaimMapper
             return;
         }
 
+        // Keep issuer provenance from the OIDC token. Reissuing role claims
+        // with the default LOCAL AUTHORITY issuer loses the signed identity
+        // context and cannot satisfy the visitor issuer-bound preflight.
         var expanded = identity.FindAll(roleClaimType)
-            .SelectMany(claim => Expand(claim.Value))
-            .Distinct(StringComparer.Ordinal)
+            .SelectMany(claim => Expand(claim.Value)
+                .Select(role => (
+                    Value: role,
+                    Issuer: claim.Issuer,
+                    OriginalIssuer: claim.OriginalIssuer)))
+            .Distinct()
             .ToList();
         if (expanded.Count == 0)
         {
@@ -69,8 +80,45 @@ public static class OidcRoleClaimMapper
 
         foreach (var role in expanded)
         {
-            identity.AddClaim(new Claim(roleClaimType, role));
+            identity.AddClaim(new Claim(roleClaimType, role.Value,
+                ClaimValueTypes.String, role.Issuer, role.OriginalIssuer));
         }
+    }
+
+    // Call ONLY after ASP.NET's OIDC handler has validated the ID token.
+    // This is a role claim projection into the visitor gate's exact
+    // ClaimTypes.Role format, NOT an authentication, enrollment or consent
+    // decision. UserInfo roles are intentionally never projected here.
+    public static void ProjectValidatedVisitorRole(
+        ClaimsIdentity identity, BlissAuthenticationOptions authentication)
+    {
+        if (!identity.IsAuthenticated ||
+            string.IsNullOrWhiteSpace(authentication.AskAlphaVisitorIssuer) ||
+            string.IsNullOrWhiteSpace(authentication.AskAlphaVisitorRole) ||
+            string.IsNullOrWhiteSpace(authentication.RoleClaimType) ||
+            authentication.RoleClaimType == ClaimTypes.Role ||
+            authentication.AskAlphaVisitorRole == authentication.AdvertiserRole ||
+            authentication.AskAlphaVisitorRole == authentication.ViewerRole ||
+            authentication.AskAlphaVisitorRole == authentication.OperatorRole ||
+            authentication.AskAlphaVisitorRole == authentication.ReviewerRole ||
+            authentication.AskAlphaVisitorRole == authentication.AdminRole)
+            return;
+
+        var roles = identity.FindAll(authentication.RoleClaimType).ToArray();
+        if (roles.Length != 1 ||
+            roles[0].Value != authentication.AskAlphaVisitorRole ||
+            roles[0].Issuer != authentication.AskAlphaVisitorIssuer ||
+            // Do not silently turn a staff or mixed-role principal into a
+            // dedicated visitor identity.
+            identity.HasClaim(c => c.Type == ClaimTypes.Role ||
+                (c.Type == "role" && authentication.RoleClaimType != "role") ||
+                (c.Type == "roles" && authentication.RoleClaimType != "roles")))
+            return;
+
+        identity.AddClaim(new Claim(ClaimTypes.Role,
+            authentication.AskAlphaVisitorRole, ClaimValueTypes.String,
+            authentication.AskAlphaVisitorIssuer,
+            authentication.AskAlphaVisitorIssuer));
     }
 
     // Accept one workspace GUID per verified claim or an array supplied by the
