@@ -181,14 +181,27 @@ public static class OidcRoleClaimMapper
     public static void NormalizeReviewerWorkspaceAssignments(ClaimsIdentity identity, string claimType)
     {
         if (string.IsNullOrWhiteSpace(claimType)) return;
+        // Token-validated workspace claims must retain their actual issuer
+        // provenance. Reissuing every scope as LOCAL AUTHORITY hides
+        // cross-issuer collisions when reviewers audit cookie principals.
+        // Preserving the origin is NOT a substitute for a future approved
+        // issuer-aware staff/tenant authorization policy.
         var authorized = identity.FindAll(claimType)
-            .SelectMany(claim => Expand(claim.Value))
-            .Select(value => Guid.TryParse(value, out var parsed) ? parsed : Guid.Empty)
-            .Where(value => value != Guid.Empty)
+            .SelectMany(claim => Expand(claim.Value).Select(value => (
+                Value: value,
+                Issuer: claim.Issuer,
+                OriginalIssuer: claim.OriginalIssuer)))
+            .Select(entry => (
+                Workspace: Guid.TryParse(entry.Value, out var parsed) ? parsed : Guid.Empty,
+                entry.Issuer,
+                entry.OriginalIssuer))
+            .Where(entry => entry.Workspace != Guid.Empty)
             .Distinct()
             .ToArray();
         foreach (var existing in identity.FindAll(claimType).ToList()) identity.RemoveClaim(existing);
-        foreach (var workspace in authorized) identity.AddClaim(new Claim(claimType, workspace.ToString("D")));
+        foreach (var entry in authorized)
+            identity.AddClaim(new Claim(claimType, entry.Workspace.ToString("D"),
+                ClaimValueTypes.String, entry.Issuer, entry.OriginalIssuer));
     }
 
     public static void ApplyReviewerWorkspaceAssignments(ClaimsIdentity identity, JsonElement user, string claimType)
