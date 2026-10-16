@@ -42,7 +42,8 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
             var workspace=Guid.NewGuid();
             var session=Guid.NewGuid();
             var legacy=Guid.NewGuid();
-            var now=DateTime.UtcNow;
+            // DB-assigned event times must be after the synthetic ownership creation.
+            var now=DateTime.UtcNow.AddMinutes(-5);
             await using(var setup=new BlissDbContext(options))
             {
                 await setup.GetService<IRelationalDatabaseCreator>().CreateTablesAsync();
@@ -130,10 +131,53 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
             await Rejected(()=>WriteConsent("OPT_IN","OTHER_NOTICE","CREATIVE_PREVIEW_ONLY","wrong_notice_123"));
             await Rejected(()=>WriteConsent("OPT_IN",acceptedVersion,acceptedPurpose,"before_creation_123",offset:-1));
 
-            await WriteConsent("OPT_IN",acceptedVersion,acceptedPurpose,"approved_fixture_123");
+            // Staging-only application writer: atomic retry serialization, DB clock,
+            // exact binding and default-off real authorization.
+            await using var stagingData=NpgsqlDataSource.Create(parsed.ConnectionString);
+            var ledger=new AskAlphaVisitorStagingConsentLedger(stagingData);
+            var optin=new AskAlphaStagingConsentRequest(
+                owner,workspace,issuer,subject,"OPT_IN",acceptedPurpose,
+                acceptedVersion,"approved_fixture_123");
+            var competing=await Task.WhenAll(Enumerable.Range(0,8)
+                .Select(_=>ledger.AppendAsync(optin)));
+            Assert.Single(competing.Select(x=>x.EventId).Distinct());
+            Assert.Equal(1,competing.Count(x=>!x.IsReplay));
+            Assert.Equal(7,competing.Count(x=>x.IsReplay));
+            Assert.All(competing,x=>{
+                Assert.False(x.RealVisitorIdentityVerified);
+                Assert.False(x.AuthenticatedVisitorConsentRecorded);
+                Assert.False(x.TranscriptExportAuthorized);
+                Assert.False(x.PaymentAuthorized);
+                Assert.False(x.CreatorPayoutAuthorized);
+                Assert.False(x.CampaignDeliveryAuthorized);
+                Assert.Equal("NOT_SENT",x.Delivery);
+            });
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                ledger.AppendAsync(optin with { Action="REVOKE" }));
+            await Assert.ThrowsAsync<ArgumentException>(()=>
+                ledger.AppendAsync(optin with { NoticeVersion="unreviewed-notice" }));
+            await Assert.ThrowsAsync<PostgresException>(()=>
+                ledger.AppendAsync(optin with {
+                    RetryKey="wrong_digest_key_123",SubjectSha256=new string('B',64)
+                }));
             await Rejected(()=>WriteConsent("OPT_IN",acceptedVersion,acceptedPurpose,"duplicate_optin_123"));
             await Rejected(()=>WriteConsent("REVOKE",acceptedVersion,acceptedPurpose,"wrong_clock_1234",offset:2));
-            await WriteConsent("REVOKE",acceptedVersion,acceptedPurpose,"withdraw_fixture_123",offset:4);
+            var revoked=new AskAlphaStagingConsentRequest(
+                owner,workspace,issuer,subject,"REVOKE",acceptedPurpose,
+                acceptedVersion,"withdraw_fixture_123");
+            var withdrawals=await Task.WhenAll(Enumerable.Range(0,5)
+                .Select(_=>ledger.AppendAsync(revoked)));
+            Assert.Single(withdrawals.Select(x=>x.EventId).Distinct());
+            Assert.Equal(1,withdrawals.Count(x=>!x.IsReplay));
+            Assert.Equal(4,withdrawals.Count(x=>x.IsReplay));
+            Assert.All(withdrawals,x=>{
+                Assert.Equal("SYNTHETIC_STAGING_REVOCATION_RECORDED_NO_EXPORT",x.Status);
+                Assert.False(x.AuthenticatedVisitorConsentRecorded);
+                Assert.False(x.TranscriptExportAuthorized);
+                Assert.Equal("NOT_SENT",x.Delivery);
+            });
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                ledger.AppendAsync(optin));
             await Rejected(()=>WriteConsent("OPT_IN",acceptedVersion,acceptedPurpose,"reoptin_attempt_123",offset:5));
             await Rejected(()=>WriteConsent("REVOKE",acceptedVersion,acceptedPurpose,"double_revoke_123",offset:6));
 
