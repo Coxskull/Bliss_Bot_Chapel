@@ -80,7 +80,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          fixture_filter='FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresAppendConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.BrandDnaPostgresTests|FullyQualifiedName~Bliss.Tests.Persistence.CreativeHandoffPersistenceTests|FullyQualifiedName~Bliss.Tests.Persistence.AskAlphaVisitorOwnershipStagingPostgresTests'
+          fixture_filter='FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresAppendConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.BrandDnaPostgresTests|FullyQualifiedName~Bliss.Tests.Persistence.CreativeHandoffPersistenceTests|FullyQualifiedName~Bliss.Tests.Persistence.AskAlphaVisitorOwnershipStagingPostgresTests|FullyQualifiedName~Bliss.Tests.Persistence.AskAlphaVisitorPrivateSnapshotStagingPostgresTests'
 
           for iteration in 1 2; do
             echo "Running disposable PostgreSQL planner iteration $iteration"
@@ -111,7 +111,7 @@ jobs:
                   raise SystemExit(f"FAIL: planner run {iteration} has no complete test summary")
               failed, passed, skipped, total = map(int, summary.groups())
               print(f"Planner PostgreSQL iteration {iteration}: {passed} passed, {failed} failed, {skipped} skipped; total {total}.")
-              if failed or skipped or passed < 8 or total != passed:
+              if failed or skipped or passed < 10 or total != passed:
                   raise SystemExit(f"FAIL: missing/skipped/failed PostgreSQL concurrency coverage in iteration {iteration}")
           PY
 
