@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "workstream": "AGM-COMM-015",
+  "parent_issue": "https://github.com/Coxskull/Bliss_Bot_Chapel/issues/231",
+  "snapshot_date": "2026-10-16",
+  "purpose": "Non-authorizing human review checklist. Not executable deployment approval.",
+  "commercial_release_authorized": false,
+  "real_visitor_consent_accepted": false,
+  "real_visitor_consent_backend_enabled": false,
+  "campaign_ready": false,
+  "delivery": "NOT_SENT",
+  "evidence_policy": "No raw tokens, personal transcripts, passwords or secret material. Require independent reviewer per gate.",
+  "gate_ids": [
+    "IDP-01",
+    "SESS-01",
+    "OWN-01",
+    "PRIV-01",
+    "CONS-01",
+    "HOST-01",
+    "COMM-01"
+  ],
+  "gates": [
+    {
+      "id": "IDP-01",
+      "status": "BLOCKED",
+      "reviewer_approval": "NOT_RECORDED",
+      "required": "Approved hosted OIDC issuer/client and signed-token verification"
+    },
+    {
+      "id": "SESS-01",
+      "status": "BLOCKED",
+      "reviewer_approval": "NOT_RECORDED",
+      "required": "Production-equivalent cookie/CSRF/proxy and browser security evidence"
+    },
+    {
+      "id": "OWN-01",
+      "status": "BLOCKED",
+      "reviewer_approval": "NOT_RECORDED",
+      "required": "Approved new-session ownership model, tenant RLS, isolated migration and rollback"
+    },
+    {
+      "id": "PRIV-01",
+      "status": "BLOCKED",
+      "reviewer_approval": "NOT_RECORDED",
+      "required": "Legally approved consent purpose/version, recipients, retention and withdrawal effects"
+    },
+    {
+      "id": "CONS-01",
+      "status": "BLOCKED",
+      "reviewer_approval": "NOT_RECORDED",
+      "required": "Real visitor-owned opt-in, withdrawal audit and revocation propagation"
+    },
+    {
+      "id": "HOST-01",
+      "status": "BLOCKED",
+      "reviewer_approval": "NOT_RECORDED",
+      "required": "Independent hosted staging identity, storage, security and privacy acceptance"
+    },
+    {
+      "id": "COMM-01",
+      "status": "BLOCKED",
+      "reviewer_approval": "NOT_RECORDED",
+      "required": "Rights, QA, settlement, sandbox financial and executive commercial release"
+    }
+  ],
+  "current_behavior": {
+    "consent_get": "Observation only; backend unconfigured",
+    "consent_post": "HTTP 409 for otherwise valid authenticated commands",
+    "synthetic_tests": "Cannot establish real identity, user consent, or commercial authority"
+  },
+  "operator_note": "Any future change of gate status requires non-secret evidence URL, independent reviewer and explicit decision. This manifest by itself must never be loaded as a feature flag or authorization source."
+}
