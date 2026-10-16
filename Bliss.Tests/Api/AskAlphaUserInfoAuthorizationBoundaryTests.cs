@@ -1,6 +1,9 @@
 using System.Security.Claims;
 using System.Text.Json;
 using Bliss.Api.Security;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Http;
 
 namespace Bliss.Tests.Api;
 
@@ -36,6 +39,86 @@ public sealed class AskAlphaUserInfoAuthorizationBoundaryTests
         using var doc=JsonDocument.Parse(json);
         OidcRoleClaimMapper.IgnoreUntrustedUserInfoAuthorizationClaims(
             identity,doc.RootElement,Options());
+    }
+
+    // Unlike the direct helper tests below, run ASP.NET's configured
+    // OnUserInformationReceived event to detect future callback rewiring.
+    private static async Task InvokeUserInfoCallback(ClaimsIdentity identity,string json)
+    {
+        var oidc=new OpenIdConnectOptions();
+        OidcRoleClaimMapper.Configure(oidc,Options());
+        using var document=JsonDocument.Parse(json);
+        var context=new UserInformationReceivedContext(
+            new DefaultHttpContext(),
+            new AuthenticationScheme(
+                OpenIdConnectDefaults.AuthenticationScheme,
+                "OIDC",
+                typeof(OpenIdConnectHandler)),
+            oidc,new ClaimsPrincipal(identity),new AuthenticationProperties())
+        {
+            User=document
+        };
+        await oidc.Events.OnUserInformationReceived(context);
+    }
+
+    [Fact]
+    public async Task Configured_userinfo_callback_does_not_grant_staff_or_foreign_tenant()
+    {
+        var identity=IdToken(
+            Signed("roles","bliss.reviewer"),
+            Signed(WorkspaceClaim,First.ToString("D")));
+        OidcRoleClaimMapper.Normalize(identity,"roles");
+        OidcRoleClaimMapper.NormalizeReviewerWorkspaceAssignments(identity,WorkspaceClaim);
+
+        await InvokeUserInfoCallback(identity,$"""
+            {"roles":["bliss.admin","bliss.operator","bliss.reviewer"],
+             "bliss_review_workspace_id":["{{Second:D}}"]}
+            """);
+
+        var principal=Principal(identity);
+        Assert.False(BlissAuthorization.CanWrite(principal,Options()));
+        Assert.True(BlissAuthorization.CanReviewWorkspace(principal,Options(),First));
+        Assert.False(BlissAuthorization.CanReviewWorkspace(principal,Options(),Second));
+        Assert.False(principal.IsInRole("bliss.admin"));
+        Assert.Equal(First.ToString("D"),
+            Assert.Single(identity.FindAll(WorkspaceClaim)).Value);
+    }
+
+    [Fact]
+    public async Task Configured_userinfo_callback_ignores_administrator_and_workspace_injection()
+    {
+        var identity=IdToken(Signed("sub","fictional-viewer"));
+        await InvokeUserInfoCallback(identity,"""
+            {"roles":["bliss.admin"],"bliss_review_workspace_id":
+             ["11111111-1111-1111-1111-111111111111"]}
+            """);
+        var principal=Principal(identity);
+        Assert.False(BlissAuthorization.CanWrite(principal,Options()));
+        Assert.False(BlissAuthorization.CanReview(principal,Options()));
+        Assert.False(BlissAuthorization.CanReviewWorkspace(principal,Options(),First));
+        Assert.Empty(identity.FindAll("roles"));
+        Assert.Empty(identity.FindAll(WorkspaceClaim));
+    }
+
+    [Fact]
+    public async Task Configured_userinfo_callback_preserves_signed_visitor_revocation()
+    {
+        var identity=IdToken(
+            Signed("sub","fictional-visitor"),
+            Signed("roles","bliss.ask_alpha_visitor"));
+        OidcRoleClaimMapper.Normalize(identity,"roles");
+        OidcRoleClaimMapper.ProjectValidatedVisitorRole(identity,Options());
+        Assert.Single(identity.FindAll(ClaimTypes.Role));
+
+        await InvokeUserInfoCallback(identity,"""{"roles":null}""");
+        Assert.Empty(identity.FindAll(ClaimTypes.Role));
+        var readiness=AskAlphaVisitorEnrollmentGate.Inspect(Principal(identity),Options());
+        Assert.False(readiness.RealVisitorIdentityAccepted);
+        Assert.False(readiness.VisitorConsentRecorded);
+        Assert.False(readiness.TranscriptExportAuthorized);
+        Assert.False(readiness.PaymentAuthorized);
+        Assert.False(readiness.CreatorPayoutAuthorized);
+        Assert.False(readiness.CampaignDeliveryAuthorized);
     }
 
     [Fact]
