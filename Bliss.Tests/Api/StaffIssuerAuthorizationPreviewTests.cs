@@ -19,6 +19,7 @@ public sealed class StaffIssuerAuthorizationPreviewTests
     {
         Enabled = true,
         Authority = authority,
+        ClientId = "fictional-staff-preview-client",
         RoleClaimType = "roles",
         ReviewerWorkspaceClaimType = Scope
     };
