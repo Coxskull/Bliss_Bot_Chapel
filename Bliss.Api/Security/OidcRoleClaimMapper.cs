@@ -27,6 +27,11 @@ public static class OidcRoleClaimMapper
             if (context.Principal?.Identity is ClaimsIdentity identity && context.User is not null)
             {
                 Apply(identity, context.User.RootElement, authentication.RoleClaimType);
+                // UserInfo arrives AFTER token validation. An unverified
+                // UserInfo role must never preserve a previously projected
+                // dedicated visitor identity, even if the role value matches.
+                InvalidateVisitorProjectionIfUserInfoContainsRoles(
+                    identity, context.User.RootElement, authentication);
                 ApplyReviewerWorkspaceAssignments(identity, context.User.RootElement, authentication.ReviewerWorkspaceClaimType);
             }
 
@@ -119,6 +124,27 @@ public static class OidcRoleClaimMapper
             authentication.AskAlphaVisitorRole, ClaimValueTypes.String,
             authentication.AskAlphaVisitorIssuer,
             authentication.AskAlphaVisitorIssuer));
+    }
+
+    // Only the signed ID token is eligible to supply a dedicated visitor
+    // role. The UserInfo endpoint is not a second issuer-trusted source of
+    // role authorization. If it supplies ANY roles property, even a duplicate
+    // of the signed role, fail closed by withdrawing the derived projection.
+    // Staff/advertiser role claims are never removed here.
+    public static void InvalidateVisitorProjectionIfUserInfoContainsRoles(
+        ClaimsIdentity identity, JsonElement user, BlissAuthenticationOptions authentication)
+    {
+        if (identity is null || user.ValueKind != JsonValueKind.Object ||
+            string.IsNullOrWhiteSpace(authentication.RoleClaimType) ||
+            !user.TryGetProperty(authentication.RoleClaimType, out _))
+            return;
+
+        foreach (var projected in identity.FindAll(ClaimTypes.Role)
+            .Where(claim => claim.Value == authentication.AskAlphaVisitorRole &&
+                claim.Issuer == authentication.AskAlphaVisitorIssuer &&
+                claim.OriginalIssuer == authentication.AskAlphaVisitorIssuer)
+            .ToArray())
+            identity.RemoveClaim(projected);
     }
 
     // Accept one workspace GUID per verified claim or an array supplied by the
