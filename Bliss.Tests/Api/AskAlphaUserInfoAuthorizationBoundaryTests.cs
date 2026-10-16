@@ -70,9 +70,9 @@ public sealed class AskAlphaUserInfoAuthorizationBoundaryTests
         OidcRoleClaimMapper.Normalize(identity,"roles");
         OidcRoleClaimMapper.NormalizeReviewerWorkspaceAssignments(identity,WorkspaceClaim);
 
-        await InvokeUserInfoCallback(identity,$"""
+        await InvokeUserInfoCallback(identity,"""
             {"roles":["bliss.admin","bliss.operator","bliss.reviewer"],
-             "bliss_review_workspace_id":["{{Second:D}}"]}
+             "bliss_review_workspace_id":["22222222-2222-2222-2222-222222222222"]}
             """);
 
         var principal=Principal(identity);
