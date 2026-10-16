@@ -50,6 +50,18 @@ public sealed class AskAlphaVisitorStagingConsentLedger
         await using var connection = await data.OpenConnectionAsync(ct);
         await using var tx = await connection.BeginTransactionAsync(ct);
 
+        // Acquire the same workspace + synthetic identity lock used by
+        // enrollment. Identity withdrawal and new sessions cannot race.
+        await using (var identityLock = new NpgsqlCommand(
+            "SELECT pg_advisory_xact_lock(hashtextextended(@identity, 5018))",
+            connection, tx))
+        {
+            identityLock.Parameters.AddWithValue("identity", string.Join("|",
+                request.WorkspaceId.ToString("N"), request.Issuer,
+                request.SubjectSha256));
+            await identityLock.ExecuteNonQueryAsync(ct);
+        }
+
         // Serialize with the staging table's consent transition trigger.
         // A same-key retry sees the committed result after the lock is acquired.
         await using (var guard = new NpgsqlCommand(
@@ -68,6 +80,27 @@ public sealed class AskAlphaVisitorStagingConsentLedger
         {
             query.Parameters.AddWithValue("owner", request.OwnershipId);
             revoked = (bool)(await query.ExecuteScalarAsync(ct) ?? false);
+        }
+        // An identity-wide withdrawal in the same workspace is terminal:
+        // switching to another OwnershipId must not make a new OPT_IN valid.
+        if (request.Action == "OPT_IN")
+        {
+            await using var tombstone = new NpgsqlCommand("""
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM "AskAlphaVisitorOwnershipStaging" o
+                    JOIN "AskAlphaVisitorConsentStaging" c
+                      ON c."OwnershipId"=o."Id"
+                    WHERE o."WorkspaceId"=@ws AND o."Issuer"=@issuer
+                      AND o."SubjectSha256"=@digest AND c."Action"='REVOKE'
+                )
+                """, connection, tx);
+            tombstone.Parameters.AddWithValue("ws", request.WorkspaceId);
+            tombstone.Parameters.AddWithValue("issuer", request.Issuer);
+            tombstone.Parameters.AddWithValue("digest", request.SubjectSha256);
+            if ((bool)(await tombstone.ExecuteScalarAsync(ct) ?? false))
+                throw new InvalidOperationException(
+                    "Revoked synthetic identity cannot opt in under another ownership record.");
         }
         // Even a historically valid opt-in retry cannot reactivate consent.
         if (revoked && request.Action == "OPT_IN")
