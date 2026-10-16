@@ -296,14 +296,68 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
             var newlyScoped=new AskAlphaStagingConsentRequest(
                 enrolled.OwnershipId,workspace,issuer,newRequest.SubjectSha256,
                 "OPT_IN",acceptedPurpose,acceptedVersion,"new_scope_optin_123");
+            var readback=new AskAlphaVisitorStagingConsentReadback(stagingData);
+            var consentScope=new AskAlphaStagingConsentScope(
+                enrolled.OwnershipId,workspace,issuer,newRequest.SubjectSha256,
+                acceptedPurpose,acceptedVersion);
+            var initial=await readback.ReadAsync(consentScope);
+            Assert.Equal("SYNTHETIC_STAGING_NO_OPT_IN",initial.Status);
+            Assert.False(initial.SyntheticOptInSeen);
+            Assert.False(initial.AuthenticatedConsentRecorded);
+            Assert.False(initial.TranscriptExportAuthorized);
+            Assert.Equal("NOT_SENT",initial.Delivery);
+
+            // Wrong ownership, issuer, digest or tenant must look identical:
+            // never reveal whether another visitor has ever opted in.
+            foreach(var wrongScope in new[] {
+                consentScope with { OwnershipId=Guid.NewGuid() },
+                consentScope with { WorkspaceId=Guid.NewGuid() },
+                consentScope with { Issuer="https://other-idp.invalid" },
+                consentScope with { SubjectSha256=new string('E',64) }
+            })
+            {
+                var denied=await readback.ReadAsync(wrongScope);
+                Assert.Equal("SYNTHETIC_STAGING_SCOPE_NOT_AUTHORIZED",denied.Status);
+                Assert.False(denied.SyntheticOptInSeen);
+                Assert.False(denied.SyntheticWithdrawn);
+                Assert.False(denied.TranscriptExportAuthorized);
+                Assert.False(denied.PaymentAuthorized);
+                Assert.False(denied.CreatorPayoutAuthorized);
+                Assert.False(denied.CampaignDeliveryAuthorized);
+                Assert.Equal("NOT_SENT",denied.Delivery);
+            }
+            await Assert.ThrowsAsync<ArgumentException>(()=>
+                readback.ReadAsync(consentScope with { Purpose="TRANSCRIPT_EXPORT" }));
+            await Assert.ThrowsAsync<ArgumentException>(()=>
+                readback.ReadAsync(consentScope with { NoticeVersion="REAL_LEGAL_NOTICE" }));
+
             var newOptin=await ledger.AppendAsync(newlyScoped);
             Assert.False(newOptin.AuthenticatedVisitorConsentRecorded);
             Assert.False(newOptin.TranscriptExportAuthorized);
+            var afterOptin=await readback.ReadAsync(consentScope);
+            Assert.Equal("SYNTHETIC_STAGING_OPT_IN_UNVERIFIED_NO_EXPORT",afterOptin.Status);
+            Assert.True(afterOptin.SyntheticOptInSeen);
+            Assert.False(afterOptin.SyntheticWithdrawn);
+            Assert.False(afterOptin.AuthenticatedConsentRecorded);
+            Assert.False(afterOptin.TranscriptExportAuthorized);
+            Assert.Equal("NOT_SENT",afterOptin.Delivery);
+
             var newRevoke=await ledger.AppendAsync(newlyScoped with {
                 Action="REVOKE",RetryKey="new_scope_revoke_123"
             });
             Assert.False(newRevoke.AuthenticatedVisitorConsentRecorded);
             Assert.Equal("NOT_SENT",newRevoke.Delivery);
+            var afterRevoke=await readback.ReadAsync(consentScope);
+            Assert.Equal("SYNTHETIC_STAGING_WITHDRAWN_NO_EXPORT",afterRevoke.Status);
+            Assert.True(afterRevoke.SyntheticOptInSeen);
+            Assert.True(afterRevoke.SyntheticWithdrawn);
+            Assert.False(afterRevoke.AuthenticatedConsentRecorded);
+            Assert.False(afterRevoke.TranscriptExportAuthorized);
+            Assert.False(afterRevoke.PaymentAuthorized);
+            Assert.False(afterRevoke.CreatorPayoutAuthorized);
+            Assert.False(afterRevoke.CampaignDeliveryAuthorized);
+            Assert.Equal("NOT_SENT",afterRevoke.Delivery);
+
             await Assert.ThrowsAsync<InvalidOperationException>(()=>
                 ledger.AppendAsync(newlyScoped));
 
