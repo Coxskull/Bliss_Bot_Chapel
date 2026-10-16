@@ -175,7 +175,9 @@ public sealed class AskAlphaVisitorOwnershipRlsRehearsalPostgresTests
                 {
                     await using var privilege = new NpgsqlCommand(
                         "SELECT has_table_privilege(current_user, @table, @operation)", sql, tx);
-                    privilege.Parameters.AddWithValue("table", table);
+                    // has_table_privilege(text) resolves a regclass: the
+                    // mixed-case staging table must be identifier-quoted.
+                    privilege.Parameters.AddWithValue("table", $"\"{table}\"");
                     privilege.Parameters.AddWithValue("operation", operation);
                     Assert.False((bool)(await privilege.ExecuteScalarAsync() ?? true));
                 }
