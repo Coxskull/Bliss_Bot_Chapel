@@ -53,6 +53,10 @@ public static class StaffIssuerAuthorizationPreview
         // An unapproved provider is never silently treated as trusted.
         if (user is null || options is null || !options.Enabled
             || string.IsNullOrWhiteSpace(options.RoleClaimType)
+            || string.IsNullOrWhiteSpace(options.ReviewerWorkspaceClaimType)
+            || string.Equals(options.RoleClaimType, options.ReviewerWorkspaceClaimType, StringComparison.Ordinal)
+            || string.IsNullOrWhiteSpace(options.ClientId)
+            || !DistinctConfiguredRoles(options)
             || string.IsNullOrWhiteSpace(options.Authority)
             || string.IsNullOrWhiteSpace(approvedIssuer)
             || !string.Equals(options.Authority, approvedIssuer, StringComparison.Ordinal)
@@ -66,6 +70,21 @@ public static class StaffIssuerAuthorizationPreview
         var identities = user.Identities.ToArray();
         return identities.Length == 1 && identities[0].IsAuthenticated
             ? identities[0] : null;
+    }
+
+    // A preview of staff grants cannot assume startup posture checks were
+    // executed. A missing or overlapping role label could make a visitor,
+    // viewer, or reviewer accidentally qualify as a privileged staff role.
+    // This is an in-memory preflight, NOT IdP client or signature validation.
+    private static bool DistinctConfiguredRoles(BlissAuthenticationOptions options)
+    {
+        var roles = new[]
+        {
+            options.ViewerRole, options.OperatorRole, options.ReviewerRole,
+            options.AdminRole, options.AdvertiserRole, options.AskAlphaVisitorRole
+        };
+        return roles.All(role => !string.IsNullOrWhiteSpace(role))
+            && roles.Distinct(StringComparer.Ordinal).Count() == roles.Length;
     }
 
     private static bool HasRole(
