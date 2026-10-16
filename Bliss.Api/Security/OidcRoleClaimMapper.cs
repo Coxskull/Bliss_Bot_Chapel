@@ -209,16 +209,15 @@ public static class OidcRoleClaimMapper
                 ClaimValueTypes.String, entry.Issuer, entry.OriginalIssuer));
     }
 
+    // Compatibility entry point only. UserInfo is not token-validated role
+    // evidence, so it must never mint reviewer workspace grants. In particular,
+    // a plain new Claim() would default to LOCAL AUTHORITY and conceal that
+    // the input originated at an untrusted UserInfo endpoint. Keep the method
+    // callable for existing clients while deliberately denying the mutation.
+    [Obsolete("Untrusted UserInfo cannot issue reviewer workspace claims. Use token-validated NormalizeReviewerWorkspaceAssignments instead.")]
     public static void ApplyReviewerWorkspaceAssignments(ClaimsIdentity identity, JsonElement user, string claimType)
     {
-        if (string.IsNullOrWhiteSpace(claimType) || user.ValueKind != JsonValueKind.Object
-            || !user.TryGetProperty(claimType, out var property)) return;
-        foreach (var value in ReadProperty(property))
-        {
-            if (Guid.TryParse(value, out var parsed) && parsed != Guid.Empty
-                && !identity.HasClaim(claimType, parsed.ToString("D")))
-                identity.AddClaim(new Claim(claimType, parsed.ToString("D")));
-        }
+        // Deliberately no-op: do not mutate the signed principal.
     }
 
     public static ClaimsIdentity Align(ClaimsIdentity identity, string nameClaimType, string roleClaimType)
