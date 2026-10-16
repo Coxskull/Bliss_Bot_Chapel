@@ -160,8 +160,9 @@ public sealed class AskAlphaVisitorConsentControllerDenyAllTests
         foreach(var action in new[]{nameof(AskAlphaVisitorConsentController.OptIn),
                                      nameof(AskAlphaVisitorConsentController.Withdraw)})
         {
-            var method=Assert.NotNull(type.GetMethod(action));
-            Assert.Single(method.GetCustomAttributes(
+            var method=type.GetMethod(action);
+            Assert.NotNull(method);
+            Assert.Single(method!.GetCustomAttributes(
                 typeof(EnableRateLimitingAttribute),inherit:true));
         }
 
