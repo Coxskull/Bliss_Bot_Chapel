@@ -42,18 +42,24 @@ public sealed class AskAlphaVisitorOwnershipRlsRehearsalPostgresTests
             connection.SearchPath = schema;
             var efOptions = new DbContextOptionsBuilder<BlissDbContext>()
                 .UseNpgsql(connection.ConnectionString).Options;
-            var advertiser = Guid.NewGuid();
+            var advertiserA = Guid.NewGuid();
+            var advertiserB = Guid.NewGuid();
             var workspaceA = Guid.NewGuid();
             var workspaceB = Guid.NewGuid();
             var now = DateTime.UtcNow.AddMinutes(-5);
             await using (var ef = new BlissDbContext(efOptions))
             {
                 await ef.GetService<IRelationalDatabaseCreator>().CreateTablesAsync();
-                ef.Advertisers.Add(new Advertiser
-                {
-                    Id = advertiser, Name = "Fictional two-tenant RLS study", CreatedAt = now
-                });
-                foreach (var workspace in new[] { workspaceA, workspaceB })
+                ef.Advertisers.AddRange(
+                    new Advertiser {
+                        Id = advertiserA, Name = "Fictional advertiser A", CreatedAt = now
+                    },
+                    new Advertiser {
+                        Id = advertiserB, Name = "Fictional advertiser B", CreatedAt = now
+                    });
+                foreach (var (workspace, advertiser) in new[] {
+                    (workspaceA, advertiserA), (workspaceB, advertiserB)
+                })
                     ef.WeddingPlannerWorkspaces.Add(new WeddingPlannerWorkspace
                     {
                         Id = workspace, AdvertiserId = advertiser, Status = "ACTIVE",
