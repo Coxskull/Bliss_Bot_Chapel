@@ -44,7 +44,7 @@ public sealed class AskAlphaVisitorStagingEnrollment
         await using var connection = await data.OpenConnectionAsync(ct);
         await using var tx = await connection.BeginTransactionAsync(ct);
 
-        // Serializes the exact synthetic identity/workspace/request-key scope.
+        // Serializes synthetic identity and workspace across ALL retry keys.
         // Never accept a client-supplied session ID or use an existing session
         // with the same retry key as proof of ownership.
         await using (var command = new NpgsqlCommand(
@@ -53,8 +53,30 @@ public sealed class AskAlphaVisitorStagingEnrollment
         {
             command.Parameters.AddWithValue("key", string.Join("|",
                 request.WorkspaceId.ToString("N"), request.Issuer,
-                request.SubjectSha256, request.RequestKey));
+                request.SubjectSha256));
             await command.ExecuteNonQueryAsync(ct);
+        }
+
+        // Terminal withdrawal blocks ALL synthetic re-enrollment attempts
+        // for this identity/workspace, including a different request key.
+        // Consent writer obtains this identity lock before committing REVOKE.
+        await using (var revokeCheck = new NpgsqlCommand("""
+            SELECT EXISTS (
+                SELECT 1
+                FROM "AskAlphaVisitorOwnershipStaging" o
+                JOIN "AskAlphaVisitorConsentStaging" c
+                  ON c."OwnershipId"=o."Id"
+                WHERE o."WorkspaceId"=@ws AND o."Issuer"=@issuer
+                  AND o."SubjectSha256"=@digest AND c."Action"='REVOKE'
+            )
+            """, connection, tx))
+        {
+            revokeCheck.Parameters.AddWithValue("ws", request.WorkspaceId);
+            revokeCheck.Parameters.AddWithValue("issuer", request.Issuer);
+            revokeCheck.Parameters.AddWithValue("digest", request.SubjectSha256);
+            if ((bool)(await revokeCheck.ExecuteScalarAsync(ct) ?? false))
+                throw new InvalidOperationException(
+                    "Synthetic visitor identity has a terminal withdrawal.");
         }
 
         // Retry must resolve to an existing immutable ownership row and its
