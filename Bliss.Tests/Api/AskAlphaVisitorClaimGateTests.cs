@@ -72,6 +72,88 @@ public sealed class AskAlphaVisitorClaimGateTests
     }
 
     [Fact]
+    public void Foreign_issuer_visitor_role_must_not_pair_with_trusted_subject_and_session()
+    {
+        var session=Guid.NewGuid();
+        var principal=Principal(session);
+        var identity=(ClaimsIdentity)principal.Identity!;
+        var trusted=Assert.Single(identity.FindAll(ClaimTypes.Role));
+        identity.RemoveClaim(trusted);
+        identity.AddClaim(new Claim(ClaimTypes.Role,"bliss.ask_alpha_visitor",
+            ClaimValueTypes.String,"https://foreign-idp.example.invalid"));
+        Assert.False(AskAlphaVisitorClaimGate.Inspect(principal,Options(),session)
+            .ClaimsMatchIssuerAndSession);
+    }
+
+    [Theory]
+    [InlineData("bliss.viewer")]
+    [InlineData("bliss.operator")]
+    [InlineData("brand.new_staff_role")]
+    public void A_second_staff_or_unknown_role_denies_claim_readiness(string extraRole)
+    {
+        var session=Guid.NewGuid();
+        var principal=Principal(session);
+        ((ClaimsIdentity)principal.Identity!).AddClaim(
+            new Claim(ClaimTypes.Role,extraRole,ClaimValueTypes.String,Issuer));
+        var result=AskAlphaVisitorClaimGate.Inspect(principal,Options(),session);
+        Assert.Equal("VISITOR_IDENTITY_PREREQUISITES_MISSING",result.Status);
+        Assert.False(result.ClaimsMatchIssuerAndSession);
+        Assert.False(result.HistoricalSessionOwnershipVerified);
+        Assert.False(result.TranscriptExportAuthorized);
+        Assert.Equal("NOT_SENT",result.Delivery);
+    }
+
+    [Fact]
+    public void Multiple_identities_must_not_be_stitched_into_a_visitors_session_binding()
+    {
+        var session=Guid.NewGuid();
+        var valid=Principal(session);
+        valid.AddIdentity(new ClaimsIdentity(new[]
+        {
+            new Claim("source","unsigned-identity")
+        }));
+        Assert.False(AskAlphaVisitorClaimGate.Inspect(valid,Options(),session)
+            .ClaimsMatchIssuerAndSession);
+
+        var authenticatedRole=new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role,"bliss.ask_alpha_visitor",
+                ClaimValueTypes.String,Issuer)
+        },"signed-test-cookie");
+        var unauthenticatedSubjectAndSession=new ClaimsIdentity(new[]
+        {
+            new Claim("sub","fixture-visitor-001",ClaimValueTypes.String,Issuer),
+            new Claim("ask_alpha_session_id",session.ToString("D"),
+                ClaimValueTypes.String,Issuer)
+        });
+        var assembled=new ClaimsPrincipal(new[]{
+            authenticatedRole,unauthenticatedSubjectAndSession
+        });
+        Assert.False(AskAlphaVisitorClaimGate.Inspect(assembled,Options(),session)
+            .ClaimsMatchIssuerAndSession);
+
+        var secondAuthenticated=Principal(session);
+        secondAuthenticated.AddIdentity(new ClaimsIdentity(new[]
+        {
+            new Claim("source","other-authenticated-person")
+        },"another-test-cookie"));
+        Assert.False(AskAlphaVisitorClaimGate.Inspect(secondAuthenticated,Options(),session)
+            .ClaimsMatchIssuerAndSession);
+    }
+
+    [Fact]
+    public void Conflicting_role_configuration_is_denied_even_with_matching_claims()
+    {
+        var session=Guid.NewGuid();
+        var options=Options();
+        options.AdvertiserRole=options.AskAlphaVisitorRole;
+        var result=AskAlphaVisitorClaimGate.Inspect(Principal(session),options,session);
+        Assert.False(result.ClaimsMatchIssuerAndSession);
+        Assert.False(result.VisitorConsentRecorded);
+        Assert.False(result.CampaignDeliveryAuthorized);
+    }
+
+    [Fact]
     public void Forged_issuer_duplicate_claims_and_invalid_sub_are_rejected()
     {
         var session = Guid.NewGuid();
