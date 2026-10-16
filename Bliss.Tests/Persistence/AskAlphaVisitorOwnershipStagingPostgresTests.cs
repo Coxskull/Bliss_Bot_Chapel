@@ -207,6 +207,75 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
             Assert.Equal("FICTIONAL_ASK_ALPHA_WAKE",
                 (await check.WeddingPlannerPlanningSessions.AsNoTracking()
                     .SingleAsync(x=>x.Id==legacy)).SourceSystem);
+            
+            // The NEW synthetic visitor session and immutable ownership must
+            // commit together against the actual Wedding Planner EF tables.
+            var enrollment=new AskAlphaVisitorStagingEnrollment(stagingData);
+            var newRequest=new AskAlphaStagingEnrollmentRequest(
+                workspace,issuer,new string('C',64),"atomic_fixture_request_123");
+            var attempts=await Task.WhenAll(Enumerable.Range(0,8)
+                .Select(_=>enrollment.CreateNewAsync(newRequest)));
+            Assert.Single(attempts.Select(x=>x.SessionId).Distinct());
+            Assert.Single(attempts.Select(x=>x.OwnershipId).Distinct());
+            Assert.Equal(1,attempts.Count(x=>!x.IsReplay));
+            Assert.Equal(7,attempts.Count(x=>x.IsReplay));
+            var enrolled=attempts[0];
+            Assert.NotEqual(session,enrolled.SessionId);
+            Assert.NotEqual(legacy,enrolled.SessionId);
+            Assert.All(attempts,x=>{
+                Assert.False(x.RealVisitorAuthenticated);
+                Assert.False(x.VisitorConsentRecorded);
+                Assert.False(x.TranscriptExportAuthorized);
+                Assert.False(x.PaymentAuthorized);
+                Assert.False(x.CreatorPayoutAuthorized);
+                Assert.False(x.CampaignDeliveryAuthorized);
+                Assert.Equal("NOT_SENT",x.Delivery);
+            });
+            await using(var exact=new NpgsqlCommand("""
+                SELECT count(*)
+                FROM "AskAlphaVisitorOwnershipStaging" o
+                JOIN "WeddingPlannerPlanningSessions" s ON s."Id"=o."SessionId"
+                WHERE o."Id"=@owner AND s."Id"=@session
+                  AND s."WorkspaceId"=@workspace
+                  AND s."SourceSystem"='STAGING_SYNTHETIC_VISITOR_NEW_SESSION'
+                """,db))
+            {
+                exact.Parameters.AddWithValue("owner",enrolled.OwnershipId);
+                exact.Parameters.AddWithValue("session",enrolled.SessionId);
+                exact.Parameters.AddWithValue("workspace",workspace);
+                Assert.Equal(1L,await exact.ExecuteScalarAsync());
+            }
+
+            // Missing workspace cannot leave a partially-created session.
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                enrollment.CreateNewAsync(newRequest with {
+                    WorkspaceId=Guid.NewGuid(),RequestKey="missing_workspace_retry_123"
+                }));
+            await Assert.ThrowsAsync<ArgumentException>(()=>
+                enrollment.CreateNewAsync(newRequest with { SubjectSha256="forged" }));
+            await Assert.ThrowsAsync<ArgumentException>(()=>
+                enrollment.CreateNewAsync(newRequest with { Issuer="http://evil.invalid" }));
+            Assert.Equal(3,await check.WeddingPlannerPlanningSessions.AsNoTracking().CountAsync());
+            Assert.Equal("FICTIONAL_ASK_ALPHA_WAKE",
+                (await check.WeddingPlannerPlanningSessions.AsNoTracking()
+                    .SingleAsync(x=>x.Id==legacy)).SourceSystem);
+
+            // Consent remains independent and voluntarily asserted even for
+            // the synthetic new ownership; a session cannot imply consent.
+            var newlyScoped=new AskAlphaStagingConsentRequest(
+                enrolled.OwnershipId,workspace,issuer,newRequest.SubjectSha256,
+                "OPT_IN",acceptedPurpose,acceptedVersion,"new_scope_optin_123");
+            var newOptin=await ledger.AppendAsync(newlyScoped);
+            Assert.False(newOptin.AuthenticatedVisitorConsentRecorded);
+            Assert.False(newOptin.TranscriptExportAuthorized);
+            var newRevoke=await ledger.AppendAsync(newlyScoped with {
+                Action="REVOKE",RetryKey="new_scope_revoke_123"
+            });
+            Assert.False(newRevoke.AuthenticatedVisitorConsentRecorded);
+            Assert.Equal("NOT_SENT",newRevoke.Delivery);
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                ledger.AppendAsync(newlyScoped));
+
         }
         finally
         {
