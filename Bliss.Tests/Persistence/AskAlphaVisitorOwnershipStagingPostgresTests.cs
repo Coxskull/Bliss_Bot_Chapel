@@ -331,6 +331,15 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
             await Assert.ThrowsAsync<ArgumentException>(()=>
                 readback.ReadAsync(consentScope with { NoticeVersion="REAL_LEGAL_NOTICE" }));
 
+            // Create a second synthetic session BEFORE withdrawal so tests
+            // can prove terminal revocation also blocks another ownership id,
+            // not just the original consent row's unique action constraint.
+            var secondOwner=await enrollment.CreateNewAsync(newRequest with {
+                RequestKey="second_owner_before_revoke_123"
+            });
+            Assert.NotEqual(enrolled.OwnershipId,secondOwner.OwnershipId);
+            Assert.NotEqual(enrolled.SessionId,secondOwner.SessionId);
+
             var newOptin=await ledger.AppendAsync(newlyScoped);
             Assert.False(newOptin.AuthenticatedVisitorConsentRecorded);
             Assert.False(newOptin.TranscriptExportAuthorized);
@@ -360,6 +369,29 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
 
             await Assert.ThrowsAsync<InvalidOperationException>(()=>
                 ledger.AppendAsync(newlyScoped));
+
+            // Terminal withdrawal must not be evaded by switching request
+            // keys or choosing an additional ownership created earlier.
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                enrollment.CreateNewAsync(newRequest with {
+                    RequestKey="fresh_request_after_revoke_123"
+                }));
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                enrollment.CreateNewAsync(newRequest));
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                ledger.AppendAsync(newlyScoped with {
+                    OwnershipId=secondOwner.OwnershipId,
+                    RetryKey="second_owner_after_revoke_123"
+                }));
+            // The disposable SQL trigger enforces the same tombstone even
+            // when the application writer is bypassed by a raw SQL INSERT.
+            await Rejected(()=>Run(consent,
+                ("id",Guid.NewGuid()),("owner",secondOwner.OwnershipId),
+                ("ws",workspace),("issuer",issuer),
+                ("digest",newRequest.SubjectSha256),("action","OPT_IN"),
+                ("purpose",acceptedPurpose),("version",acceptedVersion),
+                ("retry","raw_sql_reoptin_123"),
+                ("at",DateTimeOffset.UtcNow)));
 
             // Cross-tenant isolation: the same synthetic OIDC issuer/subject
             // and identical retry key in another actual advertiser/workspace
