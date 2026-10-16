@@ -361,6 +361,103 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
             await Assert.ThrowsAsync<InvalidOperationException>(()=>
                 ledger.AppendAsync(newlyScoped));
 
+            // Cross-tenant isolation: the same synthetic OIDC issuer/subject
+            // and identical retry key in another actual advertiser/workspace
+            // must never adopt the first workspace's visitor session or
+            // inherit its opt-in or terminal withdrawal record.
+            var otherAdvertiser=Guid.NewGuid();
+            var otherWorkspace=Guid.NewGuid();
+            await using(var otherTenant=new BlissDbContext(options))
+            {
+                otherTenant.Advertisers.Add(new Advertiser {
+                    Id=otherAdvertiser,Name="Other isolated test advertiser",CreatedAt=now
+                });
+                otherTenant.WeddingPlannerWorkspaces.Add(new WeddingPlannerWorkspace {
+                    Id=otherWorkspace,AdvertiserId=otherAdvertiser,
+                    Status="ACTIVE",SourceSystem="STAGING_ONLY",
+                    IdempotencyKey=Guid.NewGuid().ToString("N"),
+                    CreatedAt=now,UpdatedAt=now
+                });
+                await otherTenant.SaveChangesAsync();
+            }
+            var otherRequest=newRequest with { WorkspaceId=otherWorkspace };
+            var otherEnrollment=await enrollment.CreateNewAsync(otherRequest);
+            Assert.NotEqual(enrolled.OwnershipId,otherEnrollment.OwnershipId);
+            Assert.NotEqual(enrolled.SessionId,otherEnrollment.SessionId);
+            Assert.False(otherEnrollment.RealVisitorAuthenticated);
+            Assert.False(otherEnrollment.VisitorConsentRecorded);
+            Assert.False(otherEnrollment.TranscriptExportAuthorized);
+            Assert.Equal("NOT_SENT",otherEnrollment.Delivery);
+
+            var otherScope=consentScope with {
+                OwnershipId=otherEnrollment.OwnershipId,
+                WorkspaceId=otherWorkspace
+            };
+            var otherBefore=await readback.ReadAsync(otherScope);
+            Assert.Equal("SYNTHETIC_STAGING_NO_OPT_IN",otherBefore.Status);
+            Assert.False(otherBefore.SyntheticOptInSeen);
+            Assert.False(otherBefore.SyntheticWithdrawn);
+            Assert.False(otherBefore.TranscriptExportAuthorized);
+
+            // Swapping only the owner or workspace UUID must not disclose
+            // a consent record belonging to the other synthetic tenant.
+            foreach(var crossed in new[] {
+                consentScope with { OwnershipId=otherEnrollment.OwnershipId },
+                otherScope with { OwnershipId=enrolled.OwnershipId }
+            })
+            {
+                var denied=await readback.ReadAsync(crossed);
+                Assert.Equal("SYNTHETIC_STAGING_SCOPE_NOT_AUTHORIZED",denied.Status);
+                Assert.False(denied.SyntheticOptInSeen);
+                Assert.False(denied.SyntheticWithdrawn);
+                Assert.False(denied.TranscriptExportAuthorized);
+                Assert.False(denied.CampaignDeliveryAuthorized);
+            }
+
+            // A separate synthetic opt-in in the other tenant cannot undo
+            // the first tenant's permanent withdrawal.
+            var otherOptIn=newlyScoped with {
+                OwnershipId=otherEnrollment.OwnershipId,
+                WorkspaceId=otherWorkspace,
+                RetryKey="other_tenant_optin_123"
+            };
+            var otherStored=await ledger.AppendAsync(otherOptIn);
+            Assert.False(otherStored.AuthenticatedVisitorConsentRecorded);
+            Assert.False(otherStored.TranscriptExportAuthorized);
+            var otherAfter=await readback.ReadAsync(otherScope);
+            Assert.Equal("SYNTHETIC_STAGING_OPT_IN_UNVERIFIED_NO_EXPORT",otherAfter.Status);
+            Assert.True(otherAfter.SyntheticOptInSeen);
+            Assert.False(otherAfter.SyntheticWithdrawn);
+            Assert.False(otherAfter.TranscriptExportAuthorized);
+            Assert.Equal("NOT_SENT",otherAfter.Delivery);
+
+            var originalStillRevoked=await readback.ReadAsync(consentScope);
+            Assert.Equal("SYNTHETIC_STAGING_WITHDRAWN_NO_EXPORT",originalStillRevoked.Status);
+            Assert.True(originalStillRevoked.SyntheticWithdrawn);
+            Assert.False(originalStillRevoked.TranscriptExportAuthorized);
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                ledger.AppendAsync(newlyScoped));
+
+            // Disabling the second workspace must fail the readback closed,
+            // rather than showing opt-in state for an inactive tenant.
+            await using(var suspend=new NpgsqlCommand("""
+                UPDATE "WeddingPlannerWorkspaces"
+                SET "Status"='INACTIVE'
+                WHERE "Id"=@id
+                """,db))
+            {
+                suspend.Parameters.AddWithValue("id",otherWorkspace);
+                Assert.Equal(1,await suspend.ExecuteNonQueryAsync());
+            }
+            var suspended=await readback.ReadAsync(otherScope);
+            Assert.Equal("SYNTHETIC_STAGING_SCOPE_NOT_AUTHORIZED",suspended.Status);
+            Assert.False(suspended.SyntheticOptInSeen);
+            Assert.False(suspended.SyntheticWithdrawn);
+            Assert.False(suspended.TranscriptExportAuthorized);
+            Assert.False(suspended.CampaignDeliveryAuthorized);
+            Assert.Equal("NOT_SENT",suspended.Delivery);
+
+
         }
         finally
         {
