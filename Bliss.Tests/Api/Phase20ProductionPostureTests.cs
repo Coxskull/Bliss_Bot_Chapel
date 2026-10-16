@@ -285,27 +285,33 @@ public sealed class Phase20RoleClaimTests
     };
 
     [Fact]
-    public void Userinfo_role_array_grants_admin_write_and_review()
+    public void Userinfo_admin_array_cannot_grant_write_or_review()
     {
         using var document = JsonDocument.Parse("""{"name":"Acceptance Operator","email":"a@example.test","roles":["bliss.admin"]}""");
         var identity = new ClaimsIdentity("oidc", "name", "roles");
+#pragma warning disable CS0618 // Compatibility method deliberately denies UserInfo roles.
         OidcRoleClaimMapper.Apply(identity, document.RootElement, "roles");
+#pragma warning restore CS0618
         var principal = new ClaimsPrincipal(identity);
 
-        Assert.True(principal.IsInRole("bliss.admin"));
-        Assert.True(BlissAuthorization.CanWrite(principal, Options));
-        Assert.True(BlissAuthorization.CanReview(principal, Options));
+        Assert.Empty(identity.FindAll("roles"));
+        Assert.False(principal.IsInRole("bliss.admin"));
+        Assert.False(BlissAuthorization.CanWrite(principal, Options));
+        Assert.False(BlissAuthorization.CanReview(principal, Options));
     }
 
     [Fact]
-    public void Userinfo_reviewer_string_cannot_write()
+    public void Userinfo_reviewer_string_cannot_grant_review_or_write()
     {
         using var document = JsonDocument.Parse("""{"roles":"bliss.reviewer"}""");
         var identity = new ClaimsIdentity("oidc", "name", "roles");
+#pragma warning disable CS0618 // Compatibility method deliberately denies UserInfo roles.
         OidcRoleClaimMapper.Apply(identity, document.RootElement, "roles");
+#pragma warning restore CS0618
         var principal = new ClaimsPrincipal(identity);
 
-        Assert.True(BlissAuthorization.CanReview(principal, Options));
+        Assert.Empty(identity.FindAll("roles"));
+        Assert.False(BlissAuthorization.CanReview(principal, Options));
         Assert.False(BlissAuthorization.CanWrite(principal, Options));
     }
 
