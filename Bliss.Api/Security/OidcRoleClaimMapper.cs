@@ -141,16 +141,22 @@ public static class OidcRoleClaimMapper
     }
 
     // Only the signed ID token is eligible to supply a dedicated visitor
-    // role. The UserInfo endpoint is not a second issuer-trusted source of
-    // role authorization. If it supplies ANY roles property, even a duplicate
-    // of the signed role, fail closed by withdrawing the derived projection.
+    // role. The UserInfo endpoint must not supply a second role authority.
+    // Reject the configured role claim AND common OIDC role aliases regardless
+    // of JSON property casing. A duplicate signed role in UserInfo cannot
+    // preserve a visitor projection; unrelated profile fields remain allowed.
     // Staff/advertiser role claims are never removed here.
     public static void InvalidateVisitorProjectionIfUserInfoContainsRoles(
         ClaimsIdentity identity, JsonElement user, BlissAuthenticationOptions authentication)
     {
-        if (identity is null || user.ValueKind != JsonValueKind.Object ||
-            string.IsNullOrWhiteSpace(authentication.RoleClaimType) ||
-            !user.TryGetProperty(authentication.RoleClaimType, out _))
+        if (identity is null || authentication is null ||
+            user.ValueKind != JsonValueKind.Object ||
+            !user.EnumerateObject().Any(property =>
+                string.Equals(property.Name, authentication.RoleClaimType,
+                    StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(property.Name, "role", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(property.Name, "roles", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(property.Name, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase)))
             return;
 
         foreach (var projected in identity.FindAll(ClaimTypes.Role)
