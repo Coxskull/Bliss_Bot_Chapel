@@ -44,7 +44,7 @@ public sealed class AskAlphaCookieRoleIssuerProvenanceTests
         Assert.Equal(Foreign,role.Issuer);
         Assert.Equal(Foreign,role.OriginalIssuer);
         Assert.NotEqual(Trusted,role.Issuer);
-        Assert.NotEqual(ClaimsIdentity.DefaultIssuer,role.Issuer);
+        Assert.NotEqual(Claim.DefaultIssuer,role.Issuer);
     }
 
     [Fact]
