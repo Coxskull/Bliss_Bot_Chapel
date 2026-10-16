@@ -260,6 +260,37 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
                 (await check.WeddingPlannerPlanningSessions.AsNoTracking()
                     .SingleAsync(x=>x.Id==legacy)).SourceSystem);
 
+            // Prove atomic rollback when the second DB write fails AFTER
+            // the new EF planning session insert. This guard exists only
+            // inside the disposable schema and is dropped with that schema.
+            await using(var injectFailure = new NpgsqlCommand("""
+                CREATE FUNCTION agm_j_reject_test_ownership()
+                RETURNS trigger LANGUAGE plpgsql AS $agm$
+                BEGIN
+                  RAISE EXCEPTION 'synthetic ownership insert rejected'
+                    USING ERRCODE='23514';
+                END $agm$;
+                CREATE TRIGGER agm_j_force_test_owner_rejection
+                  BEFORE INSERT ON "AskAlphaVisitorOwnershipStaging"
+                  FOR EACH ROW
+                  WHEN (NEW."SubjectSha256" =
+                    'DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD')
+                  EXECUTE FUNCTION agm_j_reject_test_ownership();
+                """, db))
+                await injectFailure.ExecuteNonQueryAsync();
+            await Assert.ThrowsAsync<PostgresException>(()=>
+                enrollment.CreateNewAsync(newRequest with {
+                    SubjectSha256=new string('D',64),
+                    RequestKey="forced_ownership_failure_123"
+                }));
+            Assert.Equal(3, await check.WeddingPlannerPlanningSessions
+                .AsNoTracking().CountAsync());
+            await using(var noOrphan = new NpgsqlCommand("""
+                SELECT count(*) FROM "WeddingPlannerPlanningSessions"
+                WHERE "SourceSystem"='STAGING_SYNTHETIC_VISITOR_NEW_SESSION'
+                """, db))
+                Assert.Equal(2L, await noOrphan.ExecuteScalarAsync());
+
             // Consent remains independent and voluntarily asserted even for
             // the synthetic new ownership; a session cannot imply consent.
             var newlyScoped=new AskAlphaStagingConsentRequest(
