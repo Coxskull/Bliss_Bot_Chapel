@@ -207,20 +207,22 @@ public static class OidcRoleClaimMapper
     {
         var resolvedName = string.IsNullOrWhiteSpace(nameClaimType) ? identity.NameClaimType : nameClaimType.Trim();
         var resolvedRole = string.IsNullOrWhiteSpace(roleClaimType) ? identity.RoleClaimType : roleClaimType.Trim();
-        var roles = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var claim in identity.Claims)
-        {
-            if (claim.Type == resolvedRole
+        // Cookie sign-in aligns different role-claim type aliases but must
+        // NEVER re-issue their role values as LOCAL AUTHORITY or discard a
+        // conflicting issuer. A role's claimed origin is part of the evidence,
+        // not an authorization decision: provider approval is still required.
+        var roles = identity.Claims
+            .Where(claim => claim.Type == resolvedRole
                 || claim.Type == ClaimTypes.Role
                 || claim.Type == "role"
                 || claim.Type == "roles")
-            {
-                foreach (var role in Expand(claim.Value))
-                {
-                    roles.Add(role);
-                }
-            }
-        }
+            .SelectMany(claim => Expand(claim.Value)
+                .Select(role => (
+                    Value: role,
+                    Issuer: claim.Issuer,
+                    OriginalIssuer: claim.OriginalIssuer)))
+            .Distinct()
+            .ToArray();
 
         var aligned = new ClaimsIdentity(
             identity.AuthenticationType,
@@ -238,7 +240,8 @@ public static class OidcRoleClaimMapper
 
         foreach (var role in roles)
         {
-            AddRole(aligned, resolvedRole, role);
+            aligned.AddClaim(new Claim(resolvedRole, role.Value,
+                ClaimValueTypes.String, role.Issuer, role.OriginalIssuer));
         }
 
         return aligned;
