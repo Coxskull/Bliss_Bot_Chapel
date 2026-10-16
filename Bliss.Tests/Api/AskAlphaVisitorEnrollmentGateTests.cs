@@ -87,6 +87,55 @@ public sealed class AskAlphaVisitorEnrollmentGateTests
     }
 
     [Fact]
+    public void Principal_with_extra_unauthenticated_identity_is_denied()
+    {
+        var valid=Principal();
+        valid.AddIdentity(new ClaimsIdentity(new[]
+        {
+            new Claim("source", "unverified-external-principal")
+        }));
+        var reading=AskAlphaVisitorEnrollmentGate.Inspect(valid,Options());
+        Assert.True(reading.IdpConfigurationDeclared);
+        Assert.False(reading.IssuerSubjectClaimsConsistent);
+        Assert.False(reading.NewVisitorSessionCreated);
+        Assert.False(reading.VisitorConsentRecorded);
+        Assert.Equal("NOT_SENT",reading.Delivery);
+    }
+
+    [Fact]
+    public void Principal_with_second_authenticated_identity_is_denied()
+    {
+        var valid=Principal();
+        valid.AddIdentity(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role,"bliss.viewer",ClaimValueTypes.String,Issuer)
+        },"fixture-other-cookie"));
+        var reading=AskAlphaVisitorEnrollmentGate.Inspect(valid,Options());
+        Assert.False(reading.IssuerSubjectClaimsConsistent);
+        Assert.False(reading.RealVisitorIdentityAccepted);
+        Assert.False(reading.TranscriptExportAuthorized);
+    }
+
+    [Fact]
+    public void Subject_and_visitor_role_cannot_be_combined_across_identities()
+    {
+        var roleIdentity=new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role,"bliss.ask_alpha_visitor",
+                ClaimValueTypes.String,Issuer)
+        },"fixture-signed-cookie");
+        var subjectIdentity=new ClaimsIdentity(new[]
+        {
+            new Claim("sub","visit-subject-12345",ClaimValueTypes.String,Issuer)
+        });
+        var principal=new ClaimsPrincipal(new[]{roleIdentity,subjectIdentity});
+        var reading=AskAlphaVisitorEnrollmentGate.Inspect(principal,Options());
+        Assert.False(reading.IssuerSubjectClaimsConsistent);
+        Assert.False(reading.NewVisitorSessionCreated);
+        Assert.False(reading.VisitorConsentRecorded);
+    }
+
+    [Fact]
     public void Malformed_forged_duplicate_or_existing_session_claims_are_rejected()
     {
         var cfg=Options();
