@@ -37,20 +37,15 @@ public static class OidcRoleClaimMapper
         };
     }
 
+    // Compatibility boundary only. Caller-supplied UserInfo JSON is not
+    // cryptographically verified authorization evidence. Earlier behavior
+    // silently created staff/advertiser/visitor role claims with the default
+    // LOCAL AUTHORITY origin. Deliberately deny that grant path while keeping
+    // the signature so older callers cannot accidentally restore escalation.
+    [Obsolete("Untrusted UserInfo cannot issue role claims. Use token-validated Normalize instead.")]
     public static void Apply(ClaimsIdentity identity, JsonElement user, string roleClaimType)
     {
-        if (identity is null
-            || user.ValueKind != JsonValueKind.Object
-            || string.IsNullOrWhiteSpace(roleClaimType)
-            || !user.TryGetProperty(roleClaimType, out var property))
-        {
-            return;
-        }
-
-        foreach (var role in ReadProperty(property))
-        {
-            AddRole(identity, roleClaimType, role);
-        }
+        // Deliberately no-op: never alter any role claims from UserInfo.
     }
 
     public static void Normalize(ClaimsIdentity identity, string roleClaimType)
@@ -304,40 +299,5 @@ public static class OidcRoleClaimMapper
         return [trimmed];
     }
 
-    private static IEnumerable<string> ReadProperty(JsonElement property)
-    {
-        if (property.ValueKind == JsonValueKind.Array)
-        {
-            foreach (var item in property.EnumerateArray())
-            {
-                if (item.ValueKind == JsonValueKind.String)
-                {
-                    foreach (var role in Expand(item.GetString()))
-                    {
-                        yield return role;
-                    }
-                }
-            }
 
-            yield break;
-        }
-
-        if (property.ValueKind == JsonValueKind.String)
-        {
-            foreach (var role in Expand(property.GetString()))
-            {
-                yield return role;
-            }
-        }
-    }
-
-    private static void AddRole(ClaimsIdentity identity, string roleClaimType, string role)
-    {
-        if (role.Length == 0 || identity.HasClaim(roleClaimType, role))
-        {
-            return;
-        }
-
-        identity.AddClaim(new Claim(roleClaimType, role));
-    }
 }
