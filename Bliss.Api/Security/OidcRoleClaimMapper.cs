@@ -115,7 +115,15 @@ public static class OidcRoleClaimMapper
             authentication.AskAlphaVisitorRole == authentication.ViewerRole ||
             authentication.AskAlphaVisitorRole == authentication.OperatorRole ||
             authentication.AskAlphaVisitorRole == authentication.ReviewerRole ||
-            authentication.AskAlphaVisitorRole == authentication.AdminRole)
+            authentication.AskAlphaVisitorRole == authentication.AdminRole ||
+            // Visitor ownership is NEW and server-issued. The incoming
+            // identity must not also carry privileged tenant/advertiser
+            // assignments or an existing visitor session identifier.
+            // Presence alone denies, including blank or malformed values.
+            string.IsNullOrWhiteSpace(authentication.AdvertiserIdClaimType) ||
+            string.IsNullOrWhiteSpace(authentication.ReviewerWorkspaceClaimType) ||
+            string.IsNullOrWhiteSpace(authentication.AskAlphaVisitorSessionClaimType) ||
+            HasPreexistingVisitorAuthorityClaims(identity, authentication))
             return;
 
         var roles = identity.FindAll(authentication.RoleClaimType).ToArray();
@@ -143,6 +151,19 @@ public static class OidcRoleClaimMapper
             authentication.AskAlphaVisitorIssuer,
             authentication.AskAlphaVisitorIssuer));
     }
+
+    // Fail-closed token prerequisite only; NOT an ownership or consent grant.
+    // Treat issuer-supplied claim names case-insensitively, but never infer
+    // authenticated tenant authority from their values or origin metadata.
+    private static bool HasPreexistingVisitorAuthorityClaims(
+        ClaimsIdentity identity, BlissAuthenticationOptions authentication) =>
+        identity.Claims.Any(claim =>
+            string.Equals(claim.Type, authentication.AdvertiserIdClaimType,
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(claim.Type, authentication.ReviewerWorkspaceClaimType,
+                StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(claim.Type, authentication.AskAlphaVisitorSessionClaimType,
+                StringComparison.OrdinalIgnoreCase));
 
     // Only the signed ID token is eligible to supply a dedicated visitor
     // role. The UserInfo endpoint must not supply a second role authority.
