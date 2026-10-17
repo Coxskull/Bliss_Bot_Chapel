@@ -144,11 +144,56 @@ public sealed class AskAlphaVisitorPrivateSnapshotStagingPostgresTests
                 command.Parameters.AddWithValue("id", stored.SnapshotId);
                 await using var reader = await command.ExecuteReaderAsync();
                 Assert.True(await reader.ReadAsync());
-                Assert.False(plain.SequenceEqual(reader.GetFieldValue<byte[]>(0)));
-                Assert.Equal(12, reader.GetFieldValue<byte[]>(1).Length);
-                Assert.Equal(16, reader.GetFieldValue<byte[]>(2).Length);
-                Assert.Equal(Convert.ToHexString(SHA256.HashData(plain)),
-                    reader.GetString(3).Trim());
+                var ciphertext = reader.GetFieldValue<byte[]>(0);
+                var nonce = reader.GetFieldValue<byte[]>(1);
+                var tag = reader.GetFieldValue<byte[]>(2);
+                var contentDigest = reader.GetString(3).Trim();
+                Assert.False(plain.SequenceEqual(ciphertext));
+                Assert.Equal(12, nonce.Length);
+                Assert.Equal(16, tag.Length);
+                Assert.Equal(Convert.ToHexString(SHA256.HashData(plain)), contentDigest);
+
+                // Cryptographically check what ciphertext != plaintext does
+                // NOT prove: authenticity is bound to this exact synthetic
+                // snapshot/owner/workspace/purpose/notice/content/retry scope.
+                // Decryption happens ONLY inside this disposable test; no
+                // production reader or transcript export capability exists.
+                var associatedData = Encoding.UTF8.GetBytes(string.Join("|",
+                    stored.SnapshotId.ToString("N"), request.OwnershipId.ToString("N"),
+                    request.WorkspaceId.ToString("N"), request.Issuer,
+                    request.SubjectSha256, request.Purpose, request.NoticeVersion,
+                    request.RetryKey, contentDigest));
+                using var cipher = new AesGcm(key, 16);
+                var decrypted = new byte[ciphertext.Length];
+                cipher.Decrypt(nonce, ciphertext, tag, decrypted, associatedData);
+                Assert.Equal(plain, decrypted);
+
+                var wrongOwner = Encoding.UTF8.GetBytes(string.Join("|",
+                    stored.SnapshotId.ToString("N"), Guid.NewGuid().ToString("N"),
+                    request.WorkspaceId.ToString("N"), request.Issuer,
+                    request.SubjectSha256, request.Purpose, request.NoticeVersion,
+                    request.RetryKey, contentDigest));
+                Assert.Throws<CryptographicException>(() =>
+                    cipher.Decrypt(nonce, ciphertext, tag,
+                        new byte[ciphertext.Length], wrongOwner));
+
+                var tampered = (byte[])ciphertext.Clone();
+                tampered[0] ^= 0x01;
+                Assert.Throws<CryptographicException>(() =>
+                    cipher.Decrypt(nonce, tampered, tag,
+                        new byte[tampered.Length], associatedData));
+
+                var changedTag = (byte[])tag.Clone();
+                changedTag[0] ^= 0x01;
+                Assert.Throws<CryptographicException>(() =>
+                    cipher.Decrypt(nonce, ciphertext, changedTag,
+                        new byte[ciphertext.Length], associatedData));
+
+                var wrongKey = RandomNumberGenerator.GetBytes(32);
+                using var differentKeyCipher = new AesGcm(wrongKey, 16);
+                Assert.Throws<CryptographicException>(() =>
+                    differentKeyCipher.Decrypt(nonce, ciphertext, tag,
+                        new byte[ciphertext.Length], associatedData));
             }
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
