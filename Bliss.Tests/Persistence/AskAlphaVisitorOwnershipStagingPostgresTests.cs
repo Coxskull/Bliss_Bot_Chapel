@@ -156,7 +156,9 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
                 ledger.AppendAsync(optin with { Action="REVOKE" }));
             await Assert.ThrowsAsync<ArgumentException>(()=>
                 ledger.AppendAsync(optin with { NoticeVersion="unreviewed-notice" }));
-            await Assert.ThrowsAsync<PostgresException>(()=>
+            // The new active-session lookup denies an unrelated subject
+            // before trying the SQL INSERT. Keep the negative guarantee.
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
                 ledger.AppendAsync(optin with {
                     RetryKey="wrong_digest_key_123",SubjectSha256=new string('B',64)
                 }));
@@ -340,6 +342,44 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
             Assert.NotEqual(enrolled.OwnershipId,secondOwner.OwnershipId);
             Assert.NotEqual(enrolled.SessionId,secondOwner.SessionId);
 
+            // An inactive planning session or workspace must never record
+            // an OPT_IN, even if the immutable ownership row already exists.
+            // Test both service guard and independently enforced SQL trigger.
+            await Run("""
+                UPDATE "WeddingPlannerPlanningSessions" SET "Status"='CLOSED'
+                WHERE "Id"=@session
+                """,("session",enrolled.SessionId));
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                ledger.AppendAsync(newlyScoped));
+            await Rejected(()=>Run(consent,
+                ("id",Guid.NewGuid()),("owner",enrolled.OwnershipId),
+                ("ws",workspace),("issuer",issuer),
+                ("digest",newRequest.SubjectSha256),("action","OPT_IN"),
+                ("purpose",acceptedPurpose),("version",acceptedVersion),
+                ("retry","closed_session_direct_optin"),
+                ("at",DateTimeOffset.UtcNow)));
+            await Run("""
+                UPDATE "WeddingPlannerPlanningSessions" SET "Status"='OPEN'
+                WHERE "Id"=@session
+                """,("session",enrolled.SessionId));
+            await Run("""
+                UPDATE "WeddingPlannerWorkspaces" SET "Status"='SUSPENDED'
+                WHERE "Id"=@workspace
+                """,("workspace",workspace));
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                ledger.AppendAsync(newlyScoped));
+            await Rejected(()=>Run(consent,
+                ("id",Guid.NewGuid()),("owner",enrolled.OwnershipId),
+                ("ws",workspace),("issuer",issuer),
+                ("digest",newRequest.SubjectSha256),("action","OPT_IN"),
+                ("purpose",acceptedPurpose),("version",acceptedVersion),
+                ("retry","suspended_ws_direct_optin"),
+                ("at",DateTimeOffset.UtcNow)));
+            await Run("""
+                UPDATE "WeddingPlannerWorkspaces" SET "Status"='ACTIVE'
+                WHERE "Id"=@workspace
+                """,("workspace",workspace));
+
             var newOptin=await ledger.AppendAsync(newlyScoped);
             Assert.False(newOptin.AuthenticatedVisitorConsentRecorded);
             Assert.False(newOptin.TranscriptExportAuthorized);
@@ -351,9 +391,31 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
             Assert.False(afterOptin.TranscriptExportAuthorized);
             Assert.Equal("NOT_SENT",afterOptin.Delivery);
 
+            // Revocation must remain possible after both the session and
+            // workspace close. An existing OPT_IN replay, by contrast, now
+            // denies inactive scope even if its idempotency key exists.
+            await Run("""
+                UPDATE "WeddingPlannerPlanningSessions" SET "Status"='CLOSED'
+                WHERE "Id"=@session
+                """,("session",enrolled.SessionId));
+            await Run("""
+                UPDATE "WeddingPlannerWorkspaces" SET "Status"='SUSPENDED'
+                WHERE "Id"=@workspace
+                """,("workspace",workspace));
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
+                ledger.AppendAsync(newlyScoped));
             var newRevoke=await ledger.AppendAsync(newlyScoped with {
                 Action="REVOKE",RetryKey="new_scope_revoke_123"
             });
+            Assert.False(newRevoke.AuthenticatedVisitorConsentRecorded);
+            await Run("""
+                UPDATE "WeddingPlannerPlanningSessions" SET "Status"='OPEN'
+                WHERE "Id"=@session
+                """,("session",enrolled.SessionId));
+            await Run("""
+                UPDATE "WeddingPlannerWorkspaces" SET "Status"='ACTIVE'
+                WHERE "Id"=@workspace
+                """,("workspace",workspace));
             Assert.False(newRevoke.AuthenticatedVisitorConsentRecorded);
             Assert.Equal("NOT_SENT",newRevoke.Delivery);
             var afterRevoke=await readback.ReadAsync(consentScope);
