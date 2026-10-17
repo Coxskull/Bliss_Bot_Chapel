@@ -51,7 +51,7 @@ public sealed class AskAlphaExistingVisitorSessionPreflightTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void Returning_visitor_command_is_shaped_but_always_storage_denied(
+    public void Returning_visitor_claim_shape_still_cannot_bootstrap_consent(
         bool withdraw)
     {
         var principal = ReturningPrincipal(Guid.NewGuid());
@@ -63,9 +63,7 @@ public sealed class AskAlphaExistingVisitorSessionPreflightTests
 
         var result = AskAlphaVisitorConsentCommandGate.Inspect(
             principal, Options(), Command(!withdraw), withdraw);
-        Assert.Equal(withdraw
-            ? "AUTHENTICATED_WITHDRAWAL_STORAGE_UNAVAILABLE"
-            : "AUTHENTICATED_OPT_IN_STORAGE_UNAVAILABLE", result.Status);
+        Assert.Equal("VISITOR_IDENTITY_PREREQUISITES_MISSING", result.Status);
         Assert.Equal("NOT_RECORDED", result.VisitorConsentStatus);
         Assert.False(result.AuthoritativeOwnershipVerified);
         Assert.False(result.AuthenticatedVisitorConsentRecorded);
@@ -86,8 +84,10 @@ public sealed class AskAlphaExistingVisitorSessionPreflightTests
             : controller.OptIn(Command(true));
         var conflict = Assert.IsType<ObjectResult>(action);
         Assert.Equal(StatusCodes.Status409Conflict, conflict.StatusCode);
-        Assert.False(Assert.IsType<AskAlphaVisitorConsentDecision>(
-            conflict.Value).AuthenticatedVisitorConsentRecorded);
+        var blocked = Assert.IsType<AskAlphaVisitorConsentDecision>(
+            conflict.Value);
+        Assert.Equal("VISITOR_IDENTITY_PREREQUISITES_MISSING", blocked.Status);
+        Assert.False(blocked.AuthenticatedVisitorConsentRecorded);
     }
 
     [Theory]
