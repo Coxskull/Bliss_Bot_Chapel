@@ -81,6 +81,34 @@ public sealed class AskAlphaVisitorStagingConsentLedger
             query.Parameters.AddWithValue("owner", request.OwnershipId);
             revoked = (bool)(await query.ExecuteScalarAsync(ct) ?? false);
         }
+        // An OPT_IN (including same-key replay) must refer to a genuine
+        // still-OPEN synthetic new session and ACTIVE workspace. Hold row
+        // share locks through commit to serialize an external close.
+        // A REVOKE intentionally remains possible even after closure.
+        if (request.Action == "OPT_IN")
+        {
+            await using var eligible = new NpgsqlCommand("""
+                SELECT 1 FROM "AskAlphaVisitorOwnershipStaging" o
+                JOIN "WeddingPlannerPlanningSessions" s ON s."Id"=o."SessionId"
+                JOIN "WeddingPlannerWorkspaces" w ON w."Id"=o."WorkspaceId"
+                WHERE o."Id"=@owner AND o."WorkspaceId"=@ws
+                  AND o."Issuer"=@issuer AND o."SubjectSha256"=@digest
+                  AND s."WorkspaceId"=o."WorkspaceId"
+                  AND s."AdvertiserId"=o."AdvertiserId"
+                  AND s."SourceSystem"='STAGING_SYNTHETIC_VISITOR_NEW_SESSION'
+                  AND s."Status"='OPEN' AND w."Status"='ACTIVE'
+                  AND w."AdvertiserId"=o."AdvertiserId"
+                FOR SHARE OF s,w
+                """, connection, tx);
+            eligible.Parameters.AddWithValue("owner", request.OwnershipId);
+            eligible.Parameters.AddWithValue("ws", request.WorkspaceId);
+            eligible.Parameters.AddWithValue("issuer", request.Issuer);
+            eligible.Parameters.AddWithValue("digest", request.SubjectSha256);
+            if (await eligible.ExecuteScalarAsync(ct) is null)
+                throw new InvalidOperationException(
+                    "Synthetic opt-in requires an active scoped NEW session.");
+        }
+
         // An identity-wide withdrawal in the same workspace is terminal:
         // switching to another OwnershipId must not make a new OPT_IN valid.
         if (request.Action == "OPT_IN")
