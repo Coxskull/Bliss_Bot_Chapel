@@ -1,0 +1,1 @@
+{"private":true,"type":"module","scripts":{"build":"esbuild login.js --bundle --minify --platform=browser --outfile=../../frontend/public/oauth-consent.bundle.js"},"dependencies":{"@supabase/supabase-js":"2.118.0"},"devDependencies":{"esbuild":"0.28.2"}}
