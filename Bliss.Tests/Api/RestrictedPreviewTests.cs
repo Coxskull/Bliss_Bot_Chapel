@@ -35,4 +35,24 @@ public sealed class RestrictedPreviewTests
         var response = await client.GetAsync("/preview-status");
         Assert.Contains("\"operational\":false", await response.Content.ReadAsStringAsync());
     }
+
+    [Fact]
+    public async Task Production_restricted_preview_starts_without_oidc_but_keeps_all_non_interface_paths_unavailable()
+    {
+        var keyPath = Path.Combine(Path.GetTempPath(), "bliss-preview-test-" + Guid.NewGuid().ToString("N"));
+        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Production");
+            builder.UseSetting("Authentication:Enabled", "false");
+            builder.UseSetting("Runtime:RestrictedPreview", "true");
+            builder.UseSetting("Runtime:DataProtectionKeysPath", keyPath);
+        });
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health/live")).StatusCode);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("/health/ready")).StatusCode);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("/signin-oidc")).StatusCode);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("/api/auth/session")).StatusCode);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable,
+            (await client.PostAsync("/api/bliss/matches", new StringContent("{}"))).StatusCode);
+    }
 }
