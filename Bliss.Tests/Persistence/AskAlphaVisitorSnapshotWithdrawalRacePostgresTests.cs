@@ -117,11 +117,11 @@ public sealed class AskAlphaVisitorSnapshotWithdrawalRacePostgresTests
             // identity and owner advisory locks in the same acquisition order.
             // Both orderings are valid: a write may commit BEFORE withdrawal,
             // or it must fail AFTER withdrawal. Neither allows a later read.
-            using var start = new ManualResetEventSlim(false);
+            var start = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             async Task<AskAlphaStagingSnapshotDecision?> TryWrite()
             {
                 await Task.Yield();
-                start.Wait(TimeSpan.FromSeconds(10));
+                await start.Task;
                 try
                 {
                     return await store.SaveFictionalAsync(write);
@@ -135,13 +135,13 @@ public sealed class AskAlphaVisitorSnapshotWithdrawalRacePostgresTests
             async Task<AskAlphaStagingConsentResult> Withdraw()
             {
                 await Task.Yield();
-                start.Wait(TimeSpan.FromSeconds(10));
+                await start.Task;
                 return await ledger.AppendAsync(revoke);
             }
 
             var writes = Enumerable.Range(0, 8).Select(_ => TryWrite()).ToArray();
             var withdrawal = Withdraw();
-            start.Set();
+            start.SetResult(true);
             var results = await Task.WhenAll(writes);
             var revoked = await withdrawal;
             Assert.Equal("SYNTHETIC_STAGING_REVOCATION_RECORDED_NO_EXPORT", revoked.Status);
