@@ -156,7 +156,9 @@ public sealed class AskAlphaVisitorOwnershipStagingPostgresTests
                 ledger.AppendAsync(optin with { Action="REVOKE" }));
             await Assert.ThrowsAsync<ArgumentException>(()=>
                 ledger.AppendAsync(optin with { NoticeVersion="unreviewed-notice" }));
-            await Assert.ThrowsAsync<PostgresException>(()=>
+            // The new active-session lookup denies an unrelated subject
+            // before trying the SQL INSERT. Keep the negative guarantee.
+            await Assert.ThrowsAsync<InvalidOperationException>(()=>
                 ledger.AppendAsync(optin with {
                     RetryKey="wrong_digest_key_123",SubjectSha256=new string('B',64)
                 }));
