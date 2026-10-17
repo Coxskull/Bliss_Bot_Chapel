@@ -58,6 +58,7 @@ jobs:
           test -f Bliss.Tests/Persistence/CreativeHandoffPersistenceTests.cs
           test -f Bliss.Infrastructure/Migrations/AskAlphaVisitorOwnershipStagingV1.sql
           test -f Bliss.Tests/Persistence/AskAlphaVisitorOwnershipStagingPostgresTests.cs
+          test -f Bliss.Tests/Persistence/AskAlphaVisitorPrivateSnapshotStagingPostgresTests.cs
           mkdir -p PlannerEvidence
 
       - name: Install pinned SDK and media test dependencies
@@ -80,7 +81,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          fixture_filter='FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresAppendConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.BrandDnaPostgresTests|FullyQualifiedName~Bliss.Tests.Persistence.CreativeHandoffPersistenceTests|FullyQualifiedName~Bliss.Tests.Persistence.AskAlphaVisitorOwnershipStagingPostgresTests|FullyQualifiedName~Bliss.Tests.Persistence.AskAlphaVisitorPrivateSnapshotStagingPostgresTests'
+          fixture_filter='FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresAppendConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.WeddingPlannerPostgresConcurrencyTests|FullyQualifiedName~Bliss.Tests.Persistence.BrandDnaPostgresTests|FullyQualifiedName~Bliss.Tests.Persistence.CreativeHandoffPersistenceTests|FullyQualifiedName~Bliss.Tests.Persistence.AskAlphaVisitorOwnershipStagingPostgresTests|FullyQualifiedName~Bliss.Tests.Persistence.AskAlphaVisitorDbRoleIsolationRehearsalPostgresTests|FullyQualifiedName~Bliss.Tests.Persistence.AskAlphaVisitorPrivateSnapshotStagingPostgresTests'
 
           for iteration in 1 2; do
             echo "Running disposable PostgreSQL planner iteration $iteration"
@@ -111,7 +112,7 @@ jobs:
                   raise SystemExit(f"FAIL: planner run {iteration} has no complete test summary")
               failed, passed, skipped, total = map(int, summary.groups())
               print(f"Planner PostgreSQL iteration {iteration}: {passed} passed, {failed} failed, {skipped} skipped; total {total}.")
-              if failed or skipped or passed < 10 or total != passed:
+              if failed or skipped or passed < 11 or total != passed:
                   raise SystemExit(f"FAIL: missing/skipped/failed PostgreSQL concurrency coverage in iteration {iteration}")
           PY
 
