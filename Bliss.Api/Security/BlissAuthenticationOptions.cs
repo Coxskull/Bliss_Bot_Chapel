@@ -8,6 +8,11 @@ public sealed class BlissAuthenticationOptions
     public string Authority { get; set; } = string.Empty;
     public string ClientId { get; set; } = string.Empty;
     public string ClientSecret { get; set; } = string.Empty;
+    public bool SupabaseEnabled { get; set; }
+    public string SupabasePublishableKey { get; set; } = string.Empty;
+    // Explicit issuer subjects, never emails or user-editable metadata.
+    // Empty means no one can complete initial test login.
+    public string[] ApprovedTestSubjects { get; set; } = [];
     public string NameClaimType { get; set; } = "name";
     public string RoleClaimType { get; set; } = "roles";
     public string ViewerRole { get; set; } = "bliss.viewer";

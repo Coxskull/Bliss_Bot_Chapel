@@ -296,6 +296,7 @@ if (authentication.Enabled)
             RoleClaimType = authentication.RoleClaimType
         };
         OidcRoleClaimMapper.Configure(options, authentication);
+        if (authentication.SupabaseEnabled) SupabaseOidc.Configure(options, authentication);
     });
 }
 
@@ -371,7 +372,9 @@ app.Use(async (context, next) =>
         context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
         context.Response.Headers["Content-Security-Policy"] =
             "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-            + "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; "
+            + "img-src 'self' data:; connect-src 'self' "
+            + (authentication.SupabaseEnabled ? new Uri(authentication.Authority).GetLeftPart(UriPartial.Authority) : "")
+            + "; frame-ancestors 'none'; "
             + "base-uri 'self'; form-action 'self'";
         return Task.CompletedTask;
     });
@@ -497,6 +500,12 @@ app.Use(async (context, next) =>
     await next();
 });
 app.MapControllers();
+app.MapGet("/api/auth/supabase-config", () =>
+    authentication.SupabaseEnabled && authentication.SupabasePublishableKey.StartsWith("sb_publishable_", StringComparison.Ordinal)
+        ? Results.Json(new { url = new Uri(authentication.Authority).GetLeftPart(UriPartial.Authority),
+            publishableKey = authentication.SupabasePublishableKey, clientId = authentication.ClientId })
+        : Results.Problem("Supabase login is not configured.", statusCode: 503))
+    .AllowAnonymous();
 app.MapHealthChecks(
         "/health/live",
         new HealthCheckOptions
