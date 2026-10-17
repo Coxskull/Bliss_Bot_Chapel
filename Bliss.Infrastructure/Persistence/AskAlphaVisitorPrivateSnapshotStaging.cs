@@ -79,11 +79,19 @@ public sealed class AskAlphaVisitorPrivateSnapshotStaging
         }
 
         await using (var withdrawn = new NpgsqlCommand("""
-            SELECT EXISTS(SELECT 1 FROM "AskAlphaVisitorConsentStaging"
-                WHERE "OwnershipId"=@owner AND "Action"='REVOKE')
+            SELECT EXISTS(
+                SELECT 1 FROM "AskAlphaVisitorOwnershipStaging" prior
+                JOIN "AskAlphaVisitorConsentStaging" c
+                  ON c."OwnershipId"=prior."Id"
+                WHERE prior."WorkspaceId"=@workspace
+                  AND prior."Issuer"=@issuer
+                  AND prior."SubjectSha256"=@subject
+                  AND c."Action"='REVOKE')
             """, connection, tx))
         {
-            withdrawn.Parameters.AddWithValue("owner", request.OwnershipId);
+            withdrawn.Parameters.AddWithValue("workspace", request.WorkspaceId);
+            withdrawn.Parameters.AddWithValue("issuer", request.Issuer);
+            withdrawn.Parameters.AddWithValue("subject", request.SubjectSha256);
             if ((bool)(await withdrawn.ExecuteScalarAsync(ct) ?? false))
                 throw new InvalidOperationException(
                     "Synthetic withdrawal permanently denies snapshot storage and replay.");
@@ -172,8 +180,13 @@ public sealed class AskAlphaVisitorPrivateSnapshotStaging
         await using var connection = await data.OpenConnectionAsync(ct);
         await using var cmd = new NpgsqlCommand("""
             SELECT s."Id", EXISTS(
-                SELECT 1 FROM "AskAlphaVisitorConsentStaging" c
-                WHERE c."OwnershipId"=s."OwnershipId" AND c."Action"='REVOKE')
+                SELECT 1 FROM "AskAlphaVisitorOwnershipStaging" prior
+                JOIN "AskAlphaVisitorConsentStaging" c
+                  ON c."OwnershipId"=prior."Id"
+                WHERE prior."WorkspaceId"=s."WorkspaceId"
+                  AND prior."Issuer"=s."Issuer"
+                  AND prior."SubjectSha256"=s."SubjectSha256"
+                  AND c."Action"='REVOKE')
             FROM "AskAlphaVisitorSnapshotStaging" s
             JOIN "AskAlphaVisitorOwnershipStaging" o ON o."Id"=s."OwnershipId"
             JOIN "WeddingPlannerPlanningSessions" ps ON ps."Id"=o."SessionId"
