@@ -14,8 +14,30 @@ public sealed class RestrictedPreviewTests
     [InlineData("/source-media/private.png")]
     [InlineData("/operations/financial-review/index.html")]
     [InlineData("/signin-oidc")]
+    [InlineData("/operations")]
+    [InlineData("/operations/index.html")]
+    [InlineData("/ai-workspace.html")]
+    [InlineData("/brand-intake.html")]
+    [InlineData("/production.html")]
+    [InlineData("/campaign-handoff.html")]
+    [InlineData("/acquisition/index.html")]
+    [InlineData("/oauth-consent.html")]
+    [InlineData("/oauth-consent.bundle.js")]
+    [InlineData("/assets/unreviewed.jpg")]
+    [InlineData("/swagger/index.html")]
     public void Data_and_auth_paths_are_never_interface_files(string path) =>
         Assert.False(RestrictedPreviewGate.IsInterfacePath(path));
+
+    [Theory]
+    [InlineData("/")]
+    [InlineData("/index.html")]
+    [InlineData("/wedding-planner.css")]
+    [InlineData("/wedding-planner.js")]
+    [InlineData("/preview-lock.js")]
+    [InlineData("/assets/bliss-chapel-hero.jpg")]
+    [InlineData("/health/live")]
+    public void Public_landing_paths_are_explicitly_allowed(string path) =>
+        Assert.True(RestrictedPreviewGate.IsInterfacePath(path));
 
     [Fact]
     public async Task Preview_serves_interface_but_never_claims_operational_readiness_or_executes_api()
@@ -49,6 +71,16 @@ public sealed class RestrictedPreviewTests
         });
         var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health/live")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/wedding-planner.css")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/preview-lock.js")).StatusCode);
+        foreach (var sensitivePath in new[]
+        {
+            "/operations", "/operations/index.html", "/ai-workspace.html",
+            "/brand-intake.html", "/production.html", "/oauth-consent.html",
+            "/acquisition/index.html", "/assets/unreviewed.jpg"
+        })
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync(sensitivePath)).StatusCode);
         Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("/health/ready")).StatusCode);
         Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("/signin-oidc")).StatusCode);
         Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("/api/auth/session")).StatusCode);
