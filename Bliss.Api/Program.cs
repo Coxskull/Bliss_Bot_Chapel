@@ -64,7 +64,9 @@ if (runtime.WriteRateLimitPermitLimit <= 0
 
 var posture = ProductionPostureEvaluator.Evaluate(
     ProductionPostureEvaluator.CreateInput(builder.Environment, builder.Configuration, authentication, runtime));
-ProductionPostureEvaluator.Ensure(posture);
+if (!runtime.RestrictedPreview) ProductionPostureEvaluator.Ensure(posture);
+if (runtime.RestrictedPreview && applyMigrations)
+    throw new InvalidOperationException("Migrations are unavailable in restricted preview.");
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -112,7 +114,7 @@ builder.Services.AddScoped<CreativeHandoffService>();
 builder.Services.AddScoped<AskAlphaLineagePreflightService>();
 builder.Services.AddScoped<CampaignMeasurementService>();
 builder.Services.AddScoped<ControlledAiService>();
-builder.Services.AddHostedService<ControlledAiWorker>();
+if (!runtime.RestrictedPreview) builder.Services.AddHostedService<ControlledAiWorker>();
 builder.Services.AddHttpClient<IControlledAiProvider, ConfiguredControlledAiProvider>(client =>
 {
     client.Timeout = Timeout.InfiniteTimeSpan;
@@ -382,6 +384,8 @@ app.Use(async (context, next) =>
 });
 
 var frontendRoot = FrontendHost.ResolveRoot(app.Environment);
+if (runtime.RestrictedPreview)
+    app.Use((context, next) => RestrictedPreviewGate.InvokeAsync(context, next));
 var publicFrontend = Path.Combine(frontendRoot, "public");
 var operationsFrontend = Path.Combine(frontendRoot, "operations");
 var generatedCreativeRoot = string.IsNullOrWhiteSpace(runtime.CreativeGeneration.OutputPath)
@@ -408,7 +412,7 @@ if (!Path.GetFullPath(generatedCreativeRoot).StartsWith(
     });
 }
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() && !runtime.RestrictedPreview)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
