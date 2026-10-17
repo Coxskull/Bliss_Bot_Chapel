@@ -37,6 +37,11 @@ public static class AskAlphaVisitorConsentCommandGate
             "REAL_VISITOR_CONSENT_BACKEND_NOT_CONFIGURED");
         // This only examines prerequisites. Authoritative new-session ownership
         // and personally submitted consent must still be independently proven.
+        // A returning visitor claim does not prove server-owned session
+        // ownership. The read-only existing-session shape helper must NOT be
+        // wired into this consent command until a separately authenticated,
+        // transactionally verified ownership lookup exists. Keep historical
+        // session-claim bootstrap attempts blocked without granting consent.
         if (AskAlphaVisitorEnrollmentGate.Inspect(principal, authentication)
             .Status != "NEW_VISITOR_OIDC_CLAIMS_DECLARED_SERVER_CREATION_PENDING")
             return denied with { Status = "VISITOR_IDENTITY_PREREQUISITES_MISSING" };
