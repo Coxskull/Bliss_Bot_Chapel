@@ -31,7 +31,7 @@ var runtime = builder.Configuration
     .GetSection(BlissRuntimeOptions.SectionName)
     .Get<BlissRuntimeOptions>() ?? new BlissRuntimeOptions();
 
-if (!authentication.Enabled && !builder.Environment.IsDevelopment())
+if (!authentication.Enabled && !builder.Environment.IsDevelopment() && !runtime.RestrictedPreview)
 {
     throw new InvalidOperationException(
         "OIDC authentication must be enabled outside Development. "
