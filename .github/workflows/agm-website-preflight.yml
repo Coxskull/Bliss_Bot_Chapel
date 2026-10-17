@@ -1,0 +1,30 @@
+name: AGM Public Website Preflight Unit Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/agm-website-preflight.py'
+      - 'scripts/test_agm_website_preflight.py'
+      - '.github/workflows/agm-website-preflight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-preflight-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile and run offline, synthetic tests
+        run: |
+          python -m py_compile scripts/agm-website-preflight.py
+          python -m unittest discover -s scripts -p 'test_agm_website_preflight.py' -v
+      # No live public website fetch or authenticated GHL operation in CI.
