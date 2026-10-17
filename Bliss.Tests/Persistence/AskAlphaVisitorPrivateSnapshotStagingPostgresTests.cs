@@ -206,7 +206,9 @@ public sealed class AskAlphaVisitorPrivateSnapshotStagingPostgresTests
                 {
                     WorkspaceId = Guid.NewGuid()
                 })).Status);
-            await Assert.ThrowsAsync<PostgresException>(() =>
+            // The new scope guard rejects an unrelated OwnershipId BEFORE
+            // any database INSERT, rather than relying only on the trigger.
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 snapshots.SaveFictionalAsync(request with
                 {
                     OwnershipId = Guid.NewGuid(),
