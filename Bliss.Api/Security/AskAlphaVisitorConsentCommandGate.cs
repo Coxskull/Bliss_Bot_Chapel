@@ -37,8 +37,15 @@ public static class AskAlphaVisitorConsentCommandGate
             "REAL_VISITOR_CONSENT_BACKEND_NOT_CONFIGURED");
         // This only examines prerequisites. Authoritative new-session ownership
         // and personally submitted consent must still be independently proven.
+        // A returning visitor legitimately has a session binding, which the
+        // *new* enrollment gate refuses. Accept either unverified claim shape
+        // only for command validation; neither can issue real consent.
+        // The existing-session path MUST NOT be mistaken for DB ownership
+        // verification, signed identity proof, or activation authority.
         if (AskAlphaVisitorEnrollmentGate.Inspect(principal, authentication)
-            .Status != "NEW_VISITOR_OIDC_CLAIMS_DECLARED_SERVER_CREATION_PENDING")
+                .Status != "NEW_VISITOR_OIDC_CLAIMS_DECLARED_SERVER_CREATION_PENDING" &&
+            !AskAlphaExistingVisitorSessionPreflight.MatchesUnverifiedClaimShape(
+                principal, authentication))
             return denied with { Status = "VISITOR_IDENTITY_PREREQUISITES_MISSING" };
 
         if (request is null ||
