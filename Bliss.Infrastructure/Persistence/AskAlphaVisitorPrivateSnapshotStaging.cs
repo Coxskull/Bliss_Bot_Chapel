@@ -97,6 +97,36 @@ public sealed class AskAlphaVisitorPrivateSnapshotStaging
                     "Synthetic withdrawal permanently denies snapshot storage and replay.");
         }
 
+        // Exact replay must also require an OPEN synthetic session and
+        // ACTIVE workspace. The database trigger checks these on INSERT
+        // but never runs for an already-stored snapshot replay. Lock both
+        // authoritative fixture rows to prevent a concurrent close after
+        // this check and before the transaction commits.
+        // This DOES NOT establish real signed OIDC visitor ownership.
+        await using (var eligibility = new NpgsqlCommand("""
+            SELECT 1 FROM "AskAlphaVisitorOwnershipStaging" o
+            JOIN "WeddingPlannerPlanningSessions" s ON s."Id"=o."SessionId"
+            JOIN "WeddingPlannerWorkspaces" w ON w."Id"=o."WorkspaceId"
+            WHERE o."Id"=@owner AND o."WorkspaceId"=@workspace
+              AND o."Issuer"=@issuer AND o."SubjectSha256"=@subject
+              AND s."WorkspaceId"=o."WorkspaceId"
+              AND s."AdvertiserId"=o."AdvertiserId"
+              AND s."SourceSystem"='STAGING_SYNTHETIC_VISITOR_NEW_SESSION'
+              AND s."Status"='OPEN'
+              AND w."Status"='ACTIVE'
+              AND w."AdvertiserId"=o."AdvertiserId"
+            FOR SHARE OF s,w
+            """, connection, tx))
+        {
+            eligibility.Parameters.AddWithValue("owner", request.OwnershipId);
+            eligibility.Parameters.AddWithValue("workspace", request.WorkspaceId);
+            eligibility.Parameters.AddWithValue("issuer", request.Issuer);
+            eligibility.Parameters.AddWithValue("subject", request.SubjectSha256);
+            if (await eligibility.ExecuteScalarAsync(ct) is null)
+                throw new InvalidOperationException(
+                    "Synthetic snapshot scope or active planning session unavailable.");
+        }
+
         // Exact idempotency, including the content digest and all scope fields.
         await using (var replay = new NpgsqlCommand("""
             SELECT "Id","WorkspaceId","Issuer","SubjectSha256","Purpose",

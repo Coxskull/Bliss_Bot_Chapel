@@ -206,12 +206,83 @@ public sealed class AskAlphaVisitorPrivateSnapshotStagingPostgresTests
                 {
                     WorkspaceId = Guid.NewGuid()
                 })).Status);
-            await Assert.ThrowsAsync<PostgresException>(() =>
+            // The new scope guard rejects an unrelated OwnershipId BEFORE
+            // any database INSERT, rather than relying only on the trigger.
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 snapshots.SaveFictionalAsync(request with
                 {
                     OwnershipId = Guid.NewGuid(),
                     RetryKey = "foreign_owner_retry_123"
                 }));
+
+            // Exact idempotency must NOT report a successful replay after
+            // the authoritative fictional session is closed. A new insert
+            // already gets this rule from the PostgreSQL trigger, but the
+            // preexisting replay path previously returned before that guard.
+            await using (var admin = new NpgsqlConnection(parsed.ConnectionString))
+            {
+                await admin.OpenAsync();
+                await using var close = new NpgsqlCommand("""
+                    UPDATE "WeddingPlannerPlanningSessions"
+                    SET "Status"='CLOSED'
+                    WHERE "Id"=@session
+                    """, admin);
+                close.Parameters.AddWithValue("session", newSession.SessionId);
+                Assert.Equal(1, await close.ExecuteNonQueryAsync());
+            }
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                snapshots.SaveFictionalAsync(request));
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                snapshots.SaveFictionalAsync(request with
+                {
+                    RetryKey = "snapshot_after_session_closed"
+                }));
+            Assert.Equal("SYNTHETIC_SNAPSHOT_SCOPE_DENIED",
+                (await snapshots.InspectAsync(scope)).Status);
+
+            // Resume the purely fictional session to test workspace closure
+            // as an independent constraint. This never mutates append-only
+            // visitor ownership, consent, or encrypted snapshot records.
+            await using (var admin = new NpgsqlConnection(parsed.ConnectionString))
+            {
+                await admin.OpenAsync();
+                await using var reopen = new NpgsqlCommand("""
+                    UPDATE "WeddingPlannerPlanningSessions"
+                    SET "Status"='OPEN'
+                    WHERE "Id"=@session
+                    """, admin);
+                reopen.Parameters.AddWithValue("session", newSession.SessionId);
+                Assert.Equal(1, await reopen.ExecuteNonQueryAsync());
+                await using var suspend = new NpgsqlCommand("""
+                    UPDATE "WeddingPlannerWorkspaces"
+                    SET "Status"='SUSPENDED'
+                    WHERE "Id"=@workspace
+                    """, admin);
+                suspend.Parameters.AddWithValue("workspace", workspace);
+                Assert.Equal(1, await suspend.ExecuteNonQueryAsync());
+            }
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                snapshots.SaveFictionalAsync(request));
+            Assert.Equal("SYNTHETIC_SNAPSHOT_SCOPE_DENIED",
+                (await snapshots.InspectAsync(scope)).Status);
+
+            await using (var admin = new NpgsqlConnection(parsed.ConnectionString))
+            {
+                await admin.OpenAsync();
+                await using var restore = new NpgsqlCommand("""
+                    UPDATE "WeddingPlannerWorkspaces"
+                    SET "Status"='ACTIVE'
+                    WHERE "Id"=@workspace
+                    """, admin);
+                restore.Parameters.AddWithValue("workspace", workspace);
+                Assert.Equal(1, await restore.ExecuteNonQueryAsync());
+            }
+            var reopenedReplay = await snapshots.SaveFictionalAsync(request);
+            Assert.True(reopenedReplay.IsReplay);
+            Assert.Equal(stored.SnapshotId, reopenedReplay.SnapshotId);
+            Assert.False(reopenedReplay.ContentReadAuthorized);
+            Assert.False(reopenedReplay.TranscriptExportAuthorized);
+            Assert.Equal("NOT_SENT", reopenedReplay.Delivery);
 
             var revoke = await consent.AppendAsync(new AskAlphaStagingConsentRequest(
                 request.OwnershipId, workspace, issuer, digest, "REVOKE",
