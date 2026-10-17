@@ -4,16 +4,18 @@ namespace Bliss.Api.Runtime;
 // business records, generated media, authentication actions or any write route.
 public static class RestrictedPreviewGate
 {
-    private static readonly HashSet<string> Extensions = new(StringComparer.OrdinalIgnoreCase)
-        { ".html", ".css", ".js", ".jpg", ".jpeg", ".png", ".svg", ".ico", ".woff", ".woff2" };
+    // Explicitly expose only the public Bliss landing page and its reviewed assets.
+    // A filename extension does not grant publication rights: other public-folder
+    // HTML pages and /operations can contain internal workflows and must stay closed.
+    private static readonly HashSet<string> PublicInterfacePaths = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "/", "/index.html", "/health/live",
+        "/wedding-planner.css", "/wedding-planner.js", "/preview-lock.js",
+        "/assets/bliss-chapel-hero.jpg", "/favicon.ico"
+    };
 
     public static bool IsInterfacePath(PathString path) =>
-        !path.StartsWithSegments("/api")
-        && !path.StartsWithSegments("/operations/generated")
-        && !path.StartsWithSegments("/source-media")
-        && !path.StartsWithSegments("/operations/financial-review")
-        && (path == "/" || path == "/operations" || path == "/health/live"
-            || Extensions.Contains(Path.GetExtension(path.Value ?? "")));
+        PublicInterfacePaths.Contains(path.Value ?? string.Empty);
 
     public static async Task InvokeAsync(HttpContext context, Func<Task> next)
     {
