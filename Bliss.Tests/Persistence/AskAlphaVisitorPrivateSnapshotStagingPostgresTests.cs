@@ -173,25 +173,25 @@ public sealed class AskAlphaVisitorPrivateSnapshotStagingPostgresTests
                     request.WorkspaceId.ToString("N"), request.Issuer,
                     request.SubjectSha256, request.Purpose, request.NoticeVersion,
                     request.RetryKey, contentDigest));
-                Assert.Throws<CryptographicException>(() =>
+                Assert.ThrowsAny<CryptographicException>(() =>
                     cipher.Decrypt(nonce, ciphertext, tag,
                         new byte[ciphertext.Length], wrongOwner));
 
                 var tampered = (byte[])ciphertext.Clone();
                 tampered[0] ^= 0x01;
-                Assert.Throws<CryptographicException>(() =>
+                Assert.ThrowsAny<CryptographicException>(() =>
                     cipher.Decrypt(nonce, tampered, tag,
                         new byte[tampered.Length], associatedData));
 
                 var changedTag = (byte[])tag.Clone();
                 changedTag[0] ^= 0x01;
-                Assert.Throws<CryptographicException>(() =>
+                Assert.ThrowsAny<CryptographicException>(() =>
                     cipher.Decrypt(nonce, ciphertext, changedTag,
                         new byte[ciphertext.Length], associatedData));
 
                 var wrongKey = RandomNumberGenerator.GetBytes(32);
                 using var differentKeyCipher = new AesGcm(wrongKey, 16);
-                Assert.Throws<CryptographicException>(() =>
+                Assert.ThrowsAny<CryptographicException>(() =>
                     differentKeyCipher.Decrypt(nonce, ciphertext, tag,
                         new byte[ciphertext.Length], associatedData));
             }
