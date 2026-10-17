@@ -43,9 +43,17 @@ BEGIN
     AND c."NoticeVersion" = NEW."NoticeVersion"
     AND c."Action" = 'OPT_IN';
 
+  -- One terminal withdrawal applies across ALL already-created ownership
+  -- records for the same workspace + synthetic issuer + subject, not just
+  -- the current owner. Match identity-wide lock scope used by consent.
   IF opt_in_at IS NULL OR EXISTS (
-    SELECT 1 FROM "AskAlphaVisitorConsentStaging" c
-    WHERE c."OwnershipId"=NEW."OwnershipId" AND c."Action"='REVOKE'
+    SELECT 1
+    FROM "AskAlphaVisitorOwnershipStaging" prior
+    JOIN "AskAlphaVisitorConsentStaging" c ON c."OwnershipId"=prior."Id"
+    WHERE prior."WorkspaceId"=NEW."WorkspaceId"
+      AND prior."Issuer"=NEW."Issuer"
+      AND prior."SubjectSha256"=NEW."SubjectSha256"
+      AND c."Action"='REVOKE'
   ) OR NOT EXISTS (
     SELECT 1 FROM "AskAlphaVisitorOwnershipStaging" o
     JOIN "WeddingPlannerPlanningSessions" s ON s."Id"=o."SessionId"

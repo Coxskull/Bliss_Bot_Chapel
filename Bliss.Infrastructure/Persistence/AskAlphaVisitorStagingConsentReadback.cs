@@ -53,13 +53,13 @@ public sealed class AskAlphaVisitorStagingConsentReadback
                   AND c."Purpose"=@purpose AND c."NoticeVersion"=@version
               ),
               EXISTS (
-                SELECT 1 FROM "AskAlphaVisitorConsentStaging" c
-                WHERE c."OwnershipId"=o."Id"
-                  AND c."WorkspaceId"=o."WorkspaceId"
-                  AND c."Issuer"=o."Issuer"
-                  AND c."SubjectSha256"=o."SubjectSha256"
+                SELECT 1 FROM "AskAlphaVisitorOwnershipStaging" prior
+                JOIN "AskAlphaVisitorConsentStaging" c
+                  ON c."OwnershipId"=prior."Id"
+                WHERE prior."WorkspaceId"=o."WorkspaceId"
+                  AND prior."Issuer"=o."Issuer"
+                  AND prior."SubjectSha256"=o."SubjectSha256"
                   AND c."Action"='REVOKE'
-                  AND c."Purpose"=@purpose AND c."NoticeVersion"=@version
               )
             FROM "AskAlphaVisitorOwnershipStaging" o
             JOIN "WeddingPlannerPlanningSessions" s ON s."Id"=o."SessionId"
