@@ -3,6 +3,8 @@ namespace Bliss.Api.Runtime;
 public sealed class BlissRuntimeOptions
 {
     public const string SectionName = "Runtime";
+    // Interface-only hosting. All API/data access and background work are locked.
+    public bool RestrictedPreview { get; set; }
 
     public string DataProtectionKeysPath { get; set; } = string.Empty;
     public string DataProtectionCertificatePath { get; set; } = string.Empty;
