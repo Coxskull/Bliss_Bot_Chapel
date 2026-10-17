@@ -46,7 +46,8 @@ public sealed class AskAlphaVisitorClaimGate
             user.FindAll(ClaimTypes.Role).Count() != 1 ||
             user.FindAll(ClaimTypes.Role).Any(role =>
                 role.Value != options.AskAlphaVisitorRole ||
-                role.Issuer != options.AskAlphaVisitorIssuer) ||
+                role.Issuer != options.AskAlphaVisitorIssuer ||
+                role.OriginalIssuer != options.AskAlphaVisitorIssuer) ||
             !user.IsInRole(options.AskAlphaVisitorRole))
             return blocked;
 
@@ -56,7 +57,9 @@ public sealed class AskAlphaVisitorClaimGate
         var bindings = user.FindAll(options.AskAlphaVisitorSessionClaimType).ToArray();
         if (subjects.Length != 1 || bindings.Length != 1 ||
             subjects[0].Issuer != options.AskAlphaVisitorIssuer ||
+            subjects[0].OriginalIssuer != options.AskAlphaVisitorIssuer ||
             bindings[0].Issuer != options.AskAlphaVisitorIssuer ||
+            bindings[0].OriginalIssuer != options.AskAlphaVisitorIssuer ||
             !Regex.IsMatch(subjects[0].Value, @"\A[A-Za-z0-9._:@-]{8,160}\z",
                 RegexOptions.CultureInvariant) ||
             !Guid.TryParseExact(bindings[0].Value, "D", out var boundSession) ||
