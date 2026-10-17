@@ -78,11 +78,36 @@ CREATE FUNCTION agm_staging_check_consent() RETURNS trigger LANGUAGE plpgsql AS 
 DECLARE opened timestamptz;
 DECLARE optin timestamptz;
 DECLARE revoked boolean;
+DECLARE active_session uuid;
 BEGIN
   PERFORM pg_advisory_xact_lock(hashtextextended(
     replace(NEW."WorkspaceId"::text,'-','') || '|' ||
     NEW."Issuer" || '|' || NEW."SubjectSha256"::text, 5018));
   PERFORM pg_advisory_xact_lock(hashtextextended(NEW."OwnershipId"::text, 5017));
+  -- An OPT_IN must bind to an OPEN, properly sourced synthetic NEW
+  -- planning session and an ACTIVE workspace. The actual DB trigger checks
+  -- direct SQL inserts even when the C# staging service is bypassed.
+  -- Do not gate REVOKE here: a closed session still needs to withdraw.
+  IF NEW."Action"='OPT_IN' THEN
+    SELECT s."Id" INTO active_session
+    FROM "AskAlphaVisitorOwnershipStaging" o
+    JOIN "WeddingPlannerPlanningSessions" s ON s."Id"=o."SessionId"
+    JOIN "WeddingPlannerWorkspaces" w ON w."Id"=o."WorkspaceId"
+    WHERE o."Id"=NEW."OwnershipId"
+      AND o."WorkspaceId"=NEW."WorkspaceId"
+      AND o."Issuer"=NEW."Issuer"
+      AND o."SubjectSha256"=NEW."SubjectSha256"
+      AND s."WorkspaceId"=o."WorkspaceId"
+      AND s."AdvertiserId"=o."AdvertiserId"
+      AND s."SourceSystem"='STAGING_SYNTHETIC_VISITOR_NEW_SESSION'
+      AND s."Status"='OPEN' AND w."Status"='ACTIVE'
+      AND w."AdvertiserId"=o."AdvertiserId"
+    FOR SHARE OF s,w;
+    IF active_session IS NULL THEN
+      RAISE EXCEPTION 'synthetic new opt-in requires an active owned session'
+        USING ERRCODE='23514';
+    END IF;
+  END IF;
   IF NEW."Action"='OPT_IN' AND EXISTS (
     SELECT 1 FROM "AskAlphaVisitorOwnershipStaging" o
     JOIN "AskAlphaVisitorConsentStaging" c ON c."OwnershipId"=o."Id"
