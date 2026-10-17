@@ -17,7 +17,7 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 RUN apt-get update \
     && apt-cache policy perl-base \
-    && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core perl-base \
+    && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core perl-base openssl gosu \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' perl-base)" ge '5.36.0-7+deb12u4' \
     && dpkg-query -W -f='perl-base installed: ${Version}\n' perl-base \
     && rm -rf /var/lib/apt/lists/*
@@ -27,5 +27,7 @@ LABEL org.opencontainers.image.revision=$SOURCE_REVISION
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
-USER $APP_UID
-ENTRYPOINT ["dotnet", "Bliss.Api.dll"]
+COPY --chmod=755 scripts/railway-entrypoint.sh /usr/local/bin/bliss-railway-entrypoint
+# Only the entrypoint initializes mount ownership as root; it immediately drops to app.
+USER root
+ENTRYPOINT ["/usr/local/bin/bliss-railway-entrypoint"]
