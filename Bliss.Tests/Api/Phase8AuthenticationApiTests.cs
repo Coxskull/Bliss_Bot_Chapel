@@ -89,7 +89,8 @@ public sealed class Phase8ReviewerWorkspaceScopeTests
         Assert.Equal(new[] { first, second }, identity.FindAll(claimType).Select(x => x.Value).OrderBy(x => x).ToArray());
 
         using var userInfo = JsonDocument.Parse($$"""{"{{claimType}}":["{{second}}","not-a-guid","{{first}}"]}""");
-        OidcRoleClaimMapper.ApplyReviewerWorkspaceAssignments(identity, userInfo.RootElement, claimType);
+        ObsoleteOidcUserInfoCompatibility.Invoke("ApplyReviewerWorkspaceAssignments",
+            identity, userInfo.RootElement, claimType);
         Assert.Equal(2, identity.FindAll(claimType).Count());
     }
 }
