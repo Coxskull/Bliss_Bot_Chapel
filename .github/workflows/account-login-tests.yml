@@ -1,0 +1,28 @@
+name: Bliss Credential Login UI Tests
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/supabase-login/**'
+      - 'frontend/public/login.html'
+      - 'frontend/public/oauth-consent.bundle.js'
+      - 'scripts/account-login.test.cjs'
+      - '.github/workflows/account-login-tests.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-login-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test scripts/account-login.test.cjs
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: tools/supabase-login
+      - run: npm run build
+        working-directory: tools/supabase-login
+      - name: Check committed browser bundle matches source
+        run: git diff --exit-code -- frontend/public/oauth-consent.bundle.js

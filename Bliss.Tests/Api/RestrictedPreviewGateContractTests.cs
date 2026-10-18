@@ -62,6 +62,7 @@ public sealed class RestrictedPreviewGateContractTests
 
     [Theory]
     [InlineData("/production.html")]
+    [InlineData("/login.html")]
     [InlineData("/brand-intake.html")]
     [InlineData("/operations")]
     [InlineData("/operations/generated/example.png")]

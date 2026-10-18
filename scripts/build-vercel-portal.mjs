@@ -14,7 +14,7 @@ const output = resolve(root, '.vercel-portal');
 let html = await readFile(resolve(source, 'global-media.html'), 'utf8');
 // Open the whole protected workspace on the application origin. Never split
 // its session, CSRF and OIDC requests across Vercel and Railway origins.
-for (const route of ['/', '/production.html', '/brand-intake.html']) {
+for (const route of ['/', '/production.html', '/brand-intake.html', '/login.html']) {
   html = html.replaceAll(`href="${route}"`, `href="${new URL(route, origin).href}"`);
 }
 html = html.replaceAll('href="/global-media.html"', 'href="/"');
