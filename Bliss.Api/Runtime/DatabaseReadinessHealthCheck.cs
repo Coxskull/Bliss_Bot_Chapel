@@ -1,4 +1,5 @@
 using Bliss.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Bliss.Api.Runtime;
@@ -15,9 +16,13 @@ public sealed class DatabaseReadinessHealthCheck(
             await using var scope = scopeFactory.CreateAsyncScope();
             var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
             var connected = await db.Database.CanConnectAsync(cancellationToken);
-            return connected
-                ? HealthCheckResult.Healthy("Database connection succeeded.")
-                : HealthCheckResult.Unhealthy("Database connection failed.");
+            if (!connected)
+                return HealthCheckResult.Unhealthy("Database connection failed.");
+            if (!db.Database.IsRelational())
+                return HealthCheckResult.Unhealthy("A relational application database is required.");
+            if ((await db.Database.GetPendingMigrationsAsync(cancellationToken)).Any())
+                return HealthCheckResult.Unhealthy("Application database migrations are pending.");
+            return HealthCheckResult.Healthy("Database connection succeeded and application migrations are current.");
         }
         catch (Exception exception)
         {
