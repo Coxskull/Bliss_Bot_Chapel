@@ -28,6 +28,8 @@ python3 scripts/agm-website-preflight.py \
 - **Never** use POST/PUT/PATCH/DELETE, authentication, real contact testing, browser sessions, CRM queries, checkouts, Stripe APIs or payouts in this script.
 - The GitHub Actions workflow runs only **offline synthetic unit tests**. It does not schedule live site access or modify any hosted system.
 
+- Privacy guard: report `title_present` and `h1_present` instead of raw text, which might contain personal data. Only explicitly allowlisted, generic first-party policy URLs are fetched or recorded. Unexpected policy-looking paths are `UNVERIFIED_NONCANONICAL_LINKS_PRESENT` and are neither fetched nor exported. Inspect custom GHL slugs manually in an authorized browser.
+
 ## Interpreting the output
 
 | Observation | Legitimate conclusion |
