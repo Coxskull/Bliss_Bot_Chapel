@@ -10,6 +10,8 @@ import html.parser
 import json
 import pathlib
 import re
+import socket
+import ssl
 import sys
 import urllib.error
 import urllib.parse
@@ -90,7 +92,11 @@ def validate_root(value):
 
 
 def safe_url(base, link):
-    """Return same-site HTTPS URL without query/fragment; never a private host."""
+    """Return only approved HTTPS hostnames without query/fragment.
+
+    DNS answers are supplied by the audit runtime and are not independently
+    validated by this URL filter. Do not infer DNS security from hostname checks.
+    """
     try:
         dest = urllib.parse.urlsplit(urllib.parse.urljoin(base, link))
         if (dest.scheme != 'https' or dest.hostname not in HOSTS or
@@ -111,6 +117,30 @@ class SameSiteOnly(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, uri)
 
 
+def classify_transport_error(error):
+    """Report safe error categories without exposing private URLs or exception text.
+
+    Failures are localized to this auditor's network/runtime. A DNS failure
+    here alone is NOT evidence that the website's authoritative DNS is broken.
+    """
+    reason = error.reason if isinstance(error, urllib.error.URLError) else error
+    if isinstance(reason, ssl.SSLCertVerificationError):
+        return 'TLS_CERTIFICATE_VALIDATION_FAILED_IN_AUDIT_RUNTIME'
+    if isinstance(reason, socket.gaierror):
+        return 'DNS_LOOKUP_FAILED_IN_AUDIT_RUNTIME'
+    if isinstance(reason, (socket.timeout, TimeoutError)):
+        return 'NETWORK_TIMEOUT_IN_AUDIT_RUNTIME'
+    if isinstance(reason, ConnectionRefusedError):
+        return 'CONNECTION_REFUSED_IN_AUDIT_RUNTIME'
+    if isinstance(reason, ssl.SSLError):
+        return 'TLS_HANDSHAKE_FAILED_IN_AUDIT_RUNTIME'
+    # This literal is emitted ONLY by SameSiteOnly above. Never copy arbitrary
+    # exception text into the public evidence JSON.
+    if isinstance(reason, str) and reason == 'redirect leaves approved HTTPS website scope':
+        return 'OUT_OF_SCOPE_REDIRECT_REJECTED'
+    return 'NETWORK_ACCESS_UNVERIFIED'
+
+
 def public_get(url, timeout=10, opener=None):
     if safe_url(url, url) != url:
         raise ValueError('unsafe requested URL')
@@ -128,7 +158,7 @@ def public_get(url, timeout=10, opener=None):
     except urllib.error.HTTPError as exc:
         return {'state': 'HTTP_ERROR', 'status': exc.code}
     except (OSError, ValueError, TimeoutError) as exc:
-        return {'state': 'INACCESSIBLE', 'reason': type(exc).__name__}
+        return {'state': 'INACCESSIBLE', 'reason': classify_transport_error(exc)}
 
 
 def audit(origin, getter=public_get):
@@ -151,8 +181,10 @@ def audit(origin, getter=public_get):
     }
     homepage = getter(origin)
     report['homepage'] = {k: v for k, v in homepage.items() if k != 'body'}
-    if homepage.get('state') != 'RETRIEVED' or homepage.get('status') != 200 or homepage.get('content_type') != 'text/html':
+    if homepage.get('state') != 'RETRIEVED' or homepage.get('status') != 200 or homepage.get('content_type') not in ('text/html', 'application/xhtml+xml'):
         report['notes'].append('Homepage could not be independently parsed; policy absence is not established.')
+        if homepage.get('reason') == 'DNS_LOOKUP_FAILED_IN_AUDIT_RUNTIME':
+            report['notes'].append('DNS failure is local to this audit runtime; authoritative domain DNS status remains UNVERIFIED.')
         return report
     parsed = PublicHtml()
     parsed.feed(homepage.get('body', ''))

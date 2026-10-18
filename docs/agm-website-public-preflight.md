@@ -18,6 +18,11 @@ python3 scripts/agm-website-preflight.py \
 
 - Exit **0**: homepage retrieved as HTTP 200 `text/html`; `website_status=HOMEPAGE_RETRIEVED_NEEDS_REVIEW`, **not Stripe-ready**.
 - Exit **2**: inaccessible, inconclusive, or invalid input. `INSUFFICIENT_EVIDENCE` is **not proof the website is globally down** or that any policy is missing.
+- `homepage.reason=DNS_LOOKUP_FAILED_IN_AUDIT_RUNTIME`: this auditor could not resolve the host. It does **not** establish that the authoritative ALPHA DNS records are wrong; repeat with a functioning resolver and inspect GHL domain bindings.
+- `TLS_CERTIFICATE_VALIDATION_FAILED_IN_AUDIT_RUNTIME`: HTTPS certificate verification failed from this auditor; requires independent TLS/domain check. Do not bypass TLS checks.
+- `NETWORK_TIMEOUT_IN_AUDIT_RUNTIME` or `CONNECTION_REFUSED_IN_AUDIT_RUNTIME`: local network path failed, not proof of a global outage.
+- `OUT_OF_SCOPE_REDIRECT_REJECTED`: HTTP redirect attempted to leave the approved first-party HTTPS hostname scope; never auto-follow or crawl external destinations.
+- `NETWORK_ACCESS_UNVERIFIED`: transport error not uniquely classifiable. No raw exception strings, proxy URLs or credential-bearing diagnostics are written into JSON.
 - Output: page title, H1, footer link count, static HTML form-type inventory, discovered same-site legal/support links, and their public GET response status. No page body, form values, hidden fields, credentials, cookies, URL query strings, or personal contact details are exported.
 - Hard limits: 1 MiB per response; HTTPS-only `alphacreativecontent.com` or `www.alphacreativecontent.com`; same-host-family redirects, no traversal into external domains; no arbitrary destination.
 - **Never** use POST/PUT/PATCH/DELETE, authentication, real contact testing, browser sessions, CRM queries, checkouts, Stripe APIs or payouts in this script.
