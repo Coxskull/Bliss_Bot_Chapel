@@ -1,0 +1,27 @@
+name: Bliss Offline Operational Preflight
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/bliss-operational-preflight.py'
+      - 'scripts/test_bliss_operational_preflight.py'
+      - '.github/workflows/bliss-operational-preflight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-inventory-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run synthetic inventory tests without hosting credentials
+        run: |
+          python -m py_compile scripts/bliss-operational-preflight.py
+          python -m unittest discover -s scripts -p 'test_bliss_operational_preflight.py' -v
