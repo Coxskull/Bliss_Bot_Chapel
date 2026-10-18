@@ -12,11 +12,10 @@ public sealed class InitialMigrationRehearsalTests
     private const string DisposableConnection =
         "Host=127.0.0.1;Port=5432;Database=bliss_initial_migration_ci;Username=postgres;Password=postgres";
 
-    [Fact]
+    [InitialMigrationPostgresFact]
     public async Task Empty_database_migrates_matches_model_and_supports_rolled_back_application_write()
     {
         var configured = Environment.GetEnvironmentVariable("BLISS_INITIAL_MIGRATION_CI");
-        if (string.IsNullOrEmpty(configured)) return;
         // Never accept a hosted connection, even if accidentally supplied by CI.
         Assert.Equal(DisposableConnection, configured);
         var options = new DbContextOptionsBuilder<BlissDbContext>().UseNpgsql(configured).Options;
@@ -69,5 +68,14 @@ public sealed class InitialMigrationRehearsalTests
         Assert.Equal(expected, (await db.Database.GetAppliedMigrationsAsync()).ToArray());
         await File.WriteAllTextAsync(Path.Combine(output, "result.txt"),
             $"PASS: {expected.Length} migrations; model columns present; synthetic write/read rolled back; second migration no-op. Disposable CI only; hosted acceptance not claimed.\n");
+    }
+}
+
+public sealed class InitialMigrationPostgresFactAttribute : FactAttribute
+{
+    public InitialMigrationPostgresFactAttribute()
+    {
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BLISS_INITIAL_MIGRATION_CI")))
+            Skip = "Requires the explicitly configured disposable initial-migration fixture.";
     }
 }
