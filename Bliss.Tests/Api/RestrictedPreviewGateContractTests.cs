@@ -75,7 +75,7 @@ public sealed class RestrictedPreviewGateContractTests
     [InlineData("/index.html/anything")]
     [InlineData("/assets/private.jpg")]
     [InlineData("/%2e%2e/operations")]
-    [InlineData("/PREVIEW-STATUS")]
+    [InlineData("/preview-status/private")]
     public async Task Private_or_unreviewed_get_paths_fail_closed_with_nonoperational_json(
         string path)
     {
