@@ -22,6 +22,14 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 SecretFileLoader.Apply(builder.Configuration, builder.Environment.ContentRootPath);
+// Explicit process-local diagnostic mode: no HTTP listener or application jobs.
+if (args.Contains("--verify-hosted-database=true", StringComparer.Ordinal))
+{
+    var diagnostic = await HostedDatabaseDiagnostic.RunAsync(builder.Configuration.GetConnectionString("DefaultConnection"));
+    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(diagnostic));
+    Environment.ExitCode = diagnostic.Success ? 0 : 2;
+    return;
+}
 var applyMigrations = MigrationCommand.Requested(args);
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 var authentication = builder.Configuration
@@ -136,23 +144,7 @@ builder.Services.AddSingleton<OperationalEventStore>();
 builder.Services.AddScoped<OperatorIdentity>();
 builder.Services.AddScoped<WeddingPlannerAccess>();
 builder.Services.AddProblemDetails();
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.ForwardLimit = 1;
-    foreach (var value in runtime.KnownProxies)
-    {
-        if (!IPAddress.TryParse(value, out var address))
-        {
-            throw new InvalidOperationException($"Runtime:KnownProxies contains invalid IP address '{value}'.");
-        }
-
-        if (!options.KnownProxies.Contains(address))
-        {
-            options.KnownProxies.Add(address);
-        }
-    }
-});
+builder.Services.Configure<ForwardedHeadersOptions>(options => TrustedForwarding.Configure(options, runtime));
 var dataProtection = builder.Services
     .AddDataProtection()
     .SetApplicationName("BlissBotChapel");
@@ -342,6 +334,14 @@ if (applyMigrations)
     return;
 }
 
+var ingressObservations = 0;
+app.Use(async (context, next) =>
+{
+    var observation = IngressDiagnostic.Observe(context, runtime);
+    if (observation is not null && Interlocked.Increment(ref ingressObservations) <= 3)
+        app.Logger.LogInformation("BlissIngressDiagnostic {Observation}", System.Text.Json.JsonSerializer.Serialize(observation));
+    await next(context);
+});
 app.UseForwardedHeaders();
 app.Use(async (context, next) =>
 {

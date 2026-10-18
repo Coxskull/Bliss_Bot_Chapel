@@ -5,11 +5,13 @@ public sealed class BlissRuntimeOptions
     public const string SectionName = "Runtime";
     // Interface-only hosting. All API/data access and background work are locked.
     public bool RestrictedPreview { get; set; }
+    public bool IngressDiagnostics { get; set; }
 
     public string DataProtectionKeysPath { get; set; } = string.Empty;
     public string DataProtectionCertificatePath { get; set; } = string.Empty;
     public string DataProtectionCertificatePassword { get; set; } = string.Empty;
     public string[] KnownProxies { get; set; } = [];
+    public string ForwardedForHeaderName { get; set; } = "X-Forwarded-For";
     public int WriteRateLimitPermitLimit { get; set; } = 30;
     public int AuthenticationRateLimitPermitLimit { get; set; } = 10;
     public int RateLimitWindowSeconds { get; set; } = 60;

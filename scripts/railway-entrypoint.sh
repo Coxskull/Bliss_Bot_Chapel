@@ -3,8 +3,9 @@ set -eu
 umask 077
 if [ "$(id -u)" = 0 ]; then
     install -d -m 0700 -o app -g app /data/keys /data/secrets
-    exec gosu app /usr/local/bin/bliss-railway-entrypoint "$@"
+    exec setpriv --reuid=app --regid=app --init-groups --inh-caps=-all --ambient-caps=-all --no-new-privs /usr/local/bin/bliss-railway-entrypoint "$@"
 fi
+test "$(id -u)" -ne 0
 : "${BLISS_DP_CERTIFICATE_BASE64:?Data protection certificate secret is required}"
 : "${Runtime__DataProtectionCertificatePassword:?Certificate password is required}"
 printf '%s' "$BLISS_DP_CERTIFICATE_BASE64" | base64 -d > /data/secrets/session.pfx.tmp
