@@ -5,8 +5,12 @@ on:
     paths:
       - 'tools/supabase-login/**'
       - 'frontend/public/login.html'
+      - 'frontend/public/account-setup*'
+      - 'frontend/public/invitation-entry.js'
+      - 'frontend/public/index.html'
       - 'frontend/public/oauth-consent.bundle.js'
       - 'scripts/account-login.test.cjs'
+      - 'scripts/account-setup.test.cjs'
       - '.github/workflows/account-login-tests.yml'
 permissions:
   contents: read
@@ -19,10 +23,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test scripts/account-login.test.cjs
+      - run: node --test scripts/account-login.test.cjs scripts/account-setup.test.cjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
         working-directory: tools/supabase-login
       - run: npm run build
         working-directory: tools/supabase-login
       - name: Check committed browser bundle matches source
-        run: git diff --exit-code -- frontend/public/oauth-consent.bundle.js
+        run: git diff --exit-code -- frontend/public/oauth-consent.bundle.js frontend/public/account-setup.bundle.js
