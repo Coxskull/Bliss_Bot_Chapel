@@ -33,3 +33,32 @@ jobs:
           node scripts/test-lead-containment.mjs
           node scripts/test-lead-function-security.mjs
       # No production URL, database credential, Supabase key, deployment or DDL.
+
+  real-postgres-event-trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-ci-fixture-only
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGDATABASE: postgres
+      PGUSER: postgres
+      PGPASSWORD: isolated-ci-fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify disposable real PostgreSQL event-trigger behavior
+        run: bash tests/lead-containment/verify-real-event-trigger.sh
+      # Uses only a disposable runner-local database. No Supabase credentials.
