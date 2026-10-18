@@ -1,0 +1,8 @@
+{
+  "name": "alpha-lead-containment-tests",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.10"
+  }
+}
