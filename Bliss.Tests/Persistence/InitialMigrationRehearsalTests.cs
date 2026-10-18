@@ -16,6 +16,41 @@ public sealed class InitialMigrationRehearsalTests
         "Host=127.0.0.1;Port=5432;Database=bliss_initial_migration_ci;Username=postgres;Password=postgres";
 
     [InitialMigrationPostgresFact]
+    public async Task Reviewed_idempotent_SQL_initializes_a_separate_empty_database_and_replays()
+    {
+        var configured = Environment.GetEnvironmentVariable("BLISS_INITIAL_MIGRATION_CI");
+        Assert.Equal(DisposableConnection, configured);
+        await using (var admin = new NpgsqlConnection(configured))
+        {
+            await admin.OpenAsync();
+            await using var create = admin.CreateCommand();
+            create.CommandText = "CREATE DATABASE bliss_initial_script_ci";
+            await create.ExecuteNonQueryAsync();
+        }
+        var scriptConnection = new NpgsqlConnectionStringBuilder(configured) { Database = "bliss_initial_script_ci" };
+        var options = new DbContextOptionsBuilder<BlissDbContext>().UseNpgsql(scriptConnection.ConnectionString).Options;
+        await using var db = new BlissDbContext(options);
+        var script = db.GetService<IMigrator>().GenerateScript(options: MigrationsSqlGenerationOptions.Idempotent);
+        await using var connection = new NpgsqlConnection(scriptConnection.ConnectionString);
+        await connection.OpenAsync();
+        // Execute the exact exported SQL path, rather than assuming it behaves like MigrateAsync.
+        for (var iteration = 0; iteration < 2; iteration++)
+        {
+            await using var apply = connection.CreateCommand();
+            apply.CommandText = script;
+            apply.CommandTimeout = 120;
+            await apply.ExecuteNonQueryAsync();
+            Assert.Equal(db.Database.GetMigrations().ToArray(), (await db.Database.GetAppliedMigrationsAsync()).ToArray());
+            Assert.Empty(await db.Database.GetPendingMigrationsAsync());
+            Assert.Empty(await db.Advertisers.AsNoTracking().ToListAsync());
+        }
+        var output = Path.Combine(Directory.GetCurrentDirectory(), "MigrationEvidence");
+        Directory.CreateDirectory(output);
+        await File.WriteAllTextAsync(Path.Combine(output, "sql-replay-result.txt"),
+            "PASS: exported idempotent SQL applied twice to a separate disposable database; migration history matches; application query succeeds. Hosted database unchanged.\n");
+    }
+
+    [InitialMigrationPostgresFact]
     public async Task Empty_database_migrates_matches_model_and_supports_rolled_back_application_write()
     {
         var configured = Environment.GetEnvironmentVariable("BLISS_INITIAL_MIGRATION_CI");
