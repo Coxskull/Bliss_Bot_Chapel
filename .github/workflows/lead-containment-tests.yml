@@ -8,6 +8,7 @@ on:
       - 'docs/security/lead-generation-function-*.sql'
       - 'scripts/test-lead-containment.mjs'
       - 'scripts/test-lead-function-security.mjs'
+      - 'scripts/lead-public-rest-denial-probe*.mjs'
       - 'tests/lead-containment/**'
       - '.github/workflows/lead-containment-tests.yml'
   workflow_dispatch:
@@ -26,6 +27,8 @@ jobs:
           node-version: '22'
       - name: Install locked isolated test dependency
         run: npm ci --prefix tests/lead-containment --ignore-scripts --no-audit --no-fund
+      - name: Test opt-in public Data API probe offline (no network/keys)
+        run: node --test scripts/lead-public-rest-denial-probe.test.mjs
       - name: Run synthetic PostgreSQL/WASM before and after checks
         run: |
           test ! -e node_modules
