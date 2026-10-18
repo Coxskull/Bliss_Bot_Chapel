@@ -215,7 +215,7 @@ def audit(origin, getter=public_get):
         raw_path = urllib.parse.urlsplit(url).path
         lower = raw_path.lower().replace('-', ' ').replace('_', ' ')
         for policy, tokens in POLICIES.items():
-            if not any(re.search(rf'\\b{re.escape(t)}\\b', lower) for t in tokens):
+            if not any(re.search(rf'\b{re.escape(t)}\b', lower) for t in tokens):
                 continue
             # Same-site hostnames do not make every untrusted URL path safe.
             canonical = raw_path.lower().rstrip('/') or '/'
