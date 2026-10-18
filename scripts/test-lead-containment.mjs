@@ -35,6 +35,12 @@ await db.exec(await readFile(new URL('../docs/security/lead-generation-containme
 const afterCatalog = (await db.query(verification)).rows;
 assert.equal(afterCatalog.length,4);checks++;
 for (const row of afterCatalog) { assert.equal(row.passed,true);checks++; }
+// PostgreSQL 17 MAINTAIN is a table privilege too. A residual grant must not
+// allow the catalog verifier to claim all unnecessary public grants are gone.
+await db.exec('GRANT MAINTAIN ON creator_applications TO anon');
+assert.equal((await db.query(verification)).rows.find(r=>r.object_name==='creator_applications').passed,false);checks++;
+await db.exec('REVOKE MAINTAIN ON creator_applications FROM anon');
+assert.equal((await db.query(verification)).rows.find(r=>r.object_name==='creator_applications').passed,true);checks++;
 for (const role of ['anon','authenticated']) {
   for (const table of tables) {
     for (const sql of [`SELECT * FROM ${table}`,`INSERT INTO ${table} VALUES(2,'denied@example.invalid')`,
