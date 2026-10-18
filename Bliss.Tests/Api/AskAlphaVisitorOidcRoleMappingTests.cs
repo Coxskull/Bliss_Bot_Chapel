@@ -81,7 +81,7 @@ public sealed class AskAlphaVisitorOidcRoleMappingTests
     {
         var id=SignedIdentity();
         using var info=JsonDocument.Parse("{\"roles\":[\"bliss.ask_alpha_visitor\"]}");
-        OidcRoleClaimMapper.Apply(id,info.RootElement,"roles");
+        ObsoleteOidcUserInfoCompatibility.Invoke("Apply",id,info.RootElement,"roles");
         OidcRoleClaimMapper.ProjectValidatedVisitorRole(id,Configuration());
         Assert.Empty(id.FindAll(ClaimTypes.Role));
     }
@@ -139,7 +139,7 @@ public sealed class AskAlphaVisitorOidcRoleMappingTests
         Assert.Single(id.FindAll(ClaimTypes.Role));
 
         using var json=JsonDocument.Parse(userInfo);
-        OidcRoleClaimMapper.Apply(id,json.RootElement,"roles");
+        ObsoleteOidcUserInfoCompatibility.Invoke("Apply",id,json.RootElement,"roles");
         OidcRoleClaimMapper.InvalidateVisitorProjectionIfUserInfoContainsRoles(
             id,json.RootElement,Configuration());
 
