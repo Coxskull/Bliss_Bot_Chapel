@@ -1,8 +1,8 @@
 #history img { display: block; max-width: 100%; max-height: 450px; margin: 1rem 0; object-fit: contain; }
-#history article { border-top: 1px solid #d9cce9; padding: 1.5rem 0; }
+#history article { border-top: 1px solid var(--alpha-border); padding: 1.5rem 0; }
 #history p, #brief-details p { overflow-wrap: anywhere; white-space: pre-wrap; }
 #brief-details pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.6; }
-#history .review { padding: 1rem; margin: .8rem 0; background: #f7f4fc; border-radius: 8px; }
+#history .review { padding: 1rem; margin: .8rem 0; background: #ffffff08; border-radius: 8px; }
 #plans p, #plans pre, #creative p { overflow-wrap: anywhere; white-space: pre-wrap; }
 header { flex-wrap: wrap; }
 pre, .record p { overflow-wrap: anywhere; white-space: pre-wrap; }
