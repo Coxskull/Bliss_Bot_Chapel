@@ -8,6 +8,7 @@ on:
       - 'docs/security/lead-generation-function-*.sql'
       - 'scripts/test-lead-containment.mjs'
       - 'scripts/test-lead-function-security.mjs'
+      - 'scripts/test-lead-harness-safety.mjs'
       - 'scripts/lead-public-rest-denial-probe*.mjs'
       - 'tests/lead-containment/**'
       - '.github/workflows/lead-containment-tests.yml'
@@ -25,6 +26,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify fixture connection isolation offline
+        run: node --test scripts/test-lead-harness-safety.mjs
       - name: Install locked isolated test dependency
         run: npm ci --prefix tests/lead-containment --ignore-scripts --no-audit --no-fund
       - name: Test opt-in public Data API probe offline (no network/keys)
