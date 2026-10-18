@@ -2,6 +2,8 @@
 """Offline synthetic fixtures: absolutely no outbound HTTP requests."""
 import importlib.util
 import pathlib
+import socket
+import ssl
 import unittest
 import urllib.error
 import urllib.request
@@ -102,6 +104,65 @@ class PublicSitePreflightTests(unittest.TestCase):
         self.assertNotIn('never-include-this', str(r))
         self.assertNotIn('secret=value', str(r))
         self.assertEqual(r['form_inventory']['input_type_sets'], [['checkbox','hidden']])
+
+
+    def test_dns_error_is_a_runtime_observation_not_domain_dns_failure(self):
+        error = urllib.error.URLError(socket.gaierror(-3, 'Temporary failure in name resolution'))
+        self.assertEqual(
+            mod.classify_transport_error(error),
+            'DNS_LOOKUP_FAILED_IN_AUDIT_RUNTIME')
+        class NoNetworkOpener:
+            def open(self, request, timeout=0):
+                raise error
+        response = mod.public_get(
+            'https://alphacreativecontent.com/', opener=NoNetworkOpener())
+        self.assertEqual(response['state'], 'INACCESSIBLE')
+        self.assertEqual(response['reason'], 'DNS_LOOKUP_FAILED_IN_AUDIT_RUNTIME')
+        result = mod.audit('https://alphacreativecontent.com/', getter=lambda _: response)
+        self.assertEqual(result['website_status'], 'INSUFFICIENT_EVIDENCE')
+        self.assertTrue(any('domain DNS status remains UNVERIFIED' in n for n in result['notes']))
+        self.assertTrue(all(item['state'] == 'UNVERIFIED'
+                            for item in result['policy_links'].values()))
+
+    def test_tls_timeout_and_redirect_are_distinct_and_redacted(self):
+        cases = [
+            (urllib.error.URLError(ssl.SSLCertVerificationError(
+                1, 'certificate verify failed token=must-not-leak')),
+             'TLS_CERTIFICATE_VALIDATION_FAILED_IN_AUDIT_RUNTIME'),
+            (urllib.error.URLError(socket.timeout('token=must-not-leak')),
+             'NETWORK_TIMEOUT_IN_AUDIT_RUNTIME'),
+            (urllib.error.URLError(ConnectionRefusedError('token=must-not-leak')),
+             'CONNECTION_REFUSED_IN_AUDIT_RUNTIME'),
+            (urllib.error.URLError('redirect leaves approved HTTPS website scope'),
+             'OUT_OF_SCOPE_REDIRECT_REJECTED'),
+            (urllib.error.URLError('token=must-not-leak'),
+             'NETWORK_ACCESS_UNVERIFIED'),
+        ]
+        for exception, expected in cases:
+            with self.subTest(expected=expected):
+                class ErrorOpener:
+                    def open(self, request, timeout=0):
+                        raise exception
+                result = mod.public_get(
+                    'https://alphacreativecontent.com/', opener=ErrorOpener())
+                self.assertEqual(result['reason'], expected)
+                self.assertNotIn('must-not-leak', str(result))
+
+    def test_xhtml_homepage_can_be_parsed_without_claiming_legal_adequacy(self):
+        result = mod.audit('https://alphacreativecontent.com/', getter=lambda _: {
+            'state': 'RETRIEVED', 'status': 200,
+            'content_type': 'application/xhtml+xml',
+            'body': '<html><head><title>ALPHA</title></head><body><h1>Media</h1></body></html>'
+        })
+        self.assertEqual(result['website_status'], 'HOMEPAGE_RETRIEVED_NEEDS_REVIEW')
+        self.assertEqual(result['title_observed'], 'ALPHA')
+        self.assertEqual(result['legal_adequacy'], 'UNVERIFIED')
+        self.assertEqual(result['stripe_payments'], 'UNVERIFIED')
+
+    def test_unknown_network_error_is_not_confused_with_a_website_response(self):
+        result = mod.classify_transport_error(
+            urllib.error.URLError('a unique unknown proxy error'))
+        self.assertEqual(result, 'NETWORK_ACCESS_UNVERIFIED')
 
 
 if __name__ == '__main__':
