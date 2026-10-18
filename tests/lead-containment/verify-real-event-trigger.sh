@@ -6,7 +6,7 @@ set -euo pipefail
 : "${PGDATABASE:?set isolated PGDATABASE}"
 : "${PGUSER:?set isolated PGUSER}"
 : "${PGPASSWORD:?set isolated PGPASSWORD}"
-if [[ "${PGHOST}" != "127.0.0.1" || "${PGDATABASE}" != "postgres" || "${PGUSER}" != "postgres" ]]; then
+if [[ "${PGHOST}" != "127.0.0.1" || "${PGPORT}" != "5432" || "${PGDATABASE}" != "postgres" || "${PGUSER}" != "postgres" || "${PGPASSWORD}" != "isolated-ci-fixture-only" ]]; then
   echo "REFUSED: real event-trigger test requires localhost disposable postgres service" >&2
   exit 1
 fi
@@ -15,7 +15,13 @@ if ! command -v psql >/dev/null; then
   exit 1
 fi
 # PostgreSQL service is only visible on this runner. Never log credentials.
-result="$(psql -X -A -t -v ON_ERROR_STOP=1 -f tests/lead-containment/real-event-trigger-driver.sql)"
+# libpq accepts PGHOSTADDR/PGSERVICE independently of PGHOST. Do not let
+# inherited connection options redirect a destructive disposable fixture.
+result="$(env -i PATH="$PATH" PGPASSWORD=isolated-ci-fixture-only \
+  PGSSLMODE=disable PGCONNECT_TIMEOUT=5 \
+  psql --host=127.0.0.1 --port=5432 --dbname=postgres --username=postgres \
+    --no-password -X -A -t -v ON_ERROR_STOP=1 \
+    -f tests/lead-containment/real-event-trigger-driver.sql)"
 printf '%s\n' "$result" | grep -F "PASS: PostgreSQL 17 event trigger auto-RLS"
 count() { printf '%s\n' "$result" | grep -Fxc "$1" || true; }
 if [[ "$(count 'rls_auto_enable|f')" -ne 1 || "$(count 'set_updated_at|f')" -ne 1 ]]; then
