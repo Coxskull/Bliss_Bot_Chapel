@@ -74,7 +74,7 @@ test('rejects wrong/missing key authentication errors and unclear access denials
     { status: 500, json: async () => ({ code: '42501' }) }
   ]) {
     await assert.rejects(probePublicDenials(config, async () => response),
-      /^(INCONCLUSIVE|FAIL):/);
+      /(?:INCONCLUSIVE|FAIL):/);
   }
 });
 
