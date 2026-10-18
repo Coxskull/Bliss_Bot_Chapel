@@ -65,3 +65,37 @@ jobs:
       - name: Verify disposable real PostgreSQL event-trigger behavior
         run: bash tests/lead-containment/verify-real-event-trigger.sh
       # Uses only a disposable runner-local database. No Supabase credentials.
+
+  real-postgrest-http-denial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: isolated-ci-fixture-only
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGDATABASE: postgres
+      PGUSER: postgres
+      PGPASSWORD: isolated-ci-fixture-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify revoked grants via disposable real PostgREST HTTP
+        run: bash tests/lead-containment/verify-local-postgrest-http.sh
+      # All network traffic stays inside ephemeral runner loopback. No actual Supabase.
