@@ -11,7 +11,7 @@ WITH targets AS (
     t.relrowsecurity
     AND NOT EXISTS (
       SELECT 1 FROM pg_roles r
-      CROSS JOIN (VALUES ('SELECT'),('INSERT'),('UPDATE'),('DELETE'),('TRUNCATE'),('REFERENCES'),('TRIGGER')) p(privilege)
+      CROSS JOIN (VALUES ('SELECT'),('INSERT'),('UPDATE'),('DELETE'),('TRUNCATE'),('REFERENCES'),('TRIGGER'),('MAINTAIN')) p(privilege)
       WHERE r.rolname IN ('anon','authenticated')
         AND has_table_privilege(r.oid,t.oid,p.privilege))
     AND NOT EXISTS (
