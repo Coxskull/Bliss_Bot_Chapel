@@ -3,6 +3,11 @@ const status = document.getElementById('status');
 const login = document.getElementById('login');
 const consent = document.getElementById('consent');
 const authorizationId = new URLSearchParams(location.search).get('authorization_id');
+const standalone = location.pathname === '/login.html';
+const requestedReturn = new URLSearchParams(location.search).get('returnUrl');
+const allowedReturnPaths = new Set(['/', '/production.html', '/brand-intake.html',
+  '/ai-workspace.html', '/campaign-handoff.html', '/campaign-measurement.html']);
+const returnPath = allowedReturnPaths.has(requestedReturn) ? requestedReturn : '/';
 let supabase, config;
 function fail(message) { status.textContent = message; }
 function redirect(target) {
@@ -12,6 +17,12 @@ function redirect(target) {
   location.assign(url.href);
 }
 async function showConsent() {
+  // Supabase password login alone never grants a Bliss session. The existing
+  // code+PKCE callback must still verify the tokens, subject approval and roles.
+  if (standalone && !authorizationId) {
+    location.assign('/api/auth/login?returnUrl=' + encodeURIComponent(returnPath));
+    return;
+  }
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) { login.hidden = false; status.textContent = 'Use your approved test account.'; return; }
   const { data, error: detailError } = await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
@@ -30,7 +41,8 @@ login.addEventListener('submit', async event => {
     login.password.value = '';
     if (error) throw new Error('Sign-in failed. Check your credentials and account approval.');
     await showConsent();
-  } catch (error) { fail(error.message); } finally { button.disabled = false; }
+  } catch (error) { fail('Sign-in could not be completed. Check your credentials or try again later.'); }
+  finally { login.password.value = ''; button.disabled = false; }
 });
 for (const action of ['approve', 'deny']) document.getElementById(action).addEventListener('click', async () => {
   const buttons = consent.querySelectorAll('button'); buttons.forEach(button => button.disabled = true);
@@ -43,13 +55,16 @@ for (const action of ['approve', 'deny']) document.getElementById(action).addEve
 });
 (async () => {
   try {
-    if (!authorizationId) throw new Error('Start sign in from Bliss Bot to continue.');
+    if (!authorizationId && !standalone) throw new Error('Start sign in from Bliss Bot to continue.');
     const response = await fetch('/api/auth/supabase-config', { cache: 'no-store' });
     if (!response.ok) throw new Error('Test sign in is not available yet.');
     config = await response.json();
     // Short-lived Supabase UI session stays in this tab. Bliss session cookies
     // are issued only by the backend after token verification and test-user checks.
     supabase = createClient(config.url, config.publishableKey, { auth: { storage: sessionStorage, detectSessionInUrl: false } });
-    await showConsent();
+    if (standalone && !authorizationId) {
+      status.textContent = 'Enter the email and password for your approved ALPHA account.';
+      login.hidden = false;
+    } else await showConsent();
   } catch (error) { fail(error.message); }
 })();
