@@ -21,7 +21,7 @@ internal static class ObsoleteOidcUserInfoCompatibility
         Assert.Equal(typeof(void), method.ReturnType);
         var deprecation = method.GetCustomAttribute<ObsoleteAttribute>();
         Assert.NotNull(deprecation);
-        Assert.Contains("Untrusted UserInfo", deprecation.Message);
+        Assert.Contains("Untrusted UserInfo", deprecation.Message ?? string.Empty);
         // This executes the original legacy entry point, not its replacement.
         // Existing callers still assert that it cannot mutate signed claims.
         method.Invoke(null, new object[] { identity, userInfo, claimType });
