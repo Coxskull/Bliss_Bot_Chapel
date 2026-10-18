@@ -12,11 +12,16 @@ permissions:
 
 jobs:
   initial-migrations:
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: [16, 18]
+    name: Initial migrations (PostgreSQL ${{ matrix.postgres }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
       postgres:
-        image: postgres:16
+        image: postgres:${{ matrix.postgres }}
         env:
           POSTGRES_DB: bliss_initial_migration_ci
           POSTGRES_USER: postgres
@@ -46,7 +51,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: initial-migration-rehearsal
+          name: initial-migration-rehearsal-pg${{ matrix.postgres }}
           path: |
             **/MigrationEvidence/*
             MigrationTestResults/*.trx
