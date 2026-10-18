@@ -144,23 +144,7 @@ builder.Services.AddSingleton<OperationalEventStore>();
 builder.Services.AddScoped<OperatorIdentity>();
 builder.Services.AddScoped<WeddingPlannerAccess>();
 builder.Services.AddProblemDetails();
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.ForwardLimit = 1;
-    foreach (var value in runtime.KnownProxies)
-    {
-        if (!IPAddress.TryParse(value, out var address))
-        {
-            throw new InvalidOperationException($"Runtime:KnownProxies contains invalid IP address '{value}'.");
-        }
-
-        if (!options.KnownProxies.Contains(address))
-        {
-            options.KnownProxies.Add(address);
-        }
-    }
-});
+builder.Services.Configure<ForwardedHeadersOptions>(options => TrustedForwarding.Configure(options, runtime));
 var dataProtection = builder.Services
     .AddDataProtection()
     .SetApplicationName("BlissBotChapel");
