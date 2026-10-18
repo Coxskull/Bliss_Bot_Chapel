@@ -1,0 +1,54 @@
+name: Initial PostgreSQL migration rehearsal
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  initial-migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: bliss_initial_migration_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d bliss_initial_migration_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Fixed disposable loopback fixture. Never provide repository/hosted secrets.
+      BLISS_INITIAL_MIGRATION_CI: Host=127.0.0.1;Port=5432;Database=bliss_initial_migration_ci;Username=postgres;Password=postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Rehearse full migration chain, model compatibility and transactional write
+        run: >-
+          dotnet test Bliss.Tests/Bliss.Tests.csproj --configuration Release
+          --filter FullyQualifiedName~InitialMigrationRehearsalTests
+          --logger "trx;LogFileName=initial-migrations.trx"
+          --results-directory MigrationTestResults
+      - name: Preserve migration SQL and execution evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: initial-migration-rehearsal
+          path: |
+            **/MigrationEvidence/*
+            MigrationTestResults/*.trx
+          if-no-files-found: error
+          retention-days: 14
