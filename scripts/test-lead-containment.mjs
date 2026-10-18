@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 const db = new PGlite();
 const tables = ['creator_applications', 'advertiser_inquiries', 'contact_inquiries'];
+const verification = await readFile(new URL('../docs/security/lead-generation-containment-verification.sql',import.meta.url),'utf8');
 let checks = 0;
 await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
   GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;`);
@@ -27,7 +28,13 @@ for (const role of ['anon','authenticated']) {
   assert.equal((await asRole(role,'SELECT count(*)::int AS n FROM alpha_lead_summary')).rows[0].n,3);checks++;
 }
 console.log('BEFORE: both public roles can read all synthetic fixture tables/view (8 checks).');
+const beforeCatalog = (await db.query(verification)).rows;
+assert.equal(beforeCatalog.length,4);checks++;
+for (const row of beforeCatalog) { assert.equal(row.passed,false);checks++; }
 await db.exec(await readFile(new URL('../docs/security/lead-generation-containment-proposal.sql',import.meta.url),'utf8'));
+const afterCatalog = (await db.query(verification)).rows;
+assert.equal(afterCatalog.length,4);checks++;
+for (const row of afterCatalog) { assert.equal(row.passed,true);checks++; }
 for (const role of ['anon','authenticated']) {
   for (const table of tables) {
     for (const sql of [`SELECT * FROM ${table}`,`INSERT INTO ${table} VALUES(2,'denied@example.invalid')`,
