@@ -157,7 +157,11 @@ jobs:
           retention-days: 14
 
   container-build:
-    name: Build production container image
+    name: Build production container image (${{ matrix.dockerfile }})
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile: [Dockerfile, Dockerfile.railway]
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -166,12 +170,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" --tag bliss-bot-chapel:ci .
+        run: docker build --file "${{ matrix.dockerfile }}" --build-arg SOURCE_REVISION="$(git rev-parse HEAD)" --tag bliss-bot-chapel:ci .
 
       - name: Test container evidence guardrails
         run: python3 -m unittest discover -s scripts -p 'test_container_runtime.py' -v
 
       - name: Verify isolated container runtime and authentication refusal
+        if: matrix.dockerfile == 'Dockerfile'
         run: python3 scripts/verify-container-runtime.py --image bliss-bot-chapel:ci --revision "$(git rev-parse HEAD)" --output ContainerEvidence
 
       - name: Test vulnerability evidence guardrails
@@ -205,7 +210,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: bliss-container-evidence-${{ github.run_number }}
+          name: bliss-container-evidence-${{ matrix.dockerfile }}-${{ github.run_number }}
           path: |
             ContainerEvidence/
             ContainerVulnerabilities/
