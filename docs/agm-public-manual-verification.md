@@ -19,6 +19,7 @@ The earlier chat runtime could not resolve ALPHA **or** unrelated control domain
 - Fixed HTTPS origin `https://alphacreativecontent.com/`. The existing Python auditor scopes same-site redirects and scrubs request queries and error messages.
 - The workflow deliberately does not fail on auditor exit **2** (`INSUFFICIENT_EVIDENCE`); it preserves the sanitized JSON and prints an inconclusive result. Unexpected execution errors still fail.
 - Artifact and logs contain no raw HTML, visitor data, cookies, authorization headers or credentials. Do not copy live lead information into CI artifacts.
+- The JSON artifact **never includes page title/H1 text** and will fetch/list only explicitly approved generic routes such as `/privacy-policy`, `/terms-of-service`, `/refund-policy` or `/contact`. Noncanonical policy-like links are flagged as `UNVERIFIED_NONCANONICAL_LINKS_PRESENT`, without their paths or content. This intentionally trades discovery coverage for privacy; inspect unusual GHL route slugs in the authenticated builder.
 - GitHub Actions can consume minutes; use manual dispatch for an approved diagnostic need, not recurring polls.
 - Independent human security/release review and explicit owner merge approval remain required. A green CI run is not permission to publish the GHL website or to activate Stripe.
 
