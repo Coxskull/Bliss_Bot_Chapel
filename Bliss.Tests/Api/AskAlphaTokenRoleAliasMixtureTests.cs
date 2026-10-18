@@ -56,11 +56,11 @@ public sealed class AskAlphaTokenRoleAliasMixtureTests
         Assert.Empty(identity.FindAll(ClaimTypes.Role));
         // ClaimsIdentity.FindAll matches claim types case-insensitively:
         // inspect the exact source types for this compatibility assertion.
-        var untouched = Assert.Single(identity.Claims.Where(c => c.Type == alias));
+        var untouched = Assert.Single(identity.Claims, c => c.Type == alias);
         Assert.Equal("bliss.admin", untouched.Value);
         Assert.Equal(Foreign, untouched.OriginalIssuer);
         Assert.Equal(Trusted, Assert.Single(
-            identity.Claims.Where(c => c.Type == options.RoleClaimType)).Issuer);
+            identity.Claims, c => c.Type == options.RoleClaimType).Issuer);
     }
 
     [Fact]
