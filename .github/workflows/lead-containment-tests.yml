@@ -5,7 +5,9 @@ on:
     branches: [main]
     paths:
       - 'docs/security/lead-generation-containment-*.sql'
+      - 'docs/security/lead-generation-function-*.sql'
       - 'scripts/test-lead-containment.mjs'
+      - 'scripts/test-lead-function-security.mjs'
       - 'tests/lead-containment/**'
       - '.github/workflows/lead-containment-tests.yml'
   workflow_dispatch:
@@ -29,4 +31,5 @@ jobs:
           test ! -e node_modules
           ln -s "$GITHUB_WORKSPACE/tests/lead-containment/node_modules" node_modules
           node scripts/test-lead-containment.mjs
+          node scripts/test-lead-function-security.mjs
       # No production URL, database credential, Supabase key, deployment or DDL.
