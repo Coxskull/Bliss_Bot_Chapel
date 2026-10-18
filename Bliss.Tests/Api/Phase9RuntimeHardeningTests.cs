@@ -15,7 +15,7 @@ public sealed class Phase9RuntimeHardeningTests : IClassFixture<RuntimeHardening
     public Phase9RuntimeHardeningTests(RuntimeHardeningApiFactory factory) => _factory = factory;
 
     [Fact]
-    public async Task Liveness_and_database_readiness_are_machine_readable()
+    public async Task Liveness_is_healthy_but_in_memory_database_cannot_claim_relational_readiness()
     {
         var client = _factory.CreateClient();
 
@@ -23,10 +23,11 @@ public sealed class Phase9RuntimeHardeningTests : IClassFixture<RuntimeHardening
         var ready = await client.GetAsync("/health/ready");
 
         Assert.Equal(HttpStatusCode.OK, live.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, ready.StatusCode);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, ready.StatusCode);
         Assert.Contains("\"status\":\"Healthy\"", await live.Content.ReadAsStringAsync());
         Assert.Contains("\"database\"", await ready.Content.ReadAsStringAsync());
-        Assert.Contains("\"status\":\"Healthy\"", await ready.Content.ReadAsStringAsync());
+        Assert.Contains("\"status\":\"Unhealthy\"", await ready.Content.ReadAsStringAsync());
+        Assert.Contains("A relational application database is required.", await ready.Content.ReadAsStringAsync());
     }
 
     [Fact]
