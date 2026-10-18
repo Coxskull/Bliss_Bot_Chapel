@@ -179,6 +179,14 @@ jobs:
         if: matrix.dockerfile == 'Dockerfile'
         run: python3 scripts/verify-container-runtime.py --image bliss-bot-chapel:ci --revision "$(git rev-parse HEAD)" --output ContainerEvidence
 
+      - name: Test Railway entrypoint evidence guardrails
+        if: matrix.dockerfile == 'Dockerfile.railway'
+        run: python3 -m unittest discover -s scripts -p 'test_railway_entrypoint.py' -v
+
+      - name: Verify actual Railway privilege drop and authentication refusal
+        if: matrix.dockerfile == 'Dockerfile.railway'
+        run: python3 scripts/verify-railway-entrypoint.py --image bliss-bot-chapel:ci --revision "$(git rev-parse HEAD)" --output RailwayEntrypointEvidence
+
       - name: Test vulnerability evidence guardrails
         run: python3 -m unittest discover -s scripts -p 'test_container_vulnerabilities.py' -v
 
@@ -213,6 +221,7 @@ jobs:
           name: bliss-container-evidence-${{ matrix.dockerfile }}-${{ github.run_number }}
           path: |
             ContainerEvidence/
+            RailwayEntrypointEvidence/
             ContainerVulnerabilities/
           if-no-files-found: warn
           retention-days: 14
