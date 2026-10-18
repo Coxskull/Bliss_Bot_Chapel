@@ -155,7 +155,8 @@ class PublicSitePreflightTests(unittest.TestCase):
             'body': '<html><head><title>ALPHA</title></head><body><h1>Media</h1></body></html>'
         })
         self.assertEqual(result['website_status'], 'HOMEPAGE_RETRIEVED_NEEDS_REVIEW')
-        self.assertEqual(result['title_observed'], 'ALPHA')
+        self.assertEqual(result['title_present'], True)
+        self.assertEqual(result['h1_present'], True)
         self.assertEqual(result['legal_adequacy'], 'UNVERIFIED')
         self.assertEqual(result['stripe_payments'], 'UNVERIFIED')
 
@@ -163,6 +164,54 @@ class PublicSitePreflightTests(unittest.TestCase):
         result = mod.classify_transport_error(
             urllib.error.URLError('a unique unknown proxy error'))
         self.assertEqual(result, 'NETWORK_ACCESS_UNVERIFIED')
+
+
+    def test_artifact_never_contains_path_tokens_or_dynamic_page_text(self):
+        requested = []
+        html = '''<html><title>visitor-secret@example.com</title>
+        <h1>Private Visitor Identity</h1>
+        <a href="/privacy/visitor-secret@example.com?token=123">Privacy</a>
+        <a href="/terms-of-service?token=secret-value">Terms</a>
+        <a href="/contact/customer/555-9999">Contact</a></html>'''
+        def synthetic_get(url):
+            requested.append(url)
+            return {'state': 'RETRIEVED', 'status': 200,
+                    'content_type': 'text/html', 'body': html}
+        report = mod.audit('https://alphacreativecontent.com/', getter=synthetic_get)
+        output = str(report)
+        self.assertNotIn('visitor-secret@example.com', output)
+        self.assertNotIn('Private Visitor Identity', output)
+        self.assertNotIn('555-9999', output)
+        self.assertNotIn('secret-value', output)
+        self.assertEqual(report['title_present'], True)
+        self.assertEqual(report['h1_present'], True)
+        self.assertEqual(report['policy_links']['privacy']['state'],
+                         'UNVERIFIED_NONCANONICAL_LINKS_PRESENT')
+        self.assertEqual(report['policy_links']['contact']['state'],
+                         'UNVERIFIED_NONCANONICAL_LINKS_PRESENT')
+        self.assertEqual(report['policy_links']['terms']['state'],
+                         'LINK_DISCOVERED')
+        self.assertEqual(requested,
+                         ['https://alphacreativecontent.com/',
+                          'https://alphacreativecontent.com/terms-of-service'])
+        self.assertEqual(report['legal_adequacy'], 'UNVERIFIED')
+
+    def test_unexpected_policy_path_is_not_fetched_even_when_onsite(self):
+        requested = []
+        html = '''<html><a href="/privacy-policy/session-token-007">Privacy</a>
+        <a href="/refund-policy">Refunds</a></html>'''
+        def synthetic_get(url):
+            requested.append(url)
+            return {'state': 'RETRIEVED', 'status': 200,
+                    'content_type': 'text/html', 'body': html}
+        report = mod.audit('https://alphacreativecontent.com/', getter=synthetic_get)
+        self.assertNotIn('session-token-007', str(report))
+        self.assertEqual(report['policy_links']['privacy']['urls'], [])
+        self.assertEqual(report['policy_links']['privacy']['state'],
+                         'UNVERIFIED_NONCANONICAL_LINKS_PRESENT')
+        self.assertEqual(requested,
+                         ['https://alphacreativecontent.com/',
+                          'https://alphacreativecontent.com/refund-policy'])
 
 
 if __name__ == '__main__':

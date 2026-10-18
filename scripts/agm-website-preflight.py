@@ -24,6 +24,16 @@ POLICIES = {
     'refunds': ('refund', 'cancellation', 'returns'),
     'contact': ('contact', 'support'),
 }
+# Only generic, reviewed routes may be probed or included in CI artifacts.
+# Arbitrary same-site paths can encode visitor identities or secret tokens.
+PUBLIC_POLICY_PATHS = {
+    'privacy': frozenset({'/privacy', '/privacy-policy', '/data-protection'}),
+    'terms': frozenset({'/terms', '/terms-of-service', '/terms-and-conditions', '/tos'}),
+    'refunds': frozenset({'/refund', '/refunds', '/refund-policy',
+                          '/refund-and-cancellation-policy', '/cancellation-policy',
+                          '/returns'}),
+    'contact': frozenset({'/contact', '/contact-us', '/support'}),
+}
 USER_AGENT = 'AGM-Site-Preflight/1.0 (read-only policy and form inventory)'
 
 
@@ -189,31 +199,45 @@ def audit(origin, getter=public_get):
     parsed = PublicHtml()
     parsed.feed(homepage.get('body', ''))
     report['website_status'] = 'HOMEPAGE_RETRIEVED_NEEDS_REVIEW'
-    report['title_observed'] = ''.join(parsed.title).strip()[:160]
-    report['h1_observed'] = ''.join(parsed.headings).strip()[:200]
+    # Raw page titles/headings can include personal data in dynamic pages.
+    report['title_present'] = bool(''.join(parsed.title).strip())
+    report['h1_present'] = bool(''.join(parsed.headings).strip())
     report['footer_link_count'] = len(parsed.footer_links)
     report['form_inventory']['count_observed_in_html'] = len(parsed.forms)
     report['form_inventory']['input_type_sets'] = [sorted(x['input_types']) for x in parsed.forms][:15]
     report['form_inventory']['notes'] = 'Observed HTML forms only; no submit, CRM readback or consent inference.'
     collected = set()
+    ignored_noncanonical = set()
     for href in parsed.links:
         url = safe_url(origin, href)
         if not url:
             continue
-        lower = urllib.parse.urlsplit(url).path.lower().replace('-', ' ').replace('_', ' ')
-        if len(collected) > 30:
-            break
+        raw_path = urllib.parse.urlsplit(url).path
+        lower = raw_path.lower().replace('-', ' ').replace('_', ' ')
         for policy, tokens in POLICIES.items():
-            if any(re.search(rf'\b{re.escape(t)}\b', lower) for t in tokens):
-                collected.add(url)
-                report['policy_links'][policy]['urls'].append(url)
+            if not any(re.search(rf'\b{re.escape(t)}\b', lower) for t in tokens):
+                continue
+            # Same-site hostnames do not make every untrusted URL path safe.
+            canonical = raw_path.lower().rstrip('/') or '/'
+            if canonical not in PUBLIC_POLICY_PATHS[policy]:
+                ignored_noncanonical.add(policy)
+                continue
+            if url not in collected and len(collected) >= 30:
+                continue
+            collected.add(url)
+            report['policy_links'][policy]['urls'].append(url)
+
     for policy, entry in report['policy_links'].items():
         unique = list(dict.fromkeys(entry['urls']))[:4]
         entry['urls'] = unique
-        entry['state'] = 'LINK_DISCOVERED' if unique else 'NOT_LINKED_IN_STATIC_HTML'
-        if not unique:
-            continue
-        entry['checks'] = [{k: v for k, v in getter(u).items() if k != 'body'} for u in unique]
+        if unique:
+            entry['state'] = 'LINK_DISCOVERED'
+            entry['checks'] = [{k: v for k, v in getter(u).items() if k != 'body'} for u in unique]
+        elif policy in ignored_noncanonical:
+            entry['state'] = 'UNVERIFIED_NONCANONICAL_LINKS_PRESENT'
+        else:
+            entry['state'] = 'NOT_LINKED_IN_STATIC_HTML'
+    report['notes'].append('Unexpected policy paths were not fetched or exported; inspect in authorized GHL browser.')
     report['notes'].append('Visible link reachability does not establish legal adequacy or Stripe approval.')
     return report
 
