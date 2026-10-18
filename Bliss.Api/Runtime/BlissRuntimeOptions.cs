@@ -6,6 +6,7 @@ public sealed class BlissRuntimeOptions
     // Interface-only hosting. All API/data access and background work are locked.
     public bool RestrictedPreview { get; set; }
     public bool IngressDiagnostics { get; set; }
+    public RailwayIngressOptions RailwayIngress { get; set; } = new();
 
     public string DataProtectionKeysPath { get; set; } = string.Empty;
     public string DataProtectionCertificatePath { get; set; } = string.Empty;

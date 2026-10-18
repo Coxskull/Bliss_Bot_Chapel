@@ -144,7 +144,7 @@ builder.Services.AddSingleton<OperationalEventStore>();
 builder.Services.AddScoped<OperatorIdentity>();
 builder.Services.AddScoped<WeddingPlannerAccess>();
 builder.Services.AddProblemDetails();
-builder.Services.Configure<ForwardedHeadersOptions>(options => TrustedForwarding.Configure(options, runtime));
+builder.Services.Configure<ForwardedHeadersOptions>(options => TrustedForwarding.Configure(options, runtime, builder.Configuration));
 var dataProtection = builder.Services
     .AddDataProtection()
     .SetApplicationName("BlissBotChapel");
