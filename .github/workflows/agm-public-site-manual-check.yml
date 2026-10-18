@@ -1,0 +1,76 @@
+name: AGM Public Website Manual Reachability
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/agm-public-site-manual-check.yml'
+      - 'scripts/agm-website-preflight.py'
+      - 'scripts/test_agm_website_preflight.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agm-public-website-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-review-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Validate read-only website auditor without contacting any website
+        run: |
+          python -m py_compile scripts/agm-website-preflight.py
+          python -m unittest discover -s scripts -p 'test_agm_website_preflight.py' -v
+
+  public-readonly-evidence:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Check the approved public ALPHA site without any form submission
+        id: website
+        shell: bash
+        run: |
+          set -u
+          status=0
+          python scripts/agm-website-preflight.py \
+            --url https://alphacreativecontent.com/ \
+            --output "$RUNNER_TEMP/agm-site-preflight.json" > /dev/null || status=$?
+          if [ "$status" -ne 0 ] && [ "$status" -ne 2 ]; then
+            echo 'Unexpected preflight execution error.' >&2
+            exit "$status"
+          fi
+          python - "$RUNNER_TEMP/agm-site-preflight.json" <<'PY'
+          import json
+          import sys
+          with open(sys.argv[1], encoding='utf-8') as handle:
+              result = json.load(handle)
+          print('Site audit result:', result['website_status'])
+          print('Probe result:', result.get('homepage', {}).get('state', 'UNVERIFIED'))
+          print('HTTP status:', result.get('homepage', {}).get('status', 'UNVERIFIED'))
+          print('Legal adequacy:', result['legal_adequacy'])
+          print('Stripe Payments:', result['stripe_payments'])
+          print('Stripe Connect:', result['stripe_connect'])
+          PY
+          echo "auditor_exit_code=$status" >> "$GITHUB_OUTPUT"
+      - name: Upload sanitized public website evidence (7 days)
+        if: always() && steps.website.outputs.auditor_exit_code != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: agm-public-site-preflight-${{ github.run_id }}
+          path: ${{ runner.temp }}/agm-site-preflight.json
+          retention-days: 7
+          if-no-files-found: error
