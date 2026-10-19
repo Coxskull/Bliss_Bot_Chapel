@@ -19,7 +19,8 @@ public sealed record ProductionPostureDocument(
     string BackupProvider,
     string BackupSchedule,
     int BackupRetentionDays,
-    bool SecretMaterialExternal);
+    bool SecretMaterialExternal,
+    bool RailwayEnvironmentTrustConfigured = false);
 
 public sealed class ProductionPostureReport(
     ProductionPostureDocument document,
@@ -48,6 +49,7 @@ public sealed record ProductionPostureInput
     public string DataProtectionCertificatePassword { get; init; } = string.Empty;
     public bool CertificateFileExists { get; init; }
     public string[] KnownProxies { get; init; } = [];
+    public bool RailwayEnvironmentTrustConfigured { get; init; }
     public string BackupProvider { get; init; } = string.Empty;
     public string BackupSchedule { get; init; } = string.Empty;
     public int BackupRetentionDays { get; init; }
@@ -98,6 +100,7 @@ public static class ProductionPostureEvaluator
             DataProtectionCertificatePassword = runtime.DataProtectionCertificatePassword ?? string.Empty,
             CertificateFileExists = IsCertificateFile(certificatePath),
             KnownProxies = runtime.KnownProxies ?? [],
+            RailwayEnvironmentTrustConfigured = RailwayIngressTrust.IsConfigured(runtime, configuration),
             BackupProvider = backup.Provider ?? string.Empty,
             BackupSchedule = backup.Schedule ?? string.Empty,
             BackupRetentionDays = backup.RetentionDays,
@@ -168,10 +171,10 @@ public static class ProductionPostureEvaluator
                     "Runtime:DataProtectionCertificatePassword must be supplied through the secret store.");
             }
 
-            if (!knownProxiesConfigured)
+            if (!knownProxiesConfigured && !input.RailwayEnvironmentTrustConfigured)
             {
                 failures.Add(
-                    "Runtime:KnownProxies must include at least one non-loopback deployment proxy outside Development.");
+                    "Runtime:KnownProxies must include at least one non-loopback deployment proxy outside Development, or a separately approved Railway environment trust policy must be configured.");
             }
 
             if (!backupDeclared)
@@ -196,7 +199,8 @@ public static class ProductionPostureEvaluator
             input.BackupProvider.Trim(),
             input.BackupSchedule.Trim(),
             input.BackupRetentionDays,
-            secretMaterialExternal);
+            secretMaterialExternal,
+            input.RailwayEnvironmentTrustConfigured);
         return new ProductionPostureReport(document, failures);
     }
 
