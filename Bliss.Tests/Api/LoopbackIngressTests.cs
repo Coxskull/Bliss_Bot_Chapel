@@ -130,14 +130,17 @@ public sealed class LoopbackIngressTests
         builder.Services.AddAuthorization();
         await using var backend = builder.Build();
         backend.UseForwardedHeaders(); backend.UseAuthentication(); backend.UseAuthorization();
-        backend.MapPost("/inspect", async (HttpContext c) => Results.Json(new {
+        backend.MapPost("/inspect", async (HttpRequest request) => {
+            var c = request.HttpContext;
+            return Results.Json(new {
             scheme = c.Request.Scheme, host = c.Request.Host.Value,
             peer = c.Connection.RemoteIpAddress?.ToString(),
             forwardedHost = c.Request.Headers["X-Forwarded-Host"].ToString(),
             realIp = c.Request.Headers["X-Real-IP"].ToString(),
             originalHost = c.Request.Headers["X-Original-Host"].ToString(),
             csrf = c.Request.Headers["X-CSRF-TOKEN"].ToString(),
-            body = await new StreamReader(c.Request.Body).ReadToEndAsync() })).AllowAnonymous();
+            body = await new StreamReader(c.Request.Body).ReadToEndAsync() });
+        }).AllowAnonymous();
         backend.MapGet("/protected", () => Results.Ok()).RequireAuthorization();
         backend.MapGet("/health/live", () => Results.Ok()).AllowAnonymous();
         await backend.StartAsync();
