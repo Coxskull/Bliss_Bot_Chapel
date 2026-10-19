@@ -42,6 +42,10 @@ jobs:
           --filter FullyQualifiedName~InitialMigrationRehearsalTests
           --logger "trx;LogFileName=initial-migrations.trx"
           --results-directory MigrationTestResults
+      - name: Verify synthetic logical backup and restore using matching PostgreSQL client
+        env:
+          POSTGRES_FIXTURE_CONTAINER: ${{ job.services.postgres.id }}
+        run: bash scripts/verify-initial-recovery-fixture.sh
       - name: Preserve migration SQL and execution evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -50,5 +54,6 @@ jobs:
           path: |
             **/MigrationEvidence/*
             MigrationTestResults/*.trx
+            RecoveryEvidence/*
           if-no-files-found: error
           retention-days: 14

@@ -27,6 +27,8 @@ public static class LoopbackIngress
             || origin.Scheme != "https" || !origin.IsDefaultPort || origin.IsLoopback
             || origin.UserInfo.Length != 0 || origin.AbsolutePath != "/" || origin.Query.Length != 0 || origin.Fragment.Length != 0
             || configuration is null
+            || configuration.GetValue<bool>("ASPNETCORE_FORWARDEDHEADERS_ENABLED")
+            || configuration.GetSection("Kestrel:Endpoints").GetChildren().Any()
             || !string.Equals(origin.Host, configuration["RAILWAY_PUBLIC_DOMAIN"], StringComparison.OrdinalIgnoreCase)
             || !int.TryParse(configuration["PORT"], out var port) || port != policy.PublicPort
             || policy.PublicPort is < 1024 or > 65535 || policy.BackendPort is < 1024 or > 65535

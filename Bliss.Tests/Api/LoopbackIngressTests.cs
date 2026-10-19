@@ -75,6 +75,28 @@ public sealed class LoopbackIngressTests
     }
 
     [Theory]
+    [InlineData("ASPNETCORE_FORWARDEDHEADERS_ENABLED", "true")]
+    [InlineData("Kestrel:Endpoints:Unexpected:Url", "http://0.0.0.0:18081")]
+    public void Alternate_listener_or_global_forwarding_configuration_is_rejected(string key, string value)
+    {
+        var config = new ConfigurationBuilder().AddConfiguration(Deployment())
+            .AddInMemoryCollection(new Dictionary<string,string?> { [key] = value }).Build();
+        Assert.Throws<InvalidOperationException>(() => LoopbackIngress.IsConfigured(Policy(), config));
+    }
+
+    [Fact]
+    public void Local_ingress_does_not_satisfy_authentication_database_or_backup_requirements()
+    {
+        var report = ProductionPostureEvaluator.Evaluate(new() { LoopbackIngressConfigured = true });
+        Assert.False(report.Document.ProductionGatesApplied);
+        Assert.False(report.Document.KnownProxiesConfigured);
+        Assert.True(report.Document.LoopbackIngressConfigured);
+        Assert.Contains(report.Failures, x => x.Contains("OIDC authentication must be enabled"));
+        Assert.Contains(report.Failures, x => x.Contains("ConnectionStrings:DefaultConnection"));
+        Assert.Contains(report.Failures, x => x.Contains("Runtime:Backup:Provider"));
+    }
+
+    [Theory]
     [InlineData("100.64.0.5")]
     [InlineData("192.0.2.12")]
     [InlineData("fd12::1234")]
