@@ -31,9 +31,6 @@ if (args.Contains("--verify-hosted-database=true", StringComparer.Ordinal))
     return;
 }
 var applyMigrations = MigrationCommand.Requested(args);
-var initialHostedInstall = MigrationCommand.InitialInstallRequested(args);
-if (args.Contains(MigrationCommand.InitialInstallArgument, StringComparer.Ordinal) && !initialHostedInstall)
-    throw new InvalidOperationException("Initial install requires exactly --migrate and --initial-install-empty-hosted-db.");
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 var authentication = builder.Configuration
     .GetSection(BlissAuthenticationOptions.SectionName)
@@ -73,11 +70,14 @@ if (runtime.WriteRateLimitPermitLimit <= 0
     throw new InvalidOperationException("Runtime rate-limit values must be positive.");
 }
 
+if (LoopbackIngress.IsConfigured(runtime, builder.Configuration))
+    builder.WebHost.ConfigureKestrel(options => LoopbackIngress.ConfigureBackend(options, runtime.LoopbackIngress));
+
 var posture = ProductionPostureEvaluator.Evaluate(
     ProductionPostureEvaluator.CreateInput(builder.Environment, builder.Configuration, authentication, runtime));
 if (!runtime.RestrictedPreview) ProductionPostureEvaluator.Ensure(posture);
-if (runtime.RestrictedPreview && applyMigrations && !initialHostedInstall)
-    throw new InvalidOperationException("Migrations are unavailable in restricted preview without explicit empty-hosted-db initialization.");
+if (runtime.RestrictedPreview && applyMigrations)
+    throw new InvalidOperationException("Migrations are unavailable in restricted preview.");
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -330,26 +330,10 @@ var app = builder.Build();
 
 if (applyMigrations)
 {
-    if (initialHostedInstall)
-    {
-        var diagnostic = await HostedDatabaseDiagnostic.RunAsync(
-            app.Configuration.GetConnectionString("DefaultConnection"));
-        MigrationCommand.ValidateInitialEmptyHostedInstall(
-            runtime.RestrictedPreview, app.Environment.IsProduction(),
-            app.Configuration.GetConnectionString("DefaultConnection"),
-            diagnostic,
-            app.Configuration["BLISS_INITIAL_INSTALL_EXPECTED_HOST"],
-            app.Configuration["BLISS_INITIAL_INSTALL_EXPECTED_DATABASE"],
-            app.Configuration["BLISS_INITIAL_INSTALL_BACKUP_EVIDENCE_ID"]);
-    }
     using var migrateScope = app.Services.CreateScope();
     var migrateDb = migrateScope.ServiceProvider.GetRequiredService<BlissDbContext>();
     migrateDb.Database.Migrate();
-    if (initialHostedInstall && migrateDb.Database.GetPendingMigrations().Any())
-        throw new InvalidOperationException("Initial install incomplete: pending migrations remain.");
-    Console.WriteLine(initialHostedInstall
-        ? MigrationCommand.InitialInstallCompletionLine
-        : MigrationCommand.CompletionLine);
+    Console.WriteLine(MigrationCommand.CompletionLine);
     return;
 }
 
@@ -563,6 +547,13 @@ app.MapFallbackToFile(
         "index.html",
         new StaticFileOptions { FileProvider = new PhysicalFileProvider(operationsFrontend) })
     .AllowAnonymous();
-app.Run();
+if (runtime.LoopbackIngress.Enabled)
+{
+    await using var ingress = LoopbackIngress.BuildProxy(runtime, builder.Configuration);
+    await ingress.StartAsync();
+    try { await app.RunAsync(); }
+    finally { await ingress.StopAsync(); }
+}
+else app.Run();
 
 public partial class Program;

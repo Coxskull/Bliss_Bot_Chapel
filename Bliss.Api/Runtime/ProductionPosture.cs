@@ -20,7 +20,7 @@ public sealed record ProductionPostureDocument(
     string BackupSchedule,
     int BackupRetentionDays,
     bool SecretMaterialExternal,
-    bool RailwayEnvironmentTrustConfigured = false);
+    bool LoopbackIngressConfigured = false);
 
 public sealed class ProductionPostureReport(
     ProductionPostureDocument document,
@@ -49,7 +49,7 @@ public sealed record ProductionPostureInput
     public string DataProtectionCertificatePassword { get; init; } = string.Empty;
     public bool CertificateFileExists { get; init; }
     public string[] KnownProxies { get; init; } = [];
-    public bool RailwayEnvironmentTrustConfigured { get; init; }
+    public bool LoopbackIngressConfigured { get; init; }
     public string BackupProvider { get; init; } = string.Empty;
     public string BackupSchedule { get; init; } = string.Empty;
     public int BackupRetentionDays { get; init; }
@@ -100,7 +100,7 @@ public static class ProductionPostureEvaluator
             DataProtectionCertificatePassword = runtime.DataProtectionCertificatePassword ?? string.Empty,
             CertificateFileExists = IsCertificateFile(certificatePath),
             KnownProxies = runtime.KnownProxies ?? [],
-            RailwayEnvironmentTrustConfigured = RailwayIngressTrust.IsConfigured(runtime, configuration),
+            LoopbackIngressConfigured = LoopbackIngress.IsConfigured(runtime, configuration),
             BackupProvider = backup.Provider ?? string.Empty,
             BackupSchedule = backup.Schedule ?? string.Empty,
             BackupRetentionDays = backup.RetentionDays,
@@ -171,10 +171,10 @@ public static class ProductionPostureEvaluator
                     "Runtime:DataProtectionCertificatePassword must be supplied through the secret store.");
             }
 
-            if (!knownProxiesConfigured && !input.RailwayEnvironmentTrustConfigured)
+            if (!knownProxiesConfigured && !input.LoopbackIngressConfigured)
             {
                 failures.Add(
-                    "Runtime:KnownProxies must include at least one non-loopback deployment proxy outside Development, or a separately approved Railway environment trust policy must be configured.");
+                    "Runtime:KnownProxies must include at least one non-loopback deployment proxy outside Development, or reviewed loopback ingress must isolate the API.");
             }
 
             if (!backupDeclared)
@@ -200,7 +200,7 @@ public static class ProductionPostureEvaluator
             input.BackupSchedule.Trim(),
             input.BackupRetentionDays,
             secretMaterialExternal,
-            input.RailwayEnvironmentTrustConfigured);
+            input.LoopbackIngressConfigured);
         return new ProductionPostureReport(document, failures);
     }
 
