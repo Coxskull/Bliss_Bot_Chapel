@@ -56,7 +56,8 @@ public static class LoopbackIngress
         builder.Services.AddReverseProxy().LoadFromMemory(
             [new RouteConfig { RouteId = "local-api", ClusterId = "local-api",
                 Match = new RouteMatch { Path = "/{**path}" },
-                Transforms = [new Dictionary<string, string> { ["X-Forwarded"] = "Off" }] }],
+                Transforms = [new Dictionary<string, string> { ["X-Forwarded"] = "Off" },
+                    new Dictionary<string, string> { ["RequestHeaderOriginalHost"] = "true" }] }],
             [new ClusterConfig { ClusterId = "local-api", Destinations = new Dictionary<string, DestinationConfig> {
                 ["loopback"] = new() { Address = $"http://127.0.0.1:{policy.BackendPort}/" } } }])
             .AddTransforms(context => context.AddRequestTransform(request =>
