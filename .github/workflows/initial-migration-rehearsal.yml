@@ -12,11 +12,16 @@ permissions:
 
 jobs:
   initial-migrations:
+    name: Initial migrations (PostgreSQL ${{ matrix.postgres }})
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: [16, 18]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     services:
       postgres:
-        image: postgres:16
+        image: postgres:${{ matrix.postgres }}
         env:
           POSTGRES_DB: bliss_initial_migration_ci
           POSTGRES_USER: postgres
@@ -42,13 +47,18 @@ jobs:
           --filter FullyQualifiedName~InitialMigrationRehearsalTests
           --logger "trx;LogFileName=initial-migrations.trx"
           --results-directory MigrationTestResults
+      - name: Verify synthetic logical backup and restore using matching PostgreSQL client
+        env:
+          POSTGRES_FIXTURE_CONTAINER: ${{ job.services.postgres.id }}
+        run: bash scripts/verify-initial-recovery-fixture.sh
       - name: Preserve migration SQL and execution evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: initial-migration-rehearsal
+          name: initial-migration-rehearsal-pg${{ matrix.postgres }}
           path: |
             **/MigrationEvidence/*
             MigrationTestResults/*.trx
+            RecoveryEvidence/*
           if-no-files-found: error
           retention-days: 14

@@ -16,12 +16,11 @@ public static class TrustedForwarding
         // Railway documents X-Real-IP as its edge-owned client-address header.
         // Selecting it does not change the requirement for explicit trusted peers.
         options.ForwardedForHeaderName = header;
-        if (RailwayIngressTrust.IsConfigured(runtime, configuration))
+        if (LoopbackIngress.IsConfigured(runtime, configuration))
         {
-            // Provider contract: public edge overwrites both headers. Private
-            // peers remain trusted by the separately approved environment policy.
-            options.KnownProxies.Clear();
             options.KnownNetworks.Clear();
+            options.KnownProxies.Clear();
+            options.KnownProxies.Add(IPAddress.Loopback);
             options.RequireHeaderSymmetry = true;
             return;
         }
