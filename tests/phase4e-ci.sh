@@ -38,7 +38,7 @@ reject env PATH=/nonexistent /bin/bash "$script"
 cp "$archive" "$BACKUP_OUTPUT_DIR/corrupt.age"
 printf X >> "$BACKUP_OUTPUT_DIR/corrupt.age"
 reject age --decrypt --identity "$BACKUP_OUTPUT_DIR/key.txt" --output /dev/null "$BACKUP_OUTPUT_DIR/corrupt.age"
-reject sha256sum --check "$archive.sha256" --ignore-missing --status --warn --strict --quiet "$BACKUP_OUTPUT_DIR/corrupt.age"
+printf "%s  %s\\n" "$(sha256sum "$archive" | cut -d\x27 \x27 -f1)" "$BACKUP_OUTPUT_DIR/corrupt.age" > "$BACKUP_OUTPUT_DIR/corrupt.sha256"\nreject sha256sum --check "$BACKUP_OUTPUT_DIR/corrupt.sha256"
 reject pg_restore -h 127.0.0.1 -U ci_backup -d phase4e_restore --exit-on-error "$BACKUP_OUTPUT_DIR/corrupt.age"
 reject age --decrypt --identity /dev/null --output /dev/null "$archive"
 echo 'PASS expected negative failures'
