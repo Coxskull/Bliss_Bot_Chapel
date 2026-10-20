@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
-# Phase 4C non-production logical backup prototype.
 set -Eeuo pipefail
 umask 077
-: "${BACKUP_ENVIRONMENT:?Set BACKUP_ENVIRONMENT=development or test}"
-case "$BACKUP_ENVIRONMENT" in development|test|ci) ;; *) echo "Refusing non-test environment" >&2; exit 64;; esac
-: "${BACKUP_DATABASE_URL:?Set a non-production PostgreSQL URL}"
-: "${BACKUP_OUTPUT_DIR:?Set an output directory}"
-: "${BACKUP_ENCRYPTION_RECIPIENT:?Set age public recipient}"
-command -v pg_dump >/dev/null
-command -v age >/dev/null
-command -v sha256sum >/dev/null
-mkdir -p -- "$BACKUP_OUTPUT_DIR"
-stamp="$(date -u +%Y%m%dT%H%M%SZ)"
-file="$BACKUP_OUTPUT_DIR/nonprod-$stamp.dump.age"
-tmp="$(mktemp "$BACKUP_OUTPUT_DIR/.dump.XXXXXXXX")"
-trap 'rm -f -- "$tmp"' EXIT
-pg_dump --dbname="$BACKUP_DATABASE_URL" --format=custom --no-owner --no-acl --file="$tmp"
-test -s "$tmp"
-age --encrypt --recipient "$BACKUP_ENCRYPTION_RECIPIENT" --output "$file" "$tmp"
-sha256sum "$file" > "$file.sha256"
-sha256sum --check "$file.sha256"
-echo "Encrypted non-production backup prepared: $file"
-echo "No production operation, upload, retention deletion, or restore was performed."
+fail(){ echo "BACKUP FAILED: $*" >&2; exit 1; }
+[[ "${BACKUP_ENVIRONMENT:-}" == ci && "${CI:-}" == true && "${GITHUB_ACTIONS:-}" == true ]] || fail 'Disposable GitHub Actions mode required'
+expected='postgresql://ci_backup:ci_only_password@127.0.0.1:5432/phase4e_source?sslmode=disable'
+[[ "${BACKUP_DATABASE_URL:-}" == "$expected" ]] || fail 'Source connection not allowlisted'
+[[ "${BACKUP_EXPECTED_SYSTEM_ID:-}" =~ ^[0-9]+$ ]] || fail 'Missing expected cluster ID'
+[[ -n "${BACKUP_OUTPUT_DIR:-}" && -n "${BACKUP_ENCRYPTION_RECIPIENT:-}" ]] || fail 'Missing output directory or recipient'
+for cmd in psql pg_dump age sha256sum mktemp; do command -v "$cmd" >/dev/null || fail "Missing $cmd"; done
+identity="$(psql "$BACKUP_DATABASE_URL" -AtX -v ON_ERROR_STOP=1 -c "SELECT current_database() || '|' || current_user || '|' || inet_server_addr() || '|' || (SELECT system_identifier FROM pg_control_system())")" || fail 'Identity verification failed'
+[[ "$identity" == "phase4e_source|ci_backup|127.0.0.1|$BACKUP_EXPECTED_SYSTEM_ID" ]] || fail 'Database identity mismatch'
+mkdir -p "$BACKUP_OUTPUT_DIR"
+plain="$(mktemp "$BACKUP_OUTPUT_DIR/.plain.XXXXXXXX")"
+archive="$(mktemp "$BACKUP_OUTPUT_DIR/backup.XXXXXXXX.age")"
+success=0
+trap 'rm -f "$plain"; if [[ "$success" != 1 ]]; then rm -f "$archive" "$archive.sha256"; fi' EXIT
+pg_dump --dbname="$BACKUP_DATABASE_URL" --format=custom --no-owner --no-acl --file="$plain" || fail 'pg_dump failed'
+[[ -s "$plain" ]] || fail 'Empty backup'
+age --encrypt --recipient "$BACKUP_ENCRYPTION_RECIPIENT" --output "$archive" "$plain" || fail 'Encryption failed'
+sha256sum "$archive" > "$archive.sha256"
+sha256sum --check "$archive.sha256" || fail 'Checksum failed'
+success=1
+printf '%s\n' "$archive"
