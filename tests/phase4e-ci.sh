@@ -39,11 +39,13 @@ reject(){ local label="$1" expected="$2" output rc=0; shift 2; output="$("$@" 2>
 reject_exit(){ local label="$1" rc=0; shift; "$@" >/dev/null 2>&1 || rc=$?; if [[ "$rc" == 0 ]]; then echo "FAIL negative: $label" >&2; exit 1; fi; echo "PASS negative: $label"; }
 echo 'STAGE: negative security cases'
 reject environment-production 'Disposable GitHub Actions mode required' env BACKUP_ENVIRONMENT=production bash "$script"
+reject ci-missing 'Disposable GitHub Actions mode required' env -u CI bash "$script"
 reject ci-false 'Disposable GitHub Actions mode required' env CI=false bash "$script"
+reject actions-missing 'Disposable GitHub Actions mode required' env -u GITHUB_ACTIONS bash "$script"
 reject actions-false 'Disposable GitHub Actions mode required' env GITHUB_ACTIONS=false bash "$script"
 reject unauthorized-target 'Source connection not allowlisted' env BACKUP_DATABASE_URL='postgresql://ci_backup:ci_only_password@127.0.0.1:5433/phase4e_restore?sslmode=disable' bash "$script"
-reject unauthorized-target 'Source connection not allowlisted' env BACKUP_DATABASE_URL='postgresql://ci_backup:ci_only_password@127.0.0.1:5432/postgres?sslmode=disable' bash "$script"
-reject unauthorized-target 'Source connection not allowlisted' env BACKUP_DATABASE_URL='postgresql://ci_restore:ci_only_password@127.0.0.1:5432/phase4e_source?sslmode=disable' bash "$script"
+reject incorrect-database-name 'Source connection not allowlisted' env BACKUP_DATABASE_URL='postgresql://ci_backup:ci_only_password@127.0.0.1:5432/postgres?sslmode=disable' bash "$script"
+reject incorrect-database-user 'Source connection not allowlisted' env BACKUP_DATABASE_URL='postgresql://ci_restore:ci_only_password@127.0.0.1:5432/phase4e_source?sslmode=disable' bash "$script"
 reject malformed-cluster-id 'Missing expected cluster ID' env BACKUP_EXPECTED_SYSTEM_ID=not-a-number bash "$script"
 reject missing-cluster-id 'Missing expected cluster ID' env BACKUP_EXPECTED_SYSTEM_ID='' bash "$script"
 reject unauthorized-target 'Source connection not allowlisted' env BACKUP_DATABASE_URL='postgresql://prod@production.invalid/prod' bash "$script"
@@ -73,11 +75,11 @@ echo 'STAGE: backup failure cleanup and tampered manifest'
 faildir="$(mktemp -d)"
 reject encryption-failure 'Encryption failed' env BACKUP_OUTPUT_DIR="$faildir" BACKUP_ENCRYPTION_RECIPIENT='bad-recipient' bash "$script"
 [[ -z "$(find "$faildir" -type f -print -quit)" ]] || { echo 'FAIL failed-backup cleanup' >&2; exit 1; }
-echo 'PASS failed-backup cleanup'
+echo 'PASS failed-backup cleanup and encryption-failure plaintext removal'
 rm -rf "$faildir"
 [[ -z "$(find "$BACKUP_OUTPUT_DIR" -name '.plain.*' -print -quit)" ]] || { echo 'FAIL successful-backup plaintext cleanup' >&2; exit 1; }
 echo 'PASS successful-backup plaintext cleanup'
-printf '%064d  %s\\n' 0 "$archive" > "$BACKUP_OUTPUT_DIR/tampered.sha256"
+printf '%064d  %s\n' 0 "$archive" > "$BACKUP_OUTPUT_DIR/tampered.sha256"
 reject_exit tampered-manifest sha256sum --check "$BACKUP_OUTPUT_DIR/tampered.sha256"
 
 echo 'PASS expected negative failures; independent clusters and security scenarios verified'
