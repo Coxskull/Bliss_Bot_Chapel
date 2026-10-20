@@ -19,6 +19,6 @@ pg_dump --dbname="$BACKUP_DATABASE_URL" --format=custom --no-owner --no-acl --fi
 [[ -s "$plain" ]] || fail 'Empty backup'
 age --encrypt --recipient "$BACKUP_ENCRYPTION_RECIPIENT" --output "$archive" "$plain" || fail 'Encryption failed'
 sha256sum "$archive" > "$archive.sha256"
-sha256sum --check "$archive.sha256" || fail 'Checksum failed'
+sha256sum --check "$archive.sha256" >&2 || fail 'Checksum failed'
 success=1
 printf '%s\n' "$archive"
