@@ -27,6 +27,17 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U ci_backup -d phase4e_source"
           --health-interval 5s --health-timeout 5s --health-retries 10
+      restore:
+        image: postgres:18.0
+        env:
+          POSTGRES_USER: ci_restore
+          POSTGRES_PASSWORD: ci_restore_only_password
+          POSTGRES_DB: phase4e_restore
+        ports:
+          - 127.0.0.1:5433:5432
+        options: >-
+          --health-cmd "pg_isready -U ci_restore -d phase4e_restore"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
         with:
