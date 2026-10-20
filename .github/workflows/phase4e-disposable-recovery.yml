@@ -41,4 +41,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-client-18
       - name: Test synthetic encrypted backup and isolated restore
-        run: bash tests/phase4e-ci.sh
+        run: |
+          export PATH="/usr/lib/postgresql/18/bin:$PATH"
+          test "$(pg_dump --version | awk '{print $3}' | cut -d. -f1)" = 18
+          test "$(psql --version | awk '{print $3}' | cut -d. -f1)" = 18
+          bash tests/phase4e-ci.sh
