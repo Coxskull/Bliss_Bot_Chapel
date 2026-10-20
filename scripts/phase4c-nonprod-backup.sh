@@ -11,11 +11,13 @@ for cmd in psql pg_dump age sha256sum mktemp; do command -v "$cmd" >/dev/null ||
 identity="$(psql "$BACKUP_DATABASE_URL" -AtX -v ON_ERROR_STOP=1 -c "SELECT current_database() || '|' || current_user || '|' || (SELECT system_identifier FROM pg_control_system())")" || fail 'Identity verification failed'
 [[ "$identity" == "phase4e_source|ci_backup|$BACKUP_EXPECTED_SYSTEM_ID" ]] || fail 'Database identity mismatch'
 mkdir -p "$BACKUP_OUTPUT_DIR"
+plain=''
+archive=''
+success=0
+trap '[[ -z "$plain" ]] || rm -f -- "$plain"; if [[ "$success" != 1 && -n "$archive" ]]; then rm -f -- "$archive" "$archive.sha256"; fi' EXIT
 plain="$(mktemp "$BACKUP_OUTPUT_DIR/.plain.XXXXXXXX")" || fail 'Plaintext allocation failed'
 [[ "$(stat -c %a "$plain")" == 600 ]] || fail 'Plaintext permissions not private'
 archive="$(mktemp "$BACKUP_OUTPUT_DIR/backup.XXXXXXXX.age")" || fail 'Archive allocation failed'
-success=0
-trap 'rm -f "$plain"; if [[ "$success" != 1 ]]; then rm -f "$archive" "$archive.sha256"; fi' EXIT
 pg_dump --dbname="$BACKUP_DATABASE_URL" --format=custom --no-owner --no-acl --file="$plain" || fail 'pg_dump failed'
 [[ -s "$plain" ]] || fail 'Empty backup'
 [[ "$(stat -c %a "$plain")" == 600 ]] || fail 'Plaintext permissions changed'
