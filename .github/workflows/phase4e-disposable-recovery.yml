@@ -1,0 +1,44 @@
+name: Phase 4E disposable encrypted recovery
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/phase4e-disposable-recovery.yml'
+      - 'scripts/phase4c-nonprod-backup.sh'
+      - 'tests/phase4e-ci.sh'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: phase4e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  synthetic-recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:18.0
+        env:
+          POSTGRES_USER: ci_backup
+          POSTGRES_PASSWORD: ci_only_password
+          POSTGRES_DB: phase4e_source
+        ports:
+          - 127.0.0.1:5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci_backup -d phase4e_source"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install age and PostgreSQL 18 client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y age ca-certificates curl gnupg
+          sudo install -d -m 0755 /usr/share/postgresql-common/pgdg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo "$VERSION_CODENAME")-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-18
+      - name: Test synthetic encrypted backup and isolated restore
+        run: bash tests/phase4e-ci.sh
