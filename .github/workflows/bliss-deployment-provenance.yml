@@ -1,0 +1,29 @@
+name: Bliss Offline Deployment Provenance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/bliss-deployment-provenance.py'
+      - 'scripts/test_bliss_deployment_provenance.py'
+      - '.github/workflows/bliss-deployment-provenance.yml'
+      - 'docs/bliss/deployment-provenance-operator-checklist.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provenance:
+    name: Offline three-way metadata comparison
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test fail-closed metadata gate
+        run: |
+          python -m py_compile scripts/bliss-deployment-provenance.py
+          python -m unittest discover -s scripts -p 'test_bliss_deployment_provenance.py' -v
