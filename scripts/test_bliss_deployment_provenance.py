@@ -1,4 +1,10 @@
+import contextlib
 import importlib.util
+import io
+import json
+import os
+import sys
+import tempfile
 from pathlib import Path
 import unittest
 
@@ -62,6 +68,36 @@ class ProvenanceTests(unittest.TestCase):
     def test_wrong_repository_fails(self):
         r = mod.inspect(sample(configured_repository="Elsewhere/Other"))
         self.assertEqual(r["checks"]["repository"], "FAIL")
+
+    def test_reject_spoofed_main_repo_even_when_both_match(self):
+        with self.assertRaisesRegex(ValueError, "Unexpected main repository"):
+            mod.inspect(sample(main_repository="Elsewhere/Other",
+                               configured_repository="Elsewhere/Other"))
+
+    def test_duplicate_json_keys_fail_closed_in_entrypoint(self):
+        # Write valid JSON containing two distinct values for the same key.
+        raw = json.dumps(sample())
+        raw = raw.replace('"main_sha":', '"main_sha": "' + B + '", "main_sha":', 1)
+        fd, path = tempfile.mkstemp(suffix=".json")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(raw)
+            original = sys.argv
+            try:
+                sys.argv = ["bliss-deployment-provenance.py", path]
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    self.assertEqual(mod.main(), 2)
+                self.assertIn('"status":"INVALID_INPUT"', output.getvalue())
+                self.assertNotIn(B, output.getvalue())
+            finally:
+                sys.argv = original
+        finally:
+            os.unlink(path)
+
+    def test_invalid_non_json_constant_rejected(self):
+        with self.assertRaisesRegex(ValueError, "Invalid JSON constant"):
+            json.loads('{"x":NaN}', parse_constant=mod.reject_json_constant)
 
     def test_identity_case_normalization(self):
         r = mod.inspect(sample(main_sha=A.upper(),
