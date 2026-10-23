@@ -8,8 +8,24 @@ EXPECTED = {
     "main_repository", "main_sha", "configured_repository", "configured_branch",
     "configured_sha", "deployment_metadata_sha", "deployment_status"
 }
+PINNED_REPOSITORY = "Coxskull/Bliss_Bot_Chapel"
 SHA = re.compile(r"[0-9a-fA-F]{40}$")
 REPO = re.compile(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+
+
+def reject_duplicate_keys(pairs):
+    """Prevent silent last-value-wins parsing of supplied evidence."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate metadata field")
+        result[key] = value
+    return result
+
+
+def reject_json_constant(value):
+    """Disallow non-JSON NaN and Infinity values accepted by json.load."""
+    raise ValueError("Invalid JSON constant")
 
 
 def inspect(data):
@@ -18,6 +34,8 @@ def inspect(data):
     for name in ("main_repository", "configured_repository"):
         if not isinstance(data[name], str) or not REPO.fullmatch(data[name]):
             raise ValueError("Invalid repository identity")
+    if data["main_repository"].casefold() != PINNED_REPOSITORY.casefold():
+        raise ValueError("Unexpected main repository identity")
     for name in ("main_sha", "configured_sha", "deployment_metadata_sha"):
         val = data[name]
         if val is not None and (
@@ -63,7 +81,9 @@ def main():
         return 2
     try:
         with open(sys.argv[1], encoding="utf-8") as fh:
-            result = inspect(json.load(fh))
+            result = inspect(json.load(
+                fh, object_pairs_hook=reject_duplicate_keys,
+                parse_constant=reject_json_constant))
     except (OSError, ValueError, TypeError):
         print('{"status":"INVALID_INPUT","release_authorized":false}')
         return 2
