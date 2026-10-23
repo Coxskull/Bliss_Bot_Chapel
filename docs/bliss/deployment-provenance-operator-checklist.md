@@ -24,7 +24,7 @@ Prepare a local file named `provenance.json` containing only this non-secret met
 }
 ```
 
-All example SHAs are placeholders; replace with freshly retrieved, complete real commit IDs. Use null for unknown configured or deployment commit metadata (and null status with unknown deployment), never a guessed SHA. Unknown extra fields are rejected.
+All example SHAs are placeholders; replace with freshly retrieved, complete real commit IDs. Use null for unknown configured or deployment commit metadata (and null status with unknown deployment), never a guessed SHA. Unknown extra fields, duplicate JSON object keys, and non-JSON numbers (`NaN` / `Infinity`) are rejected. The `main_repository` field must match the pinned release target `Coxskull/Bliss_Bot_Chapel` (case-insensitively); matching spoofed repository names cannot pass. The operator must separately confirm that all three records came from the correct GitHub/Railway resources.
 
 Run from repository root, offline:
 
