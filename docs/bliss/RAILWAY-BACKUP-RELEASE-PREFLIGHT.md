@@ -88,3 +88,30 @@ The [three-way offline provenance checker](deployment-provenance-operator-checkl
 6. Release only with explicit owner approval, tested rollback and separate evidence that `/health/live`, `/health/ready`, authenticated workspace CRUD and negative authorization checks pass. Until then preserve `Runtime__RestrictedPreview=true`, no public operator login, campaign sends, subscription/payment activation, user outreach, or new charges.
 
 **Hard rule:** `ProductionPostureDocument.BackupDeclared` checks configuration declarations; it is **not** evidence that Railway created a successful backup or that one can be restored. No provider-sourced backup verification means the P0 release gate remains BLOCKED even when offline posture/CI checks report success.
+
+## 6. Read-only backup metadata via the documented Railway Public API
+
+Railway's [public API documentation](https://docs.railway.com/integrations/api/manage-volumes#volume-backups) exposes two **query-only** GraphQL operations that can independently resolve the *metadata* missing from the connected Railway service inventory: `volumeInstanceBackupList` (backup ID/name/creation/expiration/size) and `volumeInstanceBackupScheduleList` (configured cron/kind/retention/creation). They require the **volume instance ID**, not merely the project volume ID. Railway's app/service inventory does not return the backup lists through the connector currently used for this inspection. Do not invent an instance ID or assume an empty list from an unsupported tool.
+
+An authorized owner may run the following **read-only** queries through Railway's authenticated Public API explorer using their own existing session, or simply inspect **production > Postgres > Backups**. Do not paste API tokens or customer data into evidence:
+
+```graphql
+query BlissBackupMetadata($volumeInstanceId: String!) {
+  volumeInstanceBackupList(volumeInstanceId: $volumeInstanceId) {
+    id name createdAt expiresAt usedMB referencedMB
+  }
+  volumeInstanceBackupScheduleList(volumeInstanceId: $volumeInstanceId) {
+    id name cron kind retentionSeconds createdAt
+  }
+}
+```
+
+- Before accepting this as provider proof, cross-check the returned `volumeInstanceId` resolves to `postgres-volume` of the **correct** project, `production` environment and `Postgres` service. Never compare with the unrelated `bliss-runtime` application volume.
+- A list of existing backups/schedules is **read-only snapshot metadata**, not proof of successful isolated restoration or integrity. A restore drill requires separate approval and a truly isolated target.
+- **Never** invoke `volumeInstanceBackupCreate`, `volumeInstanceBackupRestore`, `volumeInstanceBackupDelete`, `volumeInstanceBackupLock`, or any `volumeInstanceBackupSchedule` mutation to carry out this inspection. Volume restore swaps attached volumes on the original service after deploying and may interrupt production.
+- Railway also documents [PostgreSQL PITR](https://docs.railway.com/volumes/point-in-time-recovery), which can restore into a *new* sibling service when previously enabled. It is **not** automatically active because PostgreSQL 18 is running. Enabling PITR creates storage/egress costs and redeploys components; the user has not authorized it. An existing PITR configuration and archiver state should be verified separately without enabling it.
+- An accepted scheduled backup and a **real separately approved isolated restore** are both required before hosted migration and public unlock; do not promote a green source-level preflight result into production approval.
+
+## 7. Ingress preflight alternate variable-name policy
+
+The offline `bliss-operational-preflight.py` name inventory now accepts **either** `Runtime__LoopbackIngress__Enabled` **or** an indexed `Runtime__KnownProxies__0` name. Both present is `CONFLICTING_POLICY_NAMES` and fails closed; neither present is missing. The source-level reviewed loopback ingress implementation requires **zero** configured external KnownProxies. Presence of a variable name always yields only `*_DECLARED_UNVERIFIED`: the tool cannot attest whether the value is enabled, whether the configured origin is right, or whether forwarding/HTTPS is safe. `ingress_transport_verified` remains `false` in all inventory-only outcomes. Actual Kestrel/YARP hosted negative tests and owner signoff remain mandatory.
