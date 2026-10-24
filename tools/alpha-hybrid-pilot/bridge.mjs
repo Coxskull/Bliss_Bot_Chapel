@@ -9,7 +9,7 @@ export const EXECUTIVE_GITHUB_ACTOR = 'alpha7auto';
 const exact = (o, keys) => o && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).sort().join(',') === keys.slice().sort().join(',');
 const validSignature = x => typeof x === 'string' && /^[A-Za-z0-9+/]+={0,2}$/.test(x) && Buffer.from(x, 'base64').length === 64;
 const createSignature = (payload, key) => sign(null, Buffer.from(canonical(payload)), key).toString('base64');
-const verifySignature = (payload, signature, key) => validSignature(signature) && verify(null, Buffer.from(canonical(payload)), key, Buffer.from(signature, 'base64');
+const verifySignature = (payload, signature, key) => validSignature(signature) && verify(null, Buffer.from(canonical(payload)), key, Buffer.from(signature, 'base64'));
 
 /**
  * Trusted context MUST come from the authenticated GitHub API result, not from
