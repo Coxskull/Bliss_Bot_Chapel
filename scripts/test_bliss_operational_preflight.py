@@ -20,6 +20,52 @@ class InventoryTests(unittest.TestCase):
         self.assertFalse(report["operational_acceptance"])
         self.assertFalse(report["configuration_values_validated"])
 
+    def test_loopback_ingress_names_are_accepted_without_external_proxies(self):
+        names = list(module.REQUIRED) + [
+            "Authentication__ApprovedTestSubjects__0",
+            "Runtime__LoopbackIngress__Enabled",
+            "Runtime__LoopbackIngress__PublicOrigin",
+            "Runtime__LoopbackIngress__PublicPort",
+            "Runtime__LoopbackIngress__BackendPort",
+        ]
+        report = module.inspect(names)
+        self.assertEqual(report["inventory_status"], "PRESENT_UNVERIFIED")
+        self.assertEqual(report["ingress_policy_name_status"], "LOOPBACK_DECLARED_UNVERIFIED")
+        self.assertFalse(report["ingress_transport_verified"])
+        self.assertFalse(report["operational_acceptance"])
+        self.assertFalse(report["hosted_restore_verified"])
+
+    def test_existing_known_proxy_inventory_stays_unverified(self):
+        names = list(module.REQUIRED) + [
+            "Authentication__ApprovedTestSubjects__0", "Runtime__KnownProxies__0"
+        ]
+        report = module.inspect(names)
+        self.assertEqual(report["ingress_policy_name_status"], "EXPLICIT_PROXIES_DECLARED_UNVERIFIED")
+        self.assertEqual(report["inventory_status"], "PRESENT_UNVERIFIED")
+        self.assertFalse(report["ingress_transport_verified"])
+
+    def test_mixed_ingress_names_fail_closed(self):
+        names = list(module.REQUIRED) + [
+            "Authentication__ApprovedTestSubjects__0",
+            "Runtime__LoopbackIngress__Enabled",
+            "Runtime__KnownProxies__0",
+        ]
+        report = module.inspect(names)
+        self.assertEqual(report["inventory_status"], "BLOCKED")
+        self.assertEqual(report["ingress_policy_name_status"], "CONFLICTING_POLICY_NAMES")
+        self.assertFalse(report["operational_acceptance"])
+
+    def test_missing_or_malformed_ingress_names_are_blocked(self):
+        names = list(module.REQUIRED) + ["Authentication__ApprovedTestSubjects__0"]
+        for suffix in (None, "__01", "__bad"):
+            with self.subTest(suffix=suffix):
+                value = names if suffix is None else names + ["Runtime__KnownProxies" + suffix]
+                report = module.inspect(value)
+                self.assertEqual(report["inventory_status"], "BLOCKED")
+                self.assertEqual(report["ingress_policy_name_status"], "MISSING")
+                self.assertIn("Runtime__KnownProxies__0 OR Runtime__LoopbackIngress__Enabled",
+                              report["missing_required_variable_names"])
+
     def test_invalid_index_does_not_satisfy_subject_requirement(self):
         for suffix in ("", "__", "__email", "__-1", "__01"):
             with self.subTest(suffix=suffix):
