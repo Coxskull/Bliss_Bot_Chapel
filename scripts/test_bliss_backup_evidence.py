@@ -151,4 +151,33 @@ class Tests(unittest.TestCase):
         with self.assertRaisesRegex(mod.EvidenceError,'UNEXPECTED_REDIRECT'):
             mod.NoRedirect().redirect_request(None,None,302,'Moved',{},'https://evil.example/')
 
+    def test_duplicate_snapshot_or_schedule_ids_fail_closed(self):
+        for key in ('volumeInstanceBackupList', 'volumeInstanceBackupScheduleList'):
+            data = backup()
+            data[key].append(data[key][0].copy())
+            with self.subTest(key=key), self.assertRaisesRegex(mod.EvidenceError, 'INVALID_PROVIDER_RESPONSE'):
+                mod.interpret(source(), data, VOLUME_INSTANCE, NOW)
+
+    def test_nondictionary_provider_details_fail_closed(self):
+        for bad in (None, [], 'not a dict', 7):
+            with self.subTest(bad=repr(bad)), self.assertRaisesRegex(mod.EvidenceError, 'INVALID_PROVIDER_RESPONSE'):
+                mod.interpret(source(), bad, VOLUME_INSTANCE, NOW)
+
+    def test_nonstring_token_fails_without_network_or_leak(self):
+        for bad in (7, [], {'token': 'secret'}):
+            with self.subTest(bad=type(bad).__name__), self.assertRaisesRegex(mod.EvidenceError, 'INVALID_TOKEN'):
+                mod.query(bad, mod.SCOPE_QUERY, opener=FakeOpener())
+
+    def test_runtime_disables_inherited_proxy_before_scoped_token_request(self):
+        from unittest.mock import patch
+        transport = FakeOpener()
+        with patch.object(mod.urllib.request, 'build_opener', return_value=transport) as factory:
+            result = mod.query('synthetic', mod.SCOPE_QUERY)
+        self.assertEqual(result['projectToken'], source())
+        handlers = factory.call_args.args
+        no_proxy = [h for h in handlers if isinstance(h, mod.urllib.request.ProxyHandler)]
+        self.assertEqual(len(no_proxy), 1)
+        self.assertEqual(no_proxy[0].proxies, {})
+        self.assertTrue(any(isinstance(h, mod.NoRedirect) for h in handlers))
+
 if __name__=='__main__': unittest.main()
