@@ -1,0 +1,37 @@
+name: ALPHA OAuth-Only Bridge Pilot (read-only)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'tools/alpha-oauth-bridge/**'
+      - '.github/workflows/alpha-oauth-bridge-pilot.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  safe-staging-receipt:
+    if: >-
+      github.event.pull_request.draft == true &&
+      github.event.pull_request.head.repo.full_name == 'Coxskull/Bliss_Bot_Chapel' &&
+      github.event.pull_request.user.login == 'Coxskull'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read-only checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Syntax and trust regression suite
+        run: |
+          node --check tools/alpha-oauth-bridge/pilot.mjs
+          node --test tools/alpha-oauth-bridge/pilot.test.mjs
+      - name: Produce deterministic safe task receipt
+        env:
+          ALPHA_OAUTH_PILOT_ENABLED: 'YES'
+        run: node tools/alpha-oauth-bridge/pilot.mjs
