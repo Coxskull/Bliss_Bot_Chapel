@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import io
 from pathlib import Path
 import unittest
 
@@ -79,6 +80,36 @@ class InventoryTests(unittest.TestCase):
             with self.subTest(bad_type=type(bad).__name__):
                 with self.assertRaises(ValueError):
                     module.inspect([], bad)
+
+    def test_unrelated_repository_pair_cannot_self_attest(self):
+        state = {
+            "main_repo": "Attacker/Other",
+            "configured_repo": "Attacker/Other",
+            "main_sha": "a" * 40, "configured_sha": "a" * 40
+        }
+        with self.assertRaises(ValueError):
+            module.inspect([], state)
+
+    def test_strict_json_reader_rejects_duplicates_and_non_json_numbers(self):
+        for payload in (
+            '{"main_repo":"Coxskull/Bliss_Bot_Chapel","main_repo":"Attacker/Other"}',
+            '{"configured_sha":NaN}',
+            '{"main_sha":Infinity}',
+            '{"configured_sha":-Infinity}',
+        ):
+            with self.subTest(payload=payload[:20]):
+                with self.assertRaises(ValueError):
+                    module.read_strict_json(io.StringIO(payload))
+
+    def test_strict_json_reader_accepts_a_valid_source_object(self):
+        text = json.dumps({
+            "main_repo": "Coxskull/Bliss_Bot_Chapel",
+            "configured_repo": "Coxskull/Bliss_Bot_Chapel",
+            "main_sha": "a" * 40,
+            "configured_sha": "a" * 40,
+        })
+        state = module.read_strict_json(io.StringIO(text))
+        self.assertEqual(module.inspect([], state)["configured_source_parity"], "CONFIG_MATCH")
 
     def test_source_absence_does_not_mean_parity(self):
         self.assertEqual(module.inspect([])["configured_source_parity"], "NOT_PROVIDED")
