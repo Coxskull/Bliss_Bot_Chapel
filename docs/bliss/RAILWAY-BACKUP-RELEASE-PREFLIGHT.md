@@ -58,3 +58,33 @@ The command returns `CONFIG_DRIFT`, `CONFIG_MATCH`, or `NOT_PROVIDED`. It refuse
 - Legal/privacy/consent, advertiser and creator rights, and independently approved commerce decisions
 
 Until all applicable gates are accepted: **public content may remain visible, but private Bliss application must remain restricted; no live campaigns, payouts, payment activation or external messaging.**
+
+## 5. Current hosted readiness checkpoint (read-only, 2026-10-24 UTC)
+
+This is a non-secret acceptance matrix from **connected live Railway and GitHub metadata**. It is not a deployment, browser login, production backup test, migration, or independent runtime attestation. Re-check after every deployment.
+
+| Gate | Observed evidence | Acceptance |
+| --- | --- | --- |
+| Application availability | Railway `bliss-bot` production app Online, 1/1 replica, active SUCCESS deployment `2e8a1f15-9aeb-4e08-b82e-297bdfc31db9` | INFRASTRUCTURE ONLY |
+| Database availability | Railway `Postgres` PostgreSQL 18 Online, 1/1 replica, volume `postgres-volume` (5,000 MB) mounted at `/var/lib/postgresql/data` | INFRASTRUCTURE ONLY |
+| Current GitHub main | `f77b40b3a94f78004d9012cd2ac2c945feabc986` | SOURCE HEAD ONLY |
+| Railway configured source | `Coxskull/Bliss_Bot_Chapel`, branch `main`, configured SHA `121fe37a5d2d9b26281324f1af8306cfaed509ee` | CONFIG_DRIFT |
+| Actual active deployment metadata | Active deployment reports commit `7751d20be61b97cc89309bf2e11f80e6bf20e5d2`. GitHub compare main is **47 commits ahead** of this commit and **54 ahead** of configured SHA | FAIL_DRIFT; deployed bytes unverified |
+| Preview restriction | Railway recorded `/health/live` HTTP 200 and deliberately gated `/login.html`, `/api/auth/session`, private routes at HTTP 503 under restricted preview; no live OIDC acceptance | KEEP RESTRICTED |
+| Proxy policy | Current variable-name inventory did not expose `Runtime__LoopbackIngress__Enabled`, `Runtime__KnownProxies__0`, or `Runtime__Backup__Provider/Schedule/RetentionDays`. Presence/absence of names does not validate configured values | NOT VERIFIED |
+| Production backups | Attached Postgres volume is not evidence of an enabled snapshot schedule. Connected Railway tools **do not expose** a snapshot schedule, timestamp, retention, PITR or restore history | BLOCKED |
+| Isolated synthetic migration + restore | [CI PG16 and PG18 #40068210718](https://github.com/Coxskull/Bliss_Bot_Chapel/actions/runs/40068210718) succeeded, with separately retained synthetic `pg_dump` and `pg_restore` evidence artifacts | SYNTHETIC ONLY |
+| Auth, HTTPS ingress and tenant isolation | No approved real hosted issuer-subject OIDC PKCE / CSRF / workspace-denial / session-persistence evidence in the current provider reads | BLOCKED |
+
+The [three-way offline provenance checker](deployment-provenance-operator-checklist.md) should classify the exact source metadata above as `FAIL_DRIFT`. A matching source triple, if achieved later, would still be **MATCH_UNATTESTED**, not a guarantee of running image identity.
+
+### Safe operator sequence — no cost or production changes authorized here
+
+1. Use the owner-controlled Railway **Postgres > Backups** UI to record whether backup schedules are actually enabled, latest **successful** snapshot date, retention, failure status, incremental cost, and PITR status. Produce a sanitized read-only evidence reference. **Do not press Enable, Backup, Restore, Deploy, or purchase a plan as part of this inspection**. Current [Railway documentation](https://docs.railway.com/volumes/backups) notes storage-based charges and same-project/environment volume restore.
+2. Review an independent isolated **logical** restore plan and scope for sensitive data before executing anything. Existing synthetic GitHub CI demonstrates the tooling, not hosted source recovery. Never use the Railway production volume Restore command as an isolation test.
+3. Once backup/recovery has independent approval, identify the exact Railway database source-of-truth, inspect sanitized migration history/schema (no secrets or customer data), review the full migration chain and target-specific rollback, and obtain separate authority for a guarded maintenance-window write.
+4. Only after the database gate is accepted, review the exact code SHA/image provenance and a **staged** version of the loopback ingress policy from [the current design](railway-ingress-policy-review.md): `Runtime__LoopbackIngress__Enabled=true`, `PublicOrigin=https://bliss-bot-production-5eb8.up.railway.app`, `PublicPort=8080`, `BackendPort=8081`. The public Railway service must remain on 8080; 8081 stays loopback-only. This is a **configuration proposal**, not an instruction to set variables now. Keep `Runtime__KnownProxies__*` empty under loopback mode; forbid retired broad Railway proxy trust and unverified forwarded headers.
+5. Independently test approved immutable issuer-subject mappings, real signed OIDC PKCE, session/CSRF/logout and per-tenant denials on an isolated/staged environment. **Do not** log client secrets, authorization codes or real identities. Require approved synthetic data and audited reviewer signoff.
+6. Release only with explicit owner approval, tested rollback and separate evidence that `/health/live`, `/health/ready`, authenticated workspace CRUD and negative authorization checks pass. Until then preserve `Runtime__RestrictedPreview=true`, no public operator login, campaign sends, subscription/payment activation, user outreach, or new charges.
+
+**Hard rule:** `ProductionPostureDocument.BackupDeclared` checks configuration declarations; it is **not** evidence that Railway created a successful backup or that one can be restored. No provider-sourced backup verification means the P0 release gate remains BLOCKED even when offline posture/CI checks report success.
