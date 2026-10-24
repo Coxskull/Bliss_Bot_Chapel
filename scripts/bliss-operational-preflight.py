@@ -42,11 +42,24 @@ def inspect(names, source=None):
     source_parity = "NOT_PROVIDED" if source is None else inspect_source(source)
     names = set(names)
     missing = [n for n in REQUIRED if n not in names]
-    for prefix in ("Authentication__ApprovedTestSubjects", "Runtime__KnownProxies"):
-        if not any(re.fullmatch(re.escape(prefix) + r"__(0|[1-9][0-9]*)", n) for n in names):
-            missing.append(prefix + "__0")
+    if not any(re.fullmatch(r"Authentication__ApprovedTestSubjects__(0|[1-9][0-9]*)", n) for n in names):
+        missing.append("Authentication__ApprovedTestSubjects__0")
+    known_proxies_present = any(
+        re.fullmatch(r"Runtime__KnownProxies__(0|[1-9][0-9]*)", n)
+        for n in names)
+    loopback_ingress_present = "Runtime__LoopbackIngress__Enabled" in names
+    # Presence alone never establishes valid values or a secure trusted ingress.
+    ingress_policy_conflict = known_proxies_present and loopback_ingress_present
+    if not known_proxies_present and not loopback_ingress_present:
+        missing.append("Runtime__KnownProxies__0 OR Runtime__LoopbackIngress__Enabled")
     return {
-        "inventory_status": "BLOCKED" if missing else "PRESENT_UNVERIFIED",
+        "inventory_status": "BLOCKED" if missing or ingress_policy_conflict else "PRESENT_UNVERIFIED",
+        "ingress_policy_name_status": (
+            "CONFLICTING_POLICY_NAMES" if ingress_policy_conflict else
+            "LOOPBACK_DECLARED_UNVERIFIED" if loopback_ingress_present else
+            "EXPLICIT_PROXIES_DECLARED_UNVERIFIED" if known_proxies_present else
+            "MISSING"),
+        "ingress_transport_verified": False,
         "missing_required_variable_names": missing,
         "configuration_values_validated": False,
         "hosted_login_test": "NOT_TESTED",
