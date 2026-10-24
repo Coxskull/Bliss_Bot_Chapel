@@ -27,7 +27,7 @@ def inspect_source(source):
     for key in ("main_sha", "configured_sha"):
         if not isinstance(source[key], str) or not re.fullmatch(r"[0-9a-fA-F]{40}", source[key]):
             raise ValueError("Invalid Git commit SHA.")
-    return ("CONFIG_MATCH" if
+    # A self-consistent but unrelated repository is NOT valid ALPHA provenance.\n    if source["main_repo"].casefold() != "coxskull/bliss_bot_chapel":\n        raise ValueError("Unexpected main repository identity.")\n    return ("CONFIG_MATCH" if
             source["main_repo"].casefold() == source["configured_repo"].casefold()
             and source["main_sha"].lower() == source["configured_sha"].lower()
             else "CONFIG_DRIFT")
@@ -59,6 +59,22 @@ def inspect(names, source=None):
     }
 
 
+def read_strict_json(stream):
+    """Reject ambiguous key duplication and non-JSON numeric constants."""
+    def unique_pairs(pairs):
+        obj = {}
+        for key, value in pairs:
+            if key in obj:
+                raise ValueError("Duplicate JSON field.")
+            obj[key] = value
+        return obj
+
+    def reject_constant(_):
+        raise ValueError("Invalid JSON numeric constant.")
+
+    return json.load(stream, object_pairs_hook=unique_pairs, parse_constant=reject_constant)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("names_file", help="JSON array of variable names only")
@@ -66,11 +82,11 @@ def main():
     args = parser.parse_args()
     try:
         with open(args.names_file, encoding="utf-8") as source:
-            names = json.load(source)
+            names = read_strict_json(source)
         source_state = None
         if args.source_state:
             with open(args.source_state, encoding="utf-8") as source:
-                source_state = json.load(source)
+                source_state = read_strict_json(source)
         report = inspect(names, source_state)
     except (OSError, ValueError, TypeError):
         print(json.dumps({"inventory_status": "INVALID_INPUT", "operational_acceptance": False}))
