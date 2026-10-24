@@ -115,3 +115,22 @@ query BlissBackupMetadata($volumeInstanceId: String!) {
 ## 7. Ingress preflight alternate variable-name policy
 
 The offline `bliss-operational-preflight.py` name inventory now accepts **either** `Runtime__LoopbackIngress__Enabled` **with its required `Runtime__LoopbackIngress__PublicOrigin` name**, **or** an indexed `Runtime__KnownProxies__0` name. Both present is `CONFLICTING_POLICY_NAMES` and fails closed; neither present is missing. The source-level reviewed loopback ingress implementation requires **zero** configured external KnownProxies. Presence of a variable name always yields only `*_DECLARED_UNVERIFIED`: the tool cannot attest whether the value is enabled, whether the configured origin is right, or whether forwarding/HTTPS is safe. `ingress_transport_verified` remains `false` in all inventory-only outcomes. Actual Kestrel/YARP hosted negative tests and owner signoff remain mandatory.
+
+## 8. Guarded read-only backup evidence helper (operator-run; no new token requested)
+
+The PR adds `scripts/bliss_backup_evidence.py`, a narrowly scoped helper with a **fixed** Railway Public API HTTPS origin and **two allowlisted read-only GraphQL operations**. It makes no backup, schedule, restore, PITR, deployment, credential or project mutations. It uses only an **already available** `RAILWAY_TOKEN` project token scoped to the specific `bliss-bot / production` environment; it rejects broader `RAILWAY_API_TOKEN` usage. **Never paste a token in chat, CI logs, issue comments or command history.** If no existing token is authorized, use the owner-controlled Railway Backups UI and do not create/install a token without separate permission.
+
+First, independently identify the *Postgres volume instance ID* (not merely the project-level `postgres-volume` ID) from the owner-controlled Railway dashboard/Public API. It must resolve to the existing `postgres-volume` mounted on `Postgres` at `/var/lib/postgresql/data` in project `fb33c1b7-03fb-42c8-89b1-081951a738fd`, `production` environment `b67a9836-36bf-4083-93f7-00c867b13f39`. The helper refuses a different project/environment, a different volume/service/mount, redirects, GraphQL errors and malformed responses. It checks token scope using `projectToken { projectId environmentId }` **before** reading backup data.
+
+Using a terminal/session where the approved existing scoped `RAILWAY_TOKEN` is already securely available, run locally (replace only the instance ID with an independently verified real ID):
+
+```bash
+python3 scripts/bliss_backup_evidence.py --volume-instance-id <PRODUCTION_POSTGRES_VOLUME_INSTANCE_UUID>
+python3 -m unittest discover -s scripts -p 'test_bliss_backup_evidence.py' -v
+```
+
+No external requests or tokens occur during unit tests. The real metadata command emits a **sanitized JSON summary**: `backup_metadata_status`, number of unexpired snapshots, latest snapshot creation timestamp, schedule count and names-only scope assessment. It never outputs the credential, backup IDs, database rows or raw API errors. Explicitly, `backup_success_verified=false`, `restore_integrity_verified=false`, `release_accepted=false` **even when backups appear in the API**. A listed snapshot or schedule is not proof of successful backup data integrity or acceptable recovery time, and a missing list never authorizes a new billable backup.
+
+If the API declines project-token access to these queries, record `PROVIDER_QUERY_FAILED` and ask an authorized owner to inspect the Backups UI. Do **not** substitute a workspace-wide/account token or escalate privileges without separate Captain approval. If any response does not map to the right production Postgres volume, stop and reconcile inventory without writing.
+
+**Launch gate remains separate:** independent success/retention evidence, an approved isolated restore with integrity verification, migration rollback, deployment-image attribution, ingress/OIDC/tenant negative tests and human release approval are still required. No source-level test authorizes `Runtime__RestrictedPreview=false`.
