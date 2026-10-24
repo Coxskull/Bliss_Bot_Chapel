@@ -35,6 +35,20 @@ class InventoryTests(unittest.TestCase):
         self.assertFalse(report["operational_acceptance"])
         self.assertFalse(report["hosted_restore_verified"])
 
+    def test_loopback_without_public_origin_name_blocks(self):
+        names = list(module.REQUIRED) + [
+            "Authentication__ApprovedTestSubjects__0",
+            "Runtime__LoopbackIngress__Enabled",
+            "Runtime__LoopbackIngress__PublicPort",
+            "Runtime__LoopbackIngress__BackendPort",
+        ]
+        report = module.inspect(names)
+        self.assertEqual(report["inventory_status"], "BLOCKED")
+        self.assertIn("Runtime__LoopbackIngress__PublicOrigin",
+                      report["missing_required_variable_names"])
+        self.assertEqual(report["ingress_policy_name_status"], "LOOPBACK_DECLARED_UNVERIFIED")
+        self.assertFalse(report["operational_acceptance"])
+
     def test_existing_known_proxy_inventory_stays_unverified(self):
         names = list(module.REQUIRED) + [
             "Authentication__ApprovedTestSubjects__0", "Runtime__KnownProxies__0"
