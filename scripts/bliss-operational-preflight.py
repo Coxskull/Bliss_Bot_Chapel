@@ -50,6 +50,10 @@ def inspect(names, source=None):
     loopback_ingress_present = "Runtime__LoopbackIngress__Enabled" in names
     # Presence alone never establishes valid values or a secure trusted ingress.
     ingress_policy_conflict = known_proxies_present and loopback_ingress_present
+    if loopback_ingress_present and not known_proxies_present:
+        # Unlike the listener ports, the HTTPS origin has no valid default.
+        if "Runtime__LoopbackIngress__PublicOrigin" not in names:
+            missing.append("Runtime__LoopbackIngress__PublicOrigin")
     if not known_proxies_present and not loopback_ingress_present:
         missing.append("Runtime__KnownProxies__0 OR Runtime__LoopbackIngress__Enabled")
     return {
