@@ -4,7 +4,7 @@ import { generateKeyPairSync } from 'node:crypto';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { SCOPE, signTask, validateEnvelope, executeEnvelope, verifyReceipt, demo } from './pilot.mjs';
+import { SCOPE, signTask, validateEnvelope, executeEnvelope, verifyReceipt, demo, requireCaptainPin, publicKeyFingerprint } from './pilot.mjs';
 const e = generateKeyPairSync('ed25519');
 const w = generateKeyPairSync('ed25519');
 const now = Date.now();
@@ -22,3 +22,7 @@ test('rejects unexpected JSON fields', () => {const t=task();t.shell='rm -rf /';
 test('atomic replay prevention', async () => {const t=task(),env=signTask(t,e.privateKey),dir=await mkdtemp(join(tmpdir(),'hybrid-test-'));const opts={executivePublicKey:e.publicKey,workerPrivateKey:w.privateKey,enabled:true,now,journalDir:dir};await executeEnvelope(env,opts);await assert.rejects(executeEnvelope(env,opts),/REPLAY_REJECTED/);});
 test('signed receipt cannot be substituted', async () => {const t=task(),r=await run(signTask(t,e.privateKey));r.receipt.resultSha256='0'.repeat(64);assert.equal(verifyReceipt(r,w.publicKey,t),false);});
 test('demo is self-contained and verifiable', async () => {const r=await demo();assert.equal(r.pass,true);assert.equal(r.captainSigningKeyUsed,false);});
+
+test('valid independently pinned fingerprint is accepted', () => { assert.equal(requireCaptainPin(e.publicKey, publicKeyFingerprint(e.publicKey)), true); });
+test('missing captain pin is rejected', () => { assert.throws(() => requireCaptainPin(e.publicKey, undefined), /CAPTAIN_PIN_REQUIRED/); });
+test('mismatched captain pin is rejected', () => { assert.throws(() => requireCaptainPin(e.publicKey, publicKeyFingerprint(w.publicKey)), /CAPTAIN_PIN_MISMATCH/); });
