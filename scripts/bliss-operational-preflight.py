@@ -27,7 +27,10 @@ def inspect_source(source):
     for key in ("main_sha", "configured_sha"):
         if not isinstance(source[key], str) or not re.fullmatch(r"[0-9a-fA-F]{40}", source[key]):
             raise ValueError("Invalid Git commit SHA.")
-    # A self-consistent but unrelated repository is NOT valid ALPHA provenance.\n    if source["main_repo"].casefold() != "coxskull/bliss_bot_chapel":\n        raise ValueError("Unexpected main repository identity.")\n    return ("CONFIG_MATCH" if
+    # A self-consistent but unrelated repository is NOT valid ALPHA provenance.
+    if source["main_repo"].casefold() != "coxskull/bliss_bot_chapel":
+        raise ValueError("Unexpected main repository identity.")
+    return ("CONFIG_MATCH" if
             source["main_repo"].casefold() == source["configured_repo"].casefold()
             and source["main_sha"].lower() == source["configured_sha"].lower()
             else "CONFIG_DRIFT")
