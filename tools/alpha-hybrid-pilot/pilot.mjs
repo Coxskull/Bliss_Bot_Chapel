@@ -1,5 +1,5 @@
 // ALPHA Hybrid Pilot: staging-only, dependency-free, default-deny signed task runner.
-import { createHash, generateKeyPairSync, sign, verify } from 'node:crypto';
+import { createHash, createPublicKey, generateKeyPairSync, sign, timingSafeEqual, verify } from 'node:crypto';
 import { mkdir, open, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -9,6 +9,14 @@ export const SCOPE = 'ALPHA-HYBRID-PILOT-STAGING';
 const TYPES = new Set(['SHA256_EVIDENCE']);
 export const canonical = value => JSON.stringify(value, (_k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(k => [k, v[k]])) : v);
 export const digest = value => createHash('sha256').update(typeof value === 'string' ? value : canonical(value)).digest('hex');
+export const publicKeyFingerprint = key => createHash('sha256').update((key?.type === 'public' ? key : createPublicKey(key)).export({ type: 'spki', format: 'der' })).digest('hex');
+export function requireCaptainPin(publicKey, independentlyApprovedFingerprint) {
+  if (typeof independentlyApprovedFingerprint !== 'string' || !/^[a-f0-9]{64}$/.test(independentlyApprovedFingerprint)) throw Error('CAPTAIN_PIN_REQUIRED');
+  const actual = Buffer.from(publicKeyFingerprint(publicKey), 'hex');
+  const expected = Buffer.from(independentlyApprovedFingerprint, 'hex');
+  if (!timingSafeEqual(actual, expected)) throw Error('CAPTAIN_PIN_MISMATCH');
+  return true;
+}
 const keysExact = (o, required) => o && !Array.isArray(o) && typeof o === 'object' && Object.keys(o).sort().join(',') === required.slice().sort().join(',');
 const parseDate = x => typeof x === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(x) ? Date.parse(x) : NaN;
 
@@ -76,10 +84,12 @@ if (process.argv[1]?.endsWith('/pilot.mjs')) {
     if (cmd === 'demo') console.log(JSON.stringify(await demo(), null, 2));
     else if (cmd === 'process-file') {
       if (process.env.ALPHA_PILOT_ENABLED !== 'YES') throw Error('CAPTAIN_STOP_ACTIVE');
-      for (const k of ['ALPHA_EXEC_PUBLIC_KEY_FILE', 'ALPHA_WORKER_PRIVATE_KEY_FILE', 'ALPHA_PILOT_JOURNAL']) if (!process.env[k]) throw Error(`MISSING_${k}`);
+      for (const k of ['ALPHA_EXEC_PUBLIC_KEY_FILE', 'ALPHA_EXEC_PIN_SHA256', 'ALPHA_WORKER_PRIVATE_KEY_FILE', 'ALPHA_PILOT_JOURNAL']) if (!process.env[k]) throw Error(`MISSING_${k}`);
       if (!process.argv[3]) throw Error('MISSING_TASK_FILE');
       const env = JSON.parse(await readFile(process.argv[3], 'utf8'));
-      const receipt = await executeEnvelope(env, { executivePublicKey: await readFile(process.env.ALPHA_EXEC_PUBLIC_KEY_FILE, 'utf8'), workerPrivateKey: await readFile(process.env.ALPHA_WORKER_PRIVATE_KEY_FILE, 'utf8'), journalDir: process.env.ALPHA_PILOT_JOURNAL, enabled: true });
+      const pinnedKey = await readFile(process.env.ALPHA_EXEC_PUBLIC_KEY_FILE, 'utf8');
+      requireCaptainPin(pinnedKey, process.env.ALPHA_EXEC_PIN_SHA256);
+      const receipt = await executeEnvelope(env, { executivePublicKey: pinnedKey, workerPrivateKey: await readFile(process.env.ALPHA_WORKER_PRIVATE_KEY_FILE, 'utf8'), journalDir: process.env.ALPHA_PILOT_JOURNAL, enabled: true });
       console.log(JSON.stringify(receipt));
     } else throw Error('USAGE: node pilot.mjs demo | process-file TASK.json');
   } catch (err) { console.error(err.message); process.exitCode = 1; }
