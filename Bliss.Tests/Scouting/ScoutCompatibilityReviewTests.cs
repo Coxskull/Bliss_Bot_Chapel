@@ -82,7 +82,7 @@ public sealed class ScoutCompatibilityReviewTests
         string environment, bool authEnabled, bool loggedIn)
     {
         var principal = new ClaimsPrincipal(new ClaimsIdentity(
-            loggedIn ? [new Claim(ClaimTypes.NameIdentifier, "approved-staging-operator")] : [],
+            loggedIn ? new[] { new Claim(ClaimTypes.NameIdentifier, "approved-staging-operator") } : Array.Empty<Claim>(),
             loggedIn ? "TestIdentity" : null));
         return new ScoutCompatibilityPreviewController(
             new FakeHostEnvironment { EnvironmentName = environment },
