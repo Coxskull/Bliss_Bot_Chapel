@@ -53,7 +53,7 @@ def reject_non_json(_):
 def query(token, gql, variables=None, opener=None):
     if gql not in (SCOPE_QUERY, BACKUP_QUERY) or 'mutation' in gql.casefold():
         raise EvidenceError('UNAPPROVED_QUERY')
-    if not token or '\n' in token or '\r' in token or len(token) > 4096:
+    if not isinstance(token, str) or not token or '\n' in token or '\r' in token or len(token) > 4096:
         raise EvidenceError('INVALID_TOKEN')
     body = json.dumps({'query': gql, 'variables': variables or {}}, separators=(',', ':')).encode()
     req = urllib.request.Request(API, data=body, method='POST', headers={
@@ -62,7 +62,10 @@ def query(token, gql, variables=None, opener=None):
     try:
         if opener is None:
             # The fixed Railway HTTPS origin is the only permitted destination.
-            opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ssl.create_default_context()),
+            # Ignore HTTP(S)_PROXY and similar inherited process settings: never forward
+            # a production-scoped token to a third-party proxy.
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({}),
+                                                  urllib.request.HTTPSHandler(context=ssl.create_default_context()),
                                                   NoRedirect())
         with opener.open(req, timeout=12) as response:
             if response.geturl() != API or response.status != 200:
@@ -105,6 +108,8 @@ def interpret(scope, details, instance_id, now=None):
         raise EvidenceError('PROJECT_ENVIRONMENT_SCOPE_MISMATCH')
     if not UUID.fullmatch(instance_id):
         raise EvidenceError('INVALID_VOLUME_INSTANCE_ID')
+    if not isinstance(details, dict):
+        raise EvidenceError('INVALID_PROVIDER_RESPONSE')
     vi = details.get('volumeInstance')
     if not isinstance(vi, dict) or vi.get('id') != instance_id or vi.get('mountPath') != EXPECTED_MOUNT \
        or not isinstance(vi.get('volume'), dict) or vi['volume'].get('id') != EXPECTED_VOLUME \
@@ -116,17 +121,25 @@ def interpret(scope, details, instance_id, now=None):
     if not isinstance(backups, list) or not isinstance(schedules, list) or len(backups) > 10000 or len(schedules) > 100:
         raise EvidenceError('INVALID_PROVIDER_RESPONSE')
     valid = []
+    seen_backup_ids = set()
     for item in backups:
         if not isinstance(item, dict) or not isinstance(item.get('id'), str) or not item['id']:
             raise EvidenceError('INVALID_PROVIDER_RESPONSE')
+        if item['id'] in seen_backup_ids:
+            raise EvidenceError('INVALID_PROVIDER_RESPONSE')
+        seen_backup_ids.add(item['id'])
         created = parse_time(item.get('createdAt'))
         expiry = parse_time(item['expiresAt']) if item.get('expiresAt') else None
         if created > now + timedelta(minutes=5) or (expiry and expiry < created):
             raise EvidenceError('INVALID_PROVIDER_RESPONSE')
         if not expiry or expiry >= now:
             valid.append(created)
+    seen_schedule_ids = set()
     for item in schedules:
-        if not isinstance(item, dict) or not isinstance(item.get('cron'), str) or not item['cron']:
+        if not isinstance(item, dict) or not isinstance(item.get('id'), str) or not item['id'] or item['id'] in seen_schedule_ids:
+            raise EvidenceError('INVALID_PROVIDER_RESPONSE')
+        seen_schedule_ids.add(item['id'])
+        if not isinstance(item.get('cron'), str) or not item['cron']:
             raise EvidenceError('INVALID_PROVIDER_RESPONSE')
         if not isinstance(item.get('retentionSeconds'), int) or isinstance(item['retentionSeconds'], bool) or item['retentionSeconds'] <= 0:
             raise EvidenceError('INVALID_PROVIDER_RESPONSE')
