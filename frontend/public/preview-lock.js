@@ -7,13 +7,13 @@ fetch('/preview-status', { cache: 'no-store' }).then(async response => {
 
   const banner = document.createElement('aside');
   banner.setAttribute('role', 'status');
-  banner.textContent = 'INTERFACE PREVIEW · Data, login and actions are unavailable while setup is completed.';
+  banner.textContent = 'INTERFACE PREVIEW · Ask Alpha provides general guided information. Login, data, payments and commercial actions remain unavailable.';
   banner.style.cssText = 'position:sticky;top:0;z-index:99999;padding:14px 20px;background:#37204f;color:#fff;text-align:center;font:600 14px/1.5 system-ui;';
   document.body.prepend(banner);
 
   // Do not imply that an operator is online when only a static page works.
   const onlineLabel = document.querySelector('.planner-profile .online');
-  if (onlineLabel) onlineLabel.textContent = 'Preview only · Offline';
+  if (onlineLabel) onlineLabel.textContent = 'Guided information available · No live AI';
 
   // Preserve in-page navigation and the public landing page, but avoid
   // sending visitors to protected HTML that intentionally responds 503.
@@ -37,7 +37,7 @@ fetch('/preview-status', { cache: 'no-store' }).then(async response => {
   });
 
   // Leave the mobile navigation toggle functional; lock business actions.
-  document.querySelectorAll('.suggestions button, form button, form input, form textarea, form select').forEach(control => {
+  document.querySelectorAll('.suggestions button:not([data-ask-alpha-prompt]), form button, form input, form textarea, form select').forEach(control => {
     control.disabled = true;
     control.setAttribute('aria-disabled', 'true');
   });
