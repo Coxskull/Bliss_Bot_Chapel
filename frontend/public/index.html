@@ -59,7 +59,7 @@
       <div class="planner-layout">
         <aside class="planner-profile">
           <div class="planner-avatar"><span>⌁</span></div>
-          <h3>The Wedding Planner™</h3>
+          <h3>Ask Alpha™ · The Wedding Planner</h3>
           <p class="online"><i></i> Online now</p>
           <ul>
             <li>Brand Guidance</li>
@@ -79,35 +79,34 @@
             <div class="mini-bot">⌁</div>
             <div class="message">
               <strong>Welcome to Bliss Chapel.</strong>
-              <b>I am your Wedding Planner. 💒</b>
-              <p>I’m here to help you prepare your business for its Alpha campaign. We can explore your brand, create amazing campaigns, and discover how Bliss Chapel can help your business grow.</p>
-              <p>To get started, could you tell me a little about your business?</p>
+              <b>I am Ask Alpha, your guided introduction. 💒</b>
+              <p>I can explain how advertiser and creator partnerships work at Alpha. I provide general information, not personal account advice or an approved campaign.</p>
+              <p>What would you like to know about advertising, creators, pricing or next steps?</p>
               <p>I’m here to listen! 💜</p>
               <time>3:25 PM</time>
             </div>
           </div>
           <div class="phase-notice">
-            <span>FOUNDATION READY</span>
-            <p>The secure workspace is being prepared. AI conversation begins only after the next approved engineering contract.</p>
+            <span>ASK ALPHA · GUIDED INFORMATION ACTIVE</span>
+            <p>Ask a general question below. This is a scripted guide, not a live AI model. Private workspaces, contact submissions, quotes and campaigns remain unavailable.</p>
           </div>
-          <form class="message-composer">
-            <button type="button" aria-label="Attach a file">⌕</button>
-            <input aria-label="Message preview" placeholder="Type your message here..." disabled>
-            <button type="button" aria-label="Voice message" disabled>♩</button>
-            <button class="send" type="button" aria-label="Send message" disabled>➤</button>
-          </form>
-          <small class="privacy-note">Your plan stays private and belongs to you.</small>
+          <div id="ask-alpha-thread" class="ask-alpha-thread" role="log" aria-label="Ask Alpha guided conversation" aria-live="polite" aria-relevant="additions"></div>
+          <div class="message-composer ask-alpha-composer" id="ask-alpha-composer">
+            <input id="ask-alpha-input" maxlength="400" autocomplete="off" aria-label="Ask Alpha a general question" placeholder="Ask about advertisers, creators or pricing">
+            <button class="send" id="ask-alpha-send" type="button" aria-label="Send question to guided Ask Alpha">Send</button>
+          </div>
+          <small class="privacy-note">Guided answers only · No live AI · Messages stay in this tab and are not submitted.</small>
         </section>
 
         <aside class="suggestions">
           <section>
             <h3><span>💡</span> Try These Examples</h3>
-            <button type="button">“I don’t have a logo yet” <b>›</b></button>
-            <button type="button">“Create a campaign for my restaurant” <b>›</b></button>
-            <button type="button">“Help me choose colors” <b>›</b></button>
-            <button type="button">“Show me some design concepts” <b>›</b></button>
-            <button type="button">“What advertising works in my industry?” <b>›</b></button>
-            <button type="button">“I want to see different styles” <b>›</b></button>
+            <button type="button" data-ask-alpha-prompt="How does advertising with Alpha work?">How advertising works <b>›</b></button>
+            <button type="button" data-ask-alpha-prompt="How do creators join Alpha?">For content creators <b>›</b></button>
+            <button type="button" data-ask-alpha-prompt="How much does an ad cost?">Pricing and quotes <b>›</b></button>
+            <button type="button" data-ask-alpha-prompt="Can Alpha guarantee results?">Campaign expectations <b>›</b></button>
+            <button type="button" data-ask-alpha-prompt="Can I talk to a human?">Human assistance <b>›</b></button>
+            <button type="button" data-ask-alpha-prompt="What happens to my chat message?">Privacy and data <b>›</b></button>
           </section>
           <section class="also">
             <h3><span>✦</span> You Can Also:</h3>

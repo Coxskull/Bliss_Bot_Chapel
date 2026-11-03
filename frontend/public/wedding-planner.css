@@ -249,3 +249,15 @@ footer > a span { margin-left: 8px; }
   .audience-panels { grid-template-columns: 1fr; }
   footer { grid-template-columns: 1fr 1fr; }
 }
+
+/* Bounded informational Ask Alpha, separate from the protected business UI. */
+.ask-alpha-thread { margin: 12px 0 53px 46px; max-height: 188px; overflow-y: auto; display: grid; gap: 7px; }
+.ask-alpha-bubble { margin: 0; padding: 8px 10px; border-radius: 8px; background: #f1effe; color: #282150; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.ask-alpha-bubble strong { display: block; margin-bottom: 3px; font-size: 10px; }
+.ask-alpha-bubble span { white-space: pre-wrap; }
+.ask-alpha-visitor { background: #e6f2ff; }
+.ask-alpha-composer { grid-template-columns: minmax(0, 1fr) 67px; padding: 0 5px 0 9px; }
+.ask-alpha-composer input { width: 100%; min-width: 0; padding: 0 4px; }
+.ask-alpha-composer .send { width: auto; padding: 0 8px; font-weight: 700; }
+.ask-alpha-composer .send:disabled { background: #9d9ba9; }
+@media (max-width: 750px) { .ask-alpha-thread { margin-left: 0; } }

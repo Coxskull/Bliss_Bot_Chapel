@@ -21,5 +21,6 @@ html = html.replaceAll('href="/global-media.html"', 'href="/"');
 await mkdir(resolve(output, 'assets'), { recursive: true });
 await writeFile(resolve(output, 'index.html'), html);
 await copyFile(resolve(source, 'global-media.css'), resolve(output, 'global-media.css'));
+await copyFile(resolve(source, 'wedding-planner.js'), resolve(output, 'wedding-planner.js'));
 await copyFile(resolve(source, 'assets/bliss-chapel-hero.jpg'), resolve(output, 'assets/bliss-chapel-hero.jpg'));
 console.log('Built Vercel workspace portal. Application origin is public configuration, not a credential.');
