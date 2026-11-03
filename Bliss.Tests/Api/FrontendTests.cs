@@ -27,8 +27,10 @@ public sealed class FrontendTests : IClassFixture<BlissApiFactory>
         Assert.Contains("Welcome to Bliss Chapel", body);
         Assert.Contains("The Wedding Planner", body);
         Assert.Contains("Nothing Goes Live Without Your Approval", body);
-        Assert.Contains("FOUNDATION READY", body);
-        Assert.Contains("AI conversation begins only after the next approved engineering contract", body);
+        Assert.Contains("ASK ALPHA · GUIDED INFORMATION ACTIVE", body);
+        Assert.Contains("This is a scripted guide, not a live AI model", body);
+        Assert.Contains("id=\"ask-alpha-input\"", body);
+        Assert.Contains("id=\"ask-alpha-thread\"", body);
         Assert.Contains("wedding-planner.css", body);
         Assert.Contains("wedding-planner.js", body);
         Assert.DoesNotContain("Operations audit", body);
