@@ -23,7 +23,7 @@ let askAlphaTurns = 0;
 function askAlphaAnswer(question) {
   const q = question.toLowerCase();
   const has = (...terms) => terms.some(term => q.includes(term));
-  if (question.includes("@") || /(?:\\+?\\d[ -]?){8,}/.test(question)) {
+  if (question.includes("@") || /(?:\+?\d[ -]?){8,}/.test(question)) {
     return "Please do not enter email addresses or phone numbers here. This informational guide does not collect leads or send messages. A verified contact form will be needed for a private follow-up.";
   }
   if (has("privacy", "personal", "store", "save", "data", "record", "transcript")) {
