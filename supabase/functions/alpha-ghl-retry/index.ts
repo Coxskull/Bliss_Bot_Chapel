@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
-import { deliverToGhl } from "../alpha-public-intake/ghl-sync.mjs";
+import { deliverToGhl } from "./ghl-sync.mjs";
 
 // Internal operations endpoint. JWT gateway guard + exact service-role
 // credential check. Never grant a public browser origin or expose customer PII.
