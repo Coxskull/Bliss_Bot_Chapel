@@ -54,6 +54,19 @@ Verify locally that it selects the **existing** `bliss-bot` project and `product
 railway connect --environment production --tunnel-only Postgres
 ```
 
+If the first tunnel attempt instead says `No SSH keys found in your SSH agent or ~/.ssh/`, this is an **operator workstation prerequisite**, not a Railway database failure. In Ubuntu (never run `ssh-keygen` in the Windows `/mnt/c/WINDOWS/system32` folder), execute:
+
+```bash
+ssh-keygen -t ed25519 -C "bliss-railway-backup"
+# Accept ~/.ssh/id_ed25519 only if it does not already exist.
+# Use an owner-held strong passphrase; do not upload private key to Drive or GitHub.
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+railway connect --environment production --tunnel-only Postgres
+```
+
+If the default key name already exists, **do not overwrite it**; choose a separate filename under `~/.ssh` and pass its actual path to `ssh-add`. If `ssh-keygen` is unavailable, install `openssh-client` with Ubuntu's apt package manager. A successful local SSH key registration is not proof the DB tunnel is open; wait for CLI-confirmed connection, and never share output containing authentication data.
+
 Leave this terminal open if the command succeeds. The Railway CLI [documented tunnel command](https://docs.railway.com/cli/connect) binds a dynamically assigned local port and connects privately to the existing Postgres service. Do not specify a `--port` flag; use the CLI-reported local port in later steps. **WARNING: this command prints a database host, user, password and connection URL. Do not paste or screenshot its output into ChatGPT, GitHub, Google Drive, tickets or email.** It does not itself run `pg_dump` or write to the database. To close the tunnel later, press Ctrl+C.
 
 **What to report back here (ONLY this):** say `Ubuntu ready; Railway CLI login verified; project linked; tunnel open`, or tell me **which of the four stages failed**, with credentials/URLs/passwords redacted. The actual observed CLI usage is `railway connect --environment <ENVIRONMENT> --tunnel-only <SERVICE_NAME>`; `--tunnel-only` is one hyphenated flag. Do not send the terminal output.
