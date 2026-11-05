@@ -9,7 +9,7 @@ This separate operator script can produce a **client-side-encrypted custom-forma
 1. Owner approves this **exact** source (`bliss-bot` / production / `Postgres`), the identity of the person executing it, the approved encrypted destination, a **distinct** offsite copy location, security roles, retention/deletion policy and measured restore criteria. Do not copy customer data into GitHub, Sheets, chat, or CI artifacts. Do not purchase Railway Pro or expose a public Postgres TCP proxy simply to run a backup.
 2. Use an operator-controlled runtime with legitimate network access to **the existing private Railway Postgres**. The connected Railway chat tools do not provide a SQL shell or a backup-snapshot API. This repository cannot make a live backup without an authorized network path. Do not bypass Railway authentication or abuse `PGHOST`/proxy settings. A controlled one-off job is only acceptable if it can use existing paid-for capacity, has a reviewed source and no unwanted service/billing changes.
 3. Install PostgreSQL **18** client binaries (`psql`, `pg_dump`), `age`, and `sha256sum`/`flock`/`mktemp`. Use verify-full TLS with the Railway database CA file for production. Configure a read-only/export-capable database role; do not grant excessive roles merely to make an export work. Existing credentials are never copied into this repository.
-4. Place libpq credentials in an owner-owned **0600 passfile** outside the working repository. Do not set `PGPASSWORD` or put a password in an argument, log or config committed to Git. Use a separate **age public recipient**. Keep its **private decryption identity** separately protected, backed up and tested by the approved recovery custodians.
+4. Place libpq credentials in an owner-owned **0600 passfile** outside the working repository. Do not set `PGPASSWORD` or put a password in an argument, log or config committed to Git. Use a separate **age public recipient** and a pinned trusted root CA from the correct authenticated Railway service. Keep its **private decryption identity** separately protected, backed up and tested by the approved recovery custodians.
 5. Pre-create an owner-controlled **0700 destination directory** outside temporary directories, live database volumes, and Git repositories. The script writes encrypted `.age` and `.sha256` only, never an unencrypted dump. This does not automatically copy to an offsite destination.
 6. Read the expected PostgreSQL server system identifier from a separate, authorized, read-only session; pin it with expected host, DB name and user before allowing execution. Obtain separate approval for a **real** backup and separate approval before a **real backup restore**.
 
@@ -24,7 +24,22 @@ railway link --project fb33c1b7-03fb-42c8-89b1-081951a738fd --environment produc
 railway connect --environment production --tunnel-only Postgres
 ```
 
-Leave the tunnel process open. It does not change Railway's public networking or the PostgreSQL service configuration. In a **separate** private shell, libpq can dial `PGHOSTADDR=127.0.0.1` and `PGPORT=<CLI-reported-local-port>` while keeping `PGHOST` as the **actual TLS certificate hostname** approved from the source's connection settings. Railway CLI's `--tunnel-only` chooses and reports a local port; do not specify an unsupported `--port` argument or assume port 55432. PostgreSQL `verify-full` uses `PGHOST` for hostname verification when `PGHOSTADDR` supplies the network address; do not substitute `localhost` for an unmatched certificate, disable TLS, or set an untrusted CA. Reference: https://www.postgresql.org/docs/current/libpq-connect.html.
+Leave the tunnel process open. It does not change Railway's public networking or the PostgreSQL service configuration. In a **separate** private shell, libpq dials `PGHOSTADDR=127.0.0.1` and `PGPORT=<CLI-reported-local-port>` while retaining `PGHOST=localhost` for **the actual official Railway `postgres-ssl:18` server certificate**. Its upstream `init-ssl.sh` creates the server certificate with `CN=localhost` and `DNS:localhost` SAN and stores the self-signed root CA at `/var/lib/postgresql/data/certs/root.crt`. The script uses this name and a pinned, independently obtained **public CA file** to enable `PGSSLMODE=verify-full` through the already authenticated Railway SSH tunnel, without exposing the database publicly. Source: https://github.com/railwayapp-templates/postgres-ssl/blob/main/init-ssl.sh and https://www.postgresql.org/docs/18/libpq-ssl.html.
+
+**First obtain the CA securely from the approved running Postgres service via authenticated Railway SSH, without ever copying private `root.key` or `server.key`:**
+
+```bash
+umask 077
+install -d -m 700 "$HOME/bliss-backup-operator/trust"
+railway ssh --project fb33c1b7-03fb-42c8-89b1-081951a738fd --service 6aa78407-1632-48c9-8ea4-0289a7d36a5b --environment production -- cat /var/lib/postgresql/data/certs/root.crt > "$HOME/bliss-backup-operator/trust/railway-postgres-root.crt"
+chmod 600 "$HOME/bliss-backup-operator/trust/railway-postgres-root.crt"
+openssl x509 -in "$HOME/bliss-backup-operator/trust/railway-postgres-root.crt" -noout -subject -dates
+sha256sum "$HOME/bliss-backup-operator/trust/railway-postgres-root.crt"
+```
+
+Verify this is the legitimate `bliss-bot / production / Postgres` service and that `openssl x509` parses a valid public CA certificate before trusting it. If SSH fails, the path is missing, or output is not a valid certificate, **stop**. The SHA-256 of the CA **file** is operator-pinned via `BLISS_BACKUP_EXPECTED_CA_SHA256`; the pinned project ID, service ID and local tunnel port must also match. Railway may rotate certificate material upon a later deployment; a changed digest must force a fresh authenticated readback/approval rather than disabling checks. Railway CLI's `--tunnel-only` chooses an ephemeral local port; use the **actual reported port** and keep its terminal open.
+
+**No network/database query is attempted by `--preflight`**; after preflight, the `--execute` path performs a read-only SQL cluster identity check and an encrypted logical export. Even with a valid locally extracted CA, `verify-full` must succeed in the live PostgreSQL connection before any data is accepted. Never change `PGSSLMODE` to `require` or `disable` to bypass a hostname/CA failure.
 
 This connection path still requires a genuine, correctly scoped 0600 passfile, the owner-pinned database name/user/cluster ID, verified CA, an `age` recipient and an owner-approved 0700 encrypted output directory. Use the **local tunnel port** in the passfile. Stop if the correct certificate/host identity cannot be verified. Do not create a Railway public TCP proxy as a workaround; any network egress or CLI usage charges require owner cost review.
 
@@ -35,15 +50,20 @@ Set the variables in a private interactive shell (example placeholders are inten
 ```bash
 export BLISS_BACKUP_ENVIRONMENT=production
 export BLISS_BACKUP_EXECUTION_APPROVED=YES                 # only after explicit owner signoff
-export PGHOST='<approved-private-Railway-Postgres-host>'
+export PGHOST=localhost                           # upstream postgres-ssl certificate CN/SAN; SSH tunnel only
+export PGHOSTADDR=127.0.0.1                        # tunnel listener, never a public database IP
 export PGPORT=5432                              # replace with actual CLI-reported local port when using a tunnel
 # For the approved SSH tunnel only: export PGHOSTADDR=127.0.0.1
 export PGDATABASE='<approved-db-name>'
 export PGUSER='<approved-readonly-backup-role>'
 export PGSSLMODE=verify-full
-export PGSSLROOTCERT='/path/to/approved/railway-postgres-ca.pem'
+export PGSSLROOTCERT="$HOME/bliss-backup-operator/trust/railway-postgres-root.crt"
 export PGPASSFILE='/path/to/private/pgpass'               # chmod 600; NOT in repo/backup dir
 export BLISS_BACKUP_EXPECTED_HOST="$PGHOST"
+export BLISS_BACKUP_EXPECTED_PROJECT_ID=fb33c1b7-03fb-42c8-89b1-081951a738fd
+export BLISS_BACKUP_EXPECTED_SERVICE_ID=6aa78407-1632-48c9-8ea4-0289a7d36a5b
+export BLISS_BACKUP_EXPECTED_TUNNEL_PORT="$PGPORT"
+export BLISS_BACKUP_EXPECTED_CA_SHA256='<approved-public-CA-file-sha256-from-separate-SSH-readback>'
 export BLISS_BACKUP_EXPECTED_DATABASE="$PGDATABASE"
 export BLISS_BACKUP_EXPECTED_USER="$PGUSER"
 export BLISS_BACKUP_EXPECTED_SYSTEM_ID='<pinned-numeric-pg-system-id>'
