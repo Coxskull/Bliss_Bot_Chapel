@@ -13,6 +13,21 @@ This separate operator script can produce a **client-side-encrypted custom-forma
 5. Pre-create an owner-controlled **0700 destination directory** outside temporary directories, live database volumes, and Git repositories. The script writes encrypted `.age` and `.sha256` only, never an unencrypted dump. This does not automatically copy to an offsite destination.
 6. Read the expected PostgreSQL server system identifier from a separate, authorized, read-only session; pin it with expected host, DB name and user before allowing execution. Obtain separate approval for a **real** backup and separate approval before a **real backup restore**.
 
+## Private Railway CLI tunnel — no public database TCP proxy
+
+Railway's currently documented `railway connect --tunnel-only` opens an authenticated **local SSH tunnel** to the existing service, even when Postgres has no public TCP proxy. This is a **candidate owner-run network path**; the connected ChatGPT Railway tool does not run the local CLI or provide your machine's filesystem. Validate network access and costs before any real export. Documentation: https://docs.railway.com/cli/connect and https://docs.railway.com/cli/ssh.
+
+On an approved operator workstation, with Railway CLI already installed and the correct owner signed in (do not paste a token or password into chat):
+
+```bash
+railway link --project fb33c1b7-03fb-42c8-89b1-081951a738fd --environment production
+railway connect Postgres --environment production --tunnel-only --port 55432
+```
+
+Leave the tunnel process open. It does not change Railway's public networking or the PostgreSQL service configuration. In a **separate** private shell, libpq can dial `PGHOSTADDR=127.0.0.1` and `PGPORT=55432` while keeping `PGHOST` as the **actual TLS certificate hostname** approved from the source's connection settings. PostgreSQL `verify-full` uses `PGHOST` for hostname verification when `PGHOSTADDR` supplies the network address; do not substitute `localhost` for an unmatched certificate, disable TLS, or set an untrusted CA. Reference: https://www.postgresql.org/docs/current/libpq-connect.html.
+
+This connection path still requires a genuine, correctly scoped 0600 passfile, the owner-pinned database name/user/cluster ID, verified CA, an `age` recipient and an owner-approved 0700 encrypted output directory. Use the **local tunnel port** in the passfile. Stop if the correct certificate/host identity cannot be verified. Do not create a Railway public TCP proxy as a workaround; any network egress or CLI usage charges require owner cost review.
+
 ## Preflight (no network access)
 
 Set the variables in a private interactive shell (example placeholders are intentionally non-operational):
@@ -21,7 +36,8 @@ Set the variables in a private interactive shell (example placeholders are inten
 export BLISS_BACKUP_ENVIRONMENT=production
 export BLISS_BACKUP_EXECUTION_APPROVED=YES                 # only after explicit owner signoff
 export PGHOST='<approved-private-Railway-Postgres-host>'
-export PGPORT=5432
+export PGPORT=5432                              # or 55432 for an approved private SSH tunnel
+# For the approved SSH tunnel only: export PGHOSTADDR=127.0.0.1
 export PGDATABASE='<approved-db-name>'
 export PGUSER='<approved-readonly-backup-role>'
 export PGSSLMODE=verify-full
