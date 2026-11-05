@@ -63,6 +63,36 @@ bash scripts/bliss-logical-backup-operator.sh --execute
 
 The script verifies the live PostgreSQL cluster ID, database name, role and major version using metadata-only queries before export, requires matching PostgreSQL 18 client tools, locks the private destination against concurrent runs, streams `pg_dump -Fc` directly to `age` (no plaintext dump on disk), checks SHA-256 and file permissions, and deletes partial artifacts on failures. Success prints `LOCAL_ENCRYPTED_BACKUP_CREATED` and **`OFFSITE_COPY_NOT_VERIFIED`**; never interpret that as a completed backup policy or restoration test.
 
+## Approved encrypted offsite destination — Google Drive (no Cloudflare)
+
+Owner selection on 2026-11-05: **ALPHA EVIDENCE** [folder](https://drive.google.com/drive/folders/1HnemyTZBgQhmFhzddyIgxG0cPQ5wElT3). A separate child was created and read back:
+
+- **BLISS BOT CHAPEL - ENCRYPTED POSTGRES BACKUPS** — [open folder](https://drive.google.com/drive/folders/1qwj-2nGmxTQJl2LSKvNkBtfs8rcXtOSo)
+- **Exact destination folder ID:** `1qwj-2nGmxTQJl2LSKvNkBtfs8rcXtOSo`
+- The child inherits the parent's shared-access model: Drive metadata reports one owner and three editors, no `anyone` permission in the returned permissions. Editors may view, modify or delete the **encrypted files**. Do not treat this as immutable/WORM retention. The private `age` identity, PostgreSQL credentials, rclone OAuth config, and plaintext must **never** go inside the parent or child Drive folder. Separate physical custody of the decryption key and an independent immutable or offline copy are important mitigations for malicious deletion.
+- This destination replaces any proposed Cloudflare/R2 storage dependency. No Cloudflare activation, subscription, or bucket is required.
+- Google Drive quota, existing billing plan, the authorized operator workstation and real encryption-key escrow remain to be verified. Upload acceptance is **not** yet established by folder creation.
+
+### Operator-only encrypted upload
+
+After obtaining the owner-controlled encrypted `*.age` file and `*.age.sha256` manifest with `scripts/bliss-logical-backup-operator.sh`, install [rclone](https://rclone.org/drive/) on the authorized operator workstation and configure a **Google Drive** remote with the correct account via interactive OAuth. The already-connected ChatGPT Drive app is **not** a transferable rclone OAuth token. No refresh token should be copied into Git, chat, CI or Google Drive.
+
+Protect the private rclone configuration with owner-only mode `0600`. The upload script checks its remote is a Drive backend, pins the exact destination folder ID, refuses CI and unapproved invocation, accepts only correctly named `age` encrypted backups and matching SHA-256 manifests, refuses mismatched permissions/configuration, uploads using `--immutable`, and hashes the **remote bytes returned by Google Drive** before declaring success.
+
+In a private workstation shell after interactive OAuth:
+
+```bash
+export RCLONE_CONFIG='/path/to/private/rclone.conf'  # owned by operator, chmod 600
+export BLISS_DRIVE_RCLONE_REMOTE='drive'               # configured Google Drive remote name
+export BLISS_DRIVE_FOLDER_ID='1qwj-2nGmxTQJl2LSKvNkBtfs8rcXtOSo'
+export BLISS_DRIVE_UPLOAD_APPROVED=YES                # only after operator confirms upload scope
+bash scripts/bliss-google-drive-upload-operator.sh '/owner-controlled/secure-output-directory/bliss-backup-YYYYMMDDTHHMMSSZ-XXXXXXXX.age'
+```
+
+A successful upload returns `DRIVE_ENCRYPTED_ARCHIVE_READBACK_PASS` plus `SOURCE_RESTORE_AND_RETENTION_NOT_VERIFIED`. This means encrypted bytes and manifest read back exactly; **it does not** mean a real disaster recovery drill, durable retention, unrevoked Drive access, or offsite deletion protection has passed. Keep the separately recorded encrypted SHA-256 checksum **outside that shared Drive folder** to detect silent edit/replacement by an inherited editor. Do not set an automatic deletion schedule before retention has been approved.
+
+The CI workflow runs `tests/bliss-google-drive-upload-mock-ci.sh` against a synthetic, fake rclone executable only. It tests exact folder pinning, simulated upload/readback, refusal and tamper detection without external Drive access. It does not test real rclone authentication or real Google Drive transfer. Never upload production customer data through CI, browser screenshots or GitHub Actions artifacts.
+
 ## Acceptance after export (separate authorized procedure)
 
 1. Independently verify encrypted artifact and checksum against the approved destination; copy encrypted bytes **and** manifest to a physically/logically independent, access-controlled location. Do not store the private decryption identity together with backups. Record size, timestamps and media locations in a restricted operations record, without database rows or credentials.
