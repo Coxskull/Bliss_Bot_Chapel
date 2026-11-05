@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
+import { deliverToGhl } from "./ghl-sync.mjs";
 
 // Public interest requests are not account enrollment, advertiser purchases,
 // creator verification, or a pathway into protected Railway workspaces.
@@ -9,7 +10,8 @@ const allowed = new Set([
   "https://www.alphacreativecontent.com",
   "https://bliss-bot.vercel.app"
 ]);
-const notice = "AGM-INTEREST-2026-11-05";
+const notice = "AGM-INTEREST-2026-11-05-GHL";
+const supportedNotices = new Set(["AGM-INTEREST-2026-11-05", notice]);
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
 const out = (origin: string | null, payload: unknown, status = 200): Response => {
   const headers = new Headers(jsonHeaders);
@@ -77,7 +79,7 @@ Deno.serve(async (req: Request) => {
   const adult = payload.adult_confirmed === true;
   const marketing = payload.marketing_opt_in === true;
   const key = payload.request_key;
-  const expected = payload.notice_version === notice;
+  const expected = supportedNotices.has(String(payload.notice_version));
 
   if (!["creator", "advertiser", "privacy"].includes(String(kind)) ||
       !full_name || full_name.length < 2 || !email || !validEmail(email) ||
@@ -104,7 +106,7 @@ Deno.serve(async (req: Request) => {
     processing_acknowledged: true,
     adult_confirmed: true,
     marketing_opt_in: marketing,
-    notice_version: notice
+    notice_version: payload.notice_version
   };
   try {
     const { data, error } = await client.from("alpha_public_intake_requests")
@@ -115,7 +117,7 @@ Deno.serve(async (req: Request) => {
         // Same random request key and the identical submitted information only.
         // Never disclose another person's previously stored request.
         const old = await client.from("alpha_public_intake_requests")
-          .select("id,created_at,kind,email,full_name,organization,website,market,category,description,marketing_opt_in")
+          .select("id,created_at,kind,email,full_name,organization,website,market,category,description,marketing_opt_in,notice_version")
           .eq("request_key", key).maybeSingle();
         const existing = old.data;
         if (!existing || old.error ||
@@ -123,7 +125,8 @@ Deno.serve(async (req: Request) => {
             existing.full_name !== full_name || existing.organization !== organization ||
             existing.website !== website || existing.market !== market ||
             existing.category !== category || existing.description !== description ||
-            existing.marketing_opt_in !== marketing)
+            existing.marketing_opt_in !== marketing ||
+            existing.notice_version !== payload.notice_version)
           return out(origin, { error: "A request already exists for these details." }, 409);
         record = { id: existing.id, created_at: existing.created_at };
       } else if (error.code === "P0001") {
@@ -137,6 +140,14 @@ Deno.serve(async (req: Request) => {
       .select("id,recorded_at").eq("request_id", record.id).single();
     if (receipt.error || !receipt.data)
       return out(origin, { error: "We could not verify your receipt. Please use the same page to retry." }, 503);
+    // The authoritative Supabase receipt remains the source of truth.
+    // HighLevel delivery may be pending, disabled or temporarily unavailable.
+    // Only NEW notice-version creator/advertiser submissions are eligible;
+    // privacy requests and legacy-consent records are NEVER forwarded.
+    if ((kind === "creator" || kind === "advertiser") &&
+        payload.notice_version === notice) {
+      try { await deliverToGhl(client, record.id); } catch { /* never lose intake */ }
+    }
     return out(origin, {
       status: "RECEIVED_NOT_YET_VERIFIED",
       receipt_id: receipt.data.id,

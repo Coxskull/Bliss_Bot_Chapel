@@ -5,7 +5,7 @@
   const submit = document.querySelector("#submit-button");
   if (!form || !status || !submit) return;
 
-  const noticeVersion = "AGM-INTEREST-2026-11-05";
+  const noticeVersion = "AGM-INTEREST-2026-11-05-GHL";
   let pendingKey = null;
   let pendingDraft = null;
   let saved = false;
