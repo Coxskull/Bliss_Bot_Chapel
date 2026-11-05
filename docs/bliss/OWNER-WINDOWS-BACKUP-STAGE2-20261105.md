@@ -76,11 +76,10 @@ When complete:
 ```bash
 export RCLONE_CONFIG="$HOME/.config/rclone/rclone.conf"
 chmod 600 "$RCLONE_CONFIG"
-rclone --config "$RCLONE_CONFIG" --drive-root-folder-id 1qwj-2nGmxTQJl2LSKvNkBtfs8rcXtOSo lsf drive: --files-only
-echo 'DRIVE_READ_ONLY_LIST_COMPLETE'
+rclone --config "$RCLONE_CONFIG" --drive-root-folder-id 1qwj-2nGmxTQJl2LSKvNkBtfs8rcXtOSo lsf drive: --files-only && echo 'DRIVE_READ_ONLY_LIST_COMPLETE'
 ```
 
-A blank listing is **expected** while the backup subfolder is empty. This final command only lists filenames in the pinned Drive child; it never uploads, deletes, or modifies files. If rclone cannot access the folder, do not grant broad public access to fix it.
+A blank listing is **expected** while the backup subfolder is empty. The `DRIVE_READ_ONLY_LIST_COMPLETE` marker must appear **only after the rclone listing itself succeeds**; if it prints a 403 or other error, the marker is not earned. This final command only lists filenames in the pinned Drive child; it never uploads, deletes, or modifies files. If rclone cannot access the folder, do not grant broad public access to fix it.
 
 ### Owner reply (non-secret only)
 
