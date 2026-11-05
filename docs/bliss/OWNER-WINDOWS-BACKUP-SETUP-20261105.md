@@ -51,12 +51,12 @@ Verify locally that it selects the **existing** `bliss-bot` project and `product
 4. In the **same Ubuntu window**, open a **read-only transport tunnel**, without exporting any data:
 
 ```bash
-railway connect Postgres --environment production --tunnel-only --port 55432
+railway connect --environment production --tunnel-only Postgres
 ```
 
-Leave this terminal open if the command succeeds. The Railway CLI [documented tunnel command](https://docs.railway.com/cli/connect) binds a local port and connects privately to the existing Postgres service. **WARNING: this command prints a database host, user, password and connection URL. Do not paste or screenshot its output into ChatGPT, GitHub, Google Drive, tickets or email.** It does not itself run `pg_dump` or write to the database. To close the tunnel later, press Ctrl+C.
+Leave this terminal open if the command succeeds. The Railway CLI [documented tunnel command](https://docs.railway.com/cli/connect) binds a dynamically assigned local port and connects privately to the existing Postgres service. Do not specify a `--port` flag; use the CLI-reported local port in later steps. **WARNING: this command prints a database host, user, password and connection URL. Do not paste or screenshot its output into ChatGPT, GitHub, Google Drive, tickets or email.** It does not itself run `pg_dump` or write to the database. To close the tunnel later, press Ctrl+C.
 
-**What to report back here (ONLY this):** say `Ubuntu ready; Railway CLI login verified; project linked; tunnel open`, or tell me **which of the four stages failed**, with credentials/URLs/passwords redacted. Do not send the terminal output.
+**What to report back here (ONLY this):** say `Ubuntu ready; Railway CLI login verified; project linked; tunnel open`, or tell me **which of the four stages failed**, with credentials/URLs/passwords redacted. The actual observed CLI usage is `railway connect --environment <ENVIRONMENT> --tunnel-only <SERVICE_NAME>`; `--tunnel-only` is one hyphenated flag. Do not send the terminal output.
 
 ## Engineering tasks to perform only after owner reports Stage 1 is ready
 
