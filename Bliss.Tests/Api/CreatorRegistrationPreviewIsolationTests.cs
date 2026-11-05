@@ -1,3 +1,6 @@
+using System.Net;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Bliss.Api.Runtime;
 using Microsoft.AspNetCore.Http;
 
@@ -27,6 +30,28 @@ public sealed class CreatorRegistrationPreviewIsolationTests
         Assert.Equal("no-store", context.Response.Headers.CacheControl.ToString());
         Assert.Equal("noindex, nofollow", context.Response.Headers["X-Robots-Tag"].ToString());
         Assert.Equal(0, nextCalls);
+    }
+
+    [Fact]
+    public async Task Actual_host_pipeline_denies_preview_assets_before_static_files()
+    {
+        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Development");
+            builder.UseSetting("Runtime:RestrictedPreview", "true");
+        });
+        using var client = factory.CreateClient();
+        foreach (var path in new[] {
+            "/creator-registration-preview.html", "/creator-registration-preview.js"
+        })
+        {
+            using var response = await client.GetAsync(path);
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            Assert.Contains("no-store",
+                response.Headers.CacheControl?.ToString() ?? string.Empty);
+        }
+        using var health = await client.GetAsync("/health/live");
+        Assert.Equal(HttpStatusCode.OK, health.StatusCode);
     }
 
     [Theory]
