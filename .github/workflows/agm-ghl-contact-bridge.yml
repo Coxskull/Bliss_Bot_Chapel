@@ -1,0 +1,60 @@
+name: ALPHA GHL CRM consent and outbox bridge
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/alpha-public-intake/**'
+      - 'supabase/migrations/20261105_alpha_ghl_contact_delivery.sql'
+      - 'frontend/public/join-creator.html'
+      - 'frontend/public/join-advertiser.html'
+      - 'frontend/public/alpha-intake.js'
+      - 'frontend/public/alpha-privacy.html'
+      - 'frontend/public/alpha-terms.html'
+      - 'scripts/agm-ghl-*.mjs'
+      - '.github/workflows/agm-ghl-contact-bridge.yml'
+permissions:
+  contents: read
+jobs:
+  mapping-and-guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/agm-ghl-unit-smoke.mjs
+      - name: Verify GoHighLevel is not in browser code
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs'); const assert = require('node:assert/strict');
+          const browser = fs.readFileSync('frontend/public/alpha-intake.js','utf8');
+          const privacy = fs.readFileSync('frontend/public/alpha-privacy.html','utf8');
+          const creator = fs.readFileSync('frontend/public/join-creator.html','utf8');
+          const advertiser = fs.readFileSync('frontend/public/join-advertiser.html','utf8');
+          const api = fs.readFileSync('supabase/functions/alpha-public-intake/index.ts','utf8');
+          assert.ok(browser.includes('AGM-INTEREST-2026-11-05-GHL'));
+          assert.ok(privacy.includes('GoHighLevel') && privacy.includes('not automatically deleted'));
+          assert.ok(creator.includes('GoHighLevel CRM') && advertiser.includes('GoHighLevel CRM'));
+          assert.ok(api.includes('supportedNotices') && api.includes('deliverToGhl'));
+          for(const token of ['ALPHA_GHL_PRIVATE_INTEGRATION_TOKEN','ALPHA_GHL_LOCATION_ID','ALPHA_GHL_SYNC_ENABLED','services.leadconnectorhq.com']){
+            assert.ok(!browser.includes(token),'Never expose '+token+' on public frontend');
+          }
+          console.log('CRM consent version, public notice, no-secret frontend: PASS');
+          NODE
+
+  hosted-intake-synthetic:
+    # Explicitly one-time acceptance on this integration branch, never a standing
+    # production CRM test. .invalid identifiers cannot be synced to HighLevel.
+    if: github.head_ref == 'feat/agm-ghl-contact-sync-outbox'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/agm-ghl-hosted-smoke.mjs
