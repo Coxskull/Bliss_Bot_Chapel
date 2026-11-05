@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark"><meta name="theme-color" content="#160934">
+<meta name="description" content="Introduce your business and goals. ALPHA can review your interest; this form does not purchase ads, create a campaign, or give access to private workspaces.">
+<title>Advertiser signup | ALPHA GLOBAL MEDIA™</title><link rel="stylesheet" href="/alpha-intake.css"></head>
+<body>
+<a class="skip" href="#intake">Skip to form</a>
+<header class="topbar"><a class="brand" href="/">ALPHA <span>GLOBAL MEDIA™</span></a><nav aria-label="Main navigation"><a href="/">Home</a><a href="/join-creator.html">Creators</a><a href="/join-advertiser.html">Advertisers</a></nav></header>
+<main id="intake">
+<div class="intro"><div class="eyebrow">FOR BRANDS · BUSINESSES · ADVERTISERS</div><h1>Find your next creator partnership.</h1><p>Introduce your business and goals. ALPHA can review your interest; this form does not purchase ads, create a campaign, or give access to private workspaces.</p><div class="switches"><a class="" href="/join-creator.html">I'm a creator</a><a class="selected" href="/join-advertiser.html">I'm an advertiser</a></div></div>
+<div class="panel"><p class="form-kicker">ALPHA INTEREST FORM · NOT YET VERIFIED</p><h2>Advertiser signup</h2><p class="intro-note">Fields marked * are required. We do not ask for passwords, payment information, or sensitive identification.</p>
+<form id="alpha-intake-form" data-kind="advertiser" data-endpoint="https://bkutbglzivfdnoerigyb.supabase.co/functions/v1/alpha-public-intake" novalidate>
+<div class="field"><label for="full_name">Contact person <span aria-hidden="true">*</span></label><input id="full_name" name="full_name" autocomplete="name" required maxlength="120" minlength="2" placeholder="Your full name"></div>
+<div class="field"><label for="email">Email address <span aria-hidden="true">*</span></label><input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="you@example.com"></div>
+<div class="field"><label for="organization">Business or brand name <span aria-hidden="true">*</span></label><input id="organization" name="organization" required maxlength="160" placeholder="Your business name"></div>
+<div class="field"><label for="website">Business website (optional)</label><input id="website" name="website" type="url" inputmode="url" maxlength="500" placeholder="https://..."></div>
+<div class="field"><label for="market">Business city and country <span aria-hidden="true">*</span></label><input id="market" name="market" required maxlength="120" placeholder="Manila, Philippines"></div>
+<div class="field"><label for="category">Industry (optional)</label><input id="category" name="category" maxlength="80" placeholder="Food, retail, travel..."></div>
+<div class="field"><label for="description">What would you like to advertise? (optional)</label><textarea id="description" name="description" rows="3" maxlength="800"  placeholder="A short message is enough"></textarea></div>
+<div class="field trap" aria-hidden="true"><label for="middle_name">Leave this blank</label><input id="middle_name" name="middle_name" tabindex="-1" autocomplete="off"></div>
+<fieldset class="checks"><legend>Your choices</legend>
+<label class="check"><input type="checkbox" name="adult_confirmed" required><span>I confirm I am at least 18 years old. <strong>*</strong></span></label>
+<label class="check"><input type="checkbox" name="processing_acknowledged" required><span>I have read the <a href="/alpha-privacy.html" target="_blank" rel="noopener">Privacy Notice</a> and understand ALPHA will store my details to review and respond to this interest request for up to 90 days. <strong>*</strong></span></label>
+<label class="check"><input type="checkbox" name="marketing_opt_in"><span>Optional: I would also like to receive future marketing updates. This is not needed to submit the form.</span></label>
+</fieldset>
+<button class="submit" type="submit" id="submit-button">Submit interest <span aria-hidden="true">→</span></button>
+<div id="form-status" role="status" aria-live="polite" tabindex="-1" class="status" hidden></div>
+<p class="fine">Submission does not create an ALPHA account, guarantee a partnership, authorize outreach beyond your choices, or start a paid campaign. If an error occurs, no success is claimed until the server verifies a receipt.</p>
+</form></div></main>
+<footer><span>© 2026 ALPHA GLOBAL MEDIA LLC.</span><div><a href="/alpha-privacy.html">Privacy Notice</a><a href="/alpha-terms.html">Terms</a><a href="/privacy-request.html">Privacy requests</a></div></footer>
+<script defer src="/alpha-intake.js"></script></body></html>

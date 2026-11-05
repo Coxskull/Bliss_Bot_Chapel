@@ -21,6 +21,16 @@ html = html.replaceAll('href="/global-media.html"', 'href="/"');
 await mkdir(resolve(output, 'assets'), { recursive: true });
 await writeFile(resolve(output, 'index.html'), html);
 await copyFile(resolve(source, 'global-media.css'), resolve(output, 'global-media.css'));
+
+// Public interest forms and policy pages are the only newly published files.
+// The synthetic engineering-only creator-registration-preview remains excluded.
+for (const filename of [
+  'join-creator.html', 'join-advertiser.html', 'privacy-request.html',
+  'alpha-privacy.html', 'alpha-terms.html', 'alpha-intake.css', 'alpha-intake.js'
+]) {
+  await copyFile(resolve(source, filename), resolve(output, filename));
+}
+
 await copyFile(resolve(source, 'wedding-planner.js'), resolve(output, 'wedding-planner.js'));
 await copyFile(resolve(source, 'assets/bliss-chapel-hero.jpg'), resolve(output, 'assets/bliss-chapel-hero.jpg'));
 console.log('Built Vercel workspace portal. Application origin is public configuration, not a credential.');

@@ -1,0 +1,51 @@
+name: COM-261-004 public creator and advertiser forms
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/public/join-creator.html'
+      - 'frontend/public/join-advertiser.html'
+      - 'frontend/public/privacy-request.html'
+      - 'frontend/public/alpha-*.html'
+      - 'frontend/public/alpha-intake.*'
+      - 'frontend/public/global-media.html'
+      - 'scripts/build-vercel-portal.mjs'
+      - 'scripts/com261004-public-*.mjs'
+      - '.github/workflows/com261004-public-forms.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  publish-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build public portal with reviewed Railway origin
+        env:
+          BLISS_APPLICATION_ORIGIN: https://bliss-bot-production-5eb8.up.railway.app
+        run: node scripts/build-vercel-portal.mjs
+      - name: Verify public forms, notice and private-file exclusion
+        run: node scripts/com261004-public-forms-smoke.mjs
+
+  hosted-edge-synthetic:
+    # One exact authorized integration branch only; not a standing external
+    # provider test on future pull requests or forks. Real data is forbidden.
+    if: github.head_ref == 'feat/com261-004-public-creator-advertiser-intake'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify synthetic-only public Edge receipt and denial contracts
+        run: node scripts/com261004-public-http-smoke.mjs
