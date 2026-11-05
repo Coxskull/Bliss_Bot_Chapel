@@ -1,0 +1,28 @@
+name: COM-261-004 creator preview safety
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/public/creator-registration-preview.html'
+      - 'frontend/public/creator-registration-preview.js'
+      - 'scripts/creator-registration-preview-smoke.cjs'
+      - 'scripts/build-vercel-portal.mjs'
+      - '.github/workflows/com261004-creator-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fictional-only-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact PR head
+        uses: actions/checkout@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate all creator preview safety assertions
+        run: node scripts/creator-registration-preview-smoke.cjs
