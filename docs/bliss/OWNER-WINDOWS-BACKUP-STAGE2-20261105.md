@@ -21,51 +21,25 @@ On Ubuntu 26.04 (`resolute`), `postgresql-client-18` is available in the normal 
 
 ## Step B — Create and verify a private *age* encryption key, offline
 
-**Important WSL paste recovery:** If Ubuntu shows a leading `>` prompt, your shell is waiting for an unfinished statement, not executing commands. Press **Ctrl+C** once to return to the normal `# Bliss Bot — Stage 2: operator workstation encryption + Google Drive authorization
-_Date: 2026-11-05 | **local-only preparation** | Existing Railway private tunnel already open_
-
-The owner confirmed that the existing `bliss-bot / production / Postgres` private Railway tunnel is open in their **first Ubuntu terminal**. **Keep that first terminal open**, but run all preparation below in a **new Ubuntu terminal**. Do not paste the tunnel output: it can contain database secrets.
-
-**No production SQL is run here.** These steps do not create a database export, run `pg_dump`, add a subscription, configure Cloudflare or open a public DB proxy.
-
-## Step A — Install non-database operator utilities
-
-On the owner's Ubuntu/WSL machine, open a **second** Ubuntu terminal:
-
-```bash
-sudo apt-get update
-sudo apt-get install -y age rclone ca-certificates postgresql-client-18
-age --version
-rclone version | head -n 1
-pg_dump --version
-```
-
-On Ubuntu 26.04 (`resolute`), `postgresql-client-18` is available in the normal Ubuntu repositories. **Do not install only `postgresql-client-common`: it supplies a wrapper but not a `pg_dump` client binary.** Check `pg_dump --version` for **18.x** before any real backup. If installation fails or the version is not 18, stop and report that error; do not install a PostgreSQL server or create a live database. Source: https://packages.ubuntu.com/resolute/postgresql-client-18.
-
- prompt, then run commands **one line at a time**. The `if` command below deliberately uses required semicolons and fits on one line. Never paste a private key.
+If Ubuntu shows a leading `>` continuation prompt, **press Ctrl+C once**. Do not continue entering commands until the normal shell `$` prompt returns. The `>` prompt means your previous command has an unmatched quote or unfinished statement. **Paste each command below as a separate complete line.**
 
 ```bash
 umask 077
 install -d -m 700 "$HOME/.config/alpha-bliss-recovery"
-install -d -m 700 "$HOME/bliss-backup-operator/encrypted-archives"
 key="$HOME/.config/alpha-bliss-recovery/age-identity.txt"
-if [ -e "$key" ]; then echo 'Preserving existing age key'; else age-keygen -o "$key"; fi
+if [ -e "$key" ]; then echo 'Keeping existing age key'; else age-keygen -o "$key"; fi
 chmod 600 "$key"
 recipient="$(age-keygen -y "$key")"
-test_file="$(mktemp "$HOME/bliss-backup-operator/encrypted-archives/.age-test.XXXXXXXX")"
-trap 'rm -f -- "$test_file"' EXIT
-printf 'ALPHA synthetic encryption check\n' | age -r "$recipient" > "$test_file"
-got="$(age -d -i "$key" "$test_file")"
-if [ "$got" = 'ALPHA synthetic encryption check' ]; then
-  echo 'LOCAL_AGE_ENCRYPTION_TEST_PASS'
-else
-  echo 'LOCAL_AGE_ENCRYPTION_TEST_FAIL' >&2
-fi
-rm -f -- "$test_file"
-trap - EXIT
+printf 'BLISS test\n' > "$HOME/bliss-test.txt"
+age -r "$recipient" -o "$HOME/bliss-test.age" "$HOME/bliss-test.txt"
+age -d -i "$key" -o "$HOME/bliss-test-restored.txt" "$HOME/bliss-test.age"
+cmp "$HOME/bliss-test.txt" "$HOME/bliss-test-restored.txt" && echo 'LOCAL_AGE_ENCRYPTION_TEST_PASS'
+rm -f "$HOME/bliss-test.txt" "$HOME/bliss-test.age" "$HOME/bliss-test-restored.txt"
 ```
 
-This checks that the local key can decrypt the test message. It does **not** establish disaster recovery: losing this private key means losing the ability to read backups. The owner must create and test an **independent, encrypted recovery copy** of `age-identity.txt` under separate owner custody. **Never put the private key in the shared ALPHA EVIDENCE folder, GitHub, chat, or Railway variables.** The `age1...` public *recipient* is non-secret, but sharing it is still unnecessary for this procedure.
+These files contain only synthetic test text, never a real SQL dump. If the key already exists it is **preserved**, not regenerated. Check the success marker before cleanup. Failure or another `>` prompt means this step remains incomplete; return to the normal shell prompt before troubleshooting.
+
+**Key custody:** Backup archives cannot be recovered if the private age identity is lost. Keep `$HOME/.config/alpha-bliss-recovery/age-identity.txt` on the owner-controlled workstation, mode `0600`. Make a separately protected recovery copy under owner control and test its ability to decrypt a synthetic archive. Never upload the private key to the shared ALPHA EVIDENCE Drive folder, GitHub, Railway config or chat. Public recipient is not secret, but it need not be posted.
 
 ## Step C — Connect rclone to existing Google Drive (no Cloudflare)
 
