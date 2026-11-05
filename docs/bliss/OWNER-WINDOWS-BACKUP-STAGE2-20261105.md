@@ -1,0 +1,91 @@
+# Bliss Bot — Stage 2: operator workstation encryption + Google Drive authorization
+_Date: 2026-11-05 | **local-only preparation** | Existing Railway private tunnel already open_
+
+The owner confirmed that the existing `bliss-bot / production / Postgres` private Railway tunnel is open in their **first Ubuntu terminal**. **Keep that first terminal open**, but run all preparation below in a **new Ubuntu terminal**. Do not paste the tunnel output: it can contain database secrets.
+
+**No production SQL is run here.** These steps do not create a database export, run `pg_dump`, add a subscription, configure Cloudflare or open a public DB proxy.
+
+## Step A — Install non-database operator utilities
+
+On the owner's Ubuntu/WSL machine, open a **second** Ubuntu terminal:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y age rclone ca-certificates
+age --version
+rclone version | head -n 1
+command -v pg_dump >/dev/null && pg_dump --version || echo 'PostgreSQL client not yet installed'
+```
+
+`pg_dump` **18.x** is required before any real backup. If your displayed major version is not 18, do **not** run the production export script yet. Follow the [PostgreSQL official Ubuntu client installation instructions](https://www.postgresql.org/download/linux/ubuntu/) to add the supported PGDG repository and install **`postgresql-client-18`** later. Do not install a PostgreSQL server or create another live database for this task.
+
+## Step B — Create and verify a private *age* encryption key, offline
+
+```bash
+umask 077
+install -d -m 700 "$HOME/.config/alpha-bliss-recovery"
+install -d -m 700 "$HOME/bliss-backup-operator/encrypted-archives"
+key="$HOME/.config/alpha-bliss-recovery/age-identity.txt"
+if [ -e "$key" ]; then
+  echo 'Age key already exists — preserving the existing key (no overwrite)'
+else
+  age-keygen -o "$key"
+fi
+chmod 600 "$key"
+recipient="$(age-keygen -y "$key")"
+test_file="$(mktemp "$HOME/bliss-backup-operator/encrypted-archives/.age-test.XXXXXXXX")"
+trap 'rm -f -- "$test_file"' EXIT
+printf 'ALPHA synthetic encryption check\n' | age -r "$recipient" > "$test_file"
+got="$(age -d -i "$key" "$test_file")"
+if [ "$got" = 'ALPHA synthetic encryption check' ]; then
+  echo 'LOCAL_AGE_ENCRYPTION_TEST_PASS'
+else
+  echo 'LOCAL_AGE_ENCRYPTION_TEST_FAIL' >&2
+fi
+rm -f -- "$test_file"
+trap - EXIT
+```
+
+This checks that the local key can decrypt the test message. It does **not** establish disaster recovery: losing this private key means losing the ability to read backups. The owner must create and test an **independent, encrypted recovery copy** of `age-identity.txt` under separate owner custody. **Never put the private key in the shared ALPHA EVIDENCE folder, GitHub, chat, or Railway variables.** The `age1...` public *recipient* is non-secret, but sharing it is still unnecessary for this procedure.
+
+## Step C — Connect rclone to existing Google Drive (no Cloudflare)
+
+The owner-approved directory is [ALPHA EVIDENCE → BLISS BOT CHAPEL - ENCRYPTED POSTGRES BACKUPS](https://drive.google.com/drive/folders/1qwj-2nGmxTQJl2LSKvNkBtfs8rcXtOSo). Exact folder ID: `1qwj-2nGmxTQJl2LSKvNkBtfs8rcXtOSo`.
+
+```bash
+rclone config
+```
+
+In the interactive configuration:
+- Create a new remote named **`drive`**, selecting the **Google Drive** storage backend (`drive`).
+- Authenticate in the owner's browser with the Google account that has access to the approved Drive folder. Do not use a service account or give rclone any private `age` key.
+- Keep the Drive remote's root folder setting blank; the backup uploader pins the **specific child folder ID** each time.
+- Do not paste the rclone config, OAuth token, authorization code, or screenshots containing these values into chat or tickets. Note: rclone's shared Google OAuth client may be retired in 2026; if prompted for your own OAuth client and setup cannot proceed, stop and report *only the stage failed*.
+
+When complete:
+
+```bash
+export RCLONE_CONFIG="$HOME/.config/rclone/rclone.conf"
+chmod 600 "$RCLONE_CONFIG"
+rclone --config "$RCLONE_CONFIG" --drive-root-folder-id 1qwj-2nGmxTQJl2LSKvNkBtfs8rcXtOSo lsf drive: --files-only
+echo 'DRIVE_READ_ONLY_LIST_COMPLETE'
+```
+
+A blank listing is **expected** while the backup subfolder is empty. This final command only lists filenames in the pinned Drive child; it never uploads, deletes, or modifies files. If rclone cannot access the folder, do not grant broad public access to fix it.
+
+### Owner reply (non-secret only)
+
+Reply with:
+```
+LOCAL_AGE_ENCRYPTION_TEST_PASS
+DRIVE_READ_ONLY_LIST_COMPLETE
+pg_dump version: <18.x / other / not installed>
+```
+
+If Stage B or C fails, report just the stage and error **with credentials and OAuth tokens removed**.
+
+## Engineering follow-up — not part of Stage 2
+
+After safe local preparation, engineering must separately verify PostgreSQL certificate/CA trust and `verify-full` behavior over the live SSH tunnel, source Postgres 18 identity and least-privileged backup role, and private `0600` passfile. All approval checks in `scripts/bliss-logical-backup-operator.sh` remain enforced. The owner-selected Google Drive folder stores **encrypted archive + checksum only**, while the private `age` key is separately escrowed. Then an explicitly authorized **real** encrypted export, readback and **independent isolated** restoration must be verified; synthetic CI alone is not production acceptance. Existing `RestrictedPreview` stays active until recovery, OIDC/ingress, privacy and consent gates close.
+
+Official references: [age](https://github.com/FiloSottile/age), [rclone Google Drive configuration](https://rclone.org/drive/), [Railway private CLI tunnel](https://docs.railway.com/cli/connect), [PostgreSQL Ubuntu client](https://www.postgresql.org/download/linux/ubuntu/).
