@@ -41,6 +41,15 @@ Task #3 owns advertiser enrollment. Shared Railway authentication, OIDC, proxy, 
 
 Mark *VERIFIED COMPLETE* only when **both** (a) live creator intake/receipt/CRM pathway and (b) genuine creator account/role/verification/dashboard/denial/rollback are demonstrated with exact current-version evidence. The public form alone is *Milestone A interest collection*, not *Milestone B commercial pilot*.
 
+## Creator-specific signed OIDC privilege denial regression
+
+`Bliss.Tests/Api/CreatorInterestNoRoleEscalationTests.cs` adds three synthetic-only tests against the **existing** `SupabaseOidc.ApplyVerifiedAccessToken` and `BlissAuthorization` boundary. It verifies that:
+- A creator-interest string or `creator` / `bliss.creator` / `bliss.creator_verified` label does not become an approved operator, reviewer, administrator or registered creator role, whether it appears in signed app metadata or editable user metadata.
+- An unapproved authentication subject is denied even if it carries a purported administrator role.
+- An approved read-only viewer is not promoted by a second creator label.
+
+These tests must **continue to deny** any creator registration grant until a dedicated, owner-reviewed server-verifiable creator role/identity design is implemented. Passing only proves this negative boundary and does not supply account creation or owner verification.
+
 ## CI guard and non-goals
 
 `node scripts/task4-creator-interest-guards.mjs` checks the **existing** form/server/CRM contracts without making a network request. No changes to runtime, DB, security policies, public pages, secrets, backups, or existing workstreams are included. A successful guard does not prove provider readback, real Auth, or legal approval.
