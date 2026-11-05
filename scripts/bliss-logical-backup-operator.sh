@@ -20,7 +20,19 @@ case "$env_name" in
     [[ "${BLISS_BACKUP_EXECUTION_APPROVED:-}" == YES ]] || fail 'production backup requires explicit owner approval for this database and storage'
     [[ "${CI:-}" != true && "${GITHUB_ACTIONS:-}" != true ]] || fail 'production mode must not run from CI'
     [[ "${PGSSLMODE:-}" == verify-full ]] || fail 'production PostgreSQL requires verify-full TLS'
-    [[ -n "${PGSSLROOTCERT:-}" && -f "$PGSSLROOTCERT" ]] || fail 'production TLS root certificate is missing'
+    # Official Railway postgres-ssl image issues a localhost server certificate.
+    # PGHOST is the verified certificate name; PGHOSTADDR is where the authenticated
+    # CLI SSH tunnel listens locally. Do not allow arbitrary external DB hosts.
+    [[ "${PGHOST:-}" == localhost && "${PGHOSTADDR:-}" == 127.0.0.1 ]] || fail 'production requires verified localhost certificate via loopback SSH tunnel'
+    [[ "${BLISS_BACKUP_EXPECTED_PROJECT_ID:-}" == fb33c1b7-03fb-42c8-89b1-081951a738fd ]] || fail 'Railway project identity not explicitly pinned'
+    [[ "${BLISS_BACKUP_EXPECTED_SERVICE_ID:-}" == 6aa78407-1632-48c9-8ea4-0289a7d36a5b ]] || fail 'Railway Postgres service identity not explicitly pinned'
+    [[ "${BLISS_BACKUP_EXPECTED_TUNNEL_PORT:-}" =~ ^[0-9]+$ && "${BLISS_BACKUP_EXPECTED_TUNNEL_PORT:-}" == "${PGPORT:-}" ]] || fail 'SSH tunnel port does not match approved port'
+    [[ -n "${PGSSLROOTCERT:-}" && -f "$PGSSLROOTCERT" && ! -L "$PGSSLROOTCERT" ]] || fail 'trusted Railway root certificate must be a regular file'
+    [[ "$(stat -c '%u' "$PGSSLROOTCERT")" == "$(id -u)" && "$(stat -c '%a' "$PGSSLROOTCERT")" == 600 ]] || fail 'Railway CA file must belong to operator and be mode 600'
+    command -v openssl >/dev/null 2>&1 || fail 'openssl required to validate trusted root certificate'
+    openssl x509 -in "$PGSSLROOTCERT" -noout >/dev/null 2>&1 || fail 'Railway root certificate is not valid X.509'
+    [[ "${BLISS_BACKUP_EXPECTED_CA_SHA256:-}" =~ ^[a-f0-9]{64}$ ]] || fail 'approved root CA SHA256 fingerprint missing'
+    [[ "$(sha256sum "$PGSSLROOTCERT" | cut -d' ' -f1)" == "$BLISS_BACKUP_EXPECTED_CA_SHA256" ]] || fail 'trusted Railway root CA SHA256 fingerprint mismatch'
     ;;
   synthetic-ci)
     [[ "${BLISS_BACKUP_EXECUTION_APPROVED:-}" == SYNTHETIC ]] || fail 'synthetic mode requires a synthetic-only grant'
@@ -37,7 +49,7 @@ esac
 [[ "$PGPORT" -ge 1 && "$PGPORT" -le 65535 ]] || fail 'invalid PostgreSQL port'
 [[ "${BLISS_BACKUP_EXPECTED_HOST:-}" == "$PGHOST" && "${BLISS_BACKUP_EXPECTED_DATABASE:-}" == "$PGDATABASE" && "${BLISS_BACKUP_EXPECTED_USER:-}" == "$PGUSER" ]] || fail 'source does not match the approved host/database/user tuple'
 [[ "${BLISS_BACKUP_EXPECTED_SYSTEM_ID:-}" =~ ^[0-9]{10,}$ ]] || fail 'approved PostgreSQL cluster identifier required'
-[[ "$env_name" != production || ( "$PGHOST" != localhost && "$PGHOST" != 127.0.0.1 && "$PGHOST" != ::1 ) ]] || fail 'production source cannot be loopback'
+# Production loopback is allowed only through the pinned, verify-full Railway SSH tunnel above.
 [[ -n "${PGPASSFILE:-}" && -f "$PGPASSFILE" && ! -L "$PGPASSFILE" ]] || fail 'private PostgreSQL passfile required'
 [[ "$(stat -c '%a' "$PGPASSFILE")" == 600 && "$(stat -c '%u' "$PGPASSFILE")" == "$(id -u)" ]] || fail 'PostgreSQL passfile must be owned by operator, mode 600'
 [[ -n "${BLISS_BACKUP_ENCRYPTION_RECIPIENT:-}" && "${BLISS_BACKUP_ENCRYPTION_RECIPIENT}" =~ ^age1[023456789acdefghjklmnpqrstuvwxyz]{55,}$ ]] || fail 'valid age public recipient required; private key must stay outside backup directory'
