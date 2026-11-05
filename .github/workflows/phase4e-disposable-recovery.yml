@@ -9,6 +9,8 @@ on:
       - 'scripts/bliss-logical-backup-operator.sh'
       - 'tests/bliss-logical-backup-operator-ci.sh'
       - 'docs/bliss/RAILWAY-LOGICAL-BACKUP-OPERATOR.md'
+      - 'scripts/bliss-google-drive-upload-operator.sh'
+      - 'tests/bliss-google-drive-upload-mock-ci.sh'
   workflow_dispatch:
 permissions:
   contents: read
@@ -69,3 +71,8 @@ jobs:
           bash -n scripts/bliss-logical-backup-operator.sh
           bash -n tests/bliss-logical-backup-operator-ci.sh
           bash tests/bliss-logical-backup-operator-ci.sh
+      - name: Test pinned Google Drive uploader with offline mock only
+        run: |
+          bash -n scripts/bliss-google-drive-upload-operator.sh
+          bash -n tests/bliss-google-drive-upload-mock-ci.sh
+          bash tests/bliss-google-drive-upload-mock-ci.sh
