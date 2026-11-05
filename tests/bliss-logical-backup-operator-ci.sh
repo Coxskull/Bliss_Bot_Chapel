@@ -55,4 +55,32 @@ src="$(psql -AtX -v ON_ERROR_STOP=1 -c "SELECT md5(string_agg(id::text||':'||nam
 dst="$(PGPASSWORD=ci_restore_only_password psql "$restore" -AtX -v ON_ERROR_STOP=1 -c "SELECT md5(string_agg(id::text||':'||name,',' ORDER BY id)) FROM synthetic")"
 [[ -n "$src" && "$src" == "$dst" ]] || { echo 'FAIL: restored data differs from source fixture' >&2; exit 1; }
 [[ "$(find "$work/backups" -name '*.age' | wc -l)" == 1 ]] || { echo 'FAIL: unexpected backup count' >&2; exit 1; }
+# Production-mode PREFLIGHT ONLY. This generates a fictional localhost root CA.
+# No Railway credentials, no live endpoint, no production dump or DB connection.
+openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
+  -keyout "$work/secrets/local-ca.key" -out "$work/secrets/local-ca.crt" \
+  -subj '/CN=fictional-CI-root' >/dev/null 2>&1
+chmod 600 "$work/secrets/local-ca.crt"
+ca_digest="$(sha256sum "$work/secrets/local-ca.crt" | cut -d' ' -f1)"
+production_env=(
+  CI=false GITHUB_ACTIONS=false
+  BLISS_BACKUP_ENVIRONMENT=production BLISS_BACKUP_EXECUTION_APPROVED=YES
+  PGHOST=localhost PGHOSTADDR=127.0.0.1 PGSSLMODE=verify-full
+  PGSSLROOTCERT="$work/secrets/local-ca.crt"
+  BLISS_BACKUP_EXPECTED_HOST=localhost
+  BLISS_BACKUP_EXPECTED_PROJECT_ID=fb33c1b7-03fb-42c8-89b1-081951a738fd
+  BLISS_BACKUP_EXPECTED_SERVICE_ID=6aa78407-1632-48c9-8ea4-0289a7d36a5b
+  BLISS_BACKUP_EXPECTED_TUNNEL_PORT=5432
+  BLISS_BACKUP_EXPECTED_CA_SHA256="$ca_digest"
+)
+reject production-wrong-service env "${production_env[@]}" BLISS_BACKUP_EXPECTED_SERVICE_ID=wrong bash "$script" --preflight
+reject production-wrong-project env "${production_env[@]}" BLISS_BACKUP_EXPECTED_PROJECT_ID=wrong bash "$script" --preflight
+reject production-wrong-port env "${production_env[@]}" BLISS_BACKUP_EXPECTED_TUNNEL_PORT=15432 bash "$script" --preflight
+reject production-wrong-CA env "${production_env[@]}" BLISS_BACKUP_EXPECTED_CA_SHA256="$(printf '0%.0s' {1..64})" bash "$script" --preflight
+reject production-remote-host env "${production_env[@]}" PGHOSTADDR=203.0.113.1 bash "$script" --preflight
+reject production-no-SSL env "${production_env[@]}" PGSSLMODE=disable bash "$script" --preflight
+reject production-not-approved env "${production_env[@]}" BLISS_BACKUP_EXECUTION_APPROVED= bash "$script" --preflight
+env "${production_env[@]}" bash "$script" --preflight | grep -F 'NO DATABASE CONNECTION attempted'
+echo 'PASS: pinned Railway production localhost TLS CA preflight and negative guards (NO production connection attempted)'
+
 echo 'PASS: operator-mode synthetic streaming encryption, checksum, independent restore, content hash and negative guards'
