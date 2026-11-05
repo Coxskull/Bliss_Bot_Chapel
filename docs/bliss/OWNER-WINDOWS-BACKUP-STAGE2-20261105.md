@@ -55,6 +55,22 @@ In the interactive configuration:
 - Keep the Drive remote's root folder setting blank; the backup uploader pins the **specific child folder ID** each time.
 - Do not paste the rclone config, OAuth token, authorization code, or screenshots containing these values into chat or tickets. Note: rclone's shared Google OAuth client may be retired in 2026; if prompted for your own OAuth client and setup cannot proceed, stop and report *only the stage failed*.
 
+### If Google shows `403 access_denied` — Alpha Global Media is in Testing
+
+On 2026-11-05, the owner’s browser showed **“Access blocked: Alpha Global Media has not completed the Google verification process”** and **Error 403: access_denied**. The active OAuth consent screen is in **Testing**, and the signing-in Google account is not currently an approved test user for that exact OAuth client.
+
+This is an **app authorization gate**, not a Railway problem. Do not publish the OAuth app, disable Google's protections, change requested Drive scopes, or paste an authorization URL, client secret, OAuth code or token into chat.
+
+1. Open [Google Auth Platform — Audience](https://console.cloud.google.com/auth/audience). In the Google Cloud project picker, choose the project that actually owns the **OAuth Desktop client used in this `rclone` remote**. If needed, match it from **Google Auth Platform → Clients**. Do not assume it is necessarily the current default project.
+2. Under **Audience**, confirm user type **External** and publishing status **Testing**. Under **Test users**, select **Add users**.
+3. Enter the **exact Gmail address shown beneath the Google 403 error** (not another Google account), and **Save**. This is an allowed testing configuration; do not click **Publish app** merely to bypass the error. If you cannot change this project's Audience, use the authorized Google Cloud project owner account or configure a separate legitimate rclone Desktop OAuth client under your control; do not bypass authorization.
+4. Restart only the failed OAuth sign-in. If `rclone config` is still waiting to receive a token, exit the failed attempt safely and retry the `drive` configuration. If `drive:` already exists, run `rclone config reconnect drive:` in a private shell and complete the browser authorization again. Do not disclose the generated authorization or redirect URL in screenshots or tickets.
+5. Check the rclone permission prompt carefully: allow only the Drive access intended by the owner. A `drive.file` token **cannot see a pre-existing folder created by another app**, so the chosen scope must actually allow access to the designated child folder without opening the folder to the public. An app configured for full `drive` scope has broad access across the authorized account; owner consent and credential protection are essential.
+
+**Testing-mode limitation:** Google's OAuth docs state refresh tokens for External apps in Testing that request Drive permissions normally **expire after seven days**. Therefore a one-off private authorization check may succeed, but it is **not a reliable unattended recurring-backup login**. Before scheduling production backups, resolve the OAuth app's long-term publishing/verification and permissions status according to Google policy or use an approved stable identity mechanism. Do not claim the recurring backup gate is solved merely because a one-time OAuth sign-in works.
+
+Official docs: [Google Auth Platform app audience](https://support.google.com/cloud/answer/15549945?hl=en), [Google OAuth app states](https://developers.google.com/identity/protocols/oauth2/production-readiness/overview), [rclone Google Drive setup](https://rclone.org/drive/).
+
 When complete:
 
 ```bash
