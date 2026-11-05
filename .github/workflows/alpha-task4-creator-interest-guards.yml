@@ -1,0 +1,32 @@
+name: ALPHA Task4 creator interest boundary and acceptance guards
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/public/join-creator.html'
+      - 'frontend/public/alpha-intake.js'
+      - 'frontend/public/alpha-privacy.html'
+      - 'supabase/functions/alpha-public-intake/**'
+      - 'scripts/task4-creator-interest-guards.mjs'
+      - 'docs/alpha-task4-creator-enrollment-acceptance-20261106.md'
+      - '.github/workflows/alpha-task4-creator-interest-guards.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  creator-consent-receipt-crm-boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact review head
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify creator-only interest boundary (no provider calls)
+        run: node scripts/task4-creator-interest-guards.mjs
