@@ -1,0 +1,47 @@
+name: COM-261-004 isolated creator intake ledger
+
+on:
+  pull_request:
+    paths:
+      - 'Bliss.Infrastructure/Migrations/CreatorRegistrationStagingFixtureV1.sql'
+      - 'scripts/com261004-creator-staging-smoke.sql'
+      - 'scripts/com261004-creator-staging-smoke.sh'
+      - '.github/workflows/com261004-creator-ledger-staging.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        pg: [16, 18]
+    services:
+      postgres:
+        image: postgres:${{ matrix.pg }}
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: agm_creator_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d agm_creator_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 8
+    env:
+      CI: 'true'
+      CREATOR_CI_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/agm_creator_ci?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL command-line client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: Verify consented synthetic creator, immutable receipt, duplicate and access denials
+        run: bash scripts/com261004-creator-staging-smoke.sh
