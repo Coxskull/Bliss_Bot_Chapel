@@ -11,9 +11,9 @@ CREATE TABLE agm_creator_fixture.intakes (
   display_name varchar(120) NOT NULL
     CHECK (display_name ~ '^Synthetic [A-Za-z][A-Za-z0-9 ._-]{0,109}$'),
   normalized_email varchar(254) NOT NULL UNIQUE
-    CHECK (normalized_email ~ '^[a-z0-9._%+\\-]+@example\\.invalid$'),
+    CHECK (normalized_email ~ '^[a-z0-9._%+-]+@example[.]invalid$'),
   channel_url varchar(300) NOT NULL
-    CHECK (channel_url ~ '^https://example\\.invalid/[-/a-zA-Z0-9._~%]+$'),
+    CHECK (channel_url ~ '^https://example[.]invalid/[-/a-zA-Z0-9._~%]+$'),
   market varchar(100) NOT NULL
     CHECK (market ~ '^Test [A-Za-z][A-Za-z ]{0,94}$'),
   category varchar(16) NOT NULL
@@ -76,9 +76,9 @@ BEGIN
     OR v_name IS NULL OR length(v_name) > 120
     OR v_name !~ '^Synthetic [A-Za-z][A-Za-z0-9 ._-]{0,109}$'
     OR v_email IS NULL OR length(v_email) > 254
-    OR v_email !~ '^[a-z0-9._%+\\-]+@example\\.invalid$'
+    OR v_email !~ '^[a-z0-9._%+-]+@example[.]invalid$'
     OR v_channel IS NULL OR length(v_channel) > 300
-    OR v_channel !~ '^https://example\\.invalid/[-/a-zA-Z0-9._~%]+$'
+    OR v_channel !~ '^https://example[.]invalid/[-/a-zA-Z0-9._~%]+$'
     OR v_market IS NULL OR length(v_market) > 100
     OR v_market !~ '^Test [A-Za-z][A-Za-z ]{0,94}$'
     OR p_category IS NULL OR p_category NOT IN ('podcast','livestream','video','other')
