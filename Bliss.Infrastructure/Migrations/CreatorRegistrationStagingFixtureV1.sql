@@ -48,6 +48,7 @@ RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   RAISE EXCEPTION 'Immutable staging creator intake and receipt' USING ERRCODE = '23514';
 END;
+$;
 CREATE TRIGGER intakes_append_only BEFORE UPDATE OR DELETE OR TRUNCATE
   ON agm_creator_fixture.intakes FOR EACH STATEMENT
   EXECUTE FUNCTION agm_creator_fixture.deny_historical_mutation();
