@@ -1,5 +1,6 @@
 -- Run only in disposable agm_creator_ci; client identifiers are fictional.
 CREATE ROLE agm_creator_ci_writer NOLOGIN;
+CREATE ROLE agm_creator_ci_anon NOLOGIN;
 GRANT USAGE ON SCHEMA agm_creator_fixture TO agm_creator_ci_writer;
 GRANT EXECUTE ON FUNCTION agm_creator_fixture.register_synthetic(
   text,text,text,text,text,text,boolean,boolean) TO agm_creator_ci_writer;
@@ -10,7 +11,7 @@ BEGIN
      OR has_table_privilege('agm_creator_ci_writer','agm_creator_fixture.intakes','INSERT')
      OR has_table_privilege('agm_creator_ci_writer','agm_creator_fixture.receipts','SELECT')
   THEN RAISE EXCEPTION 'Unexpected table permissions'; END IF;
-  IF has_function_privilege('public',
+  IF has_function_privilege('agm_creator_ci_anon',
      'agm_creator_fixture.register_synthetic(text,text,text,text,text,text,boolean,boolean)','EXECUTE')
   THEN RAISE EXCEPTION 'RPC exposed to PUBLIC'; END IF;
 END $$;
