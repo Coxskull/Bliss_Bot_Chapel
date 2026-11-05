@@ -6,6 +6,9 @@ on:
       - 'scripts/phase4c-nonprod-backup.sh'
       - 'tests/phase4e-ci.sh'
       - 'tests/phase4c-backup-guard.sh'
+      - 'scripts/bliss-logical-backup-operator.sh'
+      - 'tests/bliss-logical-backup-operator-ci.sh'
+      - 'docs/bliss/RAILWAY-LOGICAL-BACKUP-OPERATOR.md'
   workflow_dispatch:
 permissions:
   contents: read
@@ -60,3 +63,9 @@ jobs:
           test "$(pg_dump --version | awk '{print $3}' | cut -d. -f1)" = 18
           test "$(psql --version | awk '{print $3}' | cut -d. -f1)" = 18
           bash tests/phase4e-ci.sh
+      - name: Test opt-in operator backup only with fictional source and independent restore
+        run: |
+          export PATH="/usr/lib/postgresql/18/bin:$PATH"
+          bash -n scripts/bliss-logical-backup-operator.sh
+          bash -n tests/bliss-logical-backup-operator-ci.sh
+          bash tests/bliss-logical-backup-operator-ci.sh
