@@ -34,15 +34,15 @@ RESET ROLE;
 
 -- Idempotent retry, including canonical email case and trim.
 DO $$
-DECLARE v_first uuid; v_receipt uuid; v_repeat uuid; v_replay boolean;
+DECLARE v_first uuid; v_original_receipt uuid; v_retry_receipt uuid; v_repeat uuid; v_replay boolean;
 BEGIN
-  SELECT i.id,r.id INTO v_first,v_receipt FROM agm_creator_fixture.intakes i
+  SELECT i.id,r.id INTO v_first,v_original_receipt FROM agm_creator_fixture.intakes i
   JOIN agm_creator_fixture.receipts r ON r.intake_id=i.id;
-  SELECT intake_id,receipt_id,is_replay INTO v_repeat,v_receipt,v_replay
+  SELECT intake_id,receipt_id,is_replay INTO v_repeat,v_retry_receipt,v_replay
     FROM agm_creator_fixture.register_synthetic(
       'testkey000001','Synthetic Creator One','creator@example.invalid',
       'https://example.invalid/channel/podcast','Test City','podcast',true,false);
-  IF v_first IS DISTINCT FROM v_repeat OR NOT v_replay
+  IF v_first IS DISTINCT FROM v_repeat OR v_original_receipt IS DISTINCT FROM v_retry_receipt OR NOT v_replay
   THEN RAISE EXCEPTION 'Idempotent replay invalid'; END IF;
 END $$;
 
