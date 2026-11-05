@@ -1,0 +1,33 @@
+name: ALPHA Privacy Rights Repeated Requests
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/20261105_alpha_privacy_repeat_requests.sql'
+      - 'scripts/agm-privacy-repeat-hosted.mjs'
+      - 'docs/privacy/**'
+      - '.github/workflows/agm-privacy-repeat-rights.yml'
+permissions:
+  contents: read
+jobs:
+  hosted-synthetic-repeat:
+    if: github.head_ref == 'fix/alpha-privacy-repeat-requests-20261105'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assert privacy-only partial identity index is explicitly scoped
+        run: |
+          node - <<'NODE'
+          const assert=require('node:assert/strict');
+          const fs=require('node:fs');
+          const sql=fs.readFileSync('supabase/migrations/20261105_alpha_privacy_repeat_requests.sql','utf8');
+          assert.match(sql,/WHERE kind IN \('creator', 'advertiser'\)/);
+          assert.ok(!sql.includes('DELETE FROM public.alpha_public_intake_requests'));
+          console.log('Privacy index preserves creator/advertiser uniqueness: PASS');
+          NODE
+      - run: node scripts/agm-privacy-repeat-hosted.mjs
