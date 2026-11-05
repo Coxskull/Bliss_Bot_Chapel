@@ -81,15 +81,70 @@ public static class SupabaseOidc
     {
         var subject = identity.FindFirst("sub")?.Value;
         if (string.IsNullOrEmpty(subject) || subject != access.FindFirst("sub")?.Value
-            || access.FindFirst("client_id")?.Value != auth.ClientId
-            || !auth.ApprovedTestSubjects.Contains(subject, StringComparer.Ordinal))
-            throw new SecurityTokenValidationException("Unapproved test identity.");
+            || access.FindFirst("client_id")?.Value != auth.ClientId)
+            throw new SecurityTokenValidationException("Unapproved identity.");
+
+        var approvedTest = auth.ApprovedTestSubjects.Contains(subject, StringComparer.Ordinal);
+        var approvedCreator = auth.Enabled && auth.SupabaseEnabled && auth.CreatorSelfServiceRequested
+            && auth.ApprovedCreatorSubjects.Contains(subject, StringComparer.Ordinal);
+
+        // The creator lane is deliberately disjoint from privileged test/staff
+        // subjects. A missing allowlist, disabled flag, or accidental overlap
+        // cannot silently turn a CRM lead into an authenticated account.
+        if ((!approvedTest && !approvedCreator) || (approvedTest && approvedCreator))
+            throw new SecurityTokenValidationException("Unapproved identity.");
 
         foreach (var claim in identity.Claims.Where(c => c.Type == auth.RoleClaimType
             || c.Type == ClaimTypes.Role || c.Type == auth.AdvertiserIdClaimType
-            || c.Type == auth.ReviewerWorkspaceClaimType).ToArray()) identity.RemoveClaim(claim);
+            || c.Type == auth.ReviewerWorkspaceClaimType
+            || c.Type == auth.CreatorIdClaimType
+            || c.Type == "role" || c.Type == "roles").ToArray())
+            identity.RemoveClaim(claim);
 
         var metadataClaim = access.FindFirst("app_metadata");
+        if (approvedCreator)
+        {
+            // No browser/user_metadata, CRM label or public-interest receipt may
+            // grant an identity. The validated provider access token must carry
+            // one staff-provisioned role, ID and explicit verification mark.
+            if (metadataClaim is null || string.IsNullOrWhiteSpace(auth.CreatorRole)
+                || string.IsNullOrWhiteSpace(auth.CreatorIdClaimType)
+                || auth.CreatorRole == auth.AdminRole
+                || auth.CreatorRole == auth.OperatorRole
+                || auth.CreatorRole == auth.ReviewerRole
+                || auth.CreatorRole == auth.AdvertiserRole
+                || auth.CreatorRole == auth.ViewerRole
+                || auth.CreatorRole == auth.AskAlphaVisitorRole
+                || identity.FindAll("email_verified").Count() != 1
+                || !string.Equals(identity.FindFirst("email_verified")?.Value,
+                    "true", StringComparison.OrdinalIgnoreCase))
+                throw new SecurityTokenValidationException("Creator verification is incomplete.");
+
+            using var creatorDocument = JsonDocument.Parse(metadataClaim.Value);
+            var creatorMetadata = creatorDocument.RootElement;
+            if (creatorMetadata.ValueKind != JsonValueKind.Object
+                || !creatorMetadata.TryGetProperty("bliss_roles", out var creatorRoles)
+                || creatorRoles.ValueKind != JsonValueKind.Array
+                || creatorRoles.GetArrayLength() != 1
+                || creatorRoles[0].ValueKind != JsonValueKind.String
+                || creatorRoles[0].GetString() != auth.CreatorRole
+                || !creatorMetadata.TryGetProperty("bliss_creator_verified", out var verified)
+                || verified.ValueKind != JsonValueKind.True
+                || !creatorMetadata.TryGetProperty("bliss_creator_id", out var creatorValue)
+                || creatorValue.ValueKind != JsonValueKind.String
+                || !Guid.TryParse(creatorValue.GetString(), out var creatorId)
+                || creatorId == Guid.Empty
+                || creatorMetadata.TryGetProperty("bliss_advertiser_id", out _)
+                || creatorMetadata.TryGetProperty("bliss_review_workspace_ids", out _))
+                throw new SecurityTokenValidationException("Creator verification is incomplete.");
+
+            identity.AddClaim(new Claim(auth.RoleClaimType, auth.CreatorRole,
+                ClaimValueTypes.String, auth.Authority));
+            identity.AddClaim(new Claim(auth.CreatorIdClaimType, creatorId.ToString("D"),
+                ClaimValueTypes.String, auth.Authority));
+            return;
+        }
+
         if (metadataClaim is null) return;
         using var document = JsonDocument.Parse(metadataClaim.Value);
         var metadata = document.RootElement;
