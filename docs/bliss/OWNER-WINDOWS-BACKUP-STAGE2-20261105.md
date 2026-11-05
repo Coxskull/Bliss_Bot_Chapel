@@ -11,26 +11,45 @@ On the owner's Ubuntu/WSL machine, open a **second** Ubuntu terminal:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y age rclone ca-certificates
+sudo apt-get install -y age rclone ca-certificates postgresql-client-18
 age --version
 rclone version | head -n 1
-command -v pg_dump >/dev/null && pg_dump --version || echo 'PostgreSQL client not yet installed'
+pg_dump --version
 ```
 
-`pg_dump` **18.x** is required before any real backup. If your displayed major version is not 18, do **not** run the production export script yet. Follow the [PostgreSQL official Ubuntu client installation instructions](https://www.postgresql.org/download/linux/ubuntu/) to add the supported PGDG repository and install **`postgresql-client-18`** later. Do not install a PostgreSQL server or create another live database for this task.
+On Ubuntu 26.04 (`resolute`), `postgresql-client-18` is available in the normal Ubuntu repositories. **Do not install only `postgresql-client-common`: it supplies a wrapper but not a `pg_dump` client binary.** Check `pg_dump --version` for **18.x** before any real backup. If installation fails or the version is not 18, stop and report that error; do not install a PostgreSQL server or create a live database. Source: https://packages.ubuntu.com/resolute/postgresql-client-18.
 
 ## Step B — Create and verify a private *age* encryption key, offline
+
+**Important WSL paste recovery:** If Ubuntu shows a leading `>` prompt, your shell is waiting for an unfinished statement, not executing commands. Press **Ctrl+C** once to return to the normal `# Bliss Bot — Stage 2: operator workstation encryption + Google Drive authorization
+_Date: 2026-11-05 | **local-only preparation** | Existing Railway private tunnel already open_
+
+The owner confirmed that the existing `bliss-bot / production / Postgres` private Railway tunnel is open in their **first Ubuntu terminal**. **Keep that first terminal open**, but run all preparation below in a **new Ubuntu terminal**. Do not paste the tunnel output: it can contain database secrets.
+
+**No production SQL is run here.** These steps do not create a database export, run `pg_dump`, add a subscription, configure Cloudflare or open a public DB proxy.
+
+## Step A — Install non-database operator utilities
+
+On the owner's Ubuntu/WSL machine, open a **second** Ubuntu terminal:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y age rclone ca-certificates postgresql-client-18
+age --version
+rclone version | head -n 1
+pg_dump --version
+```
+
+On Ubuntu 26.04 (`resolute`), `postgresql-client-18` is available in the normal Ubuntu repositories. **Do not install only `postgresql-client-common`: it supplies a wrapper but not a `pg_dump` client binary.** Check `pg_dump --version` for **18.x** before any real backup. If installation fails or the version is not 18, stop and report that error; do not install a PostgreSQL server or create a live database. Source: https://packages.ubuntu.com/resolute/postgresql-client-18.
+
+ prompt, then run commands **one line at a time**. The `if` command below deliberately uses required semicolons and fits on one line. Never paste a private key.
 
 ```bash
 umask 077
 install -d -m 700 "$HOME/.config/alpha-bliss-recovery"
 install -d -m 700 "$HOME/bliss-backup-operator/encrypted-archives"
 key="$HOME/.config/alpha-bliss-recovery/age-identity.txt"
-if [ -e "$key" ]; then
-  echo 'Age key already exists — preserving the existing key (no overwrite)'
-else
-  age-keygen -o "$key"
-fi
+if [ -e "$key" ]; then echo 'Preserving existing age key'; else age-keygen -o "$key"; fi
 chmod 600 "$key"
 recipient="$(age-keygen -y "$key")"
 test_file="$(mktemp "$HOME/bliss-backup-operator/encrypted-archives/.age-test.XXXXXXXX")"
