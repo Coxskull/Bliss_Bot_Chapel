@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'supabase/functions/alpha-public-intake/**'
+      - 'supabase/functions/alpha-ghl-retry/**'
+      - 'docs/alpha-highlevel-crm-bridge.md'
       - 'supabase/migrations/20261105_alpha_ghl_contact_delivery.sql'
       - 'frontend/public/join-creator.html'
       - 'frontend/public/join-advertiser.html'
@@ -34,6 +36,11 @@ jobs:
           const creator = fs.readFileSync('frontend/public/join-creator.html','utf8');
           const advertiser = fs.readFileSync('frontend/public/join-advertiser.html','utf8');
           const api = fs.readFileSync('supabase/functions/alpha-public-intake/index.ts','utf8');
+          const retry = fs.readFileSync('supabase/functions/alpha-ghl-retry/index.ts','utf8');
+          assert.ok(retry.includes('req.headers.get("Authorization") !== "Bearer "+adminKey'));
+          assert.ok(!retry.includes('Access-Control-Allow-Origin'));
+          assert.ok(retry.includes('.limit(limit)'));
+          assert.ok(retry.includes('deliverToGhl'));
           assert.ok(browser.includes('AGM-INTEREST-2026-11-05-GHL'));
           assert.ok(privacy.includes('GoHighLevel') && privacy.includes('not automatically deleted'));
           assert.ok(creator.includes('GoHighLevel CRM') && advertiser.includes('GoHighLevel CRM'));
