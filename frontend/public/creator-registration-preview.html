@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#170839">
+  <title>Creator registration · Fictional preview · ALPHA GLOBAL MEDIA</title>
+  <style>
+    :root{font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;color:#1d2539;background:#f4f5fa}
+    *{box-sizing:border-box}body{margin:0}
+    header{background:#170839;color:#fff;padding:1.1rem max(1rem,calc((100vw - 900px)/2))}
+    header strong{letter-spacing:.08em}
+    main{max-width:900px;margin:2rem auto;padding:0 1rem 4rem}
+    h1{font-size:clamp(1.8rem,5vw,2.5rem);line-height:1.2;margin:.4rem 0}
+    .eyebrow{font-size:.8rem;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:#4c3e91}
+    .notice{background:#fff4de;border-left:4px solid #a46504;padding:1rem;border-radius:8px}
+    .card{background:white;border:1px solid #d8dce8;border-radius:14px;padding:clamp(1rem,4vw,1.6rem);margin-top:1.2rem}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:1rem}
+    label.field{display:flex;flex-direction:column;gap:.3rem;font-weight:650}
+    input,select{font:inherit;width:100%;border:1px solid #8c96af;border-radius:7px;padding:.7rem;background:#fff;color:#151b2b}
+    .choice{display:flex;align-items:flex-start;gap:.7rem;margin:1rem 0}
+    .choice input{width:1.3rem;height:1.3rem;margin:.2rem 0;flex:none;accent-color:#33217e}
+    .choice span{font-weight:400}
+    button{background:#33217e;border:0;border-radius:8px;padding:.85rem 1.25rem;color:white;font:inherit;font-weight:700;cursor:pointer;min-height:44px}
+    :focus-visible{outline:3px solid #d48824;outline-offset:3px}
+    .muted{color:#596176}#result{white-space:pre-line;font-weight:650}
+  </style>
+  <script src="/creator-registration-preview.js" defer></script>
+</head>
+<body>
+  <header><strong>ALPHA GLOBAL MEDIA™ · BLISS BOT CHAPEL</strong></header>
+  <main>
+    <p class="eyebrow">COM-261-004 · PRE-LAUNCH TASK 4</p>
+    <h1>Creator registration — fictional validation preview</h1>
+    <p class="notice" role="note"><strong>NOT AN OPEN REGISTRATION FORM.</strong> This page is an isolated engineering preview. Enter fictional sample details only. It makes no API calls, stores no personal data, does not register anyone, and cannot issue a database consent receipt. The privacy notice and real registration endpoint require approval before activation.</p>
+    <section class="card" aria-labelledby="preview-title">
+      <h2 id="preview-title">Test a creator registration example</h2>
+      <p class="muted">All details must remain fictional. Real creator details or contact information must not be submitted here.</p>
+      <form id="creator-preview-form" novalidate autocomplete="off">
+        <div class="grid">
+          <label class="field" for="creator-name">Creator display name (fictional) <input id="creator-name" name="creatorName" maxlength="120" required value="Synthetic Creator Example"></label>
+          <label class="field" for="creator-email">Contact email (fictional) <input id="creator-email" type="email" name="email" maxlength="254" required value="creator@example.invalid"></label>
+          <label class="field" for="creator-channel">Channel URL (fictional) <input id="creator-channel" type="url" name="channelUrl" maxlength="300" required value="https://example.invalid/channel/sample"></label>
+          <label class="field" for="creator-market">Primary market (fictional) <input id="creator-market" name="market" maxlength="100" required value="Test City"></label>
+          <label class="field" for="creator-category">Content category <select id="creator-category" name="category" required><option value="">Choose category</option><option value="podcast" selected>Podcast</option><option value="livestream">Livestream</option><option value="video">Video creator</option><option value="other">Other</option></select></label>
+        </div>
+        <label class="choice" for="processing-consent">
+          <input id="processing-consent" name="processingConsent" type="checkbox" required>
+          <span><strong>Required acknowledgement (demo only):</strong> I have reviewed the proposed purpose of creator intake and understand a future registration will require an approved privacy notice, retention and rights information. Checking this box here is not legal consent and nothing is saved.</span>
+        </label>
+        <label class="choice" for="marketing-consent">
+          <input id="marketing-consent" name="marketingConsent" type="checkbox">
+          <span>Optional marketing contact preference (demo only). This is separate from registration, is unchecked by default, and is not transmitted or stored.</span>
+        </label>
+        <button type="submit">Validate fictional example only</button>
+        <p id="result" role="status" aria-live="polite">No validation run. Registration: DISABLED. Database receipt: NONE.</p>
+      </form>
+    </section>
+    <section class="card" aria-labelledby="safety-title">
+      <h2 id="safety-title">Activation remains closed</h2>
+      <p>Public creator intake requires a controller-approved privacy notice, verified same-origin authenticated endpoint, CSRF and abuse protection, purpose-specific versioned consent, approved authoritative storage, idempotent server-generated receipts, independent readback, accessibility testing and separate production release approval.</p>
+      <p class="muted">Synthetic staging acceptance is recorded separately in the existing factory; a passing preview does not change its grants, STOP state or data.</p>
+    </section>
+  </main>
+</body>
+</html>
