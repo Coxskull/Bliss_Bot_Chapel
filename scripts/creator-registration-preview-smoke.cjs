@@ -34,7 +34,7 @@ const build = fs.readFileSync(path.join(root,"scripts/build-vercel-portal.mjs"),
 check(/NOT AN OPEN REGISTRATION FORM/.test(html), "visible safety notice");
 check(/name="processingConsent" type="checkbox" required/.test(html), "required unchecked acknowledgement");
 check(/name="marketingConsent" type="checkbox"/.test(html), "separate optional marketing");
-check(!/checked(?:\s|>)/.test(html), "no consent choice prechecked");
+check(!/<input[^>]*\schecked(?:\s|=|>)/i.test(html), "no consent choice prechecked");
 check(/event.preventDefault\(\)/.test(js), "form submission intercepted");
 check(!/\b(fetch|XMLHttpRequest|sendBeacon|localStorage|sessionStorage)\s*[.(]/.test(js), "no network or browser storage primitives");
 check(!/creator-registration-preview(?:\.html|\.js)/.test(build), "not published by current Vercel portal build");
