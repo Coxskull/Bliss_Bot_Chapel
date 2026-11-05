@@ -386,6 +386,9 @@ app.Use(async (context, next) =>
     await next();
 });
 
+// Engineering-only creator form files must NEVER become publicly served,
+// even if the application preview lock is later lifted.
+app.Use((context, next) => CreatorRegistrationPreviewIsolation.InvokeAsync(context, next));
 var frontendRoot = FrontendHost.ResolveRoot(app.Environment);
 if (runtime.RestrictedPreview)
     app.Use((context, next) => RestrictedPreviewGate.InvokeAsync(context, next));
