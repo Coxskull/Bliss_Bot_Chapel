@@ -7,7 +7,7 @@ export function mapGhlContact(record, locationId) {
       record.notice_version !== ghlNotice ||
       record.processing_acknowledged !== true || record.adult_confirmed !== true ||
       typeof record.email !== "string" ||
-      /@example\\.invalid$/i.test(record.email))
+      /@example\.invalid$/i.test(record.email))
     throw Error("Not eligible for GoHighLevel transmission");
   if (typeof locationId !== "string" || !/^[A-Za-z0-9]{14,64}$/.test(locationId))
     throw Error("Invalid HighLevel location");
