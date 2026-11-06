@@ -85,6 +85,15 @@ public static class BlissAuthorization
             || string.IsNullOrWhiteSpace(options.RoleClaimType)
             || string.IsNullOrWhiteSpace(options.AdvertiserIdClaimType))
             return false;
+        var markers = user.Claims.Where(c => string.Equals(c.Type,
+            BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType,
+            StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (markers.Length != 1
+            || markers[0].Type != BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType
+            || markers[0].Value != "true"
+            || markers[0].Issuer != options.Authority
+            || markers[0].OriginalIssuer != options.Authority)
+            return false;
         var subjects = user.Claims.Where(c => string.Equals(c.Type, "sub", StringComparison.OrdinalIgnoreCase)).ToArray();
         if (subjects.Length != 1 || subjects[0].Type != "sub"
             || !options.ApprovedAdvertiserSubjects.Contains(subjects[0].Value, StringComparer.Ordinal)
