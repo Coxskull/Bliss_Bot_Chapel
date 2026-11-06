@@ -38,3 +38,19 @@ Run the repository's .NET regression and browser-journey workflows on this chang
 For an actual hosted demonstration, separately verify: Railway safe release posture and backup/restore, correct ingress forwarding, production OIDC access/CSRF, persistent source/QR store, bounded FFmpeg runtime, QA receipt readback, visual playback, and STOP/no-outreach state. Never remove the restricted-preview gate or mark Bliss commercially operational because an offline demonstration worked.
 
 **Status distinction:** the deterministic source-based ad workflow is implemented in code; full hosted production/advertiser campaign fulfillment is **not yet accepted**.
+
+## Actual advertiser creative: original PNG template
+
+A second, separate mode is now available in the private Creative Academy after a brand has been confirmed and a production brief saved:
+
+1. Open the desired advertiser workspace and its saved production brief.
+2. In **ORIGINAL ARTWORK / NO AI CREDITS**, select landscape 1280×720 or square 1080×1080 and click **Render original PNG from saved brief**.
+3. The local browser canvas (`/ad-composer.js`) uses only the saved brand name, palette, market, headline, and CTA. It draws an original text-and-geometry design without copying Academy reference artwork, accessing third-party assets, or calling a model/network service.
+4. The browser checks the rendered PNG is under the existing 1 MiB candidate limit and presents a draft preview and download link. Where supported, it pre-fills the existing candidate image upload field **but never submits it automatically**.
+5. An authorized user must inspect the visual, verify rights and geographic claims, then separately **Save candidate revision** to preserve the existing private human-assessment history. A PASS assessment does not authorize a campaign.
+
+This original text-only ad candidate is **not a licensed photo, logo or customized product picture**; campaigns requiring such assets must use rights-cleared owner-supplied images. The zero-credit composer does not replace optional paid photorealistic image generation.
+
+Automated regression checks cover the composer asset, explicit initiation, authorization-restricted UI, no network calls in the local artwork file, and the absence of automatic campaign/delivery authorization. The browser preview still requires hosted login and database readiness to save a candidate.
+
+**Release reminder:** .NET 8 support ends 2026-11-10; plan the evaluated .NET 10 migration before exposing long-lived commercial workloads. Security scans may complete with unaccepted package findings; neither green CI nor this document is authority to bypass release review.
