@@ -26,3 +26,14 @@
 dotnet test Bliss.Tests/Bliss.Tests.csproj --filter FullyQualifiedName~CreatorSelfServiceGateTests
 
 The unit/HTTP test validates a default-denied boundary only. It does not create real users or assert live creator account registration success. This branch is not permitted to bypass standing STOP, review or migration requirements.
+
+
+## Draft UI implementation — November 6, 2026
+
+The existing public `/join-creator.html` interest form remains the single public creator application. It already records required age/privacy acknowledgement, optional marketing preference, a durable receipt and the separate CRM delivery state. It does **not** create an Auth user. The new `/creator-account.html` page explains the invitation-only account process and points applicants back to the existing form; it does not collect duplicate personal information or create identities.
+
+The existing invitation password form `/account-setup.html` remains the only password-setup mechanism. A creator must open the original secure invitation email link; a bare visit to the setup page is not an invitation. The new `/creator-dashboard.html` shell is served by Railway and uses same-origin `/api/auth/session`, `/api/creators/me`, and antiforgery-protected logout. It displays only the minimal verified profile returned by the own-creator endpoint. 401/403/404 responses show sign-in or pending-verification states without exposing records. Campaigns, messages, earnings and payouts remain disabled.
+
+The Vercel portal build copies only the creator account explainer. It rewrites the dashboard and OIDC login links to the Railway application origin and deliberately excludes dashboard HTML/JS/CSS from Vercel so session cookies, CSRF and protected API calls stay same-origin. Railway's existing `RestrictedPreviewGate` remains unchanged and continues to block protected routes until the existing release gates are accepted.
+
+These UI files are in draft PR source only. No Vercel production deployment, Railway deployment, auth user creation, invitation issuance, Supabase schema/Edge Function change, CRM mutation, campaign, payment or STOP change was performed. Do not mark signup or dashboard as hosted/operational until hosted invitation, login, own-profile, denial, logout and rollback acceptance is completed.
