@@ -74,6 +74,44 @@ public static class BlissAuthorization
         return true;
     }
 
+    // Read-only advertiser self-profile authorization. An email match,
+    // public interest form, or generic authenticated role never grants it.
+    public static bool TryResolveVerifiedAdvertiserId(
+        ClaimsPrincipal user, BlissAuthenticationOptions options, out Guid advertiserId)
+    {
+        advertiserId = Guid.Empty;
+        if (!options.Enabled || !options.SupabaseEnabled || !options.AdvertiserSelfServiceRequested
+            || user.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(options.Authority)
+            || string.IsNullOrWhiteSpace(options.RoleClaimType)
+            || string.IsNullOrWhiteSpace(options.AdvertiserIdClaimType))
+            return false;
+        var subjects = user.Claims.Where(c => string.Equals(c.Type, "sub", StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (subjects.Length != 1 || subjects[0].Type != "sub"
+            || !options.ApprovedAdvertiserSubjects.Contains(subjects[0].Value, StringComparer.Ordinal)
+            || options.ApprovedTestSubjects.Contains(subjects[0].Value, StringComparer.Ordinal)
+            || options.ApprovedCreatorSubjects.Contains(subjects[0].Value, StringComparer.Ordinal))
+            return false;
+        var roles = user.Claims.Where(c =>
+            string.Equals(c.Type, options.RoleClaimType, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Type, "role", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Type, "roles", StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (roles.Length != 1 || roles[0].Type != options.RoleClaimType
+            || roles[0].Value != options.AdvertiserRole
+            || roles[0].Issuer != options.Authority || roles[0].OriginalIssuer != options.Authority)
+            return false;
+        var ids = user.Claims.Where(c => string.Equals(c.Type, options.AdvertiserIdClaimType, StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (ids.Length != 1 || ids[0].Type != options.AdvertiserIdClaimType
+            || ids[0].Issuer != options.Authority || ids[0].OriginalIssuer != options.Authority
+            || !Guid.TryParse(ids[0].Value, out advertiserId) || advertiserId == Guid.Empty
+            || user.HasClaim(c => c.Type == options.CreatorIdClaimType || c.Type == options.ReviewerWorkspaceClaimType))
+        {
+            advertiserId = Guid.Empty;
+            return false;
+        }
+        return true;
+    }
+
     // An authenticated reviewer is never implicitly assigned to all tenants.
     // The workspace claim must originate in a verified OIDC principal; the
     // request path, advertiser_id claim, or any HTTP header is not an assignment.
