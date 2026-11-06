@@ -34,24 +34,33 @@ public static class BlissAuthorization
             || options.CreatorIdClaimType == options.RoleClaimType)
             return false;
 
-        var subjectClaims = user.FindAll("sub").ToArray();
-        if (subjectClaims.Length != 1
+        // The cookie must have exactly one approved subject and exactly one
+        // issuer-bound creator role. Mixed/duplicate aliases are not harmless:
+        // rejecting them avoids a second authority source being ignored by
+        // case-sensitive claim resolution after cookie normalization.
+        var subjectClaims = user.Claims.Where(claim =>
+            string.Equals(claim.Type, "sub", StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (subjectClaims.Length != 1 || subjectClaims[0].Type != "sub"
             || !options.ApprovedCreatorSubjects.Contains(subjectClaims[0].Value, StringComparer.Ordinal)
             || options.ApprovedTestSubjects.Contains(subjectClaims[0].Value, StringComparer.Ordinal))
             return false;
 
         var roles = user.Claims.Where(claim =>
-            claim.Type == options.RoleClaimType
-            || claim.Type == ClaimTypes.Role
-            || claim.Type == "roles" || claim.Type == "role").ToArray();
-        if (roles.Length == 0 || roles.Any(claim =>
-            claim.Value != options.CreatorRole
-            || claim.Issuer != options.Authority
-            || claim.OriginalIssuer != options.Authority))
+            string.Equals(claim.Type, options.RoleClaimType, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(claim.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(claim.Type, "roles", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(claim.Type, "role", StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (roles.Length != 1
+            || roles[0].Type != options.RoleClaimType
+            || roles[0].Value != options.CreatorRole
+            || roles[0].Issuer != options.Authority
+            || roles[0].OriginalIssuer != options.Authority)
             return false;
 
-        var creatorClaims = user.FindAll(options.CreatorIdClaimType).ToArray();
+        var creatorClaims = user.Claims.Where(claim =>
+            string.Equals(claim.Type, options.CreatorIdClaimType, StringComparison.OrdinalIgnoreCase)).ToArray();
         if (creatorClaims.Length != 1
+            || creatorClaims[0].Type != options.CreatorIdClaimType
             || creatorClaims[0].Issuer != options.Authority
             || creatorClaims[0].OriginalIssuer != options.Authority
             || !Guid.TryParse(creatorClaims[0].Value, out creatorId)
