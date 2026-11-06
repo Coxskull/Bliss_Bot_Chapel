@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+import tarfile
 
 SCANNER_VERSION = "0.120.1"
 SCANNER_ARCHIVE_SHA256 = "0a9ee97ef5ae2ee953b0a80098105052e846cdbe319a57d808b519c33cd1343d"
@@ -68,6 +69,39 @@ def summarize(report, image_id):
             "vulnerability_acceptance": False}, rows
 
 
+
+def archive_config_image_id(archive):
+    """Hash the actual image config bytes in an exact docker-save archive.
+
+    Docker's inspected image ID can name a higher-level image/index, whereas
+    Grype reports the selected platform image *config* ID. Never accept a
+    caller-supplied scanner target alone as cryptographic provenance.
+    """
+    with tarfile.open(archive, mode="r:") as bundle:
+        try:
+            member = bundle.getmember("manifest.json")
+            if member.size < 2 or member.size > 1024 * 1024:
+                raise ValueError("Ambiguous image manifest size")
+            source = bundle.extractfile(member)
+            if source is None:
+                raise ValueError("Missing saved-image manifest")
+            manifest = json.loads(source.read())
+            if not isinstance(manifest, list) or len(manifest) != 1:
+                raise ValueError("Saved Docker image must have exactly one platform manifest")
+            config_name = manifest[0].get("Config") if isinstance(manifest[0], dict) else None
+            if not isinstance(config_name, str) or not config_name or config_name.startswith("/") or ".." in Path(config_name).parts:
+                raise ValueError("Unsafe saved-image configuration path")
+            config = bundle.getmember(config_name)
+            if config.size < 2 or config.size > 10 * 1024 * 1024:
+                raise ValueError("Invalid saved-image configuration size")
+            data = bundle.extractfile(config)
+            if data is None:
+                raise ValueError("Missing saved-image configuration blob")
+            return "sha256:" + hashlib.sha256(data.read()).hexdigest()
+        except (KeyError, json.JSONDecodeError, AttributeError, TypeError) as exc:
+            raise ValueError("Saved-image configuration cannot be proven") from exc
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--image", required=True)
@@ -118,6 +152,7 @@ def main():
         run([*docker, "image", "save", "--output", str(archive), image_id], "image-save.log")
         with archive.open("rb") as stream:
             archive_sha = hashlib.file_digest(stream, "sha256").hexdigest()
+        archive_config_id = archive_config_image_id(archive)
         # Scan the same immutable locally inspected Docker image, not an archive
         # whose extracted image config ID can diverge from the Docker image ID.
         # The report is still strictly checked against image_id by summarize().
@@ -125,10 +160,19 @@ def main():
         # a mutable tag, registry or synthetic clean scan.
         report = run(scanner + ["docker:" + image_id, "--output", "json"],
                      "vulnerabilities.json", timeout=600, tool_env=env)
-        counts, rows = summarize(report, image_id)
+        # Two independent exact-identity checks: the requested immutable
+        # Docker inspection ID and the content-hash of the saved image config.
+        # The latter is Grype's selected-platform imageID, which may differ
+        # from the higher-level Docker image/index Id.
+        if report.get("source", {}).get("target", {}).get("userInput") != image_id:
+            raise ValueError("Scanner did not target the exact inspected Docker image ID")
+        counts, rows = summarize(report, archive_config_id)
         summary = {"task_id": "AGM-LAUNCH-010", "gate": "VULNERABILITY_AUDIT_EVIDENCE_ONLY",
                    "source_revision": args.revision, "image_id": image_id,
-                   "image_archive_sha256": archive_sha, "scanner_version": SCANNER_VERSION,
+                   "image_archive_sha256": archive_sha,
+                   "archive_config_image_id": archive_config_id,
+                   "scanner_report_image_id": report["source"]["target"]["imageID"],
+                   "scanner_version": SCANNER_VERSION,
                    "scanner_archive_sha256": SCANNER_ARCHIVE_SHA256,
                    "database": database, "actual_completed_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
                    **counts, "coverage": "Grype squashed image package catalog/matches; not exploitability or complete security assurance",
