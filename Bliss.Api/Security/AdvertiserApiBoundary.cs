@@ -20,6 +20,19 @@ public static class AdvertiserApiBoundary
              || string.Equals(claim.Type, "roles", StringComparison.OrdinalIgnoreCase))
             && string.Equals(claim.Value, auth.AdvertiserRole, StringComparison.Ordinal));
         if (!labeled) return false;
+        // Legacy operator/test identities can also have bliss.advertiser.
+        // Only an issuer-stamped self-service identity is denied the
+        // broad legacy API surface. This claim survives a feature shutdown
+        // in the protected cookie and keeps stale sessions restricted.
+        var markers = context.User.Claims.Where(c =>
+            string.Equals(c.Type, BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType,
+                StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (markers.Length != 1
+            || markers[0].Type != BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType
+            || markers[0].Value != "true"
+            || markers[0].Issuer != auth.Authority
+            || markers[0].OriginalIssuer != auth.Authority)
+            return false;
 
         var path = context.Request.Path.Value ?? "";
         if (HttpMethods.IsGet(context.Request.Method)
