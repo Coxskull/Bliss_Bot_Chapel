@@ -74,14 +74,19 @@ public sealed class CreatorApiBoundaryTests
     }
 
     [Fact]
-    public void Anonymous_staff_and_disabled_creator_feature_are_not_affected()
+    public void Anonymous_and_staff_accounts_keep_existing_policies_but_old_creator_cookies_remain_restricted()
     {
         Assert.False(CreatorApiBoundary.ShouldDeny(
             Request("GET", "/api/creators", role: null), Options()));
         Assert.False(CreatorApiBoundary.ShouldDeny(
             Request("GET", "/api/creators", role: "bliss.viewer"), Options()));
-        Assert.False(CreatorApiBoundary.ShouldDeny(
+
+        // An operator can turn enrollment off without widening a stale
+        // creator cookie into general authenticated marketplace privileges.
+        Assert.True(CreatorApiBoundary.ShouldDeny(
             Request("GET", "/api/creators", role: "bliss.creator"), Options(false)));
+        Assert.False(CreatorApiBoundary.ShouldDeny(
+            Request("GET", "/api/creators/me", role: "bliss.creator"), Options(false)));
         var options = Options();
         options.Enabled = false;
         Assert.False(CreatorApiBoundary.ShouldDeny(
