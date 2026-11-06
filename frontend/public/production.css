@@ -6,3 +6,9 @@
 #plans p, #plans pre, #creative p { overflow-wrap: anywhere; white-space: pre-wrap; }
 header { flex-wrap: wrap; }
 pre, .record p { overflow-wrap: anywhere; white-space: pre-wrap; }
+
+#zero-credit-composer { margin: 1.5rem 0; }
+#zero-credit-composer label { display: block; margin: 1rem 0; }
+#zero-credit-composer button { margin: .5rem 0; }
+#composer-preview { display: block; max-width: min(100%, 1280px); max-height: 580px; height: auto; margin: 1.25rem 0; border: 1px solid var(--alpha-border); border-radius: 10px; }
+#composer-preview[hidden], #composer-download[hidden] { display: none; }
