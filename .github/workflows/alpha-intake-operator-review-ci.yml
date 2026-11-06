@@ -1,0 +1,34 @@
+name: ALPHA Intake Operator Review — Offline Contract
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/alpha-intake-operator-review-ci.yml'
+      - 'supabase/functions/alpha-intake-operator-review/**'
+      - 'docs/launch/candidates/NOT_FOR_APPLY-alpha-intake-operator-live-session.sql'
+      - 'tests/alpha-intake-operator-review.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: alpha-intake-review-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  offline-review-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify the permissioned read-only review contract with fictional records
+        run: |
+          node --check supabase/functions/alpha-intake-operator-review/review-core.mjs
+          node --test tests/alpha-intake-operator-review.test.mjs
+      - name: Verify no production authorization
+        run: |
+          test -f docs/launch/candidates/NOT_FOR_APPLY-alpha-intake-operator-live-session.sql
+          test -f supabase/functions/alpha-intake-operator-review/index.ts
+          echo 'SOURCE_ONLY_TESTS_PASS — NO LIVE AUTH, DB WRITES, CRM SUBMISSIONS, OR INVITATIONS'
