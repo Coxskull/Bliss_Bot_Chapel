@@ -11,7 +11,9 @@ public static class RestrictedPreviewGate
     {
         "/", "/index.html", "/health/live",
         "/wedding-planner.css", "/wedding-planner.js", "/preview-lock.js",
-        "/assets/bliss-chapel-hero.jpg", "/favicon.ico"
+        "/assets/bliss-chapel-hero.jpg", "/favicon.ico",
+        // Credential-free, disabled fields only; auth APIs stay denied.
+        "/creator-signin-preview.html", "/advertiser-signin-preview.html"
     };
 
     public static bool IsInterfacePath(PathString path) =>
