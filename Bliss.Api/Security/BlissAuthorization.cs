@@ -17,6 +17,54 @@ public static class BlissAuthorization
         || user.IsInRole(options.ReviewerRole)
         || user.IsInRole(options.AdminRole);
 
+    // Task #4 creator self-service is entirely disabled by default and
+    // requires one issuer-bound, owner-approved, verified creator identity.
+    // Never use an intake email, CRM contact ID, URL parameter or user_metadata
+    // as the creator's tenant scope.
+    public static bool TryResolveVerifiedCreatorId(
+        ClaimsPrincipal user, BlissAuthenticationOptions options, out Guid creatorId)
+    {
+        creatorId = Guid.Empty;
+        if (!options.Enabled || !options.SupabaseEnabled || !options.CreatorSelfServiceRequested
+            || user.Identity?.IsAuthenticated != true
+            || string.IsNullOrWhiteSpace(options.Authority)
+            || string.IsNullOrWhiteSpace(options.CreatorRole)
+            || string.IsNullOrWhiteSpace(options.CreatorIdClaimType)
+            || string.IsNullOrWhiteSpace(options.RoleClaimType)
+            || options.CreatorIdClaimType == options.RoleClaimType)
+            return false;
+
+        var subjectClaims = user.FindAll("sub").ToArray();
+        if (subjectClaims.Length != 1
+            || !options.ApprovedCreatorSubjects.Contains(subjectClaims[0].Value, StringComparer.Ordinal)
+            || options.ApprovedTestSubjects.Contains(subjectClaims[0].Value, StringComparer.Ordinal))
+            return false;
+
+        var roles = user.Claims.Where(claim =>
+            claim.Type == options.RoleClaimType
+            || claim.Type == ClaimTypes.Role
+            || claim.Type == "roles" || claim.Type == "role").ToArray();
+        if (roles.Length == 0 || roles.Any(claim =>
+            claim.Value != options.CreatorRole
+            || claim.Issuer != options.Authority
+            || claim.OriginalIssuer != options.Authority))
+            return false;
+
+        var creatorClaims = user.FindAll(options.CreatorIdClaimType).ToArray();
+        if (creatorClaims.Length != 1
+            || creatorClaims[0].Issuer != options.Authority
+            || creatorClaims[0].OriginalIssuer != options.Authority
+            || !Guid.TryParse(creatorClaims[0].Value, out creatorId)
+            || creatorId == Guid.Empty
+            || user.HasClaim(claim => claim.Type == options.AdvertiserIdClaimType
+                || claim.Type == options.ReviewerWorkspaceClaimType))
+        {
+            creatorId = Guid.Empty;
+            return false;
+        }
+        return true;
+    }
+
     // An authenticated reviewer is never implicitly assigned to all tenants.
     // The workspace claim must originate in a verified OIDC principal; the
     // request path, advertiser_id claim, or any HTTP header is not an assignment.
