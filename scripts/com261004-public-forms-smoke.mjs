@@ -40,8 +40,8 @@ for(const file of ["creator-registration-preview.html","creator-registration-pre
 }
 
 for (const [file, route] of [
-  ["creator-login.html", "/api/auth/login?returnUrl=%2Fcreator-dashboard.html"],
-  ["advertiser-login.html", "/api/auth/login?returnUrl=%2Fadvertiser-dashboard.html"]
+  ["creator-login.html", "/creator-signin-preview.html"],
+  ["advertiser-login.html", "/advertiser-signin-preview.html"]
 ]) {
   assert.ok(existsSync(base + file), file + " is publicly discoverable");
   const page = read(file);
