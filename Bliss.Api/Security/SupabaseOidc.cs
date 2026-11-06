@@ -98,6 +98,7 @@ public static class SupabaseOidc
 
         foreach (var claim in identity.Claims.Where(c => c.Type == auth.RoleClaimType
             || c.Type == ClaimTypes.Role || c.Type == auth.AdvertiserIdClaimType
+            || c.Type == BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType
             || c.Type == auth.ReviewerWorkspaceClaimType
             || ((approvedCreator || approvedAdvertiser) && (c.Type == auth.CreatorIdClaimType
                 || c.Type == "role" || c.Type == "roles"))).ToArray())
@@ -185,6 +186,8 @@ public static class SupabaseOidc
                 ClaimValueTypes.String, auth.Authority));
             identity.AddClaim(new Claim(auth.AdvertiserIdClaimType, verifiedAdvertiserId.ToString("D"),
                 ClaimValueTypes.String, auth.Authority));
+            identity.AddClaim(new Claim(BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType, "true",
+                ClaimValueTypes.Boolean, auth.Authority));
             return;
         }
 
