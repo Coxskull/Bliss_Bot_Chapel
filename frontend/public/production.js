@@ -1,6 +1,7 @@
 "use strict";
 const $ = selector => document.querySelector(selector);
 let session, workspace, brand, references = [], history, busy = false, stale = false;
+let composerObjectUrl = null;
 const keys = new Map();
 function tell(text, error = false) { $("#status").textContent = text; $("#status").dataset.error = String(error); }
 function sync() {
@@ -12,6 +13,7 @@ function sync() {
   $("#resume").disabled = busy || !$("#brief").value;
   $("#reload").disabled = busy || !workspace;
   $("#demo-generate").disabled = busy || !session?.canWrite;
+  $("#composer-render").disabled = busy || stale || !history?.brief || (!session?.canWrite && !session?.advertiserId);
   $("#brief").disabled = busy;
 }
 function path() { return `/api/wedding-planner/workspaces/${workspace}/production`; }
@@ -36,6 +38,7 @@ async function action(run) {
 function text(parent, tag, value, className) { const node = document.createElement(tag); node.textContent = value; if (className) node.className = className; parent.append(node); return node; }
 function referenceNote() { const ref = references.find(x => x.nicheKey === $("#family").value); $("#reference-note").textContent = ref ? `Reference ${ref.referenceId}. Learn: ${ref.learn}. Do not copy: ${ref.doNotCopy}.` : "No eligible reference is available."; }
 async function loadBrief(id) {
+  clearComposerPreview();
   const loaded = await api(`${path()}/briefs/${id}`); history = loaded;
   const brief = history.brief, dna = JSON.parse(brief.brandSnapshotJson), production = JSON.parse(brief.productionBriefJson), reference = JSON.parse(brief.referenceSnapshotJson);
   const panel = $("#brief-details"); panel.replaceChildren();
@@ -109,6 +112,70 @@ $("#review-form").addEventListener("submit", event => { event.preventDefault(); 
   await api(`${path()}/briefs/${history.brief.id}/candidates/${candidate.id}/reviews`, { ...payload, idempotencyKey: key(`review-${candidate.id}`, payload) });
   await loadBrief(history.brief.id); $("#review-form").reset(); tell("Human assessment saved. Campaign approval remains separate.");
 }); });
+// Original brand-owned candidate, generated in the operator's browser from a
+// confirmed saved brief. No image API, teacher artwork, or auto-upload.
+function clearComposerPreview() {
+  if (composerObjectUrl) URL.revokeObjectURL(composerObjectUrl);
+  composerObjectUrl = null;
+  $("#composer-preview").hidden = true;
+  $("#composer-preview").removeAttribute("src");
+  $("#composer-download").hidden = true;
+  $("#composer-download").removeAttribute("href");
+}
+async function renderBrandTemplatePng() {
+  const status = $("#composer-status");
+  try {
+    if (!history?.brief || (!session?.canWrite && !session?.advertiserId)) {
+      throw new Error("Open an authorized workspace and its saved production brief first.");
+    }
+    if (!window.AlphaTemplateComposer) throw new Error("Original ad composer is not available.");
+    const brief = history.brief;
+    const dna = JSON.parse(brief.brandSnapshotJson);
+    if (!dna.brandName || !brief.headline || !brief.cta) {
+      throw new Error("A confirmed brand, headline, and call-to-action are required.");
+    }
+    status.textContent = "Rendering original branded artwork locally…";
+    const blob = await window.AlphaTemplateComposer.render({
+      brandName: dna.brandName,
+      headline: brief.headline,
+      cta: brief.cta,
+      colors: dna.colors,
+      market: dna.market,
+      format: $("#composer-format").value
+    });
+    if (blob.type !== "image/png" || blob.size > 1024 * 1024) {
+      throw new Error("The rendered PNG exceeds the 1 MiB candidate image limit.");
+    }
+    clearComposerPreview();
+    composerObjectUrl = URL.createObjectURL(blob);
+    const name = "alpha-original-" + $("#composer-format").value + ".png";
+    $("#composer-preview").src = composerObjectUrl;
+    $("#composer-preview").hidden = false;
+    $("#composer-download").href = composerObjectUrl;
+    $("#composer-download").download = name;
+    $("#composer-download").hidden = false;
+    // Prepare the ordinary candidate-upload form, but never auto-submit it.
+    let prepared = false;
+    if (typeof DataTransfer === "function") {
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([blob], name, { type: "image/png" }));
+      $("#image").files = transfer.files;
+      prepared = $("#image").files.length === 1;
+    }
+    if (prepared && !$("#candidate-label").value.trim()) {
+      $("#candidate-label").value = "Original template draft — " + dna.brandName.slice(0, 100);
+    }
+    status.textContent = prepared
+      ? "Original PNG rendered locally. Review, then use Save candidate revision for private human review. Nothing was uploaded or sent."
+      : "Original PNG rendered locally. Download it and select the PNG in the candidate form to save for review. Nothing was uploaded or sent.";
+    tell("Zero-credit original PNG candidate prepared. No campaign or delivery authorization.");
+  } catch (error) {
+    status.textContent = "Artwork not produced: " + error.message;
+    throw error;
+  }
+}
+$("#composer-render").addEventListener("click", () => action(renderBrandTemplatePng));
+
 // No provider calls: this action uses only the existing source-media, overlay-1,
  // and factory QA endpoints. It never invokes /api/operations/academy/generate.
 async function runZeroCreditDemonstration() {
