@@ -495,6 +495,22 @@ app.Use(async (context, next) =>
 
     await next();
 });
+// An advertiser cookie cannot read legacy creator directories, campaigns,
+// staff routes, or another advertiser's records.
+app.Use(async (context, next) =>
+{
+    if (AdvertiserApiBoundary.ShouldDeny(context, authentication))
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        await context.Response.WriteAsJsonAsync(new
+        {
+            error = "Advertiser account access is limited to your verified business profile."
+        });
+        return;
+    }
+    await next();
+});
 app.UseRateLimiter();
 app.UseAuthorization();
 app.Use(async (context, next) =>
