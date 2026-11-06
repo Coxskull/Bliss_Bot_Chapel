@@ -3,6 +3,7 @@ namespace Bliss.Api.Security;
 public sealed class BlissAuthenticationOptions
 {
     public const string SectionName = "Authentication";
+    public const string AdvertiserSelfServiceMarkerClaimType = "bliss_advertiser_self_service";
 
     public bool Enabled { get; set; }
     public string Authority { get; set; } = string.Empty;
@@ -29,6 +30,11 @@ public sealed class BlissAuthenticationOptions
     // Explicit approved OIDC subject IDs, not editable email or form IDs.
     // Keep disjoint from ApprovedTestSubjects; empty means no creator login.
     public string[] ApprovedCreatorSubjects { get; set; } = [];
+
+    // Advertiser-only self-service stays off until identity-to-business
+    // verification and hosted recovery/ingress checks are accepted.
+    public bool AdvertiserSelfServiceRequested { get; set; }
+    public string[] ApprovedAdvertiserSubjects { get; set; } = [];
 
     // Requires explicit issuer configuration; defaults cannot enable visitor
     // claims as trusted evidence of historic conversation ownership.

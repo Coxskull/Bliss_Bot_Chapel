@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#170839"><title>Advertiser dashboard | ALPHA GLOBAL MEDIA™</title>
+<link rel="stylesheet" href="/creator-dashboard.css"><script defer src="/advertiser-dashboard.js"></script></head>
+<body><a class="skip" href="#dashboard">Skip to advertiser dashboard</a>
+<header class="topbar"><a class="brand" href="/">ALPHA <span>GLOBAL MEDIA™</span></a>
+<nav aria-label="Advertiser navigation"><a href="/advertiser-login.html">Advertiser login</a><a href="/join-advertiser.html">Business interest</a></nav></header>
+<main id="dashboard"><section class="welcome"><p class="eyebrow">ALPHA GLOBAL MEDIA™ · ADVERTISER WORKSPACE</p>
+<h1>Your advertiser dashboard.</h1><p>Only a verified, explicitly approved business account can view its own profile here.</p></section>
+<section class="panel" aria-labelledby="access-title"><div class="panel-head">
+<div><p class="kicker">ACCOUNT ACCESS</p><h2 id="access-title">Your business</h2></div>
+<span id="access-badge" class="badge">CHECKING</span></div>
+<p id="status" class="status" role="status" aria-live="polite">Checking your account session…</p>
+<div id="signin-panel" class="actions" hidden>
+<a class="primary" href="/api/auth/login?returnUrl=%2Fadvertiser-dashboard.html">Sign in securely</a>
+<a class="secondary" href="/advertiser-login.html">Account instructions</a></div>
+<div id="pending-panel" hidden><h3>Advertiser access is not yet approved</h3>
+<p>Submitting an interest form does not create a dashboard. ALPHA must verify your account and associate it with a specific business record.</p></div>
+<section id="profile-panel" class="profile" aria-labelledby="profile-title" hidden>
+<div class="profile-heading"><div><p class="kicker">APPROVED BUSINESS PROFILE</p><h3 id="profile-title">Your profile</h3></div><span class="verified">APPROVED</span></div>
+<dl><div><dt>Business name</dt><dd id="business-name">—</dd></div>
+<div><dt>Advertiser ID</dt><dd id="business-id">—</dd></div>
+<div><dt>Country</dt><dd id="business-country">—</dd></div>
+<div><dt>Website</dt><dd id="business-website">—</dd></div></dl>
+<p class="muted">Pre-launch, read-only profile. Campaigns, private leads, payments, quotes, billing and account edits are not enabled.</p></section>
+<div class="panel-actions"><button id="refresh" type="button">Refresh account status</button>
+<button id="logout" type="button" hidden>Sign out</button></div></section>
+<section class="locked-grid" aria-label="Feature availability">
+<article><span>01</span><h3>Campaigns</h3><p>Not yet enabled</p></article>
+<article><span>02</span><h3>Messages</h3><p>Not yet enabled</p></article>
+<article><span>03</span><h3>Payments</h3><p>Not yet enabled</p></article>
+</section><p class="footnote">Account access is permission-scoped. Your public form receipt alone cannot activate a private workspace.</p></main>
+<footer>© 2026 ALPHA GLOBAL MEDIA LLC.</footer></body></html>

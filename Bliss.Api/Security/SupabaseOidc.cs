@@ -87,17 +87,20 @@ public static class SupabaseOidc
         var approvedTest = auth.ApprovedTestSubjects.Contains(subject, StringComparer.Ordinal);
         var approvedCreator = auth.Enabled && auth.SupabaseEnabled && auth.CreatorSelfServiceRequested
             && auth.ApprovedCreatorSubjects.Contains(subject, StringComparer.Ordinal);
+        var approvedAdvertiser = auth.Enabled && auth.SupabaseEnabled && auth.AdvertiserSelfServiceRequested
+            && auth.ApprovedAdvertiserSubjects.Contains(subject, StringComparer.Ordinal);
 
         // The creator lane is deliberately disjoint from privileged test/staff
         // subjects. A missing allowlist, disabled flag, or accidental overlap
         // cannot silently turn a CRM lead into an authenticated account.
-        if ((!approvedTest && !approvedCreator) || (approvedTest && approvedCreator))
+        if ((approvedTest ? 1 : 0) + (approvedCreator ? 1 : 0) + (approvedAdvertiser ? 1 : 0) != 1)
             throw new SecurityTokenValidationException("Unapproved identity.");
 
         foreach (var claim in identity.Claims.Where(c => c.Type == auth.RoleClaimType
             || c.Type == ClaimTypes.Role || c.Type == auth.AdvertiserIdClaimType
+            || c.Type == BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType
             || c.Type == auth.ReviewerWorkspaceClaimType
-            || (approvedCreator && (c.Type == auth.CreatorIdClaimType
+            || ((approvedCreator || approvedAdvertiser) && (c.Type == auth.CreatorIdClaimType
                 || c.Type == "role" || c.Type == "roles"))).ToArray())
             identity.RemoveClaim(claim);
 
@@ -142,6 +145,49 @@ public static class SupabaseOidc
                 ClaimValueTypes.String, auth.Authority));
             identity.AddClaim(new Claim(auth.CreatorIdClaimType, creatorId.ToString("D"),
                 ClaimValueTypes.String, auth.Authority));
+            return;
+        }
+
+        if (approvedAdvertiser)
+        {
+            // Only issuer-validated staff-owned app_metadata can activate a
+            // customer account. No public intake/CRM data or editable
+            // user_metadata is ever consulted.
+            if (metadataClaim is null || string.IsNullOrWhiteSpace(auth.AdvertiserRole)
+                || string.IsNullOrWhiteSpace(auth.AdvertiserIdClaimType)
+                || auth.AdvertiserRole == auth.CreatorRole
+                || auth.AdvertiserRole == auth.AdminRole
+                || auth.AdvertiserRole == auth.OperatorRole
+                || auth.AdvertiserRole == auth.ReviewerRole
+                || auth.AdvertiserRole == auth.ViewerRole
+                || identity.FindAll("email_verified").Count() != 1
+                || !string.Equals(identity.FindFirst("email_verified")?.Value, "true", StringComparison.OrdinalIgnoreCase))
+                throw new SecurityTokenValidationException("Advertiser verification is incomplete.");
+
+            using var advertiserDocument = JsonDocument.Parse(metadataClaim.Value);
+            var advertiserMetadata = advertiserDocument.RootElement;
+            if (advertiserMetadata.ValueKind != JsonValueKind.Object
+                || !advertiserMetadata.TryGetProperty("bliss_roles", out var advertiserRoles)
+                || advertiserRoles.ValueKind != JsonValueKind.Array
+                || advertiserRoles.GetArrayLength() != 1
+                || advertiserRoles[0].ValueKind != JsonValueKind.String
+                || advertiserRoles[0].GetString() != auth.AdvertiserRole
+                || !advertiserMetadata.TryGetProperty("bliss_advertiser_verified", out var businessVerified)
+                || businessVerified.ValueKind != JsonValueKind.True
+                || !advertiserMetadata.TryGetProperty("bliss_advertiser_id", out var advertiserValue)
+                || advertiserValue.ValueKind != JsonValueKind.String
+                || !Guid.TryParse(advertiserValue.GetString(), out var verifiedAdvertiserId)
+                || verifiedAdvertiserId == Guid.Empty
+                || advertiserMetadata.TryGetProperty("bliss_creator_id", out _)
+                || advertiserMetadata.TryGetProperty("bliss_review_workspace_ids", out _))
+                throw new SecurityTokenValidationException("Advertiser verification is incomplete.");
+
+            identity.AddClaim(new Claim(auth.RoleClaimType, auth.AdvertiserRole,
+                ClaimValueTypes.String, auth.Authority));
+            identity.AddClaim(new Claim(auth.AdvertiserIdClaimType, verifiedAdvertiserId.ToString("D"),
+                ClaimValueTypes.String, auth.Authority));
+            identity.AddClaim(new Claim(BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType, "true",
+                ClaimValueTypes.Boolean, auth.Authority));
             return;
         }
 
