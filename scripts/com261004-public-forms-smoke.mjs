@@ -25,6 +25,24 @@ assert.ok(portal.includes('href="/join-advertiser.html"'),"public advertiser hom
 assert.ok(portal.includes('href="/creator-account.html"'),"creator account entry point");
 assert.ok(portal.includes('href="/creator-login.html"'),"creator-specific home login");
 assert.ok(portal.includes('href="/advertiser-login.html"'),"advertiser-specific home login");
+for(const file of ["services.html","contact.html"]){
+  assert.ok(existsSync(base+file), file + " published");
+  assert.ok(read(file).includes("ALPHA GLOBAL MEDIA LLC"), file + " identifies legal business");
+}
+const services=read("services.html");
+assert.ok(services.includes("Advertising and creator collaboration services"), "services identified");
+assert.ok(services.includes("transaction currency"), "quote currency disclosed per engagement");
+assert.ok(services.includes("No online checkout is enabled"), "unavailable payments disclosed");
+assert.ok(services.includes("/contact.html"), "services link to contact");
+const contact=read("contact.html");
+for(const path of ["/join-advertiser.html","/join-creator.html","/privacy-request.html"])
+  assert.ok(contact.includes('href="'+path+'"'), "contact route available: "+path);
+assert.ok(portal.includes('href="/contact.html"'), "public contact link visible on homepage");
+assert.ok(portal.includes('href="/services.html"'), "public services link visible on homepage");
+for(const file of ["join-creator.html","join-advertiser.html"]){
+  assert.ok(read(file).includes("PUBLIC INQUIRY · NOT AN ACCOUNT"), "clear inquiry-only status");
+  assert.ok(!read(file).includes("ALPHA INTEREST FORM · NOT YET VERIFIED"), "no misleading unverified business banner");
+}
 assert.ok(existsSync(base+"creator-account.html"),"creator account explainer published");
 const account=read("creator-account.html");
 assert.ok(account.includes("INVITATION ONLY"),"creator account is invite-only");
