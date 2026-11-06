@@ -20,40 +20,82 @@ const askAlphaSend = document.querySelector("#ask-alpha-send");
 const askAlphaThread = document.querySelector("#ask-alpha-thread");
 let askAlphaTurns = 0;
 
+const askAlphaActions = Object.freeze({
+  advertiser: Object.freeze({ label: "Open advertiser inquiry form", href: "/join-advertiser.html" }),
+  creator: Object.freeze({ label: "Open creator inquiry form", href: "/join-creator.html" }),
+  contact: Object.freeze({ label: "View contact options", href: "/contact.html" }),
+  privacy: Object.freeze({ label: "Read the Privacy Notice", href: "/alpha-privacy.html" }),
+  privacyRequest: Object.freeze({ label: "Open privacy request form", href: "/privacy-request.html" })
+});
+
+const answer = (text, actionKeys = []) => ({
+  text,
+  actions: actionKeys.map(key => askAlphaActions[key])
+});
+
 function askAlphaAnswer(question) {
   const q = question.toLowerCase();
   const has = (...terms) => terms.some(term => q.includes(term));
   if (question.includes("@") || /(?:\+?\d[ -]?){8,}/.test(question)) {
-    return "Please do not enter email addresses or phone numbers here. This informational guide does not collect leads or send messages. A verified contact form will be needed for a private follow-up.";
+    return answer(
+      "Please do not enter email addresses or phone numbers here. This guide does not collect leads or send messages. Use the relevant public inquiry form if you want ALPHA to review an advertiser or creator inquiry.",
+      ["advertiser", "creator"]
+    );
   }
   if (has("privacy", "personal", "store", "save", "data", "record", "transcript")) {
-    return "This guided conversation runs inside your current browser tab. It does not send your questions to a server, save a transcript, or contact anyone. Do not enter private business or personal details.";
+    return answer(
+      "This guided conversation runs in your current browser tab. It does not send your questions to a server, save a transcript, or contact anyone. Public inquiry forms have a separate Privacy Notice and privacy request form.",
+      ["privacy", "privacyRequest"]
+    );
   }
   if (has("price", "pricing", "cost", "quote", "budget", "fee", "payment")) {
-    return "Campaign pricing depends on an approved placement, audience, creative scope and an accepted quote. Ask Alpha cannot invent a price or collect payment. A human will review custom pricing when the commercial intake opens.";
+    return answer(
+      "Campaign pricing depends on an approved placement, audience, creative scope and an accepted quote. The advertiser inquiry form is available now; a person may review scope and availability before any proposal. There is no public checkout, and this guide cannot issue a quote or collect payment.",
+      ["advertiser"]
+    );
   }
   if (has("human", "person", "representative", "contact", "call", "email", "support", "meeting")) {
-    return "A human representative will be required for a custom proposal or binding agreement. This guide cannot book a call, submit your contact details, or promise a reply. Verified human-contact options will appear once the commercial intake is activated.";
+    return answer(
+      "For a human review, use the Contact page or the relevant public inquiry form. These forms are requests for information, not support tickets, and a reply is not guaranteed.",
+      ["contact", "advertiser", "creator"]
+    );
   }
   if (has("creator", "podcaster", "streamer", "influencer", "channel", "earn", "monetiz")) {
-    return "Alpha aims to connect suitable podcasters, livestreamers and content creators with advertisers. A creator's audience, content, availability and eligibility need review before any proposed campaign. Earnings or placements are not guaranteed.";
+    return answer(
+      "ALPHA aims to connect suitable podcasters, livestreamers and content creators with advertisers. A creator's audience, content, availability and eligibility need review before any proposed campaign. Earnings or placements are not guaranteed.",
+      ["creator"]
+    );
   }
   if (has("advertis", "sponsor", "brand", "campaign", "restaurant", "product", "business", "ad placement")) {
-    return "Alpha helps brands explore relevant creator and podcast advertising placements. The process is discovery, fit review, creative planning and a separately approved campaign proposal. This page does not place or launch ads.";
+    return answer(
+      "ALPHA helps brands explore relevant creator and podcast advertising placements. A public advertiser inquiry is available for human review; it does not place or launch ads.",
+      ["advertiser"]
+    );
   }
   if (has("result", "guarantee", "performance", "reach", "sales", "conversion")) {
-    return "Campaign outcomes depend on the creator, audience and execution. Alpha does not guarantee sales, reach, conversions or a return on investment. Reported results must be supported by real measurement evidence.";
+    return answer(
+      "Campaign outcomes depend on the creator, audience and execution. ALPHA does not guarantee sales, reach, conversions or a return on investment. Reported results must be supported by real measurement evidence."
+    );
   }
   if (has("where", "city", "country", "philippine", "manila", "market", "location")) {
-    return "Alpha researches opportunities across multiple markets. Availability, creator eligibility and campaign coverage are not confirmed by this guide. A specific market can be reviewed during a human-led proposal.";
+    return answer(
+      "ALPHA researches opportunities across multiple markets. Availability, creator eligibility and campaign coverage are not confirmed by this guide. A specific market can be reviewed through a human-led inquiry.",
+      ["advertiser", "creator"]
+    );
   }
-  if (has("what", "how", "work", "alpha", "help", "hello", "hi", "start", "join")) {
-    return "Ask Alpha is the information guide for Alpha Global Media's advertiser–creator marketplace. We help explain partnerships, possible ad formats and human-reviewed next steps. You can ask about creators, advertiser campaigns, pricing or privacy.";
+  if (has("what", "how", "work", "alpha", "help", "hello", "hi", "start", "join", "next step")) {
+    return answer(
+      "Ask Alpha is the information guide for ALPHA GLOBAL MEDIA's advertiser–creator marketplace. It explains partnerships, possible ad formats and human-reviewed next steps. Choose the advertiser or creator inquiry form below to introduce your request.",
+      ["advertiser", "creator"]
+    );
   }
-  return "I can help with general questions about Alpha advertising, creator partnerships, pricing, campaign expectations and human assistance. For an individualized answer, a human review will be needed once intake is available.";
+  return answer(
+    "I can help with general questions about ALPHA advertising, creator partnerships, pricing, campaign expectations and human assistance. For an individual response, submit a public inquiry for human review; this guide does not collect contact details.",
+    ["advertiser", "creator"]
+  );
 }
 
-function appendAskAlphaMessage(who, body) {
+function appendAskAlphaMessage(who, body, actions = []) {
   const bubble = document.createElement("p");
   bubble.className = "ask-alpha-bubble " + (who === "visitor" ? "ask-alpha-visitor" : "ask-alpha-guide");
   const heading = document.createElement("strong");
@@ -61,6 +103,13 @@ function appendAskAlphaMessage(who, body) {
   const text = document.createElement("span");
   text.textContent = body;
   bubble.append(heading, text);
+  for (const action of actions) {
+    const link = document.createElement("a");
+    link.className = "ask-alpha-action";
+    link.href = action.href;
+    link.textContent = action.label;
+    bubble.append(link);
+  }
   askAlphaThread.append(bubble);
   askAlphaThread.scrollTop = askAlphaThread.scrollHeight;
 }
@@ -69,7 +118,8 @@ function sendAskAlpha(question) {
   const cleaned = question.trim().slice(0, 400);
   if (!cleaned || askAlphaTurns >= 12) return;
   appendAskAlphaMessage("visitor", cleaned);
-  appendAskAlphaMessage("guide", askAlphaAnswer(cleaned));
+  const result = askAlphaAnswer(cleaned);
+  appendAskAlphaMessage("guide", result.text, result.actions);
   askAlphaTurns++;
   askAlphaInput.value = "";
   if (askAlphaTurns >= 12) {
