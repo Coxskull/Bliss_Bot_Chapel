@@ -14,6 +14,16 @@
     status.className = "status" + (tone ? " " + tone : "");
   };
   const badgeText = text => { badge.textContent = text; };
+  const clearProfile = () => {
+    // Private details must not survive a session refresh, failed role check
+    // or sign-out in a hidden DOM node.
+    for (const id of [
+      "creator-name", "creator-id", "creator-market",
+      "creator-language", "creator-status"
+    ]) {
+      byId(id).textContent = "—";
+    }
+  };
 
   async function readJson(url) {
     const response = await fetch(url, {
@@ -34,6 +44,7 @@
     show("signin-panel", false);
     show("pending-panel", false);
     show("profile-panel", false);
+    clearProfile();
     logoutButton.hidden = true;
     csrfToken = null;
     badgeText("CHECKING");
@@ -118,6 +129,8 @@
   async function signOut() {
     if (busy || !csrfToken) return;
     busy = true;
+    show("profile-panel", false);
+    clearProfile();
     logoutButton.disabled = true;
     try {
       const response = await fetch("/api/auth/logout", {
