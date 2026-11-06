@@ -31,7 +31,7 @@ has(html, 'name="adult_confirmed" required', "adult confirmation required");
 has(html, 'name="marketing_opt_in"', "optional marketing choice provided");
 absent(html, 'name="marketing_opt_in" checked', "marketing is not preselected");
 has(html, "/alpha-privacy.html", "privacy notice linked");
-has(html, "NOT YET VERIFIED", "creator is told interest is not verified");
+has(html, "PUBLIC INQUIRY · NOT AN ACCOUNT", "creator understands public inquiry is not an authenticated account");
 has(html, "does not create an ALPHA account", "creator is told no account is created");
 
 has(browser, "crypto.randomUUID()", "request key generated locally");
