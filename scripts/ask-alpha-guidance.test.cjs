@@ -60,7 +60,7 @@ function runPrompt(prompt) {
     document,
     fetch() { fetchCalls++; throw new Error('Ask Alpha must not make network calls'); }
   });
-  listeners.get('button:click')();
+  listeners.get('suggestion:click')();
   assert.equal(fetchCalls, 0);
   const guide = thread.children.find(node => node.className.includes('ask-alpha-guide') && node.children.some(child => child.tag === 'a'));
   assert.ok(guide, 'guided answer should include a direct inquiry action');
