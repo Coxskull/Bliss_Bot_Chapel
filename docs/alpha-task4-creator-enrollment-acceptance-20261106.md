@@ -53,3 +53,12 @@ These tests must **continue to deny** any creator registration grant until a ded
 ## CI guard and non-goals
 
 `node scripts/task4-creator-interest-guards.mjs` checks the **existing** form/server/CRM contracts without making a network request. No changes to runtime, DB, security policies, public pages, secrets, backups, or existing workstreams are included. A successful guard does not prove provider readback, real Auth, or legal approval.
+
+
+## Creator signup and dashboard UI — draft source only (2026-11-06)
+
+- Existing public creator interest form remains the one public signup/application form; do not duplicate it. Its receipt state remains NOT YET VERIFIED and cannot grant Auth privileges.
+- Added an invitation-only account explainer page linking back to the existing intake and to the approved OIDC/dashboard path. Existing Supabase invitation email continues to route to the existing password-setup form; no public password or Auth-user creation form is exposed.
+- Added a Railway same-origin creator dashboard shell. It checks the server session, reads only GET /api/creators/me, displays only the caller's minimal VERIFIED profile, and uses CSRF for logout. Pending/unverified/other-role accounts see no creator data.
+- The Vercel build copies the account explainer only; it routes dashboard/login links to Railway and never splits authenticated dashboard requests across origins. The existing RestrictedPreviewGate remains intact.
+- This is a source implementation in draft PR #323, not a live account system. No auth users or invitations were created; no database, CRM, production deployment, payment, campaign or STOP changes occurred.

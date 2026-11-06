@@ -20,6 +20,16 @@ public sealed class BlissAuthenticationOptions
     public string ReviewerRole { get; set; } = "bliss.reviewer";
     public string AdminRole { get; set; } = "bliss.admin";
     public string AdvertiserRole { get; set; } = "bliss.advertiser";
+    // Task #4: creator accounts are disabled until approved identity and
+    // recovery/ingress release gates are separately accepted. Never infer
+    // these values from a public interest record or CRM contact.
+    public bool CreatorSelfServiceRequested { get; set; }
+    public string CreatorRole { get; set; } = "bliss.creator";
+    public string CreatorIdClaimType { get; set; } = "bliss_creator_id";
+    // Explicit approved OIDC subject IDs, not editable email or form IDs.
+    // Keep disjoint from ApprovedTestSubjects; empty means no creator login.
+    public string[] ApprovedCreatorSubjects { get; set; } = [];
+
     // Requires explicit issuer configuration; defaults cannot enable visitor
     // claims as trusted evidence of historic conversation ownership.
     public string AskAlphaVisitorRole { get; set; } = "bliss.ask_alpha_visitor";

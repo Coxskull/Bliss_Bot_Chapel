@@ -4,10 +4,15 @@ on:
   pull_request:
     paths:
       - 'frontend/public/join-creator.html'
+      - 'frontend/public/creator-account.html'
+      - 'frontend/public/creator-dashboard.html'
+      - 'frontend/public/creator-dashboard.js'
+      - 'frontend/public/creator-dashboard.css'
       - 'frontend/public/alpha-intake.js'
       - 'frontend/public/alpha-privacy.html'
       - 'supabase/functions/alpha-public-intake/**'
       - 'scripts/task4-creator-interest-guards.mjs'
+      - 'scripts/task4-creator-dashboard-unit.mjs'
       - 'docs/alpha-task4-creator-enrollment-acceptance-20261106.md'
       - '.github/workflows/alpha-task4-creator-interest-guards.yml'
   workflow_dispatch:
@@ -30,3 +35,5 @@ jobs:
           node-version: '22'
       - name: Verify creator-only interest boundary (no provider calls)
         run: node scripts/task4-creator-interest-guards.mjs
+      - name: Verify creator dashboard state, session and role denial (synthetic)
+        run: node scripts/task4-creator-dashboard-unit.mjs
