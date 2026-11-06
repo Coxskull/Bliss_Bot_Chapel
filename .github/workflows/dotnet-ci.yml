@@ -102,10 +102,21 @@ jobs:
       - name: Show SDK version
         run: dotnet --info
 
-      - name: Install media runtime dependencies
+      - name: Verify media runtime dependencies
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core
+          set -euo pipefail
+          needs_install=0
+          command -v ffmpeg >/dev/null 2>&1 || needs_install=1
+          test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf || needs_install=1
+          test -f /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf || needs_install=1
+          if [[ "$needs_install" -eq 1 ]]; then
+            # GitHub-hosted Ubuntu images normally include these packages.
+            # Only reach apt when a runner image actually lacks a dependency;
+            # bound network waits so a mirror stall cannot consume the job.
+            timeout 180 sudo apt-get update               -o Acquire::Retries=2               -o Acquire::http::Timeout=30               -o Acquire::https::Timeout=30
+            timeout 180 sudo apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core
+          fi
           ffmpeg -version
           test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
           test -f /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
