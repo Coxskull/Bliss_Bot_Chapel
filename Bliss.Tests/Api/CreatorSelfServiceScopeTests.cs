@@ -106,4 +106,31 @@ public sealed class CreatorSelfServiceScopeTests
             .GetMyVerifiedCreator(default);
         Assert.Equal(403, Assert.IsType<StatusCodeResult>(unauth.Result).StatusCode);
     }
+
+    [Fact]
+    public async Task Creator_session_cannot_enumerate_creator_directory_or_other_creator_inventory()
+    {
+        await using var db = Database();
+        var controller = Controller(db, Auth(), Principal(ApprovedCreator));
+        var catalog = await controller.GetAll(default);
+        Assert.IsType<ForbidResult>(catalog.Result);
+        var otherCreator = await controller.GetById(OtherCreator, default);
+        Assert.IsType<ForbidResult>(otherCreator.Result);
+    }
+
+    [Fact]
+    public async Task Mixed_or_case_variant_creator_role_also_cannot_read_creator_directory()
+    {
+        await using var db = Database();
+        var identity = new ClaimsIdentity(new[] {
+            new Claim("sub", Subject),
+            new Claim("roles", "bliss.viewer", ClaimValueTypes.String, Issuer),
+            new Claim("ROLES", "bliss.creator", ClaimValueTypes.String, Issuer)
+        }, "verified-issuer", "name", "roles");
+        var controller = Controller(db, Auth(), new ClaimsPrincipal(identity));
+        var catalog = await controller.GetAll(default);
+        Assert.IsType<ForbidResult>(catalog.Result);
+        var detail = await controller.GetById(ApprovedCreator, default);
+        Assert.IsType<ForbidResult>(detail.Result);
+    }
 }
