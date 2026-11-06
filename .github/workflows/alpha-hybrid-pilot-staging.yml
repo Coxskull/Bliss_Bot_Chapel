@@ -1,0 +1,33 @@
+name: ALPHA Hybrid Pilot - signed bridge offline tests
+
+on:
+  pull_request:
+    paths:
+      - 'tools/alpha-hybrid-pilot/**'
+      - '.github/workflows/alpha-hybrid-pilot-staging.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  signed-bridge-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout only repo content
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Check Node.js source syntax
+        run: |
+          node --check tools/alpha-hybrid-pilot/pilot.mjs
+          node --check tools/alpha-hybrid-pilot/bridge.mjs
+      - name: Execute isolated signed-task tests (no remote calls)
+        run: node --test tools/alpha-hybrid-pilot/*.test.mjs
+      - name: Verify local-only demo
+        run: node tools/alpha-hybrid-pilot/pilot.mjs demo

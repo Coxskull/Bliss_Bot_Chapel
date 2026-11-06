@@ -1,0 +1,28 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { generateKeyPairSync } from 'node:crypto';
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { SCOPE, signTask, validateEnvelope, executeEnvelope, verifyReceipt, demo, requireCaptainPin, publicKeyFingerprint } from './pilot.mjs';
+const e = generateKeyPairSync('ed25519');
+const w = generateKeyPairSync('ed25519');
+const now = Date.now();
+const task = () => ({ id: 'ALPHA-PILOT-TESTCASE01', type: 'SHA256_EVIDENCE', scope: SCOPE, payload: { text: 'test public-only evidence' }, issuedAt: new Date(now).toISOString(), expiresAt: new Date(now + 120000).toISOString() });
+const run = async (env, enabled = true) => executeEnvelope(env, { executivePublicKey: e.publicKey, workerPrivateKey: w.privateKey, enabled, now, journalDir: await mkdtemp(join(tmpdir(),'hybrid-test-')) });
+
+test('end-to-end separate signed roles, authentic receipt', async () => { const t=task(); const rec=await run(signTask(t,e.privateKey)); assert.equal(verifyReceipt(rec,w.publicKey,t),true); });
+test('stopped by default', async () => { await assert.rejects(run(signTask(task(),e.privateKey),false),/CAPTAIN_STOP_ACTIVE/); });
+test('rejects tampered payload', () => {const signed=signTask(task(),e.privateKey); signed.task.payload.text='altered'; assert.throws(()=>validateEnvelope(signed,e.publicKey,now),/UNTRUSTED_SIGNATURE/);});
+test('rejects unauthorized signing identity', () => {const intruder=generateKeyPairSync('ed25519'); assert.throws(()=>validateEnvelope(signTask(task(),intruder.privateKey),e.publicKey,now),/UNTRUSTED_SIGNATURE/);});
+test('rejects expired task', () => {const t=task();t.issuedAt=new Date(now-400000).toISOString();t.expiresAt=new Date(now-100000).toISOString();assert.throws(()=>validateEnvelope(signTask(t,e.privateKey),e.publicKey,now),/EXPIRED_OR_INVALID_TTL/);});
+test('rejects unsupported commands', () => {const t=task();t.type='EXEC_SHELL';assert.throws(()=>validateEnvelope(signTask(t,e.privateKey),e.publicKey,now),/OUT_OF_SCOPE/);});
+test('rejects oversized input', () => {const t=task();t.payload.text='x'.repeat(501);assert.throws(()=>validateEnvelope(signTask(t,e.privateKey),e.publicKey,now),/BAD_PAYLOAD/);});
+test('rejects unexpected JSON fields', () => {const t=task();t.shell='rm -rf /';assert.throws(()=>validateEnvelope(signTask(t,e.privateKey),e.publicKey,now),/BAD_TASK_SCHEMA/);});
+test('atomic replay prevention', async () => {const t=task(),env=signTask(t,e.privateKey),dir=await mkdtemp(join(tmpdir(),'hybrid-test-'));const opts={executivePublicKey:e.publicKey,workerPrivateKey:w.privateKey,enabled:true,now,journalDir:dir};await executeEnvelope(env,opts);await assert.rejects(executeEnvelope(env,opts),/REPLAY_REJECTED/);});
+test('signed receipt cannot be substituted', async () => {const t=task(),r=await run(signTask(t,e.privateKey));r.receipt.resultSha256='0'.repeat(64);assert.equal(verifyReceipt(r,w.publicKey,t),false);});
+test('demo is self-contained and verifiable', async () => {const r=await demo();assert.equal(r.pass,true);assert.equal(r.captainSigningKeyUsed,false);});
+
+test('valid independently pinned fingerprint is accepted', () => { assert.equal(requireCaptainPin(e.publicKey, publicKeyFingerprint(e.publicKey)), true); });
+test('missing captain pin is rejected', () => { assert.throws(() => requireCaptainPin(e.publicKey, undefined), /CAPTAIN_PIN_REQUIRED/); });
+test('mismatched captain pin is rejected', () => { assert.throws(() => requireCaptainPin(e.publicKey, publicKeyFingerprint(w.publicKey)), /CAPTAIN_PIN_MISMATCH/); });
