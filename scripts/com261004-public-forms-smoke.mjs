@@ -39,7 +39,7 @@ for(const file of ["creator-registration-preview.html","creator-registration-pre
 
 for (const [file, route] of [
   ["creator-login.html", "/api/auth/login?returnUrl=%2Fcreator-dashboard.html"],
-  ["advertiser-login.html", "/login.html"]
+  ["advertiser-login.html", "/api/auth/login?returnUrl=%2Fadvertiser-dashboard.html"]
 ]) {
   assert.ok(existsSync(base + file), file + " is publicly discoverable");
   const page = read(file);
@@ -48,7 +48,8 @@ for (const [file, route] of [
   assert.ok(!page.includes('<input type="password"'), file + " does not solicit passwords on Vercel");
   assert.ok(!page.includes("SUPABASE_SERVICE_ROLE_KEY"), file + " contains no service credential");
 }
-assert.ok(!existsSync(base + "advertiser-dashboard.html"), "advertiser dashboard not published without authorization controls");
+assert.ok(!existsSync(base + "advertiser-dashboard.html"), "private advertiser dashboard stays on Railway");
+assert.ok(!existsSync(base + "advertiser-dashboard.js"), "advertiser profile client stays on Railway");
 
 const js=read("alpha-intake.js");
 assert.ok(js.includes('response.status === 201'),"don't claim success without HTTP 201");
