@@ -5,7 +5,6 @@ import { authorizedReview, buildReviewQueue } from "./review-core.mjs";
 // Proposed private operator-only read-only endpoint. NOT DEPLOYED. Fail closed
 // until reviewed auth/session RPC and owner-controlled environment gates exist.
 // No PII fields are selected; never return contacts, private messages or tokens.
-const uuid = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 const out = (status: number, body: unknown, origin: string | null = null): Response => {
   const headers = new Headers({
     "Content-Type": "application/json; charset=utf-8",
@@ -38,7 +37,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (Deno.env.get("ALPHA_INTAKE_REVIEW_ENABLED") !== "true")
     return out(503, { error: "Operator review is not enabled" }, approvedOrigin);
   if (req.method === "OPTIONS") {
-    const reply = out(204, null, approvedOrigin);
+    const reply = new Response(null, { status: 204, headers: {
+      "Access-Control-Allow-Origin": approvedOrigin,
+      "Vary": "Origin",
+      "Cache-Control": "no-store"
+    } });
     reply.headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
     reply.headers.set("Access-Control-Allow-Headers", "Authorization");
     return reply;
