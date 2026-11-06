@@ -59,6 +59,7 @@ public sealed class AdvertiserSelfServiceGateTests
             new ClaimsPrincipal(id), options, out var actual));
         Assert.Equal(Guid.Parse(BusinessId), actual);
         Assert.Equal(Issuer, Assert.Single(id.FindAll("roles")).Issuer);
+        Assert.Equal(Issuer, Assert.Single(id.FindAll(BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType)).Issuer);
         Assert.False(BlissAuthorization.CanWrite(new ClaimsPrincipal(id), options));
         Assert.Empty(id.FindAll(options.CreatorIdClaimType));
     }
@@ -102,6 +103,18 @@ public sealed class AdvertiserSelfServiceGateTests
             new ClaimsPrincipal(id), options, out _));
     }
 
+    [Fact]
+    public void Legacy_advertiser_staff_role_does_not_inherit_customer_api_boundary()
+    {
+        var context = new DefaultHttpContext();
+        context.Request.Method = "GET";
+        context.Request.Path = "/api/creators";
+        context.User = new ClaimsPrincipal(new ClaimsIdentity(
+            [new Claim("roles", "bliss.advertiser", ClaimValueTypes.String, Issuer)],
+            "signed-fixture"));
+        Assert.False(AdvertiserApiBoundary.ShouldDeny(context, Options(false)));
+    }
+
     [Theory]
     [InlineData("GET", "/api/auth/session", false)]
     [InlineData("GET", "/api/advertisers/me", false)]
@@ -119,7 +132,11 @@ public sealed class AdvertiserSelfServiceGateTests
         context.Request.Method = method;
         context.Request.Path = path;
         context.User = new ClaimsPrincipal(new ClaimsIdentity(
-            [new Claim("roles", "bliss.advertiser", ClaimValueTypes.String, Issuer)],
+            [
+                new Claim("roles", "bliss.advertiser", ClaimValueTypes.String, Issuer),
+                new Claim(BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType,
+                    "true", ClaimValueTypes.Boolean, Issuer)
+            ],
             "signed-test"));
         Assert.Equal(denied, AdvertiserApiBoundary.ShouldDeny(context, Options(false)));
     }
