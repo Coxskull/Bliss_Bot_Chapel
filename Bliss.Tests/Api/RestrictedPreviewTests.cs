@@ -36,6 +36,8 @@ public sealed class RestrictedPreviewTests
     [InlineData("/preview-lock.js")]
     [InlineData("/assets/bliss-chapel-hero.jpg")]
     [InlineData("/health/live")]
+    [InlineData("/creator-signin-preview.html")]
+    [InlineData("/advertiser-signin-preview.html")]
     public void Public_landing_paths_are_explicitly_allowed(string path) =>
         Assert.True(RestrictedPreviewGate.IsInterfacePath(path));
 
@@ -73,6 +75,23 @@ public sealed class RestrictedPreviewTests
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health/live")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/wedding-planner.css")).StatusCode);
+        foreach (var role in new[] { "creator", "advertiser" })
+        {
+            var screen = await client.GetAsync($"/{role}-signin-preview.html");
+            Assert.Equal(HttpStatusCode.OK, screen.StatusCode);
+            Assert.Equal("restricted-preview", screen.Headers.GetValues("X-Bliss-Mode").Single());
+            var html = await screen.Content.ReadAsStringAsync();
+            Assert.Contains("type=\"email\"", html);
+            Assert.Contains("type=\"password\"", html);
+            Assert.Contains("<fieldset disabled", html);
+            Assert.Contains("<button type=\"button\" disabled>", html);
+            Assert.DoesNotContain("method=\"post\"", html, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("fetch(", html, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("localStorage", html, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("name=\"password\"", html, StringComparison.OrdinalIgnoreCase);
+        }
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("/api/auth/login")).StatusCode);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await client.GetAsync("/login.html")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/preview-lock.js")).StatusCode);
         foreach (var sensitivePath in new[]
         {
