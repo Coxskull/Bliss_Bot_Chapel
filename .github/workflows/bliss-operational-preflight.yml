@@ -6,6 +6,8 @@ on:
     paths:
       - 'scripts/bliss-operational-preflight.py'
       - 'scripts/test_bliss_operational_preflight.py'
+      - 'scripts/bliss_backup_evidence.py'
+      - 'scripts/test_bliss_backup_evidence.py'
       - '.github/workflows/bliss-operational-preflight.yml'
   workflow_dispatch:
 
@@ -25,3 +27,5 @@ jobs:
         run: |
           python -m py_compile scripts/bliss-operational-preflight.py
           python -m unittest discover -s scripts -p 'test_bliss_operational_preflight.py' -v
+          python -m py_compile scripts/bliss_backup_evidence.py
+          python -m unittest discover -s scripts -p 'test_bliss_backup_evidence.py' -v
