@@ -14,3 +14,5 @@ footer{max-width:1180px;margin:auto;padding:28px 25px 38px;color:#c3b2d9;display
 .policy{grid-column:1/-1;max-width:860px;margin:auto;background:#fff;color:#231a33;padding:clamp(24px,5vw,60px);border-radius:24px}.policy h1{font-size:clamp(2.2rem,4vw,3.7rem);line-height:1.12}.policy h2{margin-top:30px}.policy p,.policy li{line-height:1.7}.policy a{color:#65389e}
 @media(max-width:800px){main{grid-template-columns:1fr;gap:25px;margin-top:6px}.intro{padding-top:10px}.intro h1{max-width:640px}.topbar{align-items:flex-start;flex-direction:column}.panel{padding:25px 21px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+/* Invitation-only creator account explainer */
+.account-steps{padding-left:22px;margin:22px 0}.account-steps li{padding:8px 0 8px 5px}.account-steps li strong{display:block;color:#302044}.account-steps li span{display:block;margin-top:4px;color:#645a70;font-size:14px;line-height:1.6}.account-actions{display:grid;gap:12px;margin-top:22px}.submit.secondary-action{background:#f0e9f8;color:#4c2d74;border:1px solid #c8b8dc}.submit.secondary-action:hover{background:#e4d7f2}
