@@ -78,3 +78,6 @@ assert.ok(js.includes('credentials: "omit"'),"no auth cookies across origins");
 assert.ok(!js.includes("SUPABASE_SERVICE_ROLE_KEY"),"no server secret in browser");
 assert.ok(!js.includes("localStorage"),"no local PII cache");
 console.log("Public ALPHA intake forms: 35+ privacy, routing and publication invariants PASS");
+
+// Stripe P0: all published pages must have valid public links and no unapproved paid policies.
+await import("./stripe-public-link-smoke.mjs");
