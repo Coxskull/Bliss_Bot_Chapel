@@ -97,8 +97,8 @@ public static class SupabaseOidc
         foreach (var claim in identity.Claims.Where(c => c.Type == auth.RoleClaimType
             || c.Type == ClaimTypes.Role || c.Type == auth.AdvertiserIdClaimType
             || c.Type == auth.ReviewerWorkspaceClaimType
-            || c.Type == auth.CreatorIdClaimType
-            || c.Type == "role" || c.Type == "roles").ToArray())
+            || (approvedCreator && (c.Type == auth.CreatorIdClaimType
+                || c.Type == "role" || c.Type == "roles"))).ToArray())
             identity.RemoveClaim(claim);
 
         var metadataClaim = access.FindFirst("app_metadata");
