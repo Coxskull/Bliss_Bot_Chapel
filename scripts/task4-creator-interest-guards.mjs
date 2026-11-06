@@ -72,7 +72,10 @@ has(creatorDashboardJs, 'readJson("/api/auth/session")', "dashboard checks serve
 has(creatorDashboardJs, 'fetch(url,', "API calls use a single same-origin helper");
 has(creatorDashboardJs, 'credentials: "same-origin"', "dashboard never sends cookies cross-origin");
 has(creatorDashboardJs, 'readJson("/api/creators/me")', "dashboard reads only caller's creator profile");
-has(creatorDashboardJs, '"X-CSRF-TOKEN": csrfToken', "logout sends server-issued antiforgery token");
+has(creatorDashboardJs, 'token.name = "__RequestVerificationToken"', "logout form uses ASP.NET antiforgery field");
+has(creatorDashboardJs, 'token.value = csrfToken', "logout form sends server-issued antiforgery token");
+has(creatorDashboardJs, 'form.action = "/api/auth/logout"', "logout stays on the application origin");
+has(creatorDashboardJs, 'form.submit()', "logout completes top-level OIDC redirect");
 has(creatorDashboardJs, 'profile.authorityStatus !== "VERIFIED"', "dashboard fails closed for unverified records");
 for (const leak of ["localStorage","sessionStorage","innerHTML","SUPABASE_SERVICE_ROLE_KEY","ALPHA_GHL_PRIVATE_INTEGRATION_TOKEN","auth.signUp("]) {
   absent(creatorDashboardJs + creatorAccount, leak, "creator UI does not cache tokens, render unsafe HTML or create public auth users: " + leak);
