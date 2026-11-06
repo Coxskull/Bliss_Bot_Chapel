@@ -8,6 +8,8 @@ namespace Bliss.Api.Demonstrations;
 public sealed class DemonstrationVideoStudio
 {
     private const string Font = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
+    // Local files and stdout pipes only; reject nested remote/async/RIST media protocols.
+    private const string LocalInputProtocols = "file,pipe";
 
     public static string Sha256(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
 
@@ -17,6 +19,7 @@ public sealed class DemonstrationVideoStudio
             "ffprobe",
             [
                 "-v", "error",
+                "-protocol_whitelist", LocalInputProtocols,
                 "-show_entries", "format=duration",
                 "-of", "default=nw=1:nk=1",
                 path
@@ -33,7 +36,8 @@ public sealed class DemonstrationVideoStudio
         var captured = await RunCaptureAsync(
             "ffmpeg",
             [
-                "-y", "-ss", "0.4", "-i", path,
+                "-nostdin", "-y", "-ss", "0.4",
+                "-protocol_whitelist", LocalInputProtocols, "-i", path,
                 "-frames:v", "1",
                 "-vf", "scale=8:8,format=gray",
                 "-f", "rawvideo",
@@ -63,7 +67,7 @@ public sealed class DemonstrationVideoStudio
         await RunAsync(
             "ffmpeg",
             [
-                "-y",
+                "-nostdin", "-y",
                 "-f", "lavfi", "-i", $"color=c=0x10233F:s=1280x720:d={seconds}",
                 "-filter_complex", filter,
                 "-map", "[v]",
@@ -120,7 +124,9 @@ public sealed class DemonstrationVideoStudio
         await RunAsync(
             "ffmpeg",
             [
-                "-y", "-i", sourcePath, "-i", qrPath,
+                "-nostdin", "-y",
+                "-protocol_whitelist", LocalInputProtocols, "-i", sourcePath,
+                "-protocol_whitelist", LocalInputProtocols, "-i", qrPath,
                 "-filter_complex", filter,
                 "-map", "[out]",
                 "-an",
