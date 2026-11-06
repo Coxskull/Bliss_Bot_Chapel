@@ -118,7 +118,12 @@ def main():
         run([*docker, "image", "save", "--output", str(archive), image_id], "image-save.log")
         with archive.open("rb") as stream:
             archive_sha = hashlib.file_digest(stream, "sha256").hexdigest()
-        report = run(scanner + ["docker-archive:" + str(archive), "--output", "json"],
+        # Scan the same immutable locally inspected Docker image, not an archive
+        # whose extracted image config ID can diverge from the Docker image ID.
+        # The report is still strictly checked against image_id by summarize().
+        # An absent local image or ID mismatch FAILS CLOSED, never falls back to
+        # a mutable tag, registry or synthetic clean scan.
+        report = run(scanner + ["docker:" + image_id, "--output", "json"],
                      "vulnerabilities.json", timeout=600, tool_env=env)
         counts, rows = summarize(report, image_id)
         summary = {"task_id": "AGM-LAUNCH-010", "gate": "VULNERABILITY_AUDIT_EVIDENCE_ONLY",
