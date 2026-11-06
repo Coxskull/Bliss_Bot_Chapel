@@ -9,6 +9,9 @@ on:
       - 'frontend/public/alpha-*.html'
       - 'frontend/public/alpha-intake.*'
       - 'frontend/public/global-media.html'
+      - 'frontend/public/wedding-planner.js'
+      - 'frontend/public/global-media.css'
+      - 'scripts/ask-alpha-guidance.test.cjs'
       - 'scripts/build-vercel-portal.mjs'
       - 'scripts/com261004-public-*.mjs'
       - '.github/workflows/com261004-public-forms.yml'
@@ -33,6 +36,8 @@ jobs:
         run: node scripts/build-vercel-portal.mjs
       - name: Verify public forms, notice and private-file exclusion
         run: node scripts/com261004-public-forms-smoke.mjs
+      - name: Run offline Ask Alpha inquiry routing and accessibility regressions
+        run: node --test scripts/ask-alpha-guidance.test.cjs
 
   hosted-edge-synthetic:
     # One exact authorized integration branch only; not a standing external
