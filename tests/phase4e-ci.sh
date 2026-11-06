@@ -17,6 +17,38 @@ export BACKUP_EXPECTED_SYSTEM_ID="$(psql "$BACKUP_DATABASE_URL" -AtX -c 'SELECT 
 echo 'STAGE: create synthetic records'
 psql "$BACKUP_DATABASE_URL" -v ON_ERROR_STOP=1 -c "CREATE TABLE synthetic(id integer PRIMARY KEY, name text NOT NULL); INSERT INTO synthetic VALUES(1,'alpha'),(2,'beta')"
 start="$(date +%s)"
+# DR3-FIXTURE-STOP-RLS: named, fictional ALPHA-like state. These are NOT
+# actual ALPHA migrations, users or receipts. Snapshot this along with
+# the existing two-row synthetic fixture to test independent recovery.
+psql "$BACKUP_DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+CREATE SCHEMA alpha_recovery_fixture;
+CREATE TABLE alpha_recovery_fixture.factory_control (
+  id text PRIMARY KEY CHECK (id='factory'),
+  state text NOT NULL CHECK (state IN ('STOP','CLEAR'))
+);
+INSERT INTO alpha_recovery_fixture.factory_control VALUES ('factory','STOP');
+CREATE TABLE alpha_recovery_fixture.receipts (
+  id integer PRIMARY KEY, payload text NOT NULL
+);
+INSERT INTO alpha_recovery_fixture.receipts VALUES (1,'synthetic-only-a'),(2,'synthetic-only-b');
+ALTER TABLE alpha_recovery_fixture.factory_control ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alpha_recovery_fixture.factory_control FORCE ROW LEVEL SECURITY;
+ALTER TABLE alpha_recovery_fixture.receipts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alpha_recovery_fixture.receipts FORCE ROW LEVEL SECURITY;
+CREATE FUNCTION alpha_recovery_fixture.reject_receipt_mutation()
+ RETURNS trigger LANGUAGE plpgsql AS $body$
+BEGIN
+ RAISE EXCEPTION 'ALPHA_DISPOSABLE_RECEIPT_IMMUTABLE' USING ERRCODE='42501';
+END
+$body$;
+CREATE TRIGGER immutable_receipt_update_delete
+ BEFORE UPDATE OR DELETE ON alpha_recovery_fixture.receipts
+ FOR EACH ROW EXECUTE FUNCTION alpha_recovery_fixture.reject_receipt_mutation();
+CREATE TRIGGER immutable_receipt_truncate
+ BEFORE TRUNCATE ON alpha_recovery_fixture.receipts
+ FOR EACH STATEMENT EXECUTE FUNCTION alpha_recovery_fixture.reject_receipt_mutation();
+SQL
+echo 'STAGE: DR3-FIXTURE-STOP-RLS append-only receipt and protected STOP fixture seeded'
 echo 'STAGE: encrypted backup'
 archive="$(bash "$script")"
 echo 'STAGE: checksum and decryption'
@@ -35,6 +67,50 @@ dst="$(psql "$restore_url" -AtX -c "SELECT md5(string_agg(id||':'||name,',' ORDE
 schema_src="$(pg_dump "$BACKUP_DATABASE_URL" --schema-only --no-owner --no-acl | grep -E '^CREATE TABLE|^    (id|name) ')"
 schema_dst="$(pg_dump "$restore_url" --schema-only --no-owner --no-acl | grep -E '^CREATE TABLE|^    (id|name) ')"
 [[ "$schema_src" == "$schema_dst" ]]
+# On the independently restored nonempty database, verify that immutable
+# receipts, forced RLS and STOP state survived encrypted snapshot transport.
+fixture_query="SELECT (SELECT state FROM alpha_recovery_fixture.factory_control WHERE id='factory')||'|'||(SELECT md5(string_agg(id::text||':'||payload,',' ORDER BY id)) FROM alpha_recovery_fixture.receipts)"
+fixture_src="$(psql "$BACKUP_DATABASE_URL" -AtX -v ON_ERROR_STOP=1 -c "$fixture_query")"
+fixture_dst="$(psql "$restore_url" -AtX -v ON_ERROR_STOP=1 -c "$fixture_query")"
+[[ -n "$fixture_src" && "$fixture_src" == "$fixture_dst" && "$fixture_src" == STOP\|* ]] || {
+ echo 'FAIL DR3: STOP or immutable-receipt content mismatch after snapshot restore' >&2
+ exit 1
+}
+meta_query="SELECT string_agg(relname||':'||relrowsecurity::text||':'||relforcerowsecurity::text,',' ORDER BY relname) FROM pg_class WHERE relnamespace='alpha_recovery_fixture'::regnamespace AND relname IN ('factory_control','receipts')"
+meta_src="$(psql "$BACKUP_DATABASE_URL" -AtX -v ON_ERROR_STOP=1 -c "$meta_query")"
+meta_dst="$(psql "$restore_url" -AtX -v ON_ERROR_STOP=1 -c "$meta_query")"
+[[ "$meta_src" == 'factory_control:true:true,receipts:true:true' && "$meta_dst" == "$meta_src" ]] || {
+ echo 'FAIL DR3: FORCE RLS / table metadata not preserved on restored fixture' >&2
+ exit 1
+}
+# A dedicated nonlogin role receives SELECT and INSERT grants intentionally.
+# FORCE RLS with NO policies must still deny any direct row visibility/write.
+psql "$restore_url" -v ON_ERROR_STOP=1 -c \
+ "CREATE ROLE alpha_ci_limited NOLOGIN; GRANT USAGE ON SCHEMA alpha_recovery_fixture TO alpha_ci_limited; GRANT SELECT, INSERT ON alpha_recovery_fixture.receipts TO alpha_ci_limited" >/dev/null
+limited_count="$(psql "$restore_url" -AtX -v ON_ERROR_STOP=1 -c \
+ "SET ROLE alpha_ci_limited; SELECT count(*) FROM alpha_recovery_fixture.receipts" | tail -n 1)"
+[[ "$limited_count" == 0 ]] || { echo 'FAIL DR3: limited role read protected rows' >&2; exit 1; }
+fixture_reject() {
+ local label="$1" expected="$2" command="$3" output="$BACKUP_OUTPUT_DIR/fixture-1.stderr"
+ if psql "$restore_url" -v ON_ERROR_STOP=1 -c "$command" > /dev/null 2>"$output"; then
+  echo "FAIL DR3: fixture $label was allowed" >&2; exit 1
+ fi
+ grep -Fq "$expected" "$output" || {
+  echo "FAIL DR3: fixture $label failed for unexpected reason" >&2; exit 1
+ }
+}
+fixture_reject denied-insert 'row-level security policy' \
+ "SET ROLE alpha_ci_limited; INSERT INTO alpha_recovery_fixture.receipts VALUES (3,'should-deny')"
+fixture_reject denied-update 'ALPHA_DISPOSABLE_RECEIPT_IMMUTABLE' \
+ "UPDATE alpha_recovery_fixture.receipts SET payload='tampered' WHERE id=1"
+fixture_reject denied-delete 'ALPHA_DISPOSABLE_RECEIPT_IMMUTABLE' \
+ "DELETE FROM alpha_recovery_fixture.receipts WHERE id=1"
+fixture_reject denied-truncate 'ALPHA_DISPOSABLE_RECEIPT_IMMUTABLE' \
+ "TRUNCATE alpha_recovery_fixture.receipts"
+[[ "$(psql "$restore_url" -AtX -v ON_ERROR_STOP=1 -c "$fixture_query")" == "$fixture_src" ]] || {
+ echo 'FAIL DR3: STOP/receipt integrity changed during denied mutations' >&2; exit 1
+}
+echo 'PASS DR3 disposable STOP, immutable receipts and FORCE RLS preserved after encrypted restore; denied limited-role reads/writes and receipt changes'
 echo "PASS backup/encryption/checksum/restore/schema/records; seconds=$(( $(date +%s) - start ))"
 
 # DR3 disposable failed-change rehearsal. Both source and target are separate
@@ -80,6 +156,16 @@ recovered_schema="$(pg_dump "$rollback_url" --schema-only --no-owner --no-acl | 
   echo 'FAIL DR3: independently restored encrypted snapshot did not match original records/schema' >&2
   exit 1
 }
+# Assert the independent, restored-from-original-snapshot third database also
+# recovers the protected fixture as STOP + immutable receipt data + FORCE RLS.
+recovered_fixture="$(psql "$rollback_url" -AtX -v ON_ERROR_STOP=1 -c "$fixture_query")"
+recovered_metadata="$(psql "$rollback_url" -AtX -v ON_ERROR_STOP=1 -c "$meta_query")"
+recovered_triggers="$(psql "$rollback_url" -AtX -v ON_ERROR_STOP=1 -c "SELECT count(*) FROM pg_trigger WHERE tgrelid='alpha_recovery_fixture.receipts'::regclass AND NOT tgisinternal")"
+[[ "$recovered_fixture" == "$fixture_src" && "$recovered_metadata" == "$meta_src" && "$recovered_triggers" == 2 ]] || {
+ echo 'FAIL DR3: recovery lost STOP, immutable receipts, FORCE RLS or trigger guards' >&2
+ exit 1
+}
+echo 'PASS DR3 disposable fresh recovery retains STOP state, RLS, immutable receipts and two mutation guards'
 echo 'PASS DR3 disposable committed damage detected; fresh isolated encrypted-backup restore recovered nonempty data and schema; NOT production RPO/RTO'
 
 reject(){ local label="$1" expected="$2" output rc=0; shift 2; output="$("$@" 2>&1)" || rc=$?; if [[ "$rc" == 0 || "$output" != *"$expected"* ]]; then printf 'FAIL negative %s (exit=%s, expected=%s): %s\\n' "$label" "$rc" "$expected" "$output" >&2; exit 1; fi; echo "PASS negative: $label"; }
