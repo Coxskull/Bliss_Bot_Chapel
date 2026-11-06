@@ -101,9 +101,9 @@ public sealed class CreatorSelfServiceScopeTests
         await using var db = Database();
         var featureOff = await Controller(db, Auth(false), Principal(ApprovedCreator))
             .GetMyVerifiedCreator(default);
-        Assert.Equal(403, Assert.IsType<ObjectResult>(featureOff.Result).StatusCode);
+        Assert.Equal(403, Assert.IsType<StatusCodeResult>(featureOff.Result).StatusCode);
         var unauth = await Controller(db, Auth(), new ClaimsPrincipal(new ClaimsIdentity()))
             .GetMyVerifiedCreator(default);
-        Assert.Equal(403, Assert.IsType<ObjectResult>(unauth.Result).StatusCode);
+        Assert.Equal(403, Assert.IsType<StatusCodeResult>(unauth.Result).StatusCode);
     }
 }
