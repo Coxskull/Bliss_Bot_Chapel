@@ -11,7 +11,10 @@ public static class CreatorApiBoundary
 {
     public static bool ShouldDeny(HttpContext context, BlissAuthenticationOptions auth)
     {
-        if (!auth.Enabled || !auth.CreatorSelfServiceRequested
+        // Keep this restriction active even AFTER enrollment is switched
+        // off: an already-issued cookie may still contain a creator role.
+        // Disabling enrollment must never widen that stale cookie's API scope.
+        if (!auth.Enabled
             || context.User.Identity?.IsAuthenticated != true
             || !context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
             return false;
