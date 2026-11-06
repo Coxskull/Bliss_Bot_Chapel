@@ -22,14 +22,27 @@ await mkdir(resolve(output, 'assets'), { recursive: true });
 await writeFile(resolve(output, 'index.html'), html);
 await copyFile(resolve(source, 'global-media.css'), resolve(output, 'global-media.css'));
 
-// Public interest forms and policy pages are the only newly published files.
-// The synthetic engineering-only creator-registration-preview remains excluded.
+// Public interest forms, policy pages and the creator account explainer may
+// be published on Vercel. The authenticated dashboard and password setup stay
+// on Railway so OIDC cookies, CSRF and API calls remain same-origin.
 for (const filename of [
   'join-creator.html', 'join-advertiser.html', 'privacy-request.html',
+  'creator-account.html',
   'alpha-privacy.html', 'alpha-terms.html', 'alpha-intake.css', 'alpha-intake.js'
 ]) {
   await copyFile(resolve(source, filename), resolve(output, filename));
 }
+let creatorAccount = await readFile(resolve(source, 'creator-account.html'), 'utf8');
+for (const route of [
+  '/creator-dashboard.html',
+  '/api/auth/login?returnUrl=%2Fcreator-dashboard.html'
+]) {
+  creatorAccount = creatorAccount.replaceAll(
+    `href="${route}"`,
+    `href="${new URL(route, origin).href}"`
+  );
+}
+await writeFile(resolve(output, 'creator-account.html'), creatorAccount);
 
 await copyFile(resolve(source, 'wedding-planner.js'), resolve(output, 'wedding-planner.js'));
 await copyFile(resolve(source, 'assets/bliss-chapel-hero.jpg'), resolve(output, 'assets/bliss-chapel-hero.jpg'));
