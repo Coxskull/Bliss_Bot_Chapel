@@ -9,6 +9,14 @@
   <p>Use your confirmed brand direction and an available quality reference. Save a brief, submit candidate images, and keep every revision and human assessment together.</p>
   <p id="status" role="status" aria-live="polite">Connecting…</p><a id="login" href="/login.html?returnUrl=%2Fproduction.html" hidden>Sign in with email and password</a>
   <section><h2>Your workspace</h2><label>Workspace <select id="workspace"></select></label><button id="open" type="button" disabled>Open production workspace</button><p id="brand">Confirm your direction in Brand intake before preparing a new brief.</p></section>
+  <section id="zero-credit-demo" aria-labelledby="zero-credit-title">
+    <p class="eyebrow">DEMONSTRATION / NO AI CREDITS</p>
+    <h2 id="zero-credit-title">Produce a fictional advertisement without paid AI</h2>
+    <p>Use the existing ALPHA overlay-1 recipe, an original or previously qualified studio source slice, and a QR code. This separate ABC Pharmacy fixture does not copy your Brand DNA, call an image provider, send outreach, or authorize a campaign.</p>
+    <button id="demo-generate" type="button" disabled>Create fictional zero-credit demonstration</button>
+    <p id="demo-status" role="status" aria-live="polite">Operator sign-in and an operational backend are required. Restricted preview remains locked.</p>
+    <div id="demo-evidence" hidden></div>
+  </section>
   <form id="brief-form"><fieldset id="brief-fields" disabled><legend>Prepare a production brief</legend>
     <label>Quality reference family <select id="family" required></select></label>
     <p id="reference-note"></p>
