@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#170839">
+  <title>Creator dashboard | ALPHA GLOBAL MEDIA™</title>
+  <link rel="stylesheet" href="/creator-dashboard.css">
+  <script defer src="/creator-dashboard.js"></script>
+</head>
+<body>
+  <a class="skip" href="#dashboard">Skip to creator dashboard</a>
+  <header class="topbar">
+    <a class="brand" href="/">ALPHA <span>GLOBAL MEDIA™</span></a>
+    <nav aria-label="Creator navigation">
+      <a href="/creator-account.html">Account setup</a>
+      <a href="/join-creator.html">Creator interest</a>
+    </nav>
+  </header>
+  <main id="dashboard">
+    <section class="welcome">
+      <p class="eyebrow">ALPHA GLOBAL MEDIA™ · CREATOR WORKSPACE</p>
+      <h1>Your creator dashboard.</h1>
+      <p>Your private profile is available only after your account and creator record have been verified by ALPHA.</p>
+    </section>
+    <section class="panel" aria-labelledby="access-title">
+      <div class="panel-head">
+        <div><p class="kicker">ACCOUNT ACCESS</p><h2 id="access-title">Your workspace</h2></div>
+        <span id="access-badge" class="badge">CHECKING</span>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite">Checking your secure account session…</p>
+      <div id="signin-panel" class="actions" hidden>
+        <a class="primary" href="/api/auth/login?returnUrl=%2Fcreator-dashboard.html">Sign in securely</a>
+        <a class="secondary" href="/creator-account.html">Creator account setup</a>
+      </div>
+      <div id="pending-panel" hidden>
+        <h3>Creator access is not yet available</h3>
+        <p>Your public interest submission does not create a workspace account. Access is enabled only after manual identity verification and an approved creator-to-account link.</p>
+        <a class="secondary" href="/creator-account.html">Review account setup steps</a>
+      </div>
+      <section id="profile-panel" class="profile" aria-labelledby="profile-title" hidden>
+        <div class="profile-heading"><div><p class="kicker">VERIFIED CREATOR PROFILE</p><h3 id="profile-title">Your profile</h3></div><span class="verified">VERIFIED</span></div>
+        <dl>
+          <div><dt>Creator name</dt><dd id="creator-name">—</dd></div>
+          <div><dt>Creator ID</dt><dd id="creator-id">—</dd></div>
+          <div><dt>Market</dt><dd id="creator-market">—</dd></div>
+          <div><dt>Primary language</dt><dd id="creator-language">—</dd></div>
+          <div><dt>Verification</dt><dd id="creator-status">—</dd></div>
+        </dl>
+        <p class="muted">This is a limited profile view. It does not enable campaign acceptance, creator messaging, payment details, earnings, payouts, or account changes.</p>
+      </section>
+      <div class="panel-actions">
+        <button id="refresh" type="button">Refresh account status</button>
+        <button id="logout" type="button" hidden>Sign out</button>
+      </div>
+    </section>
+    <section class="locked-grid" aria-label="Workspace feature availability">
+      <article><span>01</span><h3>Campaigns</h3><p>Not yet enabled</p></article>
+      <article><span>02</span><h3>Messages</h3><p>Not yet enabled</p></article>
+      <article><span>03</span><h3>Earnings and payouts</h3><p>Not yet enabled</p></article>
+    </section>
+    <p class="footnote">Pre-launch creator workspace. Only verified profile information is shown. ALPHA will separately announce when additional creator features are approved and available.</p>
+  </main>
+  <footer>© 2026 ALPHA GLOBAL MEDIA LLC.</footer>
+</body>
+</html>
