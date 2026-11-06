@@ -42,7 +42,7 @@ function askAlphaAnswer(question) {
       ["advertiser", "creator"]
     );
   }
-  if (has("privacy", "personal", "store", "save", "data", "record", "transcript")) {
+  if (has("privacy", "personal", "store", "save", "data", "record", "transcript", "chat message", "conversation")) {
     return answer(
       "This guided conversation runs in your current browser tab. It does not send your questions to a server, save a transcript, or contact anyone. Public inquiry forms have a separate Privacy Notice and privacy request form.",
       ["privacy", "privacyRequest"]
