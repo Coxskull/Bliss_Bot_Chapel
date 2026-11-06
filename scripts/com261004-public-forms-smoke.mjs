@@ -36,6 +36,20 @@ for(const file of ["alpha-privacy.html","alpha-terms.html","alpha-intake.css","a
 for(const file of ["creator-registration-preview.html","creator-registration-preview.js","oauth-consent.html","brand-intake.html"]){
   assert.ok(!existsSync(base+file),file+" must remain unpublished");
 }
+
+for (const [file, route] of [
+  ["creator-login.html", "/api/auth/login?returnUrl=%2Fcreator-dashboard.html"],
+  ["advertiser-login.html", "/login.html"]
+]) {
+  assert.ok(existsSync(base + file), file + " is publicly discoverable");
+  const page = read(file);
+  const expected = "href=\"https://bliss-bot-production-5eb8.up.railway.app" + route + "\"";
+  assert.ok(page.includes(expected), file + " authenticates on protected Railway origin");
+  assert.ok(!page.includes('<input type="password"'), file + " does not solicit passwords on Vercel");
+  assert.ok(!page.includes("SUPABASE_SERVICE_ROLE_KEY"), file + " contains no service credential");
+}
+assert.ok(!existsSync(base + "advertiser-dashboard.html"), "advertiser dashboard not published without authorization controls");
+
 const js=read("alpha-intake.js");
 assert.ok(js.includes('response.status === 201'),"don't claim success without HTTP 201");
 assert.ok(js.includes('result.receipt_id'),"receipt readback required");
