@@ -11,6 +11,26 @@ public sealed class RecipeRuntimeApiTests : IClassFixture<BlissApiFactory>
     public RecipeRuntimeApiTests(BlissApiFactory factory) => _factory = factory;
 
     [Fact]
+    public async Task The_creative_academy_exposes_a_separate_operator_only_zero_credit_demonstration()
+    {
+        var client = _factory.CreateClient();
+        var page = await client.GetStringAsync("/production.html");
+        var script = await client.GetStringAsync("/production.js");
+        var sourceMediaScript = await client.GetStringAsync("/source-media/source-media.js");
+
+        Assert.Contains("DEMONSTRATION / NO AI CREDITS", page);
+        Assert.Contains("id=\"demo-generate\" type=\"button\" disabled", page);
+        Assert.Contains("id=\"demo-evidence\" hidden", page);
+        Assert.Contains("!session?.canWrite", script);
+        Assert.Contains("runZeroCreditDemonstration", script);
+        Assert.Contains("/api/demonstrations/abc-pharmacy/produce", script);
+        Assert.Contains("/api/demonstrations/factory-batch", script);
+        Assert.DoesNotContain("api(\"/api/operations/academy/generate\"", script);
+        Assert.Contains("X-CSRF-TOKEN", sourceMediaScript);
+        Assert.Contains("session?.canWrite", sourceMediaScript);
+    }
+
+    [Fact]
     public async Task Produce_stores_overlay_1_and_serves_the_player()
     {
         var client = _factory.CreateClient();
@@ -35,6 +55,8 @@ public sealed class RecipeRuntimeApiTests : IClassFixture<BlissApiFactory>
         var page = await produced.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(HttpStatusCode.OK, produced.StatusCode);
         Assert.Equal("NOT_SENT", page!.GetProperty("delivery").GetString());
+        Assert.False(page.GetProperty("campaignReady").GetBoolean());
+        Assert.Equal(0, page.GetProperty("aiCalls").GetInt32());
         Assert.Contains("Mesa Norte has not sponsored", page.GetProperty("disclosure").GetString());
         var concept = page.GetProperty("concepts")[0];
         Assert.Equal("overlay-1", concept.GetProperty("recipeVersion").GetString());
