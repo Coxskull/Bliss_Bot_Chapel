@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'frontend/public/join-creator.html'
+      - 'frontend/public/creator-account.html'
+      - 'frontend/public/creator-dashboard.html'
+      - 'frontend/public/creator-dashboard.js'
+      - 'frontend/public/creator-dashboard.css'
       - 'frontend/public/alpha-intake.js'
       - 'frontend/public/alpha-privacy.html'
       - 'supabase/functions/alpha-public-intake/**'
