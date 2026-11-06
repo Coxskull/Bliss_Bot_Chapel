@@ -68,10 +68,10 @@ has(creatorDashboard, 'name="robots" content="noindex,nofollow"', "creator dashb
 has(creatorDashboard, "/api/auth/login?returnUrl=%2Fcreator-dashboard.html", "dashboard login return path is local");
 has(creatorDashboard, 'id="profile-panel"', "profile is hidden until authorized response");
 has(creatorDashboard, "Not yet enabled", "commercial features remain unavailable");
-has(creatorDashboardJs, 'fetch("/api/auth/session"', "dashboard checks server session");
+has(creatorDashboardJs, 'readJson("/api/auth/session")', "dashboard checks server session");
 has(creatorDashboardJs, 'fetch(url,', "API calls use a single same-origin helper");
 has(creatorDashboardJs, 'credentials: "same-origin"', "dashboard never sends cookies cross-origin");
-has(creatorDashboardJs, 'fetch("/api/creators/me"', "dashboard reads only caller's creator profile");
+has(creatorDashboardJs, 'readJson("/api/creators/me")', "dashboard reads only caller's creator profile");
 has(creatorDashboardJs, '"X-CSRF-TOKEN": csrfToken', "logout sends server-issued antiforgery token");
 has(creatorDashboardJs, 'profile.authorityStatus !== "VERIFIED"', "dashboard fails closed for unverified records");
 for (const leak of ["localStorage","sessionStorage","innerHTML","SUPABASE_SERVICE_ROLE_KEY","ALPHA_GHL_PRIVATE_INTEGRATION_TOKEN","auth.signUp("]) {
