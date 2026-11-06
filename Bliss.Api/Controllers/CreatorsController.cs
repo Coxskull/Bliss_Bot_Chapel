@@ -44,9 +44,23 @@ public sealed class CreatorsController : ControllerBase
         return record is null ? NotFound() : Ok(record);
     }
 
+    // Task #4: creator login authorizes own verified profile only, never
+    // the shared creator directory, match inventory or platform details.
+    // Deny mixed or case-alias creator role claims too, even if a future
+    // staff role is accidentally present in the same session.
+    private bool IsCreatorAccount() =>
+        _auth.Enabled && ControllerContext.HttpContext?.User?.Claims.Any(claim =>
+            (string.Equals(claim.Type, _auth.RoleClaimType, StringComparison.OrdinalIgnoreCase)
+             || string.Equals(claim.Type, System.Security.Claims.ClaimTypes.Role, StringComparison.OrdinalIgnoreCase)
+             || string.Equals(claim.Type, "role", StringComparison.OrdinalIgnoreCase)
+             || string.Equals(claim.Type, "roles", StringComparison.OrdinalIgnoreCase))
+            && string.Equals(claim.Value, _auth.CreatorRole, StringComparison.Ordinal)) == true;
+
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<CreatorListDto>>> GetAll(CancellationToken cancellationToken)
     {
+        if (IsCreatorAccount()) return Forbid();
+
         var items = await _db.Creators
             .AsNoTracking()
             .OrderBy(x => x.Name)
@@ -66,6 +80,8 @@ public sealed class CreatorsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CreatorDetailDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
+        if (IsCreatorAccount()) return Forbid();
+
         var creator = await _db.Creators
             .AsNoTracking()
             .Include(x => x.Platforms)
