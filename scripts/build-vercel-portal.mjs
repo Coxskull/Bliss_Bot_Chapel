@@ -27,7 +27,7 @@ await copyFile(resolve(source, 'global-media.css'), resolve(output, 'global-medi
 // on Railway so OIDC cookies, CSRF and API calls remain same-origin.
 for (const filename of [
   'join-creator.html', 'join-advertiser.html', 'privacy-request.html',
-  'creator-account.html',
+  'creator-account.html', 'creator-login.html', 'advertiser-login.html',
   'alpha-privacy.html', 'alpha-terms.html', 'alpha-intake.css', 'alpha-intake.js'
 ]) {
   await copyFile(resolve(source, filename), resolve(output, filename));
@@ -43,6 +43,19 @@ for (const route of [
   );
 }
 await writeFile(resolve(output, 'creator-account.html'), creatorAccount);
+
+// Only account login redirects leave Vercel: passwords and sessions remain
+// on Railway. Never publish protected dashboards or their API requests here.
+for (const [filename, routes] of [
+  ['creator-login.html', ['/api/auth/login?returnUrl=%2Fcreator-dashboard.html']],
+  ['advertiser-login.html', ['/login.html']]
+]) {
+  let page = await readFile(resolve(source, filename), 'utf8');
+  for (const route of routes) {
+    page = page.replaceAll(`href="${route}"`, `href="${new URL(route, origin).href}"`);
+  }
+  await writeFile(resolve(output, filename), page);
+}
 
 await copyFile(resolve(source, 'wedding-planner.js'), resolve(output, 'wedding-planner.js'));
 await copyFile(resolve(source, 'assets/bliss-chapel-hero.jpg'), resolve(output, 'assets/bliss-chapel-hero.jpg'));
