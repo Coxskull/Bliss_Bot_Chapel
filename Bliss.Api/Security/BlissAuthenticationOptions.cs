@@ -3,6 +3,7 @@ namespace Bliss.Api.Security;
 public sealed class BlissAuthenticationOptions
 {
     public const string SectionName = "Authentication";
+    public const string AdvertiserSelfServiceMarkerClaimType = "bliss_advertiser_self_service";
 
     public bool Enabled { get; set; }
     public string Authority { get; set; } = string.Empty;
