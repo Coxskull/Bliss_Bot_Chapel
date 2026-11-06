@@ -23,6 +23,8 @@ const portal=read("index.html");
 assert.ok(portal.includes('href="/join-creator.html"'),"public creator home CTA");
 assert.ok(portal.includes('href="/join-advertiser.html"'),"public advertiser home CTA");
 assert.ok(portal.includes('href="/creator-account.html"'),"creator account entry point");
+assert.ok(portal.includes('href="/creator-login.html"'),"creator-specific home login");
+assert.ok(portal.includes('href="/advertiser-login.html"'),"advertiser-specific home login");
 assert.ok(existsSync(base+"creator-account.html"),"creator account explainer published");
 const account=read("creator-account.html");
 assert.ok(account.includes("INVITATION ONLY"),"creator account is invite-only");
