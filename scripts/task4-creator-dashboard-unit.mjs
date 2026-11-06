@@ -41,6 +41,25 @@ const fixture = (sessionResponse, profileResponse = null) => {
   ]));
   const calls = [];
   const navigations = [];
+  const forms = [];
+  const bodyChildren = [];
+  const document = {
+    getElementById(id) {
+      assert.ok(nodes[id], "unknown DOM element: " + id);
+      return nodes[id];
+    },
+    createElement(tagName) {
+      const element = {
+        tagName: tagName.toUpperCase(),
+        children: [],
+        appendChild(child) { this.children.push(child); },
+        submit() { this.submitted = true; }
+      };
+      forms.push(element);
+      return element;
+    },
+    body: { appendChild(element) { bodyChildren.push(element); } }
+  };
   let currentSession = sessionResponse;
   let currentProfile = profileResponse;
   async function fakeFetch(url, options) {
@@ -63,15 +82,12 @@ const fixture = (sessionResponse, profileResponse = null) => {
     assert.fail("Unexpected or off-origin request: " + url);
   }
   vm.runInNewContext(dashboard, {
-    document: { getElementById(id) {
-      assert.ok(nodes[id], "unknown DOM element: " + id);
-      return nodes[id];
-    } },
+    document,
     fetch: fakeFetch,
     location: { assign(url) { navigations.push(url); } }
   }, { filename: "creator-dashboard.js", timeout: 3000 });
   return {
-    nodes, calls, navigations,
+    nodes, calls, navigations, forms, bodyChildren,
     sessionResponse(value) { currentSession = value; },
     profileResponse(value) { currentProfile = value; },
     async settle() {
@@ -170,16 +186,23 @@ const noPrivateData = h => {
   check(privateIds.every(id => h.nodes[id].textContent === "—"), "refresh erases previous profile data");
   noPrivateData(h);
 }
-// 9. Sign-out clears profile immediately, uses CSRF, and navigates only after 2xx.
+// 9. Sign-out clears profile and submits a same-origin CSRF form so the
+// browser can follow the complete OIDC end-session redirect (no fetch/CORS trap).
 {
   const h = fixture(response(200, session(true)), response(200, verifiedProfile));
   await h.settle();
   check(!h.nodes["profile-panel"].hidden, "precondition verified");
-  await h.nodes.logout.handlers.click();
-  check(h.nodes["profile-panel"].hidden, "logout hides profile");
-  check(privateIds.every(id => h.nodes[id].textContent === "—"), "logout clears private DOM");
-  check(h.calls.some(x => x.url === "/api/auth/logout"), "logout endpoint invoked");
-  check(h.navigations.length === 1 && h.navigations[0] === "/", "successful logout navigates locally");
+  h.nodes.logout.handlers.click();
+  check(h.nodes["profile-panel"].hidden, "logout hides profile immediately");
+  check(privateIds.every(id => h.nodes[id].textContent === "—"), "logout clears private DOM immediately");
+  const form = h.forms[0];
+  check(form?.tagName === "FORM" && form.method === "POST", "logout uses POST form");
+  check(form.action === "/api/auth/logout" && form.hidden, "logout form is hidden and same-origin");
+  check(form.children.length === 1, "logout form has one antiforgery field");
+  check(form.children[0].name === "__RequestVerificationToken", "server antiforgery field name");
+  check(form.children[0].value === "fake-csrf-fixture", "logout carries current CSRF token");
+  check(form.submitted === true && h.bodyChildren[0] === form, "browser submits logout navigation");
+  check(!h.calls.some(x => x.url === "/api/auth/logout"), "logout avoids fetch following cross-origin OIDC redirect");
 }
 console.log("TASK4_CREATOR_DASHBOARD_UNIT_PASS assertions=" + assertions);
 console.log("All scenarios use synthetic data; no browser, Supabase or marketplace writes.");
