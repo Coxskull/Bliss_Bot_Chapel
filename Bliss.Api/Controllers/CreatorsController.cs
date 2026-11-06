@@ -1,4 +1,7 @@
 using Bliss.Api.Contracts;
+using Bliss.Api.Security;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +13,35 @@ namespace Bliss.Api.Controllers;
 public sealed class CreatorsController : ControllerBase
 {
     private readonly BlissDbContext _db;
+    private readonly BlissAuthenticationOptions _auth;
 
-    public CreatorsController(BlissDbContext db)
+    public CreatorsController(BlissDbContext db, BlissAuthenticationOptions auth)
     {
         _db = db;
+        _auth = auth;
+    }
+
+    // Creator-owned account preview. This is not a public registration
+    // endpoint. It is fail-closed until the separate issuer/verification,
+    // Railway ingress, recovery and legal acceptance gates are approved.
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<ActionResult<CreatorSelfSummaryDto>> GetMyVerifiedCreator(
+        CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!BlissAuthorization.TryResolveVerifiedCreatorId(User, _auth, out var creatorId))
+            return StatusCode(StatusCodes.Status403Forbidden);
+
+        // Do not disclose unverified creators or details from a different
+        // tenant even if an issuer claim or cookie was replayed or became stale.
+        var record = await _db.Creators.AsNoTracking()
+            .Where(c => c.Id == creatorId && c.AuthorityStatus == "VERIFIED")
+            .Select(c => new CreatorSelfSummaryDto(
+                c.Id, c.Name, c.CountryCode, c.PrimaryLanguage,
+                c.AuthorityStatus))
+            .SingleOrDefaultAsync(cancellationToken);
+        return record is null ? NotFound() : Ok(record);
     }
 
     [HttpGet]
@@ -99,3 +127,9 @@ public sealed class CreatorsController : ControllerBase
         return Ok(dto);
     }
 }
+
+// Deliberately minimal read-only response; never include prospect emails,
+// CRM contact IDs, intake receipts, inventory or marketplace credentials.
+public sealed record CreatorSelfSummaryDto(
+    Guid CreatorId, string Name, string? CountryCode,
+    string? PrimaryLanguage, string AuthorityStatus);
