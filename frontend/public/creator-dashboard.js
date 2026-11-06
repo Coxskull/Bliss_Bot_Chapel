@@ -126,30 +126,28 @@
     }
   }
 
-  async function signOut() {
+  function signOut() {
     if (busy || !csrfToken) return;
     busy = true;
     show("profile-panel", false);
     clearProfile();
     logoutButton.disabled = true;
-    try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "same-origin",
-        cache: "no-store",
-        headers: { "X-CSRF-TOKEN": csrfToken }
-      });
-      if (response.ok || response.redirected) {
-        location.assign("/");
-        return;
-      }
-      message("Sign-out could not be confirmed. Refresh the session and try again.", "error");
-    } catch {
-      message("Sign-out could not be confirmed. Please retry.", "error");
-    } finally {
-      busy = false;
-      logoutButton.disabled = false;
-    }
+    message("Signing out securely…");
+    // OIDC logout is a top-level redirect to the identity provider. A fetch()
+    // would follow that cross-origin redirect and can fail CORS after the
+    // application cookie has already been cleared. Submit a same-origin form
+    // so the browser completes the full cookie + provider sign-out redirect.
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "/api/auth/logout";
+    form.hidden = true;
+    const token = document.createElement("input");
+    token.type = "hidden";
+    token.name = "__RequestVerificationToken";
+    token.value = csrfToken;
+    form.appendChild(token);
+    document.body.appendChild(form);
+    form.submit();
   }
 
   refreshButton.addEventListener("click", loadDashboard);
