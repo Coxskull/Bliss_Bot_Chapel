@@ -11,6 +11,10 @@ const browser = read("frontend/public/alpha-intake.js");
 const edge = read("supabase/functions/alpha-public-intake/index.ts");
 const ghlsync = read("supabase/functions/alpha-public-intake/ghl-sync.mjs");
 const privacy = read("frontend/public/alpha-privacy.html");
+const creatorAccount = read("frontend/public/creator-account.html");
+const creatorDashboard = read("frontend/public/creator-dashboard.html");
+const creatorDashboardJs = read("frontend/public/creator-dashboard.js");
+const creatorDashboardCss = read("frontend/public/creator-dashboard.css");
 
 let assertions = 0;
 const ok = (condition, label) => { assert.ok(condition, label); assertions++; };
@@ -53,6 +57,27 @@ for (const forbidden of ["auth.signUp(", "auth.admin.createUser(", "createUser("
 has(ghlsync, 'Deno.env.get("ALPHA_GHL_SYNC_ENABLED") !== "true"', "CRM delivery fail-closed toggle");
 has(ghlsync, 'client.rpc("alpha_ghl_claim"', "CRM delivery uses claim lease");
 has(privacy, ghlNotice, "published notice matches CRM consent version");
+
+// Creator account setup is invitation-only; preserve the existing public
+// interest form and keep the authenticated dashboard on the Railway origin.
+has(creatorAccount, "INVITATION ONLY", "creator account setup is invitation-only");
+has(creatorAccount, "/join-creator.html", "account setup points to existing interest form");
+has(creatorAccount, "/api/auth/login?returnUrl=%2Fcreator-dashboard.html", "sign-in returns to creator dashboard");
+has(creatorAccount, "does not create users", "account explainer cannot create identities");
+has(creatorDashboard, 'name="robots" content="noindex,nofollow"', "creator dashboard is not indexed");
+has(creatorDashboard, "/api/auth/login?returnUrl=%2Fcreator-dashboard.html", "dashboard login return path is local");
+has(creatorDashboard, 'id="profile-panel"', "profile is hidden until authorized response");
+has(creatorDashboard, "Not yet enabled", "commercial features remain unavailable");
+has(creatorDashboardJs, 'fetch("/api/auth/session"', "dashboard checks server session");
+has(creatorDashboardJs, 'fetch(url,', "API calls use a single same-origin helper");
+has(creatorDashboardJs, 'credentials: "same-origin"', "dashboard never sends cookies cross-origin");
+has(creatorDashboardJs, 'fetch("/api/creators/me"', "dashboard reads only caller's creator profile");
+has(creatorDashboardJs, '"X-CSRF-TOKEN": csrfToken', "logout sends server-issued antiforgery token");
+has(creatorDashboardJs, 'profile.authorityStatus !== "VERIFIED"', "dashboard fails closed for unverified records");
+for (const leak of ["localStorage","sessionStorage","innerHTML","SUPABASE_SERVICE_ROLE_KEY","ALPHA_GHL_PRIVATE_INTEGRATION_TOKEN","auth.signUp("]) {
+  absent(creatorDashboardJs + creatorAccount, leak, "creator UI does not cache tokens, render unsafe HTML or create public auth users: " + leak);
+}
+has(creatorDashboardCss, "@media(max-width:700px)", "dashboard has mobile layout");
 
 const fixture = {
   kind: "creator", notice_version: ghlNotice,
