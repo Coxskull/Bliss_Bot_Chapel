@@ -28,6 +28,11 @@ jobs:
         run: |
           node --check supabase/functions/alpha-intake-operator-review/review-core.mjs
           node --test tests/alpha-intake-operator-review.test.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check the proposed Edge review endpoint without deployment
+        run: deno check supabase/functions/alpha-intake-operator-review/index.ts
       - name: Verify no production authorization
         run: |
           test -f docs/launch/candidates/NOT_FOR_APPLY-alpha-intake-operator-live-session.sql
