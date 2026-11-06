@@ -17,6 +17,7 @@ public sealed class RecipeRuntimeApiTests : IClassFixture<BlissApiFactory>
         var page = await client.GetStringAsync("/production.html");
         var script = await client.GetStringAsync("/production.js");
         var sourceMediaScript = await client.GetStringAsync("/source-media/source-media.js");
+        var composer = await client.GetStringAsync("/ad-composer.js");
 
         Assert.Contains("DEMONSTRATION / NO AI CREDITS", page);
         Assert.Contains("id=\"demo-generate\" type=\"button\" disabled", page);
@@ -28,6 +29,16 @@ public sealed class RecipeRuntimeApiTests : IClassFixture<BlissApiFactory>
         Assert.DoesNotContain("api(\"/api/operations/academy/generate\"", script);
         Assert.Contains("X-CSRF-TOKEN", sourceMediaScript);
         Assert.Contains("session?.canWrite", sourceMediaScript);
+        Assert.Contains("id=\"composer-render\" type=\"button\" disabled", page);
+        Assert.Contains("id=\"composer-preview\"", page);
+        Assert.Contains("/ad-composer.js", page);
+        Assert.Contains("renderBrandTemplatePng", script);
+        Assert.Contains("new DataTransfer", script);
+        Assert.Contains("!history?.brief", script);
+        Assert.Contains("window.AlphaTemplateComposer", composer);
+        Assert.Contains("toBlob(", composer);
+        Assert.DoesNotContain("fetch(", composer);
+        Assert.DoesNotContain("XMLHttpRequest", composer);
     }
 
     [Fact]
