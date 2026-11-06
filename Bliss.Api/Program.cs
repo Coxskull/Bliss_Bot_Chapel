@@ -477,6 +477,24 @@ app.Use(async (context, next) =>
                 RequestCorrelation.Resolve(context)));
     }
 });
+// An approved creator may read only their own verified account, not the
+// legacy authenticated marketplace APIs. This does not override preview STOP,
+// OIDC authentication, CSRF, rate limiting or per-record authorization.
+app.Use(async (context, next) =>
+{
+    if (CreatorApiBoundary.ShouldDeny(context, authentication))
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        await context.Response.WriteAsJsonAsync(new
+        {
+            error = "Creator account access is limited to your verified profile."
+        });
+        return;
+    }
+
+    await next();
+});
 app.UseRateLimiter();
 app.UseAuthorization();
 app.Use(async (context, next) =>
