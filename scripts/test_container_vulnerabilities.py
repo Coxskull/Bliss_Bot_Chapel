@@ -52,6 +52,15 @@ class VulnerabilityEvidenceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 gate["summarize"](report, IMAGE)
 
+    def test_scanner_uses_exact_local_image_digest_and_still_rejects_mismatch(self):
+        source = Path(__file__).with_name("audit-container-vulnerabilities.py").read_text()
+        self.assertIn('image_id = image["Id"]', source)
+        self.assertIn('run([*docker, "image", "save", "--output", str(archive), image_id]', source)
+        self.assertIn('report = run(scanner + ["docker:" + image_id, "--output", "json"]', source)
+        self.assertIn('counts, rows = summarize(report, image_id)', source)
+        self.assertIn('raise ValueError("Scanner target differs from the inspected immutable image")', source)
+        self.assertNotIn('report = run(scanner + ["docker-archive:"', source)
+
     def test_no_matches_never_grants_vulnerability_or_release_acceptance(self):
         report = self.report();report["matches"] = []
         summary, rows = gate["summarize"](report, IMAGE)
