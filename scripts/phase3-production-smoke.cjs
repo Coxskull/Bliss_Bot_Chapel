@@ -35,6 +35,30 @@ const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQ
     await page.getByRole("button", { name: "Save production brief", exact: true }).click();
     await page.waitForFunction(() => document.querySelector("#status").textContent.includes("Production brief saved"));
     const briefId = await page.locator("#brief").inputValue();
+    // The saved brand brief can produce original PNG art with no provider call.
+    // No candidate is persisted until a separate human submits the existing form.
+    await page.locator("#composer-format").selectOption("landscape");
+    await page.getByRole("button", { name: "Render original PNG from saved brief" }).click();
+    await page.waitForFunction(() => document.querySelector("#composer-status").textContent.includes("Original PNG rendered locally"));
+    const firstArtwork = await page.locator("#composer-preview").evaluate(async image => {
+      await image.decode(); return { width: image.naturalWidth, height: image.naturalHeight };
+    });
+    assert.deepEqual(firstArtwork, { width: 1280, height: 720 });
+    const prepared = await page.locator("#image").evaluate(input =>
+      ({ size: input.files[0]?.size, type: input.files[0]?.type, name: input.files[0]?.name }));
+    assert(prepared.size > 0 && prepared.size <= 1024 * 1024);
+    assert.equal(prepared.type, "image/png");
+    assert.match(prepared.name, /alpha-original-landscape/);
+    assert.equal((await api(`/api/wedding-planner/workspaces/${workspace.workspaceId}/production/briefs/${briefId}`)).candidates.length, 0);
+    await page.locator("#composer-format").selectOption("square");
+    await page.getByRole("button", { name: "Render original PNG from saved brief" }).click();
+    await page.waitForFunction(() => document.querySelector("#composer-status").textContent.includes("Original PNG rendered locally"));
+    const secondArtwork = await page.locator("#composer-preview").evaluate(async image => {
+      await image.decode(); return { width: image.naturalWidth, height: image.naturalHeight };
+    });
+    assert.deepEqual(secondArtwork, { width: 1080, height: 1080 });
+    console.log("ZERO_CREDIT_AD_COMPOSER_PASS: original 1280x720 and 1080x1080 PNGs rendered from confirmed saved brief; no automatic candidate submission.");
+
     assert.match(await page.locator("#brief-details").textContent(), /Gold/);
     assert.match(await page.locator("#brief-details").textContent(), /Reference SHA-256/);
     async function candidate(target, label) {
