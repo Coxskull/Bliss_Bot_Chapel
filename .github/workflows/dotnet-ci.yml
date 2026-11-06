@@ -115,7 +115,7 @@ jobs:
             # Only reach apt when a runner image actually lacks a dependency;
             # bound network waits so a mirror stall cannot consume the job.
             timeout 180 sudo apt-get update               -o Acquire::Retries=2               -o Acquire::http::Timeout=30               -o Acquire::https::Timeout=30
-            timeout 180 sudo apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core
+            timeout 600 sudo apt-get install -y --no-install-recommends -o Acquire::Retries=2 -o Acquire::http::Timeout=45 -o Acquire::https::Timeout=45 ffmpeg fonts-dejavu-core
           fi
           ffmpeg -version
           test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
