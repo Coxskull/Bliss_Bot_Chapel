@@ -22,6 +22,14 @@ for(const [file,kind] of forms){
 const portal=read("index.html");
 assert.ok(portal.includes('href="/join-creator.html"'),"public creator home CTA");
 assert.ok(portal.includes('href="/join-advertiser.html"'),"public advertiser home CTA");
+assert.ok(portal.includes('href="/creator-account.html"'),"creator account entry point");
+assert.ok(existsSync(base+"creator-account.html"),"creator account explainer published");
+const account=read("creator-account.html");
+assert.ok(account.includes("INVITATION ONLY"),"creator account is invite-only");
+assert.ok(account.includes('href="https://bliss-bot-production-5eb8.up.railway.app/creator-dashboard.html"'),"dashboard link stays on Railway origin");
+assert.ok(account.includes('href="https://bliss-bot-production-5eb8.up.railway.app/api/auth/login?returnUrl=%2Fcreator-dashboard.html"'),"login and OIDC callback stay on Railway origin");
+assert.ok(!existsSync(base+"creator-dashboard.html"),"authenticated dashboard is not split onto Vercel");
+assert.ok(!existsSync(base+"creator-dashboard.js"),"dashboard API script remains on Railway");
 for(const file of ["alpha-privacy.html","alpha-terms.html","alpha-intake.css","alpha-intake.js"]){
   assert.ok(existsSync(base+file),file+" copied");
 }
