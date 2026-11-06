@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Creative Academy | ALPHA GLOBAL MEDIA</title><meta name="theme-color" content="#100923"><link rel="stylesheet" href="/brand-intake.css"><link rel="stylesheet" href="/production.css"><script src="/production.js" defer></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Creative Academy | ALPHA GLOBAL MEDIA</title><meta name="theme-color" content="#100923"><link rel="stylesheet" href="/brand-intake.css"><link rel="stylesheet" href="/production.css"><script src="/ad-composer.js" defer></script><script src="/production.js" defer></script></head>
 <body>
 <a class="skip-link" href="#workspace-main">Skip to workspace</a><header><a class="alpha-brand" href="/global-media.html">ALPHA<span>GLOBAL MEDIA™</span></a><nav aria-label="Workspace navigation"><a href="/brand-intake.html">Plan</a><a href="/production.html" aria-current="page">Create</a><a href="/ai-workspace.html">AI workspace</a><a href="/campaign-handoff.html">Review</a><a href="/campaign-measurement.html">Evidence</a></nav></header>
 <main id="workspace-main">
@@ -24,6 +24,17 @@
     <button type="submit">Save production brief</button><p>This prepares instructions. It does not generate an image.</p>
   </fieldset></form>
   <section><h2>Saved briefs</h2><label>Production brief <select id="brief"></select></label><button id="resume" type="button" disabled>Resume brief</button><button id="reload" type="button" disabled>Refresh saved history</button><div id="brief-details"></div></section>
+  <section id="zero-credit-composer" aria-labelledby="composer-title">
+    <p class="eyebrow">ORIGINAL ARTWORK · NO AI CREDITS</p>
+    <h2 id="composer-title">Turn a saved brand brief into an advertisement PNG</h2>
+    <p>Create an original, editable-by-revision text-and-geometry candidate using your confirmed Brand DNA, headline, and CTA. No third-party pictures, reference artwork, image services, or network requests. This is a draft, not a paid placement or approved campaign.</p>
+    <label>Artwork format <select id="composer-format"><option value="landscape">Landscape · 1280 × 720</option><option value="square">Square · 1080 × 1080</option></select></label>
+    <button id="composer-render" type="button" disabled>Render original PNG from saved brief</button>
+    <p id="composer-status" role="status" aria-live="polite">Open a confirmed brand workspace and select a saved brief first.</p>
+    <img id="composer-preview" alt="Generated original advertisement candidate preview" hidden>
+    <p><a id="composer-download" hidden>Download PNG draft</a></p>
+    <p>Review brand and copy rights, geographic accuracy, and quality before submitting as a candidate for human assessment. No image is uploaded automatically.</p>
+  </section>
   <form id="candidate-form"><fieldset id="candidate-fields" disabled><legend>Submit a candidate revision</legend>
     <label>Candidate label <input id="candidate-label" maxlength="200" required></label><label>Production notes <textarea id="notes" maxlength="2000" rows="3"></textarea></label>
     <label>Candidate image <input id="image" type="file" accept="image/png" required></label><p>PNG up to 1 MiB, 2048 × 2048, noninterlaced 8-bit grayscale, RGB, grayscale-alpha, or RGBA. Your candidate stays private to this workspace.</p>
