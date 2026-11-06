@@ -175,15 +175,15 @@ public static class SupabaseOidc
                 || businessVerified.ValueKind != JsonValueKind.True
                 || !advertiserMetadata.TryGetProperty("bliss_advertiser_id", out var advertiserValue)
                 || advertiserValue.ValueKind != JsonValueKind.String
-                || !Guid.TryParse(advertiserValue.GetString(), out var advertiserId)
-                || advertiserId == Guid.Empty
+                || !Guid.TryParse(advertiserValue.GetString(), out var verifiedAdvertiserId)
+                || verifiedAdvertiserId == Guid.Empty
                 || advertiserMetadata.TryGetProperty("bliss_creator_id", out _)
                 || advertiserMetadata.TryGetProperty("bliss_review_workspace_ids", out _))
                 throw new SecurityTokenValidationException("Advertiser verification is incomplete.");
 
             identity.AddClaim(new Claim(auth.RoleClaimType, auth.AdvertiserRole,
                 ClaimValueTypes.String, auth.Authority));
-            identity.AddClaim(new Claim(auth.AdvertiserIdClaimType, advertiserId.ToString("D"),
+            identity.AddClaim(new Claim(auth.AdvertiserIdClaimType, verifiedAdvertiserId.ToString("D"),
                 ClaimValueTypes.String, auth.Authority));
             return;
         }
