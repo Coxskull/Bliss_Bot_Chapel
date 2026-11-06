@@ -22,3 +22,7 @@
 .ask-alpha-suggestions button{border:1px solid #ab80d0;border-radius:20px;background:#35214f;color:#fff;padding:7px 12px;font-size:12px;cursor:pointer}
 @media(max-width:850px){.ask-alpha-panel{grid-template-columns:1fr;margin-bottom:52px;padding:25px}}
 @media(max-width:480px){.ask-alpha-panel{padding:18px}.ask-alpha-chat{padding:12px}.ask-alpha-bubble{max-width:98%}}
+
+/* Keep expanded business-navigation links usable on phones and tablets. */
+@media(max-width:1000px){.topbar{flex-wrap:wrap}nav{flex-wrap:wrap;gap:12px 20px}}
+@media(max-width:600px){.topbar{flex-direction:column;align-items:flex-start}nav{justify-content:flex-start;width:100%}}
