@@ -122,6 +122,26 @@ public sealed class CreatorSelfServiceGateTests
         Assert.False(BlissAuthorization.TryResolveVerifiedCreatorId(new(id), Options(), out _));
         id.RemoveClaim(id.FindAll("bliss_creator_id").Last());
 
+        // Even equal duplicate values must not be accepted as distinct
+        // authorization evidence. Case-variant aliases can hide from the
+        // default exact-case ClaimsPrincipal.FindAll implementation.
+        var trustedRole = Assert.Single(id.FindAll("roles"));
+        id.AddClaim(new Claim("roles", trustedRole.Value, ClaimValueTypes.String, Issuer));
+        Assert.False(BlissAuthorization.TryResolveVerifiedCreatorId(new(id), Options(), out _));
+        id.RemoveClaim(id.FindAll("roles").Last());
+
+        id.AddClaim(new Claim("ROLES", "bliss.admin", ClaimValueTypes.String, Issuer));
+        Assert.False(BlissAuthorization.TryResolveVerifiedCreatorId(new(id), Options(), out _));
+        id.RemoveClaim(id.FindFirst("ROLES")!);
+
+        id.AddClaim(new Claim("BLISS_CREATOR_ID", CreatorId, ClaimValueTypes.String, Issuer));
+        Assert.False(BlissAuthorization.TryResolveVerifiedCreatorId(new(id), Options(), out _));
+        id.RemoveClaim(id.FindFirst("BLISS_CREATOR_ID")!);
+
+        id.AddClaim(new Claim("SUB", CreatorSubject, ClaimValueTypes.String, Issuer));
+        Assert.False(BlissAuthorization.TryResolveVerifiedCreatorId(new(id), Options(), out _));
+        id.RemoveClaim(id.FindFirst("SUB")!);
+
         id.RemoveClaim(id.FindFirst("sub")!);
         id.AddClaim(new Claim("sub", OtherSubject));
         Assert.False(BlissAuthorization.TryResolveVerifiedCreatorId(new(id), Options(), out _));
