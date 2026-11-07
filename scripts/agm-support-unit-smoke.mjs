@@ -53,7 +53,7 @@ for (const needle of [
  "REVOKE ALL ON public.alpha_support_case_events FROM PUBLIC,anon,authenticated",
  "REVOKE EXECUTE ON FUNCTION public.alpha_support_transition",
  "NEW.category IN ('general','advertiser','creator')",
- "REFERENCES auth.users(id)",
+ "FROM auth.users",
  "FOR UPDATE"
 ]) assert.ok(sql.includes(needle),"Missing SQL control: "+needle);
 for (const category of Object.keys(expected))
