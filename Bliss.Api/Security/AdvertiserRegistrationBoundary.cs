@@ -13,6 +13,12 @@ public static class AdvertiserRegistrationBoundary
             return false;
 
         var path = context.Request.Path.Value ?? string.Empty;
+        if (BlissAuthorization.IsPendingCreatorRegistration(context.User, options)
+            && ((HttpMethods.IsPost(context.Request.Method)
+                    && path.Equals("/api/creators/register", StringComparison.OrdinalIgnoreCase))
+                || (HttpMethods.IsGet(context.Request.Method)
+                    && path.Equals("/api/creators/registration", StringComparison.OrdinalIgnoreCase))))
+            return false;
         if (HttpMethods.IsGet(context.Request.Method)
             && (path.Equals("/api/auth/session", StringComparison.OrdinalIgnoreCase)
                 || path.Equals("/api/auth/login", StringComparison.OrdinalIgnoreCase)

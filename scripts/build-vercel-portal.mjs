@@ -23,8 +23,8 @@ await writeFile(resolve(output, 'index.html'), html);
 await copyFile(resolve(source, 'global-media.css'), resolve(output, 'global-media.css'));
 
 // Public interest forms, policy pages and the creator account explainer may
-// be published on Vercel. The authenticated dashboard and password setup stay
-// on Railway so OIDC cookies, CSRF and API calls remain same-origin.
+// be published on Vercel. Authenticated registration, passwords, CSRF and API
+// calls stay on Railway so the session and endpoints remain same-origin.
 for (const filename of [
   'join-creator.html', 'join-advertiser.html', 'privacy-request.html',
   'creator-account.html', 'creator-login.html', 'advertiser-login.html',
@@ -36,6 +36,7 @@ for (const filename of [
 let creatorAccount = await readFile(resolve(source, 'creator-account.html'), 'utf8');
 for (const route of [
   '/creator-dashboard.html',
+  '/creator-registration.html',
   '/api/auth/login?returnUrl=%2Fcreator-dashboard.html'
 ]) {
   creatorAccount = creatorAccount.replaceAll(
@@ -49,7 +50,7 @@ await writeFile(resolve(output, 'creator-account.html'), creatorAccount);
 // on Railway. Never publish protected dashboards or their API requests here.
 for (const [filename, routes] of [
   ['creator-login.html', ['/creator-signin-preview.html']],
-  ['advertiser-login.html', ['/advertiser-signin-preview.html']]
+  ['advertiser-login.html', ['/advertiser-signin-preview.html', '/advertiser-registration.html']]
 ]) {
   let page = await readFile(resolve(source, filename), 'utf8');
   for (const route of routes) {

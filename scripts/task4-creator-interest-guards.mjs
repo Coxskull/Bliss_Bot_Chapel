@@ -2,9 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { mapGhlContact, ghlNotice } from "../supabase/functions/alpha-public-intake/ghl-payload.mjs";
 
-// Task #4: no live submissions, credentials, provider calls, or account creation.
-// This is a static+pure-function acceptance guard around the existing creator
-// interest boundary; authenticated creator registration is a SEPARATE open gate.
+// Task #4: source-only registration and existing public-intake boundaries.
+// No hosted submission, account creation, provider call or deployment occurs.
 const read = (p) => readFileSync(new URL("../" + p, import.meta.url), "utf8");
 const html = read("frontend/public/join-creator.html");
 const browser = read("frontend/public/alpha-intake.js");
@@ -12,6 +11,8 @@ const edge = read("supabase/functions/alpha-public-intake/index.ts");
 const ghlsync = read("supabase/functions/alpha-public-intake/ghl-sync.mjs");
 const privacy = read("frontend/public/alpha-privacy.html");
 const creatorAccount = read("frontend/public/creator-account.html");
+const creatorRegistration = read("frontend/public/creator-registration.html");
+const creatorRegistrationJs = read("frontend/public/creator-registration.js");
 const creatorDashboard = read("frontend/public/creator-dashboard.html");
 const creatorDashboardJs = read("frontend/public/creator-dashboard.js");
 const creatorDashboardCss = read("frontend/public/creator-dashboard.css");
@@ -58,12 +59,25 @@ has(ghlsync, 'Deno.env.get("ALPHA_GHL_SYNC_ENABLED") !== "true"', "CRM delivery 
 has(ghlsync, 'client.rpc("alpha_ghl_claim"', "CRM delivery uses claim lease");
 has(privacy, ghlNotice, "published notice matches CRM consent version");
 
-// Creator account setup is invitation-only; preserve the existing public
-// interest form and keep the authenticated dashboard on the Railway origin.
-has(creatorAccount, "INVITATION ONLY", "creator account setup is invitation-only");
+// Creator self-registration is a separate, default-off workflow. Preserve the
+// existing public inquiry and keep the registration page/API on Railway.
+has(creatorAccount, "/creator-registration.html", "creator account links to separate registration flow");
 has(creatorAccount, "/join-creator.html", "account setup points to existing interest form");
 has(creatorAccount, "/api/auth/login?returnUrl=%2Fcreator-dashboard.html", "sign-in returns to creator dashboard");
-has(creatorAccount, "does not create users", "account explainer cannot create identities");
+has(creatorAccount, "Registration remains disabled until this capability is enabled", "creator registration feature gate disclosed");
+has(creatorRegistration, 'id="signup-form"', "registration page has explicit Auth signup form");
+has(creatorRegistration, 'id="registration-form"', "profile registration remains separate from Auth signup");
+has(creatorRegistration, 'name="password" type="password"', "password enters only browser-to-Supabase Auth flow");
+has(creatorRegistration, "Optional: I agree to receive marketing communications", "optional marketing consent is separate");
+has(creatorRegistration, "creator-privacy-2026-11-07-v1", "versioned privacy consent captured");
+has(creatorRegistration, "creator-terms-2026-11-07-v1", "versioned terms consent captured");
+has(creatorRegistrationJs, 'fetch(endpoint,', "password/signup request goes directly to Supabase Auth");
+has(creatorRegistrationJs, 'fetch("/api/creators/register"', "profile registration uses same-origin authenticated API");
+has(creatorRegistrationJs, 'credentials: "same-origin"', "registration does not send app cookies cross-origin");
+has(creatorRegistrationJs, "creatorRegistrationEnabled", "feature-off server config disables signup");
+for (const leak of ["SUPABASE_SERVICE_ROLE_KEY","ALPHA_GHL_PRIVATE_INTEGRATION_TOKEN","localStorage"]) {
+  absent(creatorRegistrationJs, leak, "no service secret or persistent credential storage: " + leak);
+}
 has(creatorDashboard, 'name="robots" content="noindex,nofollow"', "creator dashboard is not indexed");
 has(creatorDashboard, "/api/auth/login?returnUrl=%2Fcreator-dashboard.html", "dashboard login return path is local");
 has(creatorDashboard, 'id="profile-panel"', "profile is hidden until authorized response");
@@ -112,4 +126,4 @@ for (const altered of [
   assertions++;
 }
 console.log("TASK4_CREATOR_INTEREST_BOUNDARY_GUARDS_PASS assertions=" + assertions);
-console.log("No network or database calls. Authenticated marketplace signup NOT tested.");
+console.log("No network or database calls. Hosted signup and live creator verification are NOT tested.");

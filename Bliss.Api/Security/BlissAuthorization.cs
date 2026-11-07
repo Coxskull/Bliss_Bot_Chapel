@@ -36,6 +36,35 @@ public static class BlissAuthorization
                 || string.Equals(c.Type, options.ReviewerWorkspaceClaimType, StringComparison.OrdinalIgnoreCase));
     }
 
+    public static bool IsPendingCreatorRegistration(ClaimsPrincipal user, BlissAuthenticationOptions options)
+    {
+        if (!options.Enabled || !options.SupabaseEnabled || !options.CreatorRegistrationRequested
+            || user.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(options.Authority))
+            return false;
+        var markers = user.Claims.Where(c => string.Equals(c.Type,
+            BlissAuthenticationOptions.CreatorRegistrationPendingMarkerClaimType,
+            StringComparison.OrdinalIgnoreCase)).ToArray();
+        var subjects = user.Claims.Where(c => string.Equals(c.Type, "sub", StringComparison.OrdinalIgnoreCase)).ToArray();
+        var verified = user.Claims.Where(c => string.Equals(c.Type, "email_verified", StringComparison.OrdinalIgnoreCase)).ToArray();
+        var roles = user.Claims.Where(c => string.Equals(c.Type, options.RoleClaimType, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Type, "role", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Type, "roles", StringComparison.OrdinalIgnoreCase)).ToArray();
+        return markers.Length == 1
+            && markers[0].Type == BlissAuthenticationOptions.CreatorRegistrationPendingMarkerClaimType
+            && markers[0].Value == "true"
+            && markers[0].Issuer == options.Authority
+            && markers[0].OriginalIssuer == options.Authority
+            && subjects.Length == 1 && subjects[0].Type == "sub"
+            && !string.IsNullOrWhiteSpace(subjects[0].Value)
+            && verified.Length == 1 && verified[0].Type == "email_verified"
+            && string.Equals(verified[0].Value, "true", StringComparison.OrdinalIgnoreCase)
+            && roles.Length == 0
+            && !user.Claims.Any(c => string.Equals(c.Type, options.AdvertiserIdClaimType, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(c.Type, options.CreatorIdClaimType, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(c.Type, options.ReviewerWorkspaceClaimType, StringComparison.OrdinalIgnoreCase));
+    }
+
     public static bool CanWrite(ClaimsPrincipal user, BlissAuthenticationOptions options) =>
         !options.Enabled
         || user.IsInRole(options.OperatorRole)
