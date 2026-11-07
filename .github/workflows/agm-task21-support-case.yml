@@ -4,8 +4,10 @@ on:
     paths:
       - 'supabase/functions/alpha-public-intake/**'
       - 'supabase/functions/alpha-ghl-retry/**'
+      - 'supabase/functions/alpha-support-operator/**'
       - 'supabase/migrations/20261108_alpha_support_case_workflow.sql'
       - 'scripts/agm-support-unit-smoke.mjs'
+      - 'scripts/agm-support-operator-unit.mjs'
       - 'scripts/agm-ghl-unit-smoke.mjs'
       - 'scripts/task21/**'
       - 'frontend/public/support.html'
@@ -26,6 +28,7 @@ jobs:
         with:
           node-version: '22'
       - run: node scripts/agm-support-unit-smoke.mjs
+      - run: node scripts/agm-support-operator-unit.mjs
       - run: node scripts/agm-ghl-unit-smoke.mjs
   isolated-postgres:
     runs-on: ubuntu-latest
