@@ -90,3 +90,5 @@ console.log("Public ALPHA intake forms: 35+ privacy, routing and publication inv
 
 // Stripe P0: all published pages must have valid public links and no unapproved paid policies.
 await import("./stripe-public-link-smoke.mjs");
+// ALPHA-346 first-customer manual proposal and payment gates (offline fixtures only).
+await import("./alpha346-manual-order-gates.test.mjs");
