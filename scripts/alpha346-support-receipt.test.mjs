@@ -6,7 +6,8 @@ const sop = await readFile(new URL('../docs/commercial/ALPHA-346-SUPPORT-MAILBOX
 test('internal Gmail self-test cannot be promoted to external support acceptance',()=>{
   assert.match(sop,/SELF_TEST_PASSED_PAID_CUSTOMER_SUPPORT_NOT_VERIFIED/);
   assert.match(sop,/NOT TESTED:/);
-  assert.match(sop,/separately authorized non-self address/);
+  assert.match(sop,/Inbound test and reply from the separately authorized non-self account/);
+  assert.match(sop,/human response-time service levels/);
   assert.match(sop,/NOT ASSIGNED \/ NOT VERIFIED/);
 });
 test('support mailbox self-test proves only selected mailbox and internal label',()=>{
