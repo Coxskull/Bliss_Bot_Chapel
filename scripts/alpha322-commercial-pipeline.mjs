@@ -30,7 +30,7 @@ export function createPipeline() {
       if (JSON.stringify(prior) === JSON.stringify(event)) return { duplicate: true, event: prior };
       throw new Error("receipt reference conflict");
     }
-    const priorRef = idempotency.get(\`\${event.journey_id}:\${event.event_key}\`);
+    const priorRef = idempotency.get(event.journey_id + ":" + event.event_key);
     if (priorRef) {
       const prior = events.get(priorRef);
       if (JSON.stringify(prior) === JSON.stringify(event)) return { duplicate: true, event: prior };
@@ -39,7 +39,7 @@ export function createPipeline() {
 
     const journey = [...events.values()].filter(item => item.journey_id === event.journey_id);
     const expected = STAGES[journey.length];
-    if (!expected || event.stage !== expected) throw new Error(\`expected \${expected ?? "complete"} stage\`);
+    if (!expected || event.stage !== expected) throw new Error("expected " + (expected ?? "complete") + " stage");
     if (journey.length && event.parent_receipt_ref !== journey.at(-1).receipt_ref)
       throw new Error("receipt chain does not reference the prior stage");
     if (!journey.length && (event.stage !== "inquiry" || !text(event.source_receipt_ref)))
@@ -65,7 +65,7 @@ export function createPipeline() {
 
     const stored = structuredClone(event);
     events.set(stored.receipt_ref, stored);
-    idempotency.set(\`\${stored.journey_id}:\${stored.event_key}\`, stored.receipt_ref);
+    idempotency.set(stored.journey_id + ":" + stored.event_key, stored.receipt_ref);
     return { duplicate: false, event: stored };
   }
 
@@ -90,5 +90,5 @@ export function createPipeline() {
 
 export function makeReceiptRef(event) {
   const { receipt_ref: _ignored, ...body } = event;
-  return \`sha256:\${receiptDigest(body)}\`;
+  return "sha256:" + receiptDigest(body);
 }
