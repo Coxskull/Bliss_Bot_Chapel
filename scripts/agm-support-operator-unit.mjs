@@ -27,7 +27,7 @@ const ticket = {case_id:id,request_id:requestId,category:"general",
 const contact={full_name:"Synthetic User",email:"unit@example.invalid",description:"Test only"};
 const events=[{event_id:1,action:"CREATED",status:"OPEN",summary:"Synthetic"}];
 let user=general,aal="aal1",role="authenticated",authFails=false;
-let rpcCount=0,readCount=0, selectedTicket=ticket, finish={data:true,error:null};
+let rpcCount=0,claimCount=0,readCount=0, selectedTicket=ticket, finish={data:true,error:null};
 let envState={ALPHA_SUPPORT_OPERATOR_ROSTER:roster,ALPHA_SUPPORT_MUTATIONS_ENABLED:"false",
   ALPHA_SUPPORT_OPERATOR_ORIGIN:"https://ops.example.invalid"};
 const env={get:k=>envState[k]};
@@ -50,8 +50,9 @@ const db={
     };
   },
   rpc:async(name,args)=>{
-    assert.equal(name,"alpha_support_transition");
     assert.equal(args.p_actor_user_id,user);
+    if(name==="alpha_support_claim"){claimCount++;return finish;}
+    assert.equal(name,"alpha_support_transition");
     rpcCount++;
     return finish;
   }
@@ -95,7 +96,17 @@ user=security;aal="aal1";t=await call(request());assert.equal(t.status,403);
 aal="aal2";t=await call(request("GET","?case_id="+id));assert.equal(t.status,200);
 user=general;aal="aal1";selectedTicket=ticket;
 t=await call(request("POST"));assert.equal(t.status,423);assert.equal(rpcCount,0);
+t=await call(request("POST","",{body:{action:"CLAIM",case_id:id}}));
+assert.equal(t.status,423);assert.equal(claimCount,0);
 envState.ALPHA_SUPPORT_MUTATIONS_ENABLED="true";
+t=await call(request("POST","",{body:{action:"CLAIM",case_id:id,owner_user_id:security}}));
+assert.equal(t.status,422);assert.equal(claimCount,0);
+t=await call(request("POST","",{body:{action:"CLAIM",case_id:id}}));
+assert.equal(t.status,200);assert.equal(t.data.action,"CLAIM");assert.equal(claimCount,1);
+finish={data:false,error:null};
+t=await call(request("POST","",{body:{action:"CLAIM",case_id:id}}));
+assert.equal(t.status,409);assert.equal(claimCount,2);
+finish={data:true,error:null};
 t=await call(request("POST","",{body:{
   case_id:id,status:"TRIAGED",owner_user_id:security,resolution:""}}));
 assert.equal(t.status,403);assert.equal(rpcCount,0);
