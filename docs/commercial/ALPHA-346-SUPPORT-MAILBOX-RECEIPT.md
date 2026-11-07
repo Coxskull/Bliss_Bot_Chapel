@@ -17,7 +17,15 @@
 
 **ACCEPTED:** Authenticated Gmail ownership, self-addressed message send/receipt and label organization.
 
-**NOT TESTED:** An unrelated external sender delivering inbound email; custom-domain support alias; SMTP/SPF/DKIM/DMARC for custom domain; assigned operator monitoring shifts; human reply turnaround, complaint escalation, paid-order support availability, or mail-to-CRM automation. A self-addressed message must NEVER be presented as equivalent to external customer deliverability or support acceptance.
+## External non-customer two-way delivery acceptance — VERIFIED 2026-11-07
+
+- Authorized sender mailbox: `dejesuserwin1@gmail.com`; authorized test destination: `erwindejesus519@gmail.com`. These are the two explicitly designated test accounts, **not customers**.
+- The sent message `1a1b476f5194a520` had subject `ALPHA GLOBAL MEDIA — External Email Delivery Test (ALPHA-346)` at **13:24 PHT**.
+- The recipient responded in the same Gmail thread `1a1b476f5194a520`. Gmail received reply message `1a1b4792a48c5a9b`, timestamp **2026-11-07 13:26:29 PHT**, with `INBOX` and `UNREAD` labels. The verified reply text begins `Email received.`
+- Independent Gmail search scoped to `from:erwindejesus519@gmail.com to:dejesuserwin1@gmail.com` found the same received message. The reply was also classified under the existing `ALPHA / Commercial Inquiries` Gmail label.
+- **Status: EXTERNAL_TEST_SEND_AND_REPLY_PASS.** This confirms two-way email on these two account addresses, not deliverability from all customer domains or a monitored support helpdesk.
+
+**NOT TESTED:** Custom-domain support alias, SPF/DKIM/DMARC for a future branded domain, assigned monitoring shifts, human response-time service levels, complaint escalation, paid-order support availability, or mail-to-CRM automation. Confirmation from one test sender must NEVER be presented as full commercial support acceptance.
 
 ## Daily manual inbox triage — no automated external operations
 
@@ -47,10 +55,10 @@
 - [x] Owner-selected Gmail account authenticated
 - [x] Controlled self-addressed test visible in mailbox
 - [x] Owner's Gmail account label created and applied to test
-- [ ] Inbound test from a separately authorized non-self address (no real customer outreach)
+- [x] Inbound test and reply from the separately authorized non-self account (no customer outreach)
 - [ ] Named human monitoring owner and checked response/escalation workflow
 - [ ] Approved paid-service customer support channel, terms, refund/cancellation policy, and privacy notice
 - [ ] Owner-approved customer-specific price, currency, taxes and milestones
 - [ ] Written customer acceptance and separate approved payment release
 
-**Status:** `SELF_TEST_PASSED_PAID_CUSTOMER_SUPPORT_NOT_VERIFIED`. **Task #1 remains IN_PROGRESS**; synthetic recovery PASS, real recovery deferred. **Commercial payment release: NOT AUTHORIZED.**
+**Status:** `SELF_TEST_PASSED_PAID_CUSTOMER_SUPPORT_NOT_VERIFIED` and `EXTERNAL_TEST_SEND_AND_REPLY_PASS`; paid-customer support monitoring **NOT VERIFIED**. **Task #1 remains IN_PROGRESS**; synthetic recovery PASS, real recovery deferred. **Commercial payment release: NOT AUTHORIZED.**

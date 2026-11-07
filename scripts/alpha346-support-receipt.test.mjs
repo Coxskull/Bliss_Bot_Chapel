@@ -21,3 +21,10 @@ test('internal support triage text never authorizes outreach, payment or public 
   assert.match(sop,/Commercial payment release: NOT AUTHORIZED/);
   assert.match(sop,/Replies are human-reviewed/);
 });
+
+test('external two-way non-customer test is distinguished from paid support authorization',()=>{
+  assert.match(sop,/EXTERNAL_TEST_SEND_AND_REPLY_PASS/);
+  assert.match(sop,/1a1b4792a48c5a9b/);
+  assert.match(sop,/2026-11-07 13:26:29 PHT/);
+  assert.match(sop,/paid-customer support monitoring \*\*NOT VERIFIED\*\*/);
+});
