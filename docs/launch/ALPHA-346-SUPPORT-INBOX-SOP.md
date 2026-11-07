@@ -15,10 +15,11 @@
 ### Support proof record (to be completed by operator, stored privately)
 - Named primary operator: [PRIVATE RECORD]
 - Named backup/escalation: [PRIVATE RECORD]
-- Date/time of controlled inbound test: [NOT YET PERFORMED]
-- Sender mailbox independently controlled: [PRIVATE RECORD]
-- Inbound visible and correctly attributed: [UNVERIFIED]
-- Reply from designated address delivered to test origin: [UNVERIFIED]
+- Date/time of same-account **self-delivery** test: **2026-11-07** (test Gmail subject `ALPHA-346 INTERNAL INBOX DELIVERY TEST - 2026-11-07`)
+- Self-delivery evidence: same-message Gmail `SENT` + `INBOX` + `UNREAD` labels confirmed by search; address and profile matched. This establishes only basic connected-account receipt/searchability, **not independent external deliverability**.
+- Sender mailbox independently controlled: **NOT TESTED**; controlled external-to-designated-inbox test still required.
+- Incoming mail from independent sender received and correctly attributed: **UNVERIFIED**.
+- Reply from designated address delivered to independent test sender: **UNVERIFIED**.
 - Inbox monitoring cadence and assignment: [NOT YET APPROVED]
 - Approved published contact and refund/privacy versions: [NOT YET APPROVED]
 - Captain readiness acceptance: [NOT YET SIGNED]
