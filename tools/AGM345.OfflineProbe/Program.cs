@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Bliss.Domain.AdvertisingRealEstate;
+using Bliss.Domain.CreativeAcademy;
+using Bliss.Domain.Entities;
 
 // Directive 345: deterministic fictional customer conversation traces only.
 // This runner must never connect to production, read private customer data,
@@ -96,6 +98,80 @@ var conversations = scenarios.Select(scenario =>
     };
 }).ToArray();
 
+
+/* T14–T17: human reviewer attestations are FICTIONAL TEST INPUTS.
+   The candidate and reference "hashes" below are synthetic placeholders,
+   never evidence of actual uploaded artwork or rights. */
+var dna = new WeddingPlannerBrandDna
+{
+    Id = Guid.Parse("22222222-2222-4222-8222-222222222222"),
+    WorkspaceId = Guid.Parse("11111111-1111-4111-8111-111111111111"),
+    Version = 3, Status = "CONFIRMED",
+    BrandName = "Fictional Orchid Coffee", Market = "PH", Language = "fil",
+    Colors = "#143A38 and #FFE4B5", Font = "Example Sans",
+    Niche = "coffee", Goals = "Synthetic quality test",
+    Restrictions = "No unsupported claims"
+};
+var candidateHash = new string('a', 64);
+var brandReview = new CommercialBrandReviewProof(dna.Id, dna.Version, candidateHash,
+    dna.BrandName, dna.Colors, dna.Font, dna.Language,
+    true, true, true, "FICTIONAL_BRAND_REVIEWER", "synthetic://brandqa", "V1");
+var qualityTeacher = new AcademyReferenceRecord(
+    "FICTIONAL-QUALITY-REF-01", 1, "coffee", "Coffee", "ref.png",
+    ReferenceLibrary.Active, ReferenceLibrary.Uploaded, true,
+    "Study lighting, texture and hierarchy craftsmanship",
+    "Never copy branding, people, product composition or props",
+    ProvenanceSource: "synthetic://reference-not-real", Ownership: "FICTIONAL",
+    ApprovingAuthority: "FICTIONAL_REFERENCE_REVIEWER");
+var qualities = CreativeAcademy.ReferenceParityGate.ToDictionary(
+    name => name, _ => true, StringComparer.Ordinal);
+var qualityReview = new CommercialQualityReviewProof(candidateHash,
+    qualityTeacher.ReferenceId, "FICTIONAL-REF-V1",
+    new string('b', 64), qualities, 100, [], true, true, true, true,
+    "FICTIONAL_QUALITY_REVIEWER", "synthetic://quality-qa");
+var localization = new CommercialLocalizationReviewProof(
+    "PH", "fil", "synthetic://locale", "FICTIONAL_LOCALE_REVIEWER",
+    true, true, true);
+var policy = new CommercialPolicyReviewProof(
+    "synthetic://policy", "FICTIONAL_POLICY_REVIEWER",
+    true, true, true, true, true, true, true);
+var geometryQa = CommercialGeometryGuard.Review(
+    board.Products.Single(product => product.ProductId == "ARE-P01"),
+    geometry, protectedCenter, syntheticSellableArea);
+if (!geometryQa.Validated)
+    throw new InvalidOperationException("Fictional creative sample has no valid local geometry.");
+
+CommercialCreativeQaDecision ReviewCreative(
+    CommercialBrandReviewProof brand,
+    CommercialQualityReviewProof quality,
+    CommercialLocalizationReviewProof locale,
+    CommercialPolicyReviewProof compliance) =>
+    CommercialCreativeQaGate.Evaluate(dna, brand, qualityTeacher,
+        quality, locale, compliance, geometryQa);
+
+var failedLights = qualities.ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal);
+failedLights["lighting craftsmanship"] = false;
+var creativeQaCases = new[]
+{
+    new { caseId = "FICTIONAL_DOUBLE_PASS", output = ReviewCreative(
+        brandReview, qualityReview, localization, policy) },
+    new { caseId = "T14_QUALITY_PASS_BRAND_FAIL", output = ReviewCreative(
+        brandReview with { LogoRightsVerified = false }, qualityReview, localization, policy) },
+    new { caseId = "T15_BRAND_PASS_QUALITY_FAIL", output = ReviewCreative(
+        brandReview, qualityReview with { ParityDimensions = failedLights }, localization, policy) },
+    new { caseId = "T16_UNSUPPORTED_ADVERTISING_CLAIM", output = ReviewCreative(
+        brandReview, qualityReview, localization, policy with { ClaimsSubstantiated = false }) },
+    new { caseId = "T17_LOCALIZATION_REVIEW_REQUIRED", output = ReviewCreative(
+        brandReview, qualityReview,
+        localization with { MarketContextVerified = false }, policy) },
+};
+if (creativeQaCases[0].output.BrandStatus != CommercialCreativeQaGate.Passed
+    || creativeQaCases[0].output.QualityStatus != CommercialCreativeQaGate.Passed
+    || creativeQaCases.Skip(1).Any(x => x.output.SyntheticCandidateEligibleForAdvertiserReview)
+    || creativeQaCases.Any(x => x.output.ExternalUseAuthorized || x.output.CampaignReady
+        || x.output.Delivery != "NOT_SENT"))
+    throw new InvalidOperationException("Creative source fixture unexpectedly authorized external use.");
+
 var evidence = new
 {
     schema = "ALPHA-345-OFFLINE-COMMERCIAL-TRANSCRIPT/V1",
@@ -108,7 +184,8 @@ var evidence = new
     geometryProtectedRegion = "SYNTHETIC_NOT_OWNER_SIGNED",
     geometrySellableBasis = "SYNTHETIC_DECLARED",
     economicsQuoteStatus = "PRICING_UNAVAILABLE",
-    creativeQaStatus = "NOT_LINKED",
+    creativeQaStatus = "SEPARATE_SYNTHETIC_BRAND_AND_QUALITY_GATES",
+    creativeQaCases,
     deliveryStatus = "NOT_SENT",
     outreachAuthorized = false,
     reservationAuthorized = false,
@@ -121,5 +198,6 @@ var evidence = new
 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
 File.WriteAllText(destination, JsonSerializer.Serialize(evidence, new JsonSerializerOptions { WriteIndented = true }));
 Console.WriteLine("AGM345_OFFLINE_TRANSCRIPT_RECORDED cases=" + conversations.Length
+    + " creative_cases=" + creativeQaCases.Length
     + " commercial_authority=false delivery=NOT_SENT pricing=PRICING_UNAVAILABLE");
 return 0;
