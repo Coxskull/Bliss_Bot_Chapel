@@ -40,6 +40,6 @@ assert.ok(!publicBuilder.includes("alpha346-proposal-desk.html"),"internal tool 
 assert.ok(desk.includes("owner-approved band: $50–$1,000"), "internal price range shown");
 assert.ok(desk.includes("Number(value)>=50&&Number(value)<=1000"), "inclusive $50–$1,000 validator");
 assert.ok(desk.includes("currency===\'USD\'&&validPrice(price)"), "USD only");
-assert.ok(!desk.includes(\'<option value="PHP">\'), "PHP quote not authorized");
+assert.ok(!desk.includes("<option value=\"PHP\">"), "PHP quote not authorized");
 assert.ok(desk.includes("INDIVIDUAL QUOTE NOT APPROVED"), "range does not approve any specific quote");
 console.log("ALPHA-346 offline four-deliverable proposal desk safety and source consistency PASS");
