@@ -124,11 +124,12 @@ public sealed class InstructionAmendmentEndToEndApiTests
             && item.GetProperty("status").GetString() == "SUPPLIED"
             && item.GetProperty("ownerEntry").GetString()!.Contains("Both amendments stay OPEN"));
 
+        // Commercial showcases must stay withheld without creator-specific slot consent.
         var prompts = new (string Prompt, string Intent, bool Displayed)[]
         {
-            ("This is my first campaign. I want to try Alpha, but I don't want to spend very much.", "ENTRY", true),
-            ("We want a premium campaign with a much larger visual presence.", "PREMIUM", true),
-            ("We don't want another advertiser displayed beside us.", "EXCLUSIVITY", true),
+            ("This is my first campaign. I want to try Alpha, but I don't want to spend very much.", "ENTRY", false),
+            ("We want a premium campaign with a much larger visual presence.", "PREMIUM", false),
+            ("We don't want another advertiser displayed beside us.", "EXCLUSIVITY", false),
             ("Will this same advertising configuration work on mobile?", "DEVICE", false),
             ("What if I want the advertisement displayed 20 times instead of 5?", "FREQUENCY", false),
             ("How will I know my advertisement actually ran?", "DELIVERY", false),
