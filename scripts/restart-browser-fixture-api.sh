@@ -38,7 +38,7 @@ if kill -0 "$old_pid" 2>/dev/null; then
   exit 1
 fi
 
-(cd Bliss.Api && exec dotnet bin/Release/net8.0/Bliss.Api.dll) > "BrowserEvidence/api-after-${stage}.log" 2>&1 &
+(cd Bliss.Api && exec dotnet bin/Release/net10.0/Bliss.Api.dll) > "BrowserEvidence/api-after-${stage}.log" 2>&1 &
 echo "$!" > BrowserEvidence/fixture-api.pid
 python3 - <<'PY'
 import time

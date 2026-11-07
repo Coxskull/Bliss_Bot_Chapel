@@ -9,7 +9,7 @@ RUN --mount=type=secret,id=proxy_ca \
 COPY bliss-frontend/ ./
 RUN npm test && npm run build
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY . .
 COPY --from=financial-ui /src/frontend/operations/financial-review/ ./frontend/operations/financial-review/
@@ -18,7 +18,7 @@ RUN --mount=type=secret,id=proxy_ca \
     dotnet publish Bliss.Api/Bliss.Api.csproj -c Release -o /app/publish /p:UseAppHost=false \
     && test -s /app/publish/frontend/operations/financial-review/index.html
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 RUN apt-get update \
     && apt-cache policy perl-base \

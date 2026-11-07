@@ -90,10 +90,10 @@ jobs:
           test "$(pg -d financial_test -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='financials'")" -gt 5
           test "$(pg -d gateway_test -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='command_gateway'")" -gt 5
 
-      - name: Set up .NET 8 SDK
+      - name: Set up .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Restore and build Release
         run: |
