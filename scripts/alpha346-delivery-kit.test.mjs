@@ -33,6 +33,12 @@ for (const [name] of files) {
 }
 assert.ok(index.includes("one in-scope consolidated revision"), "revision promise documented");
 assert.ok(index.includes("Global STOP"), "automated STOP left intact");
+assert.ok(index.includes("ALPHA-346-SUPPORT-INBOX-SOP.md"), "delivery kit links business support handling");
+const support = readFileSync(root + "ALPHA-346-SUPPORT-INBOX-SOP.md", "utf8");
+assert.ok(support.includes("dejesuserwin1@gmail.com"), "selected connected Gmail identity");
+assert.ok(support.includes("UNVERIFIED"), "support monitoring proof must remain pending");
+assert.ok(support.includes("without contacting customers"), "support test must be internal");
+assert.ok(support.includes("do not promise"), "no unsupported customer SLA or refund promise");
 assert.ok(index.includes("human"), "manual completion documented");
 const order = readFileSync(root + "ALPHA-346-FIRST-CUSTOMER-CAPTAIN-DECISIONS.md", "utf8");
 assert.ok(order.includes("dejesuserwin1@gmail.com"), "Captain-designated contact in decision sheet");
