@@ -16,15 +16,18 @@ assert.equal(validCase(open),true);
 assert.equal(validCase({...open,case_id:"not-a-uuid"}),false);
 assert.equal(validCase({...open,assigned_role:"SUPER_ADMIN"}),false);
 const page=parseQueue({cases:[open],page:0,page_size:20,
-  visible_roles:["GENERAL_SUPPORT"]},0);
+  visible_roles:["GENERAL_SUPPORT"],operator_user_id:owner},0);
 assert.equal(page.hasNext,false);
 assert.equal(page.cases.length,1);
-assert.throws(()=>parseQueue({cases:[open],page:1,page_size:20,
-  visible_roles:["GENERAL_SUPPORT"]},0));
-assert.throws(()=>parseQueue({cases:[{...open,assigned_role:"SECURITY_REVIEW"}],
-  page:0,page_size:20,visible_roles:["GENERAL_SUPPORT"]},0));
+assert.equal(page.operatorId,owner);
 assert.throws(()=>parseQueue({cases:[open],page:0,page_size:20,
-  visible_roles:["SUPER_ADMIN"]},0));
+  visible_roles:["GENERAL_SUPPORT"],operator_user_id:"bad-uuid"},0));
+assert.throws(()=>parseQueue({cases:[open],page:1,page_size:20,
+  visible_roles:["GENERAL_SUPPORT"],operator_user_id:owner},0));
+assert.throws(()=>parseQueue({cases:[{...open,assigned_role:"SECURITY_REVIEW"}],
+  page:0,page_size:20,visible_roles:["GENERAL_SUPPORT"],operator_user_id:owner},0));
+assert.throws(()=>parseQueue({cases:[open],page:0,page_size:20,
+  visible_roles:["SUPER_ADMIN"],operator_user_id:owner},0));
 assert.equal(parseDetail({case:open,contact:{email:"test@example.invalid",
   full_name:"Synthetic",description:"Fictional case"},events:[]},
   ["GENERAL_SUPPORT"],id).case.case_id,id);
@@ -69,6 +72,10 @@ assert.match(html,/id="signin-panel"/);
 assert.match(html,/id="mfa-panel"/);
 assert.match(html,/id="case-search-form"/);
 assert.match(html,/id="transition-form"/);
+assert.match(html,/id="claim-case"/);
+assert.match(html,/readonly/);
+assert.match(app,/action:"CLAIM"/);
+assert.match(handler,/alpha_support_claim/);
 assert.match(app,/auth\.signInWithPassword/);
 assert.match(app,/from "\.\/operator-sdk\.js"/);
 assert.ok(!/cdn\.jsdelivr\.net/.test(html+app), "Private runtime must use locally bundled SDK");
