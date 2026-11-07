@@ -124,6 +124,12 @@ public sealed class CreatorSelfServiceScopeTests
         await using var db = Database();
         var pendingId = Guid.NewGuid();
         db.Creators.Add(new Creator { Id = pendingId, Name = "Pending registration", AuthorityStatus = "UNVERIFIED" });
+        db.CreatorAccountMemberships.Add(new CreatorAccountMembership
+        {
+            Id = Guid.NewGuid(), Subject = "pending-subject", CreatorId = pendingId,
+            SubmittedChannelUrl = "https://creator.example/channel", Status = "PENDING_REVIEW",
+            CreatedAt = DateTime.UtcNow
+        });
         await db.SaveChangesAsync();
         var staff = new ClaimsPrincipal(new ClaimsIdentity(new[] {
             new Claim("sub", "synthetic-staff"),
