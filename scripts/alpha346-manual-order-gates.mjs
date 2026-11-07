@@ -9,9 +9,13 @@ const approved = p => p?.approved === true
   && nonempty(p?.by) && nonempty(p?.at) && nonempty(p?.evidence_ref);
 const policy = p => approved(p)
   && nonempty(p?.version) && nonempty(p?.location);
+// Captain-approved service QUOTING BAND only: USD 50.00–1,000.00 inclusive.
+// This never approves an individual order, Stripe collection or tax treatment.
+export const ALPHA346_PRICE_BAND_USD = Object.freeze({ min: 50, max: 1000, currency: "USD" });
 const amount = value => typeof value === "string"
   && /^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/.test(value)
-  && Number(value) > 0;
+  && Number(value) >= ALPHA346_PRICE_BAND_USD.min
+  && Number(value) <= ALPHA346_PRICE_BAND_USD.max;
 
 export function assessManualOrder(order) {
   const o = order && typeof order === "object" ? order : {};
@@ -21,7 +25,7 @@ export function assessManualOrder(order) {
   requireProposal(nonempty(o.proposal_ref) && nonempty(o.advertiser_legal_name), "PROPOSAL_AND_CUSTOMER_IDENTITY");
   requireProposal(nonempty(o.campaign_goal) && nonempty(o.market), "CUSTOMER_GOAL_AND_MARKET");
   requireProposal(amount(o.quote?.amount)
-    && /^[A-Z]{3}$/.test(o.quote?.currency || ""), "OWNER_APPROVED_EXACT_PRICE_AND_CURRENCY");
+    && o.quote?.currency === ALPHA346_PRICE_BAND_USD.currency, "OWNER_APPROVED_EXACT_PRICE_AND_CURRENCY");
   requireProposal(nonempty(o.quote?.taxes_and_fees)
     && nonempty(o.quote?.payee_legal_entity)
     && nonempty(o.quote?.payment_milestones), "TAX_FEES_PAYEE_AND_PAYMENT_TERMS");
