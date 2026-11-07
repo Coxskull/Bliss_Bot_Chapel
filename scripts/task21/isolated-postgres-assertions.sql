@@ -13,7 +13,8 @@ VALUES(gen_random_uuid(),'creator','Synthetic Creator','creator@unit.test','Podc
  'Manila','https://example.invalid/channel','','AGM-INTEREST-2026-11-05-GHL');
 
 DO $$
-DECLARE case_ref uuid; owner_ref uuid:=gen_random_uuid(); v_failed boolean;
+DECLARE case_ref uuid; owner_ref uuid:=gen_random_uuid();
+ contender_ref uuid:=gen_random_uuid(); v_failed boolean;
 BEGIN
  IF (SELECT count(*) FROM public.alpha_support_cases)<>8 THEN
    RAISE EXCEPTION 'Expected 8 actual persisted support cases'; END IF;
@@ -60,9 +61,37 @@ BEGIN
  OR has_table_privilege('authenticated','public.alpha_support_case_events','SELECT')
  OR has_function_privilege('anon',
    'public.alpha_support_transition(uuid,text,uuid,text,uuid)','EXECUTE')
+ OR has_function_privilege('authenticated',
+   'public.alpha_support_claim(uuid,uuid)','EXECUTE')
  THEN RAISE EXCEPTION 'Public support table or RPC exposure'; END IF;
+ -- Synthetic critical incident must have ONE durable human acknowledgement.
+ SELECT case_id INTO case_ref FROM public.alpha_support_cases
+ WHERE category='security_incident';
+ INSERT INTO auth.users(id) VALUES(owner_ref),(contender_ref);
+ IF public.alpha_support_claim(case_ref,owner_ref) IS DISTINCT FROM true
+ OR public.alpha_support_claim(case_ref,owner_ref) IS DISTINCT FROM true
+ THEN RAISE EXCEPTION 'Self-claim and idempotent retry must succeed'; END IF;
+ IF (SELECT count(*) FROM public.alpha_support_case_events
+       WHERE case_id=case_ref AND action='ASSIGNED')<>1
+ OR NOT EXISTS (SELECT 1 FROM public.alpha_support_cases
+       WHERE case_id=case_ref AND owner_user_id=owner_ref AND status='TRIAGED')
+ THEN RAISE EXCEPTION 'Claim lost its durable owner or duplicated audit event'; END IF;
+ IF public.alpha_support_claim(case_ref,contender_ref) IS DISTINCT FROM false
+ THEN RAISE EXCEPTION 'Second operator stole claimed incident'; END IF;
+ v_failed:=false;
+ BEGIN PERFORM public.alpha_support_claim(case_ref,gen_random_uuid());
+ EXCEPTION WHEN others THEN v_failed:=true; END;
+ IF NOT v_failed THEN RAISE EXCEPTION 'Unknown operator claim accepted'; END IF;
+ v_failed:=false;
+ BEGIN PERFORM public.alpha_support_transition(
+    case_ref,'IN_REVIEW',contender_ref,'',contender_ref);
+ EXCEPTION WHEN others THEN v_failed:=true; END;
+ IF NOT v_failed THEN RAISE EXCEPTION 'Non-owner updated someone else''s case'; END IF;
+ IF (SELECT count(*) FROM public.alpha_support_case_events
+       WHERE case_id=case_ref AND action='ASSIGNED')<>1
+ THEN RAISE EXCEPTION 'Competing operations changed history'; END IF;
+ -- Existing billing lifecycle must remain intact on a different case.
  SELECT case_id INTO case_ref FROM public.alpha_support_cases WHERE category='billing';
- INSERT INTO auth.users(id) VALUES(owner_ref);
  IF public.alpha_support_transition(case_ref,'TRIAGED',owner_ref,'',owner_ref) IS DISTINCT FROM true
  THEN RAISE EXCEPTION 'Human triage did not commit'; END IF;
  PERFORM public.alpha_support_transition(case_ref,'IN_REVIEW',owner_ref,'',owner_ref);
