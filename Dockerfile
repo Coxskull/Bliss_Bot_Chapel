@@ -23,6 +23,9 @@ WORKDIR /app
 RUN apt-get update \
     && apt-cache policy perl-base \
     && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core perl-base \
+    && apt-get install -y --no-install-recommends --only-upgrade apt libapt-pkg6.0t64 \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' apt)" ge '2.8.4ubuntu0.1' \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' libapt-pkg6.0t64)" ge '2.8.4ubuntu0.1' \
     && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' perl-base)" ge '5.36.0-7+deb12u4' \
     && dpkg-query -W -f='perl-base installed: ${Version}\n' perl-base \
     && rm -rf /var/lib/apt/lists/*
