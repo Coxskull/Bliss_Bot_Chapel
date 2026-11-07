@@ -51,6 +51,29 @@ public sealed class DemonstrationVideoStudioProtocolTests
     }
 
     [Fact]
+    public async Task GeneratedStudioSliceDeletesTemporaryRenderTextArtifacts()
+    {
+        var temporary = Path.Combine(Path.GetTempPath(), "agm-media-assets-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(temporary);
+        var output = Path.Combine(temporary, "synthetic.mp4");
+        try
+        {
+            using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var studio = new DemonstrationVideoStudio();
+            await studio.CreateStudioSliceAsync(
+                output, "Synthetic City", "Example Country", 1, cancellation.Token);
+
+            Assert.True(File.Exists(output));
+            Assert.False(File.Exists(output + ".market.txt"));
+            Assert.False(File.Exists(output + ".country.txt"));
+        }
+        finally
+        {
+            Directory.Delete(temporary, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task AsyncRistNetworkProtocolIsRefusedBeforeAStreamCanBeOpened()
     {
         // The target is synthetic loopback; successful behavior is an immediate
