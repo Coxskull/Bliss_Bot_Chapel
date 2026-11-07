@@ -1,0 +1,73 @@
+name: ALPHA Intake Operator Review — Offline Contract
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/alpha-intake-operator-review-ci.yml'
+      - 'supabase/functions/alpha-intake-operator-review/**'
+      - 'docs/launch/candidates/NOT_FOR_APPLY-alpha-intake-operator-live-session.sql'
+      - 'tests/alpha-intake-operator-review.test.mjs'
+      - 'tests/alpha-intake-operator-http.test.mjs'
+      - 'tests/alpha-intake-operator-session-ci.sh'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: alpha-intake-review-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  offline-review-contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify the permissioned read-only review contract with fictional records
+        run: |
+          node --check supabase/functions/alpha-intake-operator-review/review-core.mjs
+          node --check supabase/functions/alpha-intake-operator-review/http-handler.mjs
+          node --test tests/alpha-intake-operator-review.test.mjs tests/alpha-intake-operator-http.test.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check the proposed Edge review endpoint without deployment
+        run: deno check supabase/functions/alpha-intake-operator-review/index.ts
+      - name: Verify no production authorization
+        run: |
+          test -f docs/launch/candidates/NOT_FOR_APPLY-alpha-intake-operator-live-session.sql
+          test -f supabase/functions/alpha-intake-operator-review/index.ts
+          echo 'SOURCE_ONLY_TESTS_PASS — NO LIVE AUTH, DB WRITES, CRM SUBMISSIONS, OR INVITATIONS'
+  isolated-session-sql:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci_only_password
+          POSTGRES_DB: postgres
+        ports:
+          - 127.0.0.1:5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client
+      - name: Verify live-session guard on fictional disposable PostgreSQL
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGDATABASE: postgres
+          PGPASSWORD: ci_only_password
+        run: bash tests/alpha-intake-operator-session-ci.sh
