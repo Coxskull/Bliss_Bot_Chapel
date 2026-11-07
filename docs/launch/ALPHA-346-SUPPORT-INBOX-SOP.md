@@ -17,9 +17,10 @@
 - Named backup/escalation: [PRIVATE RECORD]
 - Date/time of same-account **self-delivery** test: **2026-11-07** (test Gmail subject `ALPHA-346 INTERNAL INBOX DELIVERY TEST - 2026-11-07`)
 - Self-delivery evidence: same-message Gmail `SENT` + `INBOX` + `UNREAD` labels confirmed by search; address and profile matched. This establishes only basic connected-account receipt/searchability, **not independent external deliverability**.
-- Sender mailbox independently controlled: **NOT TESTED**; controlled external-to-designated-inbox test still required.
-- Incoming mail from independent sender received and correctly attributed: **UNVERIFIED**.
-- Reply from designated address delivered to independent test sender: **UNVERIFIED**.
+- Controlled two-way test using a separately authorized noncustomer mailbox: **PASS, 2026-11-07**. The designated mailbox sent an internal test message, and the separate test mailbox replied to the same thread. Gmail readback confirmed the incoming reply at **13:26:29 Philippine time**. Source evidence reference: **ALPHA-346 / external test**, no customer details or credentials in this file.
+- Outbound message from designated account to test destination: **VERIFIED IN CONTROLLED TEST**.
+- Incoming response from independent test mailbox to designated address: **VERIFIED IN CONTROLLED TEST**.
+- **Remaining:** ongoing monitoring owner, coverage and complaint/refund escalation are still **UNVERIFIED**. This is not full customer-support acceptance.
 - Inbox monitoring cadence and assignment: [NOT YET APPROVED]
 - Approved published contact and refund/privacy versions: [NOT YET APPROVED]
 - Captain readiness acceptance: [NOT YET SIGNED]
