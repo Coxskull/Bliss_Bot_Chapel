@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mapGhlContact, ghlNotice } from "../supabase/functions/alpha-public-intake/ghl-payload.mjs";
 import { deliverToGhl } from "../supabase/functions/alpha-public-intake/ghl-sync.mjs";
+import "./agm-ask-alpha-smoke.mjs";
 import { readFileSync } from "node:fs";
 
 const migration = readFileSync(new URL("../supabase/migrations/20261105_alpha_ghl_contact_delivery.sql", import.meta.url), "utf8");
