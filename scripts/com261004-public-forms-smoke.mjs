@@ -23,7 +23,7 @@ const advertiser=read("join-advertiser.html");
 assert.ok(advertiser.includes('href="/services.html"'), "advertiser inquiry links to manual service overview");
 assert.ok(advertiser.includes('aria-describedby="campaign-help"'), "optional campaign details accessibility help");
 assert.ok(advertiser.includes("main goal, target audience, preferred format"), "asks for useful optional planning details");
-assert.ok(!/<textarea[^>]*name="description"[^>]*\\brequired\\b/.test(advertiser), "capture-first description remains optional");
+assert.ok(!/<textarea[^>]*name="description"[^>]*\brequired\b/.test(advertiser), "capture-first description remains optional");
 const serviceSpec=readFileSync("docs/launch/ALPHA-346-ONE-CAMPAIGN-PLANNING-SERVICE.md","utf8");
 assert.ok(serviceSpec.includes("NO OWNER-APPROVED QUOTE AMOUNT"), "do not claim unverified commercial pricing approval");
 assert.ok(!serviceSpec.includes("Owner-approved quote band"), "unverified owner pricing band must not be asserted");
