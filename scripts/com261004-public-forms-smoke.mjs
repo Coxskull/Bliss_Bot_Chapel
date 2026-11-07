@@ -44,6 +44,10 @@ assert.ok(!services.includes("https://checkout.stripe.com/"), "public service de
 assert.ok(!services.includes('href="/commercial-terms.html"') && !services.includes('href="/refund-cancellation.html"'), "unapproved commercial policy paths remain unpublished");
 
 const contact=read("contact.html");
+assert.ok(contact.includes('href="mailto:dejesuserwin1@gmail.com"'), "Captain-designated support contact staged");
+assert.ok(contact.includes("Response times are not guaranteed"), "no unsupported support SLA");
+assert.ok(!contact.includes("alpha7media@gmail.com"), "replaced prior support contact");
+
 for(const path of ["/join-advertiser.html","/join-creator.html","/privacy-request.html"])
   assert.ok(contact.includes('href="'+path+'"'), "contact route available: "+path);
 assert.ok(portal.includes('href="/contact.html"'), "public contact link visible on homepage");
