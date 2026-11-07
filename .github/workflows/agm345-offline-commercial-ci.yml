@@ -7,6 +7,7 @@ on:
       - 'Bliss.Tests/AdvertisingRealEstate/CommercialInventoryReviewGateTests.cs'
       - 'assets/alpha-prototypes/advertising-real-estate/AGM345-OFFLINE-ASSET-EVIDENCE.tsv'
       - 'docs/launch/ALPHA-345-OFFLINE-COMMERCIAL-SLICE.md'
+      - 'tools/AGM345.OfflineProbe/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -29,14 +30,23 @@ jobs:
       - name: Test owner geometry, protected content and existing Ask Alpha retrieval in isolation
         run: |
           dotnet test Bliss.Tests/Bliss.Tests.csproj --no-restore --filter FullyQualifiedName~CommercialInventoryReviewGateTests --logger "trx;LogFileName=agm345-contract.trx" --results-directory ./AGM345Results --verbosity normal
+      - name: Emit reproducible fictional conversation and retrieval JSON
+        run: |
+          dotnet run --project tools/AGM345.OfflineProbe/AGM345.OfflineProbe.csproj -- --output AGM345Results/agm345-synthetic-conversations.json
+          test -s AGM345Results/agm345-synthetic-conversations.json
+          grep -Fq '"commitmentAuthorized": false' AGM345Results/agm345-synthetic-conversations.json
+          grep -Fq '"economicsQuoteStatus": "PRICING_UNAVAILABLE"' AGM345Results/agm345-synthetic-conversations.json
       - name: Fail closed if suite produced no test artifact
         run: |
           test -s AGM345Results/agm345-contract.trx
+          test -s AGM345Results/agm345-synthetic-conversations.json
           echo 'AGM345_OFFLINE_SOURCE_ONLY — NO CUSTOMER QUOTES, OUTREACH, RESERVATIONS, PRODUCTION DB OR DELIVERY'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: agm345-offline-contract-${{ github.run_id }}
-          path: AGM345Results/*.trx
+          path: |
+            AGM345Results/*.trx
+            AGM345Results/*.json
           if-no-files-found: warn
           retention-days: 7
