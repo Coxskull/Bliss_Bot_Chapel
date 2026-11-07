@@ -127,18 +127,22 @@ async function loadQueue(page=0){
     announce("Case queue loaded. No automated notification or customer contact was triggered.");
   } catch(e) {
     const canVerify=e?.message==="OPERATOR_DENIED"&&hasMfa&&!mfaVerified;
-    const noRoster=e?.message==="OPERATOR_DENIED"&&!!verifiedAuthId&&!canVerify;
+    // An Auth-verified, but not case-authorized, user may view ONLY their
+    // own Auth UUID. No error path may substitute a queue or trusted role.
+    // CORS not configured, backend 503, and missing roster remain indistinguishable
+    // to the user: we must NOT suggest the operator was approved.
+    const identityOnly=!!verifiedAuthId&&!canVerify;
     const id=verifiedAuthId;
     hidePrivate();
     if(canVerify){
       verifiedAuthId=id;
       show("mfa-panel",true);
       announce("A second factor may be required for your assigned support queue. Verify your existing authenticator.",true);
-    }else if(noRoster){
+    }else if(identityOnly){
       verifiedAuthId=id;
       el("identity-id").textContent=id;
       show("identity-panel",true);
-      announce("Identity verified but no support case role granted. Copy your Auth UUID for administrator review; no cases are accessible.");
+      announce("Your Auth identity is verified. Support access is not authorized or available. No case was loaded; submit this UUID for administrator review.");
     }else{
       try{await client.auth.signOut();}catch{/* clear private UI regardless */}
       show("signin-panel",true);
