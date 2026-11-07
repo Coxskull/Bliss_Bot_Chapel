@@ -51,7 +51,11 @@ def verify_exported_image_provenance(report, inspected, image_archive):
             raise ValueError("Docker export must contain exactly one inspected image")
         entry = entries[0]
         config_name = entry.get("Config", "")
-        if not re.fullmatch(r"[0-9a-f]{64}\.json", config_name):
+        if re.fullmatch(r"[0-9a-f]{64}\.json", config_name):
+            config_digest = config_name[:-5]
+        elif re.fullmatch(r"blobs/sha256/[0-9a-f]{64}", config_name):
+            config_digest = config_name.rsplit("/", 1)[1]
+        else:
             raise ValueError("Docker export config path is invalid")
         member = archive.getmember(config_name)
         if member.size > 1024 * 1024:
@@ -61,7 +65,7 @@ def verify_exported_image_provenance(report, inspected, image_archive):
             raise ValueError("Docker export config is missing")
         config_bytes = config_file.read()
     exported_id = "sha256:" + hashlib.sha256(config_bytes).hexdigest()
-    if exported_id != "sha256:" + config_name[:-5] or target.get("imageID") != exported_id:
+    if exported_id != "sha256:" + config_digest or target.get("imageID") != exported_id:
         raise ValueError("Scanner target differs from exported config content")
     try:
         scanner_config = base64.b64decode(target["config"], validate=True)
