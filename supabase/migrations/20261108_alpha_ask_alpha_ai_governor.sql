@@ -91,6 +91,7 @@ BEGIN
     (SELECT count(*) FROM public.alpha_ask_alpha_turns WHERE session_hash=p_session_hash AND
       created_at >= utc_day) >= 12 OR
     (SELECT count(*) FROM public.alpha_ask_alpha_turns WHERE created_at >= utc_day) >= 100 OR
+    (SELECT count(*) FROM public.alpha_ask_alpha_turns t WHERE t.state='RESERVED') >= 5 OR
     (SELECT count(*) FROM public.alpha_ask_alpha_turns t WHERE t.session_hash=p_session_hash AND
       t.state='RESERVED') >= 1
  THEN RAISE EXCEPTION 'ASK_ALPHA_RATE_LIMITED' USING ERRCODE='P0001'; END IF;
