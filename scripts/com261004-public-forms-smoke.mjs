@@ -21,6 +21,12 @@ for(const [file,kind] of forms){
 }
 const advertiser=read("join-advertiser.html");
 assert.ok(advertiser.includes('href="/services.html"'), "advertiser inquiry links to manual service overview");
+assert.ok(advertiser.includes("Plan your next advertising campaign."), "advertiser headline accurately reflects available planning");
+assert.ok(advertiser.includes("a campaign brief, a comparison of up to three content formats"), "four-part planning scope visible on advertiser page");
+assert.ok(advertiser.includes("with one in-scope revision"), "revision scope visible");
+assert.ok(advertiser.includes("no price, creator booking or advertising placement is agreed"), "inquiry does not imply available creator inventory");
+assert.ok(!advertiser.includes("Find your next creator partnership."), "avoid inviting immediate booking in manual inquiry offer");
+
 assert.ok(advertiser.includes('aria-describedby="campaign-help"'), "optional campaign details accessibility help");
 assert.ok(advertiser.includes("main goal, target audience, preferred format"), "asks for useful optional planning details");
 assert.ok(!/<textarea[^>]*name="description"[^>]*\brequired\b/.test(advertiser), "capture-first description remains optional");
