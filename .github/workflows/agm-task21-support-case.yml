@@ -112,3 +112,23 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
+      - name: Build private staging preview offline with committed dependency lock
+        env:
+          VERCEL_ENV: preview
+          VERCEL_GIT_COMMIT_REF: feat/agm-task21-support-cases-20261108
+          ALPHA_TASK21_STAGE_PREVIEW: enabled
+          VERCEL_URL: task21-ci-preview.vercel.app
+          ALPHA_TASK21_STAGING_PUBLISHABLE_KEY: sb_publishable_FICTIONAL_UNIT_TEST_ONLY_1234
+        run: |
+          set -euo pipefail
+          # Only CI fixture config; this job has no Vercel credentials or
+          # Supabase secrets, does not deploy, and contacts no customer APIs.
+          rm -rf .task21-private-build
+          node scripts/task21/build-protected-staging-preview.cjs
+          node scripts/task21/check-protected-preview.cjs
+          # Preview package must reject production even when an env flag leaks.
+          if VERCEL_ENV=production node scripts/task21/build-protected-staging-preview.cjs; then
+            echo "SECURITY FAILURE: production mode accidentally accepted"
+            exit 1
+          fi
+
