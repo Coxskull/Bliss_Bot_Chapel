@@ -46,15 +46,17 @@ public sealed class RecipeRuntimeApiTests : IClassFixture<BlissApiFactory>
     {
         // This guard prevents future refactors from silently restoring
         // unbounded ffmpeg/ffprobe runtimes or arbitrary upload protocols.
-        var file = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
-            "../../../../../Bliss.Api/Demonstrations/DemonstrationVideoStudio.cs"));
-        if (!File.Exists(file))
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        string? file = null;
+        while (directory is not null)
         {
-            // CI may use different working directories. Resolve from repository root.
-            file = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(),
-                "Bliss.Api/Demonstrations/DemonstrationVideoStudio.cs"));
+            var candidate = Path.Combine(directory.FullName, "Bliss.Api",
+                "Demonstrations", "DemonstrationVideoStudio.cs");
+            if (File.Exists(candidate)) { file = candidate; break; }
+            directory = directory.Parent;
         }
-        var code = File.ReadAllText(file);
+        Assert.NotNull(file);
+        var code = File.ReadAllText(file!);
         Assert.Contains("\"-protocol_whitelist\", \"file,pipe\"", code);
         Assert.Contains("linked.CancelAfter(limit)", code);
         Assert.Contains("process.Kill(entireProcessTree: true)", code);
