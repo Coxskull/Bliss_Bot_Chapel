@@ -43,4 +43,12 @@ assert.ok(index.includes("human"), "manual completion documented");
 const order = readFileSync(root + "ALPHA-346-FIRST-CUSTOMER-CAPTAIN-DECISIONS.md", "utf8");
 assert.ok(order.includes("dejesuserwin1@gmail.com"), "Captain-designated contact in decision sheet");
 assert.ok(order.includes("NOT YET VERIFIED"), "support operation still needs independent verification");
+// Explicit Captain Stripe configuration report is evidence of selected account settings,
+// not verification, bank/payout readiness, or permission to collect any payment.
+const service = readFileSync(root + "ALPHA-346-ONE-CAMPAIGN-PLANNING-SERVICE.md", "utf8");
+assert.ok(service.includes("USD $50.00–$1,000.00 inclusive"), "Owner-approved internal USD quoting band is documented");
+assert.ok(service.includes("Stripe account country is **United States (USA), as reported by the owner"), "Owner-reported US Stripe country must not be silently forgotten");
+assert.ok(service.includes("UNVERIFIED"), "Service must not treat country/currency as verified live payments");
+assert.ok(order.includes("Stripe account country (owner-reported"), "Captain decision sheet separately records operator report");
+assert.ok(order.includes("Merchant status, identity/business verification, live-charge enablement"), "Verification and payment gate stay open");
 console.log("ALPHA-346: all four manual deliverables, fictional example and release guard checks PASS");
