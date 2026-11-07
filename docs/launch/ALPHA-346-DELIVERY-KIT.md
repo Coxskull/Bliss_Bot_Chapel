@@ -22,6 +22,9 @@
 
 See `ALPHA-346-FICTIONAL-PLANNING-DEMO.md` for a completely invented worked example. It is **not** a customer asset, a finished advertisement or evidence that media was published.
 
+## Customer support operating readiness
+The Captain-designated business contact is **dejesuserwin1@gmail.com**. Its connected Gmail account identity and inbox access have been confirmed, but dedicated monitoring, independent inbound/reply verification and paid-order customer-support release are still pending. Follow the controlled internal proof steps in `ALPHA-346-SUPPORT-INBOX-SOP.md`; do not claim a tested support SLA or collect payments based on mailbox access alone.
+
 ## Hard separation of statuses
 - **INQUIRY_RECEIVED**: server receipt saved, not a verified customer, no payment or marketing consent implied.
 - **PROPOSAL_READY**: complete priced Order and approved versions prepared and approved internally; no send or charge implied.
