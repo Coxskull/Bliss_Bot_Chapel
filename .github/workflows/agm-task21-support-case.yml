@@ -61,3 +61,43 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-intake-fixture.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261108_alpha_support_case_workflow.sql
           psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-postgres-assertions.sql
+
+  synthetic-browser:
+    name: Synthetic offline staff operator browser acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Use existing headless browser and pinned Playwright only
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v google-chrome >/dev/null; then
+            echo "CHROMIUM_PATH=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          elif command -v chromium >/dev/null; then
+            echo "CHROMIUM_PATH=$(command -v chromium)" >> "$GITHUB_ENV"
+          else
+            echo 'No preinstalled Chrome/Chromium; do not download paid or external browsers'
+            exit 1
+          fi
+          npm install --prefix "$RUNNER_TEMP/task21-playwright" --ignore-scripts --no-package-lock --no-audit --no-fund playwright@1.56.1
+          echo "NODE_PATH=$RUNNER_TEMP/task21-playwright/node_modules" >> "$GITHUB_ENV"
+      - name: Synthetic staff browser journey (ALL external requests mocked)
+        run: |
+          mkdir -p BrowserEvidence
+          node scripts/task21/operator-browser-journey.cjs
+      - name: Retain only fictional browser screenshot and trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task21-synthetic-operator-browser
+          path: BrowserEvidence/task21-operator-synthetic-browser.png
+          if-no-files-found: warn
+          retention-days: 14
