@@ -100,6 +100,27 @@ CREATE TRIGGER alpha_support_case_after_intake AFTER INSERT
   ON public.alpha_public_intake_requests FOR EACH ROW
   EXECUTE FUNCTION public.alpha_support_on_intake();
 
+-- Supabase service_role bypasses RLS but has NO SELECT on auth.users in
+-- a real hosted project. A tiny, non-exposed SECURITY DEFINER helper verifies
+-- existence without widening direct auth.users grants to the service role.
+-- This function returns ONLY a boolean; anon/authenticated/PUBLIC have no
+-- schema usage or function EXECUTE. It must be owned by the trusted migration
+-- owner (postgres), not by an untrusted or browser-accessible role.
+CREATE SCHEMA alpha_support_private;
+REVOKE ALL ON SCHEMA alpha_support_private FROM PUBLIC,anon,authenticated;
+GRANT USAGE ON SCHEMA alpha_support_private TO service_role;
+
+CREATE FUNCTION alpha_support_private.auth_user_exists(p_user_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path=pg_catalog AS $task21_identity_lookup$
+  SELECT p_user_id IS NOT NULL
+    AND EXISTS (SELECT 1 FROM auth.users WHERE id=p_user_id);
+$task21_identity_lookup$;
+REVOKE EXECUTE ON FUNCTION alpha_support_private.auth_user_exists(uuid)
+ FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION alpha_support_private.auth_user_exists(uuid)
+ TO service_role;
+
 -- Service-role-only, transactional ownership and resolution audit.
 -- Caller must already have verified operator identity server-side.
 CREATE FUNCTION public.alpha_support_transition(
@@ -109,11 +130,12 @@ CREATE FUNCTION public.alpha_support_transition(
 SET search_path=pg_catalog AS $$
 DECLARE c public.alpha_support_cases%ROWTYPE; v_resolution text; v_action text;
 BEGIN
- IF p_actor_user_id IS NULL OR NOT EXISTS (SELECT 1 FROM auth.users WHERE id=p_actor_user_id)
+ IF NOT alpha_support_private.auth_user_exists(p_actor_user_id)
  THEN RAISE EXCEPTION 'Verified operator identity required'; END IF;
  SELECT * INTO c FROM public.alpha_support_cases WHERE case_id=p_case_id FOR UPDATE;
  IF NOT FOUND THEN RETURN false; END IF;
- IF p_owner_user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM auth.users WHERE id=p_owner_user_id)
+ IF p_owner_user_id IS NOT NULL AND
+   NOT alpha_support_private.auth_user_exists(p_owner_user_id)
  THEN RAISE EXCEPTION 'Assigned owner must exist'; END IF;
  -- Prevent silent takeover: only the current owner can change an owned case,
  -- and an unassigned case can only be claimed by the acting human.
@@ -166,9 +188,7 @@ CREATE FUNCTION public.alpha_support_claim(
 SET search_path=pg_catalog AS $support_claim_body$
 DECLARE c public.alpha_support_cases%ROWTYPE;
 BEGIN
- IF p_actor_user_id IS NULL OR NOT EXISTS (
-   SELECT 1 FROM auth.users WHERE id=p_actor_user_id
- ) THEN RAISE EXCEPTION 'Verified human operator required'; END IF;
+ IF NOT alpha_support_private.auth_user_exists(p_actor_user_id) THEN RAISE EXCEPTION 'Verified human operator required'; END IF;
  SELECT * INTO c FROM public.alpha_support_cases WHERE case_id=p_case_id FOR UPDATE;
  IF NOT FOUND THEN RETURN false; END IF;
  IF c.owner_user_id=p_actor_user_id AND c.status='TRIAGED'
