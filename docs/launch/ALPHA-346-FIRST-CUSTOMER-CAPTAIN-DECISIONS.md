@@ -38,6 +38,13 @@ Scope signatory: ____________________  Date: ______________
 - Published route and expected response/complaint handling standard: ____________________
 **Important:** `support@alphacreativecontent.com` is an UNVERIFIED candidate from earlier drafts; do not claim it exists or is monitored.
 
+## Manual planning-only review packet prepared (NOT APPROVED)
+The following documents are new **service-specific counsel/Finance review drafts**, not published legal terms or authorizations to send, quote or charge:
+- `ALPHA-346-MANUAL-SERVICE-CUSTOMER-TERMS-REVIEW-20261107.md` — one planning campaign, four files, one revision, rights, exact quote/Order dependencies and contract approval checklist.
+- `ALPHA-346-MANUAL-SERVICE-REFUND-CANCELLATION-REVIEW-20261107.md` — proposed full refund before work begins, proposed itemized after-start remedies, with policy decisions still open.
+- `ALPHA-346-PAID-SERVICE-PRIVACY-REVIEW-20261107.md` — paid-service data categories, existing Supabase/GoHighLevel/Gmail processing, retention and jurisdiction decisions.
+The older general commercial-policy drafts remain broader; do not treat them or these new planning-only drafts as effective. Approve signed versions, support monitoring, seller jurisdiction and fee/tax allocation first. **PAYMENT_BLOCKED**.
+
 ## Legal/finance versions — separately sign and publish only after approval
 - Final paid-service Terms version, effective date, reviewer, location: ____________________
 - Final refund/cancellation/dispute policy version, effective date, reviewer, location: ____________________
