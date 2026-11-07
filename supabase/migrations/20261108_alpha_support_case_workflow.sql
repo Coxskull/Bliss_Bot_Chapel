@@ -115,6 +115,14 @@ BEGIN
  IF NOT FOUND THEN RETURN false; END IF;
  IF p_owner_user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM auth.users WHERE id=p_owner_user_id)
  THEN RAISE EXCEPTION 'Assigned owner must exist'; END IF;
+ -- Prevent silent takeover: only the current owner can change an owned case,
+ -- and an unassigned case can only be claimed by the acting human.
+ IF c.owner_user_id IS NOT NULL AND
+    (c.owner_user_id IS DISTINCT FROM p_actor_user_id OR
+     p_owner_user_id IS DISTINCT FROM c.owner_user_id)
+ THEN RAISE EXCEPTION 'Only the assigned human may update this case'; END IF;
+ IF c.owner_user_id IS NULL AND p_owner_user_id IS DISTINCT FROM p_actor_user_id
+ THEN RAISE EXCEPTION 'Unassigned cases must be claimed by the acting operator'; END IF;
  IF p_status NOT IN ('OPEN','TRIAGED','IN_REVIEW','AWAITING_CUSTOMER','RESOLVED','CLOSED')
  OR NOT (p_status = c.status
    OR (c.status='OPEN' AND p_status IN ('TRIAGED','IN_REVIEW'))
@@ -149,6 +157,38 @@ END;
 $$;
 REVOKE EXECUTE ON FUNCTION public.alpha_support_transition(uuid,text,uuid,text,uuid) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.alpha_support_transition(uuid,text,uuid,text,uuid) TO service_role;
+-- Explicit self-claim is serialized by a case-level row lock, returns false
+-- when occupied, and is idempotent for a repeat by the same owner.
+-- The private Edge handler must first verify JWT, MFA level and exact roster.
+CREATE FUNCTION public.alpha_support_claim(
+ p_case_id uuid, p_actor_user_id uuid
+) RETURNS boolean LANGUAGE plpgsql SECURITY INVOKER
+SET search_path=pg_catalog AS $
+DECLARE c public.alpha_support_cases%ROWTYPE;
+BEGIN
+ IF p_actor_user_id IS NULL OR NOT EXISTS (
+   SELECT 1 FROM auth.users WHERE id=p_actor_user_id
+ ) THEN RAISE EXCEPTION 'Verified human operator required'; END IF;
+ SELECT * INTO c FROM public.alpha_support_cases WHERE case_id=p_case_id FOR UPDATE;
+ IF NOT FOUND THEN RETURN false; END IF;
+ IF c.owner_user_id=p_actor_user_id AND c.status='TRIAGED'
+ THEN RETURN true; END IF;
+ IF c.owner_user_id IS NOT NULL OR c.status<>'OPEN'
+ THEN RETURN false; END IF;
+ UPDATE public.alpha_support_cases
+ SET owner_user_id=p_actor_user_id,status='TRIAGED',updated_at=clock_timestamp()
+ WHERE case_id=p_case_id;
+ INSERT INTO public.alpha_support_case_events
+ (case_id,action,status,owner_user_id,actor_user_id,summary)
+ VALUES (p_case_id,'ASSIGNED','TRIAGED',p_actor_user_id,p_actor_user_id,
+         'Human operator acknowledged case; no external notification');
+ RETURN true;
+END;
+$;
+REVOKE EXECUTE ON FUNCTION public.alpha_support_claim(uuid,uuid)
+ FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.alpha_support_claim(uuid,uuid) TO service_role;
+
 REVOKE EXECUTE ON FUNCTION public.alpha_support_on_intake() FROM PUBLIC,anon,authenticated;
 
 -- Reuse the existing durable HighLevel outbox for NON-SENSITIVE support only.
