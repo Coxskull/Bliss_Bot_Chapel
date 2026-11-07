@@ -1,5 +1,5 @@
 # ALPHA-346 — first-customer manual operating procedure and Stripe readiness
-**Status:** OFFLINE WORKFLOW READY FOR OPERATOR REVIEW; PAYMENT NOT ENABLED
+**Status:** OFFLINE WORKFLOW READY FOR OPERATOR REVIEW; internal USD $50–$1,000 price band approved (2026-11-07), exact quote/terms/Stripe not approved; PAYMENT NOT ENABLED
 **Directive:** ALPHA-FIRST-CUSTOMER-LAUNCH-346 | **Extra spend:** $0 | **Global STOP:** ENGAGED
 
 ## Exact existing public path
@@ -41,6 +41,8 @@ Read the existing `docs/stripe/CAPTAIN-APPROVAL-PACKET-20261106.md`, `docs/strip
 | Secure Stripe invoice/Checkout test-mode and receipts/refunds/who may operate | **UNVERIFIED/NOT ENABLED** | Stripe account/test mode eligibility & private test acceptance, no real card charges |
 | Processor/webhook/payment reconciliation if automated | **NOT REQUIRED FOR THIS INQUIRY-ONLY LAUNCH** | Required only before automated settlement/fulfillment, not to receive inquiries |
 | Creator rights, booking, media inventory, campaign delivery | **NOT REQUIRED FOR PLANNING ONLY** | Mandatory for a separately sold placement service |
+
+**Owner pricing decision (2026-11-07):** For this human-delivered planning service only, individually quote **USD $50.00–$1,000.00 inclusive**. This is an internal allowed range, not a standing public price, customer-specific approval, invoice, authority for payment, creator fee or advertised media-placement package. The amount inside that band, taxes, payment schedule and recipient/merchant must be approved for each actual order.
 
 ### Mandatory approvals for first *paid* manual Order
 1. Captain approves one planning service and actual per-order price, currency/tax, deliverables, start/delivery dates, revision and ownership terms.
