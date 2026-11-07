@@ -1,7 +1,7 @@
 -- Disposable PostgreSQL17 CI fixture only. DO NOT apply to any ALPHA project.
 CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;
-CREATE ROLE service_role NOLOGIN;
+CREATE ROLE service_role NOLOGIN BYPASSRLS; -- real Supabase hosted service_role has rolbypassrls=true
 CREATE SCHEMA auth;
 CREATE TABLE auth.users(id uuid PRIMARY KEY);
 CREATE TABLE public.alpha_public_intake_requests(
