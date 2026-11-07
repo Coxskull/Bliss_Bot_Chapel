@@ -49,22 +49,25 @@ BEGIN
 END;
 $task21_alert_check$;
 
--- A genuine *restricted* service_role may create high-severity intents, but
--- cannot mark them delivered, delete them or expose them to a browser.
+-- CI's minimal public-intake fixture intentionally does not grant
+-- service_role intake INSERT (unlike the real Supabase staging baseline).
+-- Create the fictional intake as the CI fixture owner, THEN prove the alert
+-- is visible to restricted service_role and cannot be falsified by it.
+INSERT INTO public.alpha_public_intake_requests
+  (request_key,kind,full_name,email,description,category,notice_version,
+   marketing_opt_in)
+VALUES (gen_random_uuid(),'support','SYNTHETIC ALERT RECEIPT ONLY',
+ 'task21-alert-ci@example.invalid','Fictional verification - no contact',
+ 'security_incident','AGM-SUPPORT-2026-11-08',false);
 SET ROLE service_role;
 DO $task21_alert_role$
-DECLARE ref uuid; aid uuid; denied boolean:=false;
+DECLARE aid uuid; denied boolean:=false;
 BEGIN
- INSERT INTO public.alpha_public_intake_requests
-   (request_key,kind,full_name,email,description,category,notice_version,
-    marketing_opt_in)
- VALUES (gen_random_uuid(),'support','SYNTHETIC ALERT RECEIPT ONLY',
-  'task21-alert-ci@example.invalid','Fictional verification - no contact',
-  'security_incident','AGM-SUPPORT-2026-11-08',false)
- RETURNING id INTO ref;
  SELECT a.alert_id INTO aid FROM public.alpha_support_alert_intents a
  JOIN public.alpha_support_cases c ON c.case_id=a.case_id
- WHERE c.request_id=ref AND a.delivery_state='UNROUTED';
+ JOIN public.alpha_public_intake_requests r ON r.id=c.request_id
+ WHERE r.email='task21-alert-ci@example.invalid'
+   AND a.delivery_state='UNROUTED';
  IF aid IS NULL THEN RAISE EXCEPTION 'Service role incident did not record intent'; END IF;
  BEGIN
    UPDATE public.alpha_support_alert_intents
