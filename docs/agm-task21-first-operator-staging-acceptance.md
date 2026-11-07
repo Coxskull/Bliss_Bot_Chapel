@@ -8,7 +8,7 @@
 
 ## 1. Hard gate: select a genuinely isolated Auth + database target
 
-The connected Supabase inventory currently shows projects named `Alpha`, `Alpha Lead Generation`, and `Bliss Bot`. A name alone **does not prove** a project is an approved disposable staging target. Existing project `bkutbglzivfdnoerigyb` holds the current Bliss Bot live intake/function footprint and **must not** be used for Task #21 operator creation, enrollment, role-roster edits, migration, or synthetic case writes under this directive. An in-memory mocked browser plus disposable CI PostgreSQL is already available and is the only currently verified write-safe acceptance target.
+The existing persistent Supabase development branch `alpha-first-five-staging` (`wdlmcriajgsretgyusmo`, parent `yyesqcyjhqjryaskrqip`) has now been independently identified. On November 8, 2026, the **actual Task #21 SQL migration and synthetic assertions PASSED in that hosted PostgreSQL 17 branch inside a rolled-back transaction**, with independent verification that the public support/intake tables remained absent, public function/table counts were unchanged, Auth user count stayed at three, and the migration list remained at 52. See [staging rollback evidence](agm-task21-staging-rollback-acceptance-20261108.md). This is a verified **rollback-only SQL testing target**, not yet an authorized persistent support-hosting or Auth-enrollment target. The branch holds separate `alpha_factory` and `alpha_prototype` data and lacks the Bliss Bot public intake prerequisite. Live Bliss Bot project `bkutbglzivfdnoerigyb` remains explicitly forbidden for Task #21 staging writes.
 
 Before any hosted sign-in test, obtain separate written evidence that the existing resource is isolated, has synthetic-only data, has a tested rollback point, and is eligible for Auth enrollment. The current dashboard's `safeOperatorConfig` pins the existing Bliss Bot URL; it **must be pointed only at a separately verified approved isolated target** in a reviewed later change, not overridden ad hoc in a live config.
 
@@ -32,7 +32,7 @@ The operator must approve a monitored *existing* support mailbox/channel and nom
 
 - Source, JWT/role-scoped operator contracts, default deny, browser storage/DOM XSS restrictions, the service-only PostgreSQL RPC and denial of second operator takeover.
 - Eight fictional support categories persisted with receipt/event/outbox checks in disposable PostgreSQL 17; sensitive support excludes general CRM delivery.
-- Synthetic Chromium runs with all outbound calls intercepted: password sign-in, MFA challenge, role gating, immutable case history, a single human claim, blocked overwrite, closed-case readback and logout. New enrollment flow must additionally be verified on **the exact PR head**. A browser mock does not enroll a real staff account.
+- Synthetic Chromium runs with all outbound calls intercepted: password sign-in, MFA challenge, role gating, immutable case history, a single human claim, blocked overwrite, closed-case readback and logout. New enrollment flow must additionally be verified on **the exact PR head**. A browser mock does not enroll a real staff account. The real staging SQL transactional test also passed and rolled back; neither test is evidence of a persistent private support host.
 
 These tests **do not prove** human availability, mail delivery, Supabase-hosted migration, real Auth identity or live GHL acceptance.
 
@@ -54,7 +54,8 @@ These tests **do not prove** human availability, mail delivery, Supabase-hosted 
 | Gate | Evidence | Current result |
 | --- | --- | --- |
 | First operator named | User's self-nomination | NOMINATED (not yet Auth verified) |
-| Safe isolated target | Project/rollback owner approval | BLOCKED — not identified |
+| Existing SQL-only staging | Named Supabase branch, PG17 rollback test and independent schema readback | PASS — transaction-only test |
+| Persistent hosted/identity target | Verified rollback/backup, privacy/scope and owner approval | BLOCKED — not cleared for persistent support/real Auth writes |
 | First Auth account / TOTP | Operator uses approved isolated host | NOT EXECUTED |
 | Server-only role roster / AAL2 | Admin configuration and denied/allowed reads | NOT EXECUTED |
 | Offline source, DB, browser | GitHub Actions exact-head results | PREVIOUS PASS; enrollment revision pending |
