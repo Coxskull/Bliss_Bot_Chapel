@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import {handleAskAlpha,validateAskAlpha,calculateLunaUsd,askAlphaConfiguration} from
+import {readFileSync} from "node:fs";
+import {handleAskAlpha,validateAskAlpha,calculateLunaUsd,readBoundedProviderJson,askAlphaConfiguration} from
   "../supabase/functions/alpha-public-intake/ask-alpha.mjs";
 // No API, Supabase, CRM, or real visitor calls. Exact Task20 branch mock smoke.
 const session_id="00000000-0000-4000-8000-000000000001";
@@ -12,7 +13,7 @@ const payload={action:"ask_alpha",session_id,request_key,
 const out=(_origin,data,status=200)=>new Response(JSON.stringify(data),{status,
  headers:{"Content-Type":"application/json"}});
 const req=new Request("https://example.org",{
- headers:{"x-forwarded-for":"203.0.113.9"}});
+ headers:{"cf-connecting-ip":"203.0.113.9"}});
 function setup(overrides={}) {
  let providerCalls=0, reserveCalls=0, settleCalls=0, lastSettle=null, providerBody=null;
  const client={rpc:async(name,args)=>{
@@ -30,7 +31,7 @@ function setup(overrides={}) {
   providerCalls++;
   providerBody=JSON.parse(options.body);
   return overrides.provider ?? new Response(JSON.stringify({
-    id:"resp_synthetic_test",model:"gpt-6-luna",status:"completed",
+    id:"resp_synthetic_test",model:"gpt-6-luna",service_tier:"default",status:"completed",
     output:[{type:"message",content:[{type:"output_text",text:"An advertiser can submit an interest inquiry for human review."}]}],
     usage:{input_tokens:100,output_tokens:40,input_tokens_details:{cached_tokens:0}}
   }),{status:200,headers:{"Content-Type":"application/json"}});
@@ -82,12 +83,13 @@ assert.throws(()=>calculateLunaUsd({input_tokens:100}),/UNVERIFIED/);
  assert.equal(s.stats().providerCalls,1);assert.equal(s.stats().settleCalls,1);
  assert.equal(s.stats().lastSettle.p_state,"SETTLED");
  assert.equal(s.stats().providerBody.store,false);
+ assert.equal(s.stats().providerBody.service_tier,"default");
  assert.deepEqual(s.stats().providerBody.tools,[]);
  assert.equal(s.stats().providerBody.max_output_tokens,400);
 }
 {
  const s=setup({provider:new Response(JSON.stringify({
-    id:"resp_bad_usage",model:"gpt-6-luna",status:"completed",
+    id:"resp_bad_usage",model:"gpt-6-luna",service_tier:"default",status:"completed",
     output:[{type:"message",content:[{type:"output_text",text:"An answer"}]}]
   }),{status:200})});
  const res=await handleAskAlpha(s.input);
@@ -104,5 +106,37 @@ assert.throws(()=>calculateLunaUsd({input_tokens:100}),/UNVERIFIED/);
  const s=setup({reserve:{data:[{receipt_id,state:"RESERVED",is_replay:true}],error:null}});
  const res=await handleAskAlpha(s.input);
  assert.equal(res.status,409);assert.equal(s.stats().providerCalls,0);
+}
+
+{
+ // Spoofed client XFF cannot substitute for the documented managed gateway
+ // identity; host-level header overwrite still requires independent proof.
+ const s=setup({req:new Request("https://example.org",{headers:{"x-forwarded-for":"203.0.113.9"}})});
+ const res=await handleAskAlpha(s.input);
+ assert.equal(res.status,503); assert.equal(s.stats().reserveCalls,0);
+}
+{
+ const s=setup({provider:new Response(JSON.stringify({
+   id:"resp_wrong_tier",model:"gpt-6-luna",service_tier:"priority",status:"completed",
+   output:[{type:"message",content:[{type:"output_text",text:"Any answer"}]}],
+   usage:{input_tokens:100,output_tokens:40}
+ }),{status:200})});
+ const res=await handleAskAlpha(s.input);
+ assert.equal(res.status,503);
+ assert.equal(s.stats().lastSettle.p_state,"UNKNOWN");
+}
+{
+ // Force a chunked response with no Content-Length: fail BEFORE allocating
+ // an arbitrary-sized response or reporting it as a free failed request.
+ const oversized=await readBoundedProviderJson(new Response("a".repeat(30001))).then(
+   () => false,e => e.message==="PROVIDER_RESPONSE_TOO_LARGE");
+ assert.equal(oversized,true);
+}
+{
+ const browser=readFileSync(new URL("../frontend/public/wedding-planner.js",import.meta.url),"utf8");
+ assert.ok(browser.includes('/(?:\\+?\\d[ -]?){8,}/.test(cleaned)'),
+   "Public contact-detail guard must preserve regex escapes");
+ assert.ok(/(?:\+?\d[ -]?){8,}/.test("09171234567"));
+ assert.ok(!/(?:\+?\d[ -]?){8,}/.test("three hundred"));
 }
 console.log("TASK20_ASK_ALPHA_OFFLINE_CONSENT_BUDGET_RECEIPT_PASS");
