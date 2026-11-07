@@ -2,6 +2,7 @@ using System.Text.Json;
 using Bliss.Domain.AdvertisingRealEstate;
 using Bliss.Domain.CreativeAcademy;
 using Bliss.Domain.Entities;
+using Bliss.Domain.Demonstrations;
 
 // Directive 345: deterministic fictional customer conversation traces only.
 // This runner must never connect to production, read private customer data,
@@ -172,6 +173,23 @@ if (creativeQaCases[0].output.BrandStatus != CommercialCreativeQaGate.Passed
         || x.output.Delivery != "NOT_SENT"))
     throw new InvalidOperationException("Creative source fixture unexpectedly authorized external use.");
 
+// Proposed stage is deliberately DISPLAY_VERIFIED, but the resulting
+// immutable receipt records NOT_VERIFIED and zero actual observations.
+var premium = conversations.Single(x => x.caseId == "T02");
+var syntheticDeliveryReceipts = new[]
+{
+    SyntheticCommercialDeliveryEvidence.Simulate(
+        premium.review.ProductReview
+            ?? throw new InvalidOperationException("Missing fictional premium retrieval."),
+        creativeQaCases[0].output, "FICTIONAL_CREATOR",
+        "FICTIONAL_ADVERTISER", 15, 5, "DISPLAY_VERIFIED")
+};
+if (syntheticDeliveryReceipts.Any(x => x.ActualDisplayVerified
+    || x.RealObservedOccurrences != 0 || x.ReservationAuthorized
+    || x.PaymentAuthorized || x.ExternalUseAuthorized
+    || x.DeliveryStatus != "NOT_SENT"))
+    throw new InvalidOperationException("Synthetic delivery receipt falsely asserted real evidence.");
+
 var evidence = new
 {
     schema = "ALPHA-345-OFFLINE-COMMERCIAL-TRANSCRIPT/V1",
@@ -186,6 +204,7 @@ var evidence = new
     economicsQuoteStatus = "PRICING_UNAVAILABLE",
     creativeQaStatus = "SEPARATE_SYNTHETIC_BRAND_AND_QUALITY_GATES",
     creativeQaCases,
+    syntheticDeliveryReceipts,
     deliveryStatus = "NOT_SENT",
     outreachAuthorized = false,
     reservationAuthorized = false,
@@ -199,5 +218,6 @@ Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
 File.WriteAllText(destination, JsonSerializer.Serialize(evidence, new JsonSerializerOptions { WriteIndented = true }));
 Console.WriteLine("AGM345_OFFLINE_TRANSCRIPT_RECORDED cases=" + conversations.Length
     + " creative_cases=" + creativeQaCases.Length
+    + " synthetic_receipts=" + syntheticDeliveryReceipts.Length
     + " commercial_authority=false delivery=NOT_SENT pricing=PRICING_UNAVAILABLE");
 return 0;
