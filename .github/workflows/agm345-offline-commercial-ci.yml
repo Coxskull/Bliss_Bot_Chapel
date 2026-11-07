@@ -14,6 +14,7 @@ on:
       - 'assets/alpha-prototypes/advertising-real-estate/AGM345-OFFLINE-ASSET-EVIDENCE.tsv'
       - 'docs/launch/ALPHA-345-OFFLINE-COMMERCIAL-SLICE.md'
       - 'tools/AGM345.OfflineProbe/**'
+      - 'tools/AGM345.ProductFactory/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -45,10 +46,20 @@ jobs:
           grep -Fq '"CanStatePriceToCustomer": false' AGM345Results/agm345-synthetic-conversations.json
           grep -Fq '"RealProductBindingVerified": false' AGM345Results/agm345-synthetic-conversations.json
           grep -Fq '"economicsQuoteStatus": "PRICING_UNAVAILABLE"' AGM345Results/agm345-synthetic-conversations.json
+      - name: Produce a finished fictional advertisement using installed local FFmpeg
+        run: |
+          command -v ffmpeg
+          command -v ffprobe
+          python3 tools/AGM345.ProductFactory/produce.py --output-dir AGM345Results/final-product
+          python3 tools/AGM345.ProductFactory/verify_product.py --product-dir AGM345Results/final-product
+          test -s AGM345Results/final-product/orchid-roast-creator-overlay.mp4
+          test -s AGM345Results/final-product/orchid-roast-ad-poster.png
+          test -s AGM345Results/final-product/product-receipt.json
       - name: Fail closed if suite produced no test artifact
         run: |
           test -s AGM345Results/agm345-contract.trx
           test -s AGM345Results/agm345-synthetic-conversations.json
+          test -s AGM345Results/final-product/product-receipt.json
           echo 'AGM345_OFFLINE_SOURCE_ONLY — NO CUSTOMER QUOTES, OUTREACH, RESERVATIONS, PRODUCTION DB OR DELIVERY'
       - uses: actions/upload-artifact@v4
         if: always()
@@ -57,5 +68,15 @@ jobs:
           path: |
             AGM345Results/*.trx
             AGM345Results/*.json
+          if-no-files-found: warn
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: agm345-finished-demo-product-${{ github.run_id }}
+          path: |
+            AGM345Results/final-product/*.mp4
+            AGM345Results/final-product/*.png
+            AGM345Results/final-product/*.json
           if-no-files-found: warn
           retention-days: 7
