@@ -7,6 +7,6 @@ import { createReviewHandler } from "./http-handler.mjs";
 // All access, origin, AAL2, live-session and source-query gates are exercised
 // by the same HTTP handler used in offline negative security CI tests.
 Deno.serve(createReviewHandler({
-  getEnv: name => Deno.env.get(name),
+  getEnv: (name: string) => Deno.env.get(name),
   createClient
 }));
