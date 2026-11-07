@@ -13,7 +13,8 @@ function sync() {
   $("#resume").disabled = busy || !$("#brief").value;
   $("#reload").disabled = busy || !workspace;
   $("#demo-generate").disabled = busy || !session?.canWrite;
-  $("#composer-render").disabled = busy || stale || !history?.brief || (!session?.canWrite && !session?.advertiserId);\n  $("#ad-command-submit").disabled = busy || !session?.accessAllowed || (!session?.canWrite && !session?.advertiserId);
+  $("#composer-render").disabled = busy || stale || !history?.brief || (!session?.canWrite && !session?.advertiserId);
+  $("#ad-command-submit").disabled = busy || !session?.accessAllowed || (!session?.canWrite && !session?.advertiserId);
   $("#brief").disabled = busy;
 }
 function path() { return `/api/wedding-planner/workspaces/${workspace}/production`; }
