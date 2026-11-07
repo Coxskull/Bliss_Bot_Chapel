@@ -36,6 +36,8 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.alpha_support_cases WHERE
    category='security_incident' AND assigned_role='SECURITY_REVIEW' AND status='OPEN')
  THEN RAISE EXCEPTION 'Critical security escalation not queued'; END IF;
+ IF has_table_privilege('service_role','public.alpha_support_case_events','DELETE')
+ THEN RAISE EXCEPTION 'Service role may not directly delete support history'; END IF;
  IF has_table_privilege('anon','public.alpha_support_cases','SELECT')
  OR has_table_privilege('authenticated','public.alpha_support_case_events','SELECT')
  OR has_function_privilege('anon',
@@ -65,9 +67,12 @@ BEGIN
  BEGIN UPDATE public.alpha_support_case_events SET summary='tampered' WHERE case_id=case_ref;
  EXCEPTION WHEN others THEN v_failed:=true; END;
  IF NOT v_failed THEN RAISE EXCEPTION 'History immutability failed'; END IF;
- v_failed:=false;
- BEGIN DELETE FROM public.alpha_support_case_events WHERE case_id=case_ref;
- EXCEPTION WHEN others THEN v_failed:=true; END;
- IF NOT v_failed THEN RAISE EXCEPTION 'History delete guard failed'; END IF;
+ -- The existing 90-day intake cleanup must be able to purge a case and
+ -- dependent history together, without exposing direct service-role DELETE.
+ DELETE FROM public.alpha_public_intake_requests
+ WHERE id=(SELECT request_id FROM public.alpha_support_cases WHERE category='general');
+ IF (SELECT count(*) FROM public.alpha_support_cases)<>7
+ OR (SELECT count(*) FROM public.alpha_support_case_events WHERE action='CREATED')<>7
+ THEN RAISE EXCEPTION 'Retention cascade not viable'; END IF;
  RAISE NOTICE 'TASK21 ISOLATED PG17 PASS: 8 cases, 9 receipts, 4 CRM outbox rows, protected escalation, durable transitions and immutable history';
 END;$$;
