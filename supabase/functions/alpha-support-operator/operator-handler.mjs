@@ -82,11 +82,15 @@ export async function handleOperatorRequest(req,db,env) {
       return response({case:ticket,contact:intake.data,events:events.data||[],
         history_limit:100},200,allowOrigin);
     }
+    const pageRaw=url.searchParams.get("page")||"0";
+    if (!/^(0|[1-9][0-9]{0,2})$/.test(pageRaw) || Number(pageRaw)>100)
+      return response({error:"Invalid queue page"},400,allowOrigin);
+    const page=Number(pageRaw);
     const listed=await db.from("alpha_support_cases").select(fields)
       .in("assigned_role",roles).in("status",["OPEN","TRIAGED","IN_REVIEW","AWAITING_CUSTOMER"])
-      .order("created_at",{ascending:true}).limit(20);
+      .order("created_at",{ascending:true}).range(page*20,page*20+19);
     if (listed.error) return response({error:"Operator queue unavailable"},503,allowOrigin);
-    return response({cases:listed.data||[],limit:20,visible_roles:roles},200,allowOrigin);
+    return response({cases:listed.data||[],page,page_size:20,visible_roles:roles},200,allowOrigin);
   }
   // Read-only by default, even with a valid operator login.
   if (env.get("ALPHA_SUPPORT_MUTATIONS_ENABLED")!=="true")
