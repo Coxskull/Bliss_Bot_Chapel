@@ -31,7 +31,7 @@ Scope signatory: ____________________  Date: ______________
 - Cancellation before start / after start / nonperformance remedy: ____________________
 
 ## Paid customer support — mandatory before accepting payment
-- Customer support contact (email/telephone/protected support form): ____________________
+- Customer support contact (Captain-designated): **alpha7media@gmail.com** — address NOMINATED, inbound receipt and operator monitoring **NOT YET VERIFIED**.
 - Inbound test date and proof reference (no customer personal data): ____________________
 - Monitoring operator and escalation owner: ____________________
 - Published route and expected response/complaint handling standard: ____________________
