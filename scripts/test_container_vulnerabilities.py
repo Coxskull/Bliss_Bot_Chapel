@@ -1,8 +1,13 @@
 """Reject false-clean evidence, stale databases, and cross-image audit reports."""
 import copy
 import datetime as dt
+import hashlib
+import io
+import json
 from pathlib import Path
 import runpy
+import tarfile
+import tempfile
 import unittest
 
 gate = runpy.run_path(str(Path(__file__).with_name("audit-container-vulnerabilities.py")))
@@ -51,6 +56,44 @@ class VulnerabilityEvidenceTests(unittest.TestCase):
             report = copy.deepcopy(self.report());change(report)
             with self.assertRaises(ValueError):
                 gate["summarize"](report, IMAGE)
+
+    def test_scanner_uses_exact_local_image_digest_and_still_rejects_mismatch(self):
+        source = Path(__file__).with_name("audit-container-vulnerabilities.py").read_text()
+        self.assertIn('image_id = image["Id"]', source)
+        self.assertIn('run([*docker, "image", "save", "--output", str(archive), image_id]', source)
+        self.assertIn('report = run(scanner + ["docker:" + image_id, "--output", "json"]', source)
+        self.assertIn('archive_config_id = archive_config_image_id(archive)', source)
+        self.assertIn('counts, rows = summarize(report, archive_config_id)', source)
+        self.assertIn('get("userInput") != image_id', source)
+        self.assertIn('raise ValueError("Scanner target differs from the inspected immutable image")', source)
+        self.assertNotIn('report = run(scanner + ["docker-archive:"', source)
+
+    def test_saved_image_config_digest_is_derived_from_archive_bytes(self):
+        config = b'{"architecture":"amd64","os":"linux","rootfs":{"type":"layers"}}'
+        digest = "sha256:" + hashlib.sha256(config).hexdigest()
+
+        def make_archive(path, manifest):
+            with tarfile.open(path, mode="w") as out:
+                def add(name, data):
+                    item = tarfile.TarInfo(name)
+                    item.size = len(data)
+                    out.addfile(item, io.BytesIO(data))
+                add("manifest.json", json.dumps(manifest).encode())
+                add("config.json", config)
+
+        with tempfile.TemporaryDirectory() as d:
+            archive = Path(d) / "image.tar"
+            make_archive(archive, [{"Config": "config.json", "RepoTags": [], "Layers": []}])
+            self.assertEqual(gate["archive_config_image_id"](archive), digest)
+            make_archive(archive, [{"Config": "config.json"}, {"Config": "config.json"}])
+            with self.assertRaisesRegex(ValueError, "one platform manifest"):
+                gate["archive_config_image_id"](archive)
+            make_archive(archive, [{"Config": "../different-image.json"}])
+            with self.assertRaisesRegex(ValueError, "Unsafe"):
+                gate["archive_config_image_id"](archive)
+            make_archive(archive, [{"Config": "missing.json"}])
+            with self.assertRaises(ValueError):
+                gate["archive_config_image_id"](archive)
 
     def test_no_matches_never_grants_vulnerability_or_release_acceptance(self):
         report = self.report();report["matches"] = []
