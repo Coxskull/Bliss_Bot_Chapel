@@ -1,6 +1,6 @@
 using Bliss.Domain.CreativeAcademy;
 
-namespace Bliss.Tests.CreativeAcademy;
+namespace Bliss.Tests.Alpha345;
 
 public sealed class Alpha345IndependentQualityTests
 {
