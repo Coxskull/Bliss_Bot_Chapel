@@ -31,8 +31,8 @@ Scope signatory: ____________________  Date: ______________
 - Cancellation before start / after start / nonperformance remedy: ____________________
 
 ## Paid customer support — mandatory before accepting payment
-- Customer support contact (Captain-designated): **dejesuserwin1@gmail.com** — exact Gmail account identity confirmed by the connected Gmail profile on 2026-11-07. Dedicated customer-support monitoring, response procedure, and controlled incoming/reply test **NOT YET VERIFIED**; this designation alone does not approve payments.
-- Inbound test date and proof reference (no customer personal data): ____________________
+- Customer support contact (Captain-designated): **dejesuserwin1@gmail.com** — exact Gmail account identity confirmed by the connected Gmail profile on 2026-11-07. Controlled outbound/inbound test with a separately authorized noncustomer mailbox **VERIFIED 2026-11-07**; dedicated support monitoring, response procedure, backups and escalation **NOT YET VERIFIED**. The test does not approve payments.
+- Inbound test date and proof reference (no customer personal data): **2026-11-07, ALPHA-346 external two-way email test PASS; check the restricted original email thread.**
 - Monitoring operator and escalation owner: ____________________
 - Published route and expected response/complaint handling standard: ____________________
 **Important:** `support@alphacreativecontent.com` is an UNVERIFIED candidate from earlier drafts; do not claim it exists or is monitored.
