@@ -89,17 +89,25 @@ public static class SupabaseOidc
             && auth.ApprovedCreatorSubjects.Contains(subject, StringComparer.Ordinal);
         var approvedAdvertiser = auth.Enabled && auth.SupabaseEnabled && auth.AdvertiserSelfServiceRequested
             && auth.ApprovedAdvertiserSubjects.Contains(subject, StringComparer.Ordinal);
+        var pendingAdvertiserRegistration = auth.Enabled && auth.SupabaseEnabled
+            && auth.AdvertiserRegistrationRequested
+            && !auth.ApprovedTestSubjects.Contains(subject, StringComparer.Ordinal)
+            && !auth.ApprovedCreatorSubjects.Contains(subject, StringComparer.Ordinal)
+            && !auth.ApprovedAdvertiserSubjects.Contains(subject, StringComparer.Ordinal);
 
         // The creator lane is deliberately disjoint from privileged test/staff
         // subjects. A missing allowlist, disabled flag, or accidental overlap
         // cannot silently turn a CRM lead into an authenticated account.
-        if ((approvedTest ? 1 : 0) + (approvedCreator ? 1 : 0) + (approvedAdvertiser ? 1 : 0) != 1)
+        if ((approvedTest ? 1 : 0) + (approvedCreator ? 1 : 0) + (approvedAdvertiser ? 1 : 0)
+            + (pendingAdvertiserRegistration ? 1 : 0) != 1)
             throw new SecurityTokenValidationException("Unapproved identity.");
 
         foreach (var claim in identity.Claims.Where(c => c.Type == auth.RoleClaimType
             || c.Type == ClaimTypes.Role || c.Type == auth.AdvertiserIdClaimType
             || c.Type == BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType
+            || c.Type == BlissAuthenticationOptions.AdvertiserRegistrationPendingMarkerClaimType
             || c.Type == auth.ReviewerWorkspaceClaimType
+            || (pendingAdvertiserRegistration && (c.Type == "role" || c.Type == "roles"))
             || ((approvedCreator || approvedAdvertiser) && (c.Type == auth.CreatorIdClaimType
                 || c.Type == "role" || c.Type == "roles"))).ToArray())
             identity.RemoveClaim(claim);
@@ -188,6 +196,34 @@ public static class SupabaseOidc
                 ClaimValueTypes.String, auth.Authority));
             identity.AddClaim(new Claim(BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType, "true",
                 ClaimValueTypes.Boolean, auth.Authority));
+            return;
+        }
+
+        if (pendingAdvertiserRegistration)
+        {
+            // Newly authenticated users receive a registration-only session.
+            // They must have a verified email and no issuer-stamped role or
+            // tenant scope; the request body and user_metadata cannot grant it.
+            var pendingEmail = identity.FindAll("email_verified").ToArray();
+            if (metadataClaim is null || pendingEmail.Length != 1
+                || !string.Equals(pendingEmail[0].Value, "true", StringComparison.OrdinalIgnoreCase))
+                throw new SecurityTokenValidationException("Advertiser registration identity is incomplete.");
+
+            using var pendingDocument = JsonDocument.Parse(metadataClaim.Value);
+            var pendingMetadata = pendingDocument.RootElement;
+            if (pendingMetadata.ValueKind != JsonValueKind.Object
+                || pendingMetadata.EnumerateObject().Any(property =>
+                    property.Name.Equals("bliss_roles", StringComparison.OrdinalIgnoreCase)
+                    || property.Name.Equals("bliss_advertiser_id", StringComparison.OrdinalIgnoreCase)
+                    || property.Name.Equals("bliss_advertiser_verified", StringComparison.OrdinalIgnoreCase)
+                    || property.Name.Equals("bliss_creator_id", StringComparison.OrdinalIgnoreCase)
+                    || property.Name.Equals("bliss_creator_verified", StringComparison.OrdinalIgnoreCase)
+                    || property.Name.Equals("bliss_review_workspace_ids", StringComparison.OrdinalIgnoreCase)))
+                throw new SecurityTokenValidationException("Advertiser registration identity is incomplete.");
+
+            identity.AddClaim(new Claim(
+                BlissAuthenticationOptions.AdvertiserRegistrationPendingMarkerClaimType,
+                "true", ClaimValueTypes.Boolean, auth.Authority));
             return;
         }
 
