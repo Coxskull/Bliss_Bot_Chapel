@@ -6,6 +6,8 @@ on:
       - 'Bliss.Tests/AdvertisingRealEstate/PodcastAdvertisingGeometryTests.cs'
       - 'assets/alpha-prototypes/advertising-real-estate/ALPHA-Composer-Quality-357-Offline.html'
       - 'scripts/alpha357-composer-geometry.test.mjs'
+      - 'scripts/alpha357_verify_rendered_video.py'
+      - 'scripts/test_alpha357_rendered_video_gate.py'
       - '.github/workflows/alpha357-geometry-quality.yml'
 permissions:
   contents: read
@@ -22,3 +24,5 @@ jobs:
           node-version: '22'
       - name: Verify exact pixel partition, alignment, no gaps or overlaps, no creator intrusion
         run: node --test scripts/alpha357-composer-geometry.test.mjs
+      - name: Verify pixel-video gate rejects historical gaps, overlaps and missing panels
+        run: python3 -m unittest discover -s scripts -p test_alpha357_rendered_video_gate.py -v
