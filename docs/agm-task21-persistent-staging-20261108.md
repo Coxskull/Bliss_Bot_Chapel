@@ -32,6 +32,16 @@ The existing `bliss-bot` Vercel project `prj_bWOvwDWg3zDXoduS1utRwKnYautF` belon
 
 **Vercel rejected an explicit PREVIEW deployment with HTTP 402 `api-deployments-free-per-day`: more than 100 API deployments in the rolling daily window; retry after 86400 seconds.** The existing subscription was not upgraded and the production alias was not changed. Consequently **NO new Task21 private preview was successfully deployed or verified**. The prepared preview feature remains unserved and must pass an exact-head build and runtime security review after quota resets.
 
+## Protected-preview supply-chain and offline artifact acceptance
+
+The private Vercel Preview-only operator source now declares exact build-only dependencies in [the dedicated package manifest](../scripts/task21/private-preview-deps/package.json), with a **committed 41-entry npm v3 lockfile** containing `sha512` integrity digests for all packages. GitHub CI generated the first proposal as an isolated artifact and checked direct versions `@supabase/supabase-js@2.95.0` and `esbuild@0.25.12`. After review, the full resolved graph was committed to `scripts/task21/private-preview-deps/package-lock.json`.
+
+The [private preview builder](../scripts/task21/build-protected-staging-preview.cjs) now uses `npm ci` with the committed lock, verifies approved package source URLs/integrity, and rejects mismatched direct or transitive versions. The protected preview production guard, exact branch, HTTPS staging origin, explicit `mutationsEnabled:false`, no-store/CSP response headers, and exclusion of live Bliss Bot project and privileged API keys remain mandatory.
+
+**Actual GitHub Actions [Task21 focused run #42422220113](https://github.com/Coxskull/Bliss_Bot_Chapel/actions/runs/42422220113) passed all 3 jobs**, including building the protected preview **offline with a fictional publishable key**, verifying exact allowlisted assets, denying production mode, checking origin and source safety. The independent lock verification workflow was converted to test the committed lock with a clean `npm ci --ignore-scripts` and diff check.
+
+This proves CI packaging, **not Vercel delivery**. The team's `api-deployments-free-per-day` HTTP 402 remains the private preview hosting blocker. No attempt to bypass it through paid quota or deployment protection was authorized.
+
 ## Controlled rollback plan (not executed)
 
 A fail-closed, dependency-RESTRICT [staging-only rollback script](../scripts/task21/staging-only-safe-rollback.sql) exists in source. It refuses to run if there is any unexpected case/contact/CRM record or a factory schema count change. It must never be run on production. Dropping schema objects would still leave the Supabase migration ledger history and would require separate migration reconciliation. **No rollback was needed for the successful persistent staging migration.**
