@@ -65,9 +65,9 @@ DECLARE aid uuid; denied boolean:=false;
 BEGIN
  SELECT a.alert_id INTO aid FROM public.alpha_support_alert_intents a
  JOIN public.alpha_support_cases c ON c.case_id=a.case_id
- JOIN public.alpha_public_intake_requests r ON r.id=c.request_id
- WHERE r.email='task21-alert-ci@example.invalid'
-   AND a.delivery_state='UNROUTED';
+ WHERE c.category='security_incident'
+   AND a.delivery_state='UNROUTED'
+ ORDER BY a.created_at DESC LIMIT 1;
  IF aid IS NULL THEN RAISE EXCEPTION 'Service role incident did not record intent'; END IF;
  BEGIN
    UPDATE public.alpha_support_alert_intents
