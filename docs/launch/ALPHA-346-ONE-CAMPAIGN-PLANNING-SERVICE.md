@@ -21,7 +21,7 @@ Delivery format: electronic PDF or agreed editable document, plus a brief comple
 Brand or business name and authorized representative; campaign goal; market and audience; product description; permitted brand assets and substantiation for claims; target formats; any desired dates and constraints; preferred currency for a written custom quote. Do not request card numbers, IDs or passwords through public inquiry forms.
 
 ## Commercial limitations and customer terms
-- **Price, currency, taxes/fees and payment terms:** individually quoted and approved in a written Order before payment; **none is yet approved**. No public fixed rate or deposit is implied.
+- **Owner-approved quote band (2026-11-07):** **USD $50.00–$1,000.00 inclusive** for this **manual planning-only** service. This is an internal pricing range, **not a fixed price or a customer offer**. The exact amount for each advertiser must be selected and separately approved in a completed written Order. Tax treatment, processing fees, payment milestones, merchant eligibility, paid-service Terms/refunds/privacy and live payment release remain **unapproved**. Do not display automatic checkout or imply creator/media production is included.
 - **Delivery window:** stated in the final Order after scope and input review, **not** promised automatically from inquiry date.
 - **Start condition:** written approval by customer and ALPHA of the final Order, approved payment arrangement and other specified prerequisites. No work for hire begins from public inquiry alone.
 - **Customer duties:** accurate factual claims, rights to materials supplied, timely consolidated feedback and named approver.
@@ -41,4 +41,4 @@ Brand or business name and authorized representative; campaign goal; market and 
 - No automated factory, live payment, unauthorized outreach, production deployment or STOP bypass occurs.
 
 ## Scope of this authorization
-Directive 346 authorizes the one-service preparation and offline repairs, **not** a specific fee, legal-policy approval, Stripe activation, live invoice/payment, outreach, deployment or a customer order. Do not mark the commercial service ACTIVE FOR PAYMENT until the distinct release decisions are recorded.
+Directive 346 and the owner's 2026-11-07 follow-up approve only the **USD $50–$1,000 quote range**; they do **not** approve any exact customer fee, tax treatment, legal-policy version, Stripe activation, live invoice/payment, outreach, deployment or a customer order. Do not mark the commercial service ACTIVE FOR PAYMENT until the distinct release decisions are recorded.
