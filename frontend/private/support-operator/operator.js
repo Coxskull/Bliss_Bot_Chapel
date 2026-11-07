@@ -9,7 +9,7 @@ const el=id=>document.getElementById(id);
 const panels=["signin-panel","mfa-panel","workspace"];
 const status=el("status");
 let config=null,client=null,caseId=null,activeRoles=[],currentPage=0;
-let busy=false,queue=[],connected=false,hasMfa=false;
+let busy=false,queue=[],connected=false,hasMfa=false,mfaVerified=false;
 function show(id,visible){el(id).hidden=!visible;}
 function announce(text,error=false){
   status.textContent=String(text);
@@ -32,11 +32,12 @@ function hidePrivate(){
 }
 function setBusy(on){
   busy=Boolean(on);
-  for(const id of ["signin-button","mfa-button","mfa-cancel","refresh","signout","case-search-button"])
+  for(const id of ["signin-button","mfa-button","mfa-cancel","refresh","verify-mfa","signout","case-search-button"])
     el(id).disabled=busy;
   el("prev").disabled=busy||!connected||currentPage===0;
   el("next").disabled=busy||!connected||queue.length!==20||currentPage>=100;
   el("save").disabled=busy||!connected||!caseId||config?.mutationsEnabled!==true;
+  el("verify-mfa").hidden=!connected||!hasMfa||mfaVerified;
 }
 function requireConfig(){
   const cfg=safeOperatorConfig(window.ALPHA_SUPPORT_OPERATOR_CONFIG,location.origin);
@@ -107,7 +108,7 @@ async function loadQueue(page=0){
     const parsed=parseQueue(raw,page);
     queue=parsed.cases;activeRoles=parsed.roles;currentPage=page;
     connected=true;show("signin-panel",false);show("mfa-panel",false);
-    show("workspace",true);
+    show("workspace",true);show("verify-mfa",hasMfa&&!mfaVerified);
     el("connection").textContent="SIGNED IN · ROLE-SCOPED";
     renderQueue();
     announce("Case queue loaded. No automated notification or customer contact was triggered.");
@@ -184,6 +185,7 @@ async function signin(e){
       opt.textContent=factor.friendly_name||"Verified authenticator";el("factor").append(opt);
     }
     hasMfa=available.length>0;
+    mfaVerified=false;
     show("mfa-panel",hasMfa);
     verified=true;
     announce("Identity verified. Checking authorized support roles…");
@@ -200,14 +202,14 @@ async function mfa(e){
   try{
     const {error}=await client.auth.mfa.challengeAndVerify({factorId,code});
     if(error)throw Error("MFA not verified");
-    el("totp").value="";show("mfa-panel",false);
+    mfaVerified=true;el("totp").value="";show("mfa-panel",false);
     announce("Second factor verified. Loading permitted queues…");
   }catch{el("totp").value="";announce("MFA verification failed. No sensitive cases were revealed.",true);}
   finally{setBusy(false);}
   await loadQueue(0);
 }
 async function signout(){
-  if(busy)return;setBusy(true);hidePrivate();hasMfa=false;
+  if(busy)return;setBusy(true);hidePrivate();hasMfa=false;mfaVerified=false;
   try{await client.auth.signOut();}catch{/* cleared locally */}
   finally{setBusy(false);show("signin-panel",true);announce("Signed out; private case details cleared.");}
 }
@@ -243,6 +245,11 @@ function init(){
   el("next").addEventListener("click",()=>{if(queue.length===20)loadQueue(Math.min(100,currentPage+1));});
   el("signout").addEventListener("click",signout);
   el("mfa-cancel").addEventListener("click",signout);
+  el("verify-mfa").addEventListener("click",()=>{
+    if(busy||!hasMfa||mfaVerified)return;
+    show("workspace",false);show("mfa-panel",true);
+    announce("Complete MFA to unlock additional sensitive support roles.");
+  });
   el("case-search-form").addEventListener("submit",event=>{
     event.preventDefault();
     const id=el("case-search").value.trim();
