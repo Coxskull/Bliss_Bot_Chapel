@@ -29,12 +29,30 @@ if(typeof key!=="string"||!/^sb_publishable_[A-Za-z0-9_-]{12,}$/.test(key))
 // Existing preview deployments require Vercel Authentication: project SSO
 // setting is an operations gate checked via Vercel API before enabling.
 if(fs.existsSync(bundle)||fs.existsSync(output))fail("existing output unexpected");
+// Supply chain is pinned by a committed, audited transitive npm lock; no
+// network-time version resolution, no floating dependencies, no lock rewrite.
+const deps=path.join(root,"scripts/task21/private-preview-deps");
+const packageJson=JSON.parse(fs.readFileSync(path.join(deps,"package.json"),"utf8"));
+const lock=JSON.parse(fs.readFileSync(path.join(deps,"package-lock.json"),"utf8"));
+if(lock.lockfileVersion!==3||Object.keys(lock.packages||{}).length!==41||
+   packageJson.dependencies?.["@supabase/supabase-js"]!=="2.95.0"||
+   packageJson.dependencies?.esbuild!=="0.25.12"||
+   lock.packages?.["node_modules/@supabase/supabase-js"]?.version!=="2.95.0"||
+   lock.packages?.["node_modules/esbuild"]?.version!=="0.25.12")
+  fail("unexpected package versions or missing committed lockfile");
+for(const [name,pkg] of Object.entries(lock.packages)){
+  if(!name)continue;
+  if(!pkg.integrity?.startsWith("sha512-")||
+    !pkg.resolved?.startsWith("https://registry.npmjs.org/"))
+    fail("unapproved transitive package source or integrity: "+name);
+}
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),"task21-preview-sdk-"));
 try{
+  for(const filename of ["package.json","package-lock.json"])
+    fs.copyFileSync(path.join(deps,filename),path.join(tmp,filename),
+      fs.constants.COPYFILE_EXCL);
   cp.execFileSync(process.platform==="win32"?"npm.cmd":"npm",[
-    "install","--prefix",tmp,"--no-package-lock","--no-audit",
-    "--no-fund","--save-exact","@supabase/supabase-js@2.95.0",
-    "esbuild@0.25.12"
+    "ci","--prefix",tmp,"--no-audit","--no-fund"
   ],{cwd:root,timeout:150000,stdio:["ignore","pipe","pipe"]});
   cp.execFileSync(process.execPath,[
     path.join(root,"scripts/task21/build-private-operator.cjs")
