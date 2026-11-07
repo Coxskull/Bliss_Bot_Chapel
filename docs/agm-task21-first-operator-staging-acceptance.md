@@ -65,7 +65,7 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 | Offline source, DB, browser | Focused GitHub Actions and prior full CI | PASS on tested revisions; latest exact-head CI must still be checked |
 | PII-free incident alert intent | Staging migration #54, CRITICAL case, UNROUTED receipt, zero CRM row | PASS — internal DB receipt only |
 | Internal Gmail self-mailbox delivery | Task21 synthetic test message in owner's own SENT + INBOX; 07:24 PH | PASS — manual email test only |
-| Human incident alert acknowledgement | Operator replies `TASK21 STAGING ACK RECEIVED`; timestamped monitored test routing | PENDING — not fabricated |
+| Human internal test acknowledgement | Separate Gmail reply 2026-11-08 07:37:20 Asia/Manila, first line `TASK21 STAGING ACK RECEIVED` | PASS — MANUAL TEST ONLY; no automated alert or staffed coverage |
 | Hosted fictional intake and atomic receipt | 1 OPEN general case, one receipt and CREATED event; outbox BLOCKED | PASS — database path only |
 | Hosted restricted SQL claim and closure | Fictional Auth user, real service_role, five audit events; transaction rolled back | PASS — DATABASE ONLY |
 | Actual staff login, claim and resolution | Real Auth account, approved roster, private host, verified on-duty human | NOT EXECUTED |
@@ -78,3 +78,7 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 - The existing staging-only [alert-intent migration](../scripts/task21/staging-only-alert-intents.sql) is installed (migration #54), and a fictional CRITICAL security case has one `UNROUTED` receipt; not a real incident or notification. [Detailed DB/Gmail distinction](agm-task21-staging-alert-delivery-acceptance-20261108.md).
 - Exactly one manual self-addressed internal Gmail test message reached the same Gmail account's Inbox/Sent labels. The **database did not send that email**; the application alert state remains `UNROUTED`. Do not assert staff attendance or human acknowledgement based on Inbox delivery.
 - The nominated operator must respond personally to the subject `TASK21 STAGING INTERNAL CRITICAL ALERT DELIVERY TEST — SYNTHETIC — 2026-11-08` using `TASK21 STAGING ACK RECEIVED`. Only a subsequent genuine reply and timestamp can close this narrow human-response evidence item. Do not conflate that with a staffed 24/7 incident channel or the complete Task21 launch gate.
+
+## Verified manual human acknowledgement — 2026-11-08
+- The first operator's manually sent synthetic incident email in the connected Gmail inbox **has a real distinct reply** at **07:37:20 Asia/Manila**, containing exactly `TASK21 STAGING ACK RECEIVED`. This is independently verified, not a simulated reply. [Receipt ledger](agm-task21-staging-alert-delivery-acceptance-20261108.md).
+- **Complete only the manual test human ACK gate.** The database alert remains `UNROUTED`: there is no approved automated alert dispatcher, independently monitored primary/backup staff, or proof of 24/7 coverage. Do not mark Task21 complete or enable the server roster/mutations from this evidence.
