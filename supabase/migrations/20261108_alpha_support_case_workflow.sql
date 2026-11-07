@@ -163,7 +163,7 @@ GRANT EXECUTE ON FUNCTION public.alpha_support_transition(uuid,text,uuid,text,uu
 CREATE FUNCTION public.alpha_support_claim(
  p_case_id uuid, p_actor_user_id uuid
 ) RETURNS boolean LANGUAGE plpgsql SECURITY INVOKER
-SET search_path=pg_catalog AS $
+SET search_path=pg_catalog AS $support_claim_body$
 DECLARE c public.alpha_support_cases%ROWTYPE;
 BEGIN
  IF p_actor_user_id IS NULL OR NOT EXISTS (
@@ -184,7 +184,7 @@ BEGIN
          'Human operator acknowledged case; no external notification');
  RETURN true;
 END;
-$;
+$support_claim_body$;
 REVOKE EXECUTE ON FUNCTION public.alpha_support_claim(uuid,uuid)
  FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.alpha_support_claim(uuid,uuid) TO service_role;
