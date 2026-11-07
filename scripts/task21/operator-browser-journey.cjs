@@ -118,6 +118,8 @@ async function runScenario(browser, scenario) {
         return status(200,{committed:true,case_id:security.case_id,
           status:"TRIAGED",action:"CLAIM"});
       }
+      if(scenario==="backend-unavailable")
+        return status(503,{error:"Operator access not configured"});
       if(scenario==="unrostered"||
          (scenario==="sensitive-only" && !elevated))
         return status(403,{error:"Operator permission denied"});
@@ -167,7 +169,8 @@ async function runScenario(browser, scenario) {
     assert.equal(await page.locator("#enroll-secret").innerText(),"");
     assert.equal(await page.locator("#enroll-panel").isVisible(),false);
   }else{
-    if(scenario==="sensitive-only"||scenario==="unrostered"){
+    if(scenario==="sensitive-only"||scenario==="unrostered"||
+       scenario==="backend-unavailable"){
       await page.locator("#mfa-panel").waitFor({state:"visible"});
       assert.equal(await page.locator("#workspace").isVisible(),false);
     }else{
@@ -181,7 +184,7 @@ async function runScenario(browser, scenario) {
     }
     await page.locator("#totp").fill("123456");
     await page.locator("#mfa-button").click();
-    if(scenario==="unrostered"){
+    if(scenario==="unrostered"||scenario==="backend-unavailable"){
       await page.locator("#identity-panel").waitFor({state:"visible"});
       assert.equal(await page.locator("#identity-id").innerText(),uuid(99));
       assert.equal(await page.locator("#workspace").isVisible(),false);
@@ -256,6 +259,7 @@ async function runScenario(browser, scenario) {
     await runScenario(browser,"claim-enabled");
     await runScenario(browser,"enroll-first");
     await runScenario(browser,"unrostered");
+    await runScenario(browser,"backend-unavailable");
     console.log("TASK21_OPERATOR_BROWSER_PASS: synthetic staging Auth identity handoff for unrostered user; first-time MFA enrollment, sensitive role denial, self-claim, audit, logout, XSS and no network egress.");
   }finally{await browser.close();}
 })().catch(err=>{console.error(err);process.exitCode=1;});
