@@ -7,13 +7,13 @@ public sealed class PodcastAdvertisingGeometryTests
     [Theory]
     [InlineData(2, 2500, 7500)]
     [InlineData(4, 3333, 6667)]
-    [InlineData(6, 4740, 4792)]
+    [InlineData(6, 5208, 4792)]
     public void Canonical_layouts_have_correct_dimensions_and_calculated_area(
         int rectangleCount, int expectedAdCoverageBasisPoints, int expectedCreatorCoverageBasisPoints)
     {
         var layout = PodcastAdvertisingGeometry.Get(rectangleCount);
 
-        Assert.Equal("ARE-PODCAST-16X9-V2", layout.Version);
+        Assert.Equal("ARE-PODCAST-16X9-V3-QUALITY-357", layout.Version);
         Assert.Equal(1920, layout.CanvasWidth);
         Assert.Equal(1080, layout.CanvasHeight);
         Assert.Equal(rectangleCount, layout.RectangleCount);
@@ -43,7 +43,7 @@ public sealed class PodcastAdvertisingGeometryTests
             }
         }
 
-        Assert.InRange(totalArea + layout.ProtectedCreatorRegion.Area, 1, 1920 * 1080);
+        Assert.Equal(1920 * 1080, totalArea + layout.ProtectedCreatorRegion.Area);
     }
 
     [Fact]
@@ -72,8 +72,8 @@ public sealed class PodcastAdvertisingGeometryTests
         var layout = PodcastAdvertisingGeometry.Get(6);
         Assert.Equal(new PodcastAdvertisingRect("TOP_LEFT", 0, 0, 960, 180), layout.AdSlots[0]);
         Assert.Equal(new PodcastAdvertisingRect("TOP_RIGHT", 960, 0, 960, 180), layout.AdSlots[1]);
-        Assert.Equal(new PodcastAdvertisingRect("LEFT_SIDE", 0, 270, 270, 540), layout.AdSlots[2]);
-        Assert.Equal(new PodcastAdvertisingRect("RIGHT_SIDE", 1650, 270, 270, 540), layout.AdSlots[3]);
+        Assert.Equal(new PodcastAdvertisingRect("LEFT_SIDE", 0, 180, 270, 720), layout.AdSlots[2]);
+        Assert.Equal(new PodcastAdvertisingRect("RIGHT_SIDE", 1650, 180, 270, 720), layout.AdSlots[3]);
         Assert.Equal(new PodcastAdvertisingRect("BOTTOM_LEFT", 0, 900, 960, 180), layout.AdSlots[4]);
         Assert.Equal(new PodcastAdvertisingRect("BOTTOM_RIGHT", 960, 900, 960, 180), layout.AdSlots[5]);
         Assert.Equal(new PodcastAdvertisingRect("CREATOR_SAFE", 270, 180, 1380, 720), layout.ProtectedCreatorRegion);
@@ -82,8 +82,8 @@ public sealed class PodcastAdvertisingGeometryTests
     [Theory]
     [InlineData(2, "BOTTOM_LEFT", 960, 270)]
     [InlineData(4, "TOP_RIGHT", 960, 180)]
-    [InlineData(6, "LEFT_SIDE", 270, 540)]
-    [InlineData(6, "RIGHT_SIDE", 270, 540)]
+    [InlineData(6, "LEFT_SIDE", 270, 720)]
+    [InlineData(6, "RIGHT_SIDE", 270, 720)]
     [InlineData(6, "BOTTOM_RIGHT", 960, 180)]
     public void Advertiser_template_requires_exact_slot_pixels(
         int rectangleCount, string slot, int expectedWidth, int expectedHeight)
@@ -108,6 +108,29 @@ public sealed class PodcastAdvertisingGeometryTests
         PodcastAdvertisingGeometry.ValidateRenderedCanvas(1920, 1080);
         Assert.Throws<InvalidOperationException>(() => PodcastAdvertisingGeometry.ValidateRenderedCanvas(1280, 720));
         Assert.Throws<InvalidOperationException>(() => PodcastAdvertisingGeometry.ValidateRenderedCanvas(1672, 941));
+    }
+
+    [Fact]
+    public void Six_rectangles_touch_top_and_bottom_without_blank_perimeter_strips()
+    {
+        var layout = PodcastAdvertisingGeometry.Get(6);
+        var top = layout.AdSlots.Where(x => x.SlotId.StartsWith("TOP_", StringComparison.Ordinal)).ToArray();
+        var bottom = layout.AdSlots.Where(x => x.SlotId.StartsWith("BOTTOM_", StringComparison.Ordinal)).ToArray();
+        var left = layout.AdSlots.Single(x => x.SlotId == "LEFT_SIDE");
+        var right = layout.AdSlots.Single(x => x.SlotId == "RIGHT_SIDE");
+
+        Assert.Equal(2, top.Length);
+        Assert.Equal(2, bottom.Length);
+        Assert.Equal(top[0].Bottom, left.Y);
+        Assert.Equal(top[0].Bottom, right.Y);
+        Assert.Equal(bottom[0].Y, left.Bottom);
+        Assert.Equal(bottom[0].Y, right.Bottom);
+        Assert.Equal(0, left.X);
+        Assert.Equal(1920, right.Right);
+        Assert.Equal(layout.ProtectedCreatorRegion.Y, left.Y);
+        Assert.Equal(layout.ProtectedCreatorRegion.Bottom, left.Bottom);
+        Assert.Equal(1920 * 1080, layout.AdSlots.Sum(slot => slot.Area)
+            + layout.ProtectedCreatorRegion.Area);
     }
 
     private static bool Overlaps(PodcastAdvertisingRect a, PodcastAdvertisingRect b) =>
