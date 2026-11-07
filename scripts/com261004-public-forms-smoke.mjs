@@ -119,3 +119,5 @@ await import("./alpha346-delivery-kit.test.mjs");
 await import("./alpha346-proposal-desk-smoke.test.mjs");
 // Draft paid-service Terms/Refund/Privacy review must remain private and unapproved.
 await import("./alpha346-commercial-policy-review-smoke.test.mjs");
+// ALPHA-346 Stripe read-only source readiness; all paid Order and processor gates remain blocked.
+await import("./alpha346-stripe-preflight.test.mjs");
