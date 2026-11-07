@@ -82,7 +82,7 @@ BEGIN
     cfg.verified_at IS NULL OR cfg.verified_at < now()-interval '24 hours' OR
     cfg.verified_at > now()+interval '5 minutes'
  THEN RAISE EXCEPTION 'ASK_ALPHA_METERING_NOT_VERIFIED' USING ERRCODE='P0001'; END IF;
- IF EXISTS(SELECT 1 FROM public.alpha_ask_alpha_turns WHERE state='UNKNOWN')
+ IF EXISTS(SELECT 1 FROM public.alpha_ask_alpha_turns t WHERE t.state='UNKNOWN')
  THEN RAISE EXCEPTION 'ASK_ALPHA_UNRECONCILED_USAGE' USING ERRCODE='P0001'; END IF;
  IF (SELECT count(*) FROM public.alpha_ask_alpha_turns WHERE ip_hash=p_ip_hash AND
       created_at >= now()-interval '1 hour') >= 6 OR
@@ -92,12 +92,12 @@ BEGIN
     (SELECT count(*) FROM public.alpha_ask_alpha_turns WHERE session_hash=p_session_hash AND
       state='RESERVED') >= 1
  THEN RAISE EXCEPTION 'ASK_ALPHA_RATE_LIMITED' USING ERRCODE='P0001'; END IF;
- SELECT coalesce(sum(CASE WHEN state='SETTLED' THEN greatest(actual_usd,0)
-                   ELSE reserved_usd END),0)
- INTO today_usd FROM public.alpha_ask_alpha_turns WHERE created_at>=utc_day;
- SELECT coalesce(sum(CASE WHEN state='SETTLED' THEN greatest(actual_usd,0)
-                   ELSE reserved_usd END),0)
- INTO month_usd FROM public.alpha_ask_alpha_turns WHERE created_at>=utc_month;
+ SELECT coalesce(sum(CASE WHEN t.state='SETTLED' THEN greatest(t.actual_usd,0)
+                   ELSE t.reserved_usd END),0)
+ INTO today_usd FROM public.alpha_ask_alpha_turns t WHERE t.created_at>=utc_day;
+ SELECT coalesce(sum(CASE WHEN t.state='SETTLED' THEN greatest(t.actual_usd,0)
+                   ELSE t.reserved_usd END),0)
+ INTO month_usd FROM public.alpha_ask_alpha_turns t WHERE t.created_at>=utc_month;
  IF today_usd+0.010000>1.000000 OR
     month_usd+cfg.externally_billed_usd+0.010000>10.000000
  THEN RAISE EXCEPTION 'ASK_ALPHA_BUDGET_EXHAUSTED' USING ERRCODE='P0001'; END IF;
