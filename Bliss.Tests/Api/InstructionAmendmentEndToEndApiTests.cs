@@ -94,7 +94,8 @@ public sealed class InstructionAmendmentEndToEndApiTests
             Assert.Equal(15, product.GetProperty("durationSeconds")[0].GetInt32());
             Assert.Contains("unpriced", product.GetProperty("notice").GetString());
         });
-        Assert.True(board.GetProperty("creatorAuthorized").GetBoolean());
+        // Owner-wide prototype permission is not verified creator/product/slot consent.
+        Assert.False(board.GetProperty("creatorAuthorized").GetBoolean());
         Assert.Contains("will not state a number", board.GetProperty("economics").GetString());
         Assert.DoesNotContain("$", board.GetProperty("economics").GetString());
         Assert.Equal("NOT_SENT", board.GetProperty("delivery").GetString());
