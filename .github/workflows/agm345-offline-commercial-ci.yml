@@ -5,6 +5,8 @@ on:
       - '.github/workflows/agm345-offline-commercial-ci.yml'
       - 'Bliss.Domain/AdvertisingRealEstate/**'
       - 'Bliss.Tests/AdvertisingRealEstate/CommercialInventoryReviewGateTests.cs'
+      - 'Bliss.Tests/AdvertisingRealEstate/CommercialCreativeQaGateTests.cs'
+      - 'Bliss.Domain/CreativeAcademy/CommercialCreativeQaGate.cs'
       - 'assets/alpha-prototypes/advertising-real-estate/AGM345-OFFLINE-ASSET-EVIDENCE.tsv'
       - 'docs/launch/ALPHA-345-OFFLINE-COMMERCIAL-SLICE.md'
       - 'tools/AGM345.OfflineProbe/**'
@@ -29,7 +31,7 @@ jobs:
         run: dotnet restore BlissBotChapel.sln
       - name: Test owner geometry, protected content and existing Ask Alpha retrieval in isolation
         run: |
-          dotnet test Bliss.Tests/Bliss.Tests.csproj --no-restore --filter FullyQualifiedName~CommercialInventoryReviewGateTests --logger "trx;LogFileName=agm345-contract.trx" --results-directory ./AGM345Results --verbosity normal
+          dotnet test Bliss.Tests/Bliss.Tests.csproj --no-restore --filter 'FullyQualifiedName~CommercialInventoryReviewGateTests|FullyQualifiedName~CommercialCreativeQaGateTests' --logger "trx;LogFileName=agm345-contract.trx" --results-directory ./AGM345Results --verbosity normal
       - name: Emit reproducible fictional conversation and retrieval JSON
         run: |
           dotnet run --project tools/AGM345.OfflineProbe/AGM345.OfflineProbe.csproj -- --output AGM345Results/agm345-synthetic-conversations.json
