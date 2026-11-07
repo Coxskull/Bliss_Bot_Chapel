@@ -192,6 +192,9 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
                 Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(image.FullPath))).ToLowerInvariant();
             var slots = product.SlotIds.Where(geometry.ContainsKey)
                 .Select(slotId => geometry[slotId]).ToArray();
+            // The full-frame union is a measured input, NOT creator protection
+            // or percent of authorized advertising real estate.
+            var proof = CatalogGeometrySafety.Inspect(slots);
             candidates.Add(new BlueprintCommerceCandidate(
                 row.ProductId, row.Version, row.Lifecycle, row.Tier,
                 row.Exclusivity, row.MaximumAdvertisers, row.ShowcaseId,
@@ -199,7 +202,8 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
                 image is null ? null
                     : "/api/operations/blueprint/showcases/" + Uri.EscapeDataString(row.ShowcaseId) + "/image",
                 slots.Length == product.SlotIds.Count
-                    ? "OWNER_RECOMMENDATION_ONLY" : "GEOMETRY_UNRECORDED",
+                    ? proof.Status : "GEOMETRY_UNRECORDED",
+                proof,
                 slots,
                 "CREATOR_SPECIFIC_AUTHORIZATION_MISSING",
                 "PRODUCT_SLOT_AVAILABILITY_UNVERIFIED",
@@ -440,6 +444,7 @@ public sealed record BlueprintCommerceCandidate(
     string? ShowcaseSha256,
     string? ShowcaseImageUrl,
     string GeometryStatus,
+    CatalogGeometryProof GeometryProof,
     IReadOnlyList<OwnerSlotGeometry> OwnerRecommendedSlots,
     string CreatorAuthorizationStatus,
     string AvailabilityStatus,

@@ -113,6 +113,12 @@ public sealed class BlueprintCommercialEvidenceApiTests(ITestOutputHelper testOu
                 var actualSha = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
                 Assert.Equal(actualSha, candidate.GetProperty("showcaseSha256").GetString());
                 Assert.NotEmpty(candidate.GetProperty("ownerRecommendedSlots").EnumerateArray());
+                var proof = candidate.GetProperty("geometryProof");
+                Assert.Equal("PROTECTED_CREATOR_REGION_UNVERIFIED",
+                    proof.GetProperty("status").GetString());
+                Assert.False(proof.GetProperty("declaredCreatorRegionProtected").GetBoolean());
+                Assert.True(proof.GetProperty("unionAllocatedPixels").GetInt64() > 0);
+                Assert.True(proof.GetProperty("frameOccupancyBasisPoints").GetInt32() > 0);
             }
             testOutput.WriteLine("ALPHA345_ASK_RECEIPT " + JsonSerializer.Serialize(new
             {
@@ -122,7 +128,8 @@ public sealed class BlueprintCommercialEvidenceApiTests(ITestOutputHelper testOu
                 showcaseAssetReceipts = candidates.Select(x => new
                 {
                     id = x.GetProperty("showcaseId").GetString(),
-                    sha256 = x.GetProperty("showcaseSha256").GetString()
+                    sha256 = x.GetProperty("showcaseSha256").GetString(),
+                    frameOccupancyBasisPoints = x.GetProperty("geometryProof").GetProperty("frameOccupancyBasisPoints").GetInt32()
                 }).ToArray(),
                 humanEscalation = turn.GetProperty("humanEscalation").GetBoolean(),
                 offerEligible = evidence.GetProperty("offerEligible").GetBoolean(),

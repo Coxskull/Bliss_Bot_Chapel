@@ -143,6 +143,7 @@ async function askCatalog(message) {
         <strong>${escapeCatalog(item.productId)} · ${escapeCatalog(item.version)}</strong>
         <small>${escapeCatalog(item.lifecycle)} / ${escapeCatalog(item.showcaseId)}</small>
         <small>Source: existing RealEstateProducts record; file sha256 ${escapeCatalog(item.showcaseSha256 || "UNVERIFIED")}</small>
+        <small>Canvas: ${escapeCatalog(item.geometryStatus)}. Union occupancy ${item.geometryProof?.frameOccupancyBasisPoints == null ? "UNKNOWN" : escapeCatalog((item.geometryProof.frameOccupancyBasisPoints / 100).toFixed(2)) + "% OF TOTAL FRAME ONLY"}; NOT sellable inventory or an authorized creator-safe area.</small>
         <small>Creator: ${escapeCatalog(item.creatorAuthorizationStatus)}. Availability: ${escapeCatalog(item.availabilityStatus)}.</small>
         <small>Economics: ${escapeCatalog(item.economicsPricingStatus)}. Mobile: ${escapeCatalog(item.deviceCompatibilityStatus)}.</small>
       </figcaption></figure>`;
