@@ -146,10 +146,20 @@ async function renderBrandTemplatePng() {
     if (blob.type !== "image/png" || blob.size > 1024 * 1024) {
       throw new Error("The rendered PNG exceeds the 1 MiB candidate image limit.");
     }
+    // The server CSP deliberately allows data: images but not blob: images.
+    // Keep the downloadable object URL separate from the image preview;
+    // do not weaken the security policy or inject remote content.
+    const imagePreview = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => typeof reader.result === "string"
+        ? resolve(reader.result) : reject(new Error("Unable to preview the PNG."));
+      reader.onerror = () => reject(new Error("Unable to preview the PNG."));
+      reader.readAsDataURL(blob);
+    });
     clearComposerPreview();
     composerObjectUrl = URL.createObjectURL(blob);
     const name = "alpha-original-" + $("#composer-format").value + ".png";
-    $("#composer-preview").src = composerObjectUrl;
+    $("#composer-preview").src = imagePreview;
     $("#composer-preview").hidden = false;
     $("#composer-download").href = composerObjectUrl;
     $("#composer-download").download = name;
