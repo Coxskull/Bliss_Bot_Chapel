@@ -66,8 +66,8 @@ public sealed class CreatorRegistrationSecurityTests
 
         var principal = new ClaimsPrincipal(identity);
         Assert.True(BlissAuthorization.IsPendingCreatorRegistration(principal, Options));
-        Assert.Empty(identity.Claims.Where(c => c.Type == Options.RoleClaimType || c.Type == "roles"
-            || c.Type == Options.AdvertiserIdClaimType || c.Type == Options.CreatorIdClaimType));
+        Assert.DoesNotContain(identity.Claims, c => c.Type == Options.RoleClaimType || c.Type == "roles"
+            || c.Type == Options.AdvertiserIdClaimType || c.Type == Options.CreatorIdClaimType);
     }
 
     [Fact]
@@ -223,7 +223,8 @@ public sealed class CreatorRegistrationSecurityTests
     {
         var controller = new CreatorRegistrationController(db, Options);
         controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = Pending(subject) } };
-        return await controller.GetMyRegistration(CancellationToken.None);
+        var result = await controller.GetMyRegistration(CancellationToken.None);
+        return result.Result ?? new OkObjectResult(result.Value);
     }
 
     private static ClaimsPrincipal Pending(string subject, params Claim[] extraClaims)
