@@ -240,6 +240,53 @@ public sealed class CommercialInventoryReviewGateTests
     }
 
     [Fact]
+    public void Existing_AskAlpha_customer_intent_reaches_stored_premium_product_but_not_a_price_or_commitment()
+    {
+        var turn = CommercialInventoryReviewGate.SimulateConversation(
+            Board(), "We want a premium campaign with a larger visual presence.",
+            "ARE-P01", Geometry, Protected, 1152000,
+            Creator(), Availability(), Compatibility(), Showcase());
+
+        Assert.Equal("PREMIUM", turn.Intent);
+        Assert.Equal("ARE-P01", turn.SelectedProductId);
+        Assert.Equal("OFFLINE_SYNTHETIC_ONLY", turn.Mode);
+        Assert.Equal("NEEDS_REVIEW", turn.Status);
+        Assert.Contains(turn.Trace, step => step.Step == "CustomerIntent" && step.Result == "PREMIUM");
+        Assert.Contains(turn.Trace, step => step.Step == "GeometryVariantResolution" && step.Result == "PASS_SYNTHETIC");
+        Assert.Contains(turn.Trace, step => step.Step == "EconomicsQuoteLookup" && step.Result == "PRICING_UNAVAILABLE");
+        Assert.False(turn.InventedProduct);
+        Assert.False(turn.InventedPrice);
+        Assert.False(turn.CampaignReady);
+        Assert.True(turn.HumanEscalation);
+        Assert.Equal("NOT_SENT", turn.DeliveryStatus);
+        Assert.StartsWith("OFFLINE FIXTURE ONLY", turn.Transcript);
+        Assert.DoesNotContain("$", turn.Transcript);
+    }
+
+    [Fact]
+    public void Existing_AskAlpha_rejects_unmatched_or_unsupported_product_requests_before_evidence_lookup()
+    {
+        var unsupported = CommercialInventoryReviewGate.SimulateConversation(
+            Board(), "I want 70% of the screen for $10.", "ARE-P01",
+            Geometry, Protected, 1152000,
+            Creator(), Availability(), Compatibility(), Showcase());
+        Assert.Equal("UNSUPPORTED", unsupported.Intent);
+        Assert.Null(unsupported.ProductReview);
+        Assert.Equal("NEEDS_REVIEW", unsupported.Status);
+        Assert.False(unsupported.InventedPrice);
+        Assert.Equal("NOT_SENT", unsupported.DeliveryStatus);
+
+        var unknown = CommercialInventoryReviewGate.SimulateConversation(
+            Board(), "We want premium visual presence.", "INVENTED_PRODUCT",
+            Geometry, Protected, 1152000,
+            Creator(), Availability(), Compatibility(), Showcase());
+        Assert.Equal("PREMIUM", unknown.Intent);
+        Assert.Null(unknown.ProductReview);
+        Assert.Null(unknown.SelectedProductId);
+        Assert.True(unknown.HumanEscalation);
+    }
+
+    [Fact]
     public void Unsupported_screen_percentage_and_ten_dollar_offer_is_escalated_by_existing_AskAlpha_catalog()
     {
         var result = RealEstateCatalog.Reply(
