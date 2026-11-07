@@ -34,7 +34,8 @@ const serviceSpec=readFileSync("docs/launch/ALPHA-346-ONE-CAMPAIGN-PLANNING-SERV
 assert.ok(serviceSpec.includes("Captain-approved internal quoting band: USD $50.00–$1,000.00 inclusive"), "explicit Captain pricing band must be recorded");
 assert.ok(serviceSpec.includes("not** an approved customer-specific price"), "pricing range must not imply any individual fee approval");
 assert.ok(serviceSpec.includes("Stripe Dashboard account verification is **owner-confirmed VERIFIED**"), "owner-reported verification recorded without unsupported API assertion");
-assert.ok(serviceSpec.includes("live charges, payout capability, bank settlement and payment-method availability remain **UNVERIFIED**"), "verified account status must not authorize payments");
+assert.ok(serviceSpec.includes("live charges and payouts show ENABLED, owner-confirmed November 7, 2026"), "Owner-reported Stripe live payment and payout status recorded");
+assert.ok(serviceSpec.includes("no customer-specific payment or invoice is authorized"), "Account readiness must not authorize a customer payment");
 assert.ok(serviceSpec.includes("UNVERIFIED"), "Stripe live payment status remains unverified");
 const portal=read("index.html");
 assert.ok(portal.includes('href="/join-creator.html"'),"public creator home CTA");
