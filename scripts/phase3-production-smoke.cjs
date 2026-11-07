@@ -57,7 +57,28 @@ const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQ
       await image.decode(); return { width: image.naturalWidth, height: image.naturalHeight };
     });
     assert.deepEqual(secondArtwork, { width: 1080, height: 1080 });
-    console.log("ZERO_CREDIT_AD_COMPOSER_PASS: original 1280x720 and 1080x1080 PNGs rendered from confirmed saved brief; no automatic candidate submission.");
+    // Run the user-facing freeform command against the existing local renderer,
+    // then preserve the actual downloaded PNG as CI evidence.
+    await page.locator("#ad-command").fill("Create a landscape ad for Fictional Luna Verde in Santo Domingo; headline: Fresh flavors, brighter days; CTA: Visit us today");
+    await page.getByRole("button", { name: "Render fictional ad PNG" }).click();
+    await page.waitForFunction(() => document.querySelector("#ad-command-status").textContent.includes("Finished fictional PNG prototype"));
+    const commandArtwork = await page.locator("#ad-command-preview").evaluate(async image => {
+      await image.decode(); return { width: image.naturalWidth, height: image.naturalHeight };
+    });
+    assert.deepEqual(commandArtwork, { width: 1280, height: 720 });
+    const fs = require("node:fs/promises"), crypto = require("node:crypto");
+    const outputDir = process.env.BLISS_SMOKE_OUTPUT_DIR || "BrowserEvidence";
+    await fs.mkdir(outputDir, { recursive: true });
+    const downloadPromise = page.waitForEvent("download");
+    await page.locator("#ad-command-download").click();
+    const download = await downloadPromise;
+    const outputFile = require("node:path").join(outputDir, "bliss-fictional-luna-verde-landscape.png");
+    await download.saveAs(outputFile);
+    const outputBytes = await fs.readFile(outputFile);
+    assert(outputBytes.length > 1024 && outputBytes.length <= 1024 * 1024);
+    assert.equal(outputBytes.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+    console.log("FICTIONAL_AD_RECEIPT " + JSON.stringify({ templateId: "alpha-original-landscape-v1", outputFile, dimensions: commandArtwork, bytes: outputBytes.length, sha256: crypto.createHash("sha256").update(outputBytes).digest("hex"), aiCalls: 0, uploads: 0, databaseWritesForRequest: 0, delivery: "NOT_SENT" }));
+\n    console.log("ZERO_CREDIT_AD_COMPOSER_PASS: original 1280x720 and 1080x1080 PNGs rendered from confirmed saved brief; no automatic candidate submission.");
 
     assert.match(await page.locator("#brief-details").textContent(), /Gold/);
     assert.match(await page.locator("#brief-details").textContent(), /Reference SHA-256/);

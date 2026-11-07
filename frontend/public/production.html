@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Creative Academy | ALPHA GLOBAL MEDIA</title><meta name="theme-color" content="#100923"><link rel="stylesheet" href="/brand-intake.css"><link rel="stylesheet" href="/production.css"><script src="/ad-composer.js" defer></script><script src="/production.js" defer></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Creative Academy | ALPHA GLOBAL MEDIA</title><meta name="theme-color" content="#100923"><link rel="stylesheet" href="/brand-intake.css"><link rel="stylesheet" href="/production.css"><script src="/ad-composer.js" defer></script><script src="/ad-request.js" defer></script><script src="/production.js" defer></script></head>
 <body>
 <a class="skip-link" href="#workspace-main">Skip to workspace</a><header><a class="alpha-brand" href="/global-media.html">ALPHA<span>GLOBAL MEDIA™</span></a><nav aria-label="Workspace navigation"><a href="/brand-intake.html">Plan</a><a href="/production.html" aria-current="page">Create</a><a href="/ai-workspace.html">AI workspace</a><a href="/campaign-handoff.html">Review</a><a href="/campaign-measurement.html">Evidence</a></nav></header>
 <main id="workspace-main">
@@ -26,7 +26,17 @@
   <section><h2>Saved briefs</h2><label>Production brief <select id="brief"></select></label><button id="resume" type="button" disabled>Resume brief</button><button id="reload" type="button" disabled>Refresh saved history</button><div id="brief-details"></div></section>
   <section id="zero-credit-composer" aria-labelledby="composer-title">
     <p class="eyebrow">ORIGINAL ARTWORK · NO AI CREDITS</p>
-    <h2 id="composer-title">Turn a saved brand brief into an advertisement PNG</h2>
+    <h2 id="composer-title">Create a fictional ad from a direct request</h2>
+    <p>Enter one bounded fictional request. The existing local template composer renders an original PNG in this browser. No AI/image provider, network request, database write, campaign, or delivery is involved.</p>
+    <form id="ad-command-form">
+      <label>Fictional ad request <textarea id="ad-command" maxlength="500" rows="3" required>Create a landscape ad for Fictional Luna Verde in Santo Domingo; headline: Fresh flavors, brighter days; CTA: Visit us today</textarea></label>
+      <button id="ad-command-submit" type="submit" disabled>Render fictional ad PNG</button>
+      <p id="ad-command-status" role="status" aria-live="polite">Sign in to your authorized workspace before rendering.</p>
+    </form>
+    <img id="ad-command-preview" alt="Fictional advertisement prototype preview" hidden>
+    <p><a id="ad-command-download" hidden>Download fictional prototype PNG</a></p>
+    <p>Template: original landscape or square geometry. The output is fictional draft artwork and remains local until you download it.</p>
+    <h2>Saved brief composer</h2>
     <p>Create an original, editable-by-revision text-and-geometry candidate using your confirmed Brand DNA, headline, and CTA. No third-party pictures, reference artwork, image services, or network requests. This is a draft, not a paid placement or approved campaign.</p>
     <label>Artwork format <select id="composer-format"><option value="landscape">Landscape · 1280 × 720</option><option value="square">Square · 1080 × 1080</option></select></label>
     <button id="composer-render" type="button" disabled>Render original PNG from saved brief</button>

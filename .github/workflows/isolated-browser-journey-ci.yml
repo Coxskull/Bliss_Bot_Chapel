@@ -101,6 +101,9 @@ jobs:
             echo "CHROMIUM_PATH=$(command -v chromium)" >> "$GITHUB_ENV"
           fi
 
+      - name: Test fictional request parser
+        run: node --test scripts/alpha359-ad-request.test.cjs
+
       - name: Restore and build Release
         run: |
           dotnet restore BlissBotChapel.sln

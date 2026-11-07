@@ -13,7 +13,7 @@ function sync() {
   $("#resume").disabled = busy || !$("#brief").value;
   $("#reload").disabled = busy || !workspace;
   $("#demo-generate").disabled = busy || !session?.canWrite;
-  $("#composer-render").disabled = busy || stale || !history?.brief || (!session?.canWrite && !session?.advertiserId);
+  $("#composer-render").disabled = busy || stale || !history?.brief || (!session?.canWrite && !session?.advertiserId);\n  $("#ad-command-submit").disabled = busy || !session?.accessAllowed || (!session?.canWrite && !session?.advertiserId);
   $("#brief").disabled = busy;
 }
 function path() { return `/api/wedding-planner/workspaces/${workspace}/production`; }
@@ -185,6 +185,28 @@ async function renderBrandTemplatePng() {
   }
 }
 $("#composer-render").addEventListener("click", () => action(renderBrandTemplatePng));
+let adCommandObjectUrl = null;
+$("#ad-command-form").addEventListener("submit", event => { event.preventDefault(); action(async () => {
+  const status = $("#ad-command-status");
+  if (!session?.accessAllowed || (!session?.canWrite && !session?.advertiserId)) throw new Error("An authorized advertiser or operator session is required.");
+  if (!window.BlissAdRequest || !window.AlphaTemplateComposer) throw new Error("The fictional request renderer is unavailable.");
+  const request = window.BlissAdRequest.parseFictionalAdRequest($("#ad-command").value);
+  status.textContent = `Selecting ${request.templateId} and rendering locally…`;
+  const blob = await window.AlphaTemplateComposer.render(request);
+  if (blob.type !== "image/png" || !blob.size || blob.size > 1024 * 1024) throw new Error("The rendered PNG is empty or exceeds 1 MiB.");
+  const preview = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Unable to preview PNG."));
+    reader.onerror = () => reject(new Error("Unable to preview PNG."));
+    reader.readAsDataURL(blob);
+  });
+  if (adCommandObjectUrl) URL.revokeObjectURL(adCommandObjectUrl);
+  adCommandObjectUrl = URL.createObjectURL(blob);
+  const fileName = "bliss-fictional-" + request.format + ".png";
+  $("#ad-command-preview").src = preview; $("#ad-command-preview").hidden = false;
+  $("#ad-command-download").href = adCommandObjectUrl; $("#ad-command-download").download = fileName; $("#ad-command-download").hidden = false;
+  status.textContent = `Finished fictional PNG prototype: ${request.templateId}; ${blob.size} bytes. Rendered locally; no AI call, upload, database write, campaign, or delivery.`;
+}); });
 
 // No provider calls: this action uses only the existing source-media, overlay-1,
  // and factory QA endpoints. It never invokes /api/operations/academy/generate.
