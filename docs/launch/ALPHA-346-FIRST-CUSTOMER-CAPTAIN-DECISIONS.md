@@ -31,7 +31,7 @@ Scope signatory: ____________________  Date: ______________
 - Cancellation before start / after start / nonperformance remedy: ____________________
 
 ## Paid customer support — mandatory before accepting payment
-- Customer support contact (Captain-designated): **alpha7media@gmail.com** — address NOMINATED, inbound receipt and operator monitoring **NOT YET VERIFIED**.
+- Customer support contact (Captain-designated): **dejesuserwin1@gmail.com** — exact Gmail account identity confirmed by the connected Gmail profile on 2026-11-07. Dedicated customer-support monitoring, response procedure, and controlled incoming/reply test **NOT YET VERIFIED**; this designation alone does not approve payments.
 - Inbound test date and proof reference (no customer personal data): ____________________
 - Monitoring operator and escalation owner: ____________________
 - Published route and expected response/complaint handling standard: ____________________
