@@ -78,7 +78,8 @@ const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQ
     assert(outputBytes.length > 1024 && outputBytes.length <= 1024 * 1024);
     assert.equal(outputBytes.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
     console.log("FICTIONAL_AD_RECEIPT " + JSON.stringify({ templateId: "alpha-original-landscape-v1", outputFile, dimensions: commandArtwork, bytes: outputBytes.length, sha256: crypto.createHash("sha256").update(outputBytes).digest("hex"), aiCalls: 0, uploads: 0, databaseWritesForRequest: 0, delivery: "NOT_SENT" }));
-\n    console.log("ZERO_CREDIT_AD_COMPOSER_PASS: original 1280x720 and 1080x1080 PNGs rendered from confirmed saved brief; no automatic candidate submission.");
+
+    console.log("ZERO_CREDIT_AD_COMPOSER_PASS: original 1280x720 and 1080x1080 PNGs rendered from confirmed saved brief; no automatic candidate submission.");
 
     assert.match(await page.locator("#brief-details").textContent(), /Gold/);
     assert.match(await page.locator("#brief-details").textContent(), /Reference SHA-256/);
