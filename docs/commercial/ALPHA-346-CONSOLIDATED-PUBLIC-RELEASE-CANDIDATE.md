@@ -36,3 +36,10 @@
 - Relevant production security and recovery review for an actual paid order; Task #1 full disaster recovery is not falsely marked complete.
 
 **This candidate is a source-code review unit, not a guarantee that a commercial transaction is already possible.**
+
+
+## November 7 security-baseline reconciliation
+
+- The narrow Docker image provenance fix has been merged separately as [PR #344](https://github.com/Coxskull/Bliss_Bot_Chapel/pull/344), main commit `d4eabc66e5d8db979be1262a28889f4ed3d23a59`. Its exact-head .NET CI #42355096095 completed SUCCESS, including both Dockerfile vulnerability evidence jobs. The fix does not waive review of actual vulnerability findings.
+- This public-site branch does not modify either scanner file relative to its original base. The updated `main` changes only those two scanner files; the `pull_request` validation tests the merged result by default. Trigger fresh PR checks against the updated base before publication; don't rely on prior PR #343 CI #42353296391, which failed on the old scanner.
+- Public Vercel preview and hosted browser/mobile confirmation are separate acceptance gates, and were NOT performed by the scanner fix. Payment remains disabled.
