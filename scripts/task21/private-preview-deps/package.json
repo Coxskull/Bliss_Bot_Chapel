@@ -1,0 +1,13 @@
+{
+  "name": "alpha-task21-private-preview-build-deps",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build-only pinned dependencies for ALPHA Task21 protected staging operator preview",
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.95.0",
+    "esbuild": "0.25.12"
+  }
+}
