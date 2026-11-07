@@ -43,6 +43,7 @@ const db={
       eq(){return this;},
       in(){return this;},
       order(){return this;},
+      range:async()=>({data:table==="alpha_support_cases" ? [selectedTicket] : events,error:null}),
       limit:async()=>({data:table==="alpha_support_cases" ? [selectedTicket] : events,error:null}),
       maybeSingle:async()=>({data:table==="alpha_support_cases" ? selectedTicket : contact,error:null})
     };
@@ -77,6 +78,10 @@ role="authenticated";
 t=await call(request());assert.equal(t.status,200);
 assert.equal(t.data.cases.length,1);
 assert.deepEqual(t.data.visible_roles,["GENERAL_SUPPORT"]);
+assert.equal(t.data.page,0);
+t=await call(request("GET","?page=101"));assert.equal(t.status,400);
+t=await call(request("GET","?page=1"));assert.equal(t.status,200);
+assert.equal(t.data.page,1);
 assert.ok(!("description" in t.data.cases[0]),"list must not disclose case text");
 t=await call(request("GET","?case_id="+id));assert.equal(t.status,200);
 assert.equal(t.data.contact.email,contact.email);
