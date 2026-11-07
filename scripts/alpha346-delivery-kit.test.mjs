@@ -51,5 +51,6 @@ assert.ok(service.includes("Stripe account country is **United States (USA), as 
 assert.ok(service.includes("UNVERIFIED"), "Service must not treat country/currency as verified live payments");
 assert.ok(order.includes("Stripe account country (owner-reported"), "Captain decision sheet separately records operator report");
 assert.ok(order.includes("Stripe Dashboard account verification status: VERIFIED — owner-confirmed"), "Owner-confirmed Stripe verification should be recorded");
-assert.ok(order.includes("live charges enabled, payment-method capability, payout/banking availability"), "Live charge and payout capability remain separately unverified");
+assert.ok(order.includes("both live payments/charges and payouts show ENABLED"), "Owner reports live charge and payout capability enabled");
+assert.ok(order.includes("No live invoice/charge/payment authorization"), "Stripe enablement must never authorize a real customer charge");
 console.log("ALPHA-346: all four manual deliverables, fictional example and release guard checks PASS");
