@@ -11,6 +11,7 @@ const status=el("status");
 let config=null,client=null,caseId=null,activeRoles=[],currentPage=0,operatorId=null;
 let busy=false,queue=[],connected=false,hasMfa=false,mfaVerified=false;
 let pendingFactorId=null; // private in-memory enrollment state only
+let verifiedAuthId=null; // self-only Auth UUID, never an access-control role
 function show(id,visible){el(id).hidden=!visible;}
 function announce(text,error=false){
   status.textContent=String(text);
@@ -26,8 +27,9 @@ function appendDescription(node,key,value){
 function hidePrivate(){
   show("workspace",false);show("mfa-panel",false);
   show("enroll-offer-panel",false);show("enroll-panel",false);
+  show("identity-panel",false);el("identity-id").textContent="";
   el("enroll-secret").textContent="";el("enroll-code").value="";
-  pendingFactorId=null;
+  pendingFactorId=null;verifiedAuthId=null;
   clearNode(el("queue"));clearNode(el("case-fields"));
   clearNode(el("contact-fields"));clearNode(el("events"));
   show("case-detail",false);show("case-empty",true);
@@ -38,7 +40,7 @@ function setBusy(on){
   busy=Boolean(on);
   for(const id of ["signin-button","mfa-button","mfa-cancel","refresh","verify-mfa",
     "enroll-start","enroll-signout","enroll-verify","enroll-cancel",
-    "signout","case-search-button"])
+    "identity-copy","identity-signout","signout","case-search-button"])
     el(id).disabled=busy;
   el("prev").disabled=busy||!connected||currentPage===0;
   el("next").disabled=busy||!connected||queue.length!==20||currentPage>=100;
@@ -124,12 +126,20 @@ async function loadQueue(page=0){
     renderQueue();
     announce("Case queue loaded. No automated notification or customer contact was triggered.");
   } catch(e) {
-    const canVerify=e?.message==="OPERATOR_DENIED"&&hasMfa;
+    const canVerify=e?.message==="OPERATOR_DENIED"&&hasMfa&&!mfaVerified;
+    const noRoster=e?.message==="OPERATOR_DENIED"&&!!verifiedAuthId&&!canVerify;
+    const id=verifiedAuthId;
     hidePrivate();
-    if(canVerify) {
+    if(canVerify){
+      verifiedAuthId=id;
       show("mfa-panel",true);
-      announce("A second factor may be required for your assigned support queue. Verify the enrolled factor. If access is still denied, ask the ALPHA administrator.",true);
-    } else {
+      announce("A second factor may be required for your assigned support queue. Verify your existing authenticator.",true);
+    }else if(noRoster){
+      verifiedAuthId=id;
+      el("identity-id").textContent=id;
+      show("identity-panel",true);
+      announce("Identity verified but no support case role granted. Copy your Auth UUID for administrator review; no cases are accessible.");
+    }else{
       try{await client.auth.signOut();}catch{/* clear private UI regardless */}
       show("signin-panel",true);
       announce(errMessage(e),true);
@@ -191,6 +201,11 @@ async function signin(e){
     if(!email||!password)throw Error("Missing credentials");
     const {data,error}=await client.auth.signInWithPassword({email,password});
     if(error||!data?.session)throw Error("Auth failed");
+    const identity=await client.auth.getUser();
+    if(identity.error||!identity.data?.user?.id||
+       !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+         .test(identity.data.user.id))throw Error("Verified Auth account not available");
+    verifiedAuthId=identity.data.user.id;
     el("password").value="";
     show("signin-panel",false);
     // List factors only after the password sign-in has been verified by Auth.
@@ -213,8 +228,9 @@ async function signin(e){
       announce("Identity verified. Checking authorized support roles…");
     }
     verified=true;
-  }catch{el("password").value="";show("signin-panel",true);
-    announce("Sign-in was not verified. Use an authorized staff account.",true);}
+  }catch{el("password").value="";verifiedAuthId=null;show("signin-panel",true);
+    try{await client.auth.signOut();}catch{/* clear unverified session */}
+    announce("Sign-in or verified Auth identity was not available. Use an approved staging staff account.",true);}
   finally{setBusy(false);}
   if(verified&&hasMfa)await loadQueue(0);
 }
@@ -331,6 +347,14 @@ function init(){
   el("enroll-signout").addEventListener("click",signout);
   el("enroll-form").addEventListener("submit",finishEnrollment);
   el("enroll-cancel").addEventListener("click",signout);
+  el("identity-signout").addEventListener("click",signout);
+  el("identity-copy").addEventListener("click",async()=>{
+    if(!verifiedAuthId||busy)return;
+    try{
+      await navigator.clipboard.writeText(verifiedAuthId);
+      announce("Verified staging Auth UUID copied. Do not share login tokens or MFA secrets.");
+    }catch{announce("Copy was unavailable. Select the displayed UUID manually.",true);}
+  });
   el("refresh").addEventListener("click",()=>loadQueue(currentPage));
   el("prev").addEventListener("click",()=>loadQueue(Math.max(0,currentPage-1)));
   el("next").addEventListener("click",()=>{if(queue.length===20)loadQueue(Math.min(100,currentPage+1));});
