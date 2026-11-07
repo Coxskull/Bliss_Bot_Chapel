@@ -63,6 +63,9 @@ public sealed class CreatorsController : ControllerBase
 
         var items = await _db.Creators
             .AsNoTracking()
+            // Registrations create an UNVERIFIED record. Keep it out of
+            // shared directories until a separate review establishes authority.
+            .Where(x => x.AuthorityStatus == "VERIFIED")
             .OrderBy(x => x.Name)
             .Select(x => new CreatorListDto(
                 x.Id,
@@ -88,7 +91,7 @@ public sealed class CreatorsController : ControllerBase
             .Include(x => x.ContentItems)
                 .ThenInclude(x => x.AdInventorySlots)
             .Include(x => x.BlissMatches)
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == id && x.AuthorityStatus == "VERIFIED", cancellationToken);
 
         if (creator is null)
         {

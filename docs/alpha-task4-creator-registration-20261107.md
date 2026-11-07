@@ -7,6 +7,7 @@
 - Privacy processing and terms acceptance are required. Marketing permission is an independent optional field. The receipt records the applicant subject, creator ID, request digest, consent versions and choices, and creation time; it does not store email/password.
 - A random request key is exact-payload idempotent. Changed-content retries, reused keys from other subjects and duplicate subject registrations return `409`. Database uniqueness constraints backstop concurrent requests.
 - `GET /api/creators/registration` returns only the caller's own registration/receipt identifiers and status. Approved creator account access continues to use the existing issuer-bound, approved-subject path and only a matching `VERIFIED` Creator row. The pre-existing creator API boundary blocks shared-directory, cross-tenant and campaign access.
+- Shared creator directory and detail reads filter out `UNVERIFIED` registrations, so applicants are not exposed to other authenticated marketplace users before review.
 - The registration page is served from the Railway application origin so cookie, CSRF and API requests stay same-origin. The Vercel portal receives only a link to Railway; it does not publish the password form or registration JavaScript. Password signup goes directly from the browser to Supabase Auth with its publishable key.
 
 ## Verification and release boundary
