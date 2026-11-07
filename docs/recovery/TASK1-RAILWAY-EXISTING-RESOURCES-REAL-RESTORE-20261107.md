@@ -3,6 +3,19 @@
 **Scope:** Reuse existing Railway account/projects and Bliss Bot recovery tools. No project/service/volume created. No paid allocation, decryption, database transfer, restore, CI artifact upload or production configuration change.
 **Global STOP:** unchanged / engaged. **Additional spending authorized:** $0.
 
+## Hobby Plan evidence — owner-provided screenshot, November 7, 2026
+The owner's Railway **Settings → Plans** screenshot confirms the existing **`alpha7auto's Projects` Hobby workspace**, rather than a need to buy a new plan. It displays:
+- **$5 of included monthly usage credits** (this is a monthly allowance, **not an extra unspent balance**).
+- **Up to 5 replicas, 8 vCPU / 8 GB RAM per replica**; a separate plan tile advertises a higher maximum **48 vCPU / 48 GB RAM per service**. These are upper limits, **not reserved recovery resources**.
+- **Up to 5 GB storage** on the plan. This does **not** confirm a free, empty 5 GB allocation or permission to add another volume; the separate live Bliss Bot PostgreSQL 5,000 MB volume and application 500 MB volume already exist.
+- An active platform banner: **"External network blocks affecting access to Railway"**. This is an access-risk notice, not proof the existing running services or private database were unreachable. Verify the incident is resolved before any time-limited transfer.
+- The screenshot **does not show** workspace usage, consumption-to-date, remaining allowance, projected restore workload cost, payment limit or whether the existing volumes consume the storage allowance.
+
+Railway's own pricing FAQ says usage **exceeding the included $5 is billed separately**, even on Hobby:
+https://docs.railway.com/pricing/faqs#why-am-i-charged-for-more-than-5-on-the-hobby-plan
+
+**Budget gate:** NO-GO for provisioning pending the **Railway Usage** view for this **specific workspace**, current month, including consumption to date, period end, running resource commitments and projected short-lived compute/storage/egress. Under the Captain's **$0 additional spending** instruction, do not assume one can create a database without a charge merely because plan resources allow it. No service/volume or additional plan has been purchased.
+
 ## Verified existing Railway capacity (read-only)
 All values below are connected Railway provider readbacks (24-hour resource metrics), not dedicated recoverable allocations.
 
