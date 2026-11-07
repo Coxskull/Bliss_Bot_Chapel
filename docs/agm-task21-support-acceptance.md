@@ -25,8 +25,13 @@
 - A valid roster is *permission configuration*, not proof that a person is on duty or received an alert. No staffed human notification channel is claimed until real delivery/readback and escalation ownership are witnessed.
 - Only a narrowly allowlisted operator frontend Origin can receive CORS headers, if the owner later configures `ALPHA_SUPPORT_OPERATOR_ORIGIN`; no public frontend is connected yet. Service-role key remains inside Edge runtime.
 
+## Private dashboard source (unserved, not a launch commitment)
+- `frontend/private/support-operator` implements a staff sign-in interface and role-scoped queue with MFA flow, case details, durable event history, authorized closed-case lookup, and default-OFF case updates. This directory is deliberately outside the existing Vercel public allowlist.
+- Supabase Auth credentials are exchanged only with the approved project using the official client and never persisted to browser storage. All case fields are rendered with `textContent`, never untrusted HTML. Service-role secrets are forbidden in browser config, including legacy JWTs with `service_role` claims.
+- Actual private hosting/identity provisioning, server-only operator roster, on-duty alerts and operator acceptance have **not** occurred. Do not claim a staffed support desk from source files.
+
 ## Verification plan and strict interpretation
-- Offline CI: `node scripts/agm-support-unit-smoke.mjs`, `node scripts/agm-support-operator-unit.mjs`, `node scripts/agm-ghl-unit-smoke.mjs`.
+- Offline CI: `node scripts/agm-support-unit-smoke.mjs`, `node scripts/agm-support-operator-unit.mjs`, `node scripts/agm-support-operator-ui-smoke.mjs`, `node scripts/agm-ghl-unit-smoke.mjs`.
 - Disposable PostgreSQL 17 CI: create a matching *synthetic baseline fixture*, execute the proposed migration and real SQL inserts/status transitions; assert 8 cases, 9 intake receipts, 4 eligible CRM outbox rows, no sensitive forwarding, role-level denials, closure audit and retention cascade. The baseline fixture is not a verified full copy of the deployed schema, so this is **not live acceptance**.
 - Verify existing GitHub Actions checks at the *exact branch commit*. A green badge alone cannot establish deployed functionality.
 
