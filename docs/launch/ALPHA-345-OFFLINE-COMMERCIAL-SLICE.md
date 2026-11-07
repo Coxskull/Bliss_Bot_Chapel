@@ -61,9 +61,9 @@ These are **not** 20 unconditional PASS declarations. Each entry states what is 
 | T15 Brand pass / quality failure | New gate holds reference quality when lighting craftsmanship is unapproved despite valid Brand DNA evidence. **OFFLINE TESTED; REAL HUMAN QUALITY REVIEW BLOCKED** |
 | T16 Unsupported advertising claim | Fictional policy evidence rejects unsubstantiated claims and missing sponsorship disclosure. **OFFLINE TESTED; REAL POLICY AUTHORITY BLOCKED** |
 | T17 Country-specific localization | PH, DO, PA, CO, MY, ID require explicit reviewer/language/casting context; no automatic cultural inference. **OFFLINE TESTED; REAL MARKET VERIFICATION BLOCKED** |
-| T18 Synthetic delivery vs actual | Synthetic output never claims an impression. **SOURCE REFUSAL TEST / LIVE DELIVERY BLOCKED** |
+| T18 Synthetic delivery vs actual | New offline `SyntheticCommercialDeliveryEvidence` captures a requested stage but keeps real display **NOT_VERIFIED**, observed occurrences 0 and delivery NOT_SENT. **SOURCE TEST; REAL DELIVERY BLOCKED** |
 | T19 Asset missing/unapproved | Missing or unapproved showcase denied, guide cannot define geometry. **SOURCE TEST / FINAL ASSET APPROVAL BLOCKED** |
-| T20 Historical version integrity | Product/creator/geometry version mismatch denied; historical DB transaction snapshot untested. **SOURCE TEST / LIVE TRANSACTION BLOCKED** |
+| T20 Historical version integrity | Immutable synthetic receipt hashes product/version, geometry version and creative candidate digest separately; changing a source version changes the receipt hash, retaining prior record. **OFFLINE SNAPSHOT TEST; REAL TRANSACTION LEDGER BLOCKED** |
 
 ## Exact developer commands (reproducible)
 
@@ -87,6 +87,14 @@ New `Bliss.Domain/CreativeAcademy/CommercialCreativeQaGate.cs` reuses:
 An additional fictional policy review holds unsupported claims, disclosure, sector, creator rights and platform checks. Market review holds uncertain casting/language/local styling for six declared countries (DO, PA, CO, PH, MY, ID). Lack of market evidence yields `LOCALIZATION_REVIEW_REQUIRED` and no false cultural assertion. The runner now records fictional `FICTIONAL_DOUBLE_PASS` / T14 / T15 / T16 / T17 decisions in its synthetic JSON artifact.
 
 **Even a double PASS produces only `SyntheticCandidateEligibleForAdvertiserReview=true`; `ExternalUseAuthorized=false`, `CampaignReady=false`, and `Delivery=NOT_SENT`.** The synthetic sample hash, brand, quality reference, reviewers, and locale attestations are **not real-world approvals**. The named FizzUp, PortoCafé, AquaPure, NaturaViva and Frutália source assets are still not verified against approved reference IDs. There is no external creative publication or actual image generation in this slice. The new tests must pass at the **final exact head** before their source behavior can be accepted.
+
+## Directive 345 / P6 — truthful synthetic delivery evidence and version identity (2026-11-07)
+
+`Bliss.Domain/Demonstrations/SyntheticCommercialDeliveryEvidence.cs` is a **pure local fixture helper**, not a new operational delivery database. Existing `CampaignPlacementRun` and `CampaignObservation` remain the authoritative production persistence models, and the existing `PreviewDeliveryAdapter` remains non-transmitting.
+
+The fixture's immutable `SyntheticCommercialDeliveryReceipt` includes stored product ID/version, creator/advertiser synthetic IDs, geometry version, Economics quote status/version (`PRICING_UNAVAILABLE`), creative candidate digest, scheduled duration and occurrence count, attempted lifecycle stage, and a length-prefixed canonical SHA-256 fingerprint. Its requested stage is always an **attempt**. Even when the fictional input says `DISPLAY_VERIFIED` or `DELIVERED`, output states `VerifiedStage=NOT_VERIFIED`, `RealObservedOccurrences=0`, `DeliveryStatus=NOT_SENT`, `ActualDisplayVerified=false`, `ReservationAuthorized=false`, `PaymentAuthorized=false`, `ExternalUseAuthorized=false`. The generated fictional JSON includes a delivery receipt for the premium request.
+
+The source tests cover all ten requested conceptual delivery stages and T20 mutation of product/geometry/creative versions, and reject a non-synthetic mode. This proves **offline anti-fabrication** only; it does not persist a real `CampaignObservation` or verify an actual advertising display. No synthetic receipt is an impression or acceptable invoice.
 
 ## Next gated integration, not silently completed
 
