@@ -46,7 +46,7 @@ for (const [label, rectangles] of Object.entries(expected)) {
     assert.equal(item.advertiserCapacity, Number(label));
     assert.equal(item.geometryVersion, "ALPHA-ARE-COMPOSER-QUALITY-357-V2");
     assert.deepEqual(
-      item.slots.map(s => [s.id, s.x, s.y, s.width, s.height]),
+      Array.from(item.slots, s => [s.id, s.x, s.y, s.width, s.height]),
       rectangles);
     const mask = new Uint8Array(W * H);
     const mark = (x,y,w,h,value) => {
