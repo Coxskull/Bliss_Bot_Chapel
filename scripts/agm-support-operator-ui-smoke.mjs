@@ -63,6 +63,8 @@ assert.doesNotThrow(()=>safeOperatorConfig({...base,publishableKey:jwt("anon")},
   base.operatorOrigin));
 assert.throws(()=>safeOperatorConfig({...base,publishableKey:jwt("service_role")},
   base.operatorOrigin));
+assert.equal(base.environment,"staging");
+assert.throws(()=>safeOperatorConfig({...base,environment:"production"},base.operatorOrigin));
 const html=read("../frontend/private/support-operator/index.html");
 const app=read("../frontend/private/support-operator/operator.js");
 const build=read("../scripts/build-vercel-portal.mjs");
@@ -76,6 +78,11 @@ assert.match(html,/id="enroll-offer-panel"/);
 assert.match(html,/id="enroll-panel"/);
 assert.match(html,/id="enroll-secret"/);
 assert.match(html,/id="enroll-form"/);
+assert.match(html,/id="identity-panel"/);
+assert.match(html,/id="identity-id"/);
+assert.match(html,/id="identity-signout"/);
+assert.match(app,/auth\.getUser\(\)/);
+assert.match(app,/verifiedAuthId=identity\.data\.user\.id/);
 assert.match(app,/auth\.mfa\.enroll/);
 assert.match(app,/auth\.mfa\.challengeAndVerify/);
 assert.match(app,/pendingFactorId=null/);
