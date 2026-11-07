@@ -23,11 +23,11 @@ const beforePayment = () => {
   return p;
 };
 for (const state of ["fictional", "pending", "failed", "sandbox_succeeded"]) {
-  const nonRevenue = { ...payment, payment_state: state, event_key: \`state-\${state}\`, receipt_ref: "", actual_collected_minor: 0 };
+  const nonRevenue = { ...payment, payment_state: state, event_key: "state-" + state, receipt_ref: "", actual_collected_minor: 0 };
   nonRevenue.receipt_ref = makeReceiptRef(nonRevenue);
   const classified = beforePayment();
   classified.append(nonRevenue);
-  assert.equal(classified.report(base.journey_id).actual_collected_minor, 0, \`\${state} is not collected revenue\`);
+  assert.equal(classified.report(base.journey_id).actual_collected_minor, 0, state + " is not collected revenue");
 }
 const nonLiveAmount = { ...payment, event_key: "bad-amount", receipt_ref: "", actual_collected_minor: 25000 };
 nonLiveAmount.receipt_ref = makeReceiptRef(nonLiveAmount);
