@@ -15,6 +15,7 @@ on:
       - 'docs/launch/ALPHA-345-OFFLINE-COMMERCIAL-SLICE.md'
       - 'tools/AGM345.OfflineProbe/**'
       - 'tools/AGM345.ProductFactory/**'
+      - 'assets/alpha-prototypes/advertising-real-estate/AGM345-PREMIUM-2-4-6-CONCEPT-LAYOUTS.json'
   workflow_dispatch:
 permissions:
   contents: read
@@ -46,6 +47,11 @@ jobs:
           grep -Fq '"CanStatePriceToCustomer": false' AGM345Results/agm345-synthetic-conversations.json
           grep -Fq '"RealProductBindingVerified": false' AGM345Results/agm345-synthetic-conversations.json
           grep -Fq '"economicsQuoteStatus": "PRICING_UNAVAILABLE"' AGM345Results/agm345-synthetic-conversations.json
+      - name: Validate proposed premium 2, 4 and 6 layouts (owner authority remains blocked)
+        run: |
+          python3 tools/AGM345.ProductFactory/verify_premium_layouts.py --selftest --receipt AGM345Results/agm345-premium-layout-verification.json
+          test -s AGM345Results/agm345-premium-layout-verification.json
+          grep -Fq '"source": "DRAFT_CONCEPT_NOT_OWNER_APPROVED"' AGM345Results/agm345-premium-layout-verification.json
       - name: Install free distro FFmpeg and local font only when missing
         run: |
           if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null || ! test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf; then
