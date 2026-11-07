@@ -96,3 +96,5 @@ console.log("Public ALPHA intake forms: 35+ privacy, routing and publication inv
 await import("./stripe-public-link-smoke.mjs");
 // ALPHA-346 first-customer manual proposal and payment gates (offline fixtures only).
 await import("./alpha346-manual-order-gates.test.mjs");
+// ALPHA-346 actual four-deliverable planning kit and fictional demo proof.
+await import("./alpha346-delivery-kit.test.mjs");
