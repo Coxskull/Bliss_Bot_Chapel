@@ -70,11 +70,23 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install PostgreSQL client and media dependencies
+      - name: Verify PostgreSQL client and media dependencies
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends postgresql-client ffmpeg fonts-dejavu-core
+          set -euo pipefail
+          needs_install=0
+          command -v psql >/dev/null 2>&1 || needs_install=1
+          command -v ffmpeg >/dev/null 2>&1 || needs_install=1
+          test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf || needs_install=1
+          if [[ "$needs_install" -eq 1 ]]; then
+            # Hosted runners usually include the tools. Avoid unbounded apt
+            # waits on degraded mirrors and keep this disposable CI only.
+            timeout 180 sudo apt-get update -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30
+            timeout 360 sudo apt-get install -y --no-install-recommends -o Acquire::Retries=2 -o Acquire::http::Timeout=45 -o Acquire::https::Timeout=45 postgresql-client ffmpeg fonts-dejavu-core
+          fi
           command -v psql
+          command -v ffmpeg
+          test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
           command -v google-chrome || command -v chromium
 
       - name: Install pinned Playwright client without downloading browsers
