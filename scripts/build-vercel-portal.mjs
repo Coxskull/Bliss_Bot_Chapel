@@ -61,3 +61,16 @@ for (const [filename, routes] of [
 await copyFile(resolve(source, 'wedding-planner.js'), resolve(output, 'wedding-planner.js'));
 await copyFile(resolve(source, 'assets/bliss-chapel-hero.jpg'), resolve(output, 'assets/bliss-chapel-hero.jpg'));
 console.log('Built Vercel workspace portal. Application origin is public configuration, not a credential.');
+
+
+// ONLY the explicitly scoped existing Vercel Authentication preview for the
+// Task21 draft branch may package its staging-pinned private operator UI.
+// Production, other previews, and ordinary public builds never run this path.
+if(process.env.VERCEL_ENV==='preview' &&
+   process.env.VERCEL_GIT_COMMIT_REF==='feat/agm-task21-support-cases-20261108' &&
+   process.env.ALPHA_TASK21_STAGE_PREVIEW==='enabled'){
+  const {execFileSync}=await import('node:child_process');
+  execFileSync(process.execPath,
+    [resolve(root,'scripts/task21/build-protected-staging-preview.cjs')],
+    {cwd:root,timeout:210000,stdio:'inherit'});
+}
