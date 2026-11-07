@@ -17,10 +17,12 @@ export function validCase(c){
 export function parseQueue(data,requestedPage){
   if(!data||!Array.isArray(data.cases)||data.cases.length>20
     ||!data.cases.every(validCase)||data.page!==requestedPage||data.page_size!==20
+    ||!isUuid(data.operator_user_id)
     ||!Array.isArray(data.visible_roles)||!data.visible_roles.every(r=>roles.has(r))
     ||!data.cases.every(c=>data.visible_roles.includes(c.assigned_role)))
     throw Error("INVALID_OPERATOR_QUEUE");
   return {cases:data.cases,page:requestedPage,roles:data.visible_roles,
+    operatorId:data.operator_user_id,
     hasNext:data.cases.length===20};
 }
 export function parseDetail(data,roleSet,expectedId){

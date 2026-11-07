@@ -8,7 +8,7 @@ import {parseQueue,parseDetail,validateTransition,safeOperatorConfig}
 const el=id=>document.getElementById(id);
 const panels=["signin-panel","mfa-panel","workspace"];
 const status=el("status");
-let config=null,client=null,caseId=null,activeRoles=[],currentPage=0;
+let config=null,client=null,caseId=null,activeRoles=[],currentPage=0,operatorId=null;
 let busy=false,queue=[],connected=false,hasMfa=false,mfaVerified=false;
 function show(id,visible){el(id).hidden=!visible;}
 function announce(text,error=false){
@@ -27,7 +27,7 @@ function hidePrivate(){
   clearNode(el("queue"));clearNode(el("case-fields"));
   clearNode(el("contact-fields"));clearNode(el("events"));
   show("case-detail",false);show("case-empty",true);
-  caseId=null;activeRoles=[];queue=[];currentPage=0;connected=false;
+  caseId=null;operatorId=null;activeRoles=[];queue=[];currentPage=0;connected=false;
   el("connection").textContent="NOT CONNECTED";
 }
 function setBusy(on){
@@ -36,7 +36,10 @@ function setBusy(on){
     el(id).disabled=busy;
   el("prev").disabled=busy||!connected||currentPage===0;
   el("next").disabled=busy||!connected||queue.length!==20||currentPage>=100;
-  el("save").disabled=busy||!connected||!caseId||config?.mutationsEnabled!==true;
+  el("save").disabled=busy||!connected||!caseId||
+    config?.mutationsEnabled!==true||el("owner-id").value!==operatorId;
+  el("claim-case").disabled=busy||!connected||!caseId||
+    config?.mutationsEnabled!==true;
   el("verify-mfa").hidden=!connected||!hasMfa||mfaVerified;
 }
 function requireConfig(){
@@ -75,6 +78,7 @@ function errMessage(e){
 }
 function resetDetail(){
   caseId=null;show("case-detail",false);show("case-empty",true);
+  el("claim-case").hidden=true;el("claim-case").disabled=true;
   clearNode(el("case-fields"));clearNode(el("contact-fields"));clearNode(el("events"));
 }
 function caseButton(c){
@@ -106,7 +110,8 @@ async function loadQueue(page=0){
   try {
     const raw=await authorizedApi("GET","?page="+page);
     const parsed=parseQueue(raw,page);
-    queue=parsed.cases;activeRoles=parsed.roles;currentPage=page;
+    queue=parsed.cases;activeRoles=parsed.roles;
+    operatorId=parsed.operatorId;currentPage=page;
     connected=true;show("signin-panel",false);show("mfa-panel",false);
     show("workspace",true);show("verify-mfa",hasMfa&&!mfaVerified);
     el("connection").textContent="SIGNED IN · ROLE-SCOPED";
@@ -156,8 +161,14 @@ async function loadDetail(id){
     el("case-status").value=ticket.status;
     el("owner-id").value=ticket.owner_user_id||"";
     el("resolution").value=ticket.resolution_summary||"";
-    const allowed=config.mutationsEnabled===true;
-    for(const id of ["case-status","owner-id","resolution"])el(id).disabled=!allowed;
+    const ownerIsMe=ticket.owner_user_id===operatorId;
+    const canClaim=config.mutationsEnabled===true&&!ticket.owner_user_id&&
+      ticket.status==="OPEN";
+    el("claim-case").hidden=!canClaim;
+    el("claim-case").disabled=!canClaim;
+    const allowed=config.mutationsEnabled===true&&ownerIsMe;
+    for(const id of ["case-status","resolution"])el(id).disabled=!allowed;
+    el("owner-id").disabled=true; // never operator-entered
     el("save").disabled=!allowed;
     el("save").textContent=allowed?"Record human case update":"Case updates not enabled";
     show("case-empty",false);show("case-detail",true);
@@ -213,6 +224,22 @@ async function signout(){
   try{await client.auth.signOut();}catch{/* cleared locally */}
   finally{setBusy(false);show("signin-panel",true);announce("Signed out; private case details cleared.");}
 }
+async function claimCurrentCase(){
+  if(busy||!caseId||config?.mutationsEnabled!==true)return;
+  const target=caseId;
+  setBusy(true);announce("Requesting an atomic human case acknowledgement…");
+  let success=false;
+  try{
+    const result=await authorizedApi("POST","",{action:"CLAIM",case_id:target});
+    if(result.committed!==true||result.case_id!==target||
+       result.status!=="TRIAGED"||result.action!=="CLAIM")
+      throw Error("Unverified claim response");
+    success=true;
+    announce("Human case acknowledgement committed. No customer was contacted.");
+  }catch(e){announce(errMessage(e),true);}
+  finally{setBusy(false);}
+  if(success){await loadQueue(currentPage);if(connected)await loadDetail(target);}
+}
 async function saveTransition(e){
   e.preventDefault();
   if(busy||!caseId||config.mutationsEnabled!==true)return;
@@ -257,5 +284,6 @@ function init(){
     loadDetail(id);
   });
   el("transition-form").addEventListener("submit",saveTransition);
+  el("claim-case").addEventListener("click",claimCurrentCase);
 }
 init();
