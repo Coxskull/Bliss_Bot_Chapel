@@ -17,6 +17,8 @@ No guaranteed advertising inventory, booked creator, real outreach, live podcast
 
 ## Manual custom quotation policy
 
+**Approved internal quotation reference range: USD $50–$1,000.** This owner-approved range guides preparation of individualized campaign-planning proposals only. It is **not** an approved price for any identified customer, an automatic quote, a public advertised price, a payment authorization, or a promise to accept work. Every proposed amount within this range still needs customer-specific written owner/finance review, market and tax confirmation, and approved contractual terms before external issuance. Quotes outside the range require a separate explicit owner decision. No default amount is assumed.
+
 - One separately reviewed written quotation per actual customer and agreed scope, with quotation ID/version and legal customer name.
 - State merchant identity; target market; exact deliverable formats/count; IP/usage rights; customer-provided materials; intended milestones and revision rounds; specific **numerical amount and ISO currency**; taxes; third-party fees, if any; payment and cancellation terms; formal customer and ALPHA approval method.
 - There is **no fixed list price, default currency, automatic discount, guaranteed delivery date or universal revision count** in this authorization.
