@@ -9,10 +9,10 @@
   const signinLink = document.getElementById("signin-link");
   let configuration;
   let session;
+  const randomKey = () => crypto.randomUUID();
   const requestKeyStorage = "alpha.advertiser-registration.request-key.v1";
   let requestKey = sessionStorage.getItem(requestKeyStorage) || randomKey();
   sessionStorage.setItem(requestKeyStorage, requestKey);
-  const randomKey = () => crypto.randomUUID();
   async function initialize() {
     try {
       const [configResponse, sessionResponse] = await Promise.all([

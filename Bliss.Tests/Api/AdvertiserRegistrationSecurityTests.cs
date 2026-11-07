@@ -135,7 +135,7 @@ public sealed class AdvertiserRegistrationSecurityTests
             var tenantBuilder = new NpgsqlConnectionStringBuilder(source) { SearchPath = schema };
             var dbOptions = new DbContextOptionsBuilder<BlissDbContext>().UseNpgsql(tenantBuilder.ConnectionString).Options;
             await using var db = new BlissDbContext(dbOptions);
-            await db.Database.EnsureCreatedAsync();
+            await db.Database.MigrateAsync();
 
             var request = new AdvertiserRegistrationRequest(Guid.NewGuid(), "Synthetic Northwind Studio", "PH",
                 "https://example.invalid", true, true, false,

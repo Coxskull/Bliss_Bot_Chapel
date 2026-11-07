@@ -40,7 +40,7 @@ public sealed class AdvertiserAccountController : ControllerBase
             return StatusCode(StatusCodes.Status403Forbidden);
 
         var record = await _db.Advertisers.AsNoTracking()
-            .Where(a => a.Id == membership.AdvertiserId)
+            .Where(a => a.Id == advertiserId)
             .Select(a => new AdvertiserSelfSummaryDto(a.Id, a.Name, a.CountryCode, a.Website))
             .SingleOrDefaultAsync(cancellationToken);
         return record is null ? NotFound() : Ok(record);
