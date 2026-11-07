@@ -87,8 +87,10 @@ jobs:
             echo 'No preinstalled Chrome/Chromium; do not download paid or external browsers'
             exit 1
           fi
-          npm install --prefix "$RUNNER_TEMP/task21-playwright" --ignore-scripts --no-package-lock --no-audit --no-fund playwright@1.56.1
+          npm install --prefix "$RUNNER_TEMP/task21-playwright" --no-package-lock --no-audit --no-fund --save-exact playwright@1.56.1 @supabase/supabase-js@2.95.0 esbuild@0.25.12
           echo "NODE_PATH=$RUNNER_TEMP/task21-playwright/node_modules" >> "$GITHUB_ENV"
+      - name: Bundle pinned Supabase SDK LOCALLY for private operator assets
+        run: node scripts/task21/build-private-operator.cjs
       - name: Synthetic staff browser journey (ALL external requests mocked)
         run: |
           mkdir -p BrowserEvidence
@@ -100,4 +102,12 @@ jobs:
           name: task21-synthetic-operator-browser
           path: BrowserEvidence/task21-operator-synthetic-browser.png
           if-no-files-found: warn
+          retention-days: 14
+      - name: Retain unsigned private bundle (NO operator config or credentials)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task21-private-operator-unsigned-bundle
+          path: .task21-private-build/
+          if-no-files-found: error
           retention-days: 14

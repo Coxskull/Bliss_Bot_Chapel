@@ -494,3 +494,7 @@ bliss-frontend/node_modules/
 bliss-frontend/dist/
 
 frontend/operations/financial-review/
+
+# Task #21 local private support dashboard output and uncommitted operator config
+.task21-private-build/
+frontend/private/support-operator/operator-config.js
