@@ -42,3 +42,21 @@ Independent Gmail search and message readback show the item labeled **SENT** and
 - Complete sandbox HighLevel consent/opt-out and sensitive-data exclusion verification without sending fictional contacts to a production HighLevel location.
 
 **Status:** Core staging support DB/API, severity routing and internal evidence capture are working. Hosted first-operator and human-alert acceptance remain OPEN, so Task #21 is **IN PROGRESS, not COMPLETE**.
+
+## Addendum — verified separate human email reply (2026-11-08)
+
+**PASS — manual internal test message received and human reply independently verified.** On November 8, 2026 at **07:37:20 Asia/Manila (UTC+8)**, the Gmail test thread for the existing **07:24:16** self-addressed synthetic message received a **separate reply** whose authored first line is exactly `TASK21 STAGING ACK RECEIVED`. The earlier sent message and new reply are distinct Gmail messages in the same thread. The connected Gmail account's read-only `read_email_thread` response independently established the reply's exact text, date and thread identity. The operator also provided the same acknowledgement in the current ChatGPT conversation at 07:37 local time.
+
+Evidence identifiers (private internal audit metadata, not customer data):
+- Gmail thread: `1a1b853b45c7a33d`
+- Initial test email: `1a1b853b45c7a33d` — 2026-11-08 07:24:16 Asia/Manila
+- Human reply: `1a1b85fbb7fefca3` — 2026-11-08 07:37:20 Asia/Manila
+- Subject: `Re: TASK21 STAGING INTERNAL CRITICAL ALERT DELIVERY TEST — SYNTHETIC — 2026-11-08`
+- Exact reply first line: `TASK21 STAGING ACK RECEIVED`
+- Synthetic staging case `90d58c01-c9ad-464a-99a9-dee900b09d98`, alert `1cf5e519-33e2-4d66-8984-185cc93f3641`.
+
+**Scope of pass:** one manually sent internal self-mailbox test generated a *real, time-stamped human response*. The **Gmail response gate is PASS**, replacing the earlier provisional `PENDING` statement **for the manual test only**.
+
+**Do not change the DB alert state:** its `delivery_state` remains deliberately `UNROUTED`; the app never dispatched the email, and the database has no authorized `SENT/DELIVERED/ACKNOWLEDGED` capability. The real **automated incident notification, independently monitored primary/backup coverage, staged staff Auth/TOTP, roster, HTTPS preview, and launch sign-off remain OPEN**. A successful human self-reply does not prove 24/7 support or authorize any customer contact. Global STOP engaged, $0 incremental spending, production unchanged.
+
+**Task #21 status remains IN PROGRESS.**
