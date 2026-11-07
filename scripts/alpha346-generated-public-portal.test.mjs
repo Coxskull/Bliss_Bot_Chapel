@@ -46,3 +46,27 @@ test('generated portal does not publish internal proposal tools or restricted op
     await assert.rejects(access(generated(privatePath)), { code: 'ENOENT' });
   }
 });
+
+
+test('consolidated advertiser page agrees with the five planning outputs, not the conflicting four-output package', async () => {
+  const advertiser = await load('join-advertiser.html');
+  const services = await load('services.html');
+  for (const item of ['discovery brief', 'creator/channel suitability', 'creative direction', 'coordination schedule', 'final planning summary']) {
+    assert.ok(advertiser.includes(item), 'advertiser explanation missing ' + item);
+  }
+  assert.match(advertiser, /revision count, price, currency and delivery dates require separate written approval/);
+  assert.doesNotMatch(advertiser, /up to three content formats|one in-scope revision/);
+  assert.match(services, /five proposed deliverables/);
+});
+
+test('consolidated homepage directly exposes consented public forms with accessible actions', async () => {
+  const homepage = await load('index.html');
+  const css = await load('global-media.css');
+  assert.match(homepage, /class="hero-actions" role="group"/);
+  assert.match(homepage, /href="\/join-advertiser.html"/);
+  assert.match(homepage, /href="\/join-creator.html"/);
+  assert.match(homepage, /href="#ask-alpha"/);
+  assert.match(css, /\.hero-actions a:focus-visible/);
+  assert.match(css, /min-height:\s*48px/);
+  assert.doesNotMatch(homepage, /payment checkout is now available|book your creator now/i);
+});
