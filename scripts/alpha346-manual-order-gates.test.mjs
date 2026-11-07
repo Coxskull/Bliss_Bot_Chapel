@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { assessManualOrder } from "./alpha346-manual-order-gates.mjs";
+import { assessManualOrder, ALPHA346_PRICE_BAND_USD } from "./alpha346-manual-order-gates.mjs";
 
 // All identifiers, approval receipts, and addresses below are FICTIONAL TEST DATA.
 const approval = () => ({
@@ -39,6 +39,22 @@ assert.equal(blank.payment_status, "BLOCKED");
 assert.ok(blank.proposal_missing.includes("ACTUAL_MONITORED_SUPPORT_EVIDENCE"));
 assert.ok(blank.payment_missing.includes("SEPARATE_LIVE_PAYMENT_RELEASE"));
 
+assert.deepEqual(ALPHA346_PRICE_BAND_USD, { min: 50, max: 1000, currency: "USD" });
+for (const boundary of ["50", "50.00", "1000", "1000.00"]) {
+  const o = fixture(); o.quote.amount = boundary;
+  assert.equal(assessManualOrder(o).proposal_status, "READY_FOR_AUTHORIZED_HUMAN_SEND", "in-band boundary " + boundary);
+}
+for (const outside of ["0", "49.99", "1000.01", "1001", "-50", "50.001"]) {
+  const o = fixture(); o.quote.amount = outside;
+  const verdict = assessManualOrder(o);
+  assert.equal(verdict.proposal_status, "BLOCKED", "out-of-band " + outside);
+  assert.ok(verdict.proposal_missing.includes("OWNER_APPROVED_EXACT_PRICE_AND_CURRENCY"));
+}
+for (const otherCurrency of ["PHP", "EUR", "usd", ""]) {
+  const o = fixture(); o.quote.currency = otherCurrency;
+  assert.ok(assessManualOrder(o).proposal_missing.includes("OWNER_APPROVED_EXACT_PRICE_AND_CURRENCY"), "USD-only quote band");
+}
+
 const example = fixture();
 const passing = assessManualOrder(example);
 assert.equal(passing.proposal_status, "READY_FOR_AUTHORIZED_HUMAN_SEND");
@@ -51,6 +67,8 @@ for (const field of ["sent", "invoice_created", "payment_captured", "outreach_pe
 const cases = [
   [o => { o.quote.amount = "0.00"; }, "OWNER_APPROVED_EXACT_PRICE_AND_CURRENCY"],
   [o => { o.quote.amount = "200.001"; }, "OWNER_APPROVED_EXACT_PRICE_AND_CURRENCY"],
+  [o => { o.quote.amount = "49.99"; }, "OWNER_APPROVED_EXACT_PRICE_AND_CURRENCY"],
+  [o => { o.quote.amount = "1000.01"; }, "OWNER_APPROVED_EXACT_PRICE_AND_CURRENCY"],
   [o => { o.quote.currency = "php"; }, "OWNER_APPROVED_EXACT_PRICE_AND_CURRENCY"],
   [o => { o.service_code = "MARKETPLACE-PLACEMENT"; }, "SCOPE_MANUAL_SERVICE_ONLY"],
   [o => { o.support.verified = false; }, "ACTUAL_MONITORED_SUPPORT_EVIDENCE"],
