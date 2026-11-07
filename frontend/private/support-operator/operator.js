@@ -195,7 +195,9 @@ async function signin(e){
     show("signin-panel",false);
     // List factors only after the password sign-in has been verified by Auth.
     const factors=await client.auth.mfa.listFactors();
-    const available=factors.data?.totp?.filter(x=>x.status==="verified")||[];
+    if(factors.error||!Array.isArray(factors.data?.totp))
+      throw Error("Cannot verify existing factors");
+    const available=factors.data.totp.filter(x=>x.status==="verified");
     clearNode(el("factor"));
     for(const factor of available) {
       const opt=document.createElement("option");opt.value=factor.id;
