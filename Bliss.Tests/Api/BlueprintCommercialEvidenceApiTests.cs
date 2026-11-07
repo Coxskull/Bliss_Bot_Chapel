@@ -6,6 +6,7 @@ using Bliss.Domain.Entities;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Xunit.Abstractions;
 
 namespace Bliss.Tests.Api;
 
@@ -14,7 +15,7 @@ namespace Bliss.Tests.Api;
 /// real ASP.NET Ask Alpha calls on a disposable, in-memory test database.
 /// These tests must NOT assert a real creator permission or price exists.
 /// </summary>
-public sealed class BlueprintCommercialEvidenceApiTests
+public sealed class BlueprintCommercialEvidenceApiTests(ITestOutputHelper testOutput)
 {
     [Fact]
     public async Task Seven_ask_alpha_conversations_retrieve_existing_rows_and_images_without_selling()
@@ -113,6 +114,23 @@ public sealed class BlueprintCommercialEvidenceApiTests
                 Assert.Equal(actualSha, candidate.GetProperty("showcaseSha256").GetString());
                 Assert.NotEmpty(candidate.GetProperty("ownerRecommendedSlots").EnumerateArray());
             }
+            testOutput.WriteLine("ALPHA345_ASK_RECEIPT " + JsonSerializer.Serialize(new
+            {
+                intent,
+                advertiserQuestion = message,
+                retrievedProductIds = candidates.Select(x => x.GetProperty("productId").GetString()).ToArray(),
+                showcaseAssetReceipts = candidates.Select(x => new
+                {
+                    id = x.GetProperty("showcaseId").GetString(),
+                    sha256 = x.GetProperty("showcaseSha256").GetString()
+                }).ToArray(),
+                humanEscalation = turn.GetProperty("humanEscalation").GetBoolean(),
+                offerEligible = evidence.GetProperty("offerEligible").GetBoolean(),
+                pricing = evidence.GetProperty("economicsNotice").GetString(),
+                creatorAuthorization = evidence.GetProperty("creatorAuthorizationNotice").GetString(),
+                answer = turn.GetProperty("reply").GetString(),
+                delivery = evidence.GetProperty("delivery").GetString()
+            }));
         }
 
         // The new inspection endpoint cannot create a product, quote, consent,
@@ -125,6 +143,19 @@ public sealed class BlueprintCommercialEvidenceApiTests
             Assert.Equal(0, await db.Quotes.CountAsync());
             Assert.Equal(0, await db.CampaignPlacements.CountAsync());
         }
+    }
+
+    [Fact]
+    public async Task Reading_the_legacy_catalog_must_not_create_or_activate_products()
+    {
+        await using var factory = new BlissApiFactory();
+        using var client = factory.CreateClient();
+        var board = await client.GetAsync("/api/operations/blueprint");
+        Assert.Equal(HttpStatusCode.OK, board.StatusCode);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+        Assert.Empty(await db.RealEstateProducts.ToListAsync());
+        Assert.Empty(await db.CatalogConversations.ToListAsync());
     }
 
     [Fact]

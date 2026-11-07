@@ -43,7 +43,8 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
             deviceStatus: approval.DeviceStatus,
             platformStatus: approval.PlatformStatus,
             geometry: geometry);
-        await MirrorProductsAsync(board, cancellationToken);
+        // A catalog GET is an inspection, never an inventory write or activation.
+        // Canonical records require a separate authorized lifecycle operation.
         var manifest = ReadManifest();
         var references = ReferenceLibrary.ParseManifest(manifest, name => AssetExists(name, assets));
         return new BlueprintReading(
@@ -258,46 +259,6 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
     {
         var rows = await database.RealEstateProducts.AsNoTracking().ToListAsync(cancellationToken);
         return rows.ToDictionary(item => item.ProductId, item => item.Lifecycle, StringComparer.Ordinal);
-    }
-
-    private async Task MirrorProductsAsync(CatalogBoard board, CancellationToken cancellationToken)
-    {
-        var existing = await database.RealEstateProducts.ToListAsync(cancellationToken);
-        foreach (var product in board.Products)
-        {
-            var row = existing.FirstOrDefault(item => item.ProductId == product.ProductId);
-            if (row is null)
-            {
-                database.RealEstateProducts.Add(new RealEstateProductRow
-                {
-                    ProductId = product.ProductId,
-                    Version = product.Version,
-                    Tier = product.Tier,
-                    Exclusivity = product.Exclusivity,
-                    MaximumAdvertisers = product.MaximumAdvertisers,
-                    SlotIds = string.Join(",", product.SlotIds),
-                    ShowcaseId = product.ShowcaseId,
-                    Lifecycle = product.Lifecycle,
-                    OccupancyStatus = product.OccupancyStatus,
-                    DeviceStatus = product.DeviceStatus,
-                    PlatformStatus = product.PlatformStatus,
-                    Notice = product.Notice
-                });
-            }
-            else if (row.Lifecycle != product.Lifecycle
-                || row.DeviceStatus != product.DeviceStatus
-                || row.PlatformStatus != product.PlatformStatus)
-            {
-                row.Lifecycle = product.Lifecycle;
-                row.DeviceStatus = product.DeviceStatus;
-                row.PlatformStatus = product.PlatformStatus;
-            }
-        }
-
-        if (database.ChangeTracker.HasChanges())
-        {
-            await database.SaveChangesAsync(cancellationToken);
-        }
     }
 
     private Dictionary<string, bool> ReadAssets()
