@@ -551,14 +551,24 @@ public sealed class DemonstrationsController(
         [FromForm] string? culture,
         CancellationToken cancellationToken)
     {
-        if (file.Length == 0)
+        if (file is null || file.Length == 0)
         {
             return BadRequest(new { error = "The upload was empty." });
         }
+        if (file.Length > ProspectDemonstrationService.MaxUploadedClipBytes)
+        {
+            return StatusCode(StatusCodes.Status413PayloadTooLarge,
+                new { error = "Source media exceeds the 32 MiB upload limit." });
+        }
 
         await using var stream = file.OpenReadStream();
-        using var memory = new MemoryStream();
+        using var memory = new MemoryStream(capacity: checked((int)file.Length));
         await stream.CopyToAsync(memory, cancellationToken);
+        if (memory.Length > ProspectDemonstrationService.MaxUploadedClipBytes)
+        {
+            return StatusCode(StatusCodes.Status413PayloadTooLarge,
+                new { error = "Source media exceeds the 32 MiB upload limit." });
+        }
         var clip = await demonstrations.SaveUploadAsync(
             file.FileName,
             memory.ToArray(),
