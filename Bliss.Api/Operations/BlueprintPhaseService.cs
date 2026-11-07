@@ -132,7 +132,10 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
     public async Task<CatalogTurn> AskAsync(string? message, CancellationToken cancellationToken)
     {
         var reading = await ReadAsync(cancellationToken);
-        var turn = RealEstateCatalog.Reply(message, reading.Catalog);
+        // Legacy demo route must never promote owner-wide TSV approval to
+        // individual creator permission. Creator+product+slot+period evidence
+        // is required before any customer-facing offer.
+        var turn = RealEstateCatalog.Reply(message, reading.Catalog with { CreatorAuthorized = false });
         database.CatalogConversations.Add(new CatalogConversationRow
         {
             Id = Guid.NewGuid(),
