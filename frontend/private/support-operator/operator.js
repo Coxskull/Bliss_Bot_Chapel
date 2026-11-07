@@ -32,11 +32,11 @@ function hidePrivate(){
 }
 function setBusy(on){
   busy=Boolean(on);
-  for(const id of ["signin-button","mfa-button","mfa-cancel","refresh","prev","next","signout","save","case-search-button"]){
-    const item=el(id);
-    if(!item)continue;
-    if(on)item.disabled=true;
-  }
+  for(const id of ["signin-button","mfa-button","mfa-cancel","refresh","signout","case-search-button"])
+    el(id).disabled=busy;
+  el("prev").disabled=busy||!connected||currentPage===0;
+  el("next").disabled=busy||!connected||queue.length!==20||currentPage>=100;
+  el("save").disabled=busy||!connected||!caseId||config?.mutationsEnabled!==true;
 }
 function requireConfig(){
   const cfg=safeOperatorConfig(window.ALPHA_SUPPORT_OPERATOR_CONFIG,location.origin);
