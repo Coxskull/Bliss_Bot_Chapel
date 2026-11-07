@@ -90,6 +90,16 @@ jobs:
           test "$(pg -d financial_test -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='financials'")" -gt 5
           test "$(pg -d gateway_test -Atc "SELECT count(*) FROM information_schema.tables WHERE table_schema='command_gateway'")" -gt 5
 
+      - name: Task20 AI finance governor — disposable PostgreSQL SQL acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Reuse the existing loopback financial_test fixture, without
+          # connecting to Supabase, an OpenAI account, or any production DB.
+          test "$PGPASSWORD" = postgres
+          psql --no-password -h 127.0.0.1 -p 5432 -U postgres             -d financial_test -v ON_ERROR_STOP=1             -f scripts/agm-ask-alpha-sql-acceptance.sql 2>&1 | tee ask-alpha-sql-acceptance.txt
+          grep -q 'TASK20_SQL_ATOMIC_BUDGET_RLS_IDEMPOTENCY_FAILCLOSED_PASS'             ask-alpha-sql-acceptance.txt
+
       - name: Set up .NET 8 SDK
         uses: actions/setup-dotnet@v4
         with:
@@ -135,5 +145,6 @@ jobs:
           path: |
             IsolatedFixtureResults/**/*.trx
             isolated-fixture-console.txt
+            ask-alpha-sql-acceptance.txt
           if-no-files-found: warn
           retention-days: 14
