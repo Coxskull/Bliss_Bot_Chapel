@@ -42,6 +42,8 @@ jobs:
           test -s AGM345Results/agm345-synthetic-conversations.json
           grep -Fq '"commitmentAuthorized": false' AGM345Results/agm345-synthetic-conversations.json
           grep -Fq '"ActualDisplayVerified": false' AGM345Results/agm345-synthetic-conversations.json
+          grep -Fq '"CanStatePriceToCustomer": false' AGM345Results/agm345-synthetic-conversations.json
+          grep -Fq '"RealProductBindingVerified": false' AGM345Results/agm345-synthetic-conversations.json
           grep -Fq '"economicsQuoteStatus": "PRICING_UNAVAILABLE"' AGM345Results/agm345-synthetic-conversations.json
       - name: Fail closed if suite produced no test artifact
         run: |
