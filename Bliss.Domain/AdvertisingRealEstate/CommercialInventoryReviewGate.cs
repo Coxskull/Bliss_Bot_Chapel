@@ -93,6 +93,9 @@ public static class CommercialInventoryReviewGate
             || string.IsNullOrWhiteSpace(compatibility.Version)
             || string.IsNullOrWhiteSpace(compatibility.Device)
             || string.IsNullOrWhiteSpace(compatibility.Platform)
+            // The stored geometry is the current desktop frame only. A named
+            // mobile variant must be separately approved, not auto-resized.
+            || !string.Equals(compatibility.Device, "desktop", StringComparison.OrdinalIgnoreCase)
             || product.DeviceStatus != "OWNER_APPROVED" || product.PlatformStatus != "OWNER_APPROVED")
             return Reject("NEEDS_REVIEW", "PlatformCompatibilityFilter",
                 "Unverified platform, device or version. Mobile is not inferred from desktop.", product);
@@ -121,7 +124,7 @@ public static class CommercialInventoryReviewGate
         // verified quote. The existing EconomicsAcceptedPriceReader is the only
         // accepted-value readback in the API; no binding lookup occurs here.
         trace.Add(new("EconomicsQuoteLookup", "PRICING_UNAVAILABLE",
-            "No verified Economics quote/version bound to this exact product, geometry and occurrences."));
+            "No verified Economics quote/version bound to this exact product, geometry and requested occurrences: " + requestedOccurrences + ".""));
         trace.Add(new("NegotiationBoundaryValidation", "HUMAN_ESCALATION_REQUIRED",
             "No authorized price or negotiation envelope; no reservation can be created."));
         return new("OFFLINE_SYNTHETIC_ONLY", "NEEDS_REVIEW",
