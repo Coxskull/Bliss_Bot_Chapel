@@ -7,7 +7,7 @@
 
 - ALPHA public site source already contains `/services.html`, `/contact.html`, `/join-advertiser.html`, and public-interest privacy/terms pages. The deployed site was **not independently browser-reverified this session** (external network/browser tools unavailable).
 - Connected Bliss Bot Supabase project `bkutbglzivfdnoerigyb` stores aggregate **2 advertiser + 2 creator** intake requests, each with matching receipt and `alpha_ghl_delivery` record marked `DELIVERED`. All four were `NOT_YET_VERIFIED`. This proves persisted source/CRM state, not a new form submission or marketing consent.
-- Owner explicitly selected **dejesuserwin1@gmail.com** for this manual commercial work. Connected Gmail profile confirms that exact account is accessible via the owner's integration, but **no inbound delivery/reply test, assigned monitoring schedule, or paid-support escalation acceptance has been performed**. Draft public contact copy may invite ordinary inquiries to that address; it does not claim a guaranteed response time.
+- Owner selected **dejesuserwin1@gmail.com**. On 2026-11-07 an internal **self-addressed send/INBOX receipt** was verified through connected Gmail; the operator label `ALPHA / Commercial Inquiries` was created and attached to that test message. **No external-sender deliverability, scheduled human monitoring, or paid-support escalation acceptance has been tested.** See `ALPHA-346-SUPPORT-MAILBOX-RECEIPT.md`. Draft public contact copy may invite ordinary inquiries to that address, but cannot promise a customer-support response time.
 - One proposed service is defined in `ALPHA-346-FIRST-CUSTOMER-MANUAL-SERVICE.md`: **Campaign Planning & Coordination**, comprising campaign discovery, creator/channel suitability analysis, creative direction outline, coordination timeline, and planning summary, with no creator booking/advertising publication guarantee.
 - `tools/commercial/alpha346-proposal-desk.html` is an **offline browser tool**, excluded from Vercel public build. It drafts proposals and can print marked *internal* drafts. It does not store data, send email, access the DB, request payments or represent a legally accepted quote.
 
@@ -16,7 +16,7 @@
 | Gate | Required evidence | Current |
 | --- | --- | --- |
 | Seller/merchant identity | ALPHA legal name, contracting entity and Stripe registered country match | NOT VERIFIED |
-| Support route | Verified inbox ownership, **inbound test**, named operator, complaint/refund escalation | EMAIL ACCOUNT CONNECTED; MONITORING NOT VERIFIED |
+| Support route | Verified inbox ownership, **external-sender inbound test**, named operator, complaint/refund escalation | SELF-TEST PASS; EXTERNAL DELIVERY AND MONITORING NOT VERIFIED |
 | Scope | Approved five planning deliverables, exclusions, rights, market eligibility, client proof obligations | DRAFT |
 | Price/currency | Customer-specific approved quote, ISO currency, itemized taxes/fees, third-party costs, timing | NOT APPROVED |
 | Delivery | Order-specific milestones, revision count, acceptance method, exceptions | NOT APPROVED |
@@ -31,7 +31,7 @@
 
 ## Next actions using existing resources
 
-1. Use connected Gmail inbox `dejesuserwin1@gmail.com` to manually verify **inbound receipt** and set a real monitoring owner/schedule, without publishing an SLA until tested; no bulk outreach or customer campaign messaging.
+1. Existing Gmail **self-send + inbox receipt** has passed. Next verify inbound from a separately authorized non-self sender and assign an actual human monitoring owner/schedule, without publishing an SLA until tested; no bulk outreach or customer campaign messaging.
 2. Sign off the exact manual **planning-only** service scope, quote method, approved markets/currency, revisions, rights, merchant identity and official support route.
 3. Counsel/owner/finance review existing *draft* paid-service terms and refund/cancel policy; approve and date final versions, and separate paid-client privacy practices. Do not deploy drafts.
 4. For an expressly consented advertiser inquiry, authorized operator verifies private receipt and CRM record, composes a **private** quote in the offline Proposal Desk, obtains customer acceptance through an approved written process, then seeks separate payment release. Never paste private prospect identities into CI.
