@@ -200,6 +200,8 @@ jobs:
 
       - name: Test vulnerability evidence guardrails
         run: python3 -m unittest discover -s scripts -p 'test_container_vulnerabilities.py' -v
+      - name: Verify risk triage rules on fictional image evidence
+        run: python3 -m unittest discover -s scripts -p 'test_container_risk_triage.py' -v
 
       - name: Install checksum-pinned Grype scanner
         shell: bash
@@ -215,6 +217,14 @@ jobs:
 
       - name: Collect container vulnerability findings for review
         run: python3 scripts/audit-container-vulnerabilities.py --image bliss-bot-chapel:ci --revision "$(git rev-parse HEAD)" --scanner "$AGM_GRYPE_PATH" --output ContainerVulnerabilities
+      - name: Derive immutable-image vulnerability risk register (NEVER authorizes release)
+        run: |
+          python3 scripts/triage-container-findings.py \
+            --report ContainerVulnerabilities/vulnerabilities.json \
+            --summary ContainerVulnerabilities/vulnerability-summary.json \
+            --output ContainerVulnerabilityRisk
+          test -s ContainerVulnerabilityRisk/risk-summary.json
+          grep -Fq '"release_authorized": false' ContainerVulnerabilityRisk/risk-summary.json
 
       - name: Remove task scanner
         if: always()
@@ -234,5 +244,6 @@ jobs:
             ContainerEvidence/
             RailwayEntrypointEvidence/
             ContainerVulnerabilities/
+            ContainerVulnerabilityRisk/
           if-no-files-found: warn
           retention-days: 14

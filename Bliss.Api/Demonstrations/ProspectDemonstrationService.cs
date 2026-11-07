@@ -1,9 +1,12 @@
 using Bliss.Domain.Demonstrations;
+using System.Security.Cryptography;
 
 namespace Bliss.Api.Demonstrations;
 
 public sealed class ProspectDemonstrationService(ProspectDemonstrationStore store, DemonstrationVideoStudio studio)
 {
+    // Bound media decoder input; a separate HTTP request-body limit is still required.
+    public const int MaxUploadedClipBytes = 32 * 1024 * 1024;
     public LibraryDocument Library() => store.Read();
 
     public string MemoryStore => store.MemoryProvider;
@@ -73,6 +76,11 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         string provenance,
         CancellationToken cancellationToken)
     {
+        if (bytes.Length == 0 || bytes.Length > MaxUploadedClipBytes)
+        {
+            throw new InvalidOperationException("Uploaded media must be nonempty and at most 32 MiB.");
+        }
+
         var temporary = Path.Combine(store.ClipsDirectory, Guid.NewGuid().ToString("N") + ".upload");
         await File.WriteAllBytesAsync(temporary, bytes, cancellationToken);
         try
@@ -95,15 +103,25 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         CancellationToken cancellationToken)
     {
         var temporary = Path.Combine(store.ClipsDirectory, Guid.NewGuid().ToString("N") + ".mp4");
-        await studio.CreateStudioSliceAsync(temporary, market, country, seconds, cancellationToken);
-        return await ClassifyFileAsync(
-            temporary,
-            "alpha-studio-slice.mp4",
-            market,
-            country,
-            "original studio",
-            "Original Alpha studio slice. Not a copied podcast.",
-            cancellationToken);
+        try
+        {
+            await studio.CreateStudioSliceAsync(temporary, market, country, seconds, cancellationToken);
+            return await ClassifyFileAsync(
+                temporary,
+                "alpha-studio-slice.mp4",
+                market,
+                country,
+                "original studio",
+                "Original Alpha studio slice. Not a copied podcast.",
+                cancellationToken);
+        }
+        finally
+        {
+            if (File.Exists(temporary))
+            {
+                File.Delete(temporary);
+            }
+        }
     }
 
     public async Task<DemonstrationRecord> ProduceReferenceAsync(
@@ -746,8 +764,19 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         string provenance,
         CancellationToken cancellationToken)
     {
-        var bytes = await File.ReadAllBytesAsync(temporaryPath, cancellationToken);
-        var sha = DemonstrationVideoStudio.Sha256(bytes);
+        var input = new FileInfo(temporaryPath);
+        if (input.Length == 0 || input.Length > MaxUploadedClipBytes)
+        {
+            throw new InvalidOperationException("Source media must be nonempty and at most 32 MiB.");
+        }
+
+        string sha;
+        await using (var source = new FileStream(temporaryPath, FileMode.Open, FileAccess.Read,
+            FileShare.Read, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan))
+        {
+            sha = Convert.ToHexString(await SHA256.HashDataAsync(source, cancellationToken))
+                .ToLowerInvariant();
+        }
         var duration = await studio.ProbeDurationAsync(temporaryPath, cancellationToken);
         var frameHash = await studio.FrameHashAsync(temporaryPath, cancellationToken);
         var library = store.Read();
