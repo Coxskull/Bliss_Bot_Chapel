@@ -11,14 +11,18 @@
 - One proposed service is defined in `ALPHA-346-FIRST-CUSTOMER-MANUAL-SERVICE.md`: **Campaign Planning & Coordination**, comprising campaign discovery, creator/channel suitability analysis, creative direction outline, coordination timeline, and planning summary, with no creator booking/advertising publication guarantee.
 - `tools/commercial/alpha346-proposal-desk.html` is an **offline browser tool**, excluded from Vercel public build. It drafts proposals and can print marked *internal* drafts. It does not store data, send email, access the DB, request payments or represent a legally accepted quote.
 
+## Scoped November 7 approval
+
+The user responded **"i approved proceed"** to continue the manual planning-only service, custom quotation and support workflow. This is accepted as authorization to **prepare and test** the five-deliverable service and individualized quotation process, but is not a customer-specific order, a final price or currency, a support coverage schedule, a legal-policy signoff, a payment release, or a production deployment. Refer to `ALPHA-346-PLANNING-SERVICE-APPROVAL-20261107.md`.
+
 ## Mandatory explicit decisions for a PAID manual order — currently OPEN
 
 | Gate | Required evidence | Current |
 | --- | --- | --- |
 | Seller/merchant identity | ALPHA legal name, contracting entity and Stripe registered country match | NOT VERIFIED |
 | Support route | Verified inbox ownership, **external-sender inbound test**, named operator, complaint/refund escalation | SELF + EXTERNAL TWO-WAY TEST PASS; MONITORING/PAID SUPPORT NOT VERIFIED |
-| Scope | Approved five planning deliverables, exclusions, rights, market eligibility, client proof obligations | DRAFT |
-| Price/currency | Customer-specific approved quote, ISO currency, itemized taxes/fees, third-party costs, timing | NOT APPROVED |
+| Scope | Approved five planning deliverables, exclusions, rights, market eligibility, client proof obligations | PLANNING-ONLY SERVICE APPROVED FOR PREPARATION; CUSTOMER-SPECIFIC RIGHTS/ELIGIBILITY PENDING |
+| Price/currency | Customer-specific approved quote, ISO currency, itemized taxes/fees, third-party costs, timing | CUSTOM-QUOTE METHOD APPROVED FOR PREPARATION; ACTUAL PRICE, CURRENCY AND PAYMENT NOT APPROVED |
 | Delivery | Order-specific milestones, revision count, acceptance method, exceptions | NOT APPROVED |
 | Paid commercial terms | Counsel/owner approved version and effective date, visible to buyer before payment | NOT APPROVED |
 | Cancellation/refunds/disputes | Approved eligibility, work-stage consequences, procedure and contact, published policy | NOT APPROVED |
