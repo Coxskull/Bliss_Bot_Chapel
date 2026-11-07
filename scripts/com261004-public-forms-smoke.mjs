@@ -34,6 +34,15 @@ assert.ok(services.includes("Advertising and creator collaboration services"), "
 assert.ok(services.includes("transaction currency"), "quote currency disclosed per engagement");
 assert.ok(services.includes("No online checkout is enabled"), "unavailable payments disclosed");
 assert.ok(services.includes("/contact.html"), "services link to contact");
+// ALPHA-346: one manual planning service reuses the public advertiser form; no checkout.
+assert.ok(services.includes("One-Campaign Planning &amp; Coordination"), "single manual service visible");
+assert.ok(services.includes("one consolidated round"), "included revision scope visible");
+assert.ok(services.includes("Request a planning proposal through the existing advertiser inquiry form"), "existing inquiry CTA");
+assert.ok(services.includes("creator outreach or contracts"), "creator commitments excluded");
+assert.ok(services.includes("before payment or work begins"), "paid order is separately authorized");
+assert.ok(!services.includes("https://checkout.stripe.com/"), "public service description must not open Stripe checkout");
+assert.ok(!services.includes('href="/commercial-terms.html"') && !services.includes('href="/refund-cancellation.html"'), "unapproved commercial policy paths remain unpublished");
+
 const contact=read("contact.html");
 for(const path of ["/join-advertiser.html","/join-creator.html","/privacy-request.html"])
   assert.ok(contact.includes('href="'+path+'"'), "contact route available: "+path);
