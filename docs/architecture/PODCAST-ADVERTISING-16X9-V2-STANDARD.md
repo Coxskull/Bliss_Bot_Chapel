@@ -1,5 +1,8 @@
 # ALPHA GLOBAL MEDIA — Podcast Advertising Real Estate 16:9 Geometry V2
 
+> **Historical version notice (ALPHA-357):** This V2 document is retained for traceability, not as the current quality standard. Its six-layout 270×540 side advertisements leave 97,200 pixels of unused outer strips. The actual existing Composer was corrected to full-height 270×720 side ads (Y=180–900) under **ALPHA-VIDEO-GEOMETRY-QUALITY-357-M2M**. Refer to `docs/architecture/ALPHA-VIDEO-GEOMETRY-QUALITY-357-RECEIPT.md` and the V3-QUALITY-357 geometry contract before constructing new layouts. No production activation is implied.
+
+
 **Standard:** `ARE-PODCAST-16X9-V2`  
 **Recorded:** 2026-11-07  
 **Authority:** Owner-supplied 2/4/6-rectangle illustration; the **written pixel dimensions**, not the infographic's coverage labels, are the design reference.  
