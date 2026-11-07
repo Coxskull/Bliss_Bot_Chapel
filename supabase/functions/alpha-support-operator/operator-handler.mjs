@@ -56,7 +56,7 @@ export async function handleOperatorRequest(req,db,env) {
     return response({error:"Unauthenticated"},401,allowOrigin);
   const roles=rolesForUser(roster,user.id,claims.aal);
   if (!roles.length) return response({error:"Operator permission denied"},403,allowOrigin);
-  const fields="case_id,request_id,category,severity,assigned_role,owner_user_id,status,created_at,updated_at,resolved_at";
+  const fields="case_id,request_id,category,severity,assigned_role,owner_user_id,status,resolution_summary,created_at,updated_at,resolved_at";
   if (req.method==="GET") {
     let url;
     try { url=new URL(req.url); } catch { return response({error:"Bad URL"},400,allowOrigin); }
