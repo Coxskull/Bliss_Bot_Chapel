@@ -116,8 +116,8 @@ const pre=await handleOperatorRequest(new Request(url,{method:"OPTIONS",
 assert.equal(pre.status,204);
 assert.equal(pre.headers.get("Access-Control-Allow-Headers"),"Authorization, apikey, Content-Type");
 const config=readFileSync(new URL("../supabase/config.toml",import.meta.url),"utf8");
-assert.match(config,/\\[functions\\.alpha-public-intake\\]\\s*verify_jwt\\s*=\\s*false/);
-assert.match(config,/\\[functions\\.alpha-support-operator\\]\\s*verify_jwt\\s*=\\s*true/);
+assert.match(config,/\[functions\.alpha-public-intake\]\s*verify_jwt\s*=\s*false/);
+assert.match(config,/\[functions\.alpha-support-operator\]\s*verify_jwt\s*=\s*true/);
 const supportPage=readFileSync(new URL("../frontend/public/support.html",import.meta.url),"utf8");
 assert.ok(!supportPage.includes("SUPABASE_SERVICE_ROLE_KEY"));
 assert.ok(!supportPage.includes("ALPHA_SUPPORT_OPERATOR_ROSTER"));
