@@ -116,6 +116,30 @@ public sealed class ControlledAiApiTests : IClassFixture<WeddingPlannerOidcFacto
         Assert.Single(await db.ControlledAiEvents.Where(x => x.Action == "IMAGE_ATTACHED").ToListAsync());
     }
     [Fact]
+    public async Task Monthly_budget_blocks_reservation_even_when_daily_and_total_budgets_have_capacity()
+    {
+        await using var s = await Setup();
+        var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        using (var scope = s.App.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+            var runtime = scope.ServiceProvider.GetRequiredService<BlissRuntimeOptions>();
+            runtime.ControlledAi.MonthlyBudgetUsd = .1m;
+            db.Add(new ControlledAiDailyUsage { Day = monthStart, Calls = 0, ReservedUsd = .1m });
+            await db.SaveChangesAsync();
+        }
+
+        var response = await s.Owner.PostAsJsonAsync(s.Path + "/runs", s.Request());
+        Assert.Equal(HttpStatusCode.TooManyRequests, response.StatusCode);
+        using var document = JsonDocument.Parse(await s.Owner.GetStringAsync(s.Path + "/readiness"));
+        Assert.False(document.RootElement.GetProperty("textReady").GetBoolean());
+        Assert.Equal(0, s.Provider.Calls);
+        using var verifyScope = s.App.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<BlissDbContext>();
+        Assert.Empty(await verifyDb.ControlledAiRuns.ToListAsync());
+    }
+
+    [Fact]
     public async Task Disabled_provider_never_reserves_or_dispatches()
     {
         await using var s = await Setup(false);
