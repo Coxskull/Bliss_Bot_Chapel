@@ -19,6 +19,10 @@ for (const route of ['/', '/production.html', '/brand-intake.html', '/login.html
 }
 html = html.replaceAll('href="/global-media.html"', 'href="/"');
 await mkdir(resolve(output, 'assets'), { recursive: true });
+// Public, fictional creative-only demonstration; separate from protected
+// Railway Creative Academy, creator permissions, quotes and campaign endpoints.
+if (!html.includes('</main>')) throw new Error('Portal homepage entry point missing.');
+html = html.replace('</main>', "<section class=\"journey\" aria-labelledby=\"alpha-demo-heading\"><div><p class=\"eyebrow\">CREATIVE ACADEMY · PRODUCT DEMONSTRATION</p><h2 id=\"alpha-demo-heading\">Try the Advertising Real Estate composer.</h2><p>This is a fictional, browser-only illustration of ALPHA's 2-, 4-, and 6-rectangle podcast placements. No approved creator inventory, price, reservation, or real campaign is represented.</p></div><div><p>Choose a layout, inspect exact rectangle positions, download an original draft PNG, or record a short fictional demonstration. The ad assets are produced by ALPHA's existing zero-credit canvas composer; no AI credits or personal account are required.</p><a class=\"card-link\" href=\"/real-estate-showcase.html\">Try the fictional 2 / 4 / 6 renderer <span aria-hidden=\"true\">↗</span></a></div></section>" + '\n</main>');
 await writeFile(resolve(output, 'index.html'), html);
 await copyFile(resolve(source, 'global-media.css'), resolve(output, 'global-media.css'));
 
@@ -60,4 +64,16 @@ for (const [filename, routes] of [
 
 await copyFile(resolve(source, 'wedding-planner.js'), resolve(output, 'wedding-planner.js'));
 await copyFile(resolve(source, 'assets/bliss-chapel-hero.jpg'), resolve(output, 'assets/bliss-chapel-hero.jpg'));
+// Publish ONLY the bounded demo with its original zero-credit composer.
+// Do not expose authenticated production, Brand DNA, candidate files or API routes.
+for (const filename of [
+  'ad-composer.js', 'real-estate-showcase.js',
+  'real-estate-showcase-page.js', 'production.css'
+]) {
+  await copyFile(resolve(source, filename), resolve(output, filename));
+}
+let showcaseHtml = await readFile(resolve(source, 'real-estate-showcase.html'), 'utf8');
+showcaseHtml = showcaseHtml.replace('href="/production.html"', 'href="/"');
+await writeFile(resolve(output, 'real-estate-showcase.html'), showcaseHtml);
+console.log('Public fictional ALPHA real-estate demo built; no private workspace files published.');
 console.log('Built Vercel workspace portal. Application origin is public configuration, not a credential.');
