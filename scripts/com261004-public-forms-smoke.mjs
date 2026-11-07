@@ -19,6 +19,14 @@ for(const [file,kind] of forms){
   assert.ok(html.includes("/alpha-privacy.html"),"policy disclosed");
   assert.ok(html.includes("type=\"email\""),"email field");
 }
+const advertiser=read("join-advertiser.html");
+assert.ok(advertiser.includes('href="/services.html"'), "advertiser inquiry links to manual service overview");
+assert.ok(advertiser.includes('aria-describedby="campaign-help"'), "optional campaign details accessibility help");
+assert.ok(advertiser.includes("main goal, target audience, preferred format"), "asks for useful optional planning details");
+assert.ok(!/<textarea[^>]*name="description"[^>]*\\brequired\\b/.test(advertiser), "capture-first description remains optional");
+const serviceSpec=readFileSync("docs/launch/ALPHA-346-ONE-CAMPAIGN-PLANNING-SERVICE.md","utf8");
+assert.ok(serviceSpec.includes("NO OWNER-APPROVED QUOTE AMOUNT"), "do not claim unverified commercial pricing approval");
+assert.ok(!serviceSpec.includes("Owner-approved quote band"), "unverified owner pricing band must not be asserted");
 const portal=read("index.html");
 assert.ok(portal.includes('href="/join-creator.html"'),"public creator home CTA");
 assert.ok(portal.includes('href="/join-advertiser.html"'),"public advertiser home CTA");
