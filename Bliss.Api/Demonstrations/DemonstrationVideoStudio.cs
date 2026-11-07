@@ -10,6 +10,9 @@ public sealed class DemonstrationVideoStudio
     private const string Font = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
     // Local files and stdout pipes only; reject nested remote/async/RIST media protocols.
     private const string LocalInputProtocols = "file,pipe";
+    // A stalled or malicious codec must not retain an API worker indefinitely.
+    // Real production isolation/CPU and memory quotas are separately required.
+    private static readonly TimeSpan MediaProcessDeadline = TimeSpan.FromSeconds(45);
 
     public static string Sha256(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
 
@@ -165,28 +168,57 @@ public sealed class DemonstrationVideoStudio
         }
 
         process.Start();
-        var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
-        byte[] bytes = [];
-        string text = string.Empty;
-        if (captureBinary)
+        using var bounded = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        bounded.CancelAfter(MediaProcessDeadline);
+        try
         {
-            using var memory = new MemoryStream();
-            await process.StandardOutput.BaseStream.CopyToAsync(memory, cancellationToken);
-            bytes = memory.ToArray();
-        }
-        else
-        {
-            text = await process.StandardOutput.ReadToEndAsync(cancellationToken);
-        }
+            var stderrTask = process.StandardError.ReadToEndAsync(bounded.Token);
+            byte[] bytes = [];
+            string text = string.Empty;
+            if (captureBinary)
+            {
+                using var memory = new MemoryStream();
+                await process.StandardOutput.BaseStream.CopyToAsync(memory, bounded.Token);
+                bytes = memory.ToArray();
+            }
+            else
+            {
+                text = await process.StandardOutput.ReadToEndAsync(bounded.Token);
+            }
 
-        await process.WaitForExitAsync(cancellationToken);
-        var stderr = await stderrTask;
-        if (process.ExitCode != 0)
-        {
-            throw new InvalidOperationException(fileName + " failed: " + Trim(stderr));
-        }
+            await process.WaitForExitAsync(bounded.Token);
+            var stderr = await stderrTask;
+            if (process.ExitCode != 0)
+            {
+                throw new InvalidOperationException(fileName + " failed: " + Trim(stderr));
+            }
 
-        return new CapturedProcess(process.ExitCode, string.IsNullOrWhiteSpace(text) ? stderr : text, bytes);
+            return new CapturedProcess(process.ExitCode, string.IsNullOrWhiteSpace(text) ? stderr : text, bytes);
+        }
+        catch (OperationCanceledException)
+        {
+            // Do not leave a codec process or its children running after an
+            // aborted HTTP request or the independent operation deadline.
+            try
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                    await process.WaitForExitAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // Exited concurrently with cancellation.
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+
+            throw new TimeoutException(fileName + " exceeded the bounded media processing deadline.");
+        }
     }
 
     private static string Trim(string value) =>
