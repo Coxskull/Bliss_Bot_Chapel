@@ -9,11 +9,11 @@ Directive: ALPHA-TASK-020-OPENAI-ACTIVATION-388, 2026-11-08.
 - Task #21 must independently verify human support case creation and escalation before Task #20's full support-journey gate can pass. The AI reply must never claim a support case was opened when one was not.
 
 ## Provider and budget
-- Model pinned: `gpt-6-luna`, Responses API `/v1/responses`, `store:false`, `tools:[]`, `reasoning.effort:none`, `max_output_tokens:400`, no web/file/search or tool spending.
+- Model pinned: `gpt-6-luna`, Responses API `/v1/responses`, `service_tier:"default"` (STANDARD pricing, not account auto priority), `store:false`, `tools:[]`, `reasoning.effort:none`, `max_output_tokens:400`, no web/file/search or tool spending. Reject any provider response whose recorded model/tier differs.
 - Standard global short-context published token prices (verify at deployment): input $0.10/1M, cached input $0.01/1M, output $0.50/1M. No ChatGPT subscription is an API credit.
 - Each call atomically reserves $0.010000 in the EXISTING Supabase database before provider request. Global lock serializes callers. Daily limit $1, monthly $10 including operator-reconciled **outside-this-handler** OpenAI usage. Settlement records provider receipt, actual tokens and calculated actual cost. Unknown billing state remains reserved and blocks further calls.
-- Default-off control `public.alpha_ask_alpha_settings` requires `enabled=true`, UTC `metered_month`, `verified_at` within 24h and `externally_billed_usd`. Do not enable until an authorized operator has verified account billing and configured a separate provider-side project cap if available. If billed usage cannot be reliably reconciled, leave disabled.
-- Max one concurrent request per pseudonymous session, 12 per session/day, six per HMAC-hashed gateway IP/hour, 100 total/day; 400-character user message, up to four bounded recent turns, 15s provider timeout, 30KB response cap. Any spoofable or missing gateway IP identity must be reviewed and repaired BEFORE live activation; browser `Origin` is not authentication.
+- Default-off control `public.alpha_ask_alpha_settings` requires `enabled=true`, UTC `metered_month`, `verified_at` within 24h and `externally_billed_usd`. Do not enable until an authorized operator has verified account billing and configured an OpenAI **hard project spend limit** (not merely an alert) at or below $10/month, allowing for processing-lag overage, and verified this API key has access to Luna. The application atomic ledger is a second independent cap. If billed usage cannot be reliably reconciled, leave disabled.
+- Max one concurrent request per pseudonymous session, 12 per session/day, six per HMAC-hashed gateway IP/hour, 100 total/day; 400-character user message, up to four bounded recent turns, 15s provider timeout, streamed 30KB response cap. Managed Supabase `cf-connecting-ip` is the only candidate visitor-IP signal; no `X-Forwarded-For` fallback. Independently prove the field is overwritten by the managed gateway, including caller-supplied forged header and alternate public routes, BEFORE live activation; browser `Origin` is not authentication.
 - SQL candidate: `supabase/migrations/20261108_alpha_ask_alpha_ai_governor.sql`. Database writes, RLS, grants and RPC execution have NOT yet been hosted-tested.
 
 ## Human-only prerequisites — no secrets in chat
@@ -29,7 +29,7 @@ Directive: ALPHA-TASK-020-OPENAI-ACTIVATION-388, 2026-11-08.
 - Static and mocked tests: `node scripts/agm-ghl-unit-smoke.mjs` (now imports Task20 smoke) and existing CI; collect exact head and run URLs. These do NOT replace hosted acceptance.
 - Real staged advertiser and creator conversations with language variations; verified response text, model ID, provider request ID, actual input/output tokens and calculated cost, matching durable receipt IDs, consent version and session isolation.
 - Genuine support escalation with separately verified Task #21 support case receipt and human queue. If unavailable, mark BLOCKED, not a success.
-- Explicit negative cases: denied consent (zero API calls), unsupported origin, malformed/large input, idempotency replay, per-IP/session limits, concurrency collision, daily exhaustion, monthly exhaustion including pending usage and external billed usage, missing/expired metering, missing key, timeout, provider HTTP failure, missing usage, and failed settlement. After UNKNOWN, verify the next call fails closed.
+- Explicit negative cases: denied consent (zero API calls), unsupported origin, malformed/large input, idempotency replay, per-IP/session limits, concurrency collision, daily exhaustion, monthly exhaustion including pending usage and external billed usage, missing/expired metering, missing key, timeout, provider HTTP failure, missing usage, and failed settlement. After UNKNOWN, verify the next call fails closed. Test request `service_tier` is STANDARD even when project auto settings prefer Fast/Priority; reject unexpected provider-tier responses. Verify spoofed `X-Forwarded-For` and absent `cf-connecting-ip` fail before reservation, and verify `cf-connecting-ip` overwrite in hosted gateway. Verify over-30KB streaming response is cancelled and never considered free. Test the browser regex blocks phone-like strings before requesting AI.
 - Existing public interest and privacy forms must continue to work with their own receipt and HighLevel outbox state. No automatic CRM contact, outreach, campaign, price/quote, refund, payment or commercial approval from chat text.
 - Security inspection of prompts, content sanitization, PII minimization, service-key isolation, RLS, abnormal token usage, tenant data boundaries and published policy accuracy.
 
@@ -41,3 +41,12 @@ Directive: ALPHA-TASK-020-OPENAI-ACTIVATION-388, 2026-11-08.
 
 ## Current evidence state
 Engineering branch code only. No real API conversation, no provider usage or cost receipt, no staged SQL application, no new credential, no Vercel/Railway deployment, and no human support case demonstrated by this change. Maintain Task #20 OPEN until all hosted gates pass.
+
+
+### 2026-11-08 security continuation (offline only)
+- Current source now corrects the escaped phone-number regex in the existing public Ask Alpha browser handler.
+- OpenAI Responses calls explicitly request `service_tier:"default"` to prevent an API project setting from selecting a higher-priced mode; model/tier mismatch produces a retained UNKNOWN reservation.
+- The backend now bounds provider bytes **while reading the stream**, rather than only after `response.text()` allocates an unbounded body.
+- The managed Edge gateway IP candidate is `cf-connecting-ip`, without an `x-forwarded-for` fallback; official Supabase references document the header on its platform, but spoof-resistance still requires independent hosted verification.
+- New mocked assertions cover these specific regressions. CI must pass at the exact post-fix SHA; do not reuse prior green checks.
+- Sources: https://developers.openai.com/api/reference/resources/responses/methods/create ; https://developers.openai.com/api/docs/guides/spend-limits ; https://supabase.com/docs/guides/api/query-plans
