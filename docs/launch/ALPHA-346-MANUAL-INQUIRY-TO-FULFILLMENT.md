@@ -33,7 +33,7 @@ Read the existing `docs/stripe/CAPTAIN-APPROVAL-PACKET-20261106.md`, `docs/strip
 | Requirement | Current classification | Real release proof |
 | --- | --- | --- |
 | HTTPS public site, service description and advertiser inquiry | VERIFIED PUBLIC PAGE, RECEIPT PATH PREVIOUSLY VERIFIED | Fresh read-only page/browser + existing receipt count |
-| Monitored customer support contact | **CAPTAIN-DESIGNATED: alpha7media@gmail.com; INBOX/OPERATOR UNVERIFIED** | One controlled inbound/outbound verification, assigned monitoring operator, owner approval before publication/payment |
+| Monitored customer support contact | **CAPTAIN-DESIGNATED: dejesuserwin1@gmail.com; CONNECTED ACCOUNT IDENTITY VERIFIED, SUPPORT MONITORING NOT VERIFIED** | Record an incoming/reply handling test and assign monitoring operator and escalation practice; payment/publication approval remains separate |
 | Verified merchant legal name, country, business profile and Stripe account capability | **UNVERIFIED** | Stripe dashboard owner inspection; no assumptions from GitHub |
 | Custom price, currency, tax/fees, service schedule, invoicing party | **NEEDS APPROVAL PER ORDER** | Approved numeric order, authorized currency, dates |
 | Paid-service commercial Terms, cancellation/refund/dispute policy | **DRAFTED INTERNALLY; NOT APPROVED/PUBLISHED** | Captain/Legal/Finance versioned approval, effective date, public access before payment |
