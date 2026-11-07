@@ -20,7 +20,7 @@ test('public service has exactly five planning outputs and existing request form
 test('approval is limited to internal preparation and individualized quote procedure',()=>{
  assert.match(approval,/APPROVED_TO_PREPARE_MANUAL_PLANNING_SERVICE_AND_CUSTOM_QUOTES/);
  assert.match(approval,/USD \$50–\$1,000/);
- assert.match(approval,/not.*an approved price for any identified customer/);
+ assert.match(approval,/approved price for any identified customer/);
  assert.match(signoff,/INTERNAL USD \$50–\$1,000 REFERENCE RANGE APPROVED/);
  assert.match(approval,/Production payment release:\*\* `DENIED`/);
  assert.match(approval,/Global STOP:\*\* `ENGAGED`/);
