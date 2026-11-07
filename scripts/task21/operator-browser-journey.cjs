@@ -155,6 +155,23 @@ async function runScenario(browser, scenario) {
   await page.locator("#password").fill("synthetic-only");
   await page.locator("#signin-button").click();
 
+  if(scenario==="backend-unavailable"){
+    // The actual staging handler may return 503 when its role roster is
+    // deliberately unconfigured. An Auth-verified user sees only their UUID.
+    await page.locator("#identity-panel").waitFor({state:"visible"});
+    assert.equal(await page.locator("#identity-id").innerText(),uuid(99));
+    assert.equal(await page.locator("#workspace").isVisible(),false);
+    assert.equal(await page.locator("#mfa-panel").isVisible(),false);
+    assert.equal(await page.locator("#contact-fields").innerText(),"");
+    await page.locator("#identity-signout").click();
+    await page.locator("#signin-panel").waitFor({state:"visible"});
+    assert.equal(await page.locator("#identity-id").innerText(),"");
+    assert.equal(writes.length,0);
+    assert.deepEqual(accidentalEgress,[]);
+    assert.deepEqual(pageErrors,[]);
+    await context.close();
+    return;
+  }
   if(scenario==="enroll-first"){
     await page.locator("#enroll-offer-panel").waitFor({state:"visible"});
     assert.equal(await page.locator("#workspace").isVisible(),false);
@@ -169,8 +186,7 @@ async function runScenario(browser, scenario) {
     assert.equal(await page.locator("#enroll-secret").innerText(),"");
     assert.equal(await page.locator("#enroll-panel").isVisible(),false);
   }else{
-    if(scenario==="sensitive-only"||scenario==="unrostered"||
-       scenario==="backend-unavailable"){
+    if(scenario==="sensitive-only"||scenario==="unrostered"){
       await page.locator("#mfa-panel").waitFor({state:"visible"});
       assert.equal(await page.locator("#workspace").isVisible(),false);
     }else{
@@ -184,7 +200,7 @@ async function runScenario(browser, scenario) {
     }
     await page.locator("#totp").fill("123456");
     await page.locator("#mfa-button").click();
-    if(scenario==="unrostered"||scenario==="backend-unavailable"){
+    if(scenario==="unrostered"){
       await page.locator("#identity-panel").waitFor({state:"visible"});
       assert.equal(await page.locator("#identity-id").innerText(),uuid(99));
       assert.equal(await page.locator("#workspace").isVisible(),false);
