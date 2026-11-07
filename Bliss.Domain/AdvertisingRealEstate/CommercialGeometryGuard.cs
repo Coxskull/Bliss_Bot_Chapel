@@ -100,7 +100,7 @@ public static class CommercialGeometryGuard
 
         // Validate even when only a subset of the frame is sellable; the basis
         // is explicitly supplied, not guessed from advertising artwork.
-        if (sellableAdvertiserArea is <= 0 || sellableAdvertiserArea > frameArea)
+        if (sellableAdvertiserArea is null || sellableAdvertiserArea <= 0 || sellableAdvertiserArea > frameArea)
             return Reject("SELLABLE_BASIS_INVALID", "Sellable advertiser reference area must be explicit and inside the frame.");
 
         var union = UnionArea(rectangles);
