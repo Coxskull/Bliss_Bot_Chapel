@@ -65,7 +65,7 @@ public static class CommercialEconomicsReadOnlyGate
 
         if (inventory is null || product is null
             || inventory.Mode != "OFFLINE_SYNTHETIC_ONLY"
-            || !inventory.Geometry?.Validated == true
+            || inventory.Geometry?.Validated != true
             || inventory.ProductId != product.ProductId
             || inventory.ProductVersion != product.Version
             || !inventory.ShowcaseAllowed
