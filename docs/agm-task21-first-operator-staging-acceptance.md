@@ -2,15 +2,15 @@
 
 **Date:** 2026-11-08  
 **Nominated first human operator:** ALPHA's requesting operator (self-nominated in chat; **identity not yet verified against Supabase Auth**).  
-**Status:** PREPARED — no deployed operator login, verified roster entry, private staging site, or human notification acknowledgement yet.  
+**Status:** STAGING JWT-GUARDED API ACTIVE v1 — no approved operator roster, private hosted staff page, verified human login, or notification acknowledgement yet. [API deployment receipt](agm-task21-staging-api-deployment-20261108.md).  
 **No-spend directive:** $0 incremental, existing resources only.  
 **Change-control:** Global STOP engaged; production mutations, customer outreach, GHL sends, refunds, campaign changes and unapproved staging infrastructure are prohibited.
 
 ## 1. Hard gate: select a genuinely isolated Auth + database target
 
-The existing persistent Supabase development branch `alpha-first-five-staging` (`wdlmcriajgsretgyusmo`, parent `yyesqcyjhqjryaskrqip`) has now been independently identified. On November 8, 2026, the **actual Task #21 SQL migration and synthetic assertions PASSED in that hosted PostgreSQL 17 branch inside a rolled-back transaction**, with independent verification that the public support/intake tables remained absent, public function/table counts were unchanged, Auth user count stayed at three, and the migration list remained at 52. See [staging rollback evidence](agm-task21-staging-rollback-acceptance-20261108.md). This is a verified **rollback-only SQL testing target**, not yet an authorized persistent support-hosting or Auth-enrollment target. The branch holds separate `alpha_factory` and `alpha_prototype` data and lacks the Bliss Bot public intake prerequisite. Live Bliss Bot project `bkutbglzivfdnoerigyb` remains explicitly forbidden for Task #21 staging writes.
+The existing persistent Supabase development branch `alpha-first-five-staging` (`wdlmcriajgsretgyusmo`, parent `yyesqcyjhqjryaskrqip`) has now been independently identified. On November 8, 2026, the **actual Task #21 SQL migration and synthetic assertions PASSED in that hosted PostgreSQL 17 branch inside a rolled-back transaction**, with independent verification that the public support/intake tables remained absent, public function/table counts were unchanged, Auth user count stayed at three, and the migration list remained at 52. See [staging rollback evidence](agm-task21-staging-rollback-acceptance-20261108.md). This is a verified **rollback-only SQL testing target** with a separately deployed **default-deny** staging Edge API; it is not yet an authorized persistent support-hosting or Auth-enrollment target. The branch holds separate `alpha_factory` and `alpha_prototype` data and lacks the Bliss Bot public intake prerequisite. Live Bliss Bot project `bkutbglzivfdnoerigyb` remains explicitly forbidden for Task #21 staging writes.
 
-Before any hosted sign-in test, obtain separate written evidence that the existing resource is isolated, has synthetic-only data, has a tested rollback point, and is eligible for Auth enrollment. The current dashboard's `safeOperatorConfig` pins the existing Bliss Bot URL; it **must be pointed only at a separately verified approved isolated target** in a reviewed later change, not overridden ad hoc in a live config.
+Before any hosted sign-in test, obtain separate written evidence that the existing resource is isolated, has synthetic-only data, has a tested rollback point, and is eligible for Auth enrollment. The revised private dashboard `safeOperatorConfig` pins only the existing staging branch URL and requires `environment: "staging"`. It rejects the Bliss Bot production URL. There is still no approved private HTTPS staff host or server roster, so it is not a usable login portal yet.
 
 Do not deploy `alpha-support-operator`, run the migration against a connected Supabase project, open public support traffic, or flip the mutations flag until this gate is met. No new account purchases or subscriptions.
 
@@ -56,6 +56,7 @@ These tests **do not prove** human availability, mail delivery, Supabase-hosted 
 | First operator named | User's self-nomination | NOMINATED (not yet Auth verified) |
 | Existing SQL-only staging | Named Supabase branch, PG17 rollback test and independent schema readback | PASS — transaction-only test |
 | Persistent hosted/identity target | Verified rollback/backup, privacy/scope and owner approval | BLOCKED — not cleared for persistent support/real Auth writes |
+| Staging operator API | Deployed function v1 JWT required, source/readback confirmed | PASS — default denied, no live case queue |
 | First Auth account / TOTP | Operator uses approved isolated host | NOT EXECUTED |
 | Server-only role roster / AAL2 | Admin configuration and denied/allowed reads | NOT EXECUTED |
 | Offline source, DB, browser | GitHub Actions exact-head results | PREVIOUS PASS; enrollment revision pending |
