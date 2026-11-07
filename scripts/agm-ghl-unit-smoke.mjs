@@ -88,7 +88,6 @@ try {
 
   // A successful GHL HTTP response is not a successful durable delivery until
   // the exact outbox claim is committed in Supabase.
-  globalThis.fetch=async()=>({ok:true,status:200,json:async()=>({contact:{id:"mock_contact_123"}})});
   finishResult={data:false,error:null};
   await assert.rejects(deliverToGhl(fakeDb,"test-id"),/GHL_DELIVERY_STATE_NOT_COMMITTED/);
   finishResult={data:null,error:{message:"mock Supabase write failure"}};
