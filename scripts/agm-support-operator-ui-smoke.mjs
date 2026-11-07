@@ -70,6 +70,16 @@ assert.match(html,/noindex,nofollow,noarchive/);
 assert.match(html,/Content-Security-Policy/);
 assert.match(html,/id="signin-panel"/);
 assert.match(html,/id="mfa-panel"/);
+assert.match(html,/id="enroll-offer-panel"/);
+assert.match(html,/id="enroll-panel"/);
+assert.match(html,/id="enroll-secret"/);
+assert.match(html,/id="enroll-form"/);
+assert.match(app,/auth\.mfa\.enroll/);
+assert.match(app,/auth\.mfa\.challengeAndVerify/);
+assert.match(app,/pendingFactorId=null/);
+assert.match(app,/el\("enroll-secret"\)\.textContent=""/);
+assert.ok(!/console\.(?:log|debug|warn)\([^)]*(?:secret|pendingFactorId)/.test(app),
+  "MFA enrollment secret must not be logged");
 assert.match(html,/id="case-search-form"/);
 assert.match(html,/id="transition-form"/);
 assert.match(html,/id="claim-case"/);
