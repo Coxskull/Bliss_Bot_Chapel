@@ -77,6 +77,7 @@ assert.match(app,/credentials:"omit"/);
 assert.match(app,/result\.committed!==true/);
 assert.match(app,/canVerify=e\?\.message==="OPERATOR_DENIED"&&hasMfa/);
 assert.match(handler,/resolution_summary,created_at/);
+assert.match(handler,/.order\("severity",\{ascending:true\}\).order\("created_at",\{ascending:true\}\)/);
 assert.ok(!/\.innerHTML\s*=/.test(app),"No untrusted case text may be rendered as HTML");
 assert.ok(!/(?:localStorage|sessionStorage)\s*\.\s*(?:getItem|setItem)|(?:window|globalThis)\.(?:localStorage|sessionStorage)/.test(app),
   "Sensitive tokens must not use browser storage APIs");
