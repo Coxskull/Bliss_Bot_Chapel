@@ -28,6 +28,15 @@
     <button id="signin-button" type="submit">Sign in securely</button>
   </form>
 </section>
+<section class="panel" id="identity-panel" hidden>
+  <h2>Staff account verified — roster approval pending</h2>
+  <p>Your Supabase Auth identity has been verified, but no support-case queue was authorized for this session. Copy your account UUID and give it only to the trusted ALPHA staging administrator for review. It is an identifier, not a password or permission grant.</p>
+  <label for="identity-id">Verified Auth user UUID</label>
+  <output id="identity-id"></output>
+  <div class="tools"><button id="identity-copy" type="button" class="secondary">Copy my Auth user ID</button>
+    <button id="identity-signout" type="button" class="secondary">Sign out securely</button></div>
+  <p class="subtle">No case data was loaded. MFA, the separate server-side role roster, and explicit approval are still required for sensitive queues.</p>
+</section>
 <section class="panel" id="enroll-offer-panel" hidden>
   <h2>Set up your first authenticator</h2>
   <p>Your password sign-in succeeded, but no verified authenticator is enrolled. A TOTP authenticator is required for billing, privacy and security queues. This setup does not grant operator permissions: a separate server-side staff roster is still required.</p>
