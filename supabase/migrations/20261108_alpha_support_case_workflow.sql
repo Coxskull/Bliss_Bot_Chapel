@@ -25,13 +25,13 @@ ALTER TABLE public.alpha_public_intake_receipts ADD CONSTRAINT alpha_public_inta
 
 CREATE TABLE public.alpha_support_cases (
   case_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  request_id uuid NOT NULL UNIQUE REFERENCES public.alpha_public_intake_requests(id) ON DELETE RESTRICT,
+  request_id uuid NOT NULL UNIQUE REFERENCES public.alpha_public_intake_requests(id) ON DELETE CASCADE,
   category text NOT NULL CHECK (category IN
     ('general','advertiser','creator','billing','refund','failed_campaign','privacy','security_incident')),
   severity text NOT NULL CHECK (severity IN ('NORMAL','HIGH','CRITICAL')),
   assigned_role text NOT NULL CHECK (assigned_role IN
     ('GENERAL_SUPPORT','ADVERTISER_SUPPORT','CREATOR_SUPPORT','BILLING_REVIEW','PRIVACY_REVIEW','SECURITY_REVIEW')),
-  owner_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  owner_user_id uuid, -- Verified by service-only transition; retain operator ID if Auth account is later removed.
   status text NOT NULL DEFAULT 'OPEN' CHECK
     (status IN ('OPEN','TRIAGED','IN_REVIEW','AWAITING_CUSTOMER','RESOLVED','CLOSED')),
   resolution_summary text NOT NULL DEFAULT '' CHECK (char_length(resolution_summary)<=1600),
@@ -50,7 +50,7 @@ GRANT SELECT,INSERT,UPDATE ON public.alpha_support_cases TO service_role;
 
 CREATE TABLE public.alpha_support_case_events (
   event_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  case_id uuid NOT NULL REFERENCES public.alpha_support_cases(case_id) ON DELETE RESTRICT,
+  case_id uuid NOT NULL REFERENCES public.alpha_support_cases(case_id) ON DELETE CASCADE,
   action text NOT NULL CHECK (action IN ('CREATED','STATUS_CHANGED','ASSIGNED','RESOLUTION_RECORDED')),
   status text NOT NULL,
   owner_user_id uuid,
@@ -69,7 +69,7 @@ LANGUAGE plpgsql SET search_path=pg_catalog AS $$
 BEGIN RAISE EXCEPTION 'Support case events are immutable'; END;
 $$;
 CREATE TRIGGER alpha_support_events_immutable
-  BEFORE UPDATE OR DELETE ON public.alpha_support_case_events
+  BEFORE UPDATE ON public.alpha_support_case_events
   FOR EACH ROW EXECUTE FUNCTION public.alpha_support_immutable_event();
 REVOKE EXECUTE ON FUNCTION public.alpha_support_immutable_event() FROM PUBLIC,anon,authenticated;
 
