@@ -4,6 +4,8 @@ on:
     paths:
       - 'docs/commercial/ALPHA-346-*'
       - 'scripts/alpha346-*'
+      - 'tools/commercial/alpha346-*'
+      - 'frontend/public/contact.html'
       - '.github/workflows/alpha346-manual-first-customer-ci.yml'
 permissions:
   contents: read
@@ -18,7 +20,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test scripts/alpha346-manual-proposal-gate.test.mjs
+      - run: node --test scripts/alpha346-manual-proposal-gate.test.mjs scripts/alpha346-proposal-desk-smoke.test.mjs
       - name: Assert unapproved synthetic offer never passes
         shell: bash
         run: |
