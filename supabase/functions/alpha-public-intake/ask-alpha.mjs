@@ -9,7 +9,6 @@ const MONTHLY_MAX_USD = 10;
 const DAILY_MAX_USD = 1;
 const uuid = x => typeof x === "string" &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
-const hex = x => typeof x === "string" && /^[a-f0-9]{64}$/.test(x);
 const text = x => typeof x === "string" ? x.trim() : "";
 const sha256 = async value => {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
@@ -52,8 +51,34 @@ export function calculateLunaUsd(usage) {
   return Math.ceil((((input - cached - writes) * 0.10 + cached * 0.01 +
     writes * 0.25 + output * 0.50) / 1_000_000) * 1e8) / 1e8;
 }
+export async function readBoundedProviderJson(response) {
+  // Content-Length is advisory; chunked responses must also obey this cap.
+  const limit = 30000;
+  const sizeHint = response.headers.get("content-length");
+  if (sizeHint !== null && Number(sizeHint) > limit)
+    throw Error("PROVIDER_RESPONSE_TOO_LARGE");
+  const reader = response.body?.getReader();
+  if (!reader) throw Error("PROVIDER_BODY_UNAVAILABLE");
+  const chunks = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const {done,value} = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > limit) throw Error("PROVIDER_RESPONSE_TOO_LARGE");
+      chunks.push(value);
+    }
+  } finally {
+    try { await reader.cancel(); } catch { /* stream closed */ }
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const part of chunks) { bytes.set(part,offset); offset += part.length; }
+  return JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));
+}
 function responseText(json) {
-  if (json?.status !== "completed" || json.model !== MODEL ||
+  if (json?.status !== "completed" || json.model !== MODEL || json.service_tier !== "default" ||
       !Array.isArray(json.output) || json.output.some(o => o.type !== "message"))
     throw Error("PROVIDER_OUTPUT_UNVERIFIED");
   const result = json.output.flatMap(o => o.content || [])
@@ -82,10 +107,11 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
   const salt = env("ALPHA_ASK_ALPHA_HASH_SECRET");
   if (!apiKey || !salt || salt.length < 32)
     return out(origin, {error:"AI_SERVICE_NOT_CONFIGURED"},503);
-  // The gateway's client-IP header must be validated at hosted acceptance.
-  // Missing gateway identity FAILS CLOSED; this is never an authorization credential.
-  const ip = req.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim();
-  if (!ip || ip.length > 64 || !/^[a-zA-Z0-9.:]+$/.test(ip))
+  // The managed-gateway cf-connecting-ip contract must be checked with a
+  // spoofing probe on the actual hosted route before enabling public AI.
+  // Never fall back to client-supplied X-Forwarded-For; this is not authentication.
+  const ip = req.headers.get("cf-connecting-ip")?.trim();
+  if (!ip || ip.length > 45 || !/^[a-fA-F0-9.:]+$/.test(ip))
     return out(origin, {error:"RATE_LIMIT_IDENTITY_UNAVAILABLE"},503);
   const sessionHash = await hmac(salt, payload.session_id);
   const ipHash = await hmac(salt, ip);
@@ -120,7 +146,7 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
         headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json",
           "Idempotency-Key":payload.request_key},
         body:JSON.stringify({
-          model:MODEL,store:false,max_output_tokens:MAX_OUTPUT_TOKENS,tools:[],
+          model:MODEL,service_tier:"default",store:false,max_output_tokens:MAX_OUTPUT_TOKENS,tools:[],
           reasoning:{effort:"none"},instructions,
           input:[...(payload.history ?? []).map(h => ({role:h.role,content:h.content})),
             {role:"user",content:payload.message}]
@@ -129,9 +155,7 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
       });
     } finally {clearTimeout(timer);}
     if (!response.ok) throw Error("PROVIDER_NOT_SUCCESSFUL");
-    const raw = await response.text();
-    if (raw.length > 30000) throw Error("PROVIDER_RESPONSE_TOO_LARGE");
-    const data = JSON.parse(raw);
+    const data = await readBoundedProviderJson(response);
     answer = responseText(data);
     usd = calculateLunaUsd(data.usage);
     if (usd > RESERVATION_USD || usd > DAILY_MAX_USD || usd > MONTHLY_MAX_USD)
