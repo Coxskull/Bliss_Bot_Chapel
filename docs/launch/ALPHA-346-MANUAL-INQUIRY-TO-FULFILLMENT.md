@@ -26,14 +26,14 @@ Existing Vercel form uses frontend/public/alpha-intake.js and the existing Bliss
 **No early shortcuts:** “delivered to GHL” ≠ contacted; “inquiry received” ≠ account; “customer approved” ≠ paid; “planning complete” ≠ ad displayed. STOP remains engaged for the factory. There is no bulk marketing, cold creator outreach, invitation, Stripe charge, provider call, or automatic campaign fulfillment in this document.
 
 ## Test / privacy evidence (read-only, 2026-11-07)
-A current count-only readback found 2 advertiser + 2 creator requests, all NOT_YET_VERIFIED, 2+2 receipts and four delivery ledger entries marked DELIVERED. No customer PII was inspected. This evidence alone does NOT certify current live form submission or CRM lead ownership. Do not test by writing synthetic production leads.
+A fresh aggregate readback on **2026-11-07** found **3 advertiser + 2 creator requests**, all `NOT_YET_VERIFIED`, **3 advertiser + 2 creator receipts** and **5 CRM delivery ledger entries** in `DELIVERED` state. The advertiser dates in Philippine time were Nov 5 (one), Nov 6 (one), and Nov 7 (one). All three advertiser records carried the required processing/adult acknowledgments and optional marketing opt-in; this is not proof they are qualified customers. A new inquiry had insufficient campaign objective details, so a **private Gmail qualification-response draft** was prepared for human review, NOT sent. No customer identity or private lead details belong in GitHub. Do not create fake production submissions.
 
 ## Stripe readiness — exact remaining requirements
 Read the existing `docs/stripe/CAPTAIN-APPROVAL-PACKET-20261106.md`, `docs/stripe/commercial-terms-CAPTAIN-REVIEW.md`, and `docs/stripe/refund-cancellation-policy-CAPTAIN-REVIEW.md`; avoid drafting competing public policies.
 | Requirement | Current classification | Real release proof |
 | --- | --- | --- |
 | HTTPS public site, service description and advertiser inquiry | VERIFIED PUBLIC PAGE, RECEIPT PATH PREVIOUSLY VERIFIED | Fresh read-only page/browser + existing receipt count |
-| Monitored customer support contact | **CAPTAIN-DESIGNATED: dejesuserwin1@gmail.com; CONNECTED ACCOUNT IDENTITY VERIFIED, SUPPORT MONITORING NOT VERIFIED** | Record an incoming/reply handling test and assign monitoring operator and escalation practice; payment/publication approval remains separate |
+| Monitored customer support contact | **CAPTAIN-DESIGNATED: dejesuserwin1@gmail.com; account verified, external two-way email test PASSED, HUMAN MONITORING NOT VERIFIED** | Assign monitoring operator, backup, complaint escalation and approved response practices; payment/publication approval remains separate |
 | Verified merchant legal name, country, business profile and Stripe account capability | **UNVERIFIED** | Stripe dashboard owner inspection; no assumptions from GitHub |
 | Custom price, currency, tax/fees, service schedule, invoicing party | **NEEDS APPROVAL PER ORDER** | Approved numeric order, authorized currency, dates |
 | Paid-service commercial Terms, cancellation/refund/dispute policy | **DRAFTED INTERNALLY; NOT APPROVED/PUBLISHED** | Captain/Legal/Finance versioned approval, effective date, public access before payment |
