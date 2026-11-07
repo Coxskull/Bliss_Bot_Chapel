@@ -3,6 +3,11 @@
 **Service:** One-Campaign Planning & Coordination
 **Scope:** Exactly four planning deliverables + one in-scope consolidated revision.
 
+## Internal offline proposal editor — no checkout
+An existing in-repository offline proposal editor from the parallel ALPHA-346 work has been consolidated into this review branch as `tools/commercial/alpha346-proposal-desk.html`. Open that file **locally** on a trusted operator computer to draft and print an **INTERNAL REVIEW DRAFT**, not a customer offer. It never transmits, saves, emails, invoices or processes card data; its CSP forbids outbound connections and the Vercel public build does not include it. It reflects the same four written planning deliverables and one in-scope revision used by this kit. **Do not paste real customer data into shared CI, browser screenshots, GitHub comments or unrelated systems.**
+
+Any self-reported checkbox in the editor does not substitute for authentic Captain/Finance/Legal review, an approved individual Order, independently verified customer support, merchant eligibility or actual customer acceptance. In all cases the editor preserves a non-offer watermark; the final approved Order must be issued separately through an authorized human review and response process.
+
 ## One operator workflow
 1. Review a customer-initiated advertiser inquiry in the existing approved private CRM/operator path; correlate the saved receipt; do not copy names/emails into a public repo.
 2. Review actual customer goals and business scope against `ALPHA-346-ONE-CAMPAIGN-PLANNING-SERVICE.md`. Confirm that actual outreach, purchased media, creator booking and finished ads are excluded.
