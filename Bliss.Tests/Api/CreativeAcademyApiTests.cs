@@ -610,6 +610,7 @@ public sealed class AdCreatorApiFactory : WebApplicationFactory<Program>
         {
             var toRemove = services.Where(d =>
                     d.ServiceType == typeof(DbContextOptions<BlissDbContext>)
+                    || d.ServiceType == typeof(Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptionsConfiguration<BlissDbContext>)
                     || d.ServiceType == typeof(BlissDbContext))
                 .ToList();
             foreach (var descriptor in toRemove)

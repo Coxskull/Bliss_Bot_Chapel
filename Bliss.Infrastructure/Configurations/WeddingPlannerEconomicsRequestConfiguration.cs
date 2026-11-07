@@ -20,6 +20,7 @@ public sealed class WeddingPlannerEconomicsRequestConfiguration
         builder.Property(x => x.IdempotencyKey).IsRequired().HasMaxLength(128);
 
         builder.HasIndex(x => new { x.SourceSystem, x.IdempotencyKey }).IsUnique();
+        builder.HasIndex(x => x.WorkspaceId);
         builder.HasIndex(x => new { x.SessionId, x.CreatedAt });
         builder.HasIndex(x => x.RateRecommendationId).IsUnique();
 
