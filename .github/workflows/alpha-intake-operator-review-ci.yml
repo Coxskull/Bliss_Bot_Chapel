@@ -6,6 +6,7 @@ on:
       - 'supabase/functions/alpha-intake-operator-review/**'
       - 'docs/launch/candidates/NOT_FOR_APPLY-alpha-intake-operator-live-session.sql'
       - 'tests/alpha-intake-operator-review.test.mjs'
+      - 'tests/alpha-intake-operator-http.test.mjs'
       - 'tests/alpha-intake-operator-session-ci.sh'
   workflow_dispatch:
 permissions:
@@ -27,7 +28,8 @@ jobs:
       - name: Verify the permissioned read-only review contract with fictional records
         run: |
           node --check supabase/functions/alpha-intake-operator-review/review-core.mjs
-          node --test tests/alpha-intake-operator-review.test.mjs
+          node --check supabase/functions/alpha-intake-operator-review/http-handler.mjs
+          node --test tests/alpha-intake-operator-review.test.mjs tests/alpha-intake-operator-http.test.mjs
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
