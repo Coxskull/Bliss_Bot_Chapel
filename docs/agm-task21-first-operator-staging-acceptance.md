@@ -65,7 +65,8 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 | Offline source, DB, browser | Focused GitHub Actions and prior full CI | PASS on tested revisions; latest exact-head CI must still be checked |
 | Human incident alert acknowledgement | Timestamped fictional alert delivery / ACK | NOT EXECUTED |
 | Hosted fictional intake and atomic receipt | 1 OPEN general case, one receipt and CREATED event; outbox BLOCKED | PASS — database path only |
-| Hosted staff claim and resolution | Real Auth account, staff roster and gated mutation API | NOT EXECUTED |
+| Hosted restricted SQL claim and closure | Fictional Auth user, real service_role, five audit events; transaction rolled back | PASS — DATABASE ONLY |
+| Actual staff login, claim and resolution | Real Auth account, approved roster, private host, verified on-duty human | NOT EXECUTED |
 | Private dashboard HTTPS preview | Vercel SSO project exists, Preview-only source ready | BLOCKED — daily deployment quota 402 |
 | Production | Explicit owner launch signoff | DENIED; Global STOP engaged |
 
