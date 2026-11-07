@@ -79,7 +79,9 @@
       const result = await response.json();
       if (response.status === 201 &&
           result?.status === "RECEIVED_NOT_YET_VERIFIED" &&
-          /^[0-9a-f-]{36}$/i.test(result.receipt_id ?? "")) {
+          /^[0-9a-f-]{36}$/i.test(result.receipt_id ?? "") &&
+          (kind !== "support" || (/^[0-9a-f-]{36}$/i.test(result.case_id ?? "") &&
+                                  result.case_status === "OPEN"))) {
         saved = true;
         form.querySelectorAll("input,textarea,select,button").forEach(el => { el.disabled = true; });
         show(kind === "support" && /^[0-9a-f-]{36}$/i.test(result.case_id ?? "")
