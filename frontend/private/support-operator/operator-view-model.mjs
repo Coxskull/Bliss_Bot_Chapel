@@ -42,10 +42,11 @@ export function validateTransition(caseId,status,ownerId,resolution){
 }
 function keyIsPublic(key){
   if(/^sb_publishable_[A-Za-z0-9_-]+$/.test(key))return true;
-  if(!/^eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/.test(key))
-    return false;
+  const chunks=key.split(".");
+  if(chunks.length!==3 || !chunks[0].startsWith("eyJ")
+     ||!chunks.every(p=>/^[A-Za-z0-9_-]+$/.test(p)))return false;
   try{
-    const jwtPayload=JSON.parse(atob(key.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));
+    const jwtPayload=JSON.parse(atob(chunks[1].replace(/-/g,"+").replace(/_/g,"/")));
     return jwtPayload.role==="anon";
   }catch{return false;}
 }
@@ -53,9 +54,10 @@ export function safeOperatorConfig(config,origin){
   if(!config||typeof config!=="object"
     ||config.supabaseUrl!=="https://bkutbglzivfdnoerigyb.supabase.co"
     ||typeof config.publishableKey!=="string"
-    ||!(/^(sb_publishable_[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/).test(config.publishableKey)
+    ||!keyIsPublic(config.publishableKey)
     ||config.publishableKey.includes("REPLACE")
-    ||!/^https:\/\/[^/]+$/.test(origin)
+    ||!origin.startsWith("https://")
+    ||origin.includes("/") && origin.indexOf("/",8)!==-1
     ||config.operatorOrigin!==origin)
     throw Error("PRIVATE_OPERATOR_CONFIGURATION_NOT_VERIFIED");
   return config;
