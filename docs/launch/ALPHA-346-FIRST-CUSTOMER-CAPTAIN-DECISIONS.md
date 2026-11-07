@@ -13,16 +13,16 @@ Scope signatory: ____________________  Date: ______________
 
 ## Contract and merchant identity to confirm
 - Entity selling this planning service / merchant of record: ____________________
-- Actual registered business/payment country: ____________________
+- **Stripe account country (owner-reported November 7, 2026): United States (USA)**. The actual registered business address/country, legal entity documentation, US tax identification and banking eligibility still require Stripe dashboard verification and Finance/Legal review. **Do not treat a country selection as account verification.**
 - Eligible customer countries/industries: ____________________
 - Contract law/jurisdiction and required legal notice address (legal review): ____________________
-- Stripe merchant account status for **direct professional service**: UNVERIFIED; operator must inspect actual dashboard and any Stripe requests. Stripe decides final eligibility.
+- Stripe payment-account currency (owner-reported): **USD**. Stripe account country (owner-reported): **USA**. **Merchant status, identity/business verification, live-charge enablement, payout/banking and account restrictions: NOT VERIFIED.** Operator should inspect Dashboard account status and any action-required banner without exposing IDs, bank information or API keys. Stripe decides final eligibility.
 - **Marketplace payouts / creator-platform payment handling are not part of this order.** They may require separate due diligence.
 
 ## Quote choices — fill before offering a priced Order
 - **Owner-approved internal quote range:** **USD $50.00–$1,000.00 inclusive** (approved in ChatGPT 2026-11-07); this is an allowed band, **not** an individual customer quote or legal/Finance release.
 - Actual quote amount chosen within band: __________ (numeric; requires independent per-order Captain/Finance approval)
-- Transaction currency for this band: **USD** (merchant capability for actual collection unverified)
+- Transaction currency for this band: **USD** (matches owner-reported Stripe account currency; merchant capability for actual collection unverified)
 - Tax/fee treatment, which party pays what: ____________________
 - Deposits/remaining balance and milestone(s): ____________________
 - Approved payment method (do not include card details here): ____________________
