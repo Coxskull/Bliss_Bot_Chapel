@@ -78,7 +78,7 @@ assert.match(app,/result\.committed!==true/);
 assert.match(app,/canVerify=e\?\.message==="OPERATOR_DENIED"&&hasMfa/);
 assert.match(handler,/resolution_summary,created_at/);
 assert.ok(!/\.innerHTML\s*=/.test(app),"No untrusted case text may be rendered as HTML");
-assert.ok(!/(?:localStorage|sessionStorage)\\s*\\.\\s*(?:getItem|setItem)|(?:window|globalThis)\\.(?:localStorage|sessionStorage)/.test(app),
+assert.ok(!/(?:localStorage|sessionStorage)\s*\.\s*(?:getItem|setItem)|(?:window|globalThis)\.(?:localStorage|sessionStorage)/.test(app),
   "Sensitive tokens must not use browser storage APIs");
 assert.ok(!/SERVICE_ROLE_KEY|sb_secret_[A-Za-z0-9]+/.test(html+app+configExample),
   "No service-role or secret browser config");
