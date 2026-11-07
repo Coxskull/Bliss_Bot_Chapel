@@ -38,15 +38,17 @@ const oldDeno=globalThis.Deno;
 let env={};
 globalThis.Deno={env:{get:k=>env[k]}};
 let fetches=0, completions=[], claims=0, httpResponse={ok:true,status:200};
+let finishResult={data:true,error:null};
+let claimResult={data:[{request_id:"test-id",claim_token:"test-claim"}],error:null};
 const fakeDb={
   rpc: async(name,args)=>{
     if(name==="alpha_ghl_claim"){
       claims++;
-      return {data:[{request_id:"test-id",claim_token:"test-claim"}],error:null};
+      return claimResult;
     }
     if(name==="alpha_ghl_finish"){
       completions.push(args);
-      return {data:true,error:null};
+      return finishResult;
     }
     throw Error("Unexpected RPC");
   },
@@ -67,6 +69,9 @@ try {
     ALPHA_GHL_LOCATION_ID:loc,
     ALPHA_GHL_PRIVATE_INTEGRATION_TOKEN:"SYNTHETIC-TEST-TOKEN"
   };
+  claimResult={data:null,error:{message:"mock Supabase claim failure"}};
+  await assert.rejects(deliverToGhl(fakeDb,"test-id"),/GHL_DELIVERY_CLAIM_FAILED/);
+  claimResult={data:[{request_id:"test-id",claim_token:"test-claim"}],error:null};
   globalThis.fetch=async(url,options)=>{
     fetches++;
     assert.equal(url,"https://services.leadconnectorhq.com/contacts/upsert");
@@ -80,6 +85,16 @@ try {
   assert.equal(fetches,1);
   assert.equal(completions.at(-1).p_new_state,"DELIVERED");
   assert.equal(completions.at(-1).p_contact_id,"mock_contact_123");
+
+  // A successful GHL HTTP response is not a successful durable delivery until
+  // the exact outbox claim is committed in Supabase.
+  globalThis.fetch=async()=>({ok:true,status:200,json:async()=>({contact:{id:"mock_contact_123"}})});
+  finishResult={data:false,error:null};
+  await assert.rejects(deliverToGhl(fakeDb,"test-id"),/GHL_DELIVERY_STATE_NOT_COMMITTED/);
+  finishResult={data:null,error:{message:"mock Supabase write failure"}};
+  await assert.rejects(deliverToGhl(fakeDb,"test-id"),/GHL_DELIVERY_STATE_NOT_COMMITTED/);
+  finishResult={data:true,error:null};
+
   httpResponse={ok:false,status:401};
   assert.equal(await deliverToGhl(fakeDb,"test-id"),"BLOCKED");
   assert.equal(completions.at(-1).p_error_class,"auth_failure");

@@ -11,18 +11,21 @@ export async function deliverToGhl(client, requestId) {
     return "CONFIG_MISSING";
 
   const claimed = await client.rpc("alpha_ghl_claim", { p_request_id: requestId });
-  if (claimed.error || !Array.isArray(claimed.data) || !claimed.data.length)
-    return "NOT_DUE";
+  if (claimed.error) throw new Error("GHL_DELIVERY_CLAIM_FAILED");
+  if (!Array.isArray(claimed.data) || !claimed.data.length) return "NOT_DUE";
   const lease = claimed.data[0];
   if (!lease?.claim_token) return "NOT_DUE";
   const finish = async (state, httpStatus, errorClass, contactId = null) => {
     // Only the exact claim token can complete delivery; after an unexpected
     // process crash the lease becomes eligible for a bounded retry.
-    await client.rpc("alpha_ghl_finish", {
+    const completion = await client.rpc("alpha_ghl_finish", {
       p_request_id: requestId, p_claim_token: lease.claim_token,
       p_new_state: state, p_http_status: httpStatus,
       p_error_class: errorClass, p_contact_id: contactId
     });
+    // Never report delivery unless the durable outbox transition committed.
+    if (completion?.error || completion?.data !== true)
+      throw new Error("GHL_DELIVERY_STATE_NOT_COMMITTED");
   };
 
   try {
