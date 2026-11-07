@@ -19,6 +19,24 @@ for(const [file,kind] of forms){
   assert.ok(html.includes("/alpha-privacy.html"),"policy disclosed");
   assert.ok(html.includes("type=\"email\""),"email field");
 }
+const advertiser=read("join-advertiser.html");
+assert.ok(advertiser.includes('href="/services.html"'), "advertiser inquiry links to manual service overview");
+assert.ok(advertiser.includes("Plan your next advertising campaign."), "advertiser headline accurately reflects available planning");
+assert.ok(advertiser.includes("a campaign brief, a comparison of up to three content formats"), "four-part planning scope visible on advertiser page");
+assert.ok(advertiser.includes("with one in-scope revision"), "revision scope visible");
+assert.ok(advertiser.includes("no price, creator booking or advertising placement is agreed"), "inquiry does not imply available creator inventory");
+assert.ok(!advertiser.includes("Find your next creator partnership."), "avoid inviting immediate booking in manual inquiry offer");
+
+assert.ok(advertiser.includes('aria-describedby="campaign-help"'), "optional campaign details accessibility help");
+assert.ok(advertiser.includes("main goal, target audience, preferred format"), "asks for useful optional planning details");
+assert.ok(!/<textarea[^>]*name="description"[^>]*\brequired\b/.test(advertiser), "capture-first description remains optional");
+const serviceSpec=readFileSync("docs/launch/ALPHA-346-ONE-CAMPAIGN-PLANNING-SERVICE.md","utf8");
+assert.ok(serviceSpec.includes("Captain-approved internal quoting band: USD $50.00–$1,000.00 inclusive"), "explicit Captain pricing band must be recorded");
+assert.ok(serviceSpec.includes("not** an approved customer-specific price"), "pricing range must not imply any individual fee approval");
+assert.ok(serviceSpec.includes("Stripe Dashboard account verification is **owner-confirmed VERIFIED**"), "owner-reported verification recorded without unsupported API assertion");
+assert.ok(serviceSpec.includes("live charges and payouts show ENABLED, owner-confirmed November 7, 2026"), "Owner-reported Stripe live payment and payout status recorded");
+assert.ok(serviceSpec.includes("no customer-specific payment or invoice is authorized"), "Account readiness must not authorize a customer payment");
+assert.ok(serviceSpec.includes("UNVERIFIED"), "Stripe live payment status remains unverified");
 const portal=read("index.html");
 assert.ok(portal.includes('href="/join-creator.html"'),"public creator home CTA");
 assert.ok(portal.includes('href="/join-advertiser.html"'),"public advertiser home CTA");
@@ -34,7 +52,20 @@ assert.ok(services.includes("Advertising and creator collaboration services"), "
 assert.ok(services.includes("transaction currency"), "quote currency disclosed per engagement");
 assert.ok(services.includes("No online checkout is enabled"), "unavailable payments disclosed");
 assert.ok(services.includes("/contact.html"), "services link to contact");
+// ALPHA-346: one manual planning service reuses the public advertiser form; no checkout.
+assert.ok(services.includes("One-Campaign Planning &amp; Coordination"), "single manual service visible");
+assert.ok(services.includes("one consolidated round"), "included revision scope visible");
+assert.ok(services.includes("Request a planning proposal through the existing advertiser inquiry form"), "existing inquiry CTA");
+assert.ok(services.includes("creator outreach or contracts"), "creator commitments excluded");
+assert.ok(services.includes("before payment or work begins"), "paid order is separately authorized");
+assert.ok(!services.includes("https://checkout.stripe.com/"), "public service description must not open Stripe checkout");
+assert.ok(!services.includes('href="/commercial-terms.html"') && !services.includes('href="/refund-cancellation.html"'), "unapproved commercial policy paths remain unpublished");
+
 const contact=read("contact.html");
+assert.ok(contact.includes('href="mailto:dejesuserwin1@gmail.com"'), "Captain-designated support contact staged");
+assert.ok(contact.includes("Response times are not guaranteed"), "no unsupported support SLA");
+assert.ok(!contact.includes("alpha7media@gmail.com"), "replaced prior support contact");
+
 for(const path of ["/join-advertiser.html","/join-creator.html","/privacy-request.html"])
   assert.ok(contact.includes('href="'+path+'"'), "contact route available: "+path);
 assert.ok(portal.includes('href="/contact.html"'), "public contact link visible on homepage");
@@ -81,3 +112,13 @@ console.log("Public ALPHA intake forms: 35+ privacy, routing and publication inv
 
 // Stripe P0: all published pages must have valid public links and no unapproved paid policies.
 await import("./stripe-public-link-smoke.mjs");
+// ALPHA-346 first-customer manual proposal and payment gates (offline fixtures only).
+await import("./alpha346-manual-order-gates.test.mjs");
+// ALPHA-346 actual four-deliverable planning kit and fictional demo proof.
+await import("./alpha346-delivery-kit.test.mjs");
+// Consolidated original offline proposal desk, private-only and four-document promise.
+await import("./alpha346-proposal-desk-smoke.test.mjs");
+// Draft paid-service Terms/Refund/Privacy review must remain private and unapproved.
+await import("./alpha346-commercial-policy-review-smoke.test.mjs");
+// ALPHA-346 Stripe read-only source readiness; all paid Order and processor gates remain blocked.
+await import("./alpha346-stripe-preflight.test.mjs");
