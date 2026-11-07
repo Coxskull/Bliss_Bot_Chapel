@@ -61,6 +61,17 @@ jobs:
           command -v ffmpeg
           command -v ffprobe
           test -f /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+      - name: Render 2/4/6 premium concept frames and playable six-second MP4
+        run: |
+          python3 tools/AGM345.ProductFactory/render_premium_concepts.py --out-dir AGM345Results/premium
+          for n in 2 4 6; do
+            ffmpeg -hide_banner -loglevel error -y -i "AGM345Results/premium/agm345-${n}-sponsor-concept.svg" -frames:v 1 "AGM345Results/premium/agm345-${n}-sponsor-concept.png"
+            test -s "AGM345Results/premium/agm345-${n}-sponsor-concept.png"
+            ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of default=nw=1 "AGM345Results/premium/agm345-${n}-sponsor-concept.png" | grep -Fq 'width=1920'
+          done
+          ffmpeg -hide_banner -loglevel error -y -loop 1 -framerate 12 -t 2 -i AGM345Results/premium/agm345-2-sponsor-concept.png -loop 1 -framerate 12 -t 2 -i AGM345Results/premium/agm345-4-sponsor-concept.png -loop 1 -framerate 12 -t 2 -i AGM345Results/premium/agm345-6-sponsor-concept.png -filter_complex '[0:v][1:v][2:v]concat=n=3:v=1:a=0,format=yuv420p[v]' -map '[v]' -an -c:v libx264 -preset ultrafast -movflags +faststart AGM345Results/premium/agm345-2-4-6-premium-demo.mp4
+          test -s AGM345Results/premium/agm345-2-4-6-premium-demo.mp4
+          echo 'Premium designs are concept examples only; source rights and security scans remain blocking for production.'
       - name: Produce a finished fictional advertisement using installed local FFmpeg
         run: |
           command -v ffmpeg
@@ -93,5 +104,16 @@ jobs:
             AGM345Results/final-product/*.mp4
             AGM345Results/final-product/*.png
             AGM345Results/final-product/*.json
+          if-no-files-found: warn
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: agm345-premium-2-4-6-demo-${{ github.run_id }}
+          path: |
+            AGM345Results/premium/*.svg
+            AGM345Results/premium/*.png
+            AGM345Results/premium/*.mp4
+            AGM345Results/agm345-premium-layout-verification.json
           if-no-files-found: warn
           retention-days: 7
