@@ -71,7 +71,7 @@ const sdkBundle=path.join(out,"operator-sdk.js");
     JSON.stringify(manifest,null,2)+"\n",{mode:0o600,flag:"wx"});
   const headers={
     "Cache-Control":"no-store",
-    "Content-Security-Policy":"default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://bkutbglzivfdnoerigyb.supabase.co; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests",
+    "Content-Security-Policy":"default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://wdlmcriajgsretgyusmo.supabase.co; img-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; upgrade-insecure-requests",
     "Strict-Transport-Security":"max-age=31536000; includeSubDomains",
     "X-Content-Type-Options":"nosniff",
     "Referrer-Policy":"no-referrer",

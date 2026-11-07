@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, "../../frontend/private/support-operator");
 const artifactDir = path.resolve(__dirname, "../../BrowserEvidence");
 fs.mkdirSync(artifactDir,{recursive:true});
 const origin = "https://staff.example.invalid";
-const apiHost = "bkutbglzivfdnoerigyb.supabase.co";
+const apiHost = "wdlmcriajgsretgyusmo.supabase.co";
 const uuid = n => "00000000-0000-4000-8000-" + String(n).padStart(12,"0");
 const general = {
  case_id:uuid(1),request_id:uuid(11),category:"general",severity:"NORMAL",
@@ -76,7 +76,7 @@ async function runScenario(browser, scenario) {
       }
       if(filename==="operator-config.js"){
         const config={
-          supabaseUrl:"https://"+apiHost,
+          environment:"staging",supabaseUrl:"https://"+apiHost,
           publishableKey:"sb_publishable_SyntheticBrowserFixtureOnly",
           operatorOrigin:origin,mutationsEnabled:scenario==="claim-enabled"
         };

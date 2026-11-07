@@ -41,7 +41,7 @@ assert.throws(()=>validateTransition(id,"CLOSED",owner,""));
 assert.throws(()=>validateTransition(id,"IN_REVIEW","not-a-uuid",""));
 assert.equal(validateTransition(id,"RESOLVED",owner,"Synthetic resolution").status,"RESOLVED");
 
-const base={supabaseUrl:"https://bkutbglzivfdnoerigyb.supabase.co",
+const base={environment:"staging",supabaseUrl:"https://wdlmcriajgsretgyusmo.supabase.co",
   publishableKey:"sb_publishable_testOnlyPUBLICkey",
   operatorOrigin:"https://staff.example.invalid",mutationsEnabled:false};
 assert.equal(safeOperatorConfig(base,base.operatorOrigin),base);
@@ -50,6 +50,8 @@ for(const bad of [
   {...base,publishableKey:"REPLACE_WITH_PUBLISHABLE_OR_ANON_KEY"},
   {...base,operatorOrigin:"https://other.invalid"},
   {...base,supabaseUrl:"https://malicious.invalid"},
+  {...base,supabaseUrl:"https://bkutbglzivfdnoerigyb.supabase.co"},
+  {...base,environment:"production"},
 ])assert.throws(()=>safeOperatorConfig(bad,base.operatorOrigin));
 // Legacy JWTs must carry the anon role. Never allow the service_role token in
 // an operator browser, even if it superficially has the JWT shape.

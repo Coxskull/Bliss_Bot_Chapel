@@ -54,7 +54,8 @@ function keyIsPublic(key){
 }
 export function safeOperatorConfig(config,origin){
   if(!config||typeof config!=="object"
-    ||config.supabaseUrl!=="https://bkutbglzivfdnoerigyb.supabase.co"
+    ||config.supabaseUrl!=="https://wdlmcriajgsretgyusmo.supabase.co"
+    ||config.environment!=="staging"
     ||typeof config.publishableKey!=="string"
     ||!keyIsPublic(config.publishableKey)
     ||config.publishableKey.includes("REPLACE")
