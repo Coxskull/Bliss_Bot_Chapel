@@ -109,5 +109,6 @@ jobs:
         with:
           name: task21-private-operator-unsigned-bundle
           path: .task21-private-build/
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 14
