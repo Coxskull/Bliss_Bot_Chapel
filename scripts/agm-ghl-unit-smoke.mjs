@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import { mapGhlContact, ghlNotice } from "../supabase/functions/alpha-public-intake/ghl-payload.mjs";
 import { deliverToGhl } from "../supabase/functions/alpha-public-intake/ghl-sync.mjs";
+import { readFileSync } from "node:fs";
+
+const migration = readFileSync(new URL("../supabase/migrations/20261105_alpha_ghl_contact_delivery.sql", import.meta.url), "utf8");
+assert.match(migration, /ALTER TABLE public\.alpha_ghl_delivery ENABLE ROW LEVEL SECURITY;/);
+assert.match(migration, /REVOKE ALL ON public\.alpha_ghl_delivery FROM PUBLIC, anon, authenticated;/);
+assert.match(migration, /GRANT ALL ON public\.alpha_ghl_delivery TO service_role;/);
+assert.match(migration, /REVOKE EXECUTE ON FUNCTION public\.alpha_ghl_claim\(uuid\) FROM PUBLIC,anon,authenticated;/);
+assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.alpha_ghl_claim\(uuid\) TO service_role;/);
+assert.match(migration, /REVOKE EXECUTE ON FUNCTION public\.alpha_ghl_finish\(uuid,uuid,text,integer,text,text\) FROM PUBLIC,anon,authenticated;/);
+assert.match(migration, /GRANT EXECUTE ON FUNCTION public\.alpha_ghl_finish\(uuid,uuid,text,integer,text,text\) TO service_role;/);
 
 const loc = "aBcD1234EFgh5678IJkl";
 const record = {
