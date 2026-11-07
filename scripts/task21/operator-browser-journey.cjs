@@ -37,6 +37,12 @@ export function createClient() {
     getSession:async()=>({data:{session},error:null}),
     signOut:async()=>{session=null;return {error:null};},
     mfa:{
+      enroll:async ({factorType,friendlyName})=>{
+        if(factorType!=="totp"||friendlyName!=="ALPHA Support Operator")
+          return {data:null,error:{message:"wrong MFA setup"}};
+        return {data:{id:"synthetic-factor",totp:{
+          secret:"JBSWY3DPEHPK3PXP"}},error:null};
+      },
       listFactors:async()=>({data:{totp:[{
         status:"verified",id:"synthetic-factor",friendly_name:"Fixture TOTP"
       }]},error:null}),
@@ -64,7 +70,9 @@ async function runScenario(browser, scenario) {
     if(url.hostname==="staff.example.invalid"){
       const filename=parts.at(-1)||"index.html";
       if(filename==="operator-sdk.js"){
-        return route.fulfill({status:200,contentType:"text/javascript",body:sdk});
+        return route.fulfill({status:200,contentType:"text/javascript",
+          body:scenario==="enroll-first" ?
+            sdk.replace('status:"verified"','status:"unverified"') : sdk});
       }
       if(filename==="operator-config.js"){
         const config={
@@ -141,22 +149,36 @@ async function runScenario(browser, scenario) {
   await page.locator("#password").fill("synthetic-only");
   await page.locator("#signin-button").click();
 
-  if(scenario==="sensitive-only"){
-    await page.locator("#mfa-panel").waitFor({state:"visible"});
+  if(scenario==="enroll-first"){
+    await page.locator("#enroll-offer-panel").waitFor({state:"visible"});
     assert.equal(await page.locator("#workspace").isVisible(),false);
-  }else{
+    assert.equal(await page.locator("#enroll-secret").innerText(),"");
+    await page.locator("#enroll-start").click();
+    await page.locator("#enroll-panel").waitFor({state:"visible"});
+    // Validate only local in-browser display of the fictional setup secret.
+    assert.ok((await page.locator("#enroll-secret").innerText()).length>=16);
+    await page.locator("#enroll-code").fill("123456");
+    await page.locator("#enroll-verify").click();
     await page.locator("#workspace").waitFor({state:"visible"});
-    const names=await page.locator("#queue button strong").allTextContents();
-    assert.equal(names.length,1);
-    assert.match(names[0],/NORMAL/);
-    await page.locator("#verify-mfa").waitFor({state:"visible"});
-    await page.locator("#verify-mfa").click();
-    await page.locator("#mfa-panel").waitFor({state:"visible"});
+    assert.equal(await page.locator("#enroll-secret").innerText(),"");
+    assert.equal(await page.locator("#enroll-panel").isVisible(),false);
+  }else{
+    if(scenario==="sensitive-only"){
+      await page.locator("#mfa-panel").waitFor({state:"visible"});
+      assert.equal(await page.locator("#workspace").isVisible(),false);
+    }else{
+      await page.locator("#workspace").waitFor({state:"visible"});
+      const names=await page.locator("#queue button strong").allTextContents();
+      assert.equal(names.length,1);
+      assert.match(names[0],/NORMAL/);
+      await page.locator("#verify-mfa").waitFor({state:"visible"});
+      await page.locator("#verify-mfa").click();
+      await page.locator("#mfa-panel").waitFor({state:"visible"});
+    }
+    await page.locator("#totp").fill("123456");
+    await page.locator("#mfa-button").click();
+    await page.locator("#workspace").waitFor({state:"visible"});
   }
-
-  await page.locator("#totp").fill("123456");
-  await page.locator("#mfa-button").click();
-  await page.locator("#workspace").waitFor({state:"visible"});
   assert.equal(await page.locator("#mfa-panel").isVisible(),false);
   assert.equal(await page.locator("#verify-mfa").isVisible(),false);
   const names=await page.locator("#queue button strong").allTextContents();
@@ -214,6 +236,7 @@ async function runScenario(browser, scenario) {
     await runScenario(browser,"dual-role");
     await runScenario(browser,"sensitive-only");
     await runScenario(browser,"claim-enabled");
-    console.log("TASK21_OPERATOR_BROWSER_PASS: MFA and sensitive-role denial, one atomic synthetic self-claim, audit, closed-case lookup, logout, XSS and zero real network egress.");
+    await runScenario(browser,"enroll-first");
+    console.log("TASK21_OPERATOR_BROWSER_PASS: synthetic first-operator MFA enrollment and clearing, sensitive role denial, self-claim, audit, closed-case lookup, logout, XSS and zero real network egress.");
   }finally{await browser.close();}
 })().catch(err=>{console.error(err);process.exitCode=1;});
