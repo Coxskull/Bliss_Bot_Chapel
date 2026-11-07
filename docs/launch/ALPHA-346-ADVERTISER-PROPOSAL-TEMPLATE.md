@@ -20,7 +20,8 @@ For **[advertiser / product / market / objective]**, ALPHA will prepare:
 **Not included:** creator outreach, creator contracting, media placement, ad purchase, final graphic/video production, publishing, influencer fees, paid APIs or measured campaign performance. Any such service requires a separate, explicitly approved quote and agreement.
 
 ## Proposed commercial order fields — COMPLETE BEFORE OFFER OR PAYMENT
-- Service fee: **[Approved numeric amount and ISO currency]**
+- Owner-approved **internal quoting range:** **USD $50.00–$1,000.00 inclusive**, for this manual planning-only service. This is **not a completed offer**.
+- Customer-specific service fee: **[Select and separately approve ONE exact USD amount from $50.00–$1,000.00]**
 - Taxes, processing costs and third-party fees: **[Approved itemized treatment; none assumed]**
 - Payment terms and secure provider: **[Approved option and timing]**
 - Draft delivery: **[Date after prerequisites confirmed]**
