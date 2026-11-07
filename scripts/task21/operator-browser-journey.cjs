@@ -62,6 +62,9 @@ async function runScenario(browser, scenario) {
     const parts=url.pathname.split("/");
     if(url.hostname==="staff.example.invalid"){
       const filename=parts.at(-1)||"index.html";
+      if(filename==="operator-sdk.js"){
+        return route.fulfill({status:200,contentType:"text/javascript",body:sdk});
+      }
       if(filename==="operator-config.js"){
         const config={
           supabaseUrl:"https://"+apiHost,
@@ -79,12 +82,6 @@ async function runScenario(browser, scenario) {
         contentType:filename.endsWith(".html")?"text/html":
           filename.endsWith(".css")?"text/css":"text/javascript",
         body:fs.readFileSync(file)});
-    }
-    if(url.hostname==="cdn.jsdelivr.net" &&
-       url.pathname==="/npm/@supabase/supabase-js@2.95.0/+esm"){
-      return route.fulfill({status:200,contentType:"text/javascript",
-        headers:{"Access-Control-Allow-Origin":"*","Cache-Control":"no-store"},
-        body:sdk});
     }
     if(url.hostname===apiHost &&
        url.pathname==="/functions/v1/alpha-support-operator"){

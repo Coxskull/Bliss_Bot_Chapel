@@ -1,4 +1,4 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0/+esm";
+import { createClient } from "./operator-sdk.js";
 import {parseQueue,parseDetail,validateTransition,safeOperatorConfig}
   from "./operator-view-model.mjs";
 
