@@ -1,6 +1,6 @@
 # ALPHA-346 — First Paying Customer: Captain/Finance Decision Sheet
 **Prepared:** 2026-11-07 (Asia/Manila)  
-**Status:** **UNSIGNED / NOT APPROVED** — internal decision document, never a customer offer.  
+**Status:** **PRICING RANGE APPROVED ONLY (2026-11-07); REMAINDER UNSIGNED / NOT APPROVED** — internal decision document, never a customer offer.  
 **Project:** Existing Bliss public advertiser inquiry and one MANUAL advertising planning package.  
 **Working website:** https://alphacreativecontent.com/join-advertiser.html  
 **Review code:** https://github.com/Coxskull/Bliss_Bot_Chapel/pull/340  
@@ -20,8 +20,9 @@ Scope signatory: ____________________  Date: ______________
 - **Marketplace payouts / creator-platform payment handling are not part of this order.** They may require separate due diligence.
 
 ## Quote choices — fill before offering a priced Order
-- Approved single-campaign planning service fee: __________ (numeric)
-- Transaction currency (three-letter ISO code): __________
+- **Owner-approved internal quote range:** **USD $50.00–$1,000.00 inclusive** (approved in ChatGPT 2026-11-07); this is an allowed band, **not** an individual customer quote or legal/Finance release.
+- Actual quote amount chosen within band: __________ (numeric; requires independent per-order Captain/Finance approval)
+- Transaction currency for this band: **USD** (merchant capability for actual collection unverified)
 - Tax/fee treatment, which party pays what: ____________________
 - Deposits/remaining balance and milestone(s): ____________________
 - Approved payment method (do not include card details here): ____________________
