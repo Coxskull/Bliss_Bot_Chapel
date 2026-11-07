@@ -1,0 +1,47 @@
+name: ALPHA Task21 private preview dependency lock evidence
+on:
+  pull_request:
+    paths:
+      - 'scripts/task21/private-preview-deps/**'
+      - '.github/workflows/agm-task21-locked-preview-deps.yml'
+permissions:
+  contents: read
+jobs:
+  propose-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build exact direct-dependency lock proposal
+        run: |
+          set -euo pipefail
+          cd scripts/task21/private-preview-deps
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          node - <<'NODE'
+          const fs=require('node:fs'),assert=require('node:assert/strict');
+          const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+          const lock=JSON.parse(fs.readFileSync('package-lock.json','utf8'));
+          assert.equal(p.dependencies['@supabase/supabase-js'],'2.95.0');
+          assert.equal(p.dependencies.esbuild,'0.25.12');
+          assert.equal(lock.packages['node_modules/@supabase/supabase-js'].version,'2.95.0');
+          assert.equal(lock.packages['node_modules/esbuild'].version,'0.25.12');
+          for(const [name,v] of Object.entries(lock.packages)){
+            if(!name)continue;
+            assert.ok(typeof v.integrity==='string'&&v.integrity.startsWith('sha512-'),
+              'Expected integrity hash for '+name);
+            assert.ok(typeof v.version==='string','Expected resolved version for '+name);
+          }
+          console.log('TASK21_LOCK_INTEGRITY_PREPARED: transitive packages pinned and hashed');
+          NODE
+      - name: Retain generated lockfile for reviewed commit, no packages or tokens
+        uses: actions/upload-artifact@v4
+        with:
+          name: task21-proposed-preview-lock
+          path: scripts/task21/private-preview-deps/package-lock.json
+          if-no-files-found: error
+          retention-days: 3
