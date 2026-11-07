@@ -1,0 +1,57 @@
+name: ALPHA Task 21 support-case isolated acceptance
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/alpha-public-intake/**'
+      - 'supabase/functions/alpha-ghl-retry/**'
+      - 'supabase/migrations/20261108_alpha_support_case_workflow.sql'
+      - 'scripts/agm-support-unit-smoke.mjs'
+      - 'scripts/agm-ghl-unit-smoke.mjs'
+      - 'scripts/task21/**'
+      - 'frontend/public/support.html'
+      - 'frontend/public/alpha-intake.js'
+      - 'frontend/public/contact.html'
+      - '.github/workflows/agm-task21-support-case.yml'
+permissions:
+  contents: read
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/agm-support-unit-smoke.mjs
+      - run: node scripts/agm-ghl-unit-smoke.mjs
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      pg:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: task21-offline-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGDATABASE: postgres
+      PGPASSWORD: task21-offline-only
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Apply fixture then actual migration and post-conditions
+        run: |
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-intake-fixture.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261108_alpha_support_case_workflow.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-postgres-assertions.sql
