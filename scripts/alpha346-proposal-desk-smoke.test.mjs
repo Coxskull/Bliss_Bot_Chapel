@@ -23,6 +23,13 @@ for(const phrase of ["Campaign brief: objective", "Suitability matrix comparing 
 }
 assert.equal((desk.match(/data-approval="/g)||[]).length,8,"unapproved operator evidence check count");
 assert.ok(desk.includes("value.revisions!=='1'"),"one revision only");
+
+assert.ok(desk.includes('id="demoButton"'),"fictional demo button must exist");
+assert.ok(desk.includes("Riverfern Café (fictional)"),"fictional brand only");
+assert.ok(desk.includes("SYNTHETIC-NO-CUSTOMER-RECORD"),"no actual lead");
+assert.ok(desk.includes("price:''"),"fictional sample must not populate payment amount");
+assert.ok(desk.includes("for(const box of approvalBoxes)box.checked=false"),"demo must clear all approval flags");
+
 assert.ok(desk.includes("value=\"dejesuserwin1@gmail.com\""),"operator-selected real contact");
 assert.ok(desk.includes("VERIFY MONITORING BEFORE PAID ORDERS"),"actual customer support not yet verified");
 assert.ok(contact.includes('href="mailto:dejesuserwin1@gmail.com"'),"staged matching public contact");
