@@ -28,6 +28,24 @@
     <button id="signin-button" type="submit">Sign in securely</button>
   </form>
 </section>
+<section class="panel" id="enroll-offer-panel" hidden>
+  <h2>Set up your first authenticator</h2>
+  <p>Your password sign-in succeeded, but no verified authenticator is enrolled. A TOTP authenticator is required for billing, privacy and security queues. This setup does not grant operator permissions: a separate server-side staff roster is still required.</p>
+  <button type="button" id="enroll-start">Set up authenticator</button>
+  <button type="button" id="enroll-signout" class="secondary">Sign out instead</button>
+</section>
+<section class="panel" id="enroll-panel" hidden>
+  <h2>Activate your authenticator</h2>
+  <p>Add a new entry to your authenticator app using the one-time secret below. Keep this secret private. Never paste it into email, chat, screenshots, or support cases. It disappears from this page when the flow ends.</p>
+  <label>One-time authenticator setup secret</label>
+  <code id="enroll-secret" class="setup-secret"></code>
+  <form id="enroll-form" autocomplete="off">
+    <label for="enroll-code">Enter the current six-digit code from your authenticator</label>
+    <input id="enroll-code" inputmode="numeric" type="text" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required>
+    <button id="enroll-verify" type="submit">Verify and activate MFA</button>
+    <button type="button" id="enroll-cancel" class="secondary">Cancel and sign out</button>
+  </form>
+</section>
 <section class="panel" id="mfa-panel" hidden>
   <h2>Verify second factor</h2>
   <p>Billing, privacy, and security support require a verified MFA session (AAL2). An approved, already-enrolled authenticator is required.</p>
