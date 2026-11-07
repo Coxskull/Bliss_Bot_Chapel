@@ -52,9 +52,9 @@ function fixture(options = {}) {
         calls.rpc++;
         assert.equal(method, "alpha_intake_operator_session_active");
         assert.equal(args.p_user_id, USER);
-        assert.equal(args.p_session_id, SESSION);
         return {
-          data: options.live === undefined ? true : options.live,
+          data: args.p_session_id === SESSION
+            ? (options.live === undefined ? true : options.live) : false,
           error: options.rpcError ? new Error("rpc denied") : null
         };
       },
@@ -165,7 +165,6 @@ test("GoTrue denial, JWT/user mismatch, AAL1, unauthorized reviewer and revoked 
     assert.equal(f.calls.tables.length, 0);
   }
   for (const claims of [{ aal: "aal1" },
-    { session_id: "66666666-6666-4666-8666-666666666666" },
     { sub: "77777777-7777-4777-8777-777777777777" }]) {
     const f = fixture();
     const { result } = await call(f, { authorization: "Bearer " + token(claims) });
@@ -173,6 +172,13 @@ test("GoTrue denial, JWT/user mismatch, AAL1, unauthorized reviewer and revoked 
     assert.equal(f.calls.rpc, 0);
     assert.equal(f.calls.tables.length, 0);
   }
+  const differentSession = fixture();
+  const { result: sessionResult } = await call(differentSession, {
+    authorization: "Bearer " + token({ session_id: "66666666-6666-4666-8666-666666666666" })
+  });
+  assert.equal(sessionResult.status, 403);
+  assert.equal(differentSession.calls.rpc, 1);
+  assert.equal(differentSession.calls.tables.length, 0);
 });
 test("missing/duplicate receipt or delivery remains held and never grants verified account", async () => {
   for (const data of [
