@@ -113,8 +113,28 @@ assert.ok(!/(?:localStorage|sessionStorage)\s*\.\s*(?:getItem|setItem)|(?:window
   "Sensitive tokens must not use browser storage APIs");
 assert.ok(!/SERVICE_ROLE_KEY|sb_secret_[A-Za-z0-9]+/.test(html+app+configExample),
   "No service-role or secret browser config");
-assert.ok(!build.includes("support-operator"),
-  "Private operator dashboard must never be in the public Vercel build");
+const stagePreview=read("../scripts/task21/build-protected-staging-preview.cjs");
+const vercel=JSON.parse(read("../vercel.json"));
+assert.match(build,/VERCEL_ENV==='preview'/);
+assert.match(build,/VERCEL_GIT_COMMIT_REF==='feat\/agm-task21-support-cases-20261108'/);
+assert.match(build,/ALPHA_TASK21_STAGE_PREVIEW==='enabled'/);
+assert.match(build,/build-protected-staging-preview\.cjs/);
+assert.match(stagePreview,/VERCEL_ENV!=="preview"/);
+assert.match(stagePreview,/ALPHA_TASK21_STAGE_PREVIEW!=="enabled"/);
+assert.match(stagePreview,/VERCEL_GIT_COMMIT_REF!==exactBranch/);
+assert.match(stagePreview,/environment:"staging"/);
+assert.match(stagePreview,/mutationsEnabled:false/);
+assert.match(stagePreview,/npm",\[/);
+assert.match(stagePreview,/from "\.\/operator-sdk\.js"|build-private-operator\.cjs/);
+assert.ok(!stagePreview.includes("SUPABASE_SERVICE_ROLE_KEY"),
+  "Preview code must never read a privileged database secret");
+const privateRule=vercel.headers.find(h=>h.source==="/staff/task21/(.*)");
+assert.ok(privateRule,"Private route must require its own security headers");
+const hdr=Object.fromEntries(privateRule.headers.map(h=>[h.key,h.value]));
+assert.match(hdr["Content-Security-Policy"],/frame-ancestors 'none'/);
+assert.match(hdr["Content-Security-Policy"],/https:\/\/wdlmcriajgsretgyusmo\.supabase\.co/);
+assert.ok(!hdr["Content-Security-Policy"].includes("unsafe-inline"));
+assert.match(hdr["Cache-Control"],/no-store/);
 assert.ok(!read("../frontend/private/support-operator/operator-config.example.js")
   .includes("BEGIN PRIVATE KEY"));
 console.log("TASK21_OPERATOR_UI_SMOKE_PASS: role-scoped view-model, verified anon key, MFA path, private build exclusion, DOM XSS safety and memory-only session.");
