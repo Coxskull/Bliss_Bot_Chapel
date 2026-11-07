@@ -124,8 +124,11 @@ def render(variant):
         frame.append(sponsor(ad,i))
     frame.append('<rect x="0" y="0" width="1920" height="1080" fill="none" stroke="#e3bc72" stroke-width="10"/>')
     # A visible status label outside false commercial and performance claims.
-    frame.append('<rect x="530" y="1000" width="840" height="56" rx="14" fill="#041e39" stroke="#edb94d" stroke-width="3"/>')
-    frame.append(txt(557,1038,"OFFLINE CONCEPT — NO REAL AD DELIVERY",30,"#f3d18e",700))
+    protected=variant["creator_region"]
+    bx=protected["x"]+protected["width"]-430
+    by=protected["y"]+43
+    frame.append(f'<rect x="{bx}" y="{by}" width="389" height="68" rx="13" fill="#041e39" stroke="#edb94d" stroke-width="3"/>')
+    frame.append(txt(bx+21,by+44,"FICTIONAL AD DEMO",26,"#f3d18e",700))
     frame.append('</svg>')
     return '\n'.join(frame)
 
