@@ -27,7 +27,7 @@ For **[advertiser / product / market / objective]**, ALPHA will prepare:
 - Revision response and final delivery: **[Dates or business-day windows expressly agreed]**
 - Approver and customer acceptance method: **[Name + written acknowledgement]**
 - Licensed use of deliverables and ownership: **[Approved terms]**
-- Monitored support / complaint contact: **[alpha7media@gmail.com — Captain-designated, NOT YET INBOUND/OPERATOR VERIFIED; confirm before customer use]**
+- Monitored support / complaint contact: **[dejesuserwin1@gmail.com — Captain-designated and connected Gmail identity confirmed; customer-support monitoring, incoming/reply test and policy approval remain pending]**
 - Applicable approved commercial Terms, refund/cancellation and privacy notices: **[Title, version, URL or attached PDF]**
 
 ## Conditions and next step
