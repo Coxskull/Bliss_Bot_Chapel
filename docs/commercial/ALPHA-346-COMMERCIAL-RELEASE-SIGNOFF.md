@@ -22,7 +22,7 @@ The user responded **"i approved proceed"** to continue the manual planning-only
 | Seller/merchant identity | ALPHA legal name, contracting entity and Stripe registered country match | NOT VERIFIED |
 | Support route | Verified inbox ownership, **external-sender inbound test**, named operator, complaint/refund escalation | SELF + EXTERNAL TWO-WAY TEST PASS; MONITORING/PAID SUPPORT NOT VERIFIED |
 | Scope | Approved five planning deliverables, exclusions, rights, market eligibility, client proof obligations | PLANNING-ONLY SERVICE APPROVED FOR PREPARATION; CUSTOMER-SPECIFIC RIGHTS/ELIGIBILITY PENDING |
-| Price/currency | Customer-specific approved quote, ISO currency, itemized taxes/fees, third-party costs, timing | CUSTOM-QUOTE METHOD APPROVED FOR PREPARATION; ACTUAL PRICE, CURRENCY AND PAYMENT NOT APPROVED |
+| Price/currency | Customer-specific approved quote, ISO currency, itemized taxes/fees, third-party costs, timing | CUSTOM-QUOTE METHOD APPROVED FOR PREPARATION; ACTUAL PRICE, CURRENCY AND PAYMENT NOT APPROVED; INTERNAL USD $50–$1,000 REFERENCE RANGE APPROVED |
 | Delivery | Order-specific milestones, revision count, acceptance method, exceptions | NOT APPROVED |
 | Paid commercial terms | Counsel/owner approved version and effective date, visible to buyer before payment | NOT APPROVED |
 | Cancellation/refunds/disputes | Approved eligibility, work-stage consequences, procedure and contact, published policy | NOT APPROVED |
