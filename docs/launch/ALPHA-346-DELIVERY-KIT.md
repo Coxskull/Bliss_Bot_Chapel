@@ -38,5 +38,8 @@ The Captain-designated business contact is **dejesuserwin1@gmail.com**. Its conn
 - **DELIVERED**: final four planning documents handed over and customer receipt noted; **not** an ad placement.
 - **CLOSED**: customer acceptance and financial/support reconciliation documented in protected records.
 
+## Gaining a first **independent** advertiser without activating the factory
+The three stored advertiser submissions reviewed on **2026-11-07** are internally linked/test-like and **do not establish a qualified external customer**. Use the source-only `ALPHA-346-FIRST-EXTERNAL-ADVERTISER-ANNOUNCEMENT.md` as an optional, Captain-reviewed organic inquiry announcement directing voluntary contacts to the **existing** advertiser form. This draft has not been published or sent; no marketing/CRM service was added. Human operator qualification must precede any individualized commercial proposal.
+
 ## Release conditions
 Only an approved and completed customer Order governs dates, amounts, usage rights, commercial Terms/refunds/privacy, customer support, and the start of paid work. Global STOP remains engaged for automatic factory systems. The new customer-facing service and contact page in PR #340 remain development-only until explicit website deployment authorization. No automatic outreach, real creator outreach, Stripe charges or new subscriptions.
