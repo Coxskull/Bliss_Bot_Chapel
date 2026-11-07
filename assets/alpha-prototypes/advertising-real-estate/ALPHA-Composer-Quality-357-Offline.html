@@ -261,18 +261,22 @@
       const panel=ctx.createLinearGradient(x,y,x+w,y);panel.addColorStop(0,"rgba(0,0,0,.55)");panel.addColorStop(1,"rgba(0,0,0,.04)");ctx.fillStyle=panel;ctx.fillRect(x,y,w,h);
       const side=w<350;
       ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillStyle="#FFFFFF";ctx.shadowColor="#06142A";ctx.shadowBlur=9;
-      function fitLabel(text, weight, requested, minimum, centerY) {
+      function fitLabel(text, weight, requested, minimum, centerY, textX = x + 24, availableWidth = w - 48) {
         let fontSize = requested;
         do {
           ctx.font = `${weight} ${fontSize}px system-ui,sans-serif`;
-          if (ctx.measureText(text).width <= w - 48) break;
+          if (ctx.measureText(text).width <= availableWidth) break;
           fontSize -= 1;
         } while (fontSize >= minimum);
-        if (ctx.measureText(text).width > w - 48) throw Error("Logo/text cannot fit without clipping: " + text);
-        ctx.fillText(text, x + 24, centerY);
+        if (ctx.measureText(text).width > availableWidth) throw Error("Logo/text cannot fit without clipping: " + text);
+        ctx.fillText(text, textX, centerY);
       }
       fitLabel(brand, 800, side?34:55, 17, y+(side?115:h*.37));
       fitLabel(category, 600, side?19:30, 13, y+(side?175:h*.63));
+      // Human-readable product promise balances each card without resizing the artwork.
+      // Side taglines are in the center; horizontal taglines occupy the right column.
+      fitLabel(headline, 650, side?24:28, side?14:16,
+        y+(side?h*.50:h*.50), side?x+24:x+w*.56, side?w-48:w*.40);
       ctx.shadowBlur=0;
       ctx.font = `650 ${side?13:16}px system-ui,sans-serif`;
       ctx.fillStyle = "rgba(255,255,255,.94)";
