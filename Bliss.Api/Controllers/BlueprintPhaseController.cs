@@ -46,6 +46,26 @@ public sealed class BlueprintPhaseController(BlueprintPhaseService phases) : Con
         return Ok(Body(reading, null, turn));
     }
 
+    /// <summary>
+    /// Read-only engineering evidence: no sales, no writer, no generic consent
+    /// promoted into creator authorization and no invented Economics quote.
+    /// </summary>
+    [HttpPost("ask-evidence")]
+    [AllowAnonymous]
+    public async Task<ActionResult<BlueprintCommerceEvidence>> AskEvidence(
+        [FromBody] BlueprintAskRequest? request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Message) || request.Message.Length > 2000)
+            return BadRequest(new
+            {
+                error = "A bounded advertiser question is required; no commercial offer was made.",
+                campaignReady = false,
+                delivery = "NOT_SENT"
+            });
+
+        return Ok(await phases.AskEvidenceAsync(request.Message, cancellationToken));
+    }
+
     [HttpPost("adapt")]
     [AllowAnonymous]
     public async Task<ActionResult> Adapt([FromBody] BlueprintAdaptRequest? request, CancellationToken cancellationToken)

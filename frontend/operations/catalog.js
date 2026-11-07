@@ -125,7 +125,9 @@ async function adaptCatalog(body) {
 }
 
 async function askCatalog(message) {
-  const body = await api("/api/operations/blueprint/ask", {
+  // Operator catalog: inspect persisted product rows and file evidence, not
+  // the legacy owner-wide demo consent flag. This path performs no DB writes.
+  const body = await api("/api/operations/blueprint/ask-evidence", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message })
@@ -133,11 +135,31 @@ async function askCatalog(message) {
   const turn = body.turn || {};
   const target = document.getElementById("catalog-turn");
   if (target) {
-    const products = (turn.productIds || []).join(", ") || "none";
-    const showcases = (turn.showcaseIds || []).join(", ") || "none";
-    target.innerHTML = `<article><p class="eyebrow">${escapeCatalog(turn.intent)}</p><p>${escapeCatalog(turn.reply)}</p><p>Products ${escapeCatalog(products)}. Showcases ${escapeCatalog(showcases)}. Showcase displayed ${turn.showcaseDisplayed ? "Yes" : "No"}. Geometry ${escapeCatalog(turn.geometryStatus)}. Invented product ${turn.inventedProduct ? "Yes" : "No"}. Invented price ${turn.inventedPrice ? "Yes" : "No"}. Human escalation ${turn.humanEscalation ? "Yes" : "No"}. Delivery ${escapeCatalog(turn.delivery)}.</p></article>`;
+    const candidates = (body.candidates || []).map(item => {
+      const image = item.showcaseAssetRetrieved && item.showcaseImageUrl
+        ? `<img class="catalog-thumb" src="${escapeCatalog(item.showcaseImageUrl)}" alt="${escapeCatalog(item.showcaseId)} existing non-authoritative showcase">`
+        : "<p>SHOWCASE_ASSET_MISSING</p>";
+      return `<figure class="catalog-tile">${image}<figcaption>
+        <strong>${escapeCatalog(item.productId)} · ${escapeCatalog(item.version)}</strong>
+        <small>${escapeCatalog(item.lifecycle)} / ${escapeCatalog(item.showcaseId)}</small>
+        <small>Source: existing RealEstateProducts record; file sha256 ${escapeCatalog(item.showcaseSha256 || "UNVERIFIED")}</small>
+        <small>Creator: ${escapeCatalog(item.creatorAuthorizationStatus)}. Availability: ${escapeCatalog(item.availabilityStatus)}.</small>
+        <small>Economics: ${escapeCatalog(item.economicsPricingStatus)}. Mobile: ${escapeCatalog(item.deviceCompatibilityStatus)}.</small>
+      </figcaption></figure>`;
+    }).join("");
+    target.innerHTML = `<article>
+      <p class="eyebrow">${escapeCatalog(body.status)}</p>
+      <p><strong>ENGINEERING INSPECTION ONLY — NOT A PRICE, OFFER, RESERVATION, OR CREATOR APPROVAL.</strong></p>
+      <p>${escapeCatalog(turn.reply || "")}</p>
+      <p>Intent ${escapeCatalog(turn.intent)}. Database ${escapeCatalog(body.inventorySource)}.</p>
+      <p>${escapeCatalog(body.creatorAuthorizationNotice)} ${escapeCatalog(body.availabilityNotice)}</p>
+      <p>${escapeCatalog(body.economicsNotice)} ${escapeCatalog(body.showcaseNotice)}</p>
+      <p>Localization ${escapeCatalog(body.localizationStatus)}. Offer eligible ${body.offerEligible ? "Yes" : "No"}.
+      Campaign ready ${body.campaignReady ? "Yes" : "No"}. Delivery ${escapeCatalog(body.delivery)}.</p>
+      <div class="catalog-grid">${candidates || "<p>No ACTIVE canonical catalog row matches this question.</p>"}</div>
+    </article>`;
   }
-  await loadCatalog();
+  return body;
 }
 
 document.addEventListener("DOMContentLoaded", () => {

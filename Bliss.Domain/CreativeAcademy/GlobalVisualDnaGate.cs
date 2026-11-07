@@ -96,4 +96,94 @@ public static class GlobalVisualDnaGate
             "NOT_SENT",
             notice);
     }
+    /// <summary>
+    /// Two independent, human-evidenced axes. A reference image cannot certify
+    /// either actual customer brand rights or subjective visual craftsmanship.
+    /// No generated artwork is accepted merely by sharing a template or palette.
+    /// </summary>
+    public static IndependentCreativeAssessment EvaluateIndependent(
+        BrandComplianceEvidence brand,
+        ReferenceQualityEvidence quality,
+        LocalizationEvidence localization)
+    {
+        ArgumentNullException.ThrowIfNull(brand);
+        ArgumentNullException.ThrowIfNull(quality);
+        ArgumentNullException.ThrowIfNull(localization);
+
+        var brandStatus = !brand.ApprovedBrandSnapshot
+            ? Withheld
+            : brand.ApprovedLogoRights && brand.ColorsMatch && brand.CopyMatches
+              && brand.TypographyMatches && brand.ProductsMatch && brand.LanguageMatches
+              && brand.ClaimsSubstantiated && brand.MediaRightsConfirmed
+                ? Pass : Fail;
+
+        var qualityStatus = !quality.HumanVisualReviewRecorded || !quality.SourceArtworkPresent
+            ? Withheld
+            : quality.OriginalComposition && quality.CommercialPhotography
+              && quality.Lighting && quality.RichColorContrast
+              && quality.HighlightShadowControl && quality.DimensionalDepth
+              && quality.MaterialRealism && quality.TextureFidelity
+              && quality.HeroProductDominance && quality.VisualHierarchy
+              && quality.LegibleTypography && quality.PremiumPolish
+                ? Pass : Fail;
+
+        var approvedMarket = new[] { "DO", "PA", "CO", "PH", "MY", "ID" }
+            .Contains((localization.CountryCode ?? "").Trim().ToUpperInvariant(), StringComparer.Ordinal);
+        var localizationStatus = !approvedMarket
+            ? "LOCALIZATION_REVIEW_REQUIRED"
+            : localization.MarketResearchReviewed && localization.AdvertiserApprovedLanguage
+              && localization.AdvertiserApprovedSetting && localization.CastingRightsReviewed
+                ? Pass : "LOCALIZATION_REVIEW_REQUIRED";
+
+        return new IndependentCreativeAssessment(
+            brandStatus, qualityStatus, localizationStatus,
+            brandStatus == Pass && qualityStatus == Pass && localizationStatus == Pass,
+            false, "NOT_SENT", 0,
+            "Human evidence is required for each axis. Quality references are not reusable customer templates.");
+    }
+
 }
+
+public sealed record BrandComplianceEvidence(
+    bool ApprovedBrandSnapshot,
+    bool ApprovedLogoRights,
+    bool ColorsMatch,
+    bool CopyMatches,
+    bool TypographyMatches,
+    bool ProductsMatch,
+    bool LanguageMatches,
+    bool ClaimsSubstantiated,
+    bool MediaRightsConfirmed);
+
+public sealed record ReferenceQualityEvidence(
+    bool HumanVisualReviewRecorded,
+    bool SourceArtworkPresent,
+    bool OriginalComposition,
+    bool CommercialPhotography,
+    bool Lighting,
+    bool RichColorContrast,
+    bool HighlightShadowControl,
+    bool DimensionalDepth,
+    bool MaterialRealism,
+    bool TextureFidelity,
+    bool HeroProductDominance,
+    bool VisualHierarchy,
+    bool LegibleTypography,
+    bool PremiumPolish);
+
+public sealed record LocalizationEvidence(
+    string? CountryCode,
+    bool MarketResearchReviewed,
+    bool AdvertiserApprovedLanguage,
+    bool AdvertiserApprovedSetting,
+    bool CastingRightsReviewed);
+
+public sealed record IndependentCreativeAssessment(
+    string BrandComplianceStatus,
+    string ReferenceQualityStatus,
+    string LocalizationStatus,
+    bool EligibleForAdvertiserReview,
+    bool CampaignReady,
+    string Delivery,
+    int ModelCalls,
+    string Notice);
