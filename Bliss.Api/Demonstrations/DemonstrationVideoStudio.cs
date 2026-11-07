@@ -61,27 +61,37 @@ public sealed class DemonstrationVideoStudio
         var directory = Path.GetDirectoryName(outputPath)!;
         var marketFile = Path.Combine(directory, Path.GetFileName(outputPath) + ".market.txt");
         var countryFile = Path.Combine(directory, Path.GetFileName(outputPath) + ".country.txt");
-        await File.WriteAllTextAsync(marketFile, market, cancellationToken);
-        await File.WriteAllTextAsync(countryFile, country + " · source slice", cancellationToken);
-        var filter =
-            $"[0:v]drawtext=fontfile={Font}:textfile={marketFile}:fontsize=52:fontcolor=white:x=64:y=250,"
-            + $"drawtext=fontfile={Font}:textfile={countryFile}:fontsize=26:fontcolor=0xD5E4F7:x=64:y=330,"
-            + "drawbox=x=64:y=400:w=520:h=10:color=0x2F6FED:t=fill[v]";
-        await RunAsync(
-            "ffmpeg",
-            [
-                "-nostdin", "-y",
-                "-f", "lavfi", "-i", $"color=c=0x10233F:s=1280x720:d={seconds}",
-                "-filter_complex", filter,
-                "-map", "[v]",
-                "-an",
-                "-c:v", "libx264",
-                "-preset", "ultrafast",
-                "-pix_fmt", "yuv420p",
-                "-movflags", "+faststart",
-                outputPath
-            ],
-            cancellationToken);
+        try
+        {
+            await File.WriteAllTextAsync(marketFile, market, cancellationToken);
+            await File.WriteAllTextAsync(countryFile, country + " · source slice", cancellationToken);
+            var filter =
+                $"[0:v]drawtext=fontfile={Font}:textfile={marketFile}:fontsize=52:fontcolor=white:x=64:y=250,"
+                + $"drawtext=fontfile={Font}:textfile={countryFile}:fontsize=26:fontcolor=0xD5E4F7:x=64:y=330,"
+                + "drawbox=x=64:y=400:w=520:h=10:color=0x2F6FED:t=fill[v]";
+            await RunAsync(
+                "ffmpeg",
+                [
+                    "-nostdin", "-y",
+                    "-f", "lavfi", "-i", $"color=c=0x10233F:s=1280x720:d={seconds}",
+                    "-filter_complex", filter,
+                    "-map", "[v]",
+                    "-an",
+                    "-c:v", "libx264",
+                    "-preset", "ultrafast",
+                    "-pix_fmt", "yuv420p",
+                    "-movflags", "+faststart",
+                    outputPath
+                ],
+                cancellationToken);
+        }
+        finally
+        {
+            foreach (var temporary in new[] { marketFile, countryFile })
+            {
+                if (File.Exists(temporary)) File.Delete(temporary);
+            }
+        }
     }
 
     public byte[] CreateQrPng(string destination)
@@ -107,39 +117,49 @@ public sealed class DemonstrationVideoStudio
         var subhead = stem + ".s.txt";
         var detail = stem + ".d.txt";
         var cta = stem + ".c.txt";
-        await File.WriteAllTextAsync(brand, businessName, cancellationToken);
-        await File.WriteAllTextAsync(headline, concept.Headline, cancellationToken);
-        await File.WriteAllTextAsync(subhead, concept.Subhead, cancellationToken);
-        await File.WriteAllTextAsync(detail, concept.Detail, cancellationToken);
-        await File.WriteAllTextAsync(cta, concept.CallToAction, cancellationToken);
-        var accent = concept.AccentHex;
-        var filter =
-            "[0:v]scale=1280:720,setsar=1[base];"
-            + "[base]drawbox=x=760:y=36:w=484:h=648:color=white@0.96:t=fill[card];"
-            + $"[card]drawbox=x=760:y=36:w=16:h=648:color=0x{accent}:t=fill[bar];"
-            + $"[bar]drawtext=fontfile={Font}:textfile={brand}:fontsize=22:fontcolor=0x{accent}:x=796:y=64[b];"
-            + $"[b]drawtext=fontfile={Font}:textfile={headline}:fontsize=36:fontcolor=0x0C3F86:x=796:y=110[h];"
-            + $"[h]drawtext=fontfile={Font}:textfile={subhead}:fontsize=26:fontcolor=0x16324F:x=796:y=168[s];"
-            + $"[s]drawtext=fontfile={Font}:textfile={detail}:fontsize=20:fontcolor=0x3D5166:x=796:y=230[d];"
-            + $"[d]drawtext=fontfile={Font}:textfile={cta}:fontsize=24:fontcolor=0x0E7A45:x=796:y=560[t];"
-            + "[1:v]scale=150:150[qr];"
-            + "[t][qr]overlay=1048:470[out]";
-        await RunAsync(
-            "ffmpeg",
-            [
-                "-nostdin", "-y",
-                "-protocol_whitelist", LocalInputProtocols, "-i", sourcePath,
-                "-protocol_whitelist", LocalInputProtocols, "-i", qrPath,
-                "-filter_complex", filter,
-                "-map", "[out]",
-                "-an",
-                "-c:v", "libx264",
-                "-preset", "ultrafast",
-                "-pix_fmt", "yuv420p",
-                "-movflags", "+faststart",
-                outputPath
-            ],
-            cancellationToken);
+        try
+        {
+            await File.WriteAllTextAsync(brand, businessName, cancellationToken);
+            await File.WriteAllTextAsync(headline, concept.Headline, cancellationToken);
+            await File.WriteAllTextAsync(subhead, concept.Subhead, cancellationToken);
+            await File.WriteAllTextAsync(detail, concept.Detail, cancellationToken);
+            await File.WriteAllTextAsync(cta, concept.CallToAction, cancellationToken);
+            var accent = concept.AccentHex;
+            var filter =
+                "[0:v]scale=1280:720,setsar=1[base];"
+                + "[base]drawbox=x=760:y=36:w=484:h=648:color=white@0.96:t=fill[card];"
+                + $"[card]drawbox=x=760:y=36:w=16:h=648:color=0x{accent}:t=fill[bar];"
+                + $"[bar]drawtext=fontfile={Font}:textfile={brand}:fontsize=22:fontcolor=0x{accent}:x=796:y=64[b];"
+                + $"[b]drawtext=fontfile={Font}:textfile={headline}:fontsize=36:fontcolor=0x0C3F86:x=796:y=110[h];"
+                + $"[h]drawtext=fontfile={Font}:textfile={subhead}:fontsize=26:fontcolor=0x16324F:x=796:y=168[s];"
+                + $"[s]drawtext=fontfile={Font}:textfile={detail}:fontsize=20:fontcolor=0x3D5166:x=796:y=230[d];"
+                + $"[d]drawtext=fontfile={Font}:textfile={cta}:fontsize=24:fontcolor=0x0E7A45:x=796:y=560[t];"
+                + "[1:v]scale=150:150[qr];"
+                + "[t][qr]overlay=1048:470[out]";
+            await RunAsync(
+                "ffmpeg",
+                [
+                    "-nostdin", "-y",
+                    "-protocol_whitelist", LocalInputProtocols, "-i", sourcePath,
+                    "-protocol_whitelist", LocalInputProtocols, "-i", qrPath,
+                    "-filter_complex", filter,
+                    "-map", "[out]",
+                    "-an",
+                    "-c:v", "libx264",
+                    "-preset", "ultrafast",
+                    "-pix_fmt", "yuv420p",
+                    "-movflags", "+faststart",
+                    outputPath
+                ],
+                cancellationToken);
+        }
+        finally
+        {
+            foreach (var temporary in new[] { brand, headline, subhead, detail, cta })
+            {
+                if (File.Exists(temporary)) File.Delete(temporary);
+            }
+        }
     }
 
     private static async Task RunAsync(string fileName, IReadOnlyList<string> args, CancellationToken cancellationToken)
