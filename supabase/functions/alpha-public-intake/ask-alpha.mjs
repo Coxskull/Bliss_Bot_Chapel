@@ -53,7 +53,7 @@ export function calculateLunaUsd(usage) {
     writes * 0.25 + output * 0.50) / 1_000_000) * 1e8) / 1e8;
 }
 function responseText(json) {
-  if (json?.status !== "completed" || !json.model?.startsWith(MODEL) ||
+  if (json?.status !== "completed" || json.model !== MODEL ||
       !Array.isArray(json.output) || json.output.some(o => o.type !== "message"))
     throw Error("PROVIDER_OUTPUT_UNVERIFIED");
   const result = json.output.flatMap(o => o.content || [])
