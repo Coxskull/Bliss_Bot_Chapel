@@ -124,7 +124,7 @@ public static class CommercialInventoryReviewGate
         // verified quote. The existing EconomicsAcceptedPriceReader is the only
         // accepted-value readback in the API; no binding lookup occurs here.
         trace.Add(new("EconomicsQuoteLookup", "PRICING_UNAVAILABLE",
-            "No verified Economics quote/version bound to this exact product, geometry and requested occurrences: " + requestedOccurrences + ".""));
+            "No verified Economics quote/version bound to this exact product, geometry and requested occurrences: " + requestedOccurrences + "."));
         trace.Add(new("NegotiationBoundaryValidation", "HUMAN_ESCALATION_REQUIRED",
             "No authorized price or negotiation envelope; no reservation can be created."));
         return new("OFFLINE_SYNTHETIC_ONLY", "NEEDS_REVIEW",
