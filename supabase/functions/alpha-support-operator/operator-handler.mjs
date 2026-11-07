@@ -92,7 +92,8 @@ export async function handleOperatorRequest(req,db,env) {
       .order("severity",{ascending:true}).order("created_at",{ascending:true})
       .range(page*20,page*20+19);
     if (listed.error) return response({error:"Operator queue unavailable"},503,allowOrigin);
-    return response({cases:listed.data||[],page,page_size:20,visible_roles:roles},200,allowOrigin);
+    return response({cases:listed.data||[],page,page_size:20,
+      visible_roles:roles,operator_user_id:user.id},200,allowOrigin);
   }
   // Read-only by default, even with a valid operator login.
   if (env.get("ALPHA_SUPPORT_MUTATIONS_ENABLED")!=="true")
@@ -100,19 +101,36 @@ export async function handleOperatorRequest(req,db,env) {
   if (!(req.headers.get("Content-Type")||"").toLowerCase().startsWith("application/json")
       || Number(req.headers.get("Content-Length")||"0")>2400)
     return response({error:"Invalid request content"},415,allowOrigin);
-  let transition;
+  let transition, claimCaseId=null;
   try {
     const body=await req.text();
     if (body.length>2200) throw Error("Large payload");
-    transition=parseTransition(JSON.parse(body));
-  } catch { return response({error:"Invalid case transition"},422,allowOrigin); }
+    const payload=JSON.parse(body);
+    if (payload?.action==="CLAIM") {
+      if (!isUuid(payload.case_id) ||
+          Object.keys(payload).sort().join(",")!=="action,case_id")
+        throw Error("Invalid claim");
+      claimCaseId=payload.case_id;
+    } else transition=parseTransition(payload);
+  } catch { return response({error:"Invalid case operation"},422,allowOrigin); }
   const found=await db.from("alpha_support_cases")
-    .select("case_id,assigned_role").eq("case_id",transition.case_id).maybeSingle();
+    .select("case_id,assigned_role").eq("case_id",
+      claimCaseId||transition.case_id).maybeSingle();
   if (found.error) return response({error:"Case lookup unavailable"},503,allowOrigin);
   if (!found.data || !roles.includes(found.data.assigned_role))
     return response({error:"Case not found"},404,allowOrigin);
-  if (!mayAssign(roster,found.data.assigned_role,transition.owner_user_id))
-    return response({error:"Assigned operator not authorized for this queue"},403,allowOrigin);
+  if (claimCaseId) {
+    const result=await db.rpc("alpha_support_claim",{
+      p_case_id:claimCaseId,p_actor_user_id:user.id
+    });
+    if (result.error || result.data!==true)
+      return response({error:"Case unavailable or already claimed"},409,allowOrigin);
+    return response({committed:true,case_id:claimCaseId,status:"TRIAGED",
+      action:"CLAIM"},200,allowOrigin);
+  }
+  if (transition.owner_user_id!==user.id ||
+      !mayAssign(roster,found.data.assigned_role,transition.owner_user_id))
+    return response({error:"Only the assigned operator may update this case"},403,allowOrigin);
   const saved=await db.rpc("alpha_support_transition",{
     p_case_id:transition.case_id,
     p_status:transition.status,
