@@ -123,3 +123,59 @@ BEGIN
  THEN RAISE EXCEPTION 'Retention cascade not viable'; END IF;
  RAISE NOTICE 'TASK21 ISOLATED PG17 PASS: 8 cases, 9 receipts, 4 CRM outbox rows, protected escalation, durable transitions and immutable history';
 END;$$;
+
+
+-- PRODUCTION-PARITY NEGATIVE/POSITIVE ROLE TEST. Unlike the main fixture
+-- assertions above, this runs as the actual restricted `service_role`
+-- (BYPASSRLS=yes; SELECT on auth.users=no) rather than superuser.
+-- A missing private definer guard previously made BOTH RPCs fail in hosted
+-- Supabase while the CI superuser tests passed.
+INSERT INTO auth.users(id) VALUES
+  ('00000000-0000-4000-8000-000000004321'::uuid);
+DO $privilege_preflight$
+BEGIN
+ IF has_table_privilege('service_role','auth.users','SELECT') THEN
+   RAISE EXCEPTION 'Fixture does not reproduce Supabase auth.users denial'; END IF;
+ IF has_schema_privilege('anon','alpha_support_private','USAGE')
+ OR has_schema_privilege('authenticated','alpha_support_private','USAGE')
+ OR has_function_privilege('authenticated',
+   'alpha_support_private.auth_user_exists(uuid)','EXECUTE')
+ THEN RAISE EXCEPTION 'Private Auth lookup accidentally exposed to client roles'; END IF;
+ IF NOT has_function_privilege('service_role',
+   'alpha_support_private.auth_user_exists(uuid)','EXECUTE')
+ THEN RAISE EXCEPTION 'Service role cannot invoke locked-down identity helper'; END IF;
+END;
+$privilege_preflight$;
+SET ROLE service_role;
+DO $real_service_role$
+DECLARE c uuid;
+BEGIN
+ IF NOT alpha_support_private.auth_user_exists(
+   '00000000-0000-4000-8000-000000004321'::uuid)
+ THEN RAISE EXCEPTION 'Real service_role identity lookup failed'; END IF;
+ IF alpha_support_private.auth_user_exists(
+    '00000000-0000-4000-8000-000000004322'::uuid)
+ THEN RAISE EXCEPTION 'Unknown operator identity accepted'; END IF;
+ SELECT case_id INTO c FROM public.alpha_support_cases WHERE category='creator';
+ IF c IS NULL THEN RAISE EXCEPTION 'Creator case fixture missing'; END IF;
+ IF public.alpha_support_claim(c,
+   '00000000-0000-4000-8000-000000004321'::uuid) IS DISTINCT FROM true
+ THEN RAISE EXCEPTION 'Service-role self-claim failed'; END IF;
+ IF public.alpha_support_claim(c,
+   '00000000-0000-4000-8000-000000004321'::uuid) IS DISTINCT FROM true
+ THEN RAISE EXCEPTION 'Service-role idempotent claim failed'; END IF;
+ IF (SELECT COUNT(*) FROM public.alpha_support_case_events
+   WHERE case_id=c AND action='ASSIGNED')<>1
+ THEN RAISE EXCEPTION 'Service-role audit event must be exactly once'; END IF;
+ IF public.alpha_support_transition(c,'IN_REVIEW',
+     '00000000-0000-4000-8000-000000004321'::uuid,'',
+     '00000000-0000-4000-8000-000000004321'::uuid) IS DISTINCT FROM true
+ THEN RAISE EXCEPTION 'Service-role owned transition failed'; END IF;
+ IF NOT EXISTS (SELECT 1 FROM public.alpha_support_cases
+   WHERE case_id=c AND status='IN_REVIEW' AND
+   owner_user_id='00000000-0000-4000-8000-000000004321'::uuid)
+ THEN RAISE EXCEPTION 'Service-role transition did not persist'; END IF;
+END;
+$real_service_role$;
+RESET ROLE;
+SELECT 'TASK21_SERVICE_ROLE_AUTH_PRIVILEGE_PASS' AS acceptance_status;
