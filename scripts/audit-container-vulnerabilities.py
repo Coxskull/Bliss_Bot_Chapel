@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """AGM-LAUNCH-010: collect image vulnerability evidence; never approve release."""
 import argparse
+import base64
 import collections
 import csv
 import datetime as dt
@@ -10,6 +11,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tarfile
 import tempfile
 
 SCANNER_VERSION = "0.120.1"
@@ -28,6 +30,75 @@ def validate_database(status, now):
     if age > dt.timedelta(hours=48) or age < -dt.timedelta(minutes=5):
         raise ValueError("Database is stale or future-dated")
     return built.isoformat()
+
+
+
+def verify_exported_image_provenance(report, inspected, image_archive):
+    """Verify scanner bytes, manifest, image rootfs and runtime configuration.
+
+    Docker image inspect IDs can differ from exported archive config IDs.
+    Neither source is trusted alone; no provenance result approves deployment.
+    """
+    target = report.get("source", {}).get("target", {})
+    if report.get("source", {}).get("type") != "image" or target.get("userInput") != str(image_archive):
+        raise ValueError("Scanner report does not identify the requested image archive")
+    with tarfile.open(image_archive, "r:*") as archive:
+        manifest_file = archive.extractfile("manifest.json")
+        if manifest_file is None:
+            raise ValueError("Docker export lacks its image manifest")
+        entries = json.loads(manifest_file.read(1024 * 1024))
+        if not isinstance(entries, list) or len(entries) != 1:
+            raise ValueError("Docker export must contain exactly one inspected image")
+        entry = entries[0]
+        config_name = entry.get("Config", "")
+        if re.fullmatch(r"[0-9a-f]{64}\.json", config_name):
+            config_digest = config_name[:-5]
+        elif re.fullmatch(r"blobs/sha256/[0-9a-f]{64}", config_name):
+            config_digest = config_name.rsplit("/", 1)[1]
+        else:
+            raise ValueError("Docker export config path is invalid")
+        member = archive.getmember(config_name)
+        if member.size > 1024 * 1024:
+            raise ValueError("Docker export config is unexpectedly large")
+        config_file = archive.extractfile(member)
+        if config_file is None:
+            raise ValueError("Docker export config is missing")
+        config_bytes = config_file.read()
+    exported_id = "sha256:" + hashlib.sha256(config_bytes).hexdigest()
+    if exported_id != "sha256:" + config_digest or target.get("imageID") != exported_id:
+        raise ValueError("Scanner target differs from exported config content")
+    try:
+        scanner_config = base64.b64decode(target["config"], validate=True)
+        manifest_bytes = base64.b64decode(target["manifest"], validate=True)
+        distribution_manifest = json.loads(manifest_bytes)
+        exported_config = json.loads(config_bytes)
+    except (ValueError, KeyError, TypeError) as error:
+        raise ValueError("Scanner target metadata is missing or invalid") from error
+    if scanner_config != config_bytes:
+        raise ValueError("Scanner config does not match exported immutable bytes")
+    if target.get("manifestDigest") != "sha256:" + hashlib.sha256(manifest_bytes).hexdigest():
+        raise ValueError("Scanner manifest digest does not match its contents")
+    if (distribution_manifest.get("schemaVersion") != 2
+            or distribution_manifest.get("config", {}).get("digest") != exported_id
+            or distribution_manifest.get("config", {}).get("size") != len(config_bytes)):
+        raise ValueError("Scanner manifest does not bind the exported config")
+    inspected_layers = inspected.get("RootFS", {}).get("Layers")
+    exported_layers = exported_config.get("rootfs", {}).get("diff_ids")
+    if not inspected_layers or inspected_layers != exported_layers:
+        raise ValueError("Scanner export rootfs differs from Docker-inspected layers")
+    expected_config = inspected.get("Config") or {}
+    actual_config = exported_config.get("config") or {}
+    for key in ("Labels", "User", "Env", "Entrypoint", "Cmd", "WorkingDir", "ExposedPorts"):
+        if expected_config.get(key) != actual_config.get(key):
+            raise ValueError("Scanner export runtime config differs from Docker-inspected image")
+    for key in ("Architecture", "Os"):
+        if inspected.get(key) != exported_config.get(key.lower()):
+            raise ValueError("Scanner export platform differs from Docker-inspected image")
+    return {"docker_inspect_image_id": inspected["Id"],
+            "exported_image_config_id": exported_id,
+            "image_id_comparison": "DIRECT_MATCH" if inspected["Id"] == exported_id
+                                   else "EXPORT_BYTES_ROOTFS_AND_RUNTIME_MATCH",
+            "provenance_validated": True, "release_authorized": False}
 
 
 def summarize(report, image_id):
@@ -120,10 +191,12 @@ def main():
             archive_sha = hashlib.file_digest(stream, "sha256").hexdigest()
         report = run(scanner + ["docker-archive:" + str(archive), "--output", "json"],
                      "vulnerabilities.json", timeout=600, tool_env=env)
-        counts, rows = summarize(report, image_id)
+        provenance = verify_exported_image_provenance(report, image, archive)
+        counts, rows = summarize(report, provenance["exported_image_config_id"])
         summary = {"task_id": "AGM-LAUNCH-010", "gate": "VULNERABILITY_AUDIT_EVIDENCE_ONLY",
                    "source_revision": args.revision, "image_id": image_id,
                    "image_archive_sha256": archive_sha, "scanner_version": SCANNER_VERSION,
+                   "image_export_provenance": provenance,
                    "scanner_archive_sha256": SCANNER_ARCHIVE_SHA256,
                    "database": database, "actual_completed_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
                    **counts, "coverage": "Grype squashed image package catalog/matches; not exploitability or complete security assurance",
