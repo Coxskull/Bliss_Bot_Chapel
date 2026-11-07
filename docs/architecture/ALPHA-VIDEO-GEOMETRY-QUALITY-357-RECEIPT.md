@@ -22,16 +22,16 @@
 - **Purpose-based size mismatches:** zero (all paired top/bottom banners match; two sides equal).
 - **Shared divider thickness:** four pixels, rendered only once at each advertiser/advertiser boundary; no ad/creator divider crosses into the protected podcast. Original doubled inset outlines removed.
 - **Artwork sizing:** the Composer keeps the original underlying `AlphaTemplateComposer.render`, uses aspect-preserving containment for texture, and blurs it behind separately rendered legible brand/category text. No stretched/cropped landscape art in side panels.
-- **Text fit:** per-slot visible labels use `measureText` and decrease font size until the text fits, otherwise fail rather than squeeze/crop. Fixture brand text was visually checked in sampled rendered frames. This is **not** a proof for arbitrary future text, logos or video inputs.
+- **Text fit:** per-slot visible brand, category, and headline labels use `measureText` and decrease font size until the text fits, otherwise fail rather than squeeze/crop. Fixture brand text was visually checked in sampled rendered frames. This is **not** a proof for arbitrary future text, logos or video inputs.
 - The offline Composer's demo-disclosure strip was moved out of the creator viewing region; each advertiser panel retains a `FICTIONAL DEMO` notice.
 
 ## Recorded output evidence (local, fictional, not public)
 
 | Layout | WebM | Stream pixels | Decoded frames | SHA-256 |
 | --- | --- | --- | ---: | --- |
-| 2 | `ALPHA-357-Demo-2-rectangles.webm` | 1920×1080 | 32 | `b7355a6a97e8fe0a9eeffd65eed0e96a2939b2271e27865f06300fbe59ccd371` |
-| 4 | `ALPHA-357-Demo-4-rectangles.webm` | 1920×1080 | 33 | `a238940077ceea06cb9ba1b52964da1616b47fbf67cbd4e13030c64e7f106bca` |
-| 6 | `ALPHA-357-Demo-6-rectangles.webm` | 1920×1080 | 32 | `7b28b7c65db43a817ead8e9d664b5c8b8b4dc7817f8a0579e69e9f34e618b4d3` |
+| 2 | `ALPHA-357-Demo-2-rectangles.webm` | 1920×1080 | 29 | `10d9cdeb1fabab3becd20f4c7c4df586fbcdb907779bede731cd8e6e41a268d3` |
+| 4 | `ALPHA-357-Demo-4-rectangles.webm` | 1920×1080 | 31 | `bb092acb3845498abb0e412813e7ed8337c4ac9debb29f487e25e3c8c69f9f4d` |
+| 6 | `ALPHA-357-Demo-6-rectangles.webm` | 1920×1080 | 28 | `0be21c59c8eb66763ff9cbe07f1dc7dbe99b7d7fcd0909d39d11881edfe42387` |
 
 Actual Chromium canvas `MediaRecorder` VP9 WebM outputs were captured offline and independently decoded by FFmpeg. Three distinct frames sampled at ~0.3/1.1/1.9 seconds for each video. Measured creator-region per-pixel frame-change signal confirms motion; the video is not one repeated still. In the six-layout video, decoded pixel samples in **all previously blank edge strips** show the expected colored advertiser side area.
 
@@ -43,7 +43,7 @@ The outputs and detailed `ALPHA-357-geometry-evidence.json` are delivered in the
 
 1. Existing Composer source executed in **headless Chromium** by Playwright (loaded directly in memory, no external resources).
 2. Exact pixel-occupancy masks with NumPy / Pillow: every pixel belongs to exactly one ad slot or the protected creator region, for all three layouts; **zero gaps, overlaps and protected content violations**.
-3. `ffprobe -v error -count_frames -show_entries stream=width,height,codec_name,nb_read_frames -of json <file.webm>` for each actual video: 1920×1080 VP9, 32/33/32 decoded frames.
+3. `ffprobe -v error -count_frames -show_entries stream=width,height,codec_name,nb_read_frames -of json <file.webm>` for each actual video: 1920×1080 VP9, 29/31/28 decoded frames.
 4. `ffmpeg -ss 0.3|1.1|1.9 -i <file.webm> -frames:v 1 <frame.png>`, direct decoded pixel-sample verification and creator-region motion checks.
 5. Node focused geometry test: `node --test scripts/alpha357-composer-geometry.test.mjs`; C# focused tests: `dotnet test Bliss.Tests/Bliss.Tests.csproj --filter FullyQualifiedName~PodcastAdvertisingGeometryTests` in CI.
 
