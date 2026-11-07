@@ -31,8 +31,10 @@ assert.ok(advertiser.includes('aria-describedby="campaign-help"'), "optional cam
 assert.ok(advertiser.includes("main goal, target audience, preferred format"), "asks for useful optional planning details");
 assert.ok(!/<textarea[^>]*name="description"[^>]*\brequired\b/.test(advertiser), "capture-first description remains optional");
 const serviceSpec=readFileSync("docs/launch/ALPHA-346-ONE-CAMPAIGN-PLANNING-SERVICE.md","utf8");
-assert.ok(serviceSpec.includes("NO OWNER-APPROVED QUOTE AMOUNT"), "do not claim unverified commercial pricing approval");
-assert.ok(!serviceSpec.includes("Owner-approved quote band"), "unverified owner pricing band must not be asserted");
+assert.ok(serviceSpec.includes("Captain-approved internal quoting band: USD $50.00–$1,000.00 inclusive"), "explicit Captain pricing band must be recorded");
+assert.ok(serviceSpec.includes("not** an approved customer-specific price"), "pricing range must not imply any individual fee approval");
+assert.ok(serviceSpec.includes("actual Stripe merchant verification, payouts and live charge capability remain"), "reported USA/USD settings cannot imply live payment readiness");
+assert.ok(serviceSpec.includes("UNVERIFIED"), "Stripe live payment status remains unverified");
 const portal=read("index.html");
 assert.ok(portal.includes('href="/join-creator.html"'),"public creator home CTA");
 assert.ok(portal.includes('href="/join-advertiser.html"'),"public advertiser home CTA");
