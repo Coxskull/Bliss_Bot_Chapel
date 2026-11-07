@@ -40,6 +40,15 @@ export function validateTransition(caseId,status,ownerId,resolution){
     throw Error("Invalid transition, owner or resolution.");
   return {case_id:caseId,status,owner_user_id:ownerId,resolution:r};
 }
+function keyIsPublic(key){
+  if(/^sb_publishable_[A-Za-z0-9_-]+$/.test(key))return true;
+  if(!/^eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/.test(key))
+    return false;
+  try{
+    const jwtPayload=JSON.parse(atob(key.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")));
+    return jwtPayload.role==="anon";
+  }catch{return false;}
+}
 export function safeOperatorConfig(config,origin){
   if(!config||typeof config!=="object"
     ||config.supabaseUrl!=="https://bkutbglzivfdnoerigyb.supabase.co"
