@@ -1,0 +1,42 @@
+name: AGM 345 Offline Inventory & Geometry Contract
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/agm345-offline-commercial-ci.yml'
+      - 'Bliss.Domain/AdvertisingRealEstate/**'
+      - 'Bliss.Tests/AdvertisingRealEstate/CommercialInventoryReviewGateTests.cs'
+      - 'assets/alpha-prototypes/advertising-real-estate/AGM345-OFFLINE-ASSET-EVIDENCE.tsv'
+      - 'docs/launch/ALPHA-345-OFFLINE-COMMERCIAL-SLICE.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: agm345-offline-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  synthetic-commercial-guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Restore existing Bliss solution without migrations or services
+        run: dotnet restore BlissBotChapel.sln
+      - name: Test owner geometry, protected content and existing Ask Alpha retrieval in isolation
+        run: |
+          dotnet test Bliss.Tests/Bliss.Tests.csproj --no-restore --filter FullyQualifiedName~CommercialInventoryReviewGateTests --logger "trx;LogFileName=agm345-contract.trx" --results-directory ./AGM345Results --verbosity normal
+      - name: Fail closed if suite produced no test artifact
+        run: |
+          test -s AGM345Results/agm345-contract.trx
+          echo 'AGM345_OFFLINE_SOURCE_ONLY — NO CUSTOMER QUOTES, OUTREACH, RESERVATIONS, PRODUCTION DB OR DELIVERY'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: agm345-offline-contract-${{ github.run_id }}
+          path: AGM345Results/*.trx
+          if-no-files-found: warn
+          retention-days: 7
