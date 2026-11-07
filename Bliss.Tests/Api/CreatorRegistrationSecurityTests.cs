@@ -136,18 +136,18 @@ public sealed class CreatorRegistrationSecurityTests
     {
         var source = Environment.GetEnvironmentVariable("BLISS_TEST_POSTGRES_CONNECTION");
         if (string.IsNullOrWhiteSpace(source)) return;
-        var schema = "task4_" + Guid.NewGuid().ToString("N");
+        var database = "task4_" + Guid.NewGuid().ToString("N");
         var adminBuilder = new NpgsqlConnectionStringBuilder(source);
         await using (var admin = new NpgsqlConnection(adminBuilder.ConnectionString))
         {
             await admin.OpenAsync();
-            await using var create = new NpgsqlCommand($"CREATE SCHEMA \"{schema}\"", admin);
+            await using var create = new NpgsqlCommand($"CREATE DATABASE \"{database}\"", admin);
             await create.ExecuteNonQueryAsync();
         }
         try
         {
-            var tenantBuilder = new NpgsqlConnectionStringBuilder(source) { SearchPath = schema };
-            var dbOptions = new DbContextOptionsBuilder<BlissDbContext>().UseNpgsql(tenantBuilder.ConnectionString).Options;
+            var isolatedBuilder = new NpgsqlConnectionStringBuilder(source) { Database = database };
+            var dbOptions = new DbContextOptionsBuilder<BlissDbContext>().UseNpgsql(isolatedBuilder.ConnectionString).Options;
             await using var db = new BlissDbContext(dbOptions);
             await db.Database.MigrateAsync();
             var request = new CreatorRegistrationRequest(Guid.NewGuid(), "Synthetic Creator", "PH",
@@ -195,7 +195,7 @@ public sealed class CreatorRegistrationSecurityTests
         {
             await using var admin = new NpgsqlConnection(adminBuilder.ConnectionString);
             await admin.OpenAsync();
-            await using var drop = new NpgsqlCommand($"DROP SCHEMA IF EXISTS \"{schema}\" CASCADE", admin);
+            await using var drop = new NpgsqlCommand($"DROP DATABASE IF EXISTS \"{database}\" WITH (FORCE)", admin);
             await drop.ExecuteNonQueryAsync();
         }
     }
