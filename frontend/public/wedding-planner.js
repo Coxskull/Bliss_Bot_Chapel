@@ -13,12 +13,26 @@ document.querySelectorAll(".site-header nav a").forEach(link => {
   });
 });
 
-// Public, read-only guided Ask Alpha conversation. No network requests, tracking,
-// contact capture, model provider, state persistence, or commercial commands.
+// Existing guide is preserved. AI is enabled ONLY by an explicit Vercel
+// release flag, explicit per-visitor processing consent, and a separately
+// enabled server-side Supabase budget/receipt gateway. Never touch CRM here.
 const askAlphaInput = document.querySelector("#ask-alpha-input");
 const askAlphaSend = document.querySelector("#ask-alpha-send");
 const askAlphaThread = document.querySelector("#ask-alpha-thread");
 let askAlphaTurns = 0;
+const askAlphaLive = document.querySelector("#ask-alpha")?.dataset.askAlphaAi === "true";
+const askAlphaAiPanel = document.querySelector("#ask-alpha-ai-consent-panel");
+const askAlphaAiConsent = document.querySelector("#ask-alpha-ai-consent");
+const askAlphaMarketingConsent = document.querySelector("#ask-alpha-marketing-consent");
+const askAlphaAiStatus = document.querySelector("#ask-alpha-ai-status");
+const askAlphaSessionId = window.crypto?.randomUUID?.() ?? null;
+const askAlphaHistory = [];
+let askAlphaPending = false;
+if (askAlphaLive && askAlphaAiPanel && askAlphaAiConsent) {
+  askAlphaAiPanel.hidden = false;
+  if (askAlphaSend) askAlphaSend.textContent = "Ask AI";
+}
+
 
 function askAlphaAnswer(question) {
   const q = question.toLowerCase();
@@ -57,7 +71,8 @@ function appendAskAlphaMessage(who, body) {
   const bubble = document.createElement("p");
   bubble.className = "ask-alpha-bubble " + (who === "visitor" ? "ask-alpha-visitor" : "ask-alpha-guide");
   const heading = document.createElement("strong");
-  heading.textContent = who === "visitor" ? "You" : "Ask Alpha · guided answer";
+  heading.textContent = who === "visitor" ? "You" :
+    who === "ai" ? "Ask Alpha · AI response (informational)" : "Ask Alpha · guided answer";
   const text = document.createElement("span");
   text.textContent = body;
   bubble.append(heading, text);
@@ -65,17 +80,80 @@ function appendAskAlphaMessage(who, body) {
   askAlphaThread.scrollTop = askAlphaThread.scrollHeight;
 }
 
-function sendAskAlpha(question) {
-  const cleaned = question.trim().slice(0, 400);
-  if (!cleaned || askAlphaTurns >= 12) return;
-  appendAskAlphaMessage("visitor", cleaned);
-  appendAskAlphaMessage("guide", askAlphaAnswer(cleaned));
-  askAlphaTurns++;
+async function sendAskAlpha(question) {
+  const cleaned = String(question || "").trim().slice(0,400);
+  if (!cleaned || askAlphaTurns >= 12 || askAlphaPending) return;
+  // Never send contact data into an informal chat: public forms handle it.
+  if (cleaned.includes("@") || /(?:\\+?\\d[ -]?){8,}/.test(cleaned)) {
+    appendAskAlphaMessage("guide",
+      "Please avoid personal contact or payment details in chat. Use the appropriate public inquiry form.");
+    askAlphaInput.value = "";
+    return;
+  }
+  appendAskAlphaMessage("visitor",cleaned);
   askAlphaInput.value = "";
+  askAlphaTurns++;
+  if (!askAlphaLive || !askAlphaAiConsent?.checked || !askAlphaSessionId) {
+    appendAskAlphaMessage("guide",askAlphaAnswer(cleaned));
+    if (askAlphaLive && askAlphaAiStatus) {
+      askAlphaAiStatus.textContent = "No AI request made. You can use guided help without agreeing to AI processing.";
+    }
+  } else {
+    askAlphaPending = true;
+    askAlphaSend.disabled = true;
+    askAlphaInput.disabled = true;
+    const q = cleaned.toLowerCase();
+    const audience = /support|refund|dispute|complaint|problem|privacy/.test(q) ? "support" :
+      /creator|podcast|livestream|influenc|register/.test(q) ? "creator" :
+      /advertis|brand|campaign|sponsor|proposal/.test(q) ? "advertiser" : "general";
+    try {
+      // Reuse the exact established public-intake Supabase function, not an
+      // additional backend. No API key, authorization, or user PII stored here.
+      const response = await fetch(
+        "https://bkutbglzivfdnoerigyb.supabase.co/functions/v1/alpha-public-intake",{
+          method:"POST",mode:"cors",credentials:"omit",cache:"no-store",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({
+            action:"ask_alpha",notice_version:"AGM-ASK-ALPHA-AI-2026-11-08",
+            ai_processing_consent:true,
+            marketing_opt_in:askAlphaMarketingConsent?.checked === true,
+            session_id:askAlphaSessionId,request_key:crypto.randomUUID(),
+            audience,message:cleaned,history:askAlphaHistory.slice(-4)
+          }),signal:AbortSignal.timeout(20000)
+        }
+      );
+      const result = await response.json();
+      if (response.ok && result?.status === "ANSWERED" &&
+          typeof result.answer === "string" &&
+          /^[0-9a-f-]{36}$/i.test(result.receipt_id || "")) {
+        appendAskAlphaMessage("ai",result.answer);
+        askAlphaHistory.push({role:"user",content:cleaned},
+          {role:"assistant",content:result.answer.slice(0,400)});
+        while (askAlphaHistory.length > 4) askAlphaHistory.shift();
+        if (askAlphaAiStatus) askAlphaAiStatus.textContent =
+          "AI request recorded: " + result.receipt_id + ". Not an official support case or approved proposal.";
+      } else {
+        appendAskAlphaMessage("guide",
+          "AI could not verify an answer or receipt. No commercial action was taken. You can use the public interest or contact forms.");
+        if (askAlphaAiStatus) askAlphaAiStatus.textContent =
+          "AI unavailable (" + (result?.error || response.status) + "). The scripted guide remains available.";
+      }
+    } catch {
+      appendAskAlphaMessage("guide",
+        "The AI reply was not confirmed. Please use the public inquiry/contact forms for human review.");
+      if (askAlphaAiStatus) askAlphaAiStatus.textContent =
+        "Unable to verify the AI receipt. No automatic retry or submission was made.";
+    } finally {
+      askAlphaPending = false;
+      askAlphaSend.disabled = askAlphaTurns >= 12;
+      askAlphaInput.disabled = askAlphaTurns >= 12;
+    }
+  }
   if (askAlphaTurns >= 12) {
     askAlphaInput.disabled = true;
     askAlphaSend.disabled = true;
-    appendAskAlphaMessage("guide", "This guided session has reached its 12-question limit. Reload the page to start a fresh informational session.");
+    appendAskAlphaMessage("guide",
+      "This tab reached its 12-question limit. A new session requires a page reload.");
   }
 }
 
