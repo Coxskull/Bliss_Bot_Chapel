@@ -24,6 +24,12 @@ public sealed record CommercialInventoryReview(
     bool ReservationAuthorized, bool CommitmentAuthorized, bool DeliveryVerified,
     string DeliveryStatus, string SafeReply, IReadOnlyList<CommercialTrace> Trace);
 
+public sealed record CommercialConversationEvidence(
+    string Mode, string Intent, string Status, string Transcript,
+    string? SelectedProductId, CommercialInventoryReview? ProductReview,
+    bool HumanEscalation, bool InventedProduct, bool InventedPrice,
+    bool CampaignReady, string DeliveryStatus, IReadOnlyList<CommercialTrace> Trace);
+
 /// <summary>
 /// Bridges the existing RealEstateCatalog to a strictly fictional Ask Alpha
 /// retrieval *test*. It does not fetch from a DB or pretend that mock approval
@@ -134,6 +140,46 @@ public static class CommercialInventoryReviewGate
             + " has a matching example showcase. Creator/availability/geometry checks were simulated; "
             + "Economics has no verified quote for this product and cannot state a price. "
             + "No reservation, commitment or delivery occurred.", trace.ToArray());
+    }
+
+    /// <summary>
+    /// Offline Ask Alpha customer-conversation seam using the existing
+    /// RealEstateCatalog.Reply classifier, not a new AI gateway. The caller
+    /// must choose an already-returned product ID; no inferred inventory.
+    /// Fictional evidence can never cause an offer, quote or delivery.
+    /// </summary>
+    public static CommercialConversationEvidence SimulateConversation(
+        CatalogBoard board, string prompt, string selectedProductId,
+        IReadOnlyDictionary<string, OwnerSlotGeometry>? geometry,
+        IReadOnlyList<ProtectedCreatorRegion>? protectedRegions,
+        long? sellableArea, CreatorProductProof? creator,
+        InventoryAvailabilityProof? availability, DevicePlatformProof? compatibility,
+        ShowcaseAssetProof? showcase, int occurrences = 5, bool needsExclusivity = false)
+    {
+        ArgumentNullException.ThrowIfNull(board);
+        var turn = RealEstateCatalog.Reply(prompt, board);
+        var trace = new List<CommercialTrace>
+        {
+            new("CustomerIntent", turn.Intent, "RealEstateCatalog.Reply / stored product list")
+        };
+        if (turn.Intent is "UNSUPPORTED" or "DEVICE" or "DELIVERY" or "FREQUENCY"
+            || !turn.ProductIds.Contains(selectedProductId, StringComparer.Ordinal))
+        {
+            trace.Add(new("ActiveProductFilter", "HUMAN_ESCALATION_REQUIRED",
+                "No authorized exact stored product selection for this intent."));
+            return new("OFFLINE_SYNTHETIC_ONLY", turn.Intent, "NEEDS_REVIEW",
+                "OFFLINE FIXTURE ONLY / NOT A COMMERCIAL OFFER. " + turn.Reply,
+                null, null, true, false, false, false, "NOT_SENT", trace.ToArray());
+        }
+
+        var review = Evaluate(board, selectedProductId, geometry, protectedRegions,
+            sellableArea, creator, availability, compatibility, showcase,
+            occurrences, needsExclusivity);
+        trace.AddRange(review.Trace);
+        return new("OFFLINE_SYNTHETIC_ONLY", turn.Intent, review.AvailabilityStatus,
+            "OFFLINE FIXTURE ONLY / NOT A COMMERCIAL OFFER. " + review.SafeReply,
+            review.ProductId.Length == 0 ? null : review.ProductId,
+            review, true, false, false, false, "NOT_SENT", trace.ToArray());
     }
 
     private static bool IsSha256(string? value) =>
