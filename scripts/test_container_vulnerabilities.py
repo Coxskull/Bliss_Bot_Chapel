@@ -109,6 +109,30 @@ class VulnerabilityEvidenceTests(unittest.TestCase):
             proof = gate["verify_exported_image_provenance"](report, inspected, archive)
             self.assertEqual("DIRECT_MATCH", proof["image_id_comparison"])
 
+    def test_oci_blob_config_path_is_supported_without_skipping_digest_verification(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, report, inspected = self.make_export_fixture(Path(folder))
+            with tarfile.open(archive, mode="r") as input_tar:
+                config_entry = json.loads(input_tar.extractfile("manifest.json").read())[0]
+                config_bytes = input_tar.extractfile(config_entry["Config"]).read()
+            config_name = "blobs/sha256/" + hashlib.sha256(config_bytes).hexdigest()
+            manifest_bytes = json.dumps([{"Config": config_name, "Layers": ["layer.tar"]}]).encode()
+            with tarfile.open(archive, mode="w") as output_tar:
+                for name, content in [("manifest.json", manifest_bytes), (config_name, config_bytes)]:
+                    entry = tarfile.TarInfo(name)
+                    entry.size = len(content)
+                    output_tar.addfile(entry, io.BytesIO(content))
+            proof = gate["verify_exported_image_provenance"](report, inspected, archive)
+            self.assertTrue(proof["provenance_validated"])
+            with tarfile.open(archive, mode="w") as output_tar:
+                for name, content in [("manifest.json", manifest_bytes),
+                                      (config_name, config_bytes + b"tamper")]:
+                    entry = tarfile.TarInfo(name)
+                    entry.size = len(content)
+                    output_tar.addfile(entry, io.BytesIO(content))
+            with self.assertRaises(ValueError):
+                gate["verify_exported_image_provenance"](report, inspected, archive)
+
     def test_falsified_cross_image_and_tampered_scanner_provenance_denied(self):
         with tempfile.TemporaryDirectory() as folder:
             archive, report, inspected = self.make_export_fixture(Path(folder))
