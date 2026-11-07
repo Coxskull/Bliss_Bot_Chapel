@@ -56,6 +56,7 @@ async function runScenario(browser, scenario) {
   });
   const page=await context.newPage();
   const accidentalEgress=[],pageErrors=[],writes=[];
+  let claimed=false;
   page.on("pageerror",e=>pageErrors.push(e.message));
   await context.route("**/*",async route=>{
     const request=route.request(),url=new URL(request.url());
@@ -69,7 +70,7 @@ async function runScenario(browser, scenario) {
         const config={
           supabaseUrl:"https://"+apiHost,
           publishableKey:"sb_publishable_SyntheticBrowserFixtureOnly",
-          operatorOrigin:origin,mutationsEnabled:false
+          operatorOrigin:origin,mutationsEnabled:scenario==="claim-enabled"
         };
         return route.fulfill({status:200,contentType:"text/javascript",
           body:"window.ALPHA_SUPPORT_OPERATOR_CONFIG = Object.freeze("+
@@ -97,12 +98,21 @@ async function runScenario(browser, scenario) {
         return status(401,{error:"Unauthenticated"});
       if(request.method()!=="GET"){
         writes.push({method:request.method(),url:request.url()});
-        return status(423,{error:"Synthetic operator writes disabled"});
+        if(scenario!=="claim-enabled")return status(423,{error:"Writes disabled"});
+        const payload=JSON.parse(request.postData()||"{}");
+        if(!elevated||payload.action!=="CLAIM"||payload.case_id!==security.case_id)
+          return status(403,{error:"Invalid claim"});
+        if(claimed)return status(409,{error:"Already claimed"});
+        claimed=true;
+        return status(200,{committed:true,case_id:security.case_id,
+          status:"TRIAGED",action:"CLAIM"});
       }
       if(scenario==="sensitive-only" && !elevated)
         return status(403,{error:"Operator permission denied"});
       const caseId=url.searchParams.get("case_id");
-      const allowed=elevated?[security,general,resolved]:[general];
+      const currentSecurity=claimed
+        ? {...security,owner_user_id:uuid(99),status:"TRIAGED"} : security;
+      const allowed=elevated?[currentSecurity,general,resolved]:[general];
       if(caseId){
         const c=allowed.find(item=>item.case_id===caseId);
         if(!c)return status(404,{error:"Case not found"});
@@ -116,9 +126,9 @@ async function runScenario(browser, scenario) {
           history_limit:100});
       }
       const roles=elevated?["GENERAL_SUPPORT","SECURITY_REVIEW"]:["GENERAL_SUPPORT"];
-      const cases=elevated?[security,general]:[general];
+      const cases=elevated?[currentSecurity,general]:[general];
       return status(200,{cases,page:Number(url.searchParams.get("page")||"0"),
-        page_size:20,visible_roles:roles});
+        page_size:20,visible_roles:roles,operator_user_id:uuid(99)});
     }
     accidentalEgress.push(request.url());
     return route.abort("blockedbyclient");
@@ -162,6 +172,17 @@ async function runScenario(browser, scenario) {
   assert.equal(await page.locator("img").count(),0);
   assert.equal(await page.evaluate(()=>window.__TASK21_XSS===true),false);
   assert.equal(await page.locator("#save").isEnabled(),false);
+  if(scenario==="claim-enabled"){
+    await page.locator("#claim-case").waitFor({state:"visible"});
+    await page.locator("#claim-case").click();
+    await page.locator("#case-detail").waitFor({state:"visible"});
+    assert.match(await page.locator("#case-fields").innerText(),/TRIAGED/);
+    assert.equal(await page.locator("#owner-id").inputValue(),uuid(99));
+    assert.equal(await page.locator("#save").isEnabled(),true);
+    assert.equal(claimed,true);
+  }else{
+    assert.equal(await page.locator("#claim-case").isVisible(),false);
+  }
   await page.locator("#case-search").fill(resolved.case_id);
   await page.locator("#case-search-button").click();
   await page.locator("#case-detail").waitFor({state:"visible"});
@@ -175,7 +196,8 @@ async function runScenario(browser, scenario) {
   await page.locator("#signin-panel").waitFor({state:"visible"});
   assert.equal(await page.locator("#workspace").isVisible(),false);
   assert.equal(await page.locator("#contact-fields").innerText(),"");
-  assert.equal(writes.length,0,"A read-only UI must not send a mutation");
+  assert.equal(writes.length,scenario==="claim-enabled"?1:0,
+    "Only one audited self-claim may be sent in the opt-in scenario");
   assert.deepEqual(accidentalEgress,[],"Browser must never reach the Internet");
   assert.deepEqual(pageErrors,[],"Browser must have no uncaught errors");
   await context.close();
@@ -188,6 +210,7 @@ async function runScenario(browser, scenario) {
   try{
     await runScenario(browser,"dual-role");
     await runScenario(browser,"sensitive-only");
-    console.log("TASK21_OPERATOR_BROWSER_PASS: synthetic dual-role/MFA step-up, sensitive-only denial, case audit, closed-case lookup, logout, XSS and no network/write egress.");
+    await runScenario(browser,"claim-enabled");
+    console.log("TASK21_OPERATOR_BROWSER_PASS: MFA and sensitive-role denial, one atomic synthetic self-claim, audit, closed-case lookup, logout, XSS and zero real network egress.");
   }finally{await browser.close();}
 })().catch(err=>{console.error(err);process.exitCode=1;});
