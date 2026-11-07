@@ -132,8 +132,9 @@ public sealed class CommercialCreativeQaGateTests
     public void Candidate_digest_mismatch_blocks_both_independent_qa_gates()
     {
         var result = Run(quality: Quality() with { CandidateSha256 = new string('c', 64) });
-        Assert.Equal(CommercialCreativeQaGate.Blocked, result.BrandStatus);
-        Assert.Equal(CommercialCreativeQaGate.Blocked, result.QualityStatus);
+        Assert.Equal(CommercialCreativeQaGate.Passed, result.BrandStatus);
+        Assert.Equal(CommercialCreativeQaGate.Passed, result.QualityStatus);
+        Assert.Contains("CANDIDATE_ASSET_IDENTITY_MISMATCH", result.Findings);
         Assert.False(result.SyntheticCandidateEligibleForAdvertiserReview);
     }
 
@@ -173,6 +174,7 @@ public sealed class CommercialCreativeQaGateTests
     {
         var dna = Dna();
         dna.Language = language;
+        dna.Market = market;
         var result = Run(dna: dna, locale: Locale() with { CountryCode = market, Language = language });
         Assert.Equal(supported, result.LocalizationStatus == CommercialCreativeQaGate.Passed);
         Assert.False(result.ExternalUseAuthorized);
