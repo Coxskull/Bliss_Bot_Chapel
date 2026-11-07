@@ -35,6 +35,9 @@ export function createClient() {
       return {data:{session},error:null};
     },
     getSession:async()=>({data:{session},error:null}),
+    getUser:async()=>session?
+      {data:{user:{id:"00000000-0000-4000-8000-000000000099"}},error:null}:
+      {data:{user:null},error:{message:"no session"}},
     signOut:async()=>{session=null;return {error:null};},
     mfa:{
       enroll:async ({factorType,friendlyName})=>{
@@ -115,7 +118,8 @@ async function runScenario(browser, scenario) {
         return status(200,{committed:true,case_id:security.case_id,
           status:"TRIAGED",action:"CLAIM"});
       }
-      if(scenario==="sensitive-only" && !elevated)
+      if(scenario==="unrostered"||
+         (scenario==="sensitive-only" && !elevated))
         return status(403,{error:"Operator permission denied"});
       const caseId=url.searchParams.get("case_id");
       const currentSecurity=claimed
@@ -163,7 +167,7 @@ async function runScenario(browser, scenario) {
     assert.equal(await page.locator("#enroll-secret").innerText(),"");
     assert.equal(await page.locator("#enroll-panel").isVisible(),false);
   }else{
-    if(scenario==="sensitive-only"){
+    if(scenario==="sensitive-only"||scenario==="unrostered"){
       await page.locator("#mfa-panel").waitFor({state:"visible"});
       assert.equal(await page.locator("#workspace").isVisible(),false);
     }else{
@@ -177,6 +181,20 @@ async function runScenario(browser, scenario) {
     }
     await page.locator("#totp").fill("123456");
     await page.locator("#mfa-button").click();
+    if(scenario==="unrostered"){
+      await page.locator("#identity-panel").waitFor({state:"visible"});
+      assert.equal(await page.locator("#identity-id").innerText(),uuid(99));
+      assert.equal(await page.locator("#workspace").isVisible(),false);
+      assert.equal(await page.locator("#contact-fields").innerText(),"");
+      assert.equal(writes.length,0);
+      await page.locator("#identity-signout").click();
+      await page.locator("#signin-panel").waitFor({state:"visible"});
+      assert.equal(await page.locator("#identity-id").innerText(),"");
+      assert.deepEqual(accidentalEgress,[]);
+      assert.deepEqual(pageErrors,[]);
+      await context.close();
+      return;
+    }
     await page.locator("#workspace").waitFor({state:"visible"});
   }
   assert.equal(await page.locator("#mfa-panel").isVisible(),false);
@@ -237,6 +255,7 @@ async function runScenario(browser, scenario) {
     await runScenario(browser,"sensitive-only");
     await runScenario(browser,"claim-enabled");
     await runScenario(browser,"enroll-first");
-    console.log("TASK21_OPERATOR_BROWSER_PASS: synthetic first-operator MFA enrollment and clearing, sensitive role denial, self-claim, audit, closed-case lookup, logout, XSS and zero real network egress.");
+    await runScenario(browser,"unrostered");
+    console.log("TASK21_OPERATOR_BROWSER_PASS: synthetic staging Auth identity handoff for unrostered user; first-time MFA enrollment, sensitive role denial, self-claim, audit, logout, XSS and no network egress.");
   }finally{await browser.close();}
 })().catch(err=>{console.error(err);process.exitCode=1;});
