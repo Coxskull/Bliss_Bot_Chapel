@@ -36,6 +36,7 @@
     <label for="totp">6-digit authenticator code</label>
     <input id="totp" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
     <button type="submit" id="mfa-button">Verify MFA</button>
+    <button type="button" id="mfa-cancel" class="secondary">Sign out instead</button>
   </form>
 </section>
 <section id="workspace" hidden>
@@ -43,6 +44,12 @@
 <div class="columns">
   <section class="panel"><h2>Assigned queues</h2><p class="subtle">Only currently open cases permitted for your role. Oldest first; 20 at a time.</p>
     <div id="queue" class="queue" aria-live="polite"></div>
+    <form id="case-search-form" class="case-search">
+      <label for="case-search">Find existing case by exact ID (including closed cases)</label>
+      <input id="case-search" type="text" required spellcheck="false" autocomplete="off"
+        pattern="[0-9a-fA-F-]{36}" placeholder="Case UUID">
+      <button id="case-search-button" type="submit" class="secondary">Look up authorized case</button>
+    </form>
     <div class="tools bottom"><button id="prev" type="button" class="secondary" disabled>Previous</button><span id="page">Page 1</span><button id="next" type="button" class="secondary" disabled>Next</button></div>
   </section>
   <section class="panel" id="case-panel"><h2>Case details</h2><p id="case-empty" class="subtle">Select a case from your authorized queue.</p>
