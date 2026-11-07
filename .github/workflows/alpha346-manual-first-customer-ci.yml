@@ -1,0 +1,31 @@
+name: ALPHA-346 offline manual advertiser inquiry to proposal
+on:
+  pull_request:
+    paths:
+      - 'docs/commercial/ALPHA-346-*'
+      - 'scripts/alpha346-*'
+      - '.github/workflows/alpha346-manual-first-customer-ci.yml'
+permissions:
+  contents: read
+jobs:
+  offline-manual-service:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test scripts/alpha346-manual-proposal-gate.test.mjs
+      - name: Assert unapproved synthetic offer never passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          node scripts/alpha346-manual-proposal-gate.mjs scripts/alpha346-synthetic-proposal.json > /tmp/alpha346-gate.json
+          status=$?
+          set -e
+          test "$status" -eq 3
+          node --input-type=module -e 'import fs from "node:fs";let d=JSON.parse(fs.readFileSync("/tmp/alpha346-gate.json"));if(d.paymentEnabled||d.delivery!=="NOT_SENT"||d.validation!=="BLOCKED_PENDING_BUSINESS_APPROVALS")process.exit(1)'
