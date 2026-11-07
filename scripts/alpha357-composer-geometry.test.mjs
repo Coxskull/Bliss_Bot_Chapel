@@ -104,7 +104,7 @@ test("6 ads fill both side strips from top advertising band to bottom band", () 
 test("existing Composer uses aspect-preserving artwork, bounded text and one uniform divider pass", () => {
   assert.match(adapter, /const fit = Math\.min\(w \/ img\.width, h \/ img\.height\)/);
   assert.doesNotMatch(adapter, /drawImage\(img,\s*0,\s*0,\s*img\.width,\s*img\.height,\s*x,\s*y,\s*w,\s*h\)/);
-  assert.match(adapter, /ctx\.measureText\(text\)\.width <= w - 48/);
+  assert.match(adapter, /ctx\.measureText\(text\)\.width <= availableWidth/);\n  assert.match(adapter, /fitLabel\(headline, 650/);
   assert.match(adapter, /const divider = 4/);
   assert.doesNotMatch(adapter, /ctx\.strokeRect\(/);
   assert.equal((source.match(/<canvas\s+id="stage"/g)||[]).length, 1);
