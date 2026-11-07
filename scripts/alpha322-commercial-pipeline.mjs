@@ -50,12 +50,16 @@ export function createPipeline() {
       throw new Error("booking requires recorded human approval");
     if (event.stage === "payment") {
       if (!PAYMENT_STATES.has(event.payment_state)) throw new Error("unknown payment classification");
+      const collected = event.actual_collected_minor ?? 0;
+      if (!Number.isSafeInteger(collected) || collected < 0)
+        throw new Error("collected amount must be a nonnegative integer in minor units");
       if (event.payment_state === "live_collected" &&
           (event.processor_mode !== "live" || event.processor_status !== "succeeded" ||
-           !text(event.processor_transaction_ref) || event.customer_accepted !== true ||
+           !text(event.processor_transaction_ref) || collected === 0 ||
+           !/^[A-Z]{3}$/.test(event.currency ?? "") || event.customer_accepted !== true ||
            event.human_release_approved !== true))
         throw new Error("live revenue requires verified live collection and approvals");
-      if (event.payment_state !== "live_collected" && Number(event.actual_collected_minor ?? 0) !== 0)
+      if (event.payment_state !== "live_collected" && collected !== 0)
         throw new Error("non-live payment classifications cannot report collected revenue");
     }
 
