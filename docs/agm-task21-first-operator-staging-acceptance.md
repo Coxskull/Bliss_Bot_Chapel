@@ -57,13 +57,15 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 | --- | --- | --- |
 | First operator named | User's self-nomination | NOMINATED (not yet Auth verified) |
 | Existing staging SQL | Real PG17 rollback test and restrictive role validation | PASS |
-| Persistent Task21 support database | Five RLS tables, migration version, fictional case/receipt and blocked CRM outbox | PASS — synthetic records only |
+| Persistent Task21 support database | Five RLS intake/case tables + staging-only alert-intent table, 54 migrations, fictional records | PASS — synthetic records only |
 | Staff identity and recovery | Actual account proof, private host, scoped roster, real MFA/backup | NOT EXECUTED |
 | Staging operator API | Deployed function v1 JWT required; default-deny until roster configured | PASS — API active; case access denied |
 | First Auth account / TOTP | Operator uses approved isolated host | NOT EXECUTED |
 | Server-only role roster / AAL2 | Admin configuration and denied/allowed reads | NOT EXECUTED |
 | Offline source, DB, browser | Focused GitHub Actions and prior full CI | PASS on tested revisions; latest exact-head CI must still be checked |
-| Human incident alert acknowledgement | Timestamped fictional alert delivery / ACK | NOT EXECUTED |
+| PII-free incident alert intent | Staging migration #54, CRITICAL case, UNROUTED receipt, zero CRM row | PASS — internal DB receipt only |
+| Internal Gmail self-mailbox delivery | Task21 synthetic test message in owner's own SENT + INBOX; 07:24 PH | PASS — manual email test only |
+| Human incident alert acknowledgement | Operator replies `TASK21 STAGING ACK RECEIVED`; timestamped monitored test routing | PENDING — not fabricated |
 | Hosted fictional intake and atomic receipt | 1 OPEN general case, one receipt and CREATED event; outbox BLOCKED | PASS — database path only |
 | Hosted restricted SQL claim and closure | Fictional Auth user, real service_role, five audit events; transaction rolled back | PASS — DATABASE ONLY |
 | Actual staff login, claim and resolution | Real Auth account, approved roster, private host, verified on-duty human | NOT EXECUTED |
@@ -71,3 +73,8 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 | Production | Explicit owner launch signoff | DENIED; Global STOP engaged |
 
 **Do not mark Task #21 complete on the strength of this checklist or CI alone.**
+
+## November 8 incident routing addendum — source of truth
+- The existing staging-only [alert-intent migration](../scripts/task21/staging-only-alert-intents.sql) is installed (migration #54), and a fictional CRITICAL security case has one `UNROUTED` receipt; not a real incident or notification. [Detailed DB/Gmail distinction](agm-task21-staging-alert-delivery-acceptance-20261108.md).
+- Exactly one manual self-addressed internal Gmail test message reached the same Gmail account's Inbox/Sent labels. The **database did not send that email**; the application alert state remains `UNROUTED`. Do not assert staff attendance or human acknowledgement based on Inbox delivery.
+- The nominated operator must respond personally to the subject `TASK21 STAGING INTERNAL CRITICAL ALERT DELIVERY TEST — SYNTHETIC — 2026-11-08` using `TASK21 STAGING ACK RECEIVED`. Only a subsequent genuine reply and timestamp can close this narrow human-response evidence item. Do not conflate that with a staffed 24/7 incident channel or the complete Task21 launch gate.
