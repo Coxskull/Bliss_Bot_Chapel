@@ -10,24 +10,34 @@ export async function deliverToGhl(client, requestId) {
   if (!token || !locationId || !/^[A-Za-z0-9]{14,64}$/.test(locationId))
     return "CONFIG_MISSING";
 
+  // Support CRM enablement is separate from creator/advertiser delivery.
+  // Inspect only kind, without claiming an outbox lease or sending anything.
+  if (Deno.env.get("ALPHA_GHL_SUPPORT_SYNC_ENABLED") !== "true") {
+    const kindCheck = await client.from("alpha_public_intake_requests")
+      .select("kind").eq("id", requestId).maybeSingle();
+    if (kindCheck.error) throw Error("GHL_SUPPORT_PREFLIGHT_FAILED");
+    if (kindCheck.data?.kind === "support") return "SUPPORT_DISABLED";
+  }
   const claimed = await client.rpc("alpha_ghl_claim", { p_request_id: requestId });
-  if (claimed.error || !Array.isArray(claimed.data) || !claimed.data.length)
-    return "NOT_DUE";
+  if (claimed.error) throw Error("GHL_DELIVERY_CLAIM_FAILED");
+  if (!Array.isArray(claimed.data) || !claimed.data.length) return "NOT_DUE";
   const lease = claimed.data[0];
   if (!lease?.claim_token) return "NOT_DUE";
   const finish = async (state, httpStatus, errorClass, contactId = null) => {
     // Only the exact claim token can complete delivery; after an unexpected
     // process crash the lease becomes eligible for a bounded retry.
-    await client.rpc("alpha_ghl_finish", {
+    const completed = await client.rpc("alpha_ghl_finish", {
       p_request_id: requestId, p_claim_token: lease.claim_token,
       p_new_state: state, p_http_status: httpStatus,
       p_error_class: errorClass, p_contact_id: contactId
     });
+    if (completed?.error || completed?.data !== true)
+      throw Error("GHL_DELIVERY_STATE_NOT_COMMITTED");
   };
 
   try {
     const lookup = await client.from("alpha_public_intake_requests")
-      .select("kind,full_name,email,organization,website,notice_version,processing_acknowledged,adult_confirmed")
+      .select("kind,category,full_name,email,organization,website,notice_version,processing_acknowledged,adult_confirmed")
       .eq("id", requestId).single();
     if (lookup.error || !lookup.data) {
       await finish("BLOCKED", null, "invalid_record");
