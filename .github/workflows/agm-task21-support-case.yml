@@ -60,7 +60,9 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-intake-fixture.sql
           psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261108_alpha_support_case_workflow.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/staging-only-alert-intents.sql
           psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-postgres-assertions.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-alert-intent-assertions.sql
 
   synthetic-browser:
     name: Synthetic offline staff operator browser acceptance
