@@ -175,7 +175,10 @@ async function runScenario(browser, scenario) {
   if(scenario==="claim-enabled"){
     await page.locator("#claim-case").waitFor({state:"visible"});
     await page.locator("#claim-case").click();
-    await page.locator("#case-detail").waitFor({state:"visible"});
+    // The prior detail is visible during async queue refresh. Wait for the
+    // *new authenticated server readback*, not just visibility of the panel.
+    await page.waitForFunction(()=>document.querySelector("#case-fields")
+      ?.textContent?.includes("TRIAGED"),{timeout:15000});
     assert.match(await page.locator("#case-fields").innerText(),/TRIAGED/);
     assert.equal(await page.locator("#owner-id").inputValue(),uuid(99));
     assert.equal(await page.locator("#save").isEnabled(),true);
