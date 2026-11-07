@@ -107,7 +107,9 @@ test("authorized operator requires server-verified identity, explicit allowlist,
   ]) assert.equal(authorizedReview({ ...verified, ...override }), false);
 });
 test("Edge implementation is explicitly read-only and requires fresh GoTrue, session RPC and env gates", () => {
-  const code = readFileSync(new URL("../supabase/functions/alpha-intake-operator-review/index.ts", import.meta.url), "utf8");
+  const entry = readFileSync(new URL("../supabase/functions/alpha-intake-operator-review/index.ts", import.meta.url), "utf8");
+  assert.ok(entry.includes("Deno.serve(createReviewHandler("));
+  const code = readFileSync(new URL("../supabase/functions/alpha-intake-operator-review/http-handler.mjs", import.meta.url), "utf8");
   for (const phrase of [
     'ALPHA_INTAKE_REVIEW_ENABLED', 'ALPHA_INTAKE_REVIEW_USER_IDS',
     'ALPHA_INTAKE_REVIEW_ORIGINS', '.auth.getUser(token)',
