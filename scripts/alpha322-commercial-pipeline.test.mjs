@@ -17,23 +17,32 @@ assert.equal(pipeline.report(base.journey_id).complete, true);
 assert.equal(pipeline.report(base.journey_id).payment_classification, "sandbox_succeeded");
 assert.equal(pipeline.report(base.journey_id).actual_collected_minor, 0);
 assert.equal(pipeline.append(payment).duplicate, true, "replay must not duplicate payment/revenue");
-
 const beforePayment = () => {
   const p = createPipeline();
   for (const event of [inquiry, qualification, booking]) p.append(event);
   return p;
 };
+for (const state of ["fictional", "pending", "failed", "sandbox_succeeded"]) {
+  const nonRevenue = { ...payment, payment_state: state, event_key: \`state-\${state}\`, receipt_ref: "", actual_collected_minor: 0 };
+  nonRevenue.receipt_ref = makeReceiptRef(nonRevenue);
+  const classified = beforePayment();
+  classified.append(nonRevenue);
+  assert.equal(classified.report(base.journey_id).actual_collected_minor, 0, \`\${state} is not collected revenue\`);
+}
 const nonLiveAmount = { ...payment, event_key: "bad-amount", receipt_ref: "", actual_collected_minor: 25000 };
 nonLiveAmount.receipt_ref = makeReceiptRef(nonLiveAmount);
 assert.throws(() => beforePayment().append(nonLiveAmount), /cannot report collected revenue/);
 const forgedLive = { ...payment, event_key: "forged-live", receipt_ref: "", payment_state: "live_collected", processor_mode: "sandbox", actual_collected_minor: 25000, currency: "USD", customer_accepted: true, human_release_approved: true };
 forgedLive.receipt_ref = makeReceiptRef(forgedLive);
 assert.throws(() => beforePayment().append(forgedLive), /verified live collection/);
+const invalidAmount = { ...payment, event_key: "invalid-amount", receipt_ref: "", actual_collected_minor: 1.5 };
+invalidAmount.receipt_ref = makeReceiptRef(invalidAmount);
+assert.throws(() => beforePayment().append(invalidAmount), /nonnegative integer/);
 const unapprovedBooking = { ...booking, event_key: "unapproved", receipt_ref: "", human_approved: false };
 unapprovedBooking.receipt_ref = makeReceiptRef(unapprovedBooking);
 const beforeBooking = createPipeline();
 beforeBooking.append(inquiry); beforeBooking.append(qualification);
 assert.throws(() => beforeBooking.append(unapprovedBooking), /human approval/);
 assert.throws(() => createPipeline().append({ ...base, stage: "payment", event_key: "out-of-order", receipt_ref: "out-of-order" }), /expected inquiry/);
-console.log("Task 22 offline pipeline: 12 assertions passed; linked fictional journey; sandbox revenue = 0.");
+console.log("Task 22 offline pipeline: 17 assertions passed; linked fictional journey; sandbox revenue = 0.");
 console.log(JSON.stringify(pipeline.report(base.journey_id)));
