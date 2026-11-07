@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ALPHA Advertising Real Estate — Offline Composer Proof</title><style>
+/* Standalone demo: all required presentation styles are inline on this page. */
+</style><script defer>
+"use strict";
+// Original deterministic artwork from a confirmed advertiser brief. No images,
+// remote resources, provider APIs, fonts, external templates or model calls.
+(function () {
+  const FALLBACK = ["#22133D", "#E4B96C"];
+  const clean = (value, limit) => String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, limit);
+  function colors(palette) {
+    const matches = String(palette ?? "").match(/#[0-9a-fA-F]{6}\b/g) || [];
+    return [matches[0] || FALLBACK[0], matches[1] || FALLBACK[1]];
+  }
+  function roundRect(ctx, x, y, w, h, r, color) {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, radius);
+    ctx.fill();
+  }
+  function drawWrapped(ctx, value, x, y, width, options) {
+    const { fontWeight = 700, maxLines = 3, initialSize = 72, minSize = 30, lineHeight = 1.18, color = "#FFFFFF" } = options;
+    const input = clean(value, 500).replace(/\s+/g, " ") || "Your next story begins here";
+    function linesFor(size) {
+      ctx.font = `${fontWeight} ${size}px system-ui, sans-serif`;
+      const tokens = input.split(" ");
+      const lines = [];
+      let line = "";
+      for (const token of tokens) {
+        const attempt = line ? line + " " + token : token;
+        if (line && ctx.measureText(attempt).width > width) { lines.push(line); line = token; }
+        else line = attempt;
+      }
+      if (line) lines.push(line);
+      return lines;
+    }
+    let size = initialSize, lines = linesFor(size);
+    while (lines.length > maxLines && size > minSize) {
+      size -= 2;
+      lines = linesFor(size);
+    }
+    if (lines.length > maxLines) {
+      lines = lines.slice(0, maxLines);
+      let last = lines[maxLines - 1];
+      ctx.font = `${fontWeight} ${size}px system-ui, sans-serif`;
+      while (last.length > 1 && ctx.measureText(last + "…").width > width) last = last.slice(0, -1);
+      lines[maxLines - 1] = last.trimEnd() + "…";
+    }
+    ctx.fillStyle = color;
+    ctx.font = `${fontWeight} ${size}px system-ui, sans-serif`;
+    ctx.textBaseline = "alphabetic";
+    lines.forEach((line, index) => ctx.fillText(line, x, y + index * size * lineHeight, width));
+    return y + (lines.length - 1) * size * lineHeight;
+  }
+  function render(input) {
+    const square = input?.format === "square";
+    const width = square ? 1080 : 1280, height = square ? 1080 : 720;
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) throw new Error("Canvas artwork is not available in this browser.");
+    const [brandColor, accent] = colors(input?.colors);
+    const brand = clean(input?.brandName, 120) || "YOUR BRAND";
+    const headline = clean(input?.headline, 500);
+    const callToAction = clean(input?.cta, 120) || "Discover more";
+    const market = clean(input?.market, 80);
+    const margin = square ? 84 : 86;
+    // Original template: brand-led, geometrical, no photography or copied reference art.
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, "#120E29");
+    gradient.addColorStop(.55, brandColor);
+    gradient.addColorStop(1, "#0D1025");
+    ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height);
+    ctx.save();
+    ctx.globalAlpha = 0.11;
+    ctx.strokeStyle = accent;
+    for (let i = 0; i < 6; i++) {
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(width * .87, height * .25, 100 + i * 74, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+    roundRect(ctx, margin, square ? 88 : 65, 66, 7, 3, accent);
+    drawWrapped(ctx, brand.toUpperCase(), margin, square ? 155 : 130, width - 2 * margin,
+      { fontWeight: 750, initialSize: square ? 32 : 27, minSize: 20, maxLines: 1, color: "#FFF2D9" });
+    ctx.font = "600 17px system-ui, sans-serif";
+    ctx.fillStyle = "#CDC7DE";
+    ctx.fillText("ORIGINAL BRAND CONCEPT", margin, square ? 225 : 192);
+    const baseline = square ? 405 : 302;
+    const last = drawWrapped(ctx, headline, margin, baseline, square ? width - 2 * margin : 850,
+      { initialSize: square ? 86 : 76, minSize: 38, maxLines: square ? 4 : 3, color: "#FFFFFF" });
+    const ctaY = Math.min(Math.max(last + 76, square ? 775 : 520), height - 174);
+    const ctaWidth = Math.min(square ? 720 : 690, width - margin * 2);
+    roundRect(ctx, margin, ctaY, ctaWidth, square ? 92 : 82, 18, accent);
+    drawWrapped(ctx, callToAction, margin + 25, ctaY + (square ? 61 : 55), ctaWidth - 50,
+      { fontWeight: 700, initialSize: 29, minSize: 20, maxLines: 1, color: "#131021" });
+    ctx.fillStyle = "#FFFFFF";
+    ctx.globalAlpha = .82;
+    ctx.fillRect(margin, height - 92, width - 2 * margin, 1);
+    ctx.globalAlpha = 1;
+    ctx.font = "500 15px system-ui, sans-serif";
+    ctx.fillStyle = "#E4DDEB";
+    ctx.fillText("DRAFT CREATIVE • HUMAN REVIEW REQUIRED • NOT A LIVE AD", margin, height - 54);
+    if (market && ctx.measureText(market).width < 220) {
+      ctx.textAlign = "right";
+      ctx.fillText(market, width - margin, height - 54);
+      ctx.textAlign = "left";
+    }
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(blob => blob && blob.size ? resolve(blob) : reject(new Error("Unable to render PNG.")), "image/png");
+    });
+  }
+  window.AlphaTemplateComposer = Object.freeze({ render });
+})();
+
+</script><script defer>
+"use strict";
+/* ALPHA Advertising Real Estate — offline adapter for the EXISTING AlphaTemplateComposer.
+   Fictional briefs only. No quotes, creator consent, reservations or network calls. */
+(function () {
+  const W = 1920, H = 1080;
+  const fixtures = {
+    2: {
+      protected: [0, 0, 1920, 810],
+      slots: [
+        ["BOTTOM_BLUE", 0, 810, 960, 270, "#0863D5", "LumaWater", "Refresh every moment", "PURE WATER"],
+        ["BOTTOM_ORANGE", 960, 810, 960, 270, "#EB7821", "RoastVale", "Made for your mornings", "COFFEE"]
+      ]
+    },
+    4: {
+      protected: [0, 180, 1920, 720],
+      slots: [
+        ["TOP_BLUE", 0, 0, 960, 180, "#0863D5", "NovaFizz", "Make a little sparkle", "SOFT DRINK"],
+        ["TOP_ORANGE", 960, 0, 960, 180, "#EB7821", "CitrusBloom", "A brighter sip", "FRUIT DRINK"],
+        ["BOTTOM_GREEN", 0, 900, 960, 180, "#15904B", "TropiLeaf", "Bright fruit moments", "JUICE"],
+        ["BOTTOM_PURPLE", 960, 900, 960, 180, "#8027B8", "VelvetScoop", "A scoop of delight", "DESSERT"]
+      ]
+    },
+    6: {
+      protected: [270, 180, 1380, 720],
+      slots: [
+        ["TOP_BLUE", 0, 0, 960, 180, "#0863D5", "SparkHome", "New ways to live", "APPLIANCES"],
+        ["TOP_ORANGE", 960, 0, 960, 180, "#EB7821", "CraftBolt", "Make what matters", "TOOLS"],
+        ["LEFT_PURPLE", 0, 180, 270, 720, "#8027B8", "BloomNails", "Color your day", "NAILS"],
+        ["RIGHT_GREEN", 1650, 180, 270, 720, "#15904B", "SonicGear", "Hear every detail", "AUDIO"],
+        ["BOTTOM_BLUE", 0, 900, 960, 180, "#0863D5", "MediVale", "Care for today", "PHARMACY"],
+        ["BOTTOM_PURPLE", 960, 900, 960, 180, "#8027B8", "JellyJoy", "Share a little joy", "SNACKS"]
+      ]
+    }
+  };
+  function overlaps(a, b) {
+    return a[1] < b[1] + b[3] && b[1] < a[1] + a[3]
+      && a[2] < b[2] + b[4] && b[2] < a[2] + a[4];
+  }
+  function check(layout) {
+    const p = ["PROTECTED", ...layout.protected];
+    if (p[1] < 0 || p[2] < 0 || p[3] < 1 || p[4] < 1 || p[1] + p[3] > W || p[2] + p[4] > H) throw Error("Invalid protected area");
+    layout.slots.forEach((slot, i) => {
+      if (slot[1] < 0 || slot[2] < 0 || slot[3] < 1 || slot[4] < 1 || slot[1] + slot[3] > W || slot[2] + slot[4] > H) throw Error("Invalid slot geometry");
+      if (overlaps(slot, p) || layout.slots.some((next, j) => j !== i && overlaps(slot, next))) throw Error("Slots overlap protected content or each other");
+    });
+    // All of the canvas must be either one advertising rectangle or the
+    // single protected creator region. No perimeter strips may be unused.
+    const area = layout.slots.reduce((total, slot) => total + slot[3] * slot[4], 0);
+    if (area + p[3] * p[4] !== W * H) throw Error("Unintended uncovered pixel area");
+    const bands = layout.slots.filter(slot => /^(TOP|BOTTOM)_/.test(slot[0]));
+    for (const band of ["TOP_", "BOTTOM_"]) {
+      const row = bands.filter(slot => slot[0].startsWith(band));
+      if (!row.length) continue;
+      if (row.length !== 2 || row[0][1] !== 0 || row[1][1] !== W / 2
+          || row[0][3] !== W / 2 || row[1][3] !== W / 2
+          || row[0][2] !== row[1][2] || row[0][4] !== row[1][4]) {
+        throw Error("Ad band not continuous, aligned and equally sized");
+      }
+    }
+    if (layout.slots.length === 6) {
+      const left = layout.slots.find(s => s[0].startsWith("LEFT_"));
+      const right = layout.slots.find(s => s[0].startsWith("RIGHT_"));
+      if (!left || !right || left[2] !== p[2] || right[2] !== p[2]
+          || left[4] !== p[4] || right[4] !== p[4]
+          || left[1] !== 0 || left[3] !== p[1]
+          || right[1] + right[3] !== W || right[1] !== p[1] + p[3]) {
+        throw Error("Side rectangles leave a perimeter gap or misalign with the creator center");
+      }
+    }
+    return true;
+  }
+  Object.values(fixtures).forEach(check);
+  const inventory = Object.freeze(Object.fromEntries(Object.entries(fixtures).map(([id, layout]) => [id, Object.freeze({
+    configurationId: `ALPHA-ARE-DEMO-${id}-V1`, geometryVersion: "ALPHA-ARE-COMPOSER-QUALITY-357-V2", canvasWidth: W, canvasHeight: H,
+    advertiserCapacity: layout.slots.length, protectedCreatorArea: { x: layout.protected[0], y: layout.protected[1], width: layout.protected[2], height: layout.protected[3] },
+    durationSeconds: 15, occurrenceCount: null, exclusivity: "SHARED_DEMO_ONLY", creatorAuthorization: "NOT_RECORDED",
+    availability: "UNVERIFIED", deviceCompatibility: "UNVERIFIED", economicsQuoteReference: null, campaignReady: false,
+    delivery: "NOT_SENT", source: "Existing AlphaTemplateComposer.render; fictional offline fixtures",
+    slots: layout.slots.map(s => ({ id: s[0], x: s[1], y: s[2], width: s[3], height: s[4], advertiser: s[6], color: s[5] }))
+  })])));
+  async function prepare() {
+    if (typeof window.AlphaTemplateComposer?.render !== "function") throw Error("Existing ALPHA ad composer is not loaded");
+    const images = {};
+    for (const layout of Object.values(fixtures)) {
+      for (const slot of layout.slots) {
+        const name = slot[6];
+        if (images[name]) continue;
+        const blob = await window.AlphaTemplateComposer.render({ format: "landscape", brandName: name, headline: slot[7], colors: `${slot[5]} #F7D79D`, cta: "FICTIONAL DEMO", market: "DEMONSTRATION" });
+        images[name] = await createImageBitmap(blob);
+      }
+    }
+    return images;
+  }
+  function draw(ctx, id, images, seconds) {
+    const layout = fixtures[id];
+    if (!layout) throw Error("Unknown advertising configuration");
+    check(layout);
+    const [px, py, pw, ph] = layout.protected;
+    const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, "#101D35"); bg.addColorStop(1, "#050B19");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    const glow = ctx.createRadialGradient(W / 2, H / 2, 90, W / 2, H / 2, 1000);
+    glow.addColorStop(0, "#254A6D"); glow.addColorStop(1, "#071323");
+    ctx.fillStyle = glow; ctx.fillRect(px, py, pw, ph);
+    // Animated, original, fictional podcast program visualization. No stock footage.
+    ctx.save(); ctx.beginPath(); ctx.rect(px, py, pw, ph); ctx.clip();
+    const cx = px + pw / 2, cy = py + ph / 2;
+    for (let i = 0; i < 5; i++) {
+      ctx.strokeStyle = `rgba(91,195,241,${0.25-i*.033})`;
+      ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(cx, cy, 125 + i * 56 + Math.sin(seconds + i) * 6, 0, 2 * Math.PI); ctx.stroke();
+    }
+    ctx.fillStyle = "#0A1828";ctx.beginPath();ctx.ellipse(cx, cy+65, 85, 135, 0, 0, 2*Math.PI);ctx.fill();
+    ctx.strokeStyle = "#CBEFFF";ctx.lineWidth = 10;
+    ctx.beginPath();ctx.roundRect(cx-43,cy-105,86,150,42);ctx.stroke();
+    ctx.beginPath();ctx.arc(cx,cy-20,95,0,Math.PI);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy+75);ctx.lineTo(cx,cy+145);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx-65,cy+145);ctx.lineTo(cx+65,cy+145);ctx.stroke();
+    for (let i=0;i<17;i++) {
+      const height=16+Math.abs(Math.sin(seconds*3+i*.77))*72;
+      ctx.fillStyle=i%2?"#37CCF2":"#F6B951";
+      ctx.fillRect(cx-240+i*29,cy+165-height/2,12,height);
+    }
+    ctx.textAlign="center";ctx.fillStyle="#E8F4FE";ctx.font="700 38px system-ui,sans-serif";
+    ctx.fillText("ALPHA PODCAST • FICTIONAL PROGRAM", cx, py+Math.min(90,ph*.16), pw-40);
+    ctx.restore();
+    layout.slots.forEach(slot => {
+      const [slotId,x,y,w,h,color,brand,headline,category]=slot;
+      ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
+      ctx.fillStyle=color;ctx.fillRect(x,y,w,h);
+      const img=images[brand];
+      if (img) {
+        // The existing template supplies a landscape source. Preserve every
+        // pixel's aspect ratio, even for side placements; never stretch/crop.
+        const fit = Math.min(w / img.width, h / img.height);
+        const iw = img.width * fit, ih = img.height * fit;
+        ctx.globalAlpha = .24;
+        ctx.filter = "blur(16px)"; // decoration only; overlay text is freshly typeset
+        ctx.drawImage(img, x + (w - iw) / 2, y + (h - ih) / 2, iw, ih);
+        ctx.filter = "none";
+        ctx.globalAlpha = 1;
+      }
+      const panel=ctx.createLinearGradient(x,y,x+w,y);panel.addColorStop(0,"rgba(0,0,0,.55)");panel.addColorStop(1,"rgba(0,0,0,.04)");ctx.fillStyle=panel;ctx.fillRect(x,y,w,h);
+      const side=w<350;
+      ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillStyle="#FFFFFF";ctx.shadowColor="#06142A";ctx.shadowBlur=9;
+      function fitLabel(text, weight, requested, minimum, centerY) {
+        let fontSize = requested;
+        do {
+          ctx.font = `${weight} ${fontSize}px system-ui,sans-serif`;
+          if (ctx.measureText(text).width <= w - 48) break;
+          fontSize -= 1;
+        } while (fontSize >= minimum);
+        if (ctx.measureText(text).width > w - 48) throw Error("Logo/text cannot fit without clipping: " + text);
+        ctx.fillText(text, x + 24, centerY);
+      }
+      fitLabel(brand, 800, side?34:55, 17, y+(side?115:h*.37));
+      fitLabel(category, 600, side?19:30, 13, y+(side?175:h*.63));
+      ctx.shadowBlur=0;
+      ctx.font = `650 ${side?13:16}px system-ui,sans-serif`;
+      ctx.fillStyle = "rgba(255,255,255,.94)";
+      ctx.fillText("FICTIONAL DEMO", x+24, y+h-30);
+      ctx.restore();
+    });
+    // Draw each shared ad-ad edge exactly once with a uniform four-pixel
+    // divider. No duplicated inset borders or opaque ad marks in creator video.
+    const divider = 4;
+    ctx.fillStyle = "rgba(236,247,255,.94)";
+    for (let i=0;i<layout.slots.length;i++) for(let j=i+1;j<layout.slots.length;j++) {
+      const a=layout.slots[i], b=layout.slots[j];
+      const lowY=Math.max(a[2],b[2]), highY=Math.min(a[2]+a[4],b[2]+b[4]);
+      if (highY>lowY && (a[1]+a[3]===b[1] || b[1]+b[3]===a[1])) {
+        const edge=a[1]+a[3]===b[1]?b[1]:a[1];
+        ctx.fillRect(edge-divider/2,lowY,divider,highY-lowY);
+      }
+      const lowX=Math.max(a[1],b[1]), highX=Math.min(a[1]+a[3],b[1]+b[3]);
+      if (highX>lowX && (a[2]+a[4]===b[2] || b[2]+b[4]===a[2])) {
+        const edge=a[2]+a[4]===b[2]?b[2]:a[2];
+        ctx.fillRect(lowX,edge-divider/2,highX-lowX,divider);
+      }
+    }
+    // The only podcast area is the original uninterrupted creator region;
+    // demonstration disclosure lives in the page UI and the ad panels.
+
+  }
+  function start(canvas, images, selected) {
+    if (!canvas || canvas.tagName !== "CANVAS") throw Error("Canvas required");
+    canvas.width=W;canvas.height=H;
+    const ctx=canvas.getContext("2d",{alpha:false});if(!ctx)throw Error("Canvas unavailable");
+    let enabled=true, fixed=selected==="cycle"?null:String(selected), startTime=performance.now(), timer=0;
+    const keys=["2","4","6"];
+    function frame() {
+      if(!enabled)return;
+      const sec=(performance.now()-startTime)/1000;
+      const id=fixed??keys[Math.floor(sec/3)%3];
+      draw(ctx,id,images,sec);
+      canvas.dataset.configuration=id;
+      timer=requestAnimationFrame(frame);
+    }
+    frame();
+    return {
+      choose(id){if(!fixtures[id] && id!=="cycle")throw Error("Unknown configuration");fixed=id==="cycle"?null:String(id);startTime=performance.now();/* Existing scheduled animation loop will render the new selection. Never spawn another loop. */},
+      stop(){enabled=false;cancelAnimationFrame(timer);},
+      capture(){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error("Capture failed")),"image/png"));},
+      async record(milliseconds=9400){
+        if(typeof MediaRecorder!=="function"||typeof canvas.captureStream!=="function")throw Error("WebM capture unsupported by this browser");
+        const prior=fixed;fixed=null;startTime=performance.now();
+        const stream=canvas.captureStream(15);
+        const type=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")?"video/webm;codecs=vp9":"video/webm";
+        const recorder=new MediaRecorder(stream,{mimeType:type});const parts=[];
+        return new Promise((resolve,reject)=>{
+          recorder.ondataavailable=e=>{if(e.data.size)parts.push(e.data);};
+          recorder.onerror=e=>reject(e.error||Error("Recording failed"));
+          recorder.onstop=()=>{stream.getTracks().forEach(t=>t.stop());fixed=prior;resolve(new Blob(parts,{type}));};
+          recorder.start();setTimeout(()=>{if(recorder.state!=="inactive")recorder.stop();},Math.min(Math.max(milliseconds,500),15000));
+        });
+      }
+    };
+  }
+  window.AlphaAdvertisingRealEstate=Object.freeze({inventory,prepare,start,validate:()=>Object.values(fixtures).every(check)});
+})();
+
+</script><script defer>
+"use strict";
+document.addEventListener("DOMContentLoaded", async () => {
+  const $=id=>document.getElementById(id), status=$("status"), canvas=$("stage");
+  let controller=null, paused=false;
+  const download=(blob,name)=>{const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);};
+  try {
+    if(!window.AlphaAdvertisingRealEstate.validate())throw Error("Invalid geometry");
+    const images=await window.AlphaAdvertisingRealEstate.prepare();
+    controller=window.AlphaAdvertisingRealEstate.start(canvas,images,$("layout").value);
+    $("layout").onchange=()=>controller.choose($("layout").value);
+    $("play").onclick=()=>{if(paused){controller=window.AlphaAdvertisingRealEstate.start(canvas,images,$("layout").value);paused=false;}else{controller.stop();paused=true;}$("play").textContent=paused?"Play":"Pause";};
+    $("png").onclick=async()=>download(await controller.capture(),`ALPHA-ARE-${canvas.dataset.configuration}-FICTIONAL.png`);
+    $("webm").onclick=async()=>{status.textContent="Recording three fictional configurations on this device only…";$("webm").disabled=true;try{download(await controller.record(9400),"ALPHA-ARE-2-4-6-FICTIONAL.webm");status.textContent="Offline WebM produced. NOT_SENT.";}catch(e){status.textContent=e.message;}finally{$("webm").disabled=false;}};
+    ["play","png","webm"].forEach(id=>$(id).disabled=false);
+    $("inventory").textContent=JSON.stringify(window.AlphaAdvertisingRealEstate.inventory,null,2);
+    status.textContent="Offline composer loaded. Deterministic 2/4/6 geometry validated; playback and visual QA still require independent review. No customer ads, no external API, no campaign.";
+  }catch(e){status.textContent="Demo blocked: "+e.message;}
+});
+
+</script><style>
+body{background:#0b1530;color:#f3f8ff;max-width:1300px;margin:auto;padding:1.4rem;font-family:system-ui,sans-serif}a{color:#9ce3ff} h1{line-height:1.15}main{display:block}canvas{display:block;width:100%;aspect-ratio:16/9;border:3px solid #63c2ff;border-radius:14px;background:#14253a}button,select{font:inherit;padding:.7rem;border-radius:9px;margin:.4rem;background:#edf6ff;color:#10213d}button:disabled{opacity:.45}section{background:#10213b;border:1px solid #3a6a9a;border-radius:12px;padding:1rem;margin-top:1rem}.flag{color:#ffd184;font-weight:800}.facts{overflow:auto}pre{font-size:.85rem;white-space:pre-wrap;overflow-wrap:anywhere}
+</style></head>
+<body><header><a href="#workspace-main">ALPHA GLOBAL MEDIA™ · Creative Academy (offline trial)</a><p class="flag">FICTIONAL OFFLINE ENGINEERING DEMO · NOT A SELLABLE PRODUCT · NO LIVE ADVERTISER</p></header><main id="workspace-main">
+<h1>Advertising Real Estate — Existing ALPHA Composer</h1><p style="color:#ffe7a4;font-weight:700">INTERACTIVE OFFLINE TRIAL · Opened from a local file until ALPHA website deployment capacity becomes available. This does not connect to the live marketplace.</p>
+<p>Three quality-aligned 16:9 fictional podcast placements generated by the existing zero-credit <code>AlphaTemplateComposer.render</code>. The animated podcast center is fictional vector content, not real creator footage. This source-only quality refinement retains one continuous creator program and full-bleed ad bands. Commercial permission, price, availability and delivery are not established.</p>
+<label for="layout">Configuration </label><select id="layout"><option value="cycle">Play 2 → 4 → 6 layouts</option><option value="2">2 bottom split</option><option value="4">4 top + bottom</option><option value="6">6 top + sides + bottom</option></select>
+<button id="play" disabled>Pause</button><button id="png" disabled>Save current frame PNG</button><button id="webm" disabled>Record fictional 9-second WebM</button>
+<p id="status" role="status" aria-live="polite">Loading existing ALPHA ad renderer…</p>
+<canvas id="stage" width="1920" height="1080" role="img" aria-label="Fictional ALPHA podcast with advertising perimeter inventory"></canvas>
+<section><h2>Exact inventory geometry and unresolved commercial gates</h2><div class="facts"><pre id="inventory">Awaiting offline geometry check</pre></div></section>
+</main></body></html>
