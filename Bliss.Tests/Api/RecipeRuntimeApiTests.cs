@@ -37,6 +37,8 @@ public sealed class RecipeRuntimeApiTests : IClassFixture<BlissApiFactory>
         Assert.Contains("!history?.brief", script);
         Assert.Contains("window.AlphaTemplateComposer", composer);
         Assert.Contains("toBlob(", composer);
+        Assert.Contains("reader.readAsDataURL(blob)", script);
+        Assert.DoesNotContain("$(\"#composer-preview\").src = composerObjectUrl", script);
         Assert.DoesNotContain("fetch(", composer);
         Assert.DoesNotContain("XMLHttpRequest", composer);
     }
