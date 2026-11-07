@@ -50,5 +50,6 @@ assert.ok(service.includes("USD $50.00–$1,000.00 inclusive"), "Owner-approved 
 assert.ok(service.includes("Stripe account country is **United States (USA), as reported by the owner"), "Owner-reported US Stripe country must not be silently forgotten");
 assert.ok(service.includes("UNVERIFIED"), "Service must not treat country/currency as verified live payments");
 assert.ok(order.includes("Stripe account country (owner-reported"), "Captain decision sheet separately records operator report");
-assert.ok(order.includes("Merchant status, identity/business verification, live-charge enablement"), "Verification and payment gate stay open");
+assert.ok(order.includes("Stripe Dashboard account verification status: VERIFIED — owner-confirmed"), "Owner-confirmed Stripe verification should be recorded");
+assert.ok(order.includes("live charges enabled, payment-method capability, payout/banking availability"), "Live charge and payout capability remain separately unverified");
 console.log("ALPHA-346: all four manual deliverables, fictional example and release guard checks PASS");
