@@ -96,6 +96,18 @@ The fixture's immutable `SyntheticCommercialDeliveryReceipt` includes stored pro
 
 The source tests cover all ten requested conceptual delivery stages and T20 mutation of product/geometry/creative versions, and reject a non-synthetic mode. This proves **offline anti-fabrication** only; it does not persist a real `CampaignObservation` or verify an actual advertising display. No synthetic receipt is an impression or acceptable invoice.
 
+## Directive 345 / P7 — read-only existing Economics ledger integrity (2026-11-07)
+
+`Bliss.Domain/Economics/CommercialEconomicsReadOnlyGate.cs` adds a **read-only object-graph integrity gate** over the existing `Quote`, immutable `QuoteVersion`, `QuoteApprovalDecision`, `QuoteOutcome`, `QuoteLineItem` and `RateRecommendation` types. The gate has no repository write path, no `QuoteService.RecordOutcomeAsync`, no migration, and no new price table.
+
+This is **not a live price resolver**. Crucially, the production Economics Quote schema does **not** currently prove which existing `ARE-P01` product/version and owner-approved geometry version a quote applies to. The test therefore requires a uniquely labelled `SyntheticQuoteProductBinding` with a synthetic-only evidence source, explicit product/geometry IDs and requested occurrences, creator and advertiser IDs, and a one-to-one slot GUID ⇄ rate recommendation GUID mapping. The actual existing quoted version, approval reviewer, accepted outcome, currency and totals must reconcile exactly. An accepted `QuoteOutcome` alone is **insufficient**.
+
+The gate rejects draft/rejected/declined or stale quotes, mismatched quote version or accepted amount, wrong quantity, creator/opportunity/slot association, duplicate lines, currency changes and missing geometry. A synthetic object's apparent acceptance is **not live commercial authority**. Even a structurally consistent fictional ledger returns `QUOTE_LEDGER_COHERENT_SYNTHETIC_ONLY`, `RealProductBindingVerified=false`, `CanStatePriceToCustomer=false`, `AutomatedNegotiationAuthorized=false`, `ReservationAuthorized=false`, `PaymentAuthorized=false` and `DeliveryStatus=NOT_SENT`. `EconomicsPriceSpeech` is reused to validate accepted amount/currency syntax, but the amount is deliberately withheld from the synthetic customer transcript. Existing read-only accepted amount and writable negotiation services are not called.
+
+`Bliss.Tests/AdvertisingRealEstate/CommercialEconomicsReadOnlyGateTests.cs` exercises this contract on **fictional instances of the existing Economics classes**. The executable offline probe emits `syntheticEconomicsQuoteCheck` with an opaque evidence fingerprint and pricing refusal, while retaining the preexisting `economicsQuoteStatus=PRICING_UNAVAILABLE` in the synthetic conversation. No guest-facing accepted quote or invoice may be inferred. Exact-head CI acceptance required before calling this source increment complete.
+
+A future live implementation requires a **real authenticated, immutable and versioned quote-product association** linked to existing stored inventory products/geometry, creator authorization, capacity and market-specific timing. That binding must be approved separately before any read-only customer quote may be shown. Do not claim it exists just because a Quote ID is accepted in Economics.
+
 ## Next gated integration, not silently completed
 
 1. Obtain a **verified, current and versioned** creator/product/slot authority source, and store availability + exclusivity + occurrence data in the existing authorized inventory ledger; do not rely on OWNER-AUTHORIZATION.tsv alone for customer commitments.
