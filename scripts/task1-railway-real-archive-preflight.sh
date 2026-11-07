@@ -11,12 +11,23 @@ if [[ "${1:-}" != "--archive" || $# != 3 || "${3:-}" != "--local-only" ]]; then
   fail 'usage: bash scripts/task1-railway-real-archive-preflight.sh --archive /private/path/actual.dump --local-only'
 fi
 [[ "${TASK1_REAL_ARCHIVE_INSPECTION_APPROVED:-}" == "yes" ]] || fail 'separate authorization required even for inspecting a real archive'
+# These values must come from the separately authenticated, owner-approved
+# BACKUP MANIFEST, not merely by hashing the candidate file on demand.
+[[ "${TASK1_REAL_SOURCE_PROJECT_REF:-}" =~ ^[a-z0-9]{20}$ ]] || fail 'verified source Supabase project ref from restricted manifest required'
+expected_sha="${TASK1_REAL_ARCHIVE_SHA256_EXPECTED:-}"
+[[ "$expected_sha" =~ ^[a-f0-9]{64}$ ]] || fail 'verified 64-digit archive SHA-256 from restricted manifest required'
 archive="$2"
 [[ -f "$archive" && ! -L "$archive" && -r "$archive" && -s "$archive" ]] || fail 'archive must be an existing private non-symlink regular file'
 [[ "${archive##*/}" != *$'\n'* ]] || fail 'invalid filename'
-for binary in dd stat pg_restore sha256sum mktemp grep cut; do
+for binary in dd stat pg_restore sha256sum mktemp grep cut chmod rm; do
   command -v "$binary" >/dev/null 2>&1 || fail "missing prerequisite: $binary"
 done
+# Never inspect a plaintext real backup that other users can read.
+mode="$(stat -c %a -- "$archive")"
+[[ "$mode" =~ ^[0-7]{3,4}$ ]] || fail 'could not establish archive permissions'
+(( (8#$mode & 8#077) == 0 )) || fail 'archive has group/other access; restrict to owner first'
+actual_sha="$(sha256sum -- "$archive" | cut -d ' ' -f 1)"
+[[ "$actual_sha" == "$expected_sha" ]] || fail 'archive checksum does not match verified backup manifest'
 
 # A Cloudflare D1 SQL/gzip export, .7z, or .age ciphertext is NOT a PGDMP.
 # Do not decrypt an owner archive on Railway; owner keys stay on owner devices.
@@ -36,7 +47,9 @@ objects="$(grep -c '^ *[0-9][0-9]*;' "$toc" || true)"
 sensitive="$(grep -Eic '^[[:space:]]*[0-9]+;.*(EVENT TRIGGER|EXTENSION|FOREIGN SERVER|USER MAPPING|SUBSCRIPTION|PUBLICATION|PROCEDURAL LANGUAGE|ACL|DATABASE|FUNCTION|TRIGGER)' "$toc" || true)"
 printf 'TASK1_READONLY_REAL_ARCHIVE_PREFLIGHT_PASS\n'
 printf 'archive_size_bytes=%s\n' "$bytes"
-printf 'archive_sha256=%s\n' "$(sha256sum "$archive" | cut -d ' ' -f 1)"
+printf 'archive_sha256=%s\n' "$actual_sha"
+printf 'source_ref_attested=%s\n' "$TASK1_REAL_SOURCE_PROJECT_REF"
+printf 'trusted_manifest_provenance=operator_must_verify_separately\n'
 printf 'toc_object_count=%s\n' "$objects"
 printf 'objects_requiring_manual_security_review=%s\n' "$sensitive"
 printf 'owner_key_uploaded=no\ndatabase_connected=no\nrestore_executed=no\nfactory_stop_changed=no\n'
