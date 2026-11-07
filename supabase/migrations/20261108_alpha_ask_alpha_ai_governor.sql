@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS public.alpha_ask_alpha_turns (
   input_hash text NOT NULL CHECK(input_hash ~ '^[0-9a-f]{64}$'),
   audience text NOT NULL CHECK(audience IN ('advertiser','creator','support','general')),
   notice_version text NOT NULL CHECK(notice_version='AGM-ASK-ALPHA-AI-2026-11-08'),
+  ai_processing_consent boolean NOT NULL DEFAULT true CHECK(ai_processing_consent = true),
+  consent_recorded_at timestamptz NOT NULL DEFAULT now(),
   marketing_opt_in boolean NOT NULL DEFAULT false,
   state text NOT NULL DEFAULT 'RESERVED' CHECK(state IN ('RESERVED','SETTLED','UNKNOWN')),
   model text NOT NULL DEFAULT 'gpt-6-luna' CHECK(model='gpt-6-luna'),
@@ -89,8 +91,8 @@ BEGIN
     (SELECT count(*) FROM public.alpha_ask_alpha_turns WHERE session_hash=p_session_hash AND
       created_at >= utc_day) >= 12 OR
     (SELECT count(*) FROM public.alpha_ask_alpha_turns WHERE created_at >= utc_day) >= 100 OR
-    (SELECT count(*) FROM public.alpha_ask_alpha_turns WHERE session_hash=p_session_hash AND
-      state='RESERVED') >= 1
+    (SELECT count(*) FROM public.alpha_ask_alpha_turns t WHERE t.session_hash=p_session_hash AND
+      t.state='RESERVED') >= 1
  THEN RAISE EXCEPTION 'ASK_ALPHA_RATE_LIMITED' USING ERRCODE='P0001'; END IF;
  SELECT coalesce(sum(CASE WHEN t.state='SETTLED' THEN greatest(t.actual_usd,0)
                    ELSE t.reserved_usd END),0)
