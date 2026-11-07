@@ -14,7 +14,7 @@ fi
 archive="$2"
 [[ -f "$archive" && ! -L "$archive" && -r "$archive" && -s "$archive" ]] || fail 'archive must be an existing private non-symlink regular file'
 [[ "${archive##*/}" != *$'\n'* ]] || fail 'invalid filename'
-for binary in dd head stat pg_restore sha256sum mktemp wc grep; do
+for binary in dd stat pg_restore sha256sum mktemp grep cut; do
   command -v "$binary" >/dev/null 2>&1 || fail "missing prerequisite: $binary"
 done
 
