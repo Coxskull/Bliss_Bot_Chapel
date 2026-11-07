@@ -2,17 +2,19 @@
 
 **Date:** 2026-11-08  
 **Nominated first human operator:** ALPHA's requesting operator (self-nominated in chat; **identity not yet verified against Supabase Auth**).  
-**Status:** STAGING JWT-GUARDED API ACTIVE v1 — no approved operator roster, private hosted staff page, verified human login, or notification acknowledgement yet. [API deployment receipt](agm-task21-staging-api-deployment-20261108.md).  
+**Status:** PERSISTENT STAGING SUPPORT DATABASE ACCEPTED + JWT-GUARDED API ACTIVE v1. One fictional case and immutable receipt exist in staging. Private staff preview deployment is blocked by Vercel API quota; no approved operator roster, human login, or notification ACK exists yet. See [persistent staging acceptance](agm-task21-persistent-staging-20261108.md).  
 **No-spend directive:** $0 incremental, existing resources only.  
 **Change-control:** Global STOP engaged; production mutations, customer outreach, GHL sends, refunds, campaign changes and unapproved staging infrastructure are prohibited.
 
 ## 1. Hard gate: select a genuinely isolated Auth + database target
 
-The existing persistent Supabase development branch `alpha-first-five-staging` (`wdlmcriajgsretgyusmo`, parent `yyesqcyjhqjryaskrqip`) has now been independently identified. On November 8, 2026, the **actual Task #21 SQL migration and synthetic assertions PASSED in that hosted PostgreSQL 17 branch inside a rolled-back transaction**, with independent verification that the public support/intake tables remained absent, public function/table counts were unchanged, Auth user count stayed at three, and the migration list remained at 52. See [staging rollback evidence](agm-task21-staging-rollback-acceptance-20261108.md). This is a verified **rollback-only SQL testing target** with a separately deployed **default-deny** staging Edge API; it is not yet an authorized persistent support-hosting or Auth-enrollment target. The branch holds separate `alpha_factory` and `alpha_prototype` data and lacks the Bliss Bot public intake prerequisite. Live Bliss Bot project `bkutbglzivfdnoerigyb` remains explicitly forbidden for Task #21 staging writes.
+The existing non-default Supabase development branch `alpha-first-five-staging` (`wdlmcriajgsretgyusmo`, parent `yyesqcyjhqjryaskrqip`) now has a **persistently deployed, verified Task21 intake + GHL outbox + support case SQL stack**, migrated as `task21_staging_support_stack_20261108`, version `20261107222825`. All five staging public tables have RLS; direct anonymous/authenticated reads are denied. Existing factory and Auth data are unchanged. One *fictional* GENERAL_SUPPORT case (`931d5569-9958-4603-b3c4-fdad25c1acd6`) has a receipt and creation event; its only CRM row is `BLOCKED`. See [full evidence and safeguarded rollback](agm-task21-persistent-staging-20261108.md).
+
+The staging database is accepted for fictional case data only. The existing user accounts and factory dataset mean this is a shared development branch, **not** authorization to process live customers or to impersonate existing Auth users. Production Bliss Bot project `bkutbglzivfdnoerigyb` was not modified.
 
 Before any hosted sign-in test, obtain separate written evidence that the existing resource is isolated, has synthetic-only data, has a tested rollback point, and is eligible for Auth enrollment. The revised private dashboard `safeOperatorConfig` pins only the existing staging branch URL and requires `environment: "staging"`. It rejects the Bliss Bot production URL. There is still no approved private HTTPS staff host or server roster, so it is not a usable login portal yet.
 
-Do not deploy `alpha-support-operator`, run the migration against a connected Supabase project, open public support traffic, or flip the mutations flag until this gate is met. No new account purchases or subscriptions.
+The JWT-protected `alpha-support-operator` staging API is already deployed v1 and its case schema is installed. **Do not** deploy a public-facing form, change the server roster or mutation gate, open production support traffic, or create paid resources without the remaining identity/host/staffing gates. The Vercel API rejected the protected preview with HTTP 402 due to the existing team's daily 100-deployment limit; no new preview URL exists yet.
 
 ## 2. Provisional operator duties
 
@@ -34,7 +36,7 @@ The operator must approve a monitored *existing* support mailbox/channel and nom
 - Eight fictional support categories persisted with receipt/event/outbox checks in disposable PostgreSQL 17; sensitive support excludes general CRM delivery.
 - Synthetic Chromium runs with all outbound calls intercepted: password sign-in, MFA challenge, role gating, immutable case history, a single human claim, blocked overwrite, closed-case readback and logout. New enrollment flow must additionally be verified on **the exact PR head**. A browser mock does not enroll a real staff account. The real staging SQL transactional test also passed and rolled back; neither test is evidence of a persistent private support host.
 
-These tests **do not prove** human availability, mail delivery, Supabase-hosted migration, real Auth identity or live GHL acceptance.
+These tests **do not prove** human availability, mail delivery, real Auth identity, privileged queue access or live GHL acceptance. The *hosted staging migration and fictional case creation* are now independently verified.
 
 ## 5. Hosted synthetic acceptance sequence (NOT AUTHORIZED UNTIL GATES ABOVE PASS)
 
@@ -54,14 +56,17 @@ These tests **do not prove** human availability, mail delivery, Supabase-hosted 
 | Gate | Evidence | Current result |
 | --- | --- | --- |
 | First operator named | User's self-nomination | NOMINATED (not yet Auth verified) |
-| Existing SQL-only staging | Named Supabase branch, PG17 rollback test and independent schema readback | PASS — transaction-only test |
-| Persistent hosted/identity target | Verified rollback/backup, privacy/scope and owner approval | BLOCKED — not cleared for persistent support/real Auth writes |
-| Staging operator API | Deployed function v1 JWT required, source/readback confirmed | PASS — default denied, no live case queue |
+| Existing staging SQL | Real PG17 rollback test and restrictive role validation | PASS |
+| Persistent Task21 support database | Five RLS tables, migration version, fictional case/receipt and blocked CRM outbox | PASS — synthetic records only |
+| Staff identity and recovery | Actual account proof, private host, scoped roster, real MFA/backup | NOT EXECUTED |
+| Staging operator API | Deployed function v1 JWT required; default-deny until roster configured | PASS — API active; case access denied |
 | First Auth account / TOTP | Operator uses approved isolated host | NOT EXECUTED |
 | Server-only role roster / AAL2 | Admin configuration and denied/allowed reads | NOT EXECUTED |
-| Offline source, DB, browser | GitHub Actions exact-head results | PREVIOUS PASS; enrollment revision pending |
+| Offline source, DB, browser | Focused GitHub Actions and prior full CI | PASS on tested revisions; latest exact-head CI must still be checked |
 | Human incident alert acknowledgement | Timestamped fictional alert delivery / ACK | NOT EXECUTED |
-| Hosted E2E, GHL sandbox, rollback | Redacted receipts | NOT EXECUTED |
+| Hosted fictional intake and atomic receipt | 1 OPEN general case, one receipt and CREATED event; outbox BLOCKED | PASS — database path only |
+| Hosted staff claim and resolution | Real Auth account, staff roster and gated mutation API | NOT EXECUTED |
+| Private dashboard HTTPS preview | Vercel SSO project exists, Preview-only source ready | BLOCKED — daily deployment quota 402 |
 | Production | Explicit owner launch signoff | DENIED; Global STOP engaged |
 
 **Do not mark Task #21 complete on the strength of this checklist or CI alone.**
