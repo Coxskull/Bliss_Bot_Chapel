@@ -106,7 +106,8 @@ async function loadQueue(page=0){
     const raw=await authorizedApi("GET","?page="+page);
     const parsed=parseQueue(raw,page);
     queue=parsed.cases;activeRoles=parsed.roles;currentPage=page;
-    connected=true;show("signin-panel",false);show("workspace",true);
+    connected=true;show("signin-panel",false);show("mfa-panel",false);
+    show("workspace",true);
     el("connection").textContent="SIGNED IN · ROLE-SCOPED";
     renderQueue();
     announce("Case queue loaded. No automated notification or customer contact was triggered.");
