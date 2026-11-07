@@ -37,6 +37,10 @@
 | Text legibility / contrast / caption and ALT requirements | [QA reviewer] | PENDING |
 | Sponsored-content disclosure review | [Legal/platform reviewer] | PENDING |
 
+## Future production dependencies (outside this service)
+- Actual image/video licensing must be documented and approved before separately commissioned production; this planning package does not grant those licenses.
+- An actual creator must separately agree to participation, placement specifications and usage rights before media is booked or published.
+
 ## Creative review questions
 - Is the message clear, truthful and approved by the advertiser?
 - Is the product represented accurately and rights-cleared?
