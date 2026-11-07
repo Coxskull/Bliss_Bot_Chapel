@@ -22,6 +22,15 @@ public sealed class RateRecommendationConfiguration : IEntityTypeConfiguration<R
         builder.Property(x => x.IdempotencyKey).IsRequired().HasMaxLength(128);
         builder.HasIndex(x => new { x.SourceSystem, x.IdempotencyKey }).IsUnique();
         builder.HasIndex(x => x.CreatedAt);
+        // Preserve existing FK indexes from the committed migration snapshot under EF Core 10.
+        builder.HasIndex(x => x.CreatorId);
+        builder.HasIndex(x => x.ContentItemId);
+        builder.HasIndex(x => x.AdInventorySlotId);
+        builder.HasIndex(x => x.AdvertiserOpportunityId);
+        builder.HasIndex(x => x.BlissMatchId);
+        builder.HasIndex(x => x.GeographicMarketId);
+        builder.HasIndex(x => x.PricingModelId);
+        builder.HasIndex(x => x.PricingRuleVersionId);
 
         builder.HasOne(x => x.Creator).WithMany()
             .HasForeignKey(x => x.CreatorId).OnDelete(DeleteBehavior.Restrict);

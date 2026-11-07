@@ -20,6 +20,15 @@ public sealed class WeddingPlannerEconomicsRequestConfiguration
         builder.Property(x => x.IdempotencyKey).IsRequired().HasMaxLength(128);
 
         builder.HasIndex(x => new { x.SourceSystem, x.IdempotencyKey }).IsUnique();
+        // EF Core 10 no longer infers all of the legacy FK indexes.
+        // These indexes already exist in BlissDbContextModelSnapshot; preserve
+        // relational lookup performance and model/migration parity explicitly.
+        builder.HasIndex(x => x.WorkspaceId);
+        builder.HasIndex(x => x.AdvertiserId);
+        builder.HasIndex(x => x.BlissMatchId);
+        builder.HasIndex(x => x.AdInventorySlotId);
+        builder.HasIndex(x => x.GeographicMarketId);
+        builder.HasIndex(x => x.PricingModelId);
         builder.HasIndex(x => new { x.SessionId, x.CreatedAt });
         builder.HasIndex(x => x.RateRecommendationId).IsUnique();
 

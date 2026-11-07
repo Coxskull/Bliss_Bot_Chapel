@@ -22,6 +22,8 @@ public sealed class EconomicsResearchRunConfiguration :
         builder.Property(x => x.IdempotencyKey).IsRequired().HasMaxLength(128);
         builder.HasIndex(x => new { x.SourceSystem, x.IdempotencyKey }).IsUnique();
         builder.HasIndex(x => new { x.Status, x.CreatedAt });
+        // Preserve existing FK indexes from the committed migration snapshot under EF Core 10.
+        builder.HasIndex(x => x.GeographicMarketId);
         builder.HasOne(x => x.GeographicMarket).WithMany()
             .HasForeignKey(x => x.GeographicMarketId)
             .OnDelete(DeleteBehavior.Restrict);

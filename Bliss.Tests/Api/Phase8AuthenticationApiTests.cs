@@ -165,6 +165,7 @@ public sealed class OidcSecurityApiFactory : WebApplicationFactory<Program>
         {
             var toRemove = services.Where(descriptor =>
                     descriptor.ServiceType == typeof(DbContextOptions<BlissDbContext>)
+                    || descriptor.ServiceType == typeof(Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptionsConfiguration<BlissDbContext>)
                     || descriptor.ServiceType == typeof(BlissDbContext))
                 .ToList();
             foreach (var descriptor in toRemove)

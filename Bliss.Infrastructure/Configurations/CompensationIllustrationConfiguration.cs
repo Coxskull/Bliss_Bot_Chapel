@@ -18,6 +18,11 @@ public sealed class CompensationIllustrationConfiguration :
         builder.Property(x => x.IdempotencyKey).IsRequired().HasMaxLength(128);
         builder.HasIndex(x => new { x.SourceSystem, x.IdempotencyKey }).IsUnique();
         builder.HasIndex(x => x.CreatedAt);
+        // Preserve existing FK indexes from the committed migration snapshot under EF Core 10.
+        builder.HasIndex(x => x.QuoteId);
+        builder.HasIndex(x => x.QuoteVersionId);
+        builder.HasIndex(x => x.QuoteOutcomeId);
+        builder.HasIndex(x => x.CompensationRuleVersionId);
         builder.HasOne(x => x.Quote).WithMany()
             .HasForeignKey(x => x.QuoteId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.QuoteVersion).WithMany()

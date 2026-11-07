@@ -928,6 +928,8 @@ public sealed class DemonstrationsController(
         plannerSessionId = demonstration.WeddingPlannerSessionId,
         transmission = DeliveryPolicy.Transmission,
         delivery = "NOT_SENT",
+        campaignReady = false,
+        aiCalls = 0,
         subject = demonstration.ProspectState == "PRESERVED"
             ? $"{demonstration.BusinessName} is preserved. No demonstration was manufactured and nothing was sent."
             : presentation.PersonalizationAllowed
