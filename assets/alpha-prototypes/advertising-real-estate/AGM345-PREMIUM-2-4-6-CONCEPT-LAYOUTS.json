@@ -1,0 +1,156 @@
+{
+  "schema": "ALPHA-345-CONCEPT-LAYOUTS/V1",
+  "mode": "OFFLINE_SYNTHETIC_ONLY",
+  "source_note": "Derived from user's visual reference, with corrected mathematical frame-share percentages. Design proposal only.",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "aspect_ratio": "16:9"
+  },
+  "authority": {
+    "lifecycle": "DRAFT_CONCEPT_NOT_OWNER_APPROVED",
+    "owner_signed": false,
+    "creator_license_verified": false,
+    "advertiser_assets_verified": false,
+    "inventory_available": false,
+    "quote_status": "PRICING_UNAVAILABLE",
+    "reservations_authorized": false,
+    "external_use_authorized": false,
+    "real_impressions": 0,
+    "delivery_status": "NOT_SENT"
+  },
+  "variants": [
+    {
+      "id": "CONCEPT-02-BOTTOM",
+      "title": "Two sponsor rectangles / bottom split",
+      "creator_region": {
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 810
+      },
+      "ads": [
+        {
+          "slot_id": "BOTTOM_LEFT_CONCEPT",
+          "brand": "BLUEWAVE",
+          "x": 0,
+          "y": 810,
+          "width": 960,
+          "height": 270
+        },
+        {
+          "slot_id": "BOTTOM_RIGHT_CONCEPT",
+          "brand": "ORCHID ROAST",
+          "x": 960,
+          "y": 810,
+          "width": 960,
+          "height": 270
+        }
+      ]
+    },
+    {
+      "id": "CONCEPT-04-TOP-BOTTOM",
+      "title": "Four sponsor rectangles / top and bottom",
+      "creator_region": {
+        "x": 0,
+        "y": 180,
+        "width": 1920,
+        "height": 720
+      },
+      "ads": [
+        {
+          "slot_id": "TOP_LEFT_CONCEPT",
+          "brand": "CITRA POP",
+          "x": 0,
+          "y": 0,
+          "width": 960,
+          "height": 180
+        },
+        {
+          "slot_id": "TOP_RIGHT_CONCEPT",
+          "brand": "GROVE JUICE",
+          "x": 960,
+          "y": 0,
+          "width": 960,
+          "height": 180
+        },
+        {
+          "slot_id": "BOTTOM_LEFT_CONCEPT",
+          "brand": "FRUITBURST",
+          "x": 0,
+          "y": 900,
+          "width": 960,
+          "height": 180
+        },
+        {
+          "slot_id": "BOTTOM_RIGHT_CONCEPT",
+          "brand": "FROST POP",
+          "x": 960,
+          "y": 900,
+          "width": 960,
+          "height": 180
+        }
+      ]
+    },
+    {
+      "id": "CONCEPT-06-TOP-SIDES-BOTTOM",
+      "title": "Six sponsor rectangles / top sides bottom",
+      "creator_region": {
+        "x": 270,
+        "y": 180,
+        "width": 1380,
+        "height": 720
+      },
+      "ads": [
+        {
+          "slot_id": "TOP_LEFT_CONCEPT",
+          "brand": "SKY TECH",
+          "x": 0,
+          "y": 0,
+          "width": 960,
+          "height": 180
+        },
+        {
+          "slot_id": "TOP_RIGHT_CONCEPT",
+          "brand": "CRAFT LAB",
+          "x": 960,
+          "y": 0,
+          "width": 960,
+          "height": 180
+        },
+        {
+          "slot_id": "LEFT_SIDE_CONCEPT",
+          "brand": "AURA BEAUTY",
+          "x": 0,
+          "y": 180,
+          "width": 270,
+          "height": 720
+        },
+        {
+          "slot_id": "RIGHT_SIDE_CONCEPT",
+          "brand": "NOVA AUDIO",
+          "x": 1650,
+          "y": 180,
+          "width": 270,
+          "height": 720
+        },
+        {
+          "slot_id": "BOTTOM_LEFT_CONCEPT",
+          "brand": "LUMI CARE",
+          "x": 0,
+          "y": 900,
+          "width": 960,
+          "height": 180
+        },
+        {
+          "slot_id": "BOTTOM_RIGHT_CONCEPT",
+          "brand": "CRUNCHBOX",
+          "x": 960,
+          "y": 900,
+          "width": 960,
+          "height": 180
+        }
+      ]
+    }
+  ]
+}
