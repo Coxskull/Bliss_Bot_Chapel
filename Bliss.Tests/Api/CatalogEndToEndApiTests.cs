@@ -23,7 +23,7 @@ public sealed class CatalogEndToEndApiTests
         var board = await client.GetFromJsonAsync<JsonElement>("/api/operations/blueprint");
         Assert.Equal("RECORDED", board.GetProperty("geometryStatus").GetString());
         Assert.Equal(50, board.GetProperty("references").GetProperty("active").GetInt32());
-        Assert.True(board.GetProperty("creatorAuthorized").GetBoolean());
+        Assert.False(board.GetProperty("creatorAuthorized").GetBoolean());
 
         var usedCar = await client.GetAsync("/api/operations/blueprint/references/ACA-005-V1/image");
         var premium = await client.GetAsync("/api/operations/blueprint/showcases/ARE-001-V1/image");
@@ -36,9 +36,9 @@ public sealed class CatalogEndToEndApiTests
 
         var prompts = new (string Prompt, string Intent, bool Displayed, bool Escalated)[]
         {
-            ("This is my first campaign. I want to try Alpha, but I don't want to spend very much.", "ENTRY", true, false),
-            ("We want a premium campaign with a much larger visual presence.", "PREMIUM", true, false),
-            ("We don't want another advertiser displayed beside us.", "EXCLUSIVITY", true, false),
+            ("This is my first campaign. I want to try Alpha, but I don't want to spend very much.", "ENTRY", false, true),
+            ("We want a premium campaign with a much larger visual presence.", "PREMIUM", false, true),
+            ("We don't want another advertiser displayed beside us.", "EXCLUSIVITY", false, true),
             ("Will this same advertising configuration work on mobile?", "DEVICE", false, true),
             ("What if I want the advertisement displayed 20 times instead of 5?", "FREQUENCY", false, true),
             ("How will I know my advertisement actually ran?", "DELIVERY", false, true),
@@ -93,7 +93,7 @@ public sealed class CatalogEndToEndApiTests
             });
             Assert.All(ledger.Take(3), row =>
             {
-                Assert.True(row.ShowcaseDisplayed);
+                Assert.False(row.ShowcaseDisplayed);
                 Assert.False(string.IsNullOrWhiteSpace(row.ProductIds));
                 Assert.False(string.IsNullOrWhiteSpace(row.ShowcaseIds));
             });

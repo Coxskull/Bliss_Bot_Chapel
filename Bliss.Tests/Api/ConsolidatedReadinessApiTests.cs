@@ -38,7 +38,8 @@ public sealed class ConsolidatedReadinessApiTests
         Assert.Equal("RECORDED", board.GetProperty("geometryStatus").GetString());
         Assert.Equal(50, board.GetProperty("references").GetProperty("active").GetInt32());
         Assert.Equal("RETRIEVED", board.GetProperty("sampleRetrieval").GetProperty("status").GetString());
-        Assert.True(board.GetProperty("creatorAuthorized").GetBoolean());
+        // Owner-wide prototype permission is not verified creator/product/slot consent.
+        Assert.False(board.GetProperty("creatorAuthorized").GetBoolean());
         Assert.Equal(6, board.GetProperty("ownerNeeds").GetProperty("open").GetInt32());
         Assert.All(board.GetProperty("slots").EnumerateArray(), slot =>
         {

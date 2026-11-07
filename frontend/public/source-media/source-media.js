@@ -131,13 +131,21 @@ async function load() {
 }
 
 async function postJson(url, body) {
+  // Production requires same-origin operator access and antiforgery validation.
+  // No STOP, login, or preview restriction is bypassed by this client.
+  const authResponse = await fetch("/api/auth/session", { credentials: "same-origin" });
+  const session = await authResponse.json().catch(() => null);
+  if (!authResponse.ok || !session?.accessAllowed || !session?.canWrite || !session?.csrfToken) {
+    throw new Error("Authorized operator sign-in is required before saving or producing demonstrations.");
+  }
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": session.csrfToken },
     body: JSON.stringify(body)
   });
-  const payload = await response.json();
-  if (!response.ok) throw new Error(payload.error || "Request failed");
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(payload?.error || "Request failed");
   return payload;
 }
 

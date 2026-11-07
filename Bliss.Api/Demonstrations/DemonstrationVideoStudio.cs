@@ -33,7 +33,7 @@ public sealed class DemonstrationVideoStudio
         var captured = await RunCaptureAsync(
             "ffmpeg",
             [
-                "-y", "-ss", "0.4", "-i", path,
+                "-nostdin", "-y", "-ss", "0.4", "-protocol_whitelist", "file,pipe", "-i", path,
                 "-frames:v", "1",
                 "-vf", "scale=8:8,format=gray",
                 "-f", "rawvideo",
@@ -120,7 +120,7 @@ public sealed class DemonstrationVideoStudio
         await RunAsync(
             "ffmpeg",
             [
-                "-y", "-i", sourcePath, "-i", qrPath,
+                "-nostdin", "-y", "-protocol_whitelist", "file,pipe", "-i", sourcePath, "-i", qrPath,
                 "-filter_complex", filter,
                 "-map", "[out]",
                 "-an",
@@ -148,9 +148,16 @@ public sealed class DemonstrationVideoStudio
         bool captureBinary,
         CancellationToken cancellationToken)
     {
+        // Media parsers process attacker-controlled uploads. Never allow an
+        // orphaned ffmpeg/ffprobe subprocess to outlive its HTTP request.
+        var limit = fileName == "ffprobe" ? TimeSpan.FromSeconds(20) : TimeSpan.FromSeconds(90);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        linked.CancelAfter(limit);
+
         using var process = new Process();
         process.StartInfo.FileName = fileName;
         process.StartInfo.UseShellExecute = false;
+        process.StartInfo.RedirectStandardInput = true;
         process.StartInfo.RedirectStandardError = true;
         process.StartInfo.RedirectStandardOutput = true;
         foreach (var arg in args)
@@ -159,28 +166,51 @@ public sealed class DemonstrationVideoStudio
         }
 
         process.Start();
-        var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
-        byte[] bytes = [];
-        string text = string.Empty;
-        if (captureBinary)
+        process.StandardInput.Close();
+        try
         {
-            using var memory = new MemoryStream();
-            await process.StandardOutput.BaseStream.CopyToAsync(memory, cancellationToken);
-            bytes = memory.ToArray();
-        }
-        else
-        {
-            text = await process.StandardOutput.ReadToEndAsync(cancellationToken);
-        }
+            var stderrTask = process.StandardError.ReadToEndAsync(linked.Token);
+            byte[] bytes = [];
+            string text = string.Empty;
+            if (captureBinary)
+            {
+                // The only binary-output call scales the frame to 8x8 gray
+                // pixels (64 bytes), so this remains a tightly scoped capture.
+                using var memory = new MemoryStream();
+                await process.StandardOutput.BaseStream.CopyToAsync(memory, linked.Token);
+                bytes = memory.ToArray();
+            }
+            else
+            {
+                text = await process.StandardOutput.ReadToEndAsync(linked.Token);
+            }
 
-        await process.WaitForExitAsync(cancellationToken);
-        var stderr = await stderrTask;
-        if (process.ExitCode != 0)
-        {
-            throw new InvalidOperationException(fileName + " failed: " + Trim(stderr));
-        }
+            await process.WaitForExitAsync(linked.Token);
+            var stderr = await stderrTask;
+            if (process.ExitCode != 0)
+            {
+                throw new InvalidOperationException(fileName + " failed: " + Trim(stderr));
+            }
 
-        return new CapturedProcess(process.ExitCode, string.IsNullOrWhiteSpace(text) ? stderr : text, bytes);
+            return new CapturedProcess(process.ExitCode, string.IsNullOrWhiteSpace(text) ? stderr : text, bytes);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException(fileName + " exceeded its media-processing time limit.");
+        }
+        finally
+        {
+            if (!process.HasExited)
+            {
+                // Cancellation (including caller disconnects) must terminate
+                // the parser and its child processes rather than leaking CPU.
+                try { process.Kill(entireProcessTree: true); }
+                catch (InvalidOperationException) { } // Already exited.
+                using var cleanup = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                try { await process.WaitForExitAsync(cleanup.Token); }
+                catch (OperationCanceledException) { } // Never block the caller indefinitely.
+            }
+        }
     }
 
     private static string Trim(string value) =>
