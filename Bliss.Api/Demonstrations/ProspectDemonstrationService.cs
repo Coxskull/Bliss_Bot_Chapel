@@ -6,7 +6,7 @@ namespace Bliss.Api.Demonstrations;
 public sealed class ProspectDemonstrationService(ProspectDemonstrationStore store, DemonstrationVideoStudio studio)
 {
     // Bound media decoder input; a separate HTTP request-body limit is still required.
-    public const int MaxUploadedClipBytes = 64 * 1024 * 1024;
+    public const int MaxUploadedClipBytes = 32 * 1024 * 1024;
     public LibraryDocument Library() => store.Read();
 
     public string MemoryStore => store.MemoryProvider;
@@ -78,7 +78,7 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
     {
         if (bytes.Length == 0 || bytes.Length > MaxUploadedClipBytes)
         {
-            throw new InvalidOperationException("Uploaded media must be nonempty and at most 64 MiB.");
+            throw new InvalidOperationException("Uploaded media must be nonempty and at most 32 MiB.");
         }
 
         var temporary = Path.Combine(store.ClipsDirectory, Guid.NewGuid().ToString("N") + ".upload");
@@ -767,13 +767,16 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         var input = new FileInfo(temporaryPath);
         if (input.Length == 0 || input.Length > MaxUploadedClipBytes)
         {
-            throw new InvalidOperationException("Source media must be nonempty and at most 64 MiB.");
+            throw new InvalidOperationException("Source media must be nonempty and at most 32 MiB.");
         }
 
-        await using var source = new FileStream(temporaryPath, FileMode.Open, FileAccess.Read,
-            FileShare.Read, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
-        var sha = Convert.ToHexString(await SHA256.HashDataAsync(source, cancellationToken))
-            .ToLowerInvariant();
+        string sha;
+        await using (var source = new FileStream(temporaryPath, FileMode.Open, FileAccess.Read,
+            FileShare.Read, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan))
+        {
+            sha = Convert.ToHexString(await SHA256.HashDataAsync(source, cancellationToken))
+                .ToLowerInvariant();
+        }
         var duration = await studio.ProbeDurationAsync(temporaryPath, cancellationToken);
         var frameHash = await studio.FrameHashAsync(temporaryPath, cancellationToken);
         var library = store.Read();
