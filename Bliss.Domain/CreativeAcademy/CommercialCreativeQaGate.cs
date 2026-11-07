@@ -66,15 +66,17 @@ public static class CommercialCreativeQaGate
     {
         var findings = new List<string>();
         var candidate = brandReview?.CandidateSha256 ?? qualityReview?.CandidateSha256 ?? "";
-        var digestMatch = IsSha256(candidate)
-            && brandReview is not null && qualityReview is not null
-            && string.Equals(brandReview.CandidateSha256, qualityReview.CandidateSha256,
+        var brandDigestValid = IsSha256(brandReview?.CandidateSha256);
+        var qualityDigestValid = IsSha256(qualityReview?.CandidateSha256);
+        var sameCandidate = brandDigestValid && qualityDigestValid
+            && string.Equals(brandReview!.CandidateSha256, qualityReview!.CandidateSha256,
                 StringComparison.OrdinalIgnoreCase);
+        if (!sameCandidate) findings.Add("CANDIDATE_ASSET_IDENTITY_MISMATCH");
 
         // The real Wedding Planner intake uses CONFIRMED, not invented "APPROVED".
         // Confirmation of a brief is NOT sufficient: rights/reviewer evidence
         // must also be present for the separate BRAND gate to pass.
-        var brandPass = brandDna is not null && brandReview is not null && digestMatch
+        var brandPass = brandDna is not null && brandReview is not null && brandDigestValid
             && brandDna.Id != Guid.Empty && brandDna.WorkspaceId != Guid.Empty
             && brandDna.Status == "CONFIRMED" && brandDna.Version > 0
             && brandReview.BrandDnaId == brandDna.Id
@@ -91,7 +93,7 @@ public static class CommercialCreativeQaGate
         // Reference artwork is a quality teacher, NEVER the advertiser brand.
         // Require explicit identity, owner provenance, a human do-not-copy note
         // and a full, individually inspected CreativeAcademy parity signature.
-        var qualityPass = reference is not null && qualityReview is not null && digestMatch
+        var qualityPass = reference is not null && qualityReview is not null && qualityDigestValid
             && reference.Lifecycle == ReferenceLibrary.Active && reference.AssetPresent
             && !string.IsNullOrWhiteSpace(reference.Learn)
             && !string.IsNullOrWhiteSpace(reference.DoNotCopy)
@@ -126,6 +128,7 @@ public static class CommercialCreativeQaGate
             && Markets.Contains(localeReview.CountryCode)
             && Evidence(localeReview.Language, localeReview.Reviewer, localeReview.ReviewReference)
             && brandDna is not null && Equal(localeReview.Language, brandDna.Language)
+            && Equal(localeReview.CountryCode, brandDna.Market)
             && localeReview.LocalLanguageApproved && localeReview.MarketContextVerified
             && localeReview.CastingRightsAndRepresentationReviewed;
         if (!localizationPass) findings.Add("LOCALIZATION_REVIEW_REQUIRED");
@@ -142,7 +145,7 @@ public static class CommercialCreativeQaGate
             && !string.IsNullOrWhiteSpace(geometry.GeometryVersion);
         if (!geometryPass) findings.Add("INVENTORY_GEOMETRY_REVIEW_REQUIRED");
 
-        var candidateEligible = brandPass && qualityPass && localizationPass
+        var candidateEligible = brandPass && qualityPass && sameCandidate && localizationPass
             && policyPass && geometryPass;
         return new CommercialCreativeQaDecision(
             "OFFLINE_SYNTHETIC_ONLY",
