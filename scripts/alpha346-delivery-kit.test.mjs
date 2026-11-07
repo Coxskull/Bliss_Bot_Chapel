@@ -1,0 +1,40 @@
+import assert from "node:assert/strict";
+import { readFileSync, existsSync } from "node:fs";
+
+const root = "docs/launch/";
+const files = [
+  ["ALPHA-346-CAMPAIGN-BRIEF-TEMPLATE.md", ["Campaign brief", "Desired campaign result", "Intended audience", "Claims/evidence owner", "actual creator"]],
+  ["ALPHA-346-CHANNEL-FORMAT-MATRIX-TEMPLATE.md", ["suitability matrix", "Up-to-three-format comparison", "NO VERIFIED INVENTORY", "not a verified creator list"]],
+  ["ALPHA-346-CREATIVE-DIRECTION-TEMPLATE.md", ["Creative direction", "Message hierarchy", "Source assets", "NOT INCLUDE", "actual image/video licensing"]],
+  ["ALPHA-346-COORDINATION-PLAN-TEMPLATE.md", ["coordination and customer handoff", "Work breakdown", "Revision control", "Final handoff checklist", "No creator contacted"]]
+];
+for (const [name, required] of files) {
+  assert.ok(existsSync(root + name), "Required customer planning template missing: " + name);
+  const body = readFileSync(root + name, "utf8");
+  for (const token of required) {
+    assert.ok(body.toLowerCase().includes(token.toLowerCase()), name + " must mention " + token);
+  }
+  assert.ok(body.includes("Order reference:"), name + " should bind to a real Order by private reference");
+  assert.ok(!body.includes("checkout.stripe.com"), "No Stripe checkout in customer templates");
+  assert.ok(!body.includes("alpha7media@gmail.com"), "No retired support address");
+  assert.ok(!body.includes("THIS IS LIVE"), "No source template may imply campaign production");
+}
+const samplePath = root + "ALPHA-346-FICTIONAL-PLANNING-DEMO.md";
+assert.ok(existsSync(samplePath), "Worked fictional demonstration must exist");
+const sample = readFileSync(samplePath, "utf8");
+for (const label of ["FICTIONAL ONLY", "Fictional brief", "Fictional format suitability matrix",
+                     "Fictional creative direction", "Fictional coordination plan",
+                     "NO FINISHED AD", "NO CREATOR PARTICIPATION"]) {
+  assert.ok(sample.includes(label), "sample must explicitly distinguish fictional planning: " + label);
+}
+const index = readFileSync(root + "ALPHA-346-DELIVERY-KIT.md", "utf8");
+for (const [name] of files) {
+  assert.ok(index.includes(name), "delivery kit references each promised document");
+}
+assert.ok(index.includes("one in-scope consolidated revision"), "revision promise documented");
+assert.ok(index.includes("Global STOP"), "automated STOP left intact");
+assert.ok(index.includes("human"), "manual completion documented");
+const order = readFileSync(root + "ALPHA-346-FIRST-CUSTOMER-CAPTAIN-DECISIONS.md", "utf8");
+assert.ok(order.includes("dejesuserwin1@gmail.com"), "Captain-designated contact in decision sheet");
+assert.ok(order.includes("NOT YET VERIFIED"), "support operation still needs independent verification");
+console.log("ALPHA-346: all four manual deliverables, fictional example and release guard checks PASS");
