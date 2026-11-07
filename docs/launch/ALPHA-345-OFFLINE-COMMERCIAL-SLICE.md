@@ -57,10 +57,10 @@ These are **not** 20 unconditional PASS declarations. Each entry states what is 
 | T11 Conflicting occupancy | Product slot overlap is refused. **SOURCE TEST / LIVE RESERVATION LEDGER BLOCKED** |
 | T12 Unsupported platform/device | Unknown/mobile held for review. **SOURCE TEST** |
 | T13 Invalid geometry | Invalid/mixed/missing boundaries refused. **SOURCE TEST** |
-| T14 Quality pass / Brand failure | Separate Creative Academy double-approval contract not yet integrated here. **BLOCKED** |
-| T15 Brand pass / quality failure | Independent parity test integration remains **BLOCKED** |
-| T16 Unsupported advertising claim | Campaign claims and policy substantiation not yet connected. **BLOCKED** |
-| T17 Country-specific localization | Market/casting verification not yet connected. **BLOCKED** |
+| T14 Quality pass / Brand failure | New `CommercialCreativeQaGateTests` independently holds Brand when logo rights fail despite passing quality dimensions. **OFFLINE TESTED; REAL RIGHTS BLOCKED** |
+| T15 Brand pass / quality failure | New gate holds reference quality when lighting craftsmanship is unapproved despite valid Brand DNA evidence. **OFFLINE TESTED; REAL HUMAN QUALITY REVIEW BLOCKED** |
+| T16 Unsupported advertising claim | Fictional policy evidence rejects unsubstantiated claims and missing sponsorship disclosure. **OFFLINE TESTED; REAL POLICY AUTHORITY BLOCKED** |
+| T17 Country-specific localization | PH, DO, PA, CO, MY, ID require explicit reviewer/language/casting context; no automatic cultural inference. **OFFLINE TESTED; REAL MARKET VERIFICATION BLOCKED** |
 | T18 Synthetic delivery vs actual | Synthetic output never claims an impression. **SOURCE REFUSAL TEST / LIVE DELIVERY BLOCKED** |
 | T19 Asset missing/unapproved | Missing or unapproved showcase denied, guide cannot define geometry. **SOURCE TEST / FINAL ASSET APPROVAL BLOCKED** |
 | T20 Historical version integrity | Product/creator/geometry version mismatch denied; historical DB transaction snapshot untested. **SOURCE TEST / LIVE TRANSACTION BLOCKED** |
@@ -73,6 +73,20 @@ dotnet test Bliss.Tests/Bliss.Tests.csproj --no-restore --verbosity minimal
 ```
 
 These are **requested commands** and require actual CI logs; `--no-restore` assumes the CI workflow has restored NuGet packages. No migration or external API is required.
+
+## Directive 345 / P5 — source-level dual approval with existing Academy (2026-11-07)
+
+New `Bliss.Domain/CreativeAcademy/CommercialCreativeQaGate.cs` reuses:
+
+- `Bliss.Domain/Entities/WeddingPlannerBrandDna.cs`: the persisted Wedding Planner versioned `CONFIRMED` brand row (NOT a new brand database) plus **separate fictional reviewer evidence** for logos, approved copy, restrictions, language, palette and typography; merely confirming the brief does not establish trademark rights.
+- `CreativeAcademy.ReferenceParityGate`'s full list of **16 existing visual craftsmanship dimensions**, ACTIVE `ReferenceLibrary` provenance and DO NOT COPY notes, and `GlobalVisualDnaGate` as a secondary hard-failure review. The quality teacher cannot become the advertiser identity.
+- `CommercialGeometryGuard` versioned creator area. Missing layout keeps the independently passing brand and quality findings separate but blocks joint eligibility.
+
+`BrandStatus` and `QualityStatus` are **independent**: a brand mismatch cannot be concealed by premium art, and attractive brand-compliant work cannot be called reference-quality without individual dimension evidence. Candidate byte-digest identity is a **third joint approval gate**, never silently merged into either dimension.
+
+An additional fictional policy review holds unsupported claims, disclosure, sector, creator rights and platform checks. Market review holds uncertain casting/language/local styling for six declared countries (DO, PA, CO, PH, MY, ID). Lack of market evidence yields `LOCALIZATION_REVIEW_REQUIRED` and no false cultural assertion. The runner now records fictional `FICTIONAL_DOUBLE_PASS` / T14 / T15 / T16 / T17 decisions in its synthetic JSON artifact.
+
+**Even a double PASS produces only `SyntheticCandidateEligibleForAdvertiserReview=true`; `ExternalUseAuthorized=false`, `CampaignReady=false`, and `Delivery=NOT_SENT`.** The synthetic sample hash, brand, quality reference, reviewers, and locale attestations are **not real-world approvals**. The named FizzUp, PortoCafé, AquaPure, NaturaViva and Frutália source assets are still not verified against approved reference IDs. There is no external creative publication or actual image generation in this slice. The new tests must pass at the **final exact head** before their source behavior can be accepted.
 
 ## Next gated integration, not silently completed
 
