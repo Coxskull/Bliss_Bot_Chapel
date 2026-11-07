@@ -36,9 +36,12 @@ public sealed class BlueprintPhaseService(BlissDbContext database, IWebHostEnvir
             overrides.TryAdd(stored.Key, stored.Value);
         }
 
+        // Owner-wide demo approvals are not consent from any individual creator.
+        // This inspection cannot mark creator authorization true until a
+        // creator/product/slot/period binding is verified in canonical storage.
         var board = RealEstateCatalog.Board(
             assets,
-            approval.CreatorAuthorized,
+            creatorAuthorized: false,
             lifecycleOverrides: overrides,
             deviceStatus: approval.DeviceStatus,
             platformStatus: approval.PlatformStatus,

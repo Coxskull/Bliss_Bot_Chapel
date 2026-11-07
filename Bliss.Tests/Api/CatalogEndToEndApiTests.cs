@@ -23,7 +23,7 @@ public sealed class CatalogEndToEndApiTests
         var board = await client.GetFromJsonAsync<JsonElement>("/api/operations/blueprint");
         Assert.Equal("RECORDED", board.GetProperty("geometryStatus").GetString());
         Assert.Equal(50, board.GetProperty("references").GetProperty("active").GetInt32());
-        Assert.True(board.GetProperty("creatorAuthorized").GetBoolean());
+        Assert.False(board.GetProperty("creatorAuthorized").GetBoolean());
 
         var usedCar = await client.GetAsync("/api/operations/blueprint/references/ACA-005-V1/image");
         var premium = await client.GetAsync("/api/operations/blueprint/showcases/ARE-001-V1/image");
