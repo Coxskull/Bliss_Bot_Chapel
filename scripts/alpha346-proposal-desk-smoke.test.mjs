@@ -36,4 +36,10 @@ assert.ok(contact.includes('href="mailto:dejesuserwin1@gmail.com"'),"staged matc
 assert.ok(!contact.includes("alpha7media@gmail.com"),"prior contact retired");
 assert.ok(!publicBuilder.includes("tools/commercial/"),"tools must not be published by Vercel portal");
 assert.ok(!publicBuilder.includes("alpha346-proposal-desk.html"),"internal tool omitted from website");
+// Owner pricing authority is an inclusive USD band; not individual quote or payment approval.
+assert.ok(desk.includes("owner-approved band: $50–$1,000"), "internal price range shown");
+assert.ok(desk.includes("Number(value)>=50&&Number(value)<=1000"), "inclusive $50–$1,000 validator");
+assert.ok(desk.includes("currency===\'USD\'&&validPrice(price)"), "USD only");
+assert.ok(!desk.includes(\'<option value="PHP">\'), "PHP quote not authorized");
+assert.ok(desk.includes("INDIVIDUAL QUOTE NOT APPROVED"), "range does not approve any specific quote");
 console.log("ALPHA-346 offline four-deliverable proposal desk safety and source consistency PASS");
