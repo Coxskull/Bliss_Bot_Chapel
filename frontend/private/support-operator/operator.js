@@ -10,6 +10,7 @@ const panels=["signin-panel","mfa-panel","workspace"];
 const status=el("status");
 let config=null,client=null,caseId=null,activeRoles=[],currentPage=0,operatorId=null;
 let busy=false,queue=[],connected=false,hasMfa=false,mfaVerified=false;
+let pendingFactorId=null; // private in-memory enrollment state only
 function show(id,visible){el(id).hidden=!visible;}
 function announce(text,error=false){
   status.textContent=String(text);
@@ -24,6 +25,9 @@ function appendDescription(node,key,value){
 }
 function hidePrivate(){
   show("workspace",false);show("mfa-panel",false);
+  show("enroll-offer-panel",false);show("enroll-panel",false);
+  el("enroll-secret").textContent="";el("enroll-code").value="";
+  pendingFactorId=null;
   clearNode(el("queue"));clearNode(el("case-fields"));
   clearNode(el("contact-fields"));clearNode(el("events"));
   show("case-detail",false);show("case-empty",true);
@@ -32,7 +36,9 @@ function hidePrivate(){
 }
 function setBusy(on){
   busy=Boolean(on);
-  for(const id of ["signin-button","mfa-button","mfa-cancel","refresh","verify-mfa","signout","case-search-button"])
+  for(const id of ["signin-button","mfa-button","mfa-cancel","refresh","verify-mfa",
+    "enroll-start","enroll-signout","enroll-verify","enroll-cancel",
+    "signout","case-search-button"])
     el(id).disabled=busy;
   el("prev").disabled=busy||!connected||currentPage===0;
   el("next").disabled=busy||!connected||queue.length!==20||currentPage>=100;
@@ -197,12 +203,64 @@ async function signin(e){
     }
     hasMfa=available.length>0;
     mfaVerified=false;
-    show("mfa-panel",hasMfa);
+    if(!hasMfa){
+      show("enroll-offer-panel",true);
+      announce("Password sign-in verified. Set up TOTP MFA to prepare this staff account; no operator role is granted by enrollment.");
+    }else{
+      show("mfa-panel",true);
+      announce("Identity verified. Checking authorized support roles…");
+    }
     verified=true;
-    announce("Identity verified. Checking authorized support roles…");
   }catch{el("password").value="";show("signin-panel",true);
     announce("Sign-in was not verified. Use an authorized staff account.",true);}
   finally{setBusy(false);}
+  if(verified&&hasMfa)await loadQueue(0);
+}
+async function startEnrollment(){
+  if(busy||!client||hasMfa||pendingFactorId)return;
+  setBusy(true);announce("Requesting one-time MFA setup for your signed-in account…");
+  try {
+    const {data,error}=await client.auth.mfa.enroll({
+      factorType:"totp",friendlyName:"ALPHA Support Operator"
+    });
+    const secret=data?.totp?.secret;
+    if(error||typeof data?.id!=="string"||typeof secret!=="string"||
+       !/^[A-Za-z2-7]{16,256}$/.test(secret))
+      throw Error("MFA enrollment failed");
+    pendingFactorId=data.id;
+    el("enroll-secret").textContent=secret; // never stored, logged or sent elsewhere
+    show("enroll-offer-panel",false);show("enroll-panel",true);
+    announce("Enter the secret directly into your authenticator app, then verify your six-digit code.");
+  }catch{
+    pendingFactorId=null;el("enroll-secret").textContent="";
+    show("enroll-offer-panel",true);show("enroll-panel",false);
+    announce("Authenticator setup could not start. No staff permission was granted.",true);
+  }finally{setBusy(false);}
+}
+async function finishEnrollment(e){
+  e.preventDefault();if(busy||!client||!pendingFactorId)return;
+  const code=el("enroll-code").value.trim();
+  if(!/^\d{6}$/.test(code)){
+    announce("Enter a six-digit code from your newly enrolled authenticator.",true);
+    return;
+  }
+  setBusy(true);announce("Verifying authenticator enrollment…");
+  let verified=false;
+  try {
+    const {error}=await client.auth.mfa.challengeAndVerify({
+      factorId:pendingFactorId,code
+    });
+    if(error)throw Error("Enrollment verification rejected");
+    verified=true;
+    hasMfa=true;mfaVerified=true;
+    el("enroll-secret").textContent="";el("enroll-code").value="";
+    pendingFactorId=null;
+    show("enroll-panel",false);
+    announce("Authenticator enrollment verified. Checking separately approved operator roster…");
+  }catch{
+    el("enroll-code").value="";
+    announce("Authenticator code not verified. The setup secret remains in this private session for retry.",true);
+  }finally{setBusy(false);}
   if(verified)await loadQueue(0);
 }
 async function mfa(e){
@@ -267,6 +325,10 @@ function init(){
     return;}
   el("signin-form").addEventListener("submit",signin);
   el("mfa-form").addEventListener("submit",mfa);
+  el("enroll-start").addEventListener("click",startEnrollment);
+  el("enroll-signout").addEventListener("click",signout);
+  el("enroll-form").addEventListener("submit",finishEnrollment);
+  el("enroll-cancel").addEventListener("click",signout);
   el("refresh").addEventListener("click",()=>loadQueue(currentPage));
   el("prev").addEventListener("click",()=>loadQueue(Math.max(0,currentPage-1)));
   el("next").addEventListener("click",()=>{if(queue.length===20)loadQueue(Math.min(100,currentPage+1));});
