@@ -1,0 +1,60 @@
+# ALPHA-346 — first-customer manual operating procedure and Stripe readiness
+**Status:** OFFLINE WORKFLOW READY FOR OPERATOR REVIEW; PAYMENT NOT ENABLED
+**Directive:** ALPHA-FIRST-CUSTOMER-LAUNCH-346 | **Extra spend:** $0 | **Global STOP:** ENGAGED
+
+## Exact existing public path
+Public customer inquiry: https://alphacreativecontent.com/join-advertiser.html
+Public service explanation: https://alphacreativecontent.com/services.html
+Public contact: https://alphacreativecontent.com/contact.html
+Existing Vercel form uses frontend/public/alpha-intake.js and the existing Bliss Bot Supabase alpha-public-intake Edge Function; server persists matching alpha_public_intake_requests/receipts and an existing server-side GoHighLevel delivery. The source-of-truth is **Bliss Bot Supabase project bkutbglzivfdnoerigyb**; the Railway marketplace database and Factory staging are separate. No alternate form, CRM or database is created.
+
+## Manual operating states, owner and acceptance evidence
+| Stage | Human responsible | Evidence / gate | Permitted next action |
+| --- | --- | --- | --- |
+| INQUIRY_RECEIVED | Intake system | Server-generated request and receipt after HTTP 201; CRM delivery is only routing evidence | Human review, not automatic outreach |
+| REVIEW_PENDING | Authorized private operator | Confirm receipt link, privacy notice and lawful purpose; review PII only in existing restricted CRM/admin, not a public page | Optional **direct response to the customer's own request** if permitted by notice, owner policy and explicit outbound authorization |
+| SCOPE_DEFINED | Sales/coordinator | Objective, market, planned outputs, rights and customer dependencies; do not assume creator availability | Prepare individualized proposal |
+| PROPOSAL_PREPARED | Sales + owner/finance | Service scope, numeric quote, ISO currency, taxes/fees, schedule, support, Terms/refund/privacy versions | Route for internal approval |
+| PROPOSAL_SENT | Authorized operator | Approved outbound communication record and exact proposal/version | Await separate written customer approval |
+| CUSTOMER_APPROVED | Customer + operator | Evidence customer explicitly approved full commercial Order, policies, price/currency and dates; public form opt-in is not this approval | Queue approved payment method |
+| PAYMENT_PENDING | Finance | Legal entity/merchant/processor and payment route separately approved; no card data via form; currently **BLOCKED** | Send secure invoice/payment request **only after live payments are separately authorized** |
+| PAYMENT_CONFIRMED | Finance | Actual processor status and transaction reference reviewed; never infer from a draft, screenshot or browser redirect | Authorize fulfillment per Order |
+| IN_FULFILLMENT | Human coordinator | Four planning deliverables tracked; no creator outreach, placement or automated factory | Submit draft and receive one consolidated review |
+| DELIVERED | Coordinator | Final deliverable files, date, version and customer receipt acknowledgement | Issue closure note, handle lawful support/cancellation requests |
+| CLOSED | Operator/finance | Customer acceptance, support contact, invoice/refund/dispute record if relevant | Retain data under applicable approved policy |
+
+**No early shortcuts:** “delivered to GHL” ≠ contacted; “inquiry received” ≠ account; “customer approved” ≠ paid; “planning complete” ≠ ad displayed. STOP remains engaged for the factory. There is no bulk marketing, cold creator outreach, invitation, Stripe charge, provider call, or automatic campaign fulfillment in this document.
+
+## Test / privacy evidence (read-only, 2026-11-07)
+A current count-only readback found 2 advertiser + 2 creator requests, all NOT_YET_VERIFIED, 2+2 receipts and four delivery ledger entries marked DELIVERED. No customer PII was inspected. This evidence alone does NOT certify current live form submission or CRM lead ownership. Do not test by writing synthetic production leads.
+
+## Stripe readiness — exact remaining requirements
+Read the existing `docs/stripe/CAPTAIN-APPROVAL-PACKET-20261106.md`, `docs/stripe/commercial-terms-CAPTAIN-REVIEW.md`, and `docs/stripe/refund-cancellation-policy-CAPTAIN-REVIEW.md`; avoid drafting competing public policies.
+| Requirement | Current classification | Real release proof |
+| --- | --- | --- |
+| HTTPS public site, service description and advertiser inquiry | VERIFIED PUBLIC PAGE, RECEIPT PATH PREVIOUSLY VERIFIED | Fresh read-only page/browser + existing receipt count |
+| Monitored customer support contact | **MISSING/UNVERIFIED** | Real authorized mailbox/phone/support route, inbound tested, owner approval |
+| Verified merchant legal name, country, business profile and Stripe account capability | **UNVERIFIED** | Stripe dashboard owner inspection; no assumptions from GitHub |
+| Custom price, currency, tax/fees, service schedule, invoicing party | **NEEDS APPROVAL PER ORDER** | Approved numeric order, authorized currency, dates |
+| Paid-service commercial Terms, cancellation/refund/dispute policy | **DRAFTED INTERNALLY; NOT APPROVED/PUBLISHED** | Captain/Legal/Finance versioned approval, effective date, public access before payment |
+| Commercial privacy notice and support-data handling | **NOT APPROVED** | Reviewed paid-service data/processor/retention disclosure |
+| Secure Stripe invoice/Checkout test-mode and receipts/refunds/who may operate | **UNVERIFIED/NOT ENABLED** | Stripe account/test mode eligibility & private test acceptance, no real card charges |
+| Processor/webhook/payment reconciliation if automated | **NOT REQUIRED FOR THIS INQUIRY-ONLY LAUNCH** | Required only before automated settlement/fulfillment, not to receive inquiries |
+| Creator rights, booking, media inventory, campaign delivery | **NOT REQUIRED FOR PLANNING ONLY** | Mandatory for a separately sold placement service |
+
+### Mandatory approvals for first *paid* manual Order
+1. Captain approves one planning service and actual per-order price, currency/tax, deliverables, start/delivery dates, revision and ownership terms.
+2. Captain/Legal/Finance approve versioned paid Terms, refund/cancellation and commercial privacy notice, and the actual verified monitored support path.
+3. Finance/merchant owner verifies legal payment entity/Stripe merchant capability and specifically authorizes the payment method and a live transaction for the signed Order. **Not authorized now.**
+4. A real customer accepts the complete Order and the policies separately; authorized operator documents the acceptance.
+5. Deployment approval is separately required before the edited public service page is published; all other existing public inquiry forms remain unchanged.
+
+### What does NOT block manual inquiry and proposal preparation
+Railway PostgreSQL disaster recovery, Railway Restricted Preview, automated Sailors/factory deployment, creator matching, creator inventory, AI artwork/video, automated Stripe integration and the private operator queue PR #331. These must be revisited only if the proposed service actually depends on those protected systems. Existing public intake/CRM controls remain essential and should not be bypassed.
+
+### Go/no-go
+**PUBLIC INQUIRIES: YES, existing verified path.**
+**MANUAL PROPOSAL PREPARATION: YES, source templates and human review.**
+**SEND CUSTOMER PROPOSAL: ONLY after operator approves permitted reply and fills commercially material values; not sent in this task.**
+**PAYMENT / FULFILLMENT OF A PAID ORDER: NO until approvals listed above.**
+**DEPLOY / MERGE / OUTREACH / STOP RELEASE: NO.**
