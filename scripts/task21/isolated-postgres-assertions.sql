@@ -1,7 +1,7 @@
 -- Executed ONLY against an empty disposable PG17 CI database.
 INSERT INTO public.alpha_public_intake_requests
 (request_key,kind,full_name,email,category,description,notice_version)
-SELECT gen_random_uuid(),'support','Fictional '+category,
+SELECT gen_random_uuid(),'support','Fictional '||category,
   replace(category,'_','-')||'@example.invalid',
   category,'Synthetic fixture, no real customer information','AGM-SUPPORT-2026-11-08'
 FROM (VALUES ('general'),('advertiser'),('creator'),('billing'),('refund'),
