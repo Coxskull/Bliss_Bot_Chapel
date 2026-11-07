@@ -6,10 +6,10 @@ ALTER TABLE public.alpha_public_intake_requests ADD CONSTRAINT alpha_public_inta
   CHECK (kind IN ('creator','advertiser','privacy','support'));
 ALTER TABLE public.alpha_public_intake_requests DROP CONSTRAINT alpha_public_intake_kind_data;
 ALTER TABLE public.alpha_public_intake_requests ADD CONSTRAINT alpha_public_intake_kind_data CHECK (
- (kind='creator' AND organization='' AND website<>'' AND market<>'' AND category<>'')
- OR (kind='advertiser' AND organization<>'' AND market<>'')
- OR (kind='privacy' AND description<>'')
- OR (kind='support' AND category IN
+ (kind='creator' AND notice_version<>'AGM-SUPPORT-2026-11-08' AND organization='' AND website<>'' AND market<>'' AND category<>'')
+ OR (kind='advertiser' AND notice_version<>'AGM-SUPPORT-2026-11-08' AND organization<>'' AND market<>'')
+ OR (kind='privacy' AND notice_version<>'AGM-SUPPORT-2026-11-08' AND description<>'')
+ OR (kind='support' AND notice_version='AGM-SUPPORT-2026-11-08' AND category IN
      ('general','advertiser','creator','billing','refund','failed_campaign','privacy','security_incident')
      AND description<>'' AND organization='' AND website='' AND market='')
 );

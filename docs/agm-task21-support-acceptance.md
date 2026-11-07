@@ -16,8 +16,17 @@
 6. Case and event history is protected from direct role DELETE/UPDATE; historical rows are cascaded only when their parent intake request is lawfully purged via the existing retention process. No new cron is created.
 7. Public requests cannot activate an isolated test by supplying a header. Synthetic testing is restricted to isolated CI/disposable PostgreSQL fixture, never the live service or customer CRM.
 
+## Protected human operator backend (draft, not hosted)
+
+- `alpha-support-operator` is a private Supabase Edge Function in the **existing** project, explicitly `verify_jwt=true`, never a new Railway service.
+- Each request requires signed Supabase Auth user JWT **and** live Auth user lookup, claim verification, and exact server-only operator roster membership. Sensitive billing/privacy/security queues require JWT `aal2`; ordinary login alone cannot expose them.
+- `GET` lists scoped open cases in 20-item pages; `GET ?case_id=<uuid>` returns case details/history only to an authorized role. Unauthorized and nonexistent case IDs both return 404.
+- `POST` performs a service-only audited transition only when `ALPHA_SUPPORT_MUTATIONS_ENABLED=true` has separately been approved and configured. Operator owner assignment must belong to the matching role. Default is read-only and fail-closed.
+- A valid roster is *permission configuration*, not proof that a person is on duty or received an alert. No staffed human notification channel is claimed until real delivery/readback and escalation ownership are witnessed.
+- Only a narrowly allowlisted operator frontend Origin can receive CORS headers, if the owner later configures `ALPHA_SUPPORT_OPERATOR_ORIGIN`; no public frontend is connected yet. Service-role key remains inside Edge runtime.
+
 ## Verification plan and strict interpretation
-- Offline CI: `node scripts/agm-support-unit-smoke.mjs`, `node scripts/agm-ghl-unit-smoke.mjs`.
+- Offline CI: `node scripts/agm-support-unit-smoke.mjs`, `node scripts/agm-support-operator-unit.mjs`, `node scripts/agm-ghl-unit-smoke.mjs`.
 - Disposable PostgreSQL 17 CI: create a matching *synthetic baseline fixture*, execute the proposed migration and real SQL inserts/status transitions; assert 8 cases, 9 intake receipts, 4 eligible CRM outbox rows, no sensitive forwarding, role-level denials, closure audit and retention cascade. The baseline fixture is not a verified full copy of the deployed schema, so this is **not live acceptance**.
 - Verify existing GitHub Actions checks at the *exact branch commit*. A green badge alone cannot establish deployed functionality.
 
@@ -25,7 +34,7 @@
 1. Designated, reachable human operators must be recorded for security/privacy/billing and general support, with verified alert/response channel and cover. The database's role queue is not itself a delivery channel or an SLA.
 2. Owner-approved support/privacy notice, contact and dispute/refund policy, plus appropriate on-call and legal review. No refund transaction may be issued by the case workflow.
 3. Security-reviewed migration applied first to an **explicitly authorized isolated environment**, not the running Bliss Bot DB. Validate all existing schema constraints/triggers/functions and old creator/advertiser/privacy behavior.
-4. Deploy the existing intake Edge Function and updated public support form **only after** human routing and notice approval. Preserve Global STOP and run one server-authorized synthetic end-to-end test with a separate isolated database and disabled CRM automations. Verify saved request→receipt→case→event→owner transition→resolution, invalid key/origin and sensitive CRM exclusion.
+4. Deploy the existing intake Edge Function, the private operator function and updated public support form **only after** human routing and notice approval. Preserve Global STOP and run one server-authorized synthetic end-to-end test with a separate isolated database and disabled CRM automations. Verify saved request→receipt→case→event→owner transition→resolution, invalid key/origin and sensitive CRM exclusion.
 5. Independently validate actual HighLevel outbox claim/finish/readback only in an approved sandbox location with automation disabled. Never send fictional records to the live HighLevel location or turn support CRM enablement on implicitly.
 6. Record environment, deployed function version/image commit, test case IDs (synthetic only), redacted DB readbacks, CI run URLs, designated staffed channel and owner sign-off in PRE-LAUNCH MASTER 20261105, Task #21.
 

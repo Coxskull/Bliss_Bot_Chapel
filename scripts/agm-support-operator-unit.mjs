@@ -1,3 +1,4 @@
+import {readFileSync} from "node:fs";
 import assert from "node:assert/strict";
 import { handleOperatorRequest } from "../supabase/functions/alpha-support-operator/operator-handler.mjs";
 import { parseOperatorRoster, rolesForUser, mayAssign, parseTransition } from
@@ -114,4 +115,10 @@ const pre=await handleOperatorRequest(new Request(url,{method:"OPTIONS",
   headers:{Origin:"https://ops.example.invalid"}}),db,env);
 assert.equal(pre.status,204);
 assert.equal(pre.headers.get("Access-Control-Allow-Headers"),"Authorization, apikey, Content-Type");
+const config=readFileSync(new URL("../supabase/config.toml",import.meta.url),"utf8");
+assert.match(config,/\\[functions\\.alpha-public-intake\\]\\s*verify_jwt\\s*=\\s*false/);
+assert.match(config,/\\[functions\\.alpha-support-operator\\]\\s*verify_jwt\\s*=\\s*true/);
+const supportPage=readFileSync(new URL("../frontend/public/support.html",import.meta.url),"utf8");
+assert.ok(!supportPage.includes("SUPABASE_SERVICE_ROLE_KEY"));
+assert.ok(!supportPage.includes("ALPHA_SUPPORT_OPERATOR_ROSTER"));
 console.log("TASK21_OPERATOR_AUTH_CONTRACT_PASS: 2FA-sensitive queue, JWT/auth guard, read-only default, scoped owner, audit RPC and CORS.");

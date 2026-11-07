@@ -36,6 +36,24 @@ BEGIN
  IF NOT EXISTS(SELECT 1 FROM public.alpha_support_cases WHERE
    category='security_incident' AND assigned_role='SECURITY_REVIEW' AND status='OPEN')
  THEN RAISE EXCEPTION 'Critical security escalation not queued'; END IF;
+ -- Support cases must use support-specific notice even when written with
+ -- privileged server credentials; older interest notice cannot be replayed.
+ v_failed:=false;
+ BEGIN
+   INSERT INTO public.alpha_public_intake_requests
+   (request_key,kind,full_name,email,category,description,notice_version)
+   VALUES(gen_random_uuid(),'support','Synthetic Wrong Consent','wrong@unit.test',
+     'general','Fictional wrong notice','AGM-INTEREST-2026-11-05-GHL');
+ EXCEPTION WHEN others THEN v_failed:=true; END;
+ IF NOT v_failed THEN RAISE EXCEPTION 'Old notice wrongly authorized support case'; END IF;
+ v_failed:=false;
+ BEGIN
+   INSERT INTO public.alpha_public_intake_requests
+   (request_key,kind,full_name,email,category,description,notice_version)
+   VALUES(gen_random_uuid(),'privacy','Synthetic Wrong Support Notice','wrongprivacy@unit.test',
+     '','Fictional old privacy path','AGM-SUPPORT-2026-11-08');
+ EXCEPTION WHEN others THEN v_failed:=true; END;
+ IF NOT v_failed THEN RAISE EXCEPTION 'Support notice wrongly accepted for privacy intake'; END IF;
  IF has_table_privilege('service_role','public.alpha_support_case_events','DELETE')
  THEN RAISE EXCEPTION 'Service role may not directly delete support history'; END IF;
  IF has_table_privilege('anon','public.alpha_support_cases','SELECT')
