@@ -85,6 +85,35 @@
       compose.disabled=!ready(state);
     }
     updateInventory();
+    // The approved six native-fit images are committed in this existing
+    // project's static staging assets. They are never generated dynamically.
+    // Local file selection can override all seven without uploading anything.
+    async function loadBundledAssets(){
+      if(typeof Image==="undefined")return; // Node offline test has no browser Image.
+      const folder="/assets/creative-academy/native-six/";
+      const loaded=await Promise.all(REGIONS.map(rect=>new Promise(resolve=>{
+        const photo=new Image();
+        photo.decoding="async";
+        photo.onload=()=>resolve({id:rect.id,photo,rect,
+          name:rect===CENTER?"podcast_center_ai_crop.png":"ALPHA_NATIVE_"+rect.id+".png"});
+        photo.onerror=()=>resolve(null);
+        photo.src=folder+(rect===CENTER?"podcast_center_ai_crop.png":"ALPHA_NATIVE_"+rect.id+".png");
+      })));
+      if(fileInput.files?.length)return; // Never override an explicit operator selection.
+      for(const item of loaded){
+        if(!item)continue;
+        if(item.rect!==CENTER&&(item.photo.width!==item.rect.w||item.photo.height!==item.rect.h))continue;
+        state.set(item.id,{bitmap:item.photo,name:item.name+" (approved staging asset)"});
+      }
+      updateInventory();
+      if(ready(state)){
+        setStatus("7/7 approved native-fit images loaded from this site's existing static assets.");
+        compose.click();
+      }else{
+        setStatus("Some bundled staging assets are unavailable; choose the seven local files to proceed.",true);
+      }
+    }
+    loadBundledAssets();
     fileInput.addEventListener("change",async()=>{
       revoke();
       compose.disabled=true;exportBtn.disabled=true;canvas.hidden=true;
