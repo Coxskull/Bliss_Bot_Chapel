@@ -1,7 +1,7 @@
 // ALPHA creator/advertiser form → minimal GoHighLevel CRM contact.
 // This module is plain ESM so its mapping contract can be unit tested with Node.
 // Only server-side Supabase code imports it; never publish this module to Vercel.
-export const ghlNotice = "AGM-INTEREST-2026-11-05-GHL";
+export const ghlNotice = "AGM-INTEREST-2026-11-08-GHL-01";
 export function mapGhlContact(record, locationId) {
   if (!record || !["creator", "advertiser"].includes(record.kind) ||
       record.notice_version !== ghlNotice ||
