@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
-import {runSyntheticBudgetWorkflow,evaluateVerifiedInventory} from "../supabase/functions/alpha-public-intake/marketplace-budget.mjs";
+import {runSyntheticBudgetWorkflow,evaluateVerifiedInventory,parseBudgetToMinor,MARKET_CURRENCIES} from "../supabase/functions/alpha-public-intake/marketplace-budget.mjs";
 
 const now="2026-11-08T12:00:00.000Z";
+assert.deepEqual(Object.keys(MARKET_CURRENCIES).sort(),["JAKARTA","KUALA_LUMPUR","MANILA","MEDELLIN","PANAMA_CITY","SANTO_DOMINGO"]);
+assert.equal(parseBudgetToMinor("900.00","PHP"),90000);
+assert.equal(parseBudgetToMinor("100000","IDR"),100000);
+assert.throws(()=>parseBudgetToMinor("1000.25","IDR"),/CURRENCY_PRECISION/);
+assert.throws(()=>parseBudgetToMinor("1,000","PHP"),/INVALID_BUDGET/);
 const evidence={status:"VERIFIED",sourceRef:"SYNTHETIC_FIXTURE_SOURCE",
   sha256:"a".repeat(64),observedAt:"2026-11-07T12:00:00.000Z",expiresAt:"2026-12-08T12:00:00.000Z"};
 const brief={kind:"advertiser",intakeId:"SYNTHETIC-INTAKE-001",
