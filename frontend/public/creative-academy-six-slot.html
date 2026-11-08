@@ -30,16 +30,16 @@ footer{font-size:.82rem;color:#a5b9c7;margin-top:18px}
 <h1>Native-fit podcast ad composer</h1>
 <p>Approved six-placement layout: <strong>one full-width top</strong>, <strong>two ads left</strong>, <strong>two ads right</strong>, <strong>one full-width bottom</strong>, and a protected podcast center. Uses slot-prepared original advertising assets; it never stretches an image or blindly crops essential brand content.</p>
 <div class="instructions" id="asset-panel">
-  <h2>Load native-fit advertising artwork</h2>
-  <p>Choose the six <code>ALPHA_NATIVE_*.png</code> placement images plus <code>podcast_center_ai_crop.png</code> from the approved asset pack. You can select all seven together. Files are processed <strong>locally in your browser</strong> and never uploaded.</p>
+  <h2>Six approved native-fit ads load automatically</h2>
+  <p>This preview automatically loads the six approved <code>ALPHA_NATIVE_*.png</code> assets plus the fictional podcast image from this website. To test revisions, optionally select all seven replacement images from your computer. Replacement files stay <strong>local in your browser</strong> and are never uploaded.</p>
   <div class="controls">
-    <label for="assets">Choose prepared images</label>
+    <label for="assets">Optional: replace prepared images</label>
     <input type="file" id="assets" accept="image/png,image/jpeg,image/webp" multiple aria-describedby="asset-tip">
     <button type="button" id="compose" disabled>Render six placements</button>
     <button type="button" id="export" disabled>Download 1920 × 1080 PNG</button>
   </div>
-  <p id="asset-tip" class="muted">Only exact-size native artwork is accepted for ads. Original landscape posters must first be adapted into their slot-specific designs.</p>
-  <p id="status" role="status" aria-live="polite">Choose all seven local images. No network access or AI API is required.</p>
+  <p id="asset-tip" class="muted">Only exact-size native artwork is accepted; unadapted landscape posters are rejected so logos and product copy cannot be cut off.</p>
+  <p id="status" role="status" aria-live="polite">Loading seven approved same-origin staging images. No AI or external API required.</p>
   <table><thead><tr><th>Assigned placement</th><th>Required size</th><th>Loaded image</th></tr></thead><tbody id="inventory"></tbody></table>
 </div>
 <section class="output">
