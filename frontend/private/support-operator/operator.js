@@ -195,7 +195,7 @@ async function loadDetail(id){
       ticket.status==="OPEN";
     el("claim-case").hidden=!canClaim;
     el("claim-case").disabled=!canClaim;
-    const allowed=canUpdate&&ownerIsMe;
+    const allowed=canUpdate&&ownerIsMe&&ticket.status!=="CLOSED";
     for(const id of ["case-status","resolution"])el(id).disabled=!allowed;
     el("owner-id").disabled=true; // never operator-entered
     el("save").disabled=!allowed;
