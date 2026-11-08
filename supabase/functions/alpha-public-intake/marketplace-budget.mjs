@@ -86,7 +86,11 @@ export function evaluateVerifiedInventory(briefInput, offers, policy, options={}
         !Number.isSafeInteger(offer.verifiedAudience) || offer.verifiedAudience<=0 ||
         !evidenceIsCurrent(offer.audienceEvidence,now) ||
         !evidenceIsCurrent(offer.availabilityEvidence,now) ||
-        !validText(offer.scope,160) || !validText(offer.offerId,120) ||\n        !Number.isSafeInteger(offer.targetMarketShareBasisPoints) ||\n        offer.targetMarketShareBasisPoints < (brief.minimumTargetMarketShareBasisPoints || 0) ||\n        offer.targetMarketShareBasisPoints > 10000 ||\n        !evidenceIsCurrent(offer.geographyEvidence,now)) {
+        !validText(offer.scope,160) || !validText(offer.offerId,120) ||
+        !Number.isSafeInteger(offer.targetMarketShareBasisPoints) ||
+        offer.targetMarketShareBasisPoints < (brief.minimumTargetMarketShareBasisPoints || 0) ||
+        offer.targetMarketShareBasisPoints > 10000 ||
+        !evidenceIsCurrent(offer.geographyEvidence,now)) {
       rejected.push({offerId:offer?.offerId||null,reason:"INVENTORY_EVIDENCE_OR_FIT_FAILED"});
       continue;
     }
