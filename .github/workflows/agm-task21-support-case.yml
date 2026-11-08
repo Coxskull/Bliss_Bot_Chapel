@@ -33,6 +33,7 @@ jobs:
       - run: node scripts/agm-support-operator-unit.mjs
       - run: node scripts/agm-support-operator-ui-smoke.mjs
       - run: node scripts/agm-ghl-unit-smoke.mjs
+      - run: node scripts/task21/incident-escalation-contract.test.mjs
   isolated-postgres:
     runs-on: ubuntu-latest
     timeout-minutes: 8
@@ -137,4 +138,3 @@ jobs:
             echo "SECURITY FAILURE: production mode accidentally accepted"
             exit 1
           fi
-
