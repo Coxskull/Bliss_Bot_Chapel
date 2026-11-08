@@ -11,7 +11,7 @@ export function parseBudgetToMinor(amount, currency) {
   const code=String(currency||"").toUpperCase();
   const exponent=currencyExponent[code];
   if (exponent===undefined || typeof amount!=="string" ||
-      !/^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$/.test(amount.trim()))
+      !/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(amount.trim()))
     throw new Error("INVALID_BUDGET_OR_CURRENCY");
   const parts=amount.trim().split(".");
   if ((parts[1]||"").length>exponent) throw new Error("INVALID_CURRENCY_PRECISION");
