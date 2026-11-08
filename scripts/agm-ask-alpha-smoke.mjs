@@ -163,6 +163,13 @@ assert.throws(()=>calculateLunaUsd({input_tokens:100}),/UNVERIFIED/);
  assert.ok(privacy.includes('id="ask-alpha-ai"'),"Specific AI notice section required");
  assert.ok(privacy.includes("AGM-ASK-ALPHA-AI-2026-11-08"),"Consent notice version must match");
  assert.ok(privacy.includes("up to 30 days"),"Do not confuse store:false with zero provider abuse log retention");
- assert.ok(privacy.includes("not yet active or promised"),"Unverified ALPHA retention must not be advertised as active");
+ assert.ok(privacy.includes("Approved November 8, 2026 for controlled staging only"),"Public AI must remain separately gated");
+ assert.ok(privacy.includes("UNKNOWN") && privacy.includes("RESERVED"),"Unreconciled cost-hold exception must be disclosed");
+ const migration=readFileSync(new URL("../supabase/migrations/20261108_alpha_ask_alpha_receipts_retention_90d.sql",import.meta.url),"utf8");
+ assert.ok(migration.includes("alpha_ask_alpha_receipts_retention_90d"),"Dedicated cleanup job required");
+ assert.ok(migration.includes("cron.schedule("),"The existing database scheduler must be used");
+ assert.ok(migration.includes("WHERE state = 'SETTLED'"),"Never erase unknown provider liability");
+ assert.ok(migration.includes("created_at < now() - interval '90 days'"),"90-day boundary must be enforced");
+ assert.ok(!migration.includes("DELETE FROM public.alpha_public_intake"),"Do not touch existing public intake tables");
 }
 console.log("TASK20_ASK_ALPHA_OFFLINE_CONSENT_BUDGET_RECEIPT_PASS");
