@@ -12,6 +12,7 @@ assert.equal(BUDGET_NOTICE,"AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1");
 assert.equal(structured.market,"Manila, Philippines");
 assert.equal(structured.budget_amount_minor,90000);
 assert.equal(structured.audience_requirements,null);
+assert.doesNotThrow(()=>evaluateVerifiedInventory({...brief,audienceRequirements:null},offers,policy,{now}));
 assert.throws(()=>normalizeStructuredAdvertiser({
   budget_amount:"900",budget_currency:"USD",market_code:"MANILA",
   campaign_objective:"awareness",preferred_media_formats:["podcast"],
