@@ -91,7 +91,7 @@ Deno.serve(async (req: Request) => {
   const email = rawEmail?.toLowerCase() ?? null;
   const organization = trimmed(payload.organization ?? "", 160);
   const website = trimmed(payload.website ?? "", 500);
-  const market = trimmed(payload.market ?? "", 120);
+  const rawMarket = trimmed(payload.market ?? "", 120);
   const category = trimmed(payload.category ?? "", 80);
   const description = trimmed(payload.description ?? "", 800);
   const ack = payload.processing_acknowledged === true;
@@ -105,6 +105,9 @@ Deno.serve(async (req: Request) => {
     try { structured = normalizeStructuredAdvertiser(payload); }
     catch { return out(origin, { error: "Please check the campaign budget, market, media, language and consent fields." }, 422); }
   }
+  // Compare and persist the normalized market label on every retry. The browser
+  // form's structured market code is not the legacy free-text market field.
+  const market = structured?.market ?? rawMarket;
 
   if (!["creator", "advertiser", "privacy"].includes(String(kind)) ||
       !full_name || full_name.length < 2 || !email || !validEmail(email) ||
