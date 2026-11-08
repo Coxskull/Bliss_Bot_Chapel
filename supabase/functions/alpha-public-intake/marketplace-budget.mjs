@@ -112,8 +112,9 @@ export function evaluateVerifiedInventory(briefInput, offers, policy, options={}
   return {
     result:preferred&&overBudget.length?"LOWER_COST_ALTERNATIVE":preferred?"MATCH_FOUND":ready.length?"LOWER_COST_ALTERNATIVE":"NO_SUSTAINABLE_MATCH",
     preferred, alternatives, overBudget:overBudget.slice(0,3), rejectedCount:rejected.length,
-    message:preferred?"Verified option fits the all-in budget."
-      :ready.length?"Preferred placement is over budget; these separately agreed scopes fit."
+    message:preferred&&overBudget.length?"Preferred placement is over budget; these separately agreed scopes fit."
+      :preferred?"Verified option fits the all-in budget."
+      :ready.length?"These verified lower-cost options fit the all-in budget."
       :"No verified, sustainable option currently fits this budget."
   };
 }
