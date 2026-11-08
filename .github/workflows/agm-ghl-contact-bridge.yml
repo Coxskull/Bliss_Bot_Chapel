@@ -4,8 +4,12 @@ on:
     paths:
       - 'supabase/functions/alpha-public-intake/**'
       - 'supabase/functions/alpha-ghl-retry/**'
+      - 'supabase/functions/alpha-ghl-preflight/**'
+      - 'supabase/functions/alpha-ghl-readback/**'
       - 'docs/alpha-highlevel-crm-bridge.md'
       - 'supabase/migrations/20261105_alpha_ghl_contact_delivery.sql'
+      - 'supabase/migrations/20261108130100_alpha_budget_first_intake.sql'
+      - 'supabase/migrations/20261108170000_alpha_ghl_review_audit.sql'
       - 'frontend/public/join-creator.html'
       - 'frontend/public/join-advertiser.html'
       - 'frontend/public/alpha-intake.js'
@@ -28,6 +32,7 @@ jobs:
         with:
           node-version: '22'
       - run: node scripts/agm-ghl-unit-smoke.mjs
+      - run: node scripts/agm-ghl-readback-smoke.mjs
       - run: node scripts/agm-marketplace-budget-smoke.mjs
       - name: Verify GoHighLevel is not in browser code
         run: |
@@ -39,8 +44,14 @@ jobs:
           const advertiser = fs.readFileSync('frontend/public/join-advertiser.html','utf8');
           const api = fs.readFileSync('supabase/functions/alpha-public-intake/index.ts','utf8');
           const retry = fs.readFileSync('supabase/functions/alpha-ghl-retry/index.ts','utf8');
+          const preflight = fs.readFileSync('supabase/functions/alpha-ghl-preflight/index.ts','utf8');
+          const readback = fs.readFileSync('supabase/functions/alpha-ghl-readback/index.ts','utf8');
           assert.ok(retry.includes('req.headers.get("Authorization") !== "Bearer "+adminKey'));
+          assert.ok(preflight.includes('req.headers.get("Authorization") !== "Bearer " + adminKey'));
+          assert.ok(readback.includes('req.headers.get("Authorization") !== "Bearer " + adminKey'));
           assert.ok(!retry.includes('Access-Control-Allow-Origin'));
+          assert.ok(!preflight.includes('Access-Control-Allow-Origin'));
+          assert.ok(!readback.includes('Access-Control-Allow-Origin'));
           assert.ok(retry.includes('.limit(limit)'));
           assert.ok(retry.includes('deliverToGhl'));
           assert.ok(browser.includes('AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1'));
@@ -50,12 +61,10 @@ jobs:
           for(const token of ['ALPHA_GHL_PRIVATE_INTEGRATION_TOKEN','ALPHA_GHL_LOCATION_ID','ALPHA_GHL_SYNC_ENABLED','services.leadconnectorhq.com']){
             assert.ok(!browser.includes(token),'Never expose '+token+' on public frontend');
           }
-          console.log('CRM consent version, public notice, no-secret frontend: PASS');
+          console.log('CRM consent version, operator-only endpoints, no-secret frontend: PASS');
           NODE
 
   hosted-intake-synthetic:
-    # Explicitly one-time acceptance on this integration branch, never a standing
-    # production CRM test. .invalid identifiers cannot be synced to HighLevel.
     if: github.head_ref == 'feat/agm-ghl-contact-sync-outbox'
     runs-on: ubuntu-latest
     timeout-minutes: 5
