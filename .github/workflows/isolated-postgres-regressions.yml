@@ -99,6 +99,12 @@ jobs:
           test "$PGPASSWORD" = postgres
           psql --no-password -h 127.0.0.1 -p 5432 -U postgres             -d financial_test -v ON_ERROR_STOP=1             -f scripts/agm-ask-alpha-sql-acceptance.sql 2>&1 | tee ask-alpha-sql-acceptance.txt
           grep -q 'TASK20_SQL_ATOMIC_BUDGET_RLS_IDEMPOTENCY_FAILCLOSED_PASS'             ask-alpha-sql-acceptance.txt
+            ask-alpha-retention-acceptance.txt
+          # Task20 approved staging 90-day policy: synthetic dated records only.
+          psql --no-password -h 127.0.0.1 -p 5432 -U postgres \
+            -d financial_test -v ON_ERROR_STOP=1 \
+            -f scripts/agm-ask-alpha-retention-acceptance.sql 2>&1 | tee ask-alpha-retention-acceptance.txt
+          grep -q 'TASK20_RETENTION_90D_KEEP_UNSETTLED_PASS' ask-alpha-retention-acceptance.txt
 
       - name: Set up .NET 8 SDK
         uses: actions/setup-dotnet@v4
