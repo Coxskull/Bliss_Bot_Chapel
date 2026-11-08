@@ -15,7 +15,7 @@ const request = {
   message: 'Explain the public advertiser interest process.'
 };
 let checks = 0;
-async function check(label, {method='POST', origin=allowedOrigin, body=request, contentType='application/json', extraHeaders={}}, status, code) {
+async function check(label, {method='POST', origin=allowedOrigin, body=request, contentType='application/json', extraHeaders={},allowGatewayReject=false}, status, code) {
   const headers = {Origin:origin,...extraHeaders};
   if (contentType) headers['Content-Type'] = contentType;
   const response = await fetch(url, {
@@ -26,10 +26,16 @@ async function check(label, {method='POST', origin=allowedOrigin, body=request, 
   let result = {};
   try { result = await response.json(); } catch {}
   assert.equal(response.status,status,`${label}: unexpected HTTP status ${response.status}`);
-  assert.equal(result.error,code,`${label}: unexpected public error code ${result.error}`);
+  // Managed WAF may reject spoofed CF headers before the Edge Runtime sees
+  // them. Accept a non-JSON 403 as an edge denial ONLY for the spoof probe.
+  const gatewayReject = allowGatewayReject && response.status === 403 &&
+    !(response.headers.get('content-type') || '').includes('application/json');
+  if (!gatewayReject) {
+    assert.equal(result.error,code,`${label}: unexpected public error code ${result.error}`);
+  }
   assert.equal(result.receipt_id,undefined,`${label}: must not create an AI receipt`);
   checks += 1;
-  console.log('PASS '+label+' '+response.status+' '+code);
+  console.log('PASS '+label+' '+response.status+' '+(gatewayReject ? 'EDGE_GATEWAY_REJECTED_FORGED_HEADER' : code));
 }
 await check('unknown-origin-denied',{origin:'https://attacker.invalid'},403,
  'This form is available from ALPHA\'s official website only.');
@@ -46,7 +52,8 @@ await check('cf-header-forgery-cannot-enable-inference',{
     'cf-connecting-ip':'203.0.113.9',
     'X-Forwarded-For':'198.51.100.7',
     'User-Agent':'ALPHA-TASK20-CF-IP-PROBE-20261108-DO-NOT-REPLY'
-  }
+  },
+  allowGatewayReject:true
 },403,'CONSENT_REQUIRED');
 await check('bad-audience-denied',{body:{...request,audience:'admin'}},422,'INVALID_AUDIENCE');
 await check('get-method-denied',{method:'GET'},405,'Method not allowed');
