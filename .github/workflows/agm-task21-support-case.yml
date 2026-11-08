@@ -65,6 +65,8 @@ jobs:
           psql -v ON_ERROR_STOP=1 -f scripts/task21/staging-only-operator-grants.sql
           psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-alert-intent-assertions.sql
           psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-operator-grant-assertions.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/staging-only-browser-case-trial.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-browser-case-trial-assertions.sql
 
   synthetic-browser:
     name: Synthetic offline staff operator browser acceptance
