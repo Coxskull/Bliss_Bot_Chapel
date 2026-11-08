@@ -84,7 +84,8 @@ async function sendAskAlpha(question) {
   const cleaned = String(question || "").trim().slice(0,400);
   if (!cleaned || askAlphaTurns >= 12 || askAlphaPending) return;
   // Never send contact data into an informal chat: public forms handle it.
-  if (cleaned.includes("@") || /(?:\+?\d[ -]?){8,}/.test(cleaned) ||\n      /\b(?:password|passcode|one[- ]?time(?: code| password)?|otp|cvv|cvc|pin|secret(?: key)?|api[- ]?key)\s*[:=]\s*\S{2,}/i.test(cleaned)) {
+  if (cleaned.includes("@") || /(?:\+?\d[ -]?){8,}/.test(cleaned) ||
+      /\b(?:password|passcode|one[- ]?time(?: code| password)?|otp|cvv|cvc|pin|secret(?: key)?|api[- ]?key)\s*[:=]\s*\S{2,}/i.test(cleaned)) {
     appendAskAlphaMessage("guide",
       "Please avoid personal contact or payment details in chat. Use the appropriate public inquiry form.");
     askAlphaInput.value = "";
