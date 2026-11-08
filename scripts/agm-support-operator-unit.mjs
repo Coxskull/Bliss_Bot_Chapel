@@ -132,4 +132,59 @@ assert.match(config,/\[functions\.alpha-support-operator\]\s*verify_jwt\s*=\s*tr
 const supportPage=readFileSync(new URL("../frontend/public/support.html",import.meta.url),"utf8");
 assert.ok(!supportPage.includes("SUPABASE_SERVICE_ROLE_KEY"));
 assert.ok(!supportPage.includes("ALPHA_SUPPORT_OPERATOR_ROSTER"));
+
+// Staging-only alternate: metadata-backed grants live in a non-exposed,
+// privileged database schema. These are zero-network synthetic fixtures.
+const stageOrigin="https://bliss-task21ci-alpha-auto-s-projects.vercel.app";
+const stageRpcOriginal=db.rpc;
+let stageGrantEnabled=true, badRole=false, originChecked=0;
+envState={
+  ALPHA_SUPPORT_OPERATOR_ROSTER:undefined,
+  ALPHA_SUPPORT_OPERATOR_ORIGIN:undefined,
+  ALPHA_SUPPORT_MUTATIONS_ENABLED:"false",
+  SUPABASE_URL:"https://wdlmcriajgsretgyusmo.supabase.co"
+};
+user=general;role="authenticated";aal="aal1";selectedTicket=ticket;
+db.rpc=async(name,args)=>{
+  if(name==="alpha_support_staging_origin_allowed"){
+    originChecked++;
+    return {data:stageGrantEnabled&&args.p_origin===stageOrigin,error:null};
+  }
+  if(name==="alpha_support_staging_roles"){
+    return {data:badRole?["SECURITY_REVIEW"]:
+      (stageGrantEnabled&&args.p_user_id===general&&
+       args.p_origin===stageOrigin&&["aal1","aal2"].includes(args.p_aal)
+       ?["GENERAL_SUPPORT"]:[]),error:null};
+  }
+  return stageRpcOriginal(name,args);
+};
+const stagingRequest=(method="GET",urlPath="")=>request(method,urlPath,{
+  headers:{Origin:stageOrigin}
+});
+t=await call(stagingRequest());
+assert.equal(t.status,200,"Approved staging grant should show only GENERAL_SUPPORT");
+assert.deepEqual(t.data.visible_roles,["GENERAL_SUPPORT"]);
+assert.equal(t.data.operator_user_id,general);
+t=await call(stagingRequest("POST"));
+assert.equal(t.status,423,"Staging owner must NOT receive mutation ability");
+assert.equal(originChecked>0,true);
+t=await call(request("GET","",{headers:{Origin:"https://bliss-other-alpha-auto-s-projects.vercel.app"}}));
+assert.equal(t.status,403,"Lookalike hostname refused");
+t=await call(request());
+assert.equal(t.status,503,"No Origin may not authorize a roster-less browser session");
+user=outsider;
+t=await call(stagingRequest());
+assert.equal(t.status,403,"Wrong verified user must not receive a granted role");
+user=general;stageGrantEnabled=false;
+t=await call(stagingRequest());
+assert.equal(t.status,403,"Revoked origin/roster must remain denied");
+stageGrantEnabled=true;badRole=true;
+t=await call(stagingRequest());
+assert.equal(t.status,503,"Any unauthorized sensitive role from DB is a hard configuration failure");
+badRole=false;
+envState.SUPABASE_URL="https://bkutbglzivfdnoerigyb.supabase.co";
+t=await call(stagingRequest());
+assert.equal(t.status,403,"Production project URL must never activate the staging fallback");
+db.rpc=stageRpcOriginal;
+
 console.log("TASK21_OPERATOR_AUTH_CONTRACT_PASS: 2FA-sensitive queue, JWT/auth guard, read-only default, scoped owner, audit RPC and CORS.");
