@@ -36,6 +36,7 @@ assert.equal(advertiser.customFields.length,7);
 assert.deepEqual(advertiser.customFields.map(x=>x.id),Object.values(fieldIds));
 assert.equal(advertiser.customFields[0].field_value,"900.00");
 assert.equal(advertiser.customFields[4].field_value,"podcast, radio");
+assert.equal(advertiser.customFields[5].field_value,"");
 assert.throws(()=>mapGhlContact(advertiserRecord,loc),/mapping is incomplete/);
 for (const forbidden of [
   "tags","customFields","description","market","category","marketing_opt_in",
