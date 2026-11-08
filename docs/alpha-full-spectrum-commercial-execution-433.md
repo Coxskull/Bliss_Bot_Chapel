@@ -1,41 +1,36 @@
-# Directive 433 — commercial matching implementation status
+# ALPHA-SELECTIVE-STOP-REFORM-445 — commercial STOP scope and live status
 
-This work continues draft PR #356 and preserves the budget-first matcher, sliding-scale quotation rules, creator compensation safeguards and six-market currency support.
+Date: 2026-11-08 (America/New_York)
+Repository: `Coxskull/Bliss_Bot_Chapel`
+Existing draft PR: #356, branch `feature/marketplace-426-budget-first-guide`
 
-## Implemented on the PR branch
+## Decision
 
-- The public advertiser form collects structured budget, market, currency, objective, media formats, optional audience requirements, languages and separate contact consent.
-- Server-side validation binds the six launch markets to DOP, PAB, COP, PHP, MYR and IDR, normalizes market labels, checks currency precision and rejects missing consent or unsupported field values.
-- The additive migration `20261108130100_alpha_budget_first_intake.sql` adds nullable structured fields plus consent metadata. Existing records remain unchanged; the new fields become mandatory only for new-version advertiser submissions.
-- The intake function persists the structured fields and includes them in its request-key duplicate comparison. The GHL queue trigger accepts only the new notice version with separate, versioned contact consent. Delivery remains held until business identity, decision authority, CRM suppression, and explicit follow-up approval are verified.
-- CRM delivery maps the seven structured advertiser fields only when all seven HighLevel field IDs are configured. Missing or duplicate IDs fail closed. CRM credentials and field IDs are not included in source.
-- The existing quote engine still requires current verified audience, availability, geography, price, tax, accepted compensation and margin evidence. Synthetic acceptance remains separate from live acceptance.
+Factory STOP is a research/dispatch control. It does not need to gate public advertiser intake, ordinary human customer service, internal campaign planning, or preparation of a customer-specific draft quote. No runtime factory STOP check was found in those inbound/manual paths, so this review removes the blanket STOP prerequisite from PR #356's commercial release documentation; it does not clear or bypass the factory control.
 
-## Live database findings — 2026-11-08
+A manual consultation may review an inbound brief and prepare an internal plan independently of the autonomous factory. Send a follow-up only after the applicable contact permission, identity, authority, and suppression checks pass. Issue a customer-specific quote only after scope, delivery capacity, costs, currency, tax, price, and applicable written terms are established. The current inventory and payment evidence below do not support a placement quote or charge.
 
-Read-only inspection of the active Bliss Bot Supabase project found:
+## STOP and action-control audit
 
-- `alpha_public_intake_requests` has 5 existing rows: 3 advertiser and 2 creator inquiries, all using the 2026-11-05 GHL notice. The existing CRM outbox marks all five as delivered.
-- The live table has no structured budget fields or separate `contact_consent` field, and its notice-version constraint does not include the new contract yet. The migration is therefore not applied.
-- The old inquiry rows cannot be treated as consent evidence for this new follow-up scope. The separate contact-consent record did not exist; existing marketing preference is not substituted for it.
-- Intake, receipt and GHL outbox tables have RLS enabled with no public policies. The Edge Function uses a server-side service-role credential; no direct public table access was granted.
-- The existing marketplace contains 8 creator records, 7 platform records, 8 availability-flagged inventory slots and 6 placements. Only 2 of 8 creator profiles have audience size, geography and language all populated; none of the 6 placements has an active/open status. All 58 provenance observations are older than 30 days. The current schema has no placement price, tax or agreed creator-compensation fields.
-- These rows do not establish verified available inventory or a customer-ready quote. No customer quotation is eligible from this evidence.
+| Workflow | Actual control and evidence | Selective outcome |
+|---|---|---|
+| Factory research / Sailor dispatch | Active Alpha Lead Generation Supabase project `yyesqcyjhqjryaskrqip`; `alpha_factory.factory_control` contains the single `factory=STOP` row, last updated 2026-10-30. Factory registry and assignments are separate from the Bliss Bot inbound-intake project. | Keep STOP for autonomous research, dispatch, and factory writes until that factory's own release criteria pass. It does not authorize blocking unrelated inbound manual work. |
+| Public advertiser/creator intake | Active Bliss Bot project `bkutbglzivfdnoerigyb`; deployed `alpha-public-intake` is ACTIVE version 17, `verify_jwt=false`, and its source explicitly allows notice `AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1`. Live `alpha_public_intake_requests` has the matching structured columns and notice constraint. The Edge Function validates and persists budget amount/minor units/currency, market, objective, media, audience requirements, languages, separate contact consent, and notice version. | No factory STOP dependency exists in intake. The live form/backend contract is aligned; no new migration or deployment is required based on this inspection. No inbound request itself is a campaign, order, or payment. |
+| Existing inquiries / contact | Privacy-safe live aggregate: 5 requests, including 3 advertisers and 2 creators, all on the 2026-11-05 GHL notice. All 5 have `contact_consent=false`, `followup_gate=HOLD`, and identity/authority/suppression checks false. Their old marketing setting is not contact permission. | Keep all five on hold. Do not backfill consent or contact them. New follow-up still requires one-time inquiry-contact permission plus identity, authority, suppression, and explicit approval. |
+| CRM delivery | The live `alpha-public-intake` bridge checks current notice and recorded contact consent, then requires cleared follow-up gate, verified business identity, verified decision authority, CRM suppression check, and `followup_approved_at`. CRM writes also require explicit enablement, credentials, and complete unique field-ID configuration. | Preserve these specific checks. They protect contact creation and are not factory research gates. No CRM contact was created by this reassessment. |
+| Ask Alpha AI | `alpha_ask_alpha_settings` has `enabled=false` and `externally_billed_usd=0`; no turn rows exist. The AI endpoint uses its own setting, budget reservation, rate limits, and consent. Guided public content and the human intake route remain distinct. | Do not turn on paid AI for this $0-spend task. Its off switch does not block a human consultation or internal planning. |
+| Marketplace matching / quoting | Live marketplace aggregate: 8 creators, only 2 with audience size, primary geography, and language all populated; 8 inventory slots have an availability flag, but the 6 placements are only 2 `PLANNED` and 4 `CREATED`. The quote engine separately requires current verified audience/geography/availability evidence, price and tax evidence, accepted creator compensation/agreement, fulfillment and payment costs, and a passing margin policy. | No autonomous marketplace activity is enabled. Do not promise a placement or send an evidence-backed placement quote from these rows. A human may prepare an internal, nonbinding planning brief without relying on this inventory. |
+| Payment / Stripe | Existing repository evidence states the Stripe lifecycle is mocked, its test acceptance plan was not executed, public checkout is not active, and proposed paid-service/refund terms remain internal drafts with missing owner/legal/finance values. No connected Stripe account tool or merchant-state evidence is available in this environment. | Payment remains blocked independently of factory STOP until actual merchant readiness and the transaction-specific agreement, refund, tax, support, currency, and fulfillment controls are verified. No charge was attempted. |
+| Outreach / suppliers | No authorization or evidence is present for unsolicited outreach, unapproved supplier calls, creator commitments, or external contact to the five legacy requests. | Keep these blocked by consent, suppression, verified scope, and transaction-specific approval—not by the factory research STOP. |
 
-## Remaining release blockers
+## What changed in this PR
 
-- The migration and Edge Function are staged on the draft PR but not applied or deployed. No production migration, form release or merge occurred.
-- No connected HighLevel tool is available to inspect the account, credentials or custom-field identifiers. The seven environment-variable mappings are implemented, but the identifiers and delivery settings remain unverified. A manual follow-up gate holds new CRM delivery until identity, authority, suppression and approval evidence are recorded.
-- The existing advertiser-opportunity records are not linked to intake IDs or CRM contacts. No authorized isolated intake-to-CRM-to-opportunity record has been persisted.
-- No current inventory has verified availability, audience evidence, market fit, agreed compensation, price and tax terms. No real quotation has been produced.
-- No live provider call, external contact, supplier commitment, charge or additional spend occurred.
+- Removed the documentation-level blanket statement that the global factory STOP prohibits all marketplace/commercial operations.
+- Defined the allowable factory-independent path: receive a permitted inbound inquiry; perform human review and internal campaign-planning/quote preparation; contact the requester only after individual consent, identity, authority, suppression, and approval checks; send a quote only when all scope, delivery, cost, currency, and terms evidence exists.
+- Recorded that no live STOP value was changed and no factory gate was bypassed.
+- Reconciled prior release notes with current live evidence: the versioned intake schema and matching Edge Function are already active, while old requests remain held.
+- Kept payment, outreach, supplier-call, and placement-commitment safeguards independent and active.
 
-## Release gates
+## Verified operational result and limits
 
-1. Review and apply the migration together with the matching Edge Function and notice/form version, in an isolated or otherwise authorized environment.
-2. Verify the HighLevel custom-field IDs, credentials, duplicate/opt-out behavior and inquiry-only contact workflow without exposing secrets.
-3. Implement and prove an idempotent intake → CRM contact → existing opportunity mapping using an authorized isolated record.
-4. Refresh creator and placement evidence, then issue a quotation only if the full cost and compensation safeguards pass.
-5. Keep production form release, merge, and deployment gated until those checks pass.
-
-Factory STOP, no-outreach, no-paid-supplier-call and no-transaction boundaries remain unchanged. No additional spending was incurred.
+The advertiser form/backend can accept the new structured contract without the factory being cleared. Human review and internal planning can proceed from a new, permissioned inbound brief without autonomous creator discovery. The three legacy advertiser requests are still held. No current evidence supports a live placement quote, CRM delivery, payment, or first collected revenue. This reassessment created no database rows, CRM contacts, customer communications, transactions, or spend.
