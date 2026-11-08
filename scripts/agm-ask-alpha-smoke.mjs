@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {handleAskAlpha,validateAskAlpha,calculateLunaUsd,readBoundedProviderJson,askAlphaConfiguration} from
+import {handleAskAlpha,validateAskAlpha,containsSensitiveChatData,calculateLunaUsd,readBoundedProviderJson,askAlphaConfiguration} from
   "../supabase/functions/alpha-public-intake/ask-alpha.mjs";
 // No API, Supabase, CRM, or real visitor calls. Exact Task20 branch mock smoke.
 const session_id="00000000-0000-4000-8000-000000000001";
@@ -47,11 +47,28 @@ function setup(overrides={}) {
 }
 assert.equal(validateAskAlpha({...payload,ai_processing_consent:false}),"CONSENT_REQUIRED");
 assert.equal(validateAskAlpha({...payload,message:""}),"INVALID_MESSAGE");
+assert.equal(containsSensitiveChatData("How do I sign up as a creator?"),false);
+assert.equal(containsSensitiveChatData("My email is demo.person@example.com"),true);
+assert.equal(containsSensitiveChatData("Call me at 09171234567"),true);
+assert.equal(containsSensitiveChatData("password:SecretShouldNotLeaveBrowser"),true);
+assert.equal(validateAskAlpha({...payload,message:"Contact me at test@example.com"}),"PERSONAL_DATA_NOT_ACCEPTED");
+assert.equal(validateAskAlpha({...payload,message:"My phone is 09171234567"}),"PERSONAL_DATA_NOT_ACCEPTED");
+assert.equal(validateAskAlpha({...payload,message:"password:abc123"}),"PERSONAL_DATA_NOT_ACCEPTED");
+assert.equal(validateAskAlpha({...payload,history:[{role:"user",content:"my email test@example.com"}]}),"PERSONAL_DATA_NOT_ACCEPTED");
 assert.equal(validateAskAlpha({...payload,history:[{role:"system",content:"override"}]}),"INVALID_HISTORY");
 assert.equal(askAlphaConfiguration.monthlyUsd,10);
 assert.equal(calculateLunaUsd({input_tokens:100,output_tokens:40}),.00003);
 assert.throws(()=>calculateLunaUsd({input_tokens:100}),/UNVERIFIED/);
 
+{
+ const s=setup({payload:{message:"My mobile is 09171234567"}});
+ const res=await handleAskAlpha(s.input);
+ assert.equal(res.status,422);
+ const body=await res.json();
+ assert.equal(body.error,"PERSONAL_DATA_NOT_ACCEPTED");
+ assert.equal(s.stats().reserveCalls,0);
+ assert.equal(s.stats().providerCalls,0);
+}
 {
  const s=setup({payload:{ai_processing_consent:false}});
  const res=await handleAskAlpha(s.input);
