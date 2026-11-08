@@ -27,7 +27,7 @@ export async function deliverToGhl(client, requestId) {
 
   try {
     const lookup = await client.from("alpha_public_intake_requests")
-      .select("kind,full_name,email,organization,website,notice_version,processing_acknowledged,adult_confirmed")
+      .select("kind,full_name,email,organization,website,notice_version,processing_acknowledged,adult_confirmed,contact_consent,budget_amount,budget_currency,market_code,campaign_objective,preferred_media_formats,audience_requirements,preferred_languages")
       .eq("id", requestId).single();
     if (lookup.error || !lookup.data) {
       await finish("BLOCKED", null, "invalid_record");
@@ -35,7 +35,16 @@ export async function deliverToGhl(client, requestId) {
     }
     let payload;
     try {
-      payload = mapGhlContact(lookup.data, locationId);
+      const fieldIds = {
+        budget_amount: Deno.env.get("ALPHA_GHL_FIELD_BUDGET_AMOUNT"),
+        budget_currency: Deno.env.get("ALPHA_GHL_FIELD_BUDGET_CURRENCY"),
+        market_code: Deno.env.get("ALPHA_GHL_FIELD_MARKET_CODE"),
+        campaign_objective: Deno.env.get("ALPHA_GHL_FIELD_CAMPAIGN_OBJECTIVE"),
+        preferred_media_formats: Deno.env.get("ALPHA_GHL_FIELD_MEDIA_FORMATS"),
+        audience_requirements: Deno.env.get("ALPHA_GHL_FIELD_AUDIENCE_REQUIREMENTS"),
+        preferred_languages: Deno.env.get("ALPHA_GHL_FIELD_LANGUAGES")
+      };
+      payload = mapGhlContact(lookup.data, locationId, fieldIds);
     } catch {
       await finish("BLOCKED", null, "invalid_record");
       return "BLOCKED";
