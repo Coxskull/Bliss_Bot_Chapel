@@ -33,3 +33,20 @@ Independent read-only SQL on the same staging Supabase project returned a matchi
 - Owner-approved support policies, staffing schedule, privacy/security escalation, refund/dispute/failed-campaign handling and separate sandbox CRM acceptance.
 
 **Engineering conclusion:** Task #21's hosted first-human **general-case queue listing gate is PASSED**. Task #21 overall remains **IN PROGRESS**, draft PR #353 unmerged, Global STOP engaged, no production writes or incremental spend.
+
+## Follow-up: real hosted authorized case-detail and history — PASS
+
+The operator provided a subsequent screenshot in the same engineering conversation, after selecting the one fictional `NORMAL · general · OPEN` case in the real SSO-protected preview. The screenshot displays a signed-in role-scoped header and **"Private case record loaded. No customer was contacted."**
+
+**Actual browser detail readback:**
+- Exact selected case ID: `931d5569-9958-4603-b3c4-fdad25c1acd6`.
+- Category `general`, severity `NORMAL`, queue `GENERAL_SUPPORT`, status `OPEN`, owner **Unassigned**.
+- The private panel shows a clearly labeled **SYNTHETIC staging requester — DO NOT CONTACT**, an `example.invalid` email and fictional issue description, plus opened/updated/submitted timestamps. No real customer information is required in this report.
+- **Immutable case history** shows exactly one `CREATED · OPEN` event with a timestamp and the unassigned-owner message.
+- The case update section visibly reports that changes are disabled, with **"Case updates not enabled"**; no claim, transition, resolution, refund or external outreach occurred.
+
+**Independent SQL verification immediately after screenshot:** the same project still holds category `general`, severity `NORMAL`, assigned role `GENERAL_SUPPORT`, status `OPEN`, `owner_user_id IS NULL`, **one** immutable case-history event, **one** intake receipt, and the fictional HighLevel outbox state remains **BLOCKED**.
+
+**Acceptance:** PASS — real authenticated human operator case **detail and audit history read**, in addition to the earlier queue listing PASS. **Not accepted:** human ownership claim or case-state changes (mutations stay disabled), automated incident delivery, independent backup staffing, or final policy sign-offs. The screenshot is retained in the existing ChatGPT conversation, not copied to GitHub. No Auth UUID/token/factor secret was published by this report.
+
+**Release:** Task #21 remains **IN PROGRESS**; PR #353 stays draft and unmerged, Global STOP engaged, no production changes.
