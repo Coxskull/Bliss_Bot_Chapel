@@ -87,6 +87,10 @@ const fixture = {
   full_name: "Fixture Creator", email: "fixture@creator.test",
   website: "https://example.org/fictional-public-profile", organization: "",
   processing_acknowledged: true, adult_confirmed: true, contact_consent: true,
+  contact_consent_version: ghlNotice, contact_consent_at: "2026-11-08T12:00:00.000Z",
+  followup_gate: "CLEARED", followup_approved_at: "2026-11-08T12:00:00.000Z",
+  business_identity_verified: true, decision_authority_verified: true,
+  crm_suppression_checked: true,
   description: "Private data never for CRM", market: "Fixture City",
   category: "Podcast", marketing_opt_in: false
 };
