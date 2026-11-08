@@ -15,10 +15,10 @@ const out=(_origin,data,status=200)=>new Response(JSON.stringify(data),{status,
 const req=new Request("https://example.org",{
  headers:{"cf-connecting-ip":"203.0.113.9"}});
 function setup(overrides={}) {
- let providerCalls=0, reserveCalls=0, settleCalls=0, lastSettle=null, providerBody=null;
+ let providerCalls=0, reserveCalls=0, settleCalls=0, lastSettle=null, lastReserve=null, providerBody=null;
  const client={rpc:async(name,args)=>{
   if(name==="alpha_ask_alpha_reserve"){
-    reserveCalls++;
+    reserveCalls++;lastReserve=args;
     return overrides.reserve ?? {data:[{receipt_id,state:"RESERVED",is_replay:false}],error:null};
   }
   if(name==="alpha_ask_alpha_settle"){
@@ -42,7 +42,7 @@ function setup(overrides={}) {
     env: k=>({"ALPHA_ASK_ALPHA_ENABLED":"true","OPENAI_API_KEY":"synthetic-test-not-real",
       "ALPHA_ASK_ALPHA_HASH_SECRET":"synthetic-test-key-with-32-plus-bytes"}[k]??null),
     providerFetch},
-  stats:()=>({providerCalls,reserveCalls,settleCalls,lastSettle,providerBody})
+  stats:()=>({providerCalls,reserveCalls,settleCalls,lastSettle,lastReserve,providerBody})
  };
 }
 assert.equal(validateAskAlpha({...payload,ai_processing_consent:false}),"CONSENT_REQUIRED");
@@ -99,6 +99,15 @@ assert.throws(()=>calculateLunaUsd({input_tokens:100}),/UNVERIFIED/);
  assert.equal(body.support_case_created,false);
  assert.equal(s.stats().providerCalls,1);assert.equal(s.stats().settleCalls,1);
  assert.equal(s.stats().lastSettle.p_state,"SETTLED");
+ assert.match(s.stats().lastReserve.p_input_hash,/^[0-9a-f]{64}$/);
+ assert.match(s.stats().lastReserve.p_session_hash,/^[0-9a-f]{64}$/);
+ assert.match(s.stats().lastReserve.p_ip_hash,/^[0-9a-f]{64}$/);
+ assert.match(s.stats().lastSettle.p_output_hash,/^[0-9a-f]{64}$/);
+ const oldPlainInputHash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",
+   new TextEncoder().encode(JSON.stringify({message:payload.message,history:[],audience:payload.audience})))))
+   .map(x=>x.toString(16).padStart(2,"0")).join("");
+ assert.notEqual(s.stats().lastReserve.p_input_hash,oldPlainInputHash,
+   "Input hashes must be keyed; unkeyed SHA256 can disclose predictable questions");
  assert.equal(s.stats().providerBody.store,false);
  assert.equal(s.stats().providerBody.service_tier,"default");
  assert.deepEqual(s.stats().providerBody.tools,[]);
