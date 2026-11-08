@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>ALPHA Creative Academy — six-slot native-fit staging</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:#0c1424;color:#edf8ff}
+*{box-sizing:border-box}body{margin:0;padding:24px;max-width:1360px;margin-inline:auto}a{color:#85dcff}
+header{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;border-bottom:1px solid #33506b;padding-bottom:15px}
+.brand{font-weight:800;letter-spacing:.09em}small,.muted{color:#aac3d5}
+h1{font-size:clamp(24px,3.2vw,40px);margin:18px 0 8px}p{line-height:1.55}
+figure{margin:0}canvas{width:100%;height:auto;aspect-ratio:16/9;display:block;border:2px solid #89dcef;background:#0d1729}
+canvas[hidden]{display:none}
+.instructions{border:1px solid #385a72;border-radius:12px;background:#122238;padding:18px;margin:18px 0}
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+input[type=file]{font:inherit;max-width:100%;padding:12px;background:#1d3249;border-radius:8px}
+button{font:inherit;font-weight:700;border:0;background:#8bdfff;color:#092032;padding:12px 20px;border-radius:8px;cursor:pointer}button:disabled{opacity:.4;cursor:not-allowed}
+.output{border:1px solid #48677f;border-radius:12px;padding:14px;margin-block:20px;background:#101e32}
+table{width:100%;border-collapse:collapse;margin:12px 0}th,td{text-align:left;border-bottom:1px solid #284357;padding:10px 7px;font-size:.9rem}
+.error{color:#ffd4b2}.pass{color:#a3edc5}.note{color:#ffdc94}
+footer{font-size:.82rem;color:#a5b9c7;margin-top:18px}
+</style>
+</head>
+<body>
+<header><div class="brand">ALPHA GLOBAL MEDIA™ <small>· Creative Academy</small></div><div class="note">CONTROLLED STAGING · NO PAID CAMPAIGNS</div></header>
+<main>
+<h1>Native-fit podcast ad composer</h1>
+<p>Approved six-placement layout: <strong>one full-width top</strong>, <strong>two ads left</strong>, <strong>two ads right</strong>, <strong>one full-width bottom</strong>, and a protected podcast center. Uses slot-prepared original advertising assets; it never stretches an image or blindly crops essential brand content.</p>
+<div class="instructions" id="asset-panel">
+  <h2>Load native-fit advertising artwork</h2>
+  <p>Choose the six <code>ALPHA_NATIVE_*.png</code> placement images plus <code>podcast_center_ai_crop.png</code> from the approved asset pack. You can select all seven together. Files are processed <strong>locally in your browser</strong> and never uploaded.</p>
+  <div class="controls">
+    <label for="assets">Choose prepared images</label>
+    <input type="file" id="assets" accept="image/png,image/jpeg,image/webp" multiple aria-describedby="asset-tip">
+    <button type="button" id="compose" disabled>Render six placements</button>
+    <button type="button" id="export" disabled>Download 1920 × 1080 PNG</button>
+  </div>
+  <p id="asset-tip" class="muted">Only exact-size native artwork is accepted for ads. Original landscape posters must first be adapted into their slot-specific designs.</p>
+  <p id="status" role="status" aria-live="polite">Choose all seven local images. No network access or AI API is required.</p>
+  <table><thead><tr><th>Assigned placement</th><th>Required size</th><th>Loaded image</th></tr></thead><tbody id="inventory"></tbody></table>
+</div>
+<section class="output">
+<h2>Preview — no placeholder strips or poster thumbnails</h2>
+<figure><canvas id="stage" width="1920" height="1080" hidden aria-label="Final six-ad podcast composition"></canvas>
+<figcaption id="canvas-caption" class="muted">The compositor will display the finished image only after every slot is filled and validated.</figcaption></figure>
+<p id="proof" aria-live="polite"></p>
+</section>
+</main>
+<footer>DEMONSTRATION ONLY · Advertising assets remain fictional / not live · No creator authorization, inventory reservation, price, payment or outreach is established by this preview.</footer>
+<script src="/creative-academy-six-slot.js" defer></script>
+</body>
+</html>
