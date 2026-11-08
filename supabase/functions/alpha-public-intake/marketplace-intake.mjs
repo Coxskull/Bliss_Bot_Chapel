@@ -41,7 +41,7 @@ export function normalizeStructuredAdvertiser(payload) {
   if (!marketCode || !Object.hasOwn(MARKET_LABELS, marketCode) ||
       MARKET_CURRENCIES[marketCode] !== currency ||
       !objective || !objectives.has(objective) ||
-      !audience || payload?.contact_consent !== true)
+      audience === null || payload?.contact_consent !== true)
     throw new Error("INVALID_OR_UNCONSENTED_ADVERTISER_INTAKE");
   const preferredMedia = stringList(payload.preferred_media_formats, 7, 32);
   const languages = stringList(payload.preferred_languages, 12, 80);
@@ -56,7 +56,7 @@ export function normalizeStructuredAdvertiser(payload) {
     budget_currency: currency,
     campaign_objective: objective,
     preferred_media_formats: preferredMedia,
-    audience_requirements: audience || null,
+    audience_requirements: audience.length ? audience : null,
     preferred_languages: languages
   });
 }
