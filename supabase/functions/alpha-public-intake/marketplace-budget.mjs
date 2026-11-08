@@ -39,7 +39,7 @@ export function validateAdvertiserBrief(brief) {
       formats.some(x => !media.has(x)) ||
       !Array.isArray(brief.languages) || !brief.languages.length ||
       brief.languages.some(x => !validText(x,80)) ||
-      !validText(brief.audienceRequirements,500) ||
+      !(brief.audienceRequirements == null || (typeof brief.audienceRequirements === "string" && brief.audienceRequirements.length <= 500)) ||
       brief.contactConsent !== true)
     throw new Error("INVALID_OR_UNCONSENTED_BUDGET_BRIEF");
   return Object.freeze({
