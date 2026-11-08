@@ -23,13 +23,14 @@ let askAlphaTurns = 0;
 function askAlphaAnswer(question) {
   const q = question.toLowerCase();
   const has = (...terms) => terms.some(term => q.includes(term));
+  const mentionsBudgetAmount = /(?:[$€£]\\s?\\d|\\b\\d+(?:[.,]\\d{1,2})?\\s?(?:usd|dollars?|php|cop|dop|myr|rm|idr|rupiah|pesos?|balboas?)\\b)/i.test(question);
   if (question.includes("@") || /(?:\+?\d[ -]?){8,}/.test(question)) {
     return "Please do not enter email addresses or phone numbers here. This informational guide does not collect leads or send messages. A verified contact form will be needed for a private follow-up.";
   }
   if (has("privacy", "personal", "store", "save", "data", "record", "transcript")) {
     return "This guided conversation runs inside your current browser tab. It does not send your questions to a server, save a transcript, or contact anyone. Do not enter private business or personal details.";
   }
-  if (has("budget", "afford", "small business", "small budget", "limited budget", "spend")) {
+  if (mentionsBudgetAmount || has("budget", "afford", "small business", "small budget", "limited budget", "spend")) {
     return "Start with the total amount you can spend, including the creator or media cost, Alpha's disclosed fee, production, rights, taxes and payment costs. Alpha should compare verified options across local creators, podcasts and traditional media, then offer a shorter placement or different inventory if the first choice does not fit. We will not cut a creator's approved rate to force a match. This guide cannot check current availability or collect your budget; use the advertiser inquiry form if you want a human review, and include only information you are comfortable sharing.";
   }
   if (has("price", "pricing", "cost", "quote", "fee", "payment")) {
