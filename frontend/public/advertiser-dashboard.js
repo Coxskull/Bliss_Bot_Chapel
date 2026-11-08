@@ -62,10 +62,20 @@
         show("pending-panel", true);
         return;
       }
-      if (!response.ok || !body || typeof body.name !== "string"
-          || typeof body.advertiserId !== "string") {
+      if (!response.ok || !body) {
         badge.textContent = "UNAVAILABLE";
         message("Your business profile is unavailable.", true);
+        return;
+      }
+      // Never infer account approval from HTTP 200, a profile name or a
+      // public interest receipt. Require the verified server-side marker.
+      if (body.authorityStatus !== "VERIFIED" ||
+          typeof body.name !== "string" || !body.name.trim() ||
+          typeof body.advertiserId !== "string" ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.advertiserId)) {
+        badge.textContent = "NOT VERIFIED";
+        message("The server did not confirm a verified business profile.", true);
+        show("pending-panel", true);
         return;
       }
       el("business-name").textContent = body.name;
