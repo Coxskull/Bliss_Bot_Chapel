@@ -86,7 +86,7 @@ const fixture = {
   kind: "creator", notice_version: ghlNotice,
   full_name: "Fixture Creator", email: "fixture@creator.test",
   website: "https://example.org/fictional-public-profile", organization: "",
-  processing_acknowledged: true, adult_confirmed: true,
+  processing_acknowledged: true, adult_confirmed: true, contact_consent: true,
   description: "Private data never for CRM", market: "Fixture City",
   category: "Podcast", marketing_opt_in: false
 };
@@ -106,7 +106,7 @@ for (const key of ["description","market","category","marketing_opt_in","tags","
 }
 for (const altered of [
   {kind:"privacy"}, {notice_version:"UNAPPROVED"}, {processing_acknowledged:false},
-  {adult_confirmed:false}, {email:"synthetic@example.invalid"}
+  {adult_confirmed:false}, {contact_consent:false}, {email:"synthetic@example.invalid"}
 ]) {
   assert.throws(() => mapGhlContact({...fixture,...altered}, location));
   assertions++;
