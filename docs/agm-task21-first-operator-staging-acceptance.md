@@ -69,7 +69,8 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 | Hosted fictional intake and atomic receipt | 1 OPEN general case, one receipt and CREATED event; outbox BLOCKED | PASS — database path only |
 | Hosted restricted SQL claim and closure | Fictional Auth user, real service_role, five audit events; transaction rolled back | PASS — DATABASE ONLY |
 | Hosted staff operator queue listing | Real protected browser screenshot: GENERAL_SUPPORT only, one fictional OPEN NORMAL case, matches DB | PASS — authenticated queue read only |
-| Actual staff case detail, claim and resolution | Real queue loads; case detail not selected yet, mutation gate OFF | PENDING — detail/claim/resolution separate |
+| Hosted staff case-detail and immutable-history view | Real human preview screenshot selected authorized fictional case; detail/contact/history loaded; DB unchanged | PASS — read-only case detail |
+| Actual staff claim and resolution | No claim or state transition; server mutation gate OFF | PENDING — requires separate bounded synthetic acceptance |
 | Private dashboard HTTPS preview | Vercel SSO-protected deployment READY and user screenshot of identity-only screen | PASS — protected host/identity screen |
 | Production | Explicit owner launch signoff | DENIED; Global STOP engaged |
 
@@ -94,3 +95,8 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 - Screenshot from the protected staging preview displays `Case queue loaded`, **Authorized queues: GENERAL_SUPPORT**, exactly one case `NORMAL · general · OPEN` (fictional case `931d5569-9958-4603-b3c4-fdad25c1acd6`), and no case-detail selection yet. Independent read-only SQL matched that exact case ID, scope, status, and one CREATED audit event, with `owner_user_id IS NULL`.
 - Mark **hosted queue-list retrieval PASS**. Do **not** mark case-detail retrieval, human claim, audited transitions, or automatic incident dispatch PASS. [Redacted engineering verification](agm-task21-hosted-operator-queue-acceptance-20261108.md).
 - Next user action is to click the single fictional case in **Assigned queues** and inspect **Case details** without initiating a case update or customer contact. The global stop and separate mutation gate stay unchanged.
+
+## Real browser case detail screenshot verified — 2026-11-08
+- The operator selected fictional `931d5569-9958-4603-b3c4-fdad25c1acd6` from the already verified hosted `GENERAL_SUPPORT` queue. The panel displayed matching `general` / `NORMAL` / `OPEN` / unassigned metadata, a clearly synthetic `example.invalid` requester and issue, and **one immutable CREATED/OPEN event**. Banner: **"Private case record loaded. No customer was contacted."**
+- The screenshot also shows **"Case updates not enabled."** Independent Supabase read-only SQL confirmed the case remains OPEN/unclaimed with its single audit event, one receipt and blocked synthetic CRM row. [Complete evidence](agm-task21-hosted-operator-queue-acceptance-20261108.md).
+- **PASS:** real hosted staff detail/history read. **PENDING:** any case CLAIM, audited transition/resolution or application-generated alert. None of those actions was attempted and no mutation switch changed. Global STOP still engaged.
