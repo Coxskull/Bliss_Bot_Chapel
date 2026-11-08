@@ -53,3 +53,17 @@ A low-risk next browser acceptance step is available **without any deployment or
 Still outstanding: application-triggered internal incident alert delivery, independent primary/backup staffed acknowledgement and hours/SLA evidence, policy sign-off for refunds/disputes/failed campaigns/privacy/security, signed staging-to-production release acceptance, and sandbox HighLevel consent/opt-out tests. The genuine earlier manually sent Gmail test was acknowledged, but the application alert remains unrouted.
 
 **Formal Task #21 status:** IN PROGRESS; production unchanged and Global STOP engaged.
+
+
+## Follow-up: protected browser lookup of CLOSED case — PASS
+
+The actual staging operator has now submitted a further screenshot from the existing **Vercel Authentication-protected Support Operations preview**, after entering the new fictional closed case's exact ID into **"Find existing case by exact ID (including closed cases)"** and choosing **"Look up authorized case."** The browser displayed **"Private case record loaded. No customer was contacted."** The screenshot was reviewed in the engineering conversation; it is not copied to public GitHub.
+
+**Human-browser acceptance independently confirmed:**
+- Case `922fdedc-31a1-4dd6-9dd0-31772694922c` retrieved through role-scoped **GENERAL_SUPPORT** despite being absent from the OPEN-only queue.
+- Status **CLOSED**, severity NORMAL, category general, scope GENERAL_SUPPORT, verified operator ownership, and the clearly labeled fictional requester `@example.invalid` and synthetic resolution summary.
+- **Exactly five historical entries**, displayed newest-first: CLOSED/RESOLUTION_RECORDED; RESOLVED/RESOLUTION_RECORDED; IN_REVIEW/STATUS_CHANGED; TRIAGED/ASSIGNED; OPEN/CREATED. No missing or extra events on the user-visible page.
+- **"Case updates not enabled"** remains displayed. The page was read-only; this browser interaction did not claim, update, email, refund, or contact anyone.
+- Independent hosted Supabase read-only query after the screenshot confirmed: status CLOSED, a non-null owner and resolved timestamp, five events, one intake receipt, and synthetic HighLevel outbox still **BLOCKED**.
+
+**PASS — real authenticated human browser CLOSED-case exact-ID retrieval and full audit-history viewing.** This is now accepted separately from the earlier real restricted-database stored-procedure claim/closure test. **PENDING:** a user-triggered browser POST and a production-safe support notification/primary+backup response service. Do not enable the broad mutation gate from this read-only screenshot. Global STOP remains engaged, preview only, no actual customer data or spending.
