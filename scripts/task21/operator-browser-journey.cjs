@@ -109,13 +109,15 @@ async function runScenario(browser, scenario) {
         return status(401,{error:"Unauthenticated"});
       if(request.method()!=="GET"){
         writes.push({method:request.method(),url:request.url()});
-        if(scenario!=="claim-enabled")return status(423,{error:"Writes disabled"});
+        if(!["claim-enabled","synthetic-trial"].includes(scenario))
+          return status(423,{error:"Writes disabled"});
         const payload=JSON.parse(request.postData()||"{}");
-        if(!elevated||payload.action!=="CLAIM"||payload.case_id!==security.case_id)
+        const allowedCase=scenario==="synthetic-trial"?general.case_id:security.case_id;
+        if(!elevated||payload.action!=="CLAIM"||payload.case_id!==allowedCase)
           return status(403,{error:"Invalid claim"});
         if(claimed)return status(409,{error:"Already claimed"});
         claimed=true;
-        return status(200,{committed:true,case_id:security.case_id,
+        return status(200,{committed:true,case_id:allowedCase,
           status:"TRIAGED",action:"CLAIM"});
       }
       if(scenario==="backend-unavailable")
@@ -124,23 +126,27 @@ async function runScenario(browser, scenario) {
          (scenario==="sensitive-only" && !elevated))
         return status(403,{error:"Operator permission denied"});
       const caseId=url.searchParams.get("case_id");
-      const currentSecurity=claimed
+      const currentSecurity=claimed&&scenario!=="synthetic-trial"
         ? {...security,owner_user_id:uuid(99),status:"TRIAGED"} : security;
-      const allowed=elevated?[currentSecurity,general,resolved]:[general];
+      const currentGeneral=claimed&&scenario==="synthetic-trial"
+        ? {...general,owner_user_id:uuid(99),status:"TRIAGED"} : general;
+      const allowed=elevated?[currentSecurity,currentGeneral,resolved]:[currentGeneral];
       if(caseId){
         const c=allowed.find(item=>item.case_id===caseId);
         if(!c)return status(404,{error:"Case not found"});
         return status(200,{case:c,
           contact:{full_name:"Fictional Operator Fixture",
-            email:"fixture@example.invalid",
+            email:scenario==="synthetic-trial"&&c.case_id===general.case_id
+              ?"task21-browser-fixture@example.invalid":"fixture@example.invalid",
             description:c.category==="security_incident"?threat:"General question",
             created_at:"2026-11-08T00:00:00Z"},
           events:[{event_id:1,action:"CREATED",status:"OPEN",
             summary:"Synthetic event "+threat,occurred_at:"2026-11-08T00:00:00Z"}],
-          history_limit:100});
+          history_limit:100,
+          synthetic_trial_enabled:scenario==="synthetic-trial"&&c.case_id===general.case_id});
       }
       const roles=elevated?["GENERAL_SUPPORT","SECURITY_REVIEW"]:["GENERAL_SUPPORT"];
-      const cases=elevated?[currentSecurity,general]:[general];
+      const cases=elevated?[currentSecurity,currentGeneral]:[currentGeneral];
       return status(200,{cases,page:Number(url.searchParams.get("page")||"0"),
         page_size:20,visible_roles:roles,operator_user_id:uuid(99)});
     }
@@ -231,7 +237,21 @@ async function runScenario(browser, scenario) {
   assert.equal(await page.locator("img").count(),0);
   assert.equal(await page.evaluate(()=>window.__TASK21_XSS===true),false);
   assert.equal(await page.locator("#save").isEnabled(),false);
-  if(scenario==="claim-enabled"){
+  if(scenario==="synthetic-trial"){
+    assert.equal(await page.locator("#claim-case").isVisible(),false,
+      "Critical case cannot inherit GENERAL_SUPPORT trial");
+    await page.locator("#queue button").nth(1).click();
+    await page.waitForFunction(()=>document.querySelector("#contact-fields")
+      ?.textContent?.includes("task21-browser-fixture@example.invalid"));
+    await page.locator("#claim-case").waitFor({state:"visible"});
+    assert.equal(await page.locator("#claim-case").isEnabled(),true,
+      "Only exact fictional case should have temporary claim control");
+    await page.locator("#claim-case").click();
+    await page.waitForFunction(()=>document.querySelector("#case-fields")
+      ?.textContent?.includes("TRIAGED"),{timeout:15000});
+    assert.equal(await page.locator("#save").isEnabled(),true);
+    assert.equal(claimed,true);
+  }else if(scenario==="claim-enabled"){
     await page.locator("#claim-case").waitFor({state:"visible"});
     await page.locator("#claim-case").click();
     // The prior detail is visible during async queue refresh. Wait for the
@@ -258,7 +278,7 @@ async function runScenario(browser, scenario) {
   await page.locator("#signin-panel").waitFor({state:"visible"});
   assert.equal(await page.locator("#workspace").isVisible(),false);
   assert.equal(await page.locator("#contact-fields").innerText(),"");
-  assert.equal(writes.length,scenario==="claim-enabled"?1:0,
+  assert.equal(writes.length,["claim-enabled","synthetic-trial"].includes(scenario)?1:0,
     "Only one audited self-claim may be sent in the opt-in scenario");
   assert.deepEqual(accidentalEgress,[],"Browser must never reach the Internet");
   assert.deepEqual(pageErrors,[],"Browser must have no uncaught errors");
@@ -273,6 +293,7 @@ async function runScenario(browser, scenario) {
     await runScenario(browser,"dual-role");
     await runScenario(browser,"sensitive-only");
     await runScenario(browser,"claim-enabled");
+    await runScenario(browser,"synthetic-trial");
     await runScenario(browser,"enroll-first");
     await runScenario(browser,"unrostered");
     await runScenario(browser,"backend-unavailable");
