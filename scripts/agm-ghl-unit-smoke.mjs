@@ -6,6 +6,9 @@ const loc = "aBcD1234EFgh5678IJkl";
 const record = {
   kind: "creator", notice_version: ghlNotice,
   processing_acknowledged: true, adult_confirmed: true, contact_consent: true,
+  contact_consent_version: ghlNotice, contact_consent_at: "2026-11-08T12:00:00.000Z",
+  followup_gate: "CLEARED", followup_approved_at: "2026-11-08T12:00:00.000Z",
+  business_identity_verified: true, decision_authority_verified: true, crm_suppression_checked: true,
   full_name: "Mock Contract Creator", email: "creator@unit.test",
   organization: "", website: "https://example.org/public-channel",
   market: "Test Manila", category: "Podcast", description: "Never forward me",
