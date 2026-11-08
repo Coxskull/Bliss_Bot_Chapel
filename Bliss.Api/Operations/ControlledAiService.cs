@@ -27,20 +27,31 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         model = kind == "TEXT" ? Options.TextModel : Options.ImageModel, endpoint = kind == "TEXT" ? Options.TextEndpoint : Options.ImageEndpoint,
         Options.TimeoutSeconds, Options.MaxOutputTokens, Options.MaxResponseBytes }));
     public bool Ready(string kind) => Options.Configured(kind) && provider.Configured(kind);
+    private async Task<decimal> MonthlyReserved(DateTime utcDay, CancellationToken ct)
+    {
+        var start = new DateTime(utcDay.Year, utcDay.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var end = start.AddMonths(1);
+        return await db.ControlledAiDailyUsage.AsNoTracking()
+            .Where(x => x.Day >= start && x.Day < end)
+            .SumAsync(x => (decimal?)x.ReservedUsd, ct) ?? 0m;
+    }
     public async Task<object> Readiness(CancellationToken ct)
     {
         var day = DateTime.UtcNow.Date;
         var daily = await db.ControlledAiDailyUsage.AsNoTracking().SingleOrDefaultAsync(x => x.Day == day, ct);
         var total = await db.ControlledAiBudgetLedgers.AsNoTracking().SingleOrDefaultAsync(x => x.Id == 1, ct);
+        var monthlyReserved = await MonthlyReserved(day, ct);
         var anomaly = await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", ct);
         bool Capacity(decimal reservation) => (daily?.Calls ?? 0) < Options.MaxCallsPerDay
             && (daily?.ReservedUsd ?? 0) + reservation <= Options.DailyBudgetUsd
+            && monthlyReserved + reservation <= Options.MonthlyBudgetUsd
             && (total?.ReservedUsd ?? 0) + reservation <= Options.TotalBudgetUsd;
         return new { textReady = Ready("TEXT") && !anomaly && Capacity(Options.TextReservationUsd),
             imageReady = Ready("IMAGE") && !anomaly && Capacity(Options.ImageReservationUsd),
             provider = Options.Provider, textModel = Options.TextModel, imageModel = Options.ImageModel,
             callsReservedToday = daily?.Calls ?? 0, reservedTodayUsd = daily?.ReservedUsd ?? 0,
-            reservedTotalUsd = total?.ReservedUsd ?? 0, Options.MaxCallsPerDay, Options.DailyBudgetUsd, Options.TotalBudgetUsd,
+            reservedThisMonthUsd = monthlyReserved, reservedTotalUsd = total?.ReservedUsd ?? 0,
+            Options.MaxCallsPerDay, Options.DailyBudgetUsd, Options.MonthlyBudgetUsd, Options.TotalBudgetUsd,
             Options.TextReservationUsd, Options.ImageReservationUsd, billingAnomaly = anomaly,
             promptVersion = "bliss-workers-v1", liveCallsEnabled = Options.Enabled,
             notice = "AI output is a draft pending human review. Reserved USD is not a receipt. No paid calls are enabled by default." };
@@ -99,9 +110,11 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
             var day = DateTime.UtcNow.Date;
             var daily = await db.ControlledAiDailyUsage.SingleOrDefaultAsync(x => x.Day == day, ct);
             var ledger = await db.ControlledAiBudgetLedgers.SingleOrDefaultAsync(x => x.Id == 1, ct);
+            var monthlyReserved = await MonthlyReserved(day, ct);
             if ((daily?.Calls ?? 0) >= Options.MaxCallsPerDay || (daily?.ReservedUsd ?? 0) + reserve > Options.DailyBudgetUsd
+                || monthlyReserved + reserve > Options.MonthlyBudgetUsd
                 || (ledger?.ReservedUsd ?? 0) + reserve > Options.TotalBudgetUsd)
-                throw new AiQuotaException("The configured call quota or USD reservation budget is exhausted. No call was queued.");
+                throw new AiQuotaException("The configured call quota or daily, monthly, or total USD reservation budget is exhausted. No call was queued.");
             if (daily is null) { daily = new ControlledAiDailyUsage { Day = day }; db.Add(daily); }
             if (ledger is null) { ledger = new ControlledAiBudgetLedger(); db.Add(ledger); }
             daily.Calls++; daily.ReservedUsd += reserve; daily.Revision++;

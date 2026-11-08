@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import { deliverToGhl } from "./ghl-sync.mjs";
+import { handleAskAlpha } from "./ask-alpha.mjs";
 
 // Public interest requests are not account enrollment, advertiser purchases,
 // creator verification, or a pathway into protected Railway workspaces.
@@ -63,6 +64,18 @@ Deno.serve(async (req: Request) => {
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw Error("Invalid body");
     payload = parsed;
   } catch { return out(origin, { error: "Invalid submission" }, 400); }
+
+  // Task #20 is a separately consent-gated action within this EXISTING intake
+  // function. It cannot request a CRM contact, protected role or campaign action.
+  if (payload.action === "ask_alpha") {
+    const dbUrl = Deno.env.get("SUPABASE_URL");
+    const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!dbUrl || !secret) return out(origin, { error: "AI_SERVICE_NOT_CONFIGURED" }, 503);
+    const client = createClient(dbUrl, secret, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+    return await handleAskAlpha({ payload, req, client, origin, out });
+  }
 
   // Honeypot: no submission or personal-data write for automated fills.
   if (payload.middle_name) return out(origin, { error: "Unable to accept this submission" }, 400);

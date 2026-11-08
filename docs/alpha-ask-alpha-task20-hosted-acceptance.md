@@ -1,0 +1,79 @@
+# Task #20 — Ask Alpha OpenAI staged activation / acceptance
+Directive: ALPHA-TASK-020-OPENAI-ACTIVATION-388, 2026-11-08.
+
+## Scope, source of truth, and stop conditions
+- This code EXTENDS the existing Supabase `alpha-public-intake` Edge function and existing public Ask Alpha panel. It does not add a second bot, CRM adapter, or database project.
+- Source branch: existing draft PR #350 in `Coxskull/Bliss_Bot_Chapel`. Deployments and database migrations are NOT implied by passing CI.
+- Factory/outreach/campaign/payment GLOBAL STOP stays engaged. `ALPHA_ASK_ALPHA_ENABLED` and `ALPHA_ASK_ALPHA_FRONTEND_ENABLED` must stay unset or false until all gates below pass.
+- The historical .NET Controlled AI adapter is a private draft-generation backend, NOT a public customer authentication or consent path. Its live Railway configuration is not evidence of a public API key or billable readiness.
+- Task #21 must independently verify human support case creation and escalation before Task #20's full support-journey gate can pass. The AI reply must never claim a support case was opened when one was not.
+
+## Provider and budget
+- Model pinned: `gpt-6-luna`, Responses API `/v1/responses`, `service_tier:"default"` (STANDARD pricing, not account auto priority), `store:false`, `tools:[]`, `reasoning.effort:none`, `max_output_tokens:400`, no web/file/search or tool spending. Reject any provider response whose recorded model/tier differs.
+- Standard global short-context published token prices (verify at deployment): input $0.10/1M, cached input $0.01/1M, output $0.50/1M. No ChatGPT subscription is an API credit.
+- Each call atomically reserves $0.010000 in the EXISTING Supabase database before provider request. Global lock serializes callers. Daily limit $1, monthly $10 including operator-reconciled **outside-this-handler** OpenAI usage. Settlement records provider receipt, actual tokens and calculated actual cost. Unknown billing state remains reserved and blocks further calls.
+- Default-off control `public.alpha_ask_alpha_settings` requires `enabled=true`, UTC `metered_month`, `verified_at` within 24h and `externally_billed_usd`. Do not enable until an authorized operator has verified account billing and configured an OpenAI **hard project spend limit** (not merely an alert) at or below $10/month, allowing for processing-lag overage, and verified this API key has access to Luna. The application atomic ledger is a second independent cap. If billed usage cannot be reliably reconciled, leave disabled.
+- Max one concurrent request per pseudonymous session, 12 per session/day, six per HMAC-hashed gateway IP/hour, 100 total/day; 400-character user message, up to four bounded recent turns, 15s provider timeout, streamed 30KB response cap. Managed Supabase `cf-connecting-ip` is the only candidate visitor-IP signal; no `X-Forwarded-For` fallback. Independently prove the field is overwritten by the managed gateway, including caller-supplied forged header and alternate public routes, BEFORE live activation; browser `Origin` is not authentication.
+- SQL candidate: `supabase/migrations/20261108_alpha_ask_alpha_ai_governor.sql`. Database writes, RLS, grants and RPC execution have NOT yet been hosted-tested.
+
+## Human-only prerequisites — no secrets in chat
+1. Confirm API organization/project, separate project-level spending guard and whether a payment method is already on file; owner approval covers up to $10/month usage, not a new plan or unrelated charges. If a new payment method is needed, report exact screen, action and cost rather than performing it.
+2. In the existing Supabase project's approved Edge Function secret manager, configure `OPENAI_API_KEY` and fresh `ALPHA_ASK_ALPHA_HASH_SECRET` (minimum 32 random characters) with runtime access restricted to the existing function. Never use `NEXT_PUBLIC_` or Vercel public environment variables for API keys.
+3. Owner/privacy reviewer approves AI processing notice version `AGM-ASK-ALPHA-AI-2026-11-08`, data retention, provider disclosure, support handling, and separate optional marketing choice.
+4. Resolve source DB recovery/backup safety and review the staged RLS/migration. Apply the migration only to an isolated authorized staging target, verifying `anon`/`authenticated` cannot read tables or execute budget RPCs.
+5. Establish a trusted (non-client-spoofable) edge IP identity, replay behavior, request-size enforcement and any WAF/rate protection; don't enable based only on CORS.
+6. Reconcile provider metering into the control row, then enable the existing function by setting `ALPHA_ASK_ALPHA_ENABLED=true` ONLY in authorized staging. Enable public-page AI presentation separately with `ALPHA_ASK_ALPHA_FRONTEND_ENABLED=true` in an approved preview build.
+7. Check the live Vercel `build-rate-limit` blocker before trying a preview. Do not purchase another tier without approval.
+
+## Required evidence before updating PRE-LAUNCH MASTER #20
+- Static and mocked tests: `node scripts/agm-ghl-unit-smoke.mjs` (now imports Task20 smoke) and existing CI; collect exact head and run URLs. These do NOT replace hosted acceptance.
+- Real staged advertiser and creator conversations with language variations; verified response text, model ID, provider request ID, actual input/output tokens and calculated cost, matching durable receipt IDs, consent version and session isolation.
+- Genuine support escalation with separately verified Task #21 support case receipt and human queue. If unavailable, mark BLOCKED, not a success.
+- Explicit negative cases: denied consent (zero API calls), unsupported origin, malformed/large input, idempotency replay, per-IP/session limits, concurrency collision, daily exhaustion, monthly exhaustion including pending usage and external billed usage, missing/expired metering, missing key, timeout, provider HTTP failure, missing usage, and failed settlement. After UNKNOWN, verify the next call fails closed. Test request `service_tier` is STANDARD even when project auto settings prefer Fast/Priority; reject unexpected provider-tier responses. Verify spoofed `X-Forwarded-For` and absent `cf-connecting-ip` fail before reservation, and verify `cf-connecting-ip` overwrite in hosted gateway. Verify over-30KB streaming response is cancelled and never considered free. Test the browser regex blocks phone-like strings before requesting AI.
+- Existing public interest and privacy forms must continue to work with their own receipt and HighLevel outbox state. No automatic CRM contact, outreach, campaign, price/quote, refund, payment or commercial approval from chat text.
+- Security inspection of prompts, content sanitization, PII minimization, service-key isolation, RLS, abnormal token usage, tenant data boundaries and published policy accuracy.
+
+## Rollback / failure containment
+1. Disable the existing backend `ALPHA_ASK_ALPHA_ENABLED` first; no new provider reservations will occur. Preserve ledger entries, including UNKNOWN, for audit.
+2. Rebuild/revert Vercel presentation to `ALPHA_ASK_ALPHA_FRONTEND_ENABLED=false`; the original scripted guide is preserved.
+3. For a code problem, revert ONLY Task20 branch code via approved PR/release procedures, using Vercel's previously accepted production deployment if a release occurred. Never revert unrelated intake, GoHighLevel, factory STOP or Auth.
+4. Never delete receipt rows or revoke existing privacy requests. A migration rollback is separate and requires approved backup and dependency review.
+
+## Current evidence state
+Engineering branch code only. No real API conversation, no provider usage or cost receipt, no staged SQL application, no new credential, no Vercel/Railway deployment, and no human support case demonstrated by this change. Maintain Task #20 OPEN until all hosted gates pass.
+
+
+### 2026-11-08 security continuation (offline only)
+- Current source now corrects the escaped phone-number regex in the existing public Ask Alpha browser handler.
+- OpenAI Responses calls explicitly request `service_tier:"default"` to prevent an API project setting from selecting a higher-priced mode; model/tier mismatch produces a retained UNKNOWN reservation.
+- The backend now bounds provider bytes **while reading the stream**, rather than only after `response.text()` allocates an unbounded body.
+- The managed Edge gateway IP candidate is `cf-connecting-ip`, without an `x-forwarded-for` fallback; official Supabase references document the header on its platform, but spoof-resistance still requires independent hosted verification.
+- New mocked assertions cover these specific regressions. CI must pass at the exact post-fix SHA; do not reuse prior green checks.
+- Sources: https://developers.openai.com/api/reference/resources/responses/methods/create ; https://developers.openai.com/api/docs/guides/spend-limits ; https://supabase.com/docs/guides/api/query-plans
+
+
+## 2026-11-08 08:14 PHT live checkpoint — Directive 392 (supersedes prior source-only status)
+- Owner confirms Ask Alpha Production OpenAI project access, $10 prepaid API balance with auto recharge OFF, and **$9 project enforced hard spend limit**. This hard-limit configuration is owner-attested, not independently readable through available account integrations; OpenAI notes enforcement lag. Never describe the monthly project limit as a proof of zero external charges.
+- Owner confirms `OPENAI_API_KEY` and `ALPHA_ASK_ALPHA_HASH_SECRET` installed in existing Bliss Bot Supabase project. Do not request, echo, read, or commit these secret values.
+- Existing `alpha-public-intake` Supabase Edge Function is **v13 ACTIVE** with the Ask Alpha extension and added server-side contact/credential data rejection. `ALPHA_ASK_ALPHA_ENABLED` remains OFF; no paid OpenAI inference yet.
+- Existing hosted `alpha_ask_alpha_ai_governor_task20_20261108` migration installed in `bkutbglzivfdnoerigyb`; database readback `enabled=false`, meter month and verified_at NULL, 0 AI receipts, original public intake records/receipts preserved (5 each). Public roles cannot read governor receipts or reserve spending.
+- Existing Vercel Task20 staging deployment from source head `ff6fe66` is READY, **frontend live AI disabled**. PR #350 remains draft/unmerged.
+- Hosted public negative tests against the actual Edge Function pass for origin, consent, malformed input, and forged client-IP rejection; latest code adds server-side rejection of emails, phone numbers, password/API key declarations, and sensitive content in supplied chat history **before** calling any budget RPC. Hosted PII-specific checks must pass on v13 **after** deployment time; an initial earlier CI run reached old v12 and correctly returned AI_NOT_ENABLED (not a PII-guard test result).
+- Current owner-facing AI notice version `AGM-ASK-ALPHA-AI-2026-11-08` still needs explicit privacy/retention approval. SQL receipts retain hashed IP/session, input/output hashes, audience, model, consent version, provider ID, token usage, cost and timestamp; no raw conversation transcript is intended for storage by Ask Alpha. Formal retention policy and actual cleanup enforcement still require approval/evidence.
+- Required before any paid provider call: verify current OpenAI usage for **the same Ask Alpha Production project and UTC month**, reconcile that usage in `alpha_ask_alpha_settings`, approve AI notice/retention and human escalation arrangement, and verify provider model access/response behavior in a strictly bounded hosted session. Do not assert provider key works based solely on user installation.
+- No autonomous outreach, campaign, payment, new external service, additional subscription, or GLOBAL STOP release authorized.
+
+Security regression evidence: https://github.com/Coxskull/Bliss_Bot_Chapel/actions/runs/42428651875 (prior hosted nonbillable PASS); v13 positive PII validation must be independently retested against the deployed version.
+
+
+## 2026-11-08 controlled-staging privacy and 90-day retention — owner APPROVED
+- Captain explicitly approved the proposed Ask Alpha AI processing notice `AGM-ASK-ALPHA-AI-2026-11-08` and 90-day pseudonymous receipt retention **for controlled staging only**. This approval is NOT permission to enable public AI or release the unrelated factory GLOBAL STOP.
+- AI-specific notice in `frontend/public/alpha-privacy.html#ask-alpha-ai` states that provider content is submitted only following explicit AI consent; optional marketing remains separate; ALPHA stores pseudonymous receipt metadata rather than raw transcripts; OpenAI abuse-monitoring retention is independent; AI does not create HighLevel contacts, campaign commitments, payments or human support cases.
+- Approved retention includes a mandatory exception: `UNKNOWN` and `RESERVED` financial receipt states are held beyond 90 days for reconciled charges; deleting them would mask potential provider spend and defeat the atomic governor. The daily job deletes **only `SETTLED` receipts older than 90 days**. Operator reconciliation, record deletion requests and legally required exceptions need separate processes.
+- Existing `bkutbglzivfdnoerigyb` Supabase project's `pg_cron` extension (v1.6.4) reused; no new subscription/service. Additive migration `alpha_ask_alpha_receipts_retention_90d_20261108` applied successfully. Readback confirms `cron.job` ID 2, name `alpha_ask_alpha_receipts_retention_90d`, `active=true`, `username=postgres`, schedule `45 3 * * *` UTC, SQL `DELETE FROM public.alpha_ask_alpha_turns WHERE state = 'SETTLED' AND created_at < now() - interval '90 days';`.
+- Existing unrelated intake retention job ID 1 at `15 3 * * *` UTC unchanged. Post-migration readback confirmed AI receipt rows 0, existing intake requests 5, existing intake receipts 5, AI governor `enabled=false`, monthly external billed USD 0 with `metered_month=2026-11-01`.
+- Source artifacts: `supabase/migrations/20261108_alpha_ask_alpha_receipts_retention_90d.sql` (server cron schedule) and `scripts/agm-ask-alpha-retention-acceptance.sql` (synthetic transaction, verifies expired settled deletion and preservation of recent settled, old UNKNOWN and RESERVED, and then rolls back); wired into the EXISTING disposable PostgreSQL workflow. Never run synthetic fixture script against live Supabase.
+- The scheduled first live execution has NOT happened yet. The job definition is verified; do not claim a completed scheduled purge until `cron.job_run_details` shows a successful run. CI at newest exact SHA must be checked before describing the synthetic retention regression as passed. Public AI notice may not yet be deployed to Vercel due Free plan quota, and public AI remains OFF.
+- To verify daily retention later: read `cron.job_run_details` for job 2 and check status, start_time and return_message; verify no `SETTLED` receipt older than 90d remains, while unresolved cost holds survive. Do not inject genuine customer data to test retention or read raw input/output in logs.
+
+Remaining launch prerequisites are unaffected: verified model/key availability through a guarded real provider call, compliant public AI deployment, audit of privacy controls, separate support Task #21 staffed escalation, and all audience-specific hosted acceptance and spending receipts. $9 OpenAI hard spending limit remains **owner-attested**, not directly readable by connected tools.
