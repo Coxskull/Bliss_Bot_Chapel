@@ -100,3 +100,10 @@ push dry-run succeeded with network permission; initial sandbox proxy refusal wa
 an execution networking issue, not a GitHub repository permission denial.
 No account-level permission blocker was observed at these stages. No owner
 permission change is justified solely by the initial proxy failure.
+
+Final publication: repair commit `a07de48` was pushed successfully and draft PR
+#358 was created. Erwin advanced PR #356 to `7af4936` during this work; merged
+that update into this repair branch without conflicts (only his FrontendTests.cs
+changes). His branch was never written. Three regression cases fail against the
+original source and all four pass with repairs. No GitHub owner permission action
+is currently needed for commits, pushes or draft PR creation.
