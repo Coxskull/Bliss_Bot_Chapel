@@ -12,7 +12,6 @@ assert.equal(BUDGET_NOTICE,"AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1");
 assert.equal(structured.market,"Manila, Philippines");
 assert.equal(structured.budget_amount_minor,90000);
 assert.equal(structured.audience_requirements,null);
-assert.doesNotThrow(()=>evaluateVerifiedInventory({...brief,audienceRequirements:null},offers,policy,{now}));
 assert.throws(()=>normalizeStructuredAdvertiser({
   budget_amount:"900",budget_currency:"USD",market_code:"MANILA",
   campaign_objective:"awareness",preferred_media_formats:["podcast"],
@@ -59,6 +58,7 @@ const offers=[
     audienceEvidence:{...evidence,status:"SELF_REPORTED"},
     costs:{creatorCompensationMinor:1,alphaFeeMinor:1,paymentProcessingMinor:0,fulfillmentMinor:0,taxMinor:0}})
 ];
+assert.doesNotThrow(()=>evaluateVerifiedInventory({...brief,audienceRequirements:null},offers,policy,{now}));
 let crmPayload,opportunityPayload;
 const result=await runSyntheticBudgetWorkflow({brief,policy,offers,now,
   crm:{upsertContact:async x=>(crmPayload=x,{id:"SYNTHETIC-CRM-CONTACT-01"})},
