@@ -47,15 +47,17 @@ ALTER TABLE public.alpha_public_intake_requests
     OR kind <> 'advertiser'
     OR (
       budget_amount IS NOT NULL AND budget_amount > 0
+      AND budget_amount_minor IS NOT NULL
       AND budget_amount_minor BETWEEN 1 AND 9007199254740991
       AND budget_currency IS NOT NULL
       AND market_code IS NOT NULL
+      AND campaign_objective IS NOT NULL
       AND campaign_objective IN ('awareness','engagement','website_visits','leads','sales','community_reach','other')
-      AND jsonb_typeof(preferred_media_formats) = 'array'
-      AND jsonb_array_length(preferred_media_formats) BETWEEN 1 AND 7
+      AND CASE WHEN jsonb_typeof(preferred_media_formats) = 'array'
+        THEN jsonb_array_length(preferred_media_formats) BETWEEN 1 AND 7 ELSE false END
       AND (audience_requirements IS NULL OR char_length(audience_requirements) <= 500)
-      AND jsonb_typeof(preferred_languages) = 'array'
-      AND jsonb_array_length(preferred_languages) BETWEEN 1 AND 12
+      AND CASE WHEN jsonb_typeof(preferred_languages) = 'array'
+        THEN jsonb_array_length(preferred_languages) BETWEEN 1 AND 12 ELSE false END
       AND (market_code,budget_currency) IN (
         ('SANTO_DOMINGO','DOP'),('PANAMA_CITY','PAB'),('MEDELLIN','COP'),
         ('MANILA','PHP'),('KUALA_LUMPUR','MYR'),('JAKARTA','IDR')
