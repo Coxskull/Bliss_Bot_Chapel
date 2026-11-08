@@ -39,5 +39,8 @@ await check('no-consent-denied',{body:{...request,ai_processing_consent:false}},
 await check('wrong-notice-denied',{body:{...request,notice_version:'legacy'}},403,'CONSENT_REQUIRED');
 await check('bad-audience-denied',{body:{...request,audience:'admin'}},422,'INVALID_AUDIENCE');
 await check('get-method-denied',{method:'GET'},405,'Method not allowed');
-await check('valid-consent-still-disabled',{},503,'AI_NOT_ENABLED');
+// Never submit a fully valid inference request in recurring CI: once enabled,
+// it could invoke the paid provider. Invalid syntax is rejected before gates.
+await check('oversize-message-denied',{body:{...request,message:'X'.repeat(401)}},422,'INVALID_MESSAGE');
+await check('invalid-session-denied',{body:{...request,request_key:'invalid-id'}},422,'INVALID_SESSION');
 console.log(`TASK20_HOSTED_PUBLIC_FAILCLOSED_PASS checks=${checks} no_secrets no_paid_calls`);
