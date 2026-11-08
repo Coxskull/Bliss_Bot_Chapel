@@ -31,7 +31,7 @@ public sealed class AdvertiserAccountController : ControllerBase
 
         var record = await _db.Advertisers.AsNoTracking()
             .Where(a => a.Id == advertiserId)
-            .Select(a => new AdvertiserSelfSummaryDto(a.Id, a.Name, a.CountryCode, a.Website))
+            .Select(a => new AdvertiserSelfSummaryDto(a.Id, a.Name, a.CountryCode, a.Website, "VERIFIED"))
             .SingleOrDefaultAsync(cancellationToken);
         return record is null ? NotFound() : Ok(record);
     }
@@ -39,5 +39,7 @@ public sealed class AdvertiserAccountController : ControllerBase
 
 // Minimal business identity only; never disclose private prospect, lead,
 // campaign, billing, match, CRM or payout records.
+// A verification marker is returned only by the protected, verified-subject
+// self-service endpoint above. A public inquiry cannot populate this DTO.
 public sealed record AdvertiserSelfSummaryDto(Guid AdvertiserId, string Name,
-    string? CountryCode, string? Website);
+    string? CountryCode, string? Website, string AuthorityStatus);
