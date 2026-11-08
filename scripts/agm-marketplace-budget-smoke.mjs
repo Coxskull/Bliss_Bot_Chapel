@@ -19,8 +19,8 @@ const offer=(o)=>({status:"AVAILABLE",verifiedInventory:true,marketCode:"MANILA"
   ...o});
 const offers=[
   offer({offerId:"SYNTHETIC-PREMIUM-60S",creatorId:"SYNTHETIC-CREATOR-A",
-    scope:"60-second host read",costs:{creatorCompensationMinor:70000,alphaFeeMinor:20000,
-      paymentProcessingMinor:4000,fulfillmentMinor:8000,taxMinor:0}}),
+    scope:"60-second host read",costs:{creatorCompensationMinor:65000,alphaFeeMinor:30000,
+      paymentProcessingMinor:4000,fulfillmentMinor:4000,taxMinor:0}}),
   offer({offerId:"SYNTHETIC-ENTRY-15S",creatorId:"SYNTHETIC-CREATOR-B",
     scope:"15-second intro",costs:{creatorCompensationMinor:15000,alphaFeeMinor:15000,
       paymentProcessingMinor:1000,fulfillmentMinor:2000,taxMinor:0}}),
@@ -41,7 +41,7 @@ assert.equal(result.opportunityStatus,"SYNTHETIC_PENDING_REVIEW");
 assert.equal(result.evaluation.result,"LOWER_COST_ALTERNATIVE");
 assert.equal(result.evaluation.preferred.offerId,"SYNTHETIC-ENTRY-15S");
 assert.equal(result.evaluation.overBudget[0].offerId,"SYNTHETIC-PREMIUM-60S");
-assert.equal(result.evaluation.overBudget[0].quote.costs.creatorCompensationMinor,70000);
+assert.equal(result.evaluation.overBudget[0].quote.costs.creatorCompensationMinor,65000);
 assert.equal(result.evaluation.preferred.quote.costs.creatorCompensationMinor,15000);
 assert.equal(result.evaluation.preferred.quote.costs.alphaFeeMinor,15000);
 assert.ok(result.evaluation.preferred.quote.costs.contributionMinor>=policy.minimumContributionMinor);
