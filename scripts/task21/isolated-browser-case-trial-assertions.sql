@@ -84,6 +84,10 @@ BEGIN
  OR NOT EXISTS(SELECT 1 FROM public.alpha_support_cases WHERE case_id=cid
    AND status='CLOSED' AND owner_user_id=person)
  THEN RAISE EXCEPTION 'Trial history was not immutable/persisted'; END IF;
+ IF public.alpha_support_staging_trial_allowed(cid,person,origin)
+ OR public.alpha_support_staging_trial_action(cid,person,origin,
+   'TRANSITION','IN_REVIEW','') IS DISTINCT FROM false
+ THEN RAISE EXCEPTION 'CLOSED case must auto-lock independently of trial expiry'; END IF;
  IF public.alpha_support_staging_trial_action(cid,person,origin,'TRANSITION',
    'AWAITING_CUSTOMER','') IS DISTINCT FROM false
  THEN RAISE EXCEPTION 'Trial allowed nonapproved status'; END IF;
