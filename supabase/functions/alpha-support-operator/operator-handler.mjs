@@ -21,9 +21,29 @@ const response = (payload,status=200,origin=null) => {
 export async function handleOperatorRequest(req,db,env) {
   const origin = req.headers.get("Origin");
   const trusted = env.get("ALPHA_SUPPORT_OPERATOR_ORIGIN");
-  if (origin && (!trusted || origin !== trusted))
+  // Staging-only fallback when the Edge secret-manager cannot set a roster.
+  // Roles/origins remain privileged DB-owned records, not JWT user metadata,
+  // source-code UUIDs, public CORS wildcards or browser-provided claims.
+  const stagingDbFallback = !trusted &&
+    env.get("SUPABASE_URL")==="https://wdlmcriajgsretgyusmo.supabase.co";
+  let allowOrigin = null;
+  if (trusted) {
+    if (origin && origin!==trusted)
+      return response({error:"Forbidden origin"},403);
+    allowOrigin=origin||null;
+  } else if (stagingDbFallback && origin) {
+    let allowed;
+    try {
+      allowed=await db.rpc("alpha_support_staging_origin_allowed",{
+        p_origin:origin
+      });
+    } catch { return response({error:"Forbidden origin"},403); }
+    if (allowed.error || allowed.data!==true)
+      return response({error:"Forbidden origin"},403);
+    allowOrigin=origin;
+  } else if (origin) {
     return response({error:"Forbidden origin"},403);
-  const allowOrigin = origin && trusted === origin ? origin : null;
+  }
   if (req.method==="OPTIONS") {
     if (!allowOrigin) return response({error:"Forbidden origin"},403);
     return new Response(null,{status:204,headers:{
@@ -39,9 +59,16 @@ export async function handleOperatorRequest(req,db,env) {
     req.headers.get("Authorization") || "");
   if (!bearer || bearer[1].length>4096)
     return response({error:"Authenticated user token required"},401,allowOrigin);
-  let roster;
-  try { roster=parseOperatorRoster(env.get("ALPHA_SUPPORT_OPERATOR_ROSTER")); }
-  catch { return response({error:"Operator access not configured"},503,allowOrigin); }
+  let roster, useStagingDbGrants=false;
+  const configuredRoster=env.get("ALPHA_SUPPORT_OPERATOR_ROSTER");
+  if (configuredRoster) {
+    try { roster=parseOperatorRoster(configuredRoster); }
+    catch { return response({error:"Operator access not configured"},503,allowOrigin); }
+  } else if (stagingDbFallback && allowOrigin) {
+    useStagingDbGrants=true;
+  } else {
+    return response({error:"Operator access not configured"},503,allowOrigin);
+  }
 
   // Both an Auth-server user lookup and cryptographically checked claims are
   // required. A valid generic user login does NOT grant an operator role.
@@ -54,7 +81,25 @@ export async function handleOperatorRequest(req,db,env) {
   } catch { return response({error:"Unauthenticated"},401,allowOrigin); }
   if (!user?.id || claims?.sub!==user.id || claims?.role!=="authenticated")
     return response({error:"Unauthenticated"},401,allowOrigin);
-  const roles=rolesForUser(roster,user.id,claims.aal);
+  let roles;
+  if (useStagingDbGrants) {
+    let result;
+    try {
+      result=await db.rpc("alpha_support_staging_roles",{
+        p_user_id:user.id,p_origin:allowOrigin,p_aal:claims.aal
+      });
+    } catch { return response({error:"Operator access not configured"},503,allowOrigin); }
+    if (result.error || !Array.isArray(result.data) ||
+        !result.data.every(role=>role==="GENERAL_SUPPORT"))
+      return response({error:"Operator access not configured"},503,allowOrigin);
+    roles=result.data;
+    // This derived per-request roster contains only the verified actor's
+    // authorized staging role. No escalation or cross-user assignment.
+    roster=Object.create(null);
+    if (roles.includes("GENERAL_SUPPORT")) roster.GENERAL_SUPPORT=[user.id];
+  } else {
+    roles=rolesForUser(roster,user.id,claims.aal);
+  }
   if (!roles.length) return response({error:"Operator permission denied"},403,allowOrigin);
   const fields="case_id,request_id,category,severity,assigned_role,owner_user_id,status,resolution_summary,created_at,updated_at,resolved_at";
   if (req.method==="GET") {
