@@ -13,7 +13,7 @@ const advertiserFields = Object.freeze([
 export function mapGhlContact(record, locationId, fieldIds = {}) {
   if (!record || !["creator", "advertiser"].includes(record.kind) ||
       record.notice_version !== ghlNotice ||
-      record.contact_consent !== true ||
+      record.contact_consent !== true || record.contact_consent_version !== ghlNotice ||
       record.processing_acknowledged !== true || record.adult_confirmed !== true ||
       typeof record.email !== "string" ||
       /@example\.invalid$/i.test(record.email))
