@@ -36,9 +36,9 @@ export function mapGhlContact(record, locationId, fieldIds = {}) {
       const id = fieldIds[field];
       const value = record[column];
       if (typeof id !== "string" || !/^[A-Za-z0-9_-]{6,128}$/.test(id) ||
-          value === null || value === undefined)
+          (value === null && field !== "audience_requirements") || value === undefined)
         throw Error("Advertiser CRM custom-field mapping is incomplete");
-      return { id, field_value: Array.isArray(value) ? value.join(", ") : String(value) };
+      return { id, field_value: value === null ? "" : Array.isArray(value) ? value.join(", ") : String(value) };
     });
     if (new Set(customFields.map(field => field.id)).size !== customFields.length)
       throw Error("Advertiser CRM custom-field mapping is ambiguous");
