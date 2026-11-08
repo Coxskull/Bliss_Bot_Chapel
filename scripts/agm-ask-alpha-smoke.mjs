@@ -156,4 +156,13 @@ assert.throws(()=>calculateLunaUsd({input_tokens:100}),/UNVERIFIED/);
  assert.ok(/(?:\+?\d[ -]?){8,}/.test("09171234567"));
  assert.ok(!/(?:\+?\d[ -]?){8,}/.test("three hundred"));
 }
+{
+ const html=readFileSync(new URL("../frontend/public/global-media.html",import.meta.url),"utf8");
+ const privacy=readFileSync(new URL("../frontend/public/alpha-privacy.html",import.meta.url),"utf8");
+ assert.ok(html.includes('href="/alpha-privacy.html#ask-alpha-ai"'),"AI consent must link to specific AI notice");
+ assert.ok(privacy.includes('id="ask-alpha-ai"'),"Specific AI notice section required");
+ assert.ok(privacy.includes("AGM-ASK-ALPHA-AI-2026-11-08"),"Consent notice version must match");
+ assert.ok(privacy.includes("up to 30 days"),"Do not confuse store:false with zero provider abuse log retention");
+ assert.ok(privacy.includes("not yet active or promised"),"Unverified ALPHA retention must not be advertised as active");
+}
 console.log("TASK20_ASK_ALPHA_OFFLINE_CONSENT_BUDGET_RECEIPT_PASS");
