@@ -4,7 +4,7 @@ export const MARKET_CURRENCIES = Object.freeze({
   "SANTO_DOMINGO":"DOP", "PANAMA_CITY":"PAB", "MEDELLIN":"COP",
   "MANILA":"PHP", "KUALA_LUMPUR":"MYR", "JAKARTA":"IDR"
 });
-const media = new Set(["podcast","digital_creator","radio","television","newspaper","magazine"]);
+const media = new Set(["podcast","digital_creator","radio","television","newspaper","magazine","other"]);
 const validText = (v,max) => typeof v === "string" && v.trim().length > 0 && v.trim().length <= max;
 const whole = v => Number.isSafeInteger(v) && v >= 0;
 const overlap = (a,b) => Array.isArray(a) && Array.isArray(b) &&
@@ -86,7 +86,7 @@ export function evaluateVerifiedInventory(briefInput, offers, policy, options={}
         !Number.isSafeInteger(offer.verifiedAudience) || offer.verifiedAudience<=0 ||
         !evidenceIsCurrent(offer.audienceEvidence,now) ||
         !evidenceIsCurrent(offer.availabilityEvidence,now) ||
-        !validText(offer.scope,160) || !validText(offer.offerId,120)) {
+        !validText(offer.scope,160) || !validText(offer.offerId,120) ||\n        !Number.isSafeInteger(offer.targetMarketShareBasisPoints) ||\n        offer.targetMarketShareBasisPoints < (brief.minimumTargetMarketShareBasisPoints || 0) ||\n        offer.targetMarketShareBasisPoints > 10000 ||\n        !evidenceIsCurrent(offer.geographyEvidence,now)) {
       rejected.push({offerId:offer?.offerId||null,reason:"INVENTORY_EVIDENCE_OR_FIT_FAILED"});
       continue;
     }
@@ -97,7 +97,7 @@ export function evaluateVerifiedInventory(briefInput, offers, policy, options={}
     }
     const result={offerId:offer.offerId,creatorId:offer.creatorId,scope:offer.scope,
       mediaFormat:offer.mediaFormat,marketCode:offer.marketCode,languages:offer.languages,
-      verifiedAudience:offer.verifiedAudience,quote};
+      verifiedAudience:offer.verifiedAudience,targetMarketShareBasisPoints:offer.targetMarketShareBasisPoints,quote};
     if(quote.costs.totalAdvertiserCostMinor<=brief.budgetMinor) ready.push(result);
     else overBudget.push(result);
   }
