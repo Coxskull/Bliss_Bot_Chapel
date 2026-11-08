@@ -1,0 +1,24 @@
+name: ALPHA Creative Academy six-slot native-fit preview
+on:
+  pull_request:
+    paths:
+      - 'frontend/public/creative-academy-six-slot.html'
+      - 'frontend/public/creative-academy-six-slot.js'
+      - 'scripts/creative-academy-six-slot-smoke.mjs'
+      - 'scripts/build-vercel-portal.mjs'
+      - '.github/workflows/creative-academy-native-fit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-fit:
+    name: Six-slot geometry and local import acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run compositor geometry, file-fit and negative tests
+        run: node scripts/creative-academy-six-slot-smoke.mjs
