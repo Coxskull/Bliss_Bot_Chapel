@@ -95,6 +95,15 @@ assert.match(html,/id="claim-case"/);
 assert.match(html,/readonly/);
 assert.match(app,/action:"CLAIM"/);
 assert.match(handler,/alpha_support_claim/);
+assert.match(handler,/alpha_support_staging_trial_allowed/);
+assert.match(handler,/alpha_support_staging_trial_action/);
+assert.match(handler,/allowSyntheticTrial=!globallyEnabled&&useStagingDbGrants/);
+assert.match(app,/syntheticTrialEnabled=detail\.synthetic_trial_enabled===true/);
+assert.match(app,/contact\.email==="task21-browser-fixture@example\.invalid"/);
+assert.match(app,/config\.mutationsEnabled===true\|\|syntheticTrialEnabled/);
+assert.ok(!read("../scripts/task21/staging-only-browser-case-trial.sql")
+  .includes("ALTER ROLE authenticated"),"Trial must not alter authenticated browser role grants");
+
 assert.match(app,/auth\.signInWithPassword/);
 assert.match(app,/from "\.\/operator-sdk\.js"/);
 assert.ok(!/cdn\.jsdelivr\.net/.test(html+app), "Private runtime must use locally bundled SDK");
