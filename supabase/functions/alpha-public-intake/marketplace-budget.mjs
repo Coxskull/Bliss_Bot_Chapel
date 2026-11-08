@@ -32,7 +32,9 @@ export function validateAdvertiserBrief(brief) {
   const formats = brief?.preferredMediaFormats;
   if (!brief || brief.kind !== "advertiser" ||
       !Number.isSafeInteger(brief.budgetMinor) || brief.budgetMinor <= 0 ||
-      !validText(brief.currency,3) || !validText(brief.marketCode,80) ||\n      (MARKET_CURRENCIES[brief.marketCode.trim().toUpperCase()] &&\n        MARKET_CURRENCIES[brief.marketCode.trim().toUpperCase()] !== brief.currency.toUpperCase()) ||
+      !validText(brief.currency,3) || !validText(brief.marketCode,80) ||
+      (MARKET_CURRENCIES[brief.marketCode.trim().toUpperCase()] &&
+        MARKET_CURRENCIES[brief.marketCode.trim().toUpperCase()] !== brief.currency.toUpperCase()) ||
       !validText(brief.objective,80) || !Array.isArray(formats) || !formats.length ||
       formats.some(x => !media.has(x)) ||
       !Array.isArray(brief.languages) || !brief.languages.length ||
