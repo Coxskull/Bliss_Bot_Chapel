@@ -29,7 +29,9 @@ for (const filename of [
   'join-creator.html', 'join-advertiser.html', 'privacy-request.html',
   'creator-account.html', 'creator-login.html', 'advertiser-login.html',
   'alpha-privacy.html', 'alpha-terms.html', 'services.html', 'contact.html',
-  'alpha-intake.css', 'alpha-intake.js'
+  'alpha-intake.css', 'alpha-intake.js',
+  // Preview-only native-format Creative Academy composer: local file import, no APIs.
+  'creative-academy-six-slot.html', 'creative-academy-six-slot.js'
 ]) {
   await copyFile(resolve(source, filename), resolve(output, filename));
 }
