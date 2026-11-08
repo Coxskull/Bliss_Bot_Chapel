@@ -34,6 +34,7 @@ jobs:
       - run: node scripts/agm-support-operator-ui-smoke.mjs
       - run: node scripts/agm-ghl-unit-smoke.mjs
       - run: node scripts/task21/incident-escalation-contract.test.mjs
+      - run: node scripts/task21/incident-escalation-dispatcher.test.mjs
   isolated-postgres:
     runs-on: ubuntu-latest
     timeout-minutes: 8
