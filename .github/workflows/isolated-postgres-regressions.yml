@@ -148,3 +148,15 @@ jobs:
             ask-alpha-sql-acceptance.txt
           if-no-files-found: warn
           retention-days: 14
+
+  ask-alpha-hosted-negative:
+    # This prelaunch test must not run on main or once live AI is intentionally enabled.
+    if: github.event_name == 'pull_request' && github.head_ref == 'task20-ai-zero-default-monthly-budget-20261107'
+    name: Task20 hosted public fail-closed (nonbillable)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact PR source
+        uses: actions/checkout@v4
+      - name: Probe existing hosted Supabase endpoint without credentials
+        run: node scripts/agm-ask-alpha-hosted-negative.mjs
