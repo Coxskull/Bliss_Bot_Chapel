@@ -10,6 +10,15 @@ const DAILY_MAX_USD = 1;
 const uuid = x => typeof x === "string" &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
 const text = x => typeof x === "string" ? x.trim() : "";
+// Enforce the chat's no-contact/no-credentials boundary on the SERVER too.
+// Browser checks are convenience only: any visitor can POST directly.
+export function containsSensitiveChatData(value) {
+  if (typeof value !== "string") return false;
+  const email = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
+  const phone = /(?:\+?\d[\s().-]?){8,}/;
+  const credential = /\b(?:password|passcode|one[- ]?time(?: code| password)?|otp|cvv|cvc|pin|secret(?: key)?|api[- ]?key)\s*[:=]\s*\S{2,}/i;
+  return email.test(value) || phone.test(value) || credential.test(value);
+}
 const sha256 = async value => {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return [...new Uint8Array(bytes)].map(x => x.toString(16).padStart(2,"0")).join("");
@@ -30,6 +39,7 @@ export function validateAskAlpha(payload) {
   if (typeof payload.message !== "string" || !text(payload.message) ||
       payload.message.length > 400 || /[\u0000-\u0008\u000b-\u001f]/.test(payload.message))
     return "INVALID_MESSAGE";
+  if (containsSensitiveChatData(payload.message)) return "PERSONAL_DATA_NOT_ACCEPTED";
   if (payload.marketing_opt_in !== undefined && typeof payload.marketing_opt_in !== "boolean")
     return "INVALID_MARKETING_CONSENT";
   if (payload.history !== undefined) {
@@ -37,6 +47,8 @@ export function validateAskAlpha(payload) {
         payload.history.some(h => !h || !["user","assistant"].includes(h.role) ||
           typeof h.content !== "string" || h.content.length > 400)) return "INVALID_HISTORY";
   }
+  if (payload.history?.some(h => containsSensitiveChatData(h.content)))
+    return "PERSONAL_DATA_NOT_ACCEPTED";
   return null;
 }
 export function calculateLunaUsd(usage) {
