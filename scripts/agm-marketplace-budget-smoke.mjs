@@ -1,7 +1,32 @@
 import assert from "node:assert/strict";
 import {runSyntheticBudgetWorkflow,evaluateVerifiedInventory,parseBudgetToMinor,MARKET_CURRENCIES} from "../supabase/functions/alpha-public-intake/marketplace-budget.mjs";
+import {normalizeStructuredAdvertiser,BUDGET_NOTICE} from "../supabase/functions/alpha-public-intake/marketplace-intake.mjs";
 
 const now="2026-11-08T12:00:00.000Z";
+const structured=normalizeStructuredAdvertiser({
+  budget_amount:"900.00",budget_currency:"PHP",market_code:"MANILA",
+  campaign_objective:"awareness",preferred_media_formats:["podcast","radio"],
+  audience_requirements:"",preferred_languages:["English","Filipino"],contact_consent:true
+});
+assert.equal(BUDGET_NOTICE,"AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1");
+assert.equal(structured.market,"Manila, Philippines");
+assert.equal(structured.budget_amount_minor,90000);
+assert.equal(structured.audience_requirements,null);
+assert.throws(()=>normalizeStructuredAdvertiser({
+  budget_amount:"900",budget_currency:"USD",market_code:"MANILA",
+  campaign_objective:"awareness",preferred_media_formats:["podcast"],
+  preferred_languages:["English"],contact_consent:true
+}),/INVALID_OR_UNCONSENTED_ADVERTISER_INTAKE/);
+assert.throws(()=>normalizeStructuredAdvertiser({
+  budget_amount:"1000.25",budget_currency:"IDR",market_code:"JAKARTA",
+  campaign_objective:"awareness",preferred_media_formats:["podcast"],
+  preferred_languages:["English"],contact_consent:true
+}),/CURRENCY_PRECISION/);
+assert.throws(()=>normalizeStructuredAdvertiser({
+  budget_amount:"900",budget_currency:"PHP",market_code:"MANILA",
+  campaign_objective:"awareness",preferred_media_formats:["podcast"],
+  preferred_languages:["English"],contact_consent:false
+}),/INVALID_OR_UNCONSENTED_ADVERTISER_INTAKE/);
 assert.deepEqual(Object.keys(MARKET_CURRENCIES).sort(),["JAKARTA","KUALA_LUMPUR","MANILA","MEDELLIN","PANAMA_CITY","SANTO_DOMINGO"]);
 assert.equal(parseBudgetToMinor("900.00","PHP"),90000);
 assert.equal(parseBudgetToMinor("100000","IDR"),100000);
