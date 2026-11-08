@@ -1,32 +1,41 @@
 # Directive 433 — commercial matching implementation status
 
-This work continues draft PR #356 and preserves its full-spectrum marketplace guidance.
+This work continues draft PR #356 and preserves the budget-first matcher, sliding-scale quotation rules, creator compensation safeguards and six-market currency support.
 
-## Implemented in this branch
+## Implemented on the PR branch
 
-- Advertiser inquiry captures an all-in budget, currency, market, objective, preferred formats, audience needs, language preferences, and one-time contact consent.
-- Supported launch markets and local currencies: Santo Domingo/DOP, Panama City/PAB, Medellín/COP, Manila/PHP, Kuala Lumpur/MYR, Jakarta/IDR.
-- A server-side budget evaluation module validates budget precision, current evidence, market currency, verified availability, audience geography, inventory terms, and accepted supplier compensation.
-- Quote calculation itemizes creator compensation, Alpha fee, payment processing, fulfillment, taxes, advertiser total, and contribution against a versioned minimum-margin policy.
-- An over-budget preferred placement can be paired with a separately scoped verified lower-cost placement. The engine does not reduce the original agreement's compensation.
-- Synthetic acceptance fixtures exercise consented intake → CRM contact fixture → pending opportunity fixture → inventory evaluation → sustainable quote → affordable alternative. The fixtures use `example.invalid`, synthetic evidence labels, and no provider calls.
+- The public advertiser form collects structured budget, market, currency, objective, media formats, optional audience requirements, languages and separate contact consent.
+- Server-side validation binds the six launch markets to DOP, PAB, COP, PHP, MYR and IDR, normalizes market labels, checks currency precision and rejects missing consent or unsupported field values.
+- The additive migration `20261108130000_alpha_full_spectrum_advertiser_intake.sql` adds nullable structured fields plus consent metadata. Existing records remain unchanged; the new fields become mandatory only for new-version advertiser submissions.
+- The intake function persists the structured fields and includes them in its request-key duplicate comparison. The GHL queue trigger now accepts only the new notice version and explicit contact consent.
+- CRM delivery maps the seven structured advertiser fields only when all seven HighLevel field IDs are configured. Missing or duplicate IDs fail closed. CRM credentials and field IDs are not included in source.
+- The existing quote engine still requires current verified audience, availability, geography, price, tax, accepted compensation and margin evidence. Synthetic acceptance remains separate from live acceptance.
 
-## Live integration status and release blockers
+## Live database findings — 2026-11-08
 
-The workflow harness proves the decision path with injected synthetic adapters. It does not establish live CRM or marketplace writes.
+Read-only inspection of the active Bliss Bot Supabase project found:
 
-- The deployed `alpha_public_intake_requests` table has no budget, currency, objective, media format, audience requirement, language, or one-time contact-consent columns. The active intake Edge Function also does not accept the new notice version or persist those fields. The current public form therefore must not be released with the new notice until a schema and Edge Function update land together.
-- HighLevel custom-field IDs for the seven structured advertiser fields are not present in the configured source. Contact sync must remain disabled for these fields until the authorized field IDs are mapped and consent-gated.
-- No live mapping from this intake table to the existing marketplace opportunity record has been established. The synthetic adapter is not that mapping.
-- Existing marketplace tables include inventory rows, but the current evidence review did not establish a specific verified, available supplier quote with accepted terms and compensation. Do not produce customer quotations from counts or synthetic fixtures.
-- No production deployment, live intake, CRM contact, customer quote, campaign, payment, or outbound communication was performed.
+- `alpha_public_intake_requests` has 5 existing rows: 3 advertiser and 2 creator inquiries, all using the 2026-11-05 GHL notice. The existing CRM outbox marks all five as delivered.
+- The live table has no structured budget fields or separate `contact_consent` field, and its notice-version constraint does not include the new contract yet. The migration is therefore not applied.
+- The old inquiry rows cannot be treated as consent evidence for this new follow-up scope. The separate contact-consent record did not exist; existing marketing preference is not substituted for it.
+- Intake, receipt and GHL outbox tables have RLS enabled with no public policies. The Edge Function uses a server-side service-role credential; no direct public table access was granted.
+- The existing marketplace contains 8 creator records, 7 platform records, 8 availability-flagged inventory slots and 6 placements. Only 2 of 8 creator profiles have audience size, geography and language all populated; none of the 6 placements has an active/open status. All 58 provenance observations are older than 30 days. The current schema has no placement price, tax or agreed creator-compensation fields.
+- These rows do not establish verified available inventory or a customer-ready quote. No customer quotation is eligible from this evidence.
 
-## Required next release sequence
+## Remaining release blockers
 
-1. Add and review the additive Supabase schema migration for the advertiser fields and consent record.
-2. Update the existing `alpha-public-intake` function in place, preserving its current Ask Alpha action and CRM outbox guards.
-3. Configure and verify the HighLevel custom-field mappings and connect consented advertiser requests to the existing CRM contact and opportunity workflow.
-4. Bind the matching engine to current verified inventory and supplier terms; then validate real quotes and alternative scopes against the approved minimum-margin policy.
-5. Run hosted acceptance in an isolated staging environment before considering any production release.
+- The migration and Edge Function are staged on the draft PR but not applied or deployed. No production migration, form release or merge occurred.
+- No connected HighLevel tool is available to inspect the account, credentials or custom-field identifiers. The seven environment-variable mappings are implemented, but the identifiers and delivery settings remain unverified.
+- The existing advertiser-opportunity records are not linked to intake IDs or CRM contacts. No authorized isolated intake-to-CRM-to-opportunity record has been persisted.
+- No current inventory has verified availability, audience evidence, market fit, agreed compensation, price and tax terms. No real quotation has been produced.
+- No live provider call, external contact, supplier commitment, charge or additional spend occurred.
 
-No additional spending or external contact is authorized by this work.
+## Release gates
+
+1. Review and apply the migration together with the matching Edge Function and notice/form version, in an isolated or otherwise authorized environment.
+2. Verify the HighLevel custom-field IDs, credentials, duplicate/opt-out behavior and inquiry-only contact workflow without exposing secrets.
+3. Implement and prove an idempotent intake → CRM contact → existing opportunity mapping using an authorized isolated record.
+4. Refresh creator and placement evidence, then issue a quotation only if the full cost and compensation safeguards pass.
+5. Keep production form release, merge, and deployment gated until those checks pass.
+
+Factory STOP, no-outreach, no-paid-supplier-call and no-transaction boundaries remain unchanged. No additional spending was incurred.
