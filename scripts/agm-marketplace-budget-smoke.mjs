@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {runSyntheticBudgetWorkflow,evaluateVerifiedInventory,parseBudgetToMinor,MARKET_CURRENCIES} from "../supabase/functions/alpha-public-intake/marketplace-budget.mjs";
+import {runSyntheticBudgetWorkflow,evaluateVerifiedInventory,calculateSustainableQuote,parseBudgetToMinor,MARKET_CURRENCIES} from "../supabase/functions/alpha-public-intake/marketplace-budget.mjs";
 import {normalizeStructuredAdvertiser,BUDGET_NOTICE} from "../supabase/functions/alpha-public-intake/marketplace-intake.mjs";
 
 const now="2026-11-08T12:00:00.000Z";
@@ -34,6 +34,33 @@ assert.throws(()=>parseBudgetToMinor("1000.25","IDR"),/CURRENCY_PRECISION/);
 assert.throws(()=>parseBudgetToMinor("1,000","PHP"),/INVALID_BUDGET/);
 const evidence={status:"VERIFIED",sourceRef:"SYNTHETIC_FIXTURE_SOURCE",
   sha256:"a".repeat(64),observedAt:"2026-11-07T12:00:00.000Z",expiresAt:"2026-12-08T12:00:00.000Z"};
+const planningQuote=calculateSustainableQuote({
+  kind:"PLANNING_ONLY",marketCode:"MANILA",currency:"PHP",budgetCurrency:"PHP",
+  budgetMinor:90000,customerRequirements:"Synthetic advertiser requests a local awareness plan.",
+  requirementsVerified:true,customerRequirementsEvidence:evidence,
+  scope:"One campaign brief, channel plan, and measurement outline.",
+  scopeConfirmed:true,scopeEvidence:evidence,
+  deliveryCapacity:{status:"CONFIRMED",ownerRef:"SYNTHETIC-OPERATOR",
+    windowStart:"2026-11-10T00:00:00.000Z",windowEnd:"2026-11-20T00:00:00.000Z"},
+  capacityEvidence:evidence,
+  terms:{status:"CONFIRMED",reference:"SYNTHETIC-TERMS-V1"},termsEvidence:evidence,
+  laborCostEvidence:evidence,deliveryCostEvidence:evidence,
+  processingCostEvidence:evidence,taxEvidence:evidence,
+  costs:{creatorCompensationMinor:0,alphaFeeMinor:30000,laborMinor:10000,
+    deliveryMinor:2000,paymentProcessingMinor:1000,taxMinor:1000}
+},policy,new Date(now));
+assert.equal(planningQuote.eligible,true);
+assert.equal(planningQuote.status,"DRAFT");
+assert.equal(planningQuote.costs.totalAdvertiserCostMinor,44000);
+assert.equal(planningQuote.costs.contributionMinor,16000);
+assert.equal(planningQuote.costs.creatorCompensationMinor,0);
+assert.equal(planningQuote.serviceType,"PLANNING_ONLY");
+assert.equal(calculateSustainableQuote({
+  kind:"PLANNING_ONLY",marketCode:"MANILA",currency:"PHP",budgetCurrency:"PHP",
+  budgetMinor:90000,costs:{alphaFeeMinor:30000,laborMinor:10000,deliveryMinor:2000,
+    paymentProcessingMinor:1000,taxMinor:1000}
+},policy,new Date(now)).reason,"CUSTOMER_REQUIREMENTS_UNVERIFIED");
+
 const brief={kind:"advertiser",intakeId:"SYNTHETIC-INTAKE-001",
   contactName:"Synthetic Market Buyer",contactEmail:"buyer@example.invalid",
   budgetMinor:90000,currency:"PHP",marketCode:"MANILA",objective:"awareness",

@@ -59,12 +59,110 @@ function evidenceIsCurrent(evidence, now) {
   return Number.isFinite(observed) && Number.isFinite(expires) && observed<=now && expires>=now;
 }
 
+export function calculatePlanningServiceQuote(offer, policy, now = new Date()) {
+  if (!policy || !validText(policy.policyId,80) ||
+      !whole(policy.minimumContributionMinor) ||
+      !Number.isSafeInteger(policy.minimumContributionBasisPoints) ||
+      policy.minimumContributionBasisPoints < 0 || policy.minimumContributionBasisPoints > 10000)
+    return {eligible:false,reason:"MARGIN_POLICY_MISSING",status:"DRAFT"};
+  if (!offer || offer.kind !== "PLANNING_ONLY")
+    return {eligible:false,reason:"INVALID_SERVICE_QUOTE_TYPE",status:"DRAFT"};
+
+  const market=String(offer.marketCode||"").trim().toUpperCase();
+  const currency=String(offer.currency||"").trim().toUpperCase();
+  if (!MARKET_CURRENCIES[market] || MARKET_CURRENCIES[market] !== currency ||
+      currencyExponent[currency] === undefined)
+    return {eligible:false,reason:"UNSUPPORTED_MARKET_OR_CURRENCY",status:"DRAFT"};
+  if (!validText(offer.customerRequirements,2000) ||
+      offer.requirementsVerified !== true ||
+      !evidenceIsCurrent(offer.customerRequirementsEvidence,now))
+    return {eligible:false,reason:"CUSTOMER_REQUIREMENTS_UNVERIFIED",status:"DRAFT"};
+  if (!validText(offer.scope,1200) || offer.scopeConfirmed !== true ||
+      !evidenceIsCurrent(offer.scopeEvidence,now))
+    return {eligible:false,reason:"SERVICE_SCOPE_UNVERIFIED",status:"DRAFT"};
+
+  const capacity=offer.deliveryCapacity;
+  const start=Date.parse(capacity?.windowStart||"");
+  const end=Date.parse(capacity?.windowEnd||"");
+  const nowTime=now.getTime();
+  if (!capacity || capacity.status !== "CONFIRMED" ||
+      !validText(capacity.ownerRef,120) ||
+      !Number.isFinite(start) || !Number.isFinite(end) ||
+      start < nowTime || end < start ||
+      !evidenceIsCurrent(offer.capacityEvidence,now))
+    return {eligible:false,reason:"DELIVERY_CAPACITY_UNVERIFIED",status:"DRAFT"};
+  if (!offer.terms || offer.terms.status !== "CONFIRMED" ||
+      !validText(offer.terms.reference,160) ||
+      !evidenceIsCurrent(offer.termsEvidence,now))
+    return {eligible:false,reason:"SERVICE_TERMS_UNVERIFIED",status:"DRAFT"};
+
+  const c=offer.costs;
+  if (!c || (c.creatorCompensationMinor !== undefined && c.creatorCompensationMinor !== 0) ||
+      !whole(c.alphaFeeMinor) || c.alphaFeeMinor <= 0 ||
+      !whole(c.laborMinor) || !whole(c.deliveryMinor) ||
+      !whole(c.paymentProcessingMinor) || !whole(c.taxMinor) ||
+      !whole(offer.budgetMinor) || offer.budgetMinor <= 0 ||
+      offer.budgetCurrency?.toUpperCase() !== currency)
+    return {eligible:false,reason:"INCOMPLETE_SERVICE_COST_BREAKDOWN",status:"DRAFT"};
+  if (!evidenceIsCurrent(offer.laborCostEvidence,now) ||
+      !evidenceIsCurrent(offer.deliveryCostEvidence,now) ||
+      !evidenceIsCurrent(offer.processingCostEvidence,now) ||
+      !evidenceIsCurrent(offer.taxEvidence,now))
+    return {eligible:false,reason:"SERVICE_COST_EVIDENCE_UNVERIFIED",status:"DRAFT"};
+
+  // Values come from quote-specific evidence; no rate, cost, tax, or fee is defaulted.
+  const fulfillmentMinor=c.laborMinor+c.deliveryMinor;
+  const totalAdvertiserCostMinor=c.alphaFeeMinor+fulfillmentMinor+
+    c.paymentProcessingMinor+c.taxMinor;
+  const contributionMinor=c.alphaFeeMinor-fulfillmentMinor-
+    c.paymentProcessingMinor-c.taxMinor;
+  if (!Number.isSafeInteger(totalAdvertiserCostMinor) ||
+      !Number.isSafeInteger(contributionMinor))
+    return {eligible:false,reason:"SERVICE_COST_OUT_OF_RANGE",status:"DRAFT"};
+  const contributionBasisPoints=totalAdvertiserCostMinor===0?0:
+    Math.floor(contributionMinor*10000/totalAdvertiserCostMinor);
+  if (totalAdvertiserCostMinor>offer.budgetMinor)
+    return {eligible:false,reason:"OVER_CUSTOMER_BUDGET",status:"DRAFT",
+      currency,totalAdvertiserCostMinor,budgetMinor:offer.budgetMinor};
+  const meetsMargin=contributionMinor>=0 &&
+    contributionMinor>=policy.minimumContributionMinor &&
+    contributionBasisPoints>=policy.minimumContributionBasisPoints;
+  if (!meetsMargin)
+    return {eligible:false,reason:"MINIMUM_MARGIN_NOT_MET",status:"DRAFT",
+      currency,totalAdvertiserCostMinor,contributionMinor,contributionBasisPoints,
+      policyId:policy.policyId};
+  return {
+    eligible:true,reason:"SUSTAINABLE_PLANNING_SERVICE",status:"DRAFT",
+    serviceType:"PLANNING_ONLY",currency,marketCode:market,
+    scope:offer.scope,deliveryOwnerRef:capacity.ownerRef,
+    deliveryWindow:{start:capacity.windowStart,end:capacity.windowEnd},
+    costs:{
+      creatorCompensationMinor:0,alphaFeeMinor:c.alphaFeeMinor,
+      laborMinor:c.laborMinor,deliveryMinor:c.deliveryMinor,fulfillmentMinor,
+      paymentProcessingMinor:c.paymentProcessingMinor,taxMinor:c.taxMinor,
+      totalAdvertiserCostMinor,contributionMinor,contributionBasisPoints
+    },
+    budgetMinor:offer.budgetMinor,policyId:policy.policyId,
+    evidenceRefs:{
+      requirements:offer.customerRequirementsEvidence.sourceRef,
+      scope:offer.scopeEvidence.sourceRef,
+      capacity:offer.capacityEvidence.sourceRef,
+      terms:offer.termsEvidence.sourceRef,
+      labor:offer.laborCostEvidence.sourceRef,
+      delivery:offer.deliveryCostEvidence.sourceRef,
+      processing:offer.processingCostEvidence.sourceRef,
+      tax:offer.taxEvidence.sourceRef
+    }
+  };
+}
+
 export function calculateSustainableQuote(offer, policy, now = new Date()) {
   if (!offer || !policy || !validText(policy.policyId,80) ||
       !whole(policy.minimumContributionMinor) ||
       !Number.isSafeInteger(policy.minimumContributionBasisPoints) ||
       policy.minimumContributionBasisPoints < 0 || policy.minimumContributionBasisPoints > 10000)
     return {eligible:false,reason:"MARGIN_POLICY_MISSING"};
+  if (offer?.kind === "PLANNING_ONLY") return calculatePlanningServiceQuote(offer,policy,now);
   if (!offer.creatorAgreement || offer.creatorAgreement.status !== "ACCEPTED" ||
       !validText(offer.creatorAgreement.agreementRef,120) ||
       !evidenceIsCurrent(offer.priceEvidence,now) ||
