@@ -45,7 +45,7 @@ const planningQuote=calculateSustainableQuote({
   capacityEvidence:evidence,
   terms:{status:"CONFIRMED",reference:"SYNTHETIC-TERMS-V1"},termsEvidence:evidence,
   laborCostEvidence:evidence,deliveryCostEvidence:evidence,
-  processingCostEvidence:evidence,taxEvidence:evidence,
+  processingCostEvidence:evidence,alphaFeeEvidence:evidence,taxEvidence:evidence,
   costs:{creatorCompensationMinor:0,alphaFeeMinor:30000,laborMinor:10000,
     deliveryMinor:2000,paymentProcessingMinor:1000,taxMinor:1000}
 },policy,new Date(now));
@@ -55,6 +55,18 @@ assert.equal(planningQuote.costs.totalAdvertiserCostMinor,44000);
 assert.equal(planningQuote.costs.contributionMinor,16000);
 assert.equal(planningQuote.costs.creatorCompensationMinor,0);
 assert.equal(planningQuote.serviceType,"PLANNING_ONLY");
+const noCapacityQuote=calculateSustainableQuote({
+  kind:"PLANNING_ONLY",marketCode:"MANILA",currency:"PHP",budgetCurrency:"PHP",
+  budgetMinor:90000,customerRequirements:"Synthetic advertiser requirements.",
+  requirementsVerified:true,customerRequirementsEvidence:evidence,
+  scope:"One campaign brief.",scopeConfirmed:true,scopeEvidence:evidence,
+  terms:{status:"CONFIRMED",reference:"SYNTHETIC-TERMS-V1"},termsEvidence:evidence,
+  laborCostEvidence:evidence,deliveryCostEvidence:evidence,
+  processingCostEvidence:evidence,alphaFeeEvidence:evidence,taxEvidence:evidence,
+  costs:{alphaFeeMinor:30000,laborMinor:10000,deliveryMinor:2000,
+    paymentProcessingMinor:1000,taxMinor:1000}
+},policy,new Date(now));
+assert.equal(noCapacityQuote.reason,"DELIVERY_CAPACITY_UNVERIFIED");
 assert.equal(calculateSustainableQuote({
   kind:"PLANNING_ONLY",marketCode:"MANILA",currency:"PHP",budgetCurrency:"PHP",
   budgetMinor:90000,costs:{alphaFeeMinor:30000,laborMinor:10000,deliveryMinor:2000,

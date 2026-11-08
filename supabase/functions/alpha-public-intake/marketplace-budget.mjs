@@ -71,7 +71,7 @@ export function calculatePlanningServiceQuote(offer, policy, now = new Date()) {
   const market=String(offer.marketCode||"").trim().toUpperCase();
   const currency=String(offer.currency||"").trim().toUpperCase();
   if (!MARKET_CURRENCIES[market] || MARKET_CURRENCIES[market] !== currency ||
-      currencyExponent[currency] === undefined)
+      currencyExponent[currency] === undefined || offer.creatorId || offer.adInventorySlotId || offer.placementId)
     return {eligible:false,reason:"UNSUPPORTED_MARKET_OR_CURRENCY",status:"DRAFT"};
   if (!validText(offer.customerRequirements,2000) ||
       offer.requirementsVerified !== true ||
@@ -102,11 +102,12 @@ export function calculatePlanningServiceQuote(offer, policy, now = new Date()) {
       !whole(c.laborMinor) || !whole(c.deliveryMinor) ||
       !whole(c.paymentProcessingMinor) || !whole(c.taxMinor) ||
       !whole(offer.budgetMinor) || offer.budgetMinor <= 0 ||
-      offer.budgetCurrency?.toUpperCase() !== currency)
+      !validText(offer.budgetCurrency,3) || offer.budgetCurrency.toUpperCase() !== currency)
     return {eligible:false,reason:"INCOMPLETE_SERVICE_COST_BREAKDOWN",status:"DRAFT"};
   if (!evidenceIsCurrent(offer.laborCostEvidence,now) ||
       !evidenceIsCurrent(offer.deliveryCostEvidence,now) ||
       !evidenceIsCurrent(offer.processingCostEvidence,now) ||
+      !evidenceIsCurrent(offer.alphaFeeEvidence,now) ||
       !evidenceIsCurrent(offer.taxEvidence,now))
     return {eligible:false,reason:"SERVICE_COST_EVIDENCE_UNVERIFIED",status:"DRAFT"};
 
@@ -151,6 +152,7 @@ export function calculatePlanningServiceQuote(offer, policy, now = new Date()) {
       labor:offer.laborCostEvidence.sourceRef,
       delivery:offer.deliveryCostEvidence.sourceRef,
       processing:offer.processingCostEvidence.sourceRef,
+      alphaFee:offer.alphaFeeEvidence.sourceRef,
       tax:offer.taxEvidence.sourceRef
     }
   };
