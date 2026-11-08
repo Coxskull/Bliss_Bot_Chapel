@@ -148,7 +148,7 @@ Deno.serve(async (req: Request) => {
         // Same random request key and the identical submitted information only.
         // Never disclose another person's previously stored request.
         const old = await client.from("alpha_public_intake_requests")
-          .select("id,created_at,kind,email,full_name,organization,website,market,category,description,marketing_opt_in,contact_consent,budget_amount,budget_amount_minor,budget_currency,market_code,campaign_objective,preferred_media_formats,audience_requirements,preferred_languages,notice_version")
+          .select("id,created_at,kind,email,full_name,organization,website,market,category,description,marketing_opt_in,contact_consent,contact_consent_version,budget_amount,budget_amount_minor,budget_currency,market_code,campaign_objective,preferred_media_formats,audience_requirements,preferred_languages,notice_version")
           .eq("request_key", key).maybeSingle();
         const existing = old.data;
         if (!existing || old.error ||
@@ -158,6 +158,7 @@ Deno.serve(async (req: Request) => {
             existing.category !== category || existing.description !== description ||
             existing.marketing_opt_in !== marketing ||
             existing.contact_consent !== contactConsent ||
+            existing.contact_consent_version !== (contactConsent ? payload.notice_version : null) ||
             Number(existing.budget_amount_minor ?? 0) !== (structured?.budget_amount_minor ?? 0) ||
             existing.budget_currency !== (structured?.budget_currency ?? null) ||
             existing.market_code !== (structured?.market_code ?? null) ||
