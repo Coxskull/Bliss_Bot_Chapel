@@ -110,7 +110,7 @@ export function evaluateVerifiedInventory(briefInput, offers, policy, options={}
   const preferred=ready.find(x=>brief.preferredMediaFormats.includes(x.mediaFormat))||null;
   const alternatives=ready.filter(x=>x.offerId!==preferred?.offerId).slice(0,3);
   return {
-    result:preferred?"MATCH_FOUND":ready.length?"LOWER_COST_ALTERNATIVE":"NO_SUSTAINABLE_MATCH",
+    result:preferred&&overBudget.length?"LOWER_COST_ALTERNATIVE":preferred?"MATCH_FOUND":ready.length?"LOWER_COST_ALTERNATIVE":"NO_SUSTAINABLE_MATCH",
     preferred, alternatives, overBudget:overBudget.slice(0,3), rejectedCount:rejected.length,
     message:preferred?"Verified option fits the all-in budget."
       :ready.length?"Preferred placement is over budget; these separately agreed scopes fit."
