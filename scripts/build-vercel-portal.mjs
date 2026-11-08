@@ -60,4 +60,6 @@ for (const [filename, routes] of [
 
 await copyFile(resolve(source, 'wedding-planner.js'), resolve(output, 'wedding-planner.js'));
 await copyFile(resolve(source, 'assets/bliss-chapel-hero.jpg'), resolve(output, 'assets/bliss-chapel-hero.jpg'));
+// Fail Vercel builds if the public inquiry hero loses safe routes or disclosures.
+await import('./task19-public-cta-smoke.mjs');
 console.log('Built Vercel workspace portal. Application origin is public configuration, not a credential.');
