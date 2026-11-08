@@ -186,6 +186,9 @@ assert.equal(originChecked>0,true);
 const trialPost=(body)=>request("POST","",{
   headers:{Origin:stageOrigin},body
 });
+// The earlier denied POST also reached the private RPC while disabled;
+// reset this synthetic test counter before the positive grant.
+trialActions=0;
 trialAllowed=true;
 t=await call(stagingRequest("GET","?case_id="+id));
 assert.equal(t.status,200);
