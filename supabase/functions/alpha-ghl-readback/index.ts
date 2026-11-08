@@ -77,41 +77,46 @@ Deno.serve(async (req: Request) => {
       errorClass = "source_record_incomplete";
     } else {
       try {
-        const response = await fetch("https://services.leadconnectorhq.com/contacts/search", {
-          method: "POST",
-          headers: {
-            Authorization: "Bearer " + token, Version: "v3", Accept: "application/json",
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            locationId, pageLimit: 20, page: 1,
-            filters: [{ field: "email", operator: "eq", value: request.email }]
-          }),
-          signal: AbortSignal.timeout(6500)
-        });
-        if (!response.ok) {
-          errorClass = response.status === 401 || response.status === 403 ? "auth_or_scope_failure"
-            : response.status === 404 ? "location_or_endpoint_not_found"
-            : response.status === 429 ? "rate_limited" : "provider_failure";
-          result = { classification: "HOLD_CRM_READBACK_FAILED", crmMatchCount: 0,
+        const contactId = String(delivery.remote_contact_id).trim();
+        if (!/^[A-Za-z0-9_-]{6,128}$/.test(contactId)) {
+          errorClass = "invalid_stored_contact_id";
+          result = { classification: "HOLD_CRM_IDENTITY_MISMATCH", crmMatchCount: 0,
             internalDuplicateCount: emailCounts.get(request.email.trim().toLowerCase()) || 0,
             deliveredContactMatch: false, emailIdentityMatch: false, suppressionStatus: "UNKNOWN",
-            consentValid: request.contact_consent === true &&
-              request.contact_consent_version === request.notice_version &&
-              request.notice_version === "AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1" &&
-              Boolean(request.contact_consent_at),
-            businessIdentityVerified: request.business_identity_verified === true,
+            consentValid: false, businessIdentityVerified: request.business_identity_verified === true,
             decisionAuthorityVerified: request.decision_authority_verified === true,
-            followupGate: request.followup_gate || "UNKNOWN" };
+            followupGate: request.followup_gate || "UNKNOWN", remoteDuplicateCheck: "NOT_PERFORMED" };
         } else {
-          const payload = await response.json();
-          const contacts = Array.isArray(payload?.contacts) ? payload.contacts : [];
-          const internalDuplicateCount = emailCounts.get(request.email.trim().toLowerCase()) || 0;
-          result = reconcileContact({
-            request, delivery, contacts,
-            providerTotal: Number.isSafeInteger(payload?.total) ? payload.total : contacts.length,
-            internalDuplicateCount, locationId
+          // Read only the already linked CRM record by its stored provider ID.
+          // Do not send the private intake email to the CRM search endpoint.
+          const response = await fetch("https://services.leadconnectorhq.com/contacts/" + encodeURIComponent(contactId), {
+            method: "GET",
+            headers: { Authorization: "Bearer " + token, Version: "v3", Accept: "application/json" },
+            signal: AbortSignal.timeout(6500)
           });
+          if (!response.ok) {
+            errorClass = response.status === 401 || response.status === 403 ? "auth_or_scope_failure"
+              : response.status === 404 ? "stored_contact_not_found"
+              : response.status === 429 ? "rate_limited" : "provider_failure";
+            result = { classification: "HOLD_CRM_READBACK_FAILED", crmMatchCount: 0,
+              internalDuplicateCount: emailCounts.get(request.email.trim().toLowerCase()) || 0,
+              deliveredContactMatch: false, emailIdentityMatch: false, suppressionStatus: "UNKNOWN",
+              consentValid: false, businessIdentityVerified: request.business_identity_verified === true,
+              decisionAuthorityVerified: request.decision_authority_verified === true,
+              followupGate: request.followup_gate || "UNKNOWN", remoteDuplicateCheck: "NOT_PERFORMED" };
+          } else {
+            const payload = await response.json();
+            const contact = payload?.contact;
+            const contacts = contact && contact.id === contactId ? [contact] : [];
+            const internalDuplicateCount = emailCounts.get(request.email.trim().toLowerCase()) || 0;
+            result = reconcileContact({
+              request, delivery, contacts, providerTotal: contacts.length,
+              internalDuplicateCount, locationId
+            });
+            result.remoteDuplicateCheck = "NOT_PERFORMED";
+            if (result.classification === "RECONCILED_ALREADY_CLEARED")
+              result.classification = "HOLD_CRM_DUPLICATE_REVIEW_REQUIRED";
+          }
         }
       } catch {
         errorClass = "network_or_invalid_response";
