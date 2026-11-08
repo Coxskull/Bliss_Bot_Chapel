@@ -11,7 +11,8 @@ on:
       - 'frontend/public/alpha-intake.js'
       - 'frontend/public/alpha-privacy.html'
       - 'frontend/public/alpha-terms.html'
-      - 'scripts/agm-ghl-*.mjs'\n      - 'scripts/agm-marketplace-budget-smoke.mjs'
+      - 'scripts/agm-ghl-*.mjs'
+      - 'scripts/agm-marketplace-budget-smoke.mjs'
       - '.github/workflows/agm-ghl-contact-bridge.yml'
 permissions:
   contents: read
@@ -26,7 +27,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node scripts/agm-ghl-unit-smoke.mjs\n      - run: node scripts/agm-marketplace-budget-smoke.mjs
+      - run: node scripts/agm-ghl-unit-smoke.mjs
+      - run: node scripts/agm-marketplace-budget-smoke.mjs
       - name: Verify GoHighLevel is not in browser code
         run: |
           node - <<'NODE'
@@ -41,7 +43,7 @@ jobs:
           assert.ok(!retry.includes('Access-Control-Allow-Origin'));
           assert.ok(retry.includes('.limit(limit)'));
           assert.ok(retry.includes('deliverToGhl'));
-          assert.ok(browser.includes('AGM-INTEREST-2026-11-05-GHL'));
+          assert.ok(browser.includes('AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1'));
           assert.ok(privacy.includes('GoHighLevel') && privacy.includes('not automatically deleted'));
           assert.ok(creator.includes('GoHighLevel CRM') && advertiser.includes('GoHighLevel CRM'));
           assert.ok(api.includes('supportedNotices') && api.includes('deliverToGhl'));
