@@ -55,21 +55,21 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 
 | Gate | Evidence | Current result |
 | --- | --- | --- |
-| First operator named | User's self-nomination | NOMINATED (not yet Auth verified) |
+| First operator named | Screenshot + exact Auth UUID readback matched to connected account | PASS — account identity only |
 | Existing staging SQL | Real PG17 rollback test and restrictive role validation | PASS |
-| Persistent Task21 support database | Five RLS intake/case tables + staging-only alert-intent table, 54 migrations, fictional records | PASS — synthetic records only |
-| Staff identity and recovery | Actual account proof, private host, scoped roster, real MFA/backup | NOT EXECUTED |
-| Staging operator API | Deployed function v1 JWT required; default-deny until roster configured | PASS — API active; case access denied |
-| First Auth account / TOTP | Operator uses approved isolated host | NOT EXECUTED |
-| Server-only role roster / AAL2 | Admin configuration and denied/allowed reads | NOT EXECUTED |
+| Persistent Task21 support database | Five RLS intake/case tables + staging alert/grant tables, 55 migrations, fictional records | PASS — synthetic records only |
+| Staff identity and recovery | Verified staging Auth UUID, matching connected operator identity, one enrolled verified TOTP; backup unverified | PARTIAL — account verified, backup missing |
+| Staging operator API | Deployed v2 JWT-required, staging-only private DB grant fallback; exact source readback | PASS — role grant active, hosted queue UX not yet confirmed |
+| First Auth account / TOTP | Screenshot identity-only screen, exact UUID verified, TOTP factor enrolled | PASS — Auth identity; current AAL2 unverified |
+| Server-only role roster / AAL2 | One private DB grant GENERAL_SUPPORT, single protected origin, no sensitive role; AAL2 not tested | PASS — non-sensitive role only |
 | Offline source, DB, browser | Focused GitHub Actions and prior full CI | PASS on tested revisions; latest exact-head CI must still be checked |
 | PII-free incident alert intent | Staging migration #54, CRITICAL case, UNROUTED receipt, zero CRM row | PASS — internal DB receipt only |
 | Internal Gmail self-mailbox delivery | Task21 synthetic test message in owner's own SENT + INBOX; 07:24 PH | PASS — manual email test only |
 | Human internal test acknowledgement | Separate Gmail reply 2026-11-08 07:37:20 Asia/Manila, first line `TASK21 STAGING ACK RECEIVED` | PASS — MANUAL TEST ONLY; no automated alert or staffed coverage |
 | Hosted fictional intake and atomic receipt | 1 OPEN general case, one receipt and CREATED event; outbox BLOCKED | PASS — database path only |
 | Hosted restricted SQL claim and closure | Fictional Auth user, real service_role, five audit events; transaction rolled back | PASS — DATABASE ONLY |
-| Actual staff login, claim and resolution | Real Auth account, approved roster, private host, verified on-duty human | NOT EXECUTED |
-| Private dashboard HTTPS preview | Vercel SSO project exists, Preview-only source ready | BLOCKED — daily deployment quota 402 |
+| Actual staff login, claim and resolution | Auth identity screenshot and scoped read-only grant; refresh queue proof / mutation approval needed | PARTIAL — case listing not yet confirmed; writes OFF |
+| Private dashboard HTTPS preview | Vercel SSO-protected deployment READY and user screenshot of identity-only screen | PASS — protected host/identity screen |
 | Production | Explicit owner launch signoff | DENIED; Global STOP engaged |
 
 **Do not mark Task #21 complete on the strength of this checklist or CI alone.**
@@ -77,8 +77,14 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 ## November 8 incident routing addendum — source of truth
 - The existing staging-only [alert-intent migration](../scripts/task21/staging-only-alert-intents.sql) is installed (migration #54), and a fictional CRITICAL security case has one `UNROUTED` receipt; not a real incident or notification. [Detailed DB/Gmail distinction](agm-task21-staging-alert-delivery-acceptance-20261108.md).
 - Exactly one manual self-addressed internal Gmail test message reached the same Gmail account's Inbox/Sent labels. The **database did not send that email**; the application alert state remains `UNROUTED`. Do not assert staff attendance or human acknowledgement based on Inbox delivery.
-- The nominated operator must respond personally to the subject `TASK21 STAGING INTERNAL CRITICAL ALERT DELIVERY TEST — SYNTHETIC — 2026-11-08` using `TASK21 STAGING ACK RECEIVED`. Only a subsequent genuine reply and timestamp can close this narrow human-response evidence item. Do not conflate that with a staffed 24/7 incident channel or the complete Task21 launch gate.
+- The nominated operator **already replied** with `TASK21 STAGING ACK RECEIVED`; Gmail independently verified the genuine separate reply at 07:37:20 Asia/Manila. This manual human-ACK gate is PASS. Do not conflate that with a staffed 24/7 incident channel or the complete Task21 launch gate.
 
 ## Verified manual human acknowledgement — 2026-11-08
 - The first operator's manually sent synthetic incident email in the connected Gmail inbox **has a real distinct reply** at **07:37:20 Asia/Manila**, containing exactly `TASK21 STAGING ACK RECEIVED`. This is independently verified, not a simulated reply. [Receipt ledger](agm-task21-staging-alert-delivery-acceptance-20261108.md).
 - **Complete only the manual test human ACK gate.** The database alert remains `UNROUTED`: there is no approved automated alert dispatcher, independently monitored primary/backup staff, or proof of 24/7 coverage. Do not mark Task21 complete or enable the server roster/mutations from this evidence.
+
+## First verified staff GENERAL_SUPPORT grant — 2026-11-08
+- The operator opened the real [protected preview](https://bliss-o5dlori6e-alpha-auto-s-projects.vercel.app/staff/task21/) and provided a screenshot showing an authenticated identity-only screen and a verified staging Auth UUID. Independent Supabase admin query matched the exact UUID to the connected internal operator account; the account is email-confirmed, unbanned and has one verified TOTP factor. The screenshot occurred before server role configuration.
+- [Staging-only DB authorization report](agm-task21-first-staff-general-support-grant-20261108.md): `alpha_support_private.staging_operator_grants` with RLS, service-role-only SELECT, one enabled `GENERAL_SUPPORT` account restricted to the exact protected preview HTTPS origin. No UUID is committed. Staging schema migration #55; actual DB provider readback `TASK21_STAGING_GENERAL_SUPPORT_GRANTED_READ_ONLY`.
+- The existing staging `alpha-support-operator` Edge is now **ACTIVE v2, verify_jwt=true**. The deployed handler matches source exactly; independent [focused CI #42429383296](https://github.com/Coxskull/Bliss_Bot_Chapel/actions/runs/42429383296) passed 3/3 jobs. An unrelated production URL, lookalike origin, or unrostered user is denied.
+- Case modifications remain OFF; only the general fictional queue is eligible. The private browser must now be refreshed to demonstrate actual queue rendering after role grant. That hosted human case-list readback has **NOT** yet been reported. Security/finance/privacy roles and automatic critical alert delivery remain blocked; Global STOP engaged.
