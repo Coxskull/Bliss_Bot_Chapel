@@ -5,7 +5,7 @@ import { deliverToGhl } from "../supabase/functions/alpha-public-intake/ghl-sync
 const loc = "aBcD1234EFgh5678IJkl";
 const record = {
   kind: "creator", notice_version: ghlNotice,
-  processing_acknowledged: true, adult_confirmed: true,
+  processing_acknowledged: true, adult_confirmed: true, contact_consent: true,
   full_name: "Mock Contract Creator", email: "creator@unit.test",
   organization: "", website: "https://example.org/public-channel",
   market: "Test Manila", category: "Podcast", description: "Never forward me",
@@ -17,19 +17,33 @@ assert.deepEqual(creator, {
   email: record.email, source: "ALPHA GLOBAL MEDIA · Creator Interest",
   createNewIfDuplicateAllowed: false, website: record.website
 });
-const advertiser = mapGhlContact({
+const advertiserRecord = {
   ...record, kind: "advertiser", organization: "Mock Company",
-  website: "https://example.org/brand"
-}, loc);
+  website: "https://example.org/brand", budget_amount:"900.00",
+  budget_currency:"PHP", market_code:"MANILA", campaign_objective:"awareness",
+  preferred_media_formats:["podcast","radio"], audience_requirements:null,
+  preferred_languages:["English","Filipino"]
+};
+const fieldIds = {
+  budget_amount:"field001", budget_currency:"field002", market_code:"field003",
+  campaign_objective:"field004", preferred_media_formats:"field005",
+  audience_requirements:"field006", preferred_languages:"field007"
+};
+const advertiser = mapGhlContact(advertiserRecord, loc, fieldIds);
 assert.equal(advertiser.companyName, "Mock Company");
 assert.equal(advertiser.source, "ALPHA GLOBAL MEDIA · Advertiser Interest");
+assert.equal(advertiser.customFields.length,7);
+assert.deepEqual(advertiser.customFields.map(x=>x.id),Object.values(fieldIds));
+assert.equal(advertiser.customFields[0].field_value,"900.00");
+assert.equal(advertiser.customFields[4].field_value,"podcast, radio");
+assert.throws(()=>mapGhlContact(advertiserRecord,loc),/mapping is incomplete/);
 for (const forbidden of [
   "tags","customFields","description","market","category","marketing_opt_in",
   "processing_acknowledged","phone","dnd","inboundDndSettings"
 ]) assert.ok(!(forbidden in creator), forbidden + " excluded");
 for(const invalid of [
   {...record,kind:"privacy"}, {...record,notice_version:"AGM-INTEREST-2026-11-05"},
-  {...record,processing_acknowledged:false},
+  {...record,processing_acknowledged:false}, {...record,contact_consent:false},
   {...record,email:"fake@example.invalid"}
 ]) assert.throws(()=>mapGhlContact(invalid,loc));
 
