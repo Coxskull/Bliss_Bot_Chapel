@@ -11,6 +11,7 @@ const status=el("status");
 let config=null,client=null,caseId=null,activeRoles=[],currentPage=0,operatorId=null;
 let busy=false,queue=[],connected=false,hasMfa=false,mfaVerified=false;
 let pendingFactorId=null; // private in-memory enrollment state only
+let syntheticTrialEnabled=false; // server-approved single fictional case only
 let verifiedAuthId=null; // self-only Auth UUID, never an access-control role
 function show(id,visible){el(id).hidden=!visible;}
 function announce(text,error=false){
@@ -34,6 +35,7 @@ function hidePrivate(){
   clearNode(el("contact-fields"));clearNode(el("events"));
   show("case-detail",false);show("case-empty",true);
   caseId=null;operatorId=null;activeRoles=[];queue=[];currentPage=0;connected=false;
+  syntheticTrialEnabled=false;
   el("connection").textContent="NOT CONNECTED";
 }
 function setBusy(on){
@@ -44,10 +46,11 @@ function setBusy(on){
     el(id).disabled=busy;
   el("prev").disabled=busy||!connected||currentPage===0;
   el("next").disabled=busy||!connected||queue.length!==20||currentPage>=100;
+  const updateAllowed=config?.mutationsEnabled===true||syntheticTrialEnabled;
   el("save").disabled=busy||!connected||!caseId||
-    config?.mutationsEnabled!==true||el("owner-id").value!==operatorId;
+    !updateAllowed||el("owner-id").value!==operatorId;
   el("claim-case").disabled=busy||!connected||!caseId||
-    config?.mutationsEnabled!==true;
+    !updateAllowed||el("claim-case").hidden;
   el("verify-mfa").hidden=!connected||!hasMfa||mfaVerified;
 }
 function requireConfig(){
@@ -85,7 +88,8 @@ function errMessage(e){
   return "The protected support operation could not be verified. No action is confirmed.";
 }
 function resetDetail(){
-  caseId=null;show("case-detail",false);show("case-empty",true);
+  caseId=null;syntheticTrialEnabled=false;
+  show("case-detail",false);show("case-empty",true);
   el("claim-case").hidden=true;el("claim-case").disabled=true;
   clearNode(el("case-fields"));clearNode(el("contact-fields"));clearNode(el("events"));
 }
@@ -182,17 +186,24 @@ async function loadDetail(id){
     el("owner-id").value=ticket.owner_user_id||"";
     el("resolution").value=ticket.resolution_summary||"";
     const ownerIsMe=ticket.owner_user_id===operatorId;
-    const canClaim=config.mutationsEnabled===true&&!ticket.owner_user_id&&
+    syntheticTrialEnabled=detail.synthetic_trial_enabled===true&&
+      ticket.assigned_role==="GENERAL_SUPPORT"&&ticket.category==="general"&&
+      ticket.severity==="NORMAL"&&
+      contact.email==="task21-browser-fixture@example.invalid";
+    const canUpdate=config.mutationsEnabled===true||syntheticTrialEnabled;
+    const canClaim=canUpdate&&!ticket.owner_user_id&&
       ticket.status==="OPEN";
     el("claim-case").hidden=!canClaim;
     el("claim-case").disabled=!canClaim;
-    const allowed=config.mutationsEnabled===true&&ownerIsMe;
+    const allowed=canUpdate&&ownerIsMe;
     for(const id of ["case-status","resolution"])el(id).disabled=!allowed;
     el("owner-id").disabled=true; // never operator-entered
     el("save").disabled=!allowed;
     el("save").textContent=allowed?"Record human case update":"Case updates not enabled";
     show("case-empty",false);show("case-detail",true);
-    renderQueue();announce("Private case record loaded. No customer was contacted.");
+    renderQueue();announce(syntheticTrialEnabled
+      ?"FICTIONAL CASE-ONLY staging trial available. No customer contact or payment."
+      :"Private case record loaded. No customer was contacted.");
   } catch(e){resetDetail();announce(errMessage(e),true);}
   finally {setBusy(false);if(connected)renderQueue();}
 }
@@ -305,7 +316,7 @@ async function signout(){
   finally{setBusy(false);show("signin-panel",true);announce("Signed out; private case details cleared.");}
 }
 async function claimCurrentCase(){
-  if(busy||!caseId||config?.mutationsEnabled!==true)return;
+  if(busy||!caseId||(config?.mutationsEnabled!==true&&!syntheticTrialEnabled))return;
   const target=caseId;
   setBusy(true);announce("Requesting an atomic human case acknowledgement…");
   let success=false;
@@ -322,7 +333,7 @@ async function claimCurrentCase(){
 }
 async function saveTransition(e){
   e.preventDefault();
-  if(busy||!caseId||config.mutationsEnabled!==true)return;
+  if(busy||!caseId||(config.mutationsEnabled!==true&&!syntheticTrialEnabled))return;
   let body;
   try{body=validateTransition(caseId,el("case-status").value,el("owner-id").value.trim(),
     el("resolution").value);}
