@@ -68,7 +68,8 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 | Human internal test acknowledgement | Separate Gmail reply 2026-11-08 07:37:20 Asia/Manila, first line `TASK21 STAGING ACK RECEIVED` | PASS — MANUAL TEST ONLY; no automated alert or staffed coverage |
 | Hosted fictional intake and atomic receipt | 1 OPEN general case, one receipt and CREATED event; outbox BLOCKED | PASS — database path only |
 | Hosted restricted SQL claim and closure | Fictional Auth user, real service_role, five audit events; transaction rolled back | PASS — DATABASE ONLY |
-| Actual staff login, claim and resolution | Auth identity screenshot and scoped read-only grant; refresh queue proof / mutation approval needed | PARTIAL — case listing not yet confirmed; writes OFF |
+| Hosted staff operator queue listing | Real protected browser screenshot: GENERAL_SUPPORT only, one fictional OPEN NORMAL case, matches DB | PASS — authenticated queue read only |
+| Actual staff case detail, claim and resolution | Real queue loads; case detail not selected yet, mutation gate OFF | PENDING — detail/claim/resolution separate |
 | Private dashboard HTTPS preview | Vercel SSO-protected deployment READY and user screenshot of identity-only screen | PASS — protected host/identity screen |
 | Production | Explicit owner launch signoff | DENIED; Global STOP engaged |
 
@@ -88,3 +89,8 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 - [Staging-only DB authorization report](agm-task21-first-staff-general-support-grant-20261108.md): `alpha_support_private.staging_operator_grants` with RLS, service-role-only SELECT, one enabled `GENERAL_SUPPORT` account restricted to the exact protected preview HTTPS origin. No UUID is committed. Staging schema migration #55; actual DB provider readback `TASK21_STAGING_GENERAL_SUPPORT_GRANTED_READ_ONLY`.
 - The existing staging `alpha-support-operator` Edge is now **ACTIVE v2, verify_jwt=true**. The deployed handler matches source exactly; independent [focused CI #42429383296](https://github.com/Coxskull/Bliss_Bot_Chapel/actions/runs/42429383296) passed 3/3 jobs. An unrelated production URL, lookalike origin, or unrostered user is denied.
 - Case modifications remain OFF; only the general fictional queue is eligible. The private browser must now be refreshed to demonstrate actual queue rendering after role grant. That hosted human case-list readback has **NOT** yet been reported. Security/finance/privacy roles and automatic critical alert delivery remain blocked; Global STOP engaged.
+
+## Real browser queue screenshot verified — 2026-11-08
+- Screenshot from the protected staging preview displays `Case queue loaded`, **Authorized queues: GENERAL_SUPPORT**, exactly one case `NORMAL · general · OPEN` (fictional case `931d5569-9958-4603-b3c4-fdad25c1acd6`), and no case-detail selection yet. Independent read-only SQL matched that exact case ID, scope, status, and one CREATED audit event, with `owner_user_id IS NULL`.
+- Mark **hosted queue-list retrieval PASS**. Do **not** mark case-detail retrieval, human claim, audited transitions, or automatic incident dispatch PASS. [Redacted engineering verification](agm-task21-hosted-operator-queue-acceptance-20261108.md).
+- Next user action is to click the single fictional case in **Assigned queues** and inspect **Case details** without initiating a case update or customer contact. The global stop and separate mutation gate stay unchanged.
