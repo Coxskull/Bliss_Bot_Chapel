@@ -124,8 +124,19 @@ export async function handleOperatorRequest(req,db,env) {
       ]);
       if (intake.error || !intake.data || events.error)
         return response({error:"Case history unavailable"},503,allowOrigin);
+      let syntheticTrialEnabled=false;
+      if (useStagingDbGrants) {
+        // One case/actor/origin, expiring DB grant; no browser role or token
+        // metadata may activate mutations. Ordinary case reads stay read-only.
+        const trial=await db.rpc("alpha_support_staging_trial_allowed",{
+          p_case_id:id,p_actor_user_id:user.id,p_origin:allowOrigin
+        });
+        if (trial.error || typeof trial.data!=="boolean")
+          return response({error:"Trial verification unavailable"},503,allowOrigin);
+        syntheticTrialEnabled=trial.data;
+      }
       return response({case:ticket,contact:intake.data,events:events.data||[],
-        history_limit:100},200,allowOrigin);
+        history_limit:100,synthetic_trial_enabled:syntheticTrialEnabled},200,allowOrigin);
     }
     const pageRaw=url.searchParams.get("page")||"0";
     if (!/^(0|[1-9][0-9]{0,2})$/.test(pageRaw) || Number(pageRaw)>100)
@@ -140,8 +151,14 @@ export async function handleOperatorRequest(req,db,env) {
     return response({cases:listed.data||[],page,page_size:20,
       visible_roles:roles,operator_user_id:user.id},200,allowOrigin);
   }
-  // Read-only by default, even with a valid operator login.
-  if (env.get("ALPHA_SUPPORT_MUTATIONS_ENABLED")!=="true")
+  // Global mutations remain disabled. A separate hard-pinned staging path
+  // permits only the server-owned, single-use, expiring synthetic case. Its
+  // Postgres RPC RECHECKS the exact case, actor, origin and expiry atomically.
+  const globallyEnabled=env.get("ALPHA_SUPPORT_MUTATIONS_ENABLED")==="true";
+  const allowSyntheticTrial=!globallyEnabled&&useStagingDbGrants&&
+    env.get("SUPABASE_URL")==="https://wdlmcriajgsretgyusmo.supabase.co"&&
+    !!allowOrigin;
+  if (!globallyEnabled&&!allowSyntheticTrial)
     return response({error:"Support case updates disabled"},423,allowOrigin);
   if (!(req.headers.get("Content-Type")||"").toLowerCase().startsWith("application/json")
       || Number(req.headers.get("Content-Length")||"0")>2400)
@@ -158,6 +175,23 @@ export async function handleOperatorRequest(req,db,env) {
       claimCaseId=payload.case_id;
     } else transition=parseTransition(payload);
   } catch { return response({error:"Invalid case operation"},422,allowOrigin); }
+  if (allowSyntheticTrial) {
+    const selectedId=claimCaseId||transition.case_id;
+    if (!roles.includes("GENERAL_SUPPORT") ||
+       (transition && transition.owner_user_id!==user.id))
+      return response({error:"Support case updates disabled"},423,allowOrigin);
+    const saved=await db.rpc("alpha_support_staging_trial_action",{
+      p_case_id:selectedId,p_actor_user_id:user.id,p_origin:allowOrigin,
+      p_action:claimCaseId?"CLAIM":"TRANSITION",
+      p_status:claimCaseId?null:transition.status,
+      p_resolution:claimCaseId?"":transition.resolution
+    });
+    if (saved.error || saved.data!==true)
+      return response({error:"Support case updates disabled"},423,allowOrigin);
+    return response({committed:true,case_id:selectedId,
+      status:claimCaseId?"TRIAGED":transition.status,
+      ...(claimCaseId?{action:"CLAIM"}:{})},200,allowOrigin);
+  }
   const found=await db.from("alpha_support_cases")
     .select("case_id,assigned_role").eq("case_id",
       claimCaseId||transition.case_id).maybeSingle();
