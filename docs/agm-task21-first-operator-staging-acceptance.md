@@ -59,7 +59,7 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 | Existing staging SQL | Real PG17 rollback test and restrictive role validation | PASS |
 | Persistent Task21 support database | Five RLS intake/case tables + staging alert/grant tables, 55 migrations, fictional records | PASS — synthetic records only |
 | Staff identity and recovery | Verified staging Auth UUID, matching connected operator identity, one enrolled verified TOTP; backup unverified | PARTIAL — account verified, backup missing |
-| Staging operator API | Deployed v2 JWT-required, staging-only private DB grant fallback; exact source readback | PASS — role grant active, hosted queue UX not yet confirmed |
+| Staging operator API | Deployed v2 JWT-required, staging-only private DB grant fallback; exact source readback | PASS — real protected browser queue/details confirmed |
 | First Auth account / TOTP | Screenshot identity-only screen, exact UUID verified, TOTP factor enrolled | PASS — Auth identity; current AAL2 unverified |
 | Server-only role roster / AAL2 | One private DB grant GENERAL_SUPPORT, single protected origin, no sensitive role; AAL2 not tested | PASS — non-sensitive role only |
 | Offline source, DB, browser | Focused GitHub Actions and prior full CI | PASS on tested revisions; latest exact-head CI must still be checked |
@@ -67,10 +67,11 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 | Internal Gmail self-mailbox delivery | Task21 synthetic test message in owner's own SENT + INBOX; 07:24 PH | PASS — manual email test only |
 | Human internal test acknowledgement | Separate Gmail reply 2026-11-08 07:37:20 Asia/Manila, first line `TASK21 STAGING ACK RECEIVED` | PASS — MANUAL TEST ONLY; no automated alert or staffed coverage |
 | Hosted fictional intake and atomic receipt | 1 OPEN general case, one receipt and CREATED event; outbox BLOCKED | PASS — database path only |
-| Hosted restricted SQL claim and closure | Fictional Auth user, real service_role, five audit events; transaction rolled back | PASS — DATABASE ONLY |
+| Hosted restricted SQL claim and closure | Real verified staging Auth operator, five events, transaction rolled back | PASS — REAL ACTOR / DATABASE ONLY |
 | Hosted staff operator queue listing | Real protected browser screenshot: GENERAL_SUPPORT only, one fictional OPEN NORMAL case, matches DB | PASS — authenticated queue read only |
-| Hosted staff case-detail and immutable-history view | Real human preview screenshot selected authorized fictional case; detail/contact/history loaded; DB unchanged | PASS — read-only case detail |
-| Actual staff claim and resolution | No claim or state transition; server mutation gate OFF | PENDING — requires separate bounded synthetic acceptance |
+| Hosted staff case-detail and immutable-history view | Real human preview screenshot selected authorized fictional OPEN case; detail/contact/history loaded | PASS — read-only case detail |
+| Durable verified staff synthetic claim/closure (SQL) | New fictional CLOSED case owned by verified GENERAL_SUPPORT operator, exactly five events, CRM BLOCKED | PASS — DB transaction; real browser POST not tested |
+| Hosted browser staff claim and resolution | The operator UI still has mutation gate OFF; no browser POST tested | PENDING — requires separate bounded synthetic acceptance |
 | Private dashboard HTTPS preview | Vercel SSO-protected deployment READY and user screenshot of identity-only screen | PASS — protected host/identity screen |
 | Production | Explicit owner launch signoff | DENIED; Global STOP engaged |
 
@@ -100,3 +101,9 @@ These tests **do not prove** human availability, mail delivery, real Auth identi
 - The operator selected fictional `931d5569-9958-4603-b3c4-fdad25c1acd6` from the already verified hosted `GENERAL_SUPPORT` queue. The panel displayed matching `general` / `NORMAL` / `OPEN` / unassigned metadata, a clearly synthetic `example.invalid` requester and issue, and **one immutable CREATED/OPEN event**. Banner: **"Private case record loaded. No customer was contacted."**
 - The screenshot also shows **"Case updates not enabled."** Independent Supabase read-only SQL confirmed the case remains OPEN/unclaimed with its single audit event, one receipt and blocked synthetic CRM row. [Complete evidence](agm-task21-hosted-operator-queue-acceptance-20261108.md).
 - **PASS:** real hosted staff detail/history read. **PENDING:** any case CLAIM, audited transition/resolution or application-generated alert. None of those actions was attempted and no mutation switch changed. Global STOP still engaged.
+
+## Verified staff's durable fictional case closure — 2026-11-08
+- The actual approved staging Auth operator was exercised as the acting human ID via restricted `service_role` RPCs. First, a real hosted SQL transaction tested claim, duplicate-claim idempotency, `IN_REVIEW`, `RESOLVED` and `CLOSED`, then **ROLLED BACK**, preserving the case shown on the dashboard. Receipt: `TASK21_REAL_VERIFIED_OPERATOR_SYNTHETIC_LIFECYCLE_ROLLBACK_PASS`.
+- A second one-time, fully preflight-guarded [fictional closure script](../scripts/task21/staging-verified-operator-closure-receipt.sql) was tested with **ROLLBACK** first (`TASK21_DURABLE_TEST_SOURCE_STAGING_ROLLBACK_PASS`), then applied to **one new** fictional `GENERAL_SUPPORT` ticket. The new case `922fdedc-31a1-4dd6-9dd0-31772694922c` is **CLOSED** and assigned to the trusted operator in staging, with **one receipt and five immutable events** and its fictional CRM outbox **BLOCKED before transaction commit**. Prior OPEN case still visible; CRITICAL security alert remains UNROUTED; Global STOP unchanged. No production write or actual customer contact.
+- Independent readback: **3 total cases, 2 OPEN, 1 CLOSED, 7 events, 3 receipts, 2 BLOCKED CRM records, 1 UNROUTED critical alert, 3 Auth users and 1 enabled GENERAL_SUPPORT grant**. [Detailed evidence](agm-task21-real-operator-durable-synthetic-closure-20261108.md).
+- **The server's broad mutation switch remains OFF** and the real user has not submitted a browser-based POST. The next safe *read-only* step is to look up the new CLOSED test case by exact ID in the existing private preview and inspect its five history events. That tests historical case retrieval without opening writes.
