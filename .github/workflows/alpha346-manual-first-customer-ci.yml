@@ -1,0 +1,40 @@
+name: ALPHA-346 offline manual advertiser inquiry to proposal
+on:
+  pull_request:
+    paths:
+      - 'docs/commercial/ALPHA-346-*'
+      - 'scripts/alpha346-*'
+      - 'tools/commercial/alpha346-*'
+      - 'frontend/public/contact.html'
+      - 'frontend/public/services.html'
+      - '.github/workflows/alpha346-manual-first-customer-ci.yml'
+permissions:
+  contents: read
+jobs:
+  offline-manual-service:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build actual public Vercel portal offline (no API, credentials or deployment)
+        env:
+          BLISS_APPLICATION_ORIGIN: https://example.org
+        run: node scripts/build-vercel-portal.mjs
+      - name: Validate generated inquiry-only service and private-tool exclusion
+        run: node --test scripts/alpha346-generated-public-portal.test.mjs
+      - run: node --test scripts/alpha346-manual-proposal-gate.test.mjs scripts/alpha346-proposal-desk-smoke.test.mjs scripts/alpha346-support-receipt.test.mjs scripts/alpha346-approved-service.test.mjs
+      - name: Assert unapproved synthetic offer never passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          node scripts/alpha346-manual-proposal-gate.mjs scripts/alpha346-synthetic-proposal.json > /tmp/alpha346-gate.json
+          status=$?
+          set -e
+          test "$status" -eq 3
+          node --input-type=module -e 'import fs from "node:fs";let d=JSON.parse(fs.readFileSync("/tmp/alpha346-gate.json"));if(d.paymentEnabled||d.delivery!=="NOT_SENT"||d.validation!=="BLOCKED_PENDING_BUSINESS_APPROVALS")process.exit(1)'

@@ -33,6 +33,29 @@ jobs:
         run: node scripts/build-vercel-portal.mjs
       - name: Verify public forms, notice and private-file exclusion
         run: node scripts/com261004-public-forms-smoke.mjs
+      - name: Package exact public-only build for offline owner QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .vercel-portal/index.html
+          test -f .vercel-portal/global-media.css
+          test -f .vercel-portal/join-advertiser.html
+          test -f .vercel-portal/join-creator.html
+          test ! -e .vercel-portal/.env
+          test ! -e .vercel-portal/creator-dashboard.html
+          test ! -e .vercel-portal/advertiser-dashboard.html
+          tar -czf "$RUNNER_TEMP/alpha-task19-public-portal.tgz" -C .vercel-portal .
+          sha256sum "$RUNNER_TEMP/alpha-task19-public-portal.tgz" | tee "$RUNNER_TEMP/alpha-task19-public-portal.sha256"
+          test -s "$RUNNER_TEMP/alpha-task19-public-portal.tgz"
+      - name: Retain public-only Task19 review bundle (not a deployment)
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpha-task19-public-portal-${{ github.run_number }}
+          path: |
+            ${{ runner.temp }}/alpha-task19-public-portal.tgz
+            ${{ runner.temp }}/alpha-task19-public-portal.sha256
+          if-no-files-found: error
+          retention-days: 3
 
   hosted-edge-synthetic:
     # One exact authorized integration branch only; not a standing external
