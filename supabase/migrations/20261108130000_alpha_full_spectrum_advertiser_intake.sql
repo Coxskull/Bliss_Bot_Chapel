@@ -39,7 +39,9 @@ alter table public.alpha_public_intake_requests
       and contact_consent_at is not null
       and budget_amount is not null and budget_amount > 0
       and budget_amount_minor is not null and budget_amount_minor > 0
+      and budget_currency is not null
       and budget_currency = any (array['DOP','PAB','COP','PHP','MYR','IDR']::text[])
+      and market_code is not null
       and market_code = any (array['SANTO_DOMINGO','PANAMA_CITY','MEDELLIN','MANILA','KUALA_LUMPUR','JAKARTA']::text[])
       and (
         (market_code='SANTO_DOMINGO' and budget_currency='DOP') or
@@ -49,6 +51,7 @@ alter table public.alpha_public_intake_requests
         (market_code='KUALA_LUMPUR' and budget_currency='MYR') or
         (market_code='JAKARTA' and budget_currency='IDR')
       )
+      and campaign_objective is not null
       and campaign_objective = any (array[
         'awareness','engagement','website_visits','leads','sales','community_reach','other'
       ]::text[])
