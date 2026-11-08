@@ -5,6 +5,23 @@ export const MARKET_CURRENCIES = Object.freeze({
   "MANILA":"PHP", "KUALA_LUMPUR":"MYR", "JAKARTA":"IDR"
 });
 const media = new Set(["podcast","digital_creator","radio","television","newspaper","magazine","other"]);
+const currencyExponent = Object.freeze({DOP:2,PAB:2,COP:2,PHP:2,MYR:2,IDR:0});
+
+export function parseBudgetToMinor(amount, currency) {
+  const code=String(currency||"").toUpperCase();
+  const exponent=currencyExponent[code];
+  if (exponent===undefined || typeof amount!=="string" ||
+      !/^(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$/.test(amount.trim()))
+    throw new Error("INVALID_BUDGET_OR_CURRENCY");
+  const parts=amount.trim().split(".");
+  if ((parts[1]||"").length>exponent) throw new Error("INVALID_CURRENCY_PRECISION");
+  const factor=10**exponent;
+  const whole=Number(parts[0]);
+  const fraction=exponent ? Number((parts[1]||"").padEnd(exponent,"0")) : 0;
+  const minor=whole*factor+fraction;
+  if (!Number.isSafeInteger(minor) || minor<=0) throw new Error("INVALID_BUDGET_OR_CURRENCY");
+  return minor;
+}
 const validText = (v,max) => typeof v === "string" && v.trim().length > 0 && v.trim().length <= max;
 const whole = v => Number.isSafeInteger(v) && v >= 0;
 const overlap = (a,b) => Array.isArray(a) && Array.isArray(b) &&
@@ -15,7 +32,7 @@ export function validateAdvertiserBrief(brief) {
   const formats = brief?.preferredMediaFormats;
   if (!brief || brief.kind !== "advertiser" ||
       !Number.isSafeInteger(brief.budgetMinor) || brief.budgetMinor <= 0 ||
-      !validText(brief.currency,3) || !validText(brief.marketCode,80) ||
+      !validText(brief.currency,3) || !validText(brief.marketCode,80) ||\n      (MARKET_CURRENCIES[brief.marketCode.trim().toUpperCase()] &&\n        MARKET_CURRENCIES[brief.marketCode.trim().toUpperCase()] !== brief.currency.toUpperCase()) ||
       !validText(brief.objective,80) || !Array.isArray(formats) || !formats.length ||
       formats.some(x => !media.has(x)) ||
       !Array.isArray(brief.languages) || !brief.languages.length ||
