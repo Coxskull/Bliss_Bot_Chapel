@@ -30,22 +30,22 @@ function askAlphaAnswer(question) {
     return "This guided conversation runs inside your current browser tab. It does not send your questions to a server, save a transcript, or contact anyone. Do not enter private business or personal details.";
   }
   if (has("price", "pricing", "cost", "quote", "budget", "fee", "payment")) {
-    return "Campaign pricing depends on an approved placement, audience, creative scope and an accepted quote. Ask Alpha cannot invent a price or collect payment. A human will review custom pricing when the commercial intake opens.";
+    return "Alpha’s matching should start with your total budget and currency, then your goal, target market, preferred media, language and timing. A sustainable option must cover creator or media-owner compensation, Alpha’s disclosed service fee, production, rights, payment costs and applicable tax. If a preferred placement is over budget, the next step is to compare a smaller scope or lower-cost verified alternative while keeping creator compensation voluntary. Today this guide has no live, verified inventory or connected budget-matching intake, so it cannot return a placement or quote. It will not invent a price or collect payment.";
   }
   if (has("human", "person", "representative", "contact", "call", "email", "support", "meeting")) {
     return "A human representative will be required for a custom proposal or binding agreement. This guide cannot book a call, submit your contact details, or promise a reply. Verified human-contact options will appear once the commercial intake is activated.";
   }
   if (has("creator", "podcaster", "streamer", "influencer", "channel", "earn", "monetiz")) {
-    return "Alpha aims to connect suitable podcasters, livestreamers and content creators with advertisers. A creator's audience, content, availability and eligibility need review before any proposed campaign. Earnings or placements are not guaranteed.";
+    return "Alpha welcomes emerging creators through established personalities and major media, including podcasts, livestreams, video, blogs, radio, television, newspapers and magazines. There is no follower-count minimum in this guide. Audience evidence, content suitability, rights and availability must be reviewed before a match; creator compensation is agreed voluntarily and is never assumed to be discounted. A placement or earning is not guaranteed.";
   }
   if (has("advertis", "sponsor", "brand", "campaign", "restaurant", "product", "business", "ad placement")) {
-    return "Alpha helps brands explore relevant creator and podcast advertising placements. The process is discovery, fit review, creative planning and a separately approved campaign proposal. This page does not place or launch ads.";
+    return "Alpha can serve microbusinesses, small advertisers, growing companies and major organizations. Matching should begin with the advertiser’s all-in budget, then compare relevant creator and traditional-media options across local markets. When a preferred option exceeds the budget, offer a smaller scope or a lower-cost verified alternative before closing the conversation. The process still requires supply verification, fit review, a written quote and human approval. This page does not place or launch ads.";
   }
   if (has("result", "guarantee", "performance", "reach", "sales", "conversion")) {
     return "Campaign outcomes depend on the creator, audience and execution. Alpha does not guarantee sales, reach, conversions or a return on investment. Reported results must be supported by real measurement evidence.";
   }
   if (has("where", "city", "country", "philippine", "manila", "market", "location")) {
-    return "Alpha researches opportunities across multiple markets. Availability, creator eligibility and campaign coverage are not confirmed by this guide. A specific market can be reviewed during a human-led proposal.";
+    return "Alpha’s launch markets include Santo Domingo, Panama City, Medellín, Manila, Kuala Lumpur and Jakarta. A proposal should use the local market, currency, audience evidence and the advertiser’s preferred language and communication style. This guide cannot confirm current availability or provide a translated human follow-up; those require the connected intake and local review.";
   }
   if (has("what", "how", "work", "alpha", "help", "hello", "hi", "start", "join")) {
     return "Ask Alpha is the information guide for Alpha Global Media's advertiser–creator marketplace. We help explain partnerships, possible ad formats and human-reviewed next steps. You can ask about creators, advertiser campaigns, pricing or privacy.";
