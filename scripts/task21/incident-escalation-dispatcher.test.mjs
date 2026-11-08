@@ -87,4 +87,18 @@ await assert.rejects(()=>dispatchSyntheticInternalAlert({
   alert:{...alert,delivery_state:'DELIVERED'},config:cfg,...forged
 }),/TASK21_ALERT_INVALID/);
 assert.equal(forged.calls.send,0);
+
+const high=adapters();
+const highAlert={...alert,category:'refund',severity:'HIGH',assigned_role:'BILLING_REVIEW'};
+const highResult=await dispatchSyntheticInternalAlert({alert:highAlert,config:cfg,...high});
+assert.equal(highResult.status,'PROVIDER_ACCEPTED_NOT_HUMAN_ACK');
+assert.equal(high.calls.send,1);
+
+const normal=adapters();
+await assert.rejects(()=>dispatchSyntheticInternalAlert({
+  alert:{...alert,category:'general',severity:'NORMAL',assigned_role:'GENERAL_SUPPORT'},
+  config:cfg,...normal
+}),/TASK21_ALERT_INVALID/);
+assert.equal(normal.calls.send,0);
+
 console.log('TASK21_STAGING_DISPATCHER_INJECTED_NO_EGRESS_TESTS_PASS');
