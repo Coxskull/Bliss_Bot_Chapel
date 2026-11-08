@@ -34,6 +34,13 @@ assert.throws(()=>parseBudgetToMinor("1000.25","IDR"),/CURRENCY_PRECISION/);
 assert.throws(()=>parseBudgetToMinor("1,000","PHP"),/INVALID_BUDGET/);
 const evidence={status:"VERIFIED",sourceRef:"SYNTHETIC_FIXTURE_SOURCE",
   sha256:"a".repeat(64),observedAt:"2026-11-07T12:00:00.000Z",expiresAt:"2026-12-08T12:00:00.000Z"};
+const brief={kind:"advertiser",intakeId:"SYNTHETIC-INTAKE-001",
+  contactName:"Synthetic Market Buyer",contactEmail:"buyer@example.invalid",
+  budgetMinor:90000,currency:"PHP",marketCode:"MANILA",objective:"awareness",
+  preferredMediaFormats:["podcast","digital_creator"],audienceRequirements:"Synthetic Manila audience",minimumTargetMarketShareBasisPoints:5000,
+  languages:["English","Filipino"],contactConsent:true};
+const policy={policyId:"SYNTHETIC-MARGIN-POLICY-01",
+  minimumContributionMinor:10000,minimumContributionBasisPoints:1500};
 const planningQuote=calculateSustainableQuote({
   kind:"PLANNING_ONLY",marketCode:"MANILA",currency:"PHP",budgetCurrency:"PHP",
   budgetMinor:90000,customerRequirements:"Synthetic advertiser requests a local awareness plan.",
@@ -73,13 +80,7 @@ assert.equal(calculateSustainableQuote({
     paymentProcessingMinor:1000,taxMinor:1000}
 },policy,new Date(now)).reason,"CUSTOMER_REQUIREMENTS_UNVERIFIED");
 
-const brief={kind:"advertiser",intakeId:"SYNTHETIC-INTAKE-001",
-  contactName:"Synthetic Market Buyer",contactEmail:"buyer@example.invalid",
-  budgetMinor:90000,currency:"PHP",marketCode:"MANILA",objective:"awareness",
-  preferredMediaFormats:["podcast","digital_creator"],audienceRequirements:"Synthetic Manila audience",minimumTargetMarketShareBasisPoints:5000,
-  languages:["English","Filipino"],contactConsent:true};
-const policy={policyId:"SYNTHETIC-MARGIN-POLICY-01",
-  minimumContributionMinor:10000,minimumContributionBasisPoints:1500};
+
 const offer=(o)=>({status:"AVAILABLE",verifiedInventory:true,marketCode:"MANILA",currency:"PHP",
   mediaFormat:"podcast",languages:["English"],verifiedAudience:12000,
   audienceEvidence:evidence,availabilityEvidence:evidence,geographyEvidence:evidence,
