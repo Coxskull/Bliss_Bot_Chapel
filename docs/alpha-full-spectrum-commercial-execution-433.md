@@ -6,8 +6,8 @@ This work continues draft PR #356 and preserves the budget-first matcher, slidin
 
 - The public advertiser form collects structured budget, market, currency, objective, media formats, optional audience requirements, languages and separate contact consent.
 - Server-side validation binds the six launch markets to DOP, PAB, COP, PHP, MYR and IDR, normalizes market labels, checks currency precision and rejects missing consent or unsupported field values.
-- The additive migration `20261108130000_alpha_full_spectrum_advertiser_intake.sql` adds nullable structured fields plus consent metadata. Existing records remain unchanged; the new fields become mandatory only for new-version advertiser submissions.
-- The intake function persists the structured fields and includes them in its request-key duplicate comparison. The GHL queue trigger now accepts only the new notice version and explicit contact consent.
+- The additive migration `20261108130100_alpha_budget_first_intake.sql` adds nullable structured fields plus consent metadata. Existing records remain unchanged; the new fields become mandatory only for new-version advertiser submissions.
+- The intake function persists the structured fields and includes them in its request-key duplicate comparison. The GHL queue trigger accepts only the new notice version with separate, versioned contact consent. Delivery remains held until business identity, decision authority, CRM suppression, and explicit follow-up approval are verified.
 - CRM delivery maps the seven structured advertiser fields only when all seven HighLevel field IDs are configured. Missing or duplicate IDs fail closed. CRM credentials and field IDs are not included in source.
 - The existing quote engine still requires current verified audience, availability, geography, price, tax, accepted compensation and margin evidence. Synthetic acceptance remains separate from live acceptance.
 
@@ -25,7 +25,7 @@ Read-only inspection of the active Bliss Bot Supabase project found:
 ## Remaining release blockers
 
 - The migration and Edge Function are staged on the draft PR but not applied or deployed. No production migration, form release or merge occurred.
-- No connected HighLevel tool is available to inspect the account, credentials or custom-field identifiers. The seven environment-variable mappings are implemented, but the identifiers and delivery settings remain unverified.
+- No connected HighLevel tool is available to inspect the account, credentials or custom-field identifiers. The seven environment-variable mappings are implemented, but the identifiers and delivery settings remain unverified. A manual follow-up gate holds new CRM delivery until identity, authority, suppression and approval evidence are recorded.
 - The existing advertiser-opportunity records are not linked to intake IDs or CRM contacts. No authorized isolated intake-to-CRM-to-opportunity record has been persisted.
 - No current inventory has verified availability, audience evidence, market fit, agreed compensation, price and tax terms. No real quotation has been produced.
 - No live provider call, external contact, supplier commitment, charge or additional spend occurred.
