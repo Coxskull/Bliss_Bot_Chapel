@@ -23,7 +23,7 @@ let askAlphaTurns = 0;
 function askAlphaAnswer(question) {
   const q = question.toLowerCase();
   const has = (...terms) => terms.some(term => q.includes(term));
-  const mentionsBudgetAmount = /(?:[$€£]\\s?\\d|\\b\\d+(?:[.,]\\d{1,2})?\\s?(?:usd|dollars?|php|cop|dop|myr|rm|idr|rupiah|pesos?|balboas?)\\b)/i.test(question);
+  const mentionsBudgetAmount = /(?:[$€£]\s?\d|\b\d+(?:[.,]\d{1,2})?\s?(?:usd|dollars?|php|cop|dop|myr|rm|idr|rupiah|pesos?|balboas?)\b)/i.test(question);
   if (question.includes("@") || /(?:\+?\d[ -]?){8,}/.test(question)) {
     return "Please do not enter email addresses or phone numbers here. This informational guide does not collect leads or send messages. A verified contact form will be needed for a private follow-up.";
   }
