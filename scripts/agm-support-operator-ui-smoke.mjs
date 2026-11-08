@@ -101,6 +101,7 @@ assert.match(handler,/allowSyntheticTrial=!globallyEnabled&&useStagingDbGrants/)
 assert.match(app,/syntheticTrialEnabled=detail\.synthetic_trial_enabled===true/);
 assert.match(app,/contact\.email==="task21-browser-fixture@example\.invalid"/);
 assert.match(app,/config\.mutationsEnabled===true\|\|syntheticTrialEnabled/);
+assert.match(app,/ownerIsMe&&ticket.status!=="CLOSED"/);
 assert.ok(!read("../scripts/task21/staging-only-browser-case-trial.sql")
   .includes("ALTER ROLE authenticated"),"Trial must not alter authenticated browser role grants");
 
