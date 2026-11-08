@@ -62,4 +62,15 @@ for (const [filename, routes] of [
 
 await copyFile(resolve(source, 'wedding-planner.js'), resolve(output, 'wedding-planner.js'));
 await copyFile(resolve(source, 'assets/bliss-chapel-hero.jpg'), resolve(output, 'assets/bliss-chapel-hero.jpg'));
+// Copy only the seven approved staging pictures. No source files or API secrets.
+const creativeRoot='assets/creative-academy/native-six';
+await mkdir(resolve(output,creativeRoot),{recursive:true});
+for(const name of [
+  'ALPHA_NATIVE_TOP_BILLBOARD.png','ALPHA_NATIVE_LEFT_UPPER.png',
+  'ALPHA_NATIVE_LEFT_LOWER.png','ALPHA_NATIVE_RIGHT_UPPER.png',
+  'ALPHA_NATIVE_RIGHT_LOWER.png','ALPHA_NATIVE_BOTTOM_BILLBOARD.png',
+  'podcast_center_ai_crop.png'
+]){
+  await copyFile(resolve(source,creativeRoot,name),resolve(output,creativeRoot,name));
+}
 console.log('Built Vercel workspace portal. Application origin is public configuration, not a credential.');
