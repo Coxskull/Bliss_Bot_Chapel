@@ -15,8 +15,8 @@ const request = {
   message: 'Explain the public advertiser interest process.'
 };
 let checks = 0;
-async function check(label, {method='POST', origin=allowedOrigin, body=request, contentType='application/json'}, status, code) {
-  const headers = {Origin:origin};
+async function check(label, {method='POST', origin=allowedOrigin, body=request, contentType='application/json', extraHeaders={}}, status, code) {
+  const headers = {Origin:origin,...extraHeaders};
   if (contentType) headers['Content-Type'] = contentType;
   const response = await fetch(url, {
     method,headers,body: method==='POST' ? JSON.stringify(body):undefined,
@@ -37,6 +37,17 @@ await check('missing-origin-denied',{origin:''},403,
  'This form is available from ALPHA\'s official website only.');
 await check('no-consent-denied',{body:{...request,ai_processing_consent:false}},403,'CONSENT_REQUIRED');
 await check('wrong-notice-denied',{body:{...request,notice_version:'legacy'}},403,'CONSENT_REQUIRED');
+// Secure no-consent test: attempt to supply a fabricated Cloudflare client IP.
+// Supabase logs can establish whether the managed gateway overwrote it; this
+// branch never performs a billed request even if AI is enabled in the future.
+await check('cf-header-forgery-cannot-enable-inference',{
+  body:{...request,ai_processing_consent:false},
+  extraHeaders:{
+    'cf-connecting-ip':'203.0.113.9',
+    'X-Forwarded-For':'198.51.100.7',
+    'User-Agent':'ALPHA-TASK20-CF-IP-PROBE-20261108-DO-NOT-REPLY'
+  }
+},403,'CONSENT_REQUIRED');
 await check('bad-audience-denied',{body:{...request,audience:'admin'}},422,'INVALID_AUDIENCE');
 await check('get-method-denied',{method:'GET'},405,'Method not allowed');
 // Never submit a fully valid inference request in recurring CI: once enabled,
