@@ -138,6 +138,7 @@ assert.ok(!supportPage.includes("ALPHA_SUPPORT_OPERATOR_ROSTER"));
 const stageOrigin="https://bliss-task21ci-alpha-auto-s-projects.vercel.app";
 const stageRpcOriginal=db.rpc;
 let stageGrantEnabled=true, badRole=false, originChecked=0;
+let trialAllowed=false,trialActions=0;
 envState={
   ALPHA_SUPPORT_OPERATOR_ROSTER:undefined,
   ALPHA_SUPPORT_OPERATOR_ORIGIN:undefined,
@@ -156,6 +157,17 @@ db.rpc=async(name,args)=>{
        args.p_origin===stageOrigin&&["aal1","aal2"].includes(args.p_aal)
        ?["GENERAL_SUPPORT"]:[]),error:null};
   }
+  if(name==="alpha_support_staging_trial_allowed"){
+    return {data:trialAllowed&&stageGrantEnabled&&
+       args.p_case_id===id&&args.p_actor_user_id===general&&
+       args.p_origin===stageOrigin,error:null};
+  }
+  if(name==="alpha_support_staging_trial_action"){
+    trialActions++;
+    return {data:trialAllowed&&stageGrantEnabled&&
+      args.p_case_id===id&&args.p_actor_user_id===general&&
+      args.p_origin===stageOrigin,error:null};
+  }
   return stageRpcOriginal(name,args);
 };
 const stagingRequest=(method="GET",urlPath="")=>request(method,urlPath,{
@@ -165,9 +177,34 @@ t=await call(stagingRequest());
 assert.equal(t.status,200,"Approved staging grant should show only GENERAL_SUPPORT");
 assert.deepEqual(t.data.visible_roles,["GENERAL_SUPPORT"]);
 assert.equal(t.data.operator_user_id,general);
+t=await call(stagingRequest("GET","?case_id="+id));
+assert.equal(t.status,200);
+assert.equal(t.data.synthetic_trial_enabled,false);
 t=await call(stagingRequest("POST"));
 assert.equal(t.status,423,"Staging owner must NOT receive mutation ability");
 assert.equal(originChecked>0,true);
+const trialPost=(body)=>request("POST","",{
+  headers:{Origin:stageOrigin},body
+});
+trialAllowed=true;
+t=await call(stagingRequest("GET","?case_id="+id));
+assert.equal(t.status,200);
+assert.equal(t.data.synthetic_trial_enabled,true,
+  "Case detail may only advertise server-approved trial");
+t=await call(trialPost({action:"CLAIM",case_id:id}));
+assert.equal(t.status,200);
+assert.equal(t.data.case_id,id);
+assert.equal(trialActions,1,"Only approved synthetic claim reaches trial action RPC");
+t=await call(trialPost({action:"CLAIM",case_id:requestId}));
+assert.equal(t.status,423);
+assert.equal(trialActions,2,"Wrong case is refused by DB trial RPC");
+trialAllowed=false;
+t=await call(stagingRequest("GET","?case_id="+id));
+assert.equal(t.status,200);
+assert.equal(t.data.synthetic_trial_enabled,false);
+t=await call(trialPost({action:"CLAIM",case_id:id}));
+assert.equal(t.status,423,"Revoked trial must reject POST without global activation");
+assert.equal(trialActions,3);
 t=await call(request("GET","",{headers:{Origin:"https://bliss-other-alpha-auto-s-projects.vercel.app"}}));
 assert.equal(t.status,403,"Lookalike hostname refused");
 t=await call(request());
