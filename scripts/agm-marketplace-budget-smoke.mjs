@@ -7,13 +7,13 @@ const evidence={status:"VERIFIED",sourceRef:"SYNTHETIC_FIXTURE_SOURCE",
 const brief={kind:"advertiser",intakeId:"SYNTHETIC-INTAKE-001",
   contactName:"Synthetic Market Buyer",contactEmail:"buyer@example.invalid",
   budgetMinor:90000,currency:"PHP",marketCode:"MANILA",objective:"awareness",
-  preferredMediaFormats:["podcast","digital_creator"],audienceRequirements:"Synthetic Manila audience",
+  preferredMediaFormats:["podcast","digital_creator"],audienceRequirements:"Synthetic Manila audience",minimumTargetMarketShareBasisPoints:5000,
   languages:["English","Filipino"],contactConsent:true};
 const policy={policyId:"SYNTHETIC-MARGIN-POLICY-01",
   minimumContributionMinor:10000,minimumContributionBasisPoints:1500};
 const offer=(o)=>({status:"AVAILABLE",verifiedInventory:true,marketCode:"MANILA",currency:"PHP",
   mediaFormat:"podcast",languages:["English"],verifiedAudience:12000,
-  audienceEvidence:evidence,availabilityEvidence:evidence,priceEvidence:evidence,
+  audienceEvidence:evidence,availabilityEvidence:evidence,geographyEvidence:evidence,\n  targetMarketShareBasisPoints:8000,priceEvidence:evidence,
   taxEvidence:evidence,creatorAgreement:{status:"ACCEPTED",agreementRef:"SYNTHETIC-CREATOR-AGREEMENT"},
   ...o});
 const offers=[
@@ -44,7 +44,7 @@ assert.equal(result.evaluation.overBudget[0].quote.costs.creatorCompensationMino
 assert.equal(result.evaluation.preferred.quote.costs.creatorCompensationMinor,15000);
 assert.equal(result.evaluation.preferred.quote.costs.alphaFeeMinor,15000);
 assert.ok(result.evaluation.preferred.quote.costs.contributionMinor>=policy.minimumContributionMinor);
-assert.equal(result.evaluation.rejectedCount,1);
+assert.equal(result.evaluation.rejectedCount,1);\nconst weakGeo=evaluateVerifiedInventory(brief,[offer({offerId:"SYNTHETIC-WEAK-GEO",targetMarketShareBasisPoints:2000})],policy,{now});\nassert.equal(weakGeo.result,"NO_SUSTAINABLE_MATCH");
 assert.throws(()=>evaluateVerifiedInventory({...brief,contactConsent:false},offers,policy,{now}),/INVALID_OR_UNCONSENTED/);
 const noPolicy=await evaluateVerifiedInventory(brief,[offer({offerId:"SYNTHETIC-NO-POLICY"})],null,{now});
 assert.equal(noPolicy.result,"NO_SUSTAINABLE_MATCH");
