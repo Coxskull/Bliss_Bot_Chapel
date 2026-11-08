@@ -19,10 +19,8 @@ export function containsSensitiveChatData(value) {
   const credential = /\b(?:password|passcode|one[- ]?time(?: code| password)?|otp|cvv|cvc|pin|secret(?: key)?|api[- ]?key)\s*[:=]\s*\S{2,}/i;
   return email.test(value) || phone.test(value) || credential.test(value);
 }
-const sha256 = async value => {
-  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return [...new Uint8Array(bytes)].map(x => x.toString(16).padStart(2,"0")).join("");
-};
+// Avoid unkeyed hashes of short, guessable customer questions/responses.
+// Purpose-separated HMACs cannot be checked offline without the server secret.
 async function hmac(salt, data) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(salt),
     {name:"HMAC",hash:"SHA-256"},false,["sign"]);
@@ -125,9 +123,10 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
   const ip = req.headers.get("cf-connecting-ip")?.trim();
   if (!ip || ip.length > 45 || !/^[a-fA-F0-9.:]+$/.test(ip))
     return out(origin, {error:"RATE_LIMIT_IDENTITY_UNAVAILABLE"},503);
-  const sessionHash = await hmac(salt, payload.session_id);
-  const ipHash = await hmac(salt, ip);
-  const inputHash = await sha256(JSON.stringify({message:payload.message,history:payload.history ?? [],audience:payload.audience}));
+  const sessionHash = await hmac(salt, "ask-alpha-session:v1\\n" + payload.session_id);
+  const ipHash = await hmac(salt, "ask-alpha-ip:v1\\n" + ip);
+  const inputHash = await hmac(salt, "ask-alpha-input:v1\\n" +
+    JSON.stringify({message:payload.message,history:payload.history ?? [],audience:payload.audience}));
   const params = {
     p_request_key:payload.request_key,p_session_hash:sessionHash,p_ip_hash:ipHash,
     p_input_hash:inputHash,p_audience:payload.audience,p_notice_version:NOTICE,
@@ -175,7 +174,7 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
     usage = data.usage;
     providerId = typeof data.id === "string" && data.id.length < 180 ? data.id : null;
     if (!providerId) throw Error("PROVIDER_RECEIPT_UNVERIFIED");
-    outputHash = await sha256(answer);
+    outputHash = await hmac(salt, "ask-alpha-output:v1\\n" + answer);
     settleState = "SETTLED";
   } catch {
     // Unknown provider usage or failed transport is never considered free.
