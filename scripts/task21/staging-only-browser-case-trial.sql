@@ -44,6 +44,7 @@ SET search_path=pg_catalog AS $task21_trial_allowed$
      AND t.allowed_origin=p_origin
      AND c.assigned_role='GENERAL_SUPPORT'
      AND c.category='general' AND c.severity='NORMAL'
+     AND c.status IN ('OPEN','TRIAGED','IN_REVIEW','RESOLVED')
      AND r.request_key='36a681b0-9c4d-42a5-bfca-21b000000021'::uuid
      AND r.email='task21-browser-fixture@example.invalid'
      AND r.marketing_opt_in=false
