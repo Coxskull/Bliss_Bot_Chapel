@@ -12,6 +12,7 @@ on:
       - 'frontend/public/contact.html'
       - 'scripts/build-vercel-portal.mjs'
       - 'scripts/alpha346-consent-reconciled.test.mjs'
+      - 'scripts/task7-release-security-gates.test.mjs'
       - 'docs/commercial/ALPHA-346-CONSENT-COMBINED-RELEASE-20261109.md'
       - '.github/workflows/alpha346-consent-integration-ci.yml'
   workflow_dispatch:
@@ -41,3 +42,5 @@ jobs:
           node --check scripts/alpha346-consent-reconciled.test.mjs
           node scripts/alpha346-consent-reconciled.test.mjs
           node --test scripts/alpha346-generated-public-portal.test.mjs scripts/alpha346-approved-service.test.mjs
+      - name: Task7 fail-closed public-intake and planning quote denial matrix (offline)
+        run: node --test scripts/task7-release-security-gates.test.mjs
