@@ -58,6 +58,7 @@
       return;
     }
     if (kind === "advertiser") {
+      draft.market_code = value("market_code");
       draft.budget_amount = value("budget_amount");
       draft.budget_currency = value("budget_currency");
       draft.campaign_objective = value("campaign_objective");
