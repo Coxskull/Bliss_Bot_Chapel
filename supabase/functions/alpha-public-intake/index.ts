@@ -101,7 +101,7 @@ Deno.serve(async (req: Request) => {
       (payload.notice_version === notice && kind !== "privacy" && !contactConsent) ||
       (kind === "advertiser" && payload.notice_version === notice && !structured) ||
       (kind === "creator" && (!website || !validUrl(website) || !market || !category || organization !== "")) ||
-      (kind === "advertiser" && (!organization || !market || (website !== "" && !validUrl(website)))) ||
+      (kind === "advertiser" && (!organization || (!structured && !market) || (website !== "" && !validUrl(website)))) ||
       (kind === "privacy" && !description) ||
       (website && !validUrl(website))) {
     return out(origin, { error: "Please complete the required fields, review the privacy notice, and try again." }, 422);
@@ -144,7 +144,6 @@ Deno.serve(async (req: Request) => {
             existing.category !== category || existing.description !== description ||
             existing.marketing_opt_in !== marketing ||
             existing.contact_consent !== contactConsent ||
-            existing.budget_amount !== (structured?.budget_amount ?? null) ||
             Number(existing.budget_amount_minor ?? 0) !== (structured?.budget_amount_minor ?? 0) ||
             existing.budget_currency !== (structured?.budget_currency ?? null) ||
             existing.market_code !== (structured?.market_code ?? null) ||
