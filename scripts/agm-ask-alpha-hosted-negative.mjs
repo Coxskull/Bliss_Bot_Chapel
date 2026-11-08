@@ -61,4 +61,8 @@ await check('get-method-denied',{method:'GET'},405,'Method not allowed');
 // it could invoke the paid provider. Invalid syntax is rejected before gates.
 await check('oversize-message-denied',{body:{...request,message:'X'.repeat(401)}},422,'INVALID_MESSAGE');
 await check('invalid-session-denied',{body:{...request,request_key:'invalid-id'}},422,'INVALID_SESSION');
+await check('email-data-denied',{body:{...request,message:'Please reach me at customer@example.com'}},422,'PERSONAL_DATA_NOT_ACCEPTED');
+await check('phone-data-denied',{body:{...request,message:'My phone is 09171234567'}},422,'PERSONAL_DATA_NOT_ACCEPTED');
+await check('credential-data-denied',{body:{...request,message:'password:123456SECRET'}},422,'PERSONAL_DATA_NOT_ACCEPTED');
+await check('history-contact-denied',{body:{...request,history:[{role:'user',content:'My email demo@example.com'}]}},422,'PERSONAL_DATA_NOT_ACCEPTED');
 console.log(`TASK20_HOSTED_PUBLIC_FAILCLOSED_PASS checks=${checks} no_secrets no_paid_calls`);
