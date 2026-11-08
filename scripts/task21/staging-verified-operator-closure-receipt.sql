@@ -36,7 +36,7 @@ END $task21_safe_fixture_guard$;
 SET ROLE service_role;
 
 DO $task21_real_operator_synthetic_closure$
-DECLARE actor uuid; request_id uuid; ticket_id uuid; n int; did_commit boolean;
+DECLARE actor uuid; v_request_id uuid; ticket_id uuid; n int; did_commit boolean;
 BEGIN
  SELECT user_id INTO actor FROM alpha_support_private.staging_operator_grants
  WHERE role='GENERAL_SUPPORT' AND enabled
@@ -53,22 +53,22 @@ BEGIN
   'task21-closure-staging@example.invalid',
   'FICTIONAL staging-only operator case completion. No external service, refund, campaign or outreach.',
   'general','AGM-SUPPORT-2026-11-08',false,true,true)
- RETURNING id INTO request_id;
+ RETURNING id INTO v_request_id;
 
  -- Block the ONLY CRM outbox row BEFORE COMMIT; no external provider
  -- can observe a pending committed fictional contact.
  UPDATE public.alpha_ghl_delivery
  SET state='BLOCKED',last_error_class='invalid_record'
- WHERE request_id=request_id AND state='PENDING';
+ WHERE request_id=v_request_id AND state='PENDING';
  GET DIAGNOSTICS n=ROW_COUNT;
  IF n<>1 THEN RAISE EXCEPTION 'Synthetic CRM outbox was not atomically blocked'; END IF;
 
  SELECT case_id INTO ticket_id FROM public.alpha_support_cases
- WHERE request_id=request_id AND assigned_role='GENERAL_SUPPORT'
+ WHERE request_id=v_request_id AND assigned_role='GENERAL_SUPPORT'
  AND category='general' AND severity='NORMAL' AND status='OPEN';
  IF ticket_id IS NULL
  OR (SELECT count(*) FROM public.alpha_public_intake_receipts
-      WHERE request_id=request_id)<>1
+      WHERE request_id=v_request_id)<>1
  OR (SELECT count(*) FROM public.alpha_support_case_events
       WHERE case_id=ticket_id)<>1
  THEN RAISE EXCEPTION 'Atomic fictional intake, support receipt or history failed'; END IF;
@@ -100,7 +100,7 @@ BEGIN
  OR EXISTS(SELECT 1 FROM public.alpha_support_alert_intents
       WHERE case_id=ticket_id)
  OR NOT EXISTS(SELECT 1 FROM public.alpha_ghl_delivery
-      WHERE request_id=request_id AND state='BLOCKED')
+      WHERE request_id=v_request_id AND state='BLOCKED')
  OR (SELECT count(*) FROM public.alpha_support_cases
       WHERE case_id IN (
         '931d5569-9958-4603-b3c4-fdad25c1acd6'::uuid,
