@@ -17,6 +17,12 @@ IMAGE = "sha256:" + "a" * 64
 
 
 class VulnerabilityEvidenceTests(unittest.TestCase):
+    def test_digest_pinned_official_scanner_image_is_reported(self):
+        self.assertEqual(gate["SCANNER_OCI_IMAGE"], "anchore/grype")
+        self.assertEqual(gate["SCANNER_OCI_MANIFEST_SHA256"],
+                         "sha256:7bb1480f73d9a23b8e6137669c9b780389492778dc2da5c818d0add7e828ed45")
+        self.assertEqual(gate["SCANNER_VERSION"], "0.120.1")
+
     def test_database_requires_hash_valid_recent_timestamp_and_expected_schema(self):
         valid = {"valid": True, "built": "2026-10-14T10:00:00Z", "schemaVersion": "6.0.0"}
         gate["validate_database"](valid, NOW)

@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Buffers.Binary;
 
 namespace Bliss.Domain.Demonstrations;
 
@@ -17,6 +18,18 @@ public static class SourceMediaRules
     public const int NearDuplicateDistance = 8;
 
     public static bool DurationIsUsable(double seconds) => seconds is >= 8 and <= 20;
+
+    // Only local ISO-BMFF MP4 clips may reach native media decoders.
+    // Playlists, remote stream URLs and disguised files must fail closed.
+    public static bool IsMp4Upload(ReadOnlySpan<byte> bytes, string? originalFileName)
+    {
+        if (!string.Equals(Path.GetExtension(originalFileName), ".mp4",
+                StringComparison.OrdinalIgnoreCase) || bytes.Length < 12)
+            return false;
+        var boxLength = BinaryPrimitives.ReadUInt32BigEndian(bytes[..4]);
+        return boxLength is >= 12 && boxLength <= bytes.Length
+            && bytes.Slice(4, 4).SequenceEqual("ftyp"u8);
+    }
 
     public static string Classify(bool exactDuplicate, int frameDistance, bool usableDuration)
     {

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mapGhlContact, ghlNotice } from "../supabase/functions/alpha-public-intake/ghl-payload.mjs";
 import { deliverToGhl } from "../supabase/functions/alpha-public-intake/ghl-sync.mjs";
+import { supportNotice } from "../supabase/functions/alpha-public-intake/support-contract.mjs";
 
 const loc = "aBcD1234EFgh5678IJkl";
 const record = {
@@ -27,6 +28,16 @@ for (const forbidden of [
   "tags","customFields","description","market","category","marketing_opt_in",
   "processing_acknowledged","phone","dnd","inboundDndSettings"
 ]) assert.ok(!(forbidden in creator), forbidden + " excluded");
+const support = mapGhlContact({
+  ...record,kind:"support",category:"general",
+  notice_version:supportNotice,organization:"",website:"",description:"Never send content"
+},loc);
+assert.equal(support.source,"ALPHA GLOBAL MEDIA · General Support Inquiry");
+for (const forbidden of ["category","description","organization","marketing_opt_in","tags"]) 
+  assert.ok(!(forbidden in support));
+for (const sensitive of ["billing","refund","failed_campaign","privacy","security_incident"])
+  assert.throws(()=>mapGhlContact({...record,kind:"support",category:sensitive,
+    notice_version:supportNotice},loc));
 for(const invalid of [
   {...record,kind:"privacy"}, {...record,notice_version:"AGM-INTEREST-2026-11-05"},
   {...record,processing_acknowledged:false},
@@ -52,7 +63,10 @@ const fakeDb={
   },
   from: name=>{
     assert.equal(name,"alpha_public_intake_requests");
-    return {select:()=>({eq:()=>({single:async()=>({data:record,error:null})})})};
+    return {select:()=>({eq:()=>({
+      single:async()=>({data:record,error:null}),
+      maybeSingle:async()=>({data:{kind:record.kind},error:null})
+    })})};
   }
 };
 try {

@@ -5,7 +5,8 @@
   const submit = document.querySelector("#submit-button");
   if (!form || !status || !submit) return;
 
-  const noticeVersion = "AGM-INTEREST-2026-11-08-GHL-01";
+  const noticeVersion = form?.dataset.kind === "support"
+    ? "AGM-SUPPORT-2026-11-08" : "AGM-INTEREST-2026-11-08-GHL-01";
   let pendingKey = null;
   let pendingDraft = null;
   let saved = false;
@@ -78,11 +79,17 @@
       const result = await response.json();
       if (response.status === 201 &&
           result?.status === "RECEIVED_NOT_YET_VERIFIED" &&
-          /^[0-9a-f-]{36}$/i.test(result.receipt_id ?? "")) {
+          /^[0-9a-f-]{36}$/i.test(result.receipt_id ?? "") &&
+          (kind !== "support" || (/^[0-9a-f-]{36}$/i.test(result.case_id ?? "") &&
+                                  result.case_status === "OPEN"))) {
         saved = true;
         form.querySelectorAll("input,textarea,select,button").forEach(el => { el.disabled = true; });
-        show("Your interest request has been saved. Receipt: " + result.receipt_id +
-          ". Status: NOT YET VERIFIED. Please keep this receipt for your records.", "success");
+        show(kind === "support" && /^[0-9a-f-]{36}$/i.test(result.case_id ?? "")
+          ? "Your support case was recorded. Case: " + result.case_id + ". Receipt: " +
+            result.receipt_id + ". Status: " + result.case_status +
+            ". A human response is not yet confirmed. Keep both references."
+          : "Your interest request has been saved. Receipt: " + result.receipt_id +
+            ". Status: NOT YET VERIFIED. Please keep this receipt for your records.", "success");
       } else {
         show(result?.error || "Your form was not confirmed. Please retry.", "error");
       }
@@ -91,7 +98,8 @@
     } finally {
       if (!saved) {
         submit.disabled = false;
-        submit.textContent = kind === "privacy" ? "Submit privacy request →" : "Submit interest →";
+        submit.textContent = kind === "privacy" ? "Submit privacy request →"
+          : kind === "support" ? "Submit support case →" : "Submit interest →";
       }
     }
   });

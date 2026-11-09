@@ -41,7 +41,13 @@ jobs:
           assert.ok(!retry.includes('Access-Control-Allow-Origin'));
           assert.ok(retry.includes('.limit(limit)'));
           assert.ok(retry.includes('deliverToGhl'));
-          assert.ok(browser.includes('AGM-INTEREST-2026-11-05-GHL'));
+          const crmMapping = fs.readFileSync('supabase/functions/alpha-public-intake/ghl-payload.mjs','utf8');
+          const match = crmMapping.match(/export const ghlNotice = "([^"]+)"/);
+          assert.ok(match, 'CRM mapping must declare the accepted interest notice');
+          const interestNotice = match[1];
+          assert.ok(browser.includes(interestNotice),'Interest browser notice must match CRM mapping');
+          assert.ok(api.includes('const notice = "'+interestNotice+'"'),'Edge interest notice must match CRM mapping');
+          assert.ok(privacy.includes(interestNotice),'Privacy interest notice must match CRM mapping');
           assert.ok(privacy.includes('GoHighLevel') && privacy.includes('not automatically deleted'));
           assert.ok(creator.includes('GoHighLevel CRM') && advertiser.includes('GoHighLevel CRM'));
           assert.ok(api.includes('supportedNotices') && api.includes('deliverToGhl'));

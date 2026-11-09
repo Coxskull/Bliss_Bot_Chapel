@@ -1,0 +1,16 @@
+# Existing public intake intentionally accepts browser-submitted requests without
+# a Supabase Auth JWT. It validates official Origin, consent and request body,
+# and writes only using a server-side key.
+[functions.alpha-public-intake]
+verify_jwt = false
+
+# Private retry is service-to-service with JWT platform guard and exact
+# service-role Authorization check inside the handler.
+[functions.alpha-ghl-retry]
+verify_jwt = true
+
+# New internal operator queue requires an authenticated Supabase user JWT,
+# server-verified identity + claims and exact server-side roster membership.
+# No public access or privileged client-side API keys are permitted.
+[functions.alpha-support-operator]
+verify_jwt = true

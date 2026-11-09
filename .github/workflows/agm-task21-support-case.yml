@@ -1,0 +1,141 @@
+name: ALPHA Task 21 support-case isolated acceptance
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/alpha-public-intake/**'
+      - 'supabase/functions/alpha-ghl-retry/**'
+      - 'supabase/functions/alpha-support-operator/**'
+      - 'frontend/private/support-operator/**'
+      - 'supabase/migrations/20261108_alpha_support_case_workflow.sql'
+      - 'scripts/agm-support-unit-smoke.mjs'
+      - 'scripts/agm-support-operator-unit.mjs'
+      - 'scripts/agm-support-operator-ui-smoke.mjs'
+      - 'scripts/agm-ghl-unit-smoke.mjs'
+      - 'scripts/task21/**'
+      - 'frontend/public/support.html'
+      - 'frontend/public/alpha-intake.js'
+      - 'frontend/public/contact.html'
+      - '.github/workflows/agm-task21-support-case.yml'
+permissions:
+  contents: read
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/agm-support-unit-smoke.mjs
+      - run: node scripts/agm-support-operator-unit.mjs
+      - run: node scripts/agm-support-operator-ui-smoke.mjs
+      - run: node scripts/agm-ghl-unit-smoke.mjs
+      - run: node scripts/task21/incident-escalation-contract.test.mjs
+      - run: node scripts/task21/incident-escalation-dispatcher.test.mjs
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      pg:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: task21-offline-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGDATABASE: postgres
+      PGPASSWORD: task21-offline-only
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Apply fixture then actual migration and post-conditions
+        run: |
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-intake-fixture.sql
+          psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261108_alpha_support_case_workflow.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/staging-only-alert-intents.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-postgres-assertions.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/staging-only-operator-grants.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-alert-intent-assertions.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-operator-grant-assertions.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/staging-only-browser-case-trial.sql
+          psql -v ON_ERROR_STOP=1 -f scripts/task21/isolated-browser-case-trial-assertions.sql
+
+  synthetic-browser:
+    name: Synthetic offline staff operator browser acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Use existing headless browser and pinned Playwright only
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v google-chrome >/dev/null; then
+            echo "CHROMIUM_PATH=$(command -v google-chrome)" >> "$GITHUB_ENV"
+          elif command -v chromium >/dev/null; then
+            echo "CHROMIUM_PATH=$(command -v chromium)" >> "$GITHUB_ENV"
+          else
+            echo 'No preinstalled Chrome/Chromium; do not download paid or external browsers'
+            exit 1
+          fi
+          npm install --prefix "$RUNNER_TEMP/task21-playwright" --no-package-lock --no-audit --no-fund --save-exact playwright@1.56.1 @supabase/supabase-js@2.95.0 esbuild@0.25.12
+          echo "NODE_PATH=$RUNNER_TEMP/task21-playwright/node_modules" >> "$GITHUB_ENV"
+      - name: Bundle pinned Supabase SDK LOCALLY for private operator assets
+        run: node scripts/task21/build-private-operator.cjs
+      - name: Synthetic staff browser journey (ALL external requests mocked)
+        run: |
+          mkdir -p BrowserEvidence
+          node scripts/task21/operator-browser-journey.cjs
+      - name: Retain only fictional browser screenshot and trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task21-synthetic-operator-browser
+          path: BrowserEvidence/task21-operator-synthetic-browser.png
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Retain unsigned private bundle (NO operator config or credentials)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task21-private-operator-unsigned-bundle
+          path: .task21-private-build/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+      - name: Build private staging preview offline with committed dependency lock
+        env:
+          VERCEL_ENV: preview
+          VERCEL_GIT_COMMIT_REF: feat/agm-task21-support-cases-20261108
+          ALPHA_TASK21_STAGE_PREVIEW: enabled
+          VERCEL_URL: task21-ci-preview.vercel.app
+          ALPHA_TASK21_STAGING_PUBLISHABLE_KEY: sb_publishable_FICTIONAL_UNIT_TEST_ONLY_1234
+        run: |
+          set -euo pipefail
+          # Only CI fixture config; this job has no Vercel credentials or
+          # Supabase secrets, does not deploy, and contacts no customer APIs.
+          rm -rf .task21-private-build
+          node scripts/task21/build-protected-staging-preview.cjs
+          node scripts/task21/check-protected-preview.cjs
+          # Preview package must reject production even when an env flag leaks.
+          if VERCEL_ENV=production node scripts/task21/build-protected-staging-preview.cjs; then
+            echo "SECURITY FAILURE: production mode accidentally accepted"
+            exit 1
+          fi

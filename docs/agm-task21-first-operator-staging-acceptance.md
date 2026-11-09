@@ -1,0 +1,115 @@
+# ALPHA Global Media — Task #21 first human operator onboarding (STAGING ONLY)
+
+**Date:** 2026-11-08  
+**Nominated first human operator:** ALPHA's requesting operator (self-nominated in chat; **identity not yet verified against Supabase Auth**).  
+**Status:** PERSISTENT STAGING SUPPORT DATABASE ACCEPTED + JWT-GUARDED API ACTIVE v1. One fictional case and immutable receipt exist in staging. Private staff preview deployment is blocked by Vercel API quota; no approved operator roster, human login, or notification ACK exists yet. See [persistent staging acceptance](agm-task21-persistent-staging-20261108.md).  
+**No-spend directive:** $0 incremental, existing resources only.  
+**Change-control:** Global STOP engaged; production mutations, customer outreach, GHL sends, refunds, campaign changes and unapproved staging infrastructure are prohibited.
+
+## 1. Hard gate: select a genuinely isolated Auth + database target
+
+The existing non-default Supabase development branch `alpha-first-five-staging` (`wdlmcriajgsretgyusmo`, parent `yyesqcyjhqjryaskrqip`) now has a **persistently deployed, verified Task21 intake + GHL outbox + support case SQL stack**, migrated as `task21_staging_support_stack_20261108`, version `20261107222825`. All five staging public tables have RLS; direct anonymous/authenticated reads are denied. Existing factory and Auth data are unchanged. One *fictional* GENERAL_SUPPORT case (`931d5569-9958-4603-b3c4-fdad25c1acd6`) has a receipt and creation event; its only CRM row is `BLOCKED`. See [full evidence and safeguarded rollback](agm-task21-persistent-staging-20261108.md).
+
+The staging database is accepted for fictional case data only. The existing user accounts and factory dataset mean this is a shared development branch, **not** authorization to process live customers or to impersonate existing Auth users. Production Bliss Bot project `bkutbglzivfdnoerigyb` was not modified.
+
+Before any hosted sign-in test, obtain separate written evidence that the existing resource is isolated, has synthetic-only data, has a tested rollback point, and is eligible for Auth enrollment. The revised private dashboard `safeOperatorConfig` pins only the existing staging branch URL and requires `environment: "staging"`. It rejects the Bliss Bot production URL. There is still no approved private HTTPS staff host or server roster, so it is not a usable login portal yet.
+
+The JWT-protected `alpha-support-operator` staging API is already deployed v1 and its case schema is installed. **Do not** deploy a public-facing form, change the server roster or mutation gate, open production support traffic, or create paid resources without the remaining identity/host/staffing gates. The Vercel API rejected the protected preview with HTTP 402 due to the existing team's daily 100-deployment limit; no new preview URL exists yet.
+
+## 2. Provisional operator duties
+
+The requesting operator is the proposed primary **general-inquiry** responder during a bounded fictional test. That nomination is not an authentication record or legal assignment of live support coverage. Sensitive queues (billing/refund/failed campaign/privacy/security) remain excluded unless a real approved Auth user UUID is added to the server-side staging roster for the matching role, and TOTP AAL2 is verified. One person can test multiple queues in staging but is not evidence of 24/7 launch staffing.
+
+The operator must approve a monitored *existing* support mailbox/channel and nominate an alternate escalation owner for periods when unavailable. A case dashboard or assigned UUID alone is **not** an actual email/SMS/page delivery or a human response-time promise.
+
+## 3. Account and authenticator onboarding — only after isolated target approval
+
+1. From the approved isolated Supabase Auth tenant, locate or provision **your own** account under an approved operator email. Never provide password, MFA setup secret, six-digit TOTP, access token, service-role key, or recovery codes to a chatbot, repo, screenshot, or support case. Only a trusted Auth administrator may verify the actual Auth user ID; do not guess one from a name or email.
+2. Confirm the private HTTPS operator origin, security response headers, `no-store` and `noindex`, firewall/private access where applicable, and an operator config with **only a public publishable key**. The private bundle is excluded from the public Vercel build. `ALPHA_SUPPORT_MUTATIONS_ENABLED` must remain **false**.
+3. Sign in on that approved private page via email/password. If no verified TOTP factor exists, choose **Set up authenticator**, manually enter the temporary secret in an authenticator app, and verify the current code. If you already enrolled TOTP, use the existing MFA verification screen. The setup secret exists only in DOM text/memory for the active onboarding session, is cleared after successful verification or signout, and is never included in the unsigned CI artifact. This step does not grant operator permissions by itself.
+4. A trusted administrator must place the **actual verified Auth UUID** in the **server-side only** `ALPHA_SUPPORT_OPERATOR_ROSTER` JSON for the approved isolated test role(s); do not put this roster in browser config or repository source. An unrostered login must be denied. Initial proposed least-privilege role is `GENERAL_SUPPORT`; escalate roles separately only for the test and only after verified `aal2`.
+5. Capture an evidence note with only the date, test run ID, which queue(s) were authorized, whether sign-in, MFA, denial and signout passed, and redacted case references. Never capture TOTP secrets, login credentials or customer records.
+
+## 4. Current isolated acceptance already performed
+
+- Source, JWT/role-scoped operator contracts, default deny, browser storage/DOM XSS restrictions, the service-only PostgreSQL RPC and denial of second operator takeover.
+- Eight fictional support categories persisted with receipt/event/outbox checks in disposable PostgreSQL 17; sensitive support excludes general CRM delivery.
+- Synthetic Chromium runs with all outbound calls intercepted: password sign-in, MFA challenge, role gating, immutable case history, a single human claim, blocked overwrite, closed-case readback and logout. New enrollment flow must additionally be verified on **the exact PR head**. A browser mock does not enroll a real staff account. The real staging SQL transactional test also passed and rolled back; neither test is evidence of a persistent private support host.
+
+These tests **do not prove** human availability, mail delivery, real Auth identity, privileged queue access or live GHL acceptance. The *hosted staging migration and fictional case creation* are now independently verified.
+
+## 5. Hosted synthetic acceptance sequence (NOT AUTHORIZED UNTIL GATES ABOVE PASS)
+
+1. Verify written isolation/rollback/ownership and verify private origin. Confirm operator account and server roster, `aal2` for sensitive roles, no public table/data exposure.
+2. Apply additive SQL to the isolated database only; inspect migration readback and security advisors; keep CRM sends and real delivery disabled.
+3. POST one **fictional** general inquiry; verify unique request receipt, new support case, CREATED event and general-queue-only readback.
+4. With mutations still OFF, verify all POST claims/updates return LOCKED. Deny unauthenticated, wrong-role, unrostered, missing AAL2, forged UUID, and invalid Origin requests.
+5. Only in that isolated synthetic environment, explicitly approve a bounded flip of `ALPHA_SUPPORT_MUTATIONS_ENABLED=true`; claim the case using verified staff login, require exactly one ASSIGNED event and repeat-idempotent readback. Competing claimant must fail.
+6. Record TRIAGED → IN_REVIEW → RESOLVED → CLOSED with a fictional non-sensitive resolution. Verify actor IDs, event ordering, exact case history and retention/rollback. Do **not** send a real refund, email or campaign modification.
+7. Trigger one fictional security event, verify its CRITICAL queue is accessible only at AAL2 and that a separately approved *test* alert channel reaches a live human who acknowledges the message. Record time-stamped human ACK without secret content.
+8. Switch mutations flag OFF, revoke isolated roles/fixtures as approved, validate rollback, and record evidence that no production changes or external provider sends occurred.
+
+**Required final outcome:** source-only acceptance PASS is distinct from hosted staff PASS. Task #21 remains **IN PROGRESS** until the actual isolated target, staffing/alert acknowledgements, refund/dispute/privacy policy sign-offs, sandbox GHL result, and launch owner final decision are recorded.
+
+## 6. Evidence ledger format (no PII)
+
+| Gate | Evidence | Current result |
+| --- | --- | --- |
+| First operator named | Screenshot + exact Auth UUID readback matched to connected account | PASS — account identity only |
+| Existing staging SQL | Real PG17 rollback test and restrictive role validation | PASS |
+| Persistent Task21 support database | Five RLS intake/case tables + staging alert/grant tables, 55 migrations, fictional records | PASS — synthetic records only |
+| Staff identity and recovery | Verified staging Auth UUID, matching connected operator identity, one enrolled verified TOTP; backup unverified | PARTIAL — account verified, backup missing |
+| Staging operator API | Deployed v2 JWT-required, staging-only private DB grant fallback; exact source readback | PASS — real protected browser queue/details confirmed |
+| First Auth account / TOTP | Screenshot identity-only screen, exact UUID verified, TOTP factor enrolled | PASS — Auth identity; current AAL2 unverified |
+| Server-only role roster / AAL2 | One private DB grant GENERAL_SUPPORT, single protected origin, no sensitive role; AAL2 not tested | PASS — non-sensitive role only |
+| Offline source, DB, browser | Focused GitHub Actions and prior full CI | PASS on tested revisions; latest exact-head CI must still be checked |
+| PII-free incident alert intent | Staging migration #54, CRITICAL case, UNROUTED receipt, zero CRM row | PASS — internal DB receipt only |
+| Internal Gmail self-mailbox delivery | Task21 synthetic test message in owner's own SENT + INBOX; 07:24 PH | PASS — manual email test only |
+| Human internal test acknowledgement | Separate Gmail reply 2026-11-08 07:37:20 Asia/Manila, first line `TASK21 STAGING ACK RECEIVED` | PASS — MANUAL TEST ONLY; no automated alert or staffed coverage |
+| Hosted fictional intake and atomic receipt | 1 OPEN general case, one receipt and CREATED event; outbox BLOCKED | PASS — database path only |
+| Hosted restricted SQL claim and closure | Real verified staging Auth operator, five events, transaction rolled back | PASS — REAL ACTOR / DATABASE ONLY |
+| Hosted staff operator queue listing | Real protected browser screenshot: GENERAL_SUPPORT only, one fictional OPEN NORMAL case, matches DB | PASS — authenticated queue read only |
+| Hosted staff case-detail and immutable-history view | Real human preview screenshot selected authorized fictional OPEN case; detail/contact/history loaded | PASS — read-only case detail |
+| Hosted CLOSED-case lookup and full history | Real human used exact case ID lookup to retrieve CLOSED case and see 5 events; DB confirmed | PASS — protected historical case read only |
+| Durable verified staff synthetic claim/closure (SQL) | New fictional CLOSED case owned by verified GENERAL_SUPPORT operator, exactly five events, CRM BLOCKED | PASS — DB transaction; real browser POST not tested |
+| Hosted browser staff claim and resolution | The operator UI still has mutation gate OFF; no browser POST tested | PENDING — requires separate bounded synthetic acceptance |
+| Private dashboard HTTPS preview | Vercel SSO-protected deployment READY and user screenshot of identity-only screen | PASS — protected host/identity screen |
+| Production | Explicit owner launch signoff | DENIED; Global STOP engaged |
+
+**Do not mark Task #21 complete on the strength of this checklist or CI alone.**
+
+## November 8 incident routing addendum — source of truth
+- The existing staging-only [alert-intent migration](../scripts/task21/staging-only-alert-intents.sql) is installed (migration #54), and a fictional CRITICAL security case has one `UNROUTED` receipt; not a real incident or notification. [Detailed DB/Gmail distinction](agm-task21-staging-alert-delivery-acceptance-20261108.md).
+- Exactly one manual self-addressed internal Gmail test message reached the same Gmail account's Inbox/Sent labels. The **database did not send that email**; the application alert state remains `UNROUTED`. Do not assert staff attendance or human acknowledgement based on Inbox delivery.
+- The nominated operator **already replied** with `TASK21 STAGING ACK RECEIVED`; Gmail independently verified the genuine separate reply at 07:37:20 Asia/Manila. This manual human-ACK gate is PASS. Do not conflate that with a staffed 24/7 incident channel or the complete Task21 launch gate.
+
+## Verified manual human acknowledgement — 2026-11-08
+- The first operator's manually sent synthetic incident email in the connected Gmail inbox **has a real distinct reply** at **07:37:20 Asia/Manila**, containing exactly `TASK21 STAGING ACK RECEIVED`. This is independently verified, not a simulated reply. [Receipt ledger](agm-task21-staging-alert-delivery-acceptance-20261108.md).
+- **Complete only the manual test human ACK gate.** The database alert remains `UNROUTED`: there is no approved automated alert dispatcher, independently monitored primary/backup staff, or proof of 24/7 coverage. Do not mark Task21 complete or enable the server roster/mutations from this evidence.
+
+## First verified staff GENERAL_SUPPORT grant — 2026-11-08
+- The operator opened the real [protected preview](https://bliss-o5dlori6e-alpha-auto-s-projects.vercel.app/staff/task21/) and provided a screenshot showing an authenticated identity-only screen and a verified staging Auth UUID. Independent Supabase admin query matched the exact UUID to the connected internal operator account; the account is email-confirmed, unbanned and has one verified TOTP factor. The screenshot occurred before server role configuration.
+- [Staging-only DB authorization report](agm-task21-first-staff-general-support-grant-20261108.md): `alpha_support_private.staging_operator_grants` with RLS, service-role-only SELECT, one enabled `GENERAL_SUPPORT` account restricted to the exact protected preview HTTPS origin. No UUID is committed. Staging schema migration #55; actual DB provider readback `TASK21_STAGING_GENERAL_SUPPORT_GRANTED_READ_ONLY`.
+- The existing staging `alpha-support-operator` Edge is now **ACTIVE v2, verify_jwt=true**. The deployed handler matches source exactly; independent [focused CI #42429383296](https://github.com/Coxskull/Bliss_Bot_Chapel/actions/runs/42429383296) passed 3/3 jobs. An unrelated production URL, lookalike origin, or unrostered user is denied.
+- Case modifications remain OFF; only the general fictional queue is eligible. The private browser must now be refreshed to demonstrate actual queue rendering after role grant. That hosted human case-list readback has **NOT** yet been reported. Security/finance/privacy roles and automatic critical alert delivery remain blocked; Global STOP engaged.
+
+## Real browser queue screenshot verified — 2026-11-08
+- Screenshot from the protected staging preview displays `Case queue loaded`, **Authorized queues: GENERAL_SUPPORT**, exactly one case `NORMAL · general · OPEN` (fictional case `931d5569-9958-4603-b3c4-fdad25c1acd6`), and no case-detail selection yet. Independent read-only SQL matched that exact case ID, scope, status, and one CREATED audit event, with `owner_user_id IS NULL`.
+- Mark **hosted queue-list retrieval PASS**. Do **not** mark case-detail retrieval, human claim, audited transitions, or automatic incident dispatch PASS. [Redacted engineering verification](agm-task21-hosted-operator-queue-acceptance-20261108.md).
+- Next user action is to click the single fictional case in **Assigned queues** and inspect **Case details** without initiating a case update or customer contact. The global stop and separate mutation gate stay unchanged.
+
+## Real browser case detail screenshot verified — 2026-11-08
+- The operator selected fictional `931d5569-9958-4603-b3c4-fdad25c1acd6` from the already verified hosted `GENERAL_SUPPORT` queue. The panel displayed matching `general` / `NORMAL` / `OPEN` / unassigned metadata, a clearly synthetic `example.invalid` requester and issue, and **one immutable CREATED/OPEN event**. Banner: **"Private case record loaded. No customer was contacted."**
+- The screenshot also shows **"Case updates not enabled."** Independent Supabase read-only SQL confirmed the case remains OPEN/unclaimed with its single audit event, one receipt and blocked synthetic CRM row. [Complete evidence](agm-task21-hosted-operator-queue-acceptance-20261108.md).
+- **PASS:** real hosted staff detail/history read. **PENDING:** any case CLAIM, audited transition/resolution or application-generated alert. None of those actions was attempted and no mutation switch changed. Global STOP still engaged.
+
+## Verified staff's durable fictional case closure — 2026-11-08
+- The actual approved staging Auth operator was exercised as the acting human ID via restricted `service_role` RPCs. First, a real hosted SQL transaction tested claim, duplicate-claim idempotency, `IN_REVIEW`, `RESOLVED` and `CLOSED`, then **ROLLED BACK**, preserving the case shown on the dashboard. Receipt: `TASK21_REAL_VERIFIED_OPERATOR_SYNTHETIC_LIFECYCLE_ROLLBACK_PASS`.
+- A second one-time, fully preflight-guarded [fictional closure script](../scripts/task21/staging-verified-operator-closure-receipt.sql) was tested with **ROLLBACK** first (`TASK21_DURABLE_TEST_SOURCE_STAGING_ROLLBACK_PASS`), then applied to **one new** fictional `GENERAL_SUPPORT` ticket. The new case `922fdedc-31a1-4dd6-9dd0-31772694922c` is **CLOSED** and assigned to the trusted operator in staging, with **one receipt and five immutable events** and its fictional CRM outbox **BLOCKED before transaction commit**. Prior OPEN case still visible; CRITICAL security alert remains UNROUTED; Global STOP unchanged. No production write or actual customer contact.
+- Independent readback: **3 total cases, 2 OPEN, 1 CLOSED, 7 events, 3 receipts, 2 BLOCKED CRM records, 1 UNROUTED critical alert, 3 Auth users and 1 enabled GENERAL_SUPPORT grant**. [Detailed evidence](agm-task21-real-operator-durable-synthetic-closure-20261108.md).
+- **The server's broad mutation switch remains OFF** and the real user has not submitted a browser-based POST. The next safe *read-only* step is to look up the new CLOSED test case by exact ID in the existing private preview and inspect its five history events. That tests historical case retrieval without opening writes.
+
+## Real protected browser CLOSED-case readback — 2026-11-08
+- The operator searched for the **distinct fictional closed** case by exact ID in the real protected staging preview, despite the primary queue showing only OPEN cases. The screenshot shows case `922fdedc-31a1-4dd6-9dd0-31772694922c`, CLOSED, NORMAL/general/GENERAL_SUPPORT, an assigned operator, synthetic `example.invalid` requester and fictional resolution, plus **five immutable history events** in newest-first order.
+- Independent read-only staging SQL confirms CLOSED, resolved timestamp, non-null owner, exactly 5 history records, one intake receipt and CRM `BLOCKED`. The UI still says `Case updates not enabled`, and no customer was contacted. See [evidence report](agm-task21-real-operator-durable-synthetic-closure-20261108.md).
+- **PASS:** real authenticated browser historical-case read and audit history. **PENDING:** a human-triggered browser POST (general mutation gate remains OFF) and automatic alert delivery with real primary/backup staffing. Production unchanged, Global STOP engaged, PR unmerged.

@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import { deliverToGhl } from "./ghl-sync.mjs";
+import { supportNotice, supportCategories, supportCrmEligible } from "./support-contract.mjs";
 
 // Public interest requests are not account enrollment, advertiser purchases,
 // creator verification, or a pathway into protected Railway workspaces.
@@ -10,8 +11,8 @@ const allowed = new Set([
   "https://www.alphacreativecontent.com",
   "https://bliss-bot.vercel.app"
 ]);
-const notice = "AGM-INTEREST-2026-11-05-GHL";
-const supportedNotices = new Set(["AGM-INTEREST-2026-11-05", notice]);
+const notice = "AGM-INTEREST-2026-11-08-GHL-01";
+const supportedNotices = new Set(["AGM-INTEREST-2026-11-05", notice, supportNotice]);
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
 const out = (origin: string | null, payload: unknown, status = 200): Response => {
   const headers = new Headers(jsonHeaders);
@@ -81,7 +82,7 @@ Deno.serve(async (req: Request) => {
   const key = payload.request_key;
   const expected = supportedNotices.has(String(payload.notice_version));
 
-  if (!["creator", "advertiser", "privacy"].includes(String(kind)) ||
+  if (!["creator", "advertiser", "privacy", "support"].includes(String(kind)) ||
       !full_name || full_name.length < 2 || !email || !validEmail(email) ||
       organization === null || website === null || market === null ||
       category === null || description === null ||
@@ -89,6 +90,10 @@ Deno.serve(async (req: Request) => {
       (kind === "creator" && (!website || !validUrl(website) || !market || !category || organization !== "")) ||
       (kind === "advertiser" && (!organization || !market || (website !== "" && !validUrl(website)))) ||
       (kind === "privacy" && !description) ||
+      (kind === "support" && (!description || !supportCategories.includes(String(category)) ||
+        organization !== "" || website !== "" || market !== "" || marketing ||
+        payload.notice_version !== supportNotice)) ||
+      (kind !== "support" && payload.notice_version === supportNotice) ||
       (website && !validUrl(website))) {
     return out(origin, { error: "Please complete the required fields, review the privacy notice, and try again." }, 422);
   }
@@ -140,18 +145,30 @@ Deno.serve(async (req: Request) => {
       .select("id,recorded_at").eq("request_id", record.id).single();
     if (receipt.error || !receipt.data)
       return out(origin, { error: "We could not verify your receipt. Please use the same page to retry." }, 503);
+    let caseRecord: {case_id: string; status: string} | null = null;
+    if (kind === "support") {
+      // Triggered atomically with the intake row; never report a case without
+      // durable case and intake receipts.
+      const saved = await client.from("alpha_support_cases")
+        .select("case_id,status").eq("request_id", record.id).single();
+      if (saved.error || !saved.data)
+        return out(origin, { error: "We could not confirm the support case. Please retry with the same request." }, 503);
+      caseRecord = saved.data;
+    }
     // The authoritative Supabase receipt remains the source of truth.
     // HighLevel delivery may be pending, disabled or temporarily unavailable.
     // Only NEW notice-version creator/advertiser submissions are eligible;
     // privacy requests and legacy-consent records are NEVER forwarded.
-    if ((kind === "creator" || kind === "advertiser") &&
-        payload.notice_version === notice) {
+    if (((kind === "creator" || kind === "advertiser") &&
+        payload.notice_version === notice) ||
+        (kind === "support" && supportCrmEligible(String(category)))) {
       try { await deliverToGhl(client, record.id); } catch { /* never lose intake */ }
     }
     return out(origin, {
       status: "RECEIVED_NOT_YET_VERIFIED",
       receipt_id: receipt.data.id,
-      received_at: receipt.data.recorded_at
+      received_at: receipt.data.recorded_at,
+      ...(caseRecord ? {case_id: caseRecord.case_id,case_status: caseRecord.status} : {})
     }, 201);
   } catch {
     return out(origin, { error: "We could not confirm the request. Please retry." }, 503);

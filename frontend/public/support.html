@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark"><meta name="theme-color" content="#160934">
+<meta name="description" content="ALPHA GLOBAL MEDIA LLC support case inquiries, billing questions, failed campaign complaints and privacy/security concerns.">
+<title>Support case | ALPHA GLOBAL MEDIA™</title><link rel="stylesheet" href="/alpha-intake.css"></head>
+<body><a class="skip" href="#intake">Skip to support form</a>
+<header class="topbar"><a class="brand" href="/">ALPHA <span>GLOBAL MEDIA™</span></a><nav aria-label="Main navigation"><a href="/">Home</a><a href="/services.html">Services</a><a href="/contact.html">Contact</a><a href="/alpha-privacy.html">Privacy</a></nav></header>
+<main id="intake"><div class="intro"><div class="eyebrow">SUPPORT · HUMAN REVIEW QUEUE</div>
+<h1>Tell us what needs attention.</h1>
+<p>Request help or report a concern. A successfully recorded submission returns a case number and a durable receipt. This does not guarantee a response time, approve a refund, or change any campaign or payment.</p>
+</div><div class="panel"><p class="form-kicker">PUBLIC SUPPORT INQUIRY · NOT AN EMERGENCY SERVICE</p>
+<h2>Open a support case</h2>
+<p class="intro-note">Do not include passwords, card numbers, one-time codes, API tokens, government IDs, sensitive personal records, or security exploit details. For immediate danger, contact local emergency services.</p>
+<form id="alpha-intake-form" data-kind="support" data-endpoint="https://bkutbglzivfdnoerigyb.supabase.co/functions/v1/alpha-public-intake" novalidate>
+<div class="field"><label for="full_name">Name <span aria-hidden="true">*</span></label>
+<input id="full_name" name="full_name" required minlength="2" maxlength="120" autocomplete="name"></div>
+<div class="field"><label for="email">Email for follow-up <span aria-hidden="true">*</span></label>
+<input id="email" name="email" type="email" required maxlength="254" autocomplete="email"></div>
+<div class="field"><label for="category">What do you need help with? <span aria-hidden="true">*</span></label>
+<select id="category" name="category" required>
+<option value="">Select one</option><option value="general">General inquiry</option>
+<option value="advertiser">Advertiser assistance</option><option value="creator">Creator assistance</option>
+<option value="billing">Billing dispute</option><option value="refund">Refund request</option>
+<option value="failed_campaign">Failed campaign complaint</option><option value="privacy">Privacy issue</option>
+<option value="security_incident">Security incident</option></select></div>
+<div class="field"><label for="description">Brief description <span aria-hidden="true">*</span></label>
+<textarea id="description" name="description" required minlength="3" maxlength="800" rows="4"
+placeholder="Describe the issue without sensitive account or payment information."></textarea></div>
+<div class="field trap" aria-hidden="true"><label for="middle_name">Leave this blank</label>
+<input id="middle_name" name="middle_name" tabindex="-1" autocomplete="off"></div>
+<fieldset class="checks"><legend>Your consent</legend>
+<label class="check"><input type="checkbox" name="adult_confirmed" required><span>I confirm I am at least 18. <strong>*</strong></span></label>
+<label class="check"><input type="checkbox" name="processing_acknowledged" required><span>I have read the <a href="/alpha-privacy.html" target="_blank" rel="noopener">Privacy Notice</a> and consent to storing my case for review. General, advertiser and creator support contact details may be passed to the existing GoHighLevel CRM only when separately enabled by ALPHA. Billing, refund, failed-campaign, privacy and security details are not eligible for the general CRM bridge. <strong>*</strong></span></label></fieldset>
+<button class="submit" id="submit-button" type="submit">Submit support case →</button>
+<div id="form-status" role="status" aria-live="polite" tabindex="-1" class="status" hidden></div>
+<p class="fine">Human ownership, emergency notifications and response-time commitments are subject to ALPHA's staffing and release readiness. Preserve the case ID and receipt if the server confirms both.</p>
+</form></div></main><footer><span>© 2026 ALPHA GLOBAL MEDIA LLC.</span><div>
+<a href="/contact.html">Contact</a><a href="/alpha-privacy.html">Privacy Notice</a>
+<a href="/alpha-terms.html">Terms</a></div></footer>
+<script defer src="/alpha-intake.js"></script></body></html>
