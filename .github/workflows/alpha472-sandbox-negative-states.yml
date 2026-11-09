@@ -1,0 +1,26 @@
+name: ALPHA-472 signed negative payment status safety
+
+on:
+  pull_request:
+    branches:
+      - release/alpha346-consent-first-customer-candidate-20261109
+    paths:
+      - 'Bliss.Tests/Financials/StripeMockStatusVerifierTests.cs'
+      - '.github/workflows/alpha472-sandbox-negative-states.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test-failed-canceled-expired-boundaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Run existing signed sandbox negative-payment regression suite
+        run: dotnet test Bliss.Tests/Bliss.Tests.csproj --configuration Release --filter "FullyQualifiedName~StripeMockStatusVerifierTests" --logger "console;verbosity=normal"
