@@ -18,6 +18,14 @@ for (const route of ['/', '/production.html', '/brand-intake.html', '/login.html
   html = html.replaceAll(`href="${route}"`, `href="${new URL(route, origin).href}"`);
 }
 html = html.replaceAll('href="/global-media.html"', 'href="/"');
+
+// The accepted six-slot composer is a public, fictional staging demonstration.
+// Link it from the public Vercel portal; do not copy the protected AI workspace
+// or change its same-origin Railway authentication boundary.
+const academyPreview = '<aside aria-label="Creative Academy staging demonstration" style="margin:24px auto;padding:16px;max-width:960px;border:1px solid #7769a9;border-radius:12px"><strong>Creative Academy · staging demonstration</strong><p>Preview six fictional advertising placements around a protected podcast center. No live campaigns or payments.</p><a href="/creative-academy-six-slot.html">Open the six-slot compositor</a></aside>';
+if (!html.includes('</main>')) throw new Error('Public portal is missing closing main element');
+html = html.replace('</main>', academyPreview + '</main>');
+
 await mkdir(resolve(output, 'assets'), { recursive: true });
 await writeFile(resolve(output, 'index.html'), html);
 await copyFile(resolve(source, 'global-media.css'), resolve(output, 'global-media.css'));
