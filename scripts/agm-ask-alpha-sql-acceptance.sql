@@ -11,6 +11,7 @@ BEGIN
  THEN CREATE ROLE service_role NOLOGIN; END IF;
 END $$;
 \ir ../supabase/migrations/20261108_alpha_ask_alpha_ai_governor.sql
+\ir ../supabase/migrations/20261110000000_alpha_ask_alpha_project9_budget_cap.sql
 DO $$
 DECLARE
   candidate record;
@@ -67,14 +68,14 @@ BEGIN
  IF (SELECT state FROM public.alpha_ask_alpha_turns WHERE request_key=key_a) <> 'SETTLED'
  THEN RAISE EXCEPTION 'Settlement not persisted'; END IF;
 
- UPDATE public.alpha_ask_alpha_settings SET externally_billed_usd=10 WHERE id=1;
+ UPDATE public.alpha_ask_alpha_settings SET externally_billed_usd=8.990000 WHERE id=1;
  denied := false;
  BEGIN
   PERFORM * FROM public.alpha_ask_alpha_reserve(
    key_b,session_h,ip_h,input_h,'creator','AGM-ASK-ALPHA-AI-2026-11-08',false);
  EXCEPTION WHEN SQLSTATE 'P0001' THEN denied := true; END;
  IF NOT denied OR (SELECT count(*) FROM public.alpha_ask_alpha_turns) <> 1
- THEN RAISE EXCEPTION 'Monthly hard cap allowed an overrun'; END IF;
+ THEN RAISE EXCEPTION 'Nine-dollar project cap allowed an overrun'; END IF;
 
  UPDATE public.alpha_ask_alpha_settings SET externally_billed_usd=0,
   verified_at=now() - interval '25 hours' WHERE id=1;
@@ -85,7 +86,8 @@ BEGIN
  EXCEPTION WHEN SQLSTATE 'P0001' THEN denied := true; END;
  IF NOT denied THEN RAISE EXCEPTION 'Stale billing meter allowed a call'; END IF;
 
- UPDATE public.alpha_ask_alpha_settings SET verified_at=now() WHERE id=1;
+ UPDATE public.alpha_ask_alpha_settings SET verified_at=now(),
+  externally_billed_usd=8.980000 WHERE id=1;
  SELECT receipt_id,state,is_replay INTO candidate
  FROM public.alpha_ask_alpha_reserve(
    key_b,session_h,ip_h,input_h,'creator','AGM-ASK-ALPHA-AI-2026-11-08',false);

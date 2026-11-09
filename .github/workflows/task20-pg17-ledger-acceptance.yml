@@ -7,6 +7,7 @@ on:
       - 'scripts/agm-ask-alpha-retention-acceptance.sql'
       - 'supabase/migrations/20261108_alpha_ask_alpha_ai_governor.sql'
       - 'supabase/migrations/20261108_alpha_ask_alpha_receipts_retention_90d.sql'
+      - 'supabase/migrations/20261110000000_alpha_ask_alpha_project9_budget_cap.sql'
   workflow_dispatch:
 permissions:
   contents: read
@@ -57,6 +58,8 @@ jobs:
           set -euo pipefail
           psql --no-password -h 127.0.0.1 -p 5432 -U postgres -d task20_disposable_test -v ON_ERROR_STOP=1 -f scripts/agm-ask-alpha-sql-acceptance.sql > task20-finance.log 2>&1
           grep -q TASK20_SQL_ATOMIC_BUDGET_RLS_IDEMPOTENCY_FAILCLOSED_PASS task20-finance.log
+          grep -q TASK20_PROJECT9_FORWARD_ONLY_GOVERNOR_CAP_PASS task20-finance.log
+          psql --no-password -h 127.0.0.1 -p 5432 -U postgres -d task20_disposable_test -v ON_ERROR_STOP=1 -Atqc "SELECT position('month_usd+cfg.externally_billed_usd+0.010000>9.000000' in pg_get_functiondef('public.alpha_ask_alpha_reserve(uuid,text,text,text,text,text,boolean)'::regprocedure)) > 0" | grep -qx t
           psql --no-password -h 127.0.0.1 -p 5432 -U postgres -d task20_disposable_test -v ON_ERROR_STOP=1 -f scripts/agm-ask-alpha-retention-acceptance.sql > task20-retention.log 2>&1
           grep -q TASK20_RETENTION_90D_KEEP_UNSETTLED_PASS task20-retention.log
           test "$(psql --no-password -h 127.0.0.1 -p 5432 -U postgres -d task20_disposable_test -v ON_ERROR_STOP=1 -Atqc 'SELECT enabled FROM public.alpha_ask_alpha_settings WHERE id=1')" = t
