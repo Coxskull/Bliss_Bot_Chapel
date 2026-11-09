@@ -117,9 +117,15 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
   const salt = env("ALPHA_ASK_ALPHA_HASH_SECRET");
   if (!apiKey || !salt || salt.length < 32)
     return out(origin, {error:"AI_SERVICE_NOT_CONFIGURED"},503);
-  // The managed-gateway cf-connecting-ip contract must be checked with a
-  // spoofing probe on the actual hosted route before enabling public AI.
-  // Never fall back to client-supplied X-Forwarded-For; this is not authentication.
+  // Operator release interlock, not cryptographic identity proof.
+  // The owner MUST independently confirm the managed Supabase gateway overwrites
+  // a client-forged CF-Connecting-IP header on every allowed hosted path before
+  // configuring this flag. No new gateway or provider is introduced.
+  // Both ALPHA_ASK_ALPHA_ENABLED and this attestation are required.
+  if (env("ALPHA_ASK_ALPHA_INGRESS_VERIFIED") !== "CF_IP_OVERWRITE_PROBE_PASS_V1")
+    return out(origin,{error:"RATE_LIMIT_INGRESS_NOT_VERIFIED"},503);
+  // The upstream gateway must overwrite cf-connecting-ip on every request;
+  // never fall back to untrusted X-Forwarded-For or a caller-supplied token.
   const ip = req.headers.get("cf-connecting-ip")?.trim();
   if (!ip || ip.length > 45 || !/^[a-fA-F0-9.:]+$/.test(ip))
     return out(origin, {error:"RATE_LIMIT_IDENTITY_UNAVAILABLE"},503);
