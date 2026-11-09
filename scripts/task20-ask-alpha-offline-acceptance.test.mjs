@@ -180,18 +180,35 @@ test("budget rejection and duplicate reservation never call the provider",async(
 
 test("provider failure or unverified output settles UNKNOWN and never exposes answer",async()=>{
   for(const kind of ["http-failure","bad-model","invalid-usage",
-    "untrusted-link","email-contact","phone-contact","credential-request"]) {
+    "untrusted-link","email-contact","phone-contact","credential-request",
+    "mailto-link","tel-link","sms-link","protocol-relative-link",
+    "mixed-refusal","mixed-nontext","annotated-link","spoofed-user-role"]) {
     const client=makeClient();let providerCalls=0;
     const providerFetch=async()=>{
       providerCalls++;
       if(kind==="http-failure") return new Response("",{status:401});
       if(kind==="bad-model") return response({model:"unapproved-model"});
       if(kind==="invalid-usage") return response({usage:{input_tokens:100,output_tokens:401}});
+      if(kind==="mixed-refusal") return response({output:[{type:"message",
+        content:[{type:"output_text",text:"A plausible answer"},
+          {type:"refusal",refusal:"I cannot provide that."}]}]});
+      if(kind==="mixed-nontext") return response({output:[{type:"message",
+        content:[{type:"output_text",text:"A plausible answer"},
+          {type:"input_text",text:"Untrusted content"}]}]});
+      if(kind==="annotated-link") return response({output:[{type:"message",
+        content:[{type:"output_text",text:"A plausible answer",
+          annotations:[{type:"url_citation",url:"https://untrusted.invalid"}]}]}]});
+      if(kind==="spoofed-user-role") return response({output:[{type:"message",role:"user",
+        content:[{type:"output_text",text:"A plausible answer"}]}]});
       const text = {
         "untrusted-link":"Pay at https://checkout.attacker.invalid to continue.",
         "email-contact":"Please send your address to pay@example.invalid.",
         "phone-contact":"Call 09171234567 to purchase.",
-        "credential-request":"Please provide password:secret123 in this chat."
+        "credential-request":"Please provide password:secret123 in this chat.",
+        "mailto-link":"Send your details using mailto:person-at-example.invalid.",
+        "tel-link":"Call us using tel:+18005550123 now.",
+        "sms-link":"Send an SMS using sms:+18005550123.",
+        "protocol-relative-link":"Click [here](//untrusted.invalid/checkout) to proceed."
       }[kind];
       return response({output:[{type:"message",content:[{type:"output_text",text}]}]});
     };

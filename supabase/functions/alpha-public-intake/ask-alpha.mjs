@@ -97,14 +97,26 @@ function responseText(json) {
   if (json?.status !== "completed" || json.model !== MODEL || json.service_tier !== "default" ||
       !Array.isArray(json.output) || json.output.some(o => o.type !== "message"))
     throw Error("PROVIDER_OUTPUT_UNVERIFIED");
-  const result = json.output.flatMap(o => o.content || [])
-    .filter(c => c.type === "output_text").map(c => c.text).join("\n").trim();
+  // Responses can include a refusal part alongside ordinary output_text.
+  // Never silently drop refusal/tool/annotation parts and display the rest
+  // as approved advertising or support guidance. All parts must be plain text.
+  if (json.output.length === 0 ||
+      json.output.some(o => !o || (o.role != null && o.role !== "assistant") ||
+        !Array.isArray(o.content) || o.content.length === 0 ||
+        o.content.some(c => !c || c.type !== "output_text" ||
+          typeof c.text !== "string" || !c.text.trim() ||
+          c.text.length > 3000 ||
+          (c.annotations !== undefined &&
+            (!Array.isArray(c.annotations) || c.annotations.length > 0)))))
+    throw Error("PROVIDER_OUTPUT_UNVERIFIED");
+  const result = json.output.flatMap(o => o.content)
+    .map(c => c.text).join("\n").trim();
   // Provider instructions are not a sufficient output-safety boundary.
   // A hallucinated external link or contact/credential request can redirect
   // an advertiser into an unapproved payment or personal-data workflow.
   // The approved human path is the first-party relative /contact.html route.
   if (!result || result.length > 3000 || containsSensitiveChatData(result) ||
-      /(?:\bhttps?:\/\/|\bwww\.)/i.test(result))
+      /(?:\bhttps?:\/\/|\bwww\.|\bmailto:|\btel:|\bsms:|\]\(\s*\/\/)/i.test(result))
     throw Error("PROVIDER_OUTPUT_UNVERIFIED");
   return result;
 }
