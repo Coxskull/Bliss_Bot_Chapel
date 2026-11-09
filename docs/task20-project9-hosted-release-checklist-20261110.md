@@ -9,9 +9,10 @@
 ## Required preflight (NO MUTATION)
 
 1. Confirm isolated recovery/backup gate for this project, owner/operator access and a rollback point. **Do not bypass Task #1** merely because this is a small change.
-2. Verify `public.alpha_ask_alpha_settings.enabled=false`, count of `public.alpha_ask_alpha_turns`, `externally_billed_usd`, and exact installed `pg_get_functiondef` source: precisely one known legacy `>10.000000` expression, or already upgraded `>9.000000`. If neither or conflicting modifications, stop.
-3. Verify `alpha_ask_alpha_reserve` and `alpha_ask_alpha_settle` remain SECURITY DEFINER with restricted EXECUTE for only server-side service roles, and private receipt tables retain RLS/FORCE. Never use untrusted client headers or credentials in a test.
-4. Independently verify API key/project scope, provider project budget, external usage meter freshness, owner-approved AI processing disclosure, human support escalation, and ingress identity overwrite before **any** positive inference or public AI enablement.
+2. Configure server-only `ALPHA_ASK_ALPHA_OPENAI_PROJECT_ID` to the reviewed exact Ask Alpha Production project ID (`proj_...`). Ensure the deployed Edge source requires this value and sets `OpenAI-Project`; independently confirm the key/project binding without revealing the API key. A header alone is not proof the key is correct.
+3. Verify `public.alpha_ask_alpha_settings.enabled=false`, count of `public.alpha_ask_alpha_turns`, `externally_billed_usd`, and exact installed `pg_get_functiondef` source: precisely one known legacy `>10.000000` expression, or already upgraded `>9.000000`. If neither or conflicting modifications, stop.
+4. Verify `alpha_ask_alpha_reserve` and `alpha_ask_alpha_settle` remain SECURITY DEFINER with restricted EXECUTE for only server-side service roles, and private receipt tables retain RLS/FORCE. Never use untrusted client headers or credentials in a test.
+5. Independently verify API key/project scope, provider project budget, external usage meter freshness, owner-approved AI processing disclosure, human support escalation, and ingress identity overwrite before **any** positive inference or public AI enablement.
 
 ## Deployment, only after the above gates
 

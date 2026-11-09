@@ -5,6 +5,7 @@ Directive: ALPHA-TASK-020-OPENAI-ACTIVATION-388, 2026-11-08.
 - This code EXTENDS the existing Supabase `alpha-public-intake` Edge function and existing public Ask Alpha panel. It does not add a second bot, CRM adapter, or database project.
 - Source branch: existing draft PR #350 in `Coxskull/Bliss_Bot_Chapel`. Deployments and database migrations are NOT implied by passing CI.
 - Factory/outreach/campaign/payment GLOBAL STOP stays engaged. `ALPHA_ASK_ALPHA_ENABLED` and `ALPHA_ASK_ALPHA_FRONTEND_ENABLED` must stay unset or false until all gates below pass.
+- Every paid Ask Alpha request now requires the server-only `ALPHA_ASK_ALPHA_OPENAI_PROJECT_ID` set to the verified exact Ask Alpha Production project ID (`proj_...`) and sends `OpenAI-Project`. Missing/invalid project IDs fail before reservation or provider calls. The $9 screenshot does not reveal the ID and is not proof of the deployed API key's project binding. Confirm key/project access with an authorized non-billable provider check; never disclose the key in browser source or logs.
 - The historical .NET Controlled AI adapter is a private draft-generation backend, NOT a public customer authentication or consent path. Its live Railway configuration is not evidence of a public API key or billable readiness.
 - Task #21 must independently verify human support case creation and escalation before Task #20's full support-journey gate can pass. The AI reply must never claim a support case was opened when one was not.
 
