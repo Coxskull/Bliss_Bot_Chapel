@@ -1,0 +1,104 @@
+{
+  "environment": "STRIPE_SANDBOX_ONLY",
+  "origin": "STRIPE_API_READ_ONLY",
+  "observed_date": "2026-11-09",
+  "note": "Minimal noncustomer Stripe API readback; no names, emails, card numbers, or secret keys. This is a snapshot, not continuously updated evidence.",
+  "link": {
+    "id": "plink_1UZkkuH23maIy3rzRSbuvCtT",
+    "livemode": false,
+    "active": true,
+    "automatic_tax": {
+      "enabled": true
+    },
+    "metadata": {
+      "environment": "SANDBOX_ONLY",
+      "payment": "TEST_MODE_ONLY",
+      "policy_status": "DRAFT",
+      "real_customer_use": "PROHIBITED"
+    }
+  },
+  "product": {
+    "id": "prod_VawZ1nLovQnzq6",
+    "name": "[SANDBOX ONLY] Campaign Planning & Coordination — Planning-Only Starter",
+    "active": true
+  },
+  "price": {
+    "id": "price_1UZkfyH23maIy3rzzhYzRWFD",
+    "product": "prod_VawZ1nLovQnzq6",
+    "active": true,
+    "unit_amount": 14900,
+    "currency": "usd",
+    "type": "one_time"
+  },
+  "session": {
+    "id": "cs_test_a127dclwqC9jOEq2Fzt0Rg6R05GEwdbi2U73Lp4R2AlIpb4a0dDkeQvdXI",
+    "status": "complete",
+    "payment_status": "paid",
+    "livemode": false,
+    "mode": "payment",
+    "payment_link": "plink_1UZkkuH23maIy3rzRSbuvCtT",
+    "payment_intent": "pi_3UZmosH23maIy3rz1QI0U6Lo",
+    "amount_total": 14900,
+    "amount_subtotal": 14900,
+    "currency": "usd",
+    "automatic_tax": {
+      "enabled": true,
+      "status": "complete"
+    },
+    "total_details": {
+      "amount_tax": 0
+    },
+    "metadata": {
+      "environment": "SANDBOX_ONLY",
+      "payment": "TEST_MODE_ONLY",
+      "real_customer_use": "PROHIBITED"
+    }
+  },
+  "lineItems": [
+    {
+      "price": "price_1UZkfyH23maIy3rzzhYzRWFD",
+      "quantity": 1,
+      "amount_total": 14900,
+      "currency": "usd"
+    }
+  ],
+  "paymentIntent": {
+    "id": "pi_3UZmosH23maIy3rz1QI0U6Lo",
+    "status": "succeeded",
+    "livemode": false,
+    "amount": 14900,
+    "amount_received": 14900,
+    "currency": "usd"
+  },
+  "failedPaymentIntent": {
+    "id": "pi_3UZmxtH23maIy3rz1AKGKGEK",
+    "status": "requires_payment_method",
+    "livemode": false,
+    "amount": 14900,
+    "amount_received": 0,
+    "currency": "usd",
+    "last_payment_error": {
+      "decline_code": "insufficient_funds"
+    }
+  },
+  "events": [
+    {
+      "id": "evt_1UZmotH23maIy3rzkBuhd3O9",
+      "type": "checkout.session.completed",
+      "livemode": false,
+      "resource_id": "cs_test_a127dclwqC9jOEq2Fzt0Rg6R05GEwdbi2U73Lp4R2AlIpb4a0dDkeQvdXI"
+    },
+    {
+      "id": "evt_3UZmosH23maIy3rz1oFE8nBd",
+      "type": "payment_intent.succeeded",
+      "livemode": false,
+      "resource_id": "pi_3UZmosH23maIy3rz1QI0U6Lo"
+    },
+    {
+      "id": "evt_3UZmxtH23maIy3rz1JHdkQXu",
+      "type": "payment_intent.payment_failed",
+      "livemode": false,
+      "resource_id": "pi_3UZmxtH23maIy3rz1AKGKGEK"
+    }
+  ]
+}
