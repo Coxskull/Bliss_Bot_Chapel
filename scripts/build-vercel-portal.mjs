@@ -18,6 +18,14 @@ for (const route of ['/', '/production.html', '/brand-intake.html', '/login.html
   html = html.replaceAll(`href="${route}"`, `href="${new URL(route, origin).href}"`);
 }
 html = html.replaceAll('href="/global-media.html"', 'href="/"');
+
+// The accepted six-slot composer is a public, fictional staging demonstration.
+// Link it from the public Vercel portal; do not copy the protected AI workspace
+// or change its same-origin Railway authentication boundary.
+const academyPreview = '<aside aria-label="Creative Academy staging demonstration" style="margin:24px auto;padding:16px;max-width:960px;border:1px solid #7769a9;border-radius:12px"><strong>Creative Academy · staging demonstration</strong><p>Preview six fictional advertising placements around a protected podcast center. No live campaigns or payments.</p><a href="/creative-academy-six-slot.html">Open the six-slot compositor</a></aside>';
+if (!html.includes('</main>')) throw new Error('Public portal is missing closing main element');
+html = html.replace('</main>', academyPreview + '</main>');
+
 await mkdir(resolve(output, 'assets'), { recursive: true });
 await writeFile(resolve(output, 'index.html'), html);
 await copyFile(resolve(source, 'global-media.css'), resolve(output, 'global-media.css'));
@@ -29,7 +37,9 @@ for (const filename of [
   'join-creator.html', 'join-advertiser.html', 'privacy-request.html',
   'creator-account.html', 'creator-login.html', 'advertiser-login.html',
   'alpha-privacy.html', 'alpha-terms.html', 'services.html', 'contact.html',
-  'alpha-intake.css', 'alpha-intake.js'
+  'alpha-intake.css', 'alpha-intake.js',
+  // Preview-only native-format Creative Academy composer: local file import, no APIs.
+  'creative-academy-six-slot.html', 'creative-academy-six-slot.js'
 ]) {
   await copyFile(resolve(source, filename), resolve(output, filename));
 }
@@ -60,4 +70,15 @@ for (const [filename, routes] of [
 
 await copyFile(resolve(source, 'wedding-planner.js'), resolve(output, 'wedding-planner.js'));
 await copyFile(resolve(source, 'assets/bliss-chapel-hero.jpg'), resolve(output, 'assets/bliss-chapel-hero.jpg'));
+// Copy only the seven approved staging pictures. No source files or API secrets.
+const creativeRoot='assets/creative-academy/native-six';
+await mkdir(resolve(output,creativeRoot),{recursive:true});
+for(const name of [
+  'ALPHA_NATIVE_TOP_BILLBOARD.png','ALPHA_NATIVE_LEFT_UPPER.png',
+  'ALPHA_NATIVE_LEFT_LOWER.png','ALPHA_NATIVE_RIGHT_UPPER.png',
+  'ALPHA_NATIVE_RIGHT_LOWER.png','ALPHA_NATIVE_BOTTOM_BILLBOARD.png',
+  'podcast_center_ai_crop.png'
+]){
+  await copyFile(resolve(source,creativeRoot,name),resolve(output,creativeRoot,name));
+}
 console.log('Built Vercel workspace portal. Application origin is public configuration, not a credential.');
