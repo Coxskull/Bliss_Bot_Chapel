@@ -5,6 +5,7 @@ on:
       - '.github/workflows/task20-pg17-ledger-acceptance.yml'
       - 'scripts/agm-ask-alpha-sql-acceptance.sql'
       - 'scripts/agm-ask-alpha-retention-acceptance.sql'
+      - 'scripts/agm-ask-alpha-project9-release-rehearsal.sql'
       - 'supabase/migrations/20261108_alpha_ask_alpha_ai_governor.sql'
       - 'supabase/migrations/20261108_alpha_ask_alpha_receipts_retention_90d.sql'
       - 'supabase/migrations/20261110000000_alpha_ask_alpha_project9_budget_cap.sql'
@@ -65,6 +66,31 @@ jobs:
           test "$(psql --no-password -h 127.0.0.1 -p 5432 -U postgres -d task20_disposable_test -v ON_ERROR_STOP=1 -Atqc 'SELECT enabled FROM public.alpha_ask_alpha_settings WHERE id=1')" = t
           # Only disposable CI fixture: it was enabled in the synthetic test; production remains untouched.
           echo TASK20_POSTGRES17_LEDGER_AND_RETENTION_PASS
+      - name: Rehearse fail-closed release, refusal while enabled, and safe migration retry
+        shell: bash
+        run: |
+          set -euo pipefail
+          pg() { psql --no-password -h 127.0.0.1 -p 5432 -U postgres -d task20_disposable_test -v ON_ERROR_STOP=1 "$@"; }
+          # Synthetic SQL fixture deliberately leaves the governor ON.
+          test "$(pg -Atqc 'SELECT enabled FROM public.alpha_ask_alpha_settings WHERE id=1')" = t
+          receipt_before="$(pg -Atqc 'SELECT count(*) FROM public.alpha_ask_alpha_turns')"
+          meter_before="$(pg -Atqc 'SELECT externally_billed_usd FROM public.alpha_ask_alpha_settings WHERE id=1')"
+          set +e
+          pg -f supabase/migrations/20261110000000_alpha_ask_alpha_project9_budget_cap.sql > task20-refusal.log 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -q 'TASK20_PROJECT9_REQUIRES_AI_DISABLED' task20-refusal.log
+          test "$(pg -Atqc 'SELECT enabled FROM public.alpha_ask_alpha_settings WHERE id=1')" = t
+          # Emergency fail-closed STOP only in the disposable fixture.
+          pg -c 'UPDATE public.alpha_ask_alpha_settings SET enabled=false WHERE id=1'
+          pg -f supabase/migrations/20261110000000_alpha_ask_alpha_project9_budget_cap.sql > task20-reapply.log 2>&1
+          grep -q 'TASK20_PROJECT9_FORWARD_ONLY_GOVERNOR_CAP_PASS' task20-reapply.log
+          pg -f scripts/agm-ask-alpha-project9-release-rehearsal.sql > task20-rehearsal.log 2>&1
+          grep -q 'TASK20_PROJECT9_FAILCLOSED_REHEARSAL_PASS' task20-rehearsal.log
+          test "$(pg -Atqc 'SELECT count(*) FROM public.alpha_ask_alpha_turns')" = "$receipt_before"
+          test "$(pg -Atqc 'SELECT externally_billed_usd FROM public.alpha_ask_alpha_settings WHERE id=1')" = "$meter_before"
+          echo TASK20_PROJECT9_FAILCLOSED_RELEASE_REHEARSAL_PASS
       - name: Upload sanitized synthetic SQL acceptance evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -73,5 +99,8 @@ jobs:
           path: |
             task20-finance.log
             task20-retention.log
+            task20-refusal.log
+            task20-reapply.log
+            task20-rehearsal.log
           if-no-files-found: ignore
           retention-days: 7
