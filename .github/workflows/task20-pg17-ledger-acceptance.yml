@@ -6,6 +6,7 @@ on:
       - 'scripts/agm-ask-alpha-sql-acceptance.sql'
       - 'scripts/agm-ask-alpha-retention-acceptance.sql'
       - 'scripts/agm-ask-alpha-project9-release-rehearsal.sql'
+      - 'scripts/task20-readonly-hosted-budget-preflight.sql'
       - 'supabase/migrations/20261108_alpha_ask_alpha_ai_governor.sql'
       - 'supabase/migrations/20261108_alpha_ask_alpha_receipts_retention_90d.sql'
       - 'supabase/migrations/20261110000000_alpha_ask_alpha_project9_budget_cap.sql'
@@ -91,6 +92,27 @@ jobs:
           test "$(pg -Atqc 'SELECT count(*) FROM public.alpha_ask_alpha_turns')" = "$receipt_before"
           test "$(pg -Atqc 'SELECT externally_billed_usd FROM public.alpha_ask_alpha_settings WHERE id=1')" = "$meter_before"
           echo TASK20_PROJECT9_FAILCLOSED_RELEASE_REHEARSAL_PASS
+      - name: Verify portable read-only release preflight contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This script is safe for read-only hosted catalog checks; CI runs it
+          # exclusively on this container's disposable PostgreSQL 17 fixture.
+          psql --no-password -h 127.0.0.1 -p 5432 -U postgres \
+            -d task20_disposable_test -v ON_ERROR_STOP=1 -Atq \
+            -f scripts/task20-readonly-hosted-budget-preflight.sql > task20-preflight.json
+          node -e '
+            const fs=require("node:fs");
+            const r=JSON.parse(fs.readFileSync("task20-preflight.json","utf8"));
+            if(!(r.ai_disabled===true && r.sql_cap_9===true &&
+              r.legacy_cap_10===false && r.rpc_restricted===true &&
+              r.private_rls===true && r.receipt_count===2 &&
+              r.unresolved_count===1)) {
+              console.error("TASK20_PREFLIGHT_INVARIANT_FAILED");
+              process.exit(1);
+            }
+            console.log("TASK20_READONLY_PREFLIGHT_INVARIANTS_PASS");
+          '
       - name: Upload sanitized synthetic SQL acceptance evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -102,5 +124,6 @@ jobs:
             task20-refusal.log
             task20-reapply.log
             task20-rehearsal.log
+            task20-preflight.json
           if-no-files-found: ignore
           retention-days: 7
