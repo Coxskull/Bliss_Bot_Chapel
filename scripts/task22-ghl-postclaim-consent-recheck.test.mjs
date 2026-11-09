@@ -129,3 +129,41 @@ test("Task22: current approval still delivers once through an offline fake provi
     assert.equal(externalPosts,1);
   });
 });
+
+test("Task22: provider 200 without durable finish confirmation is never DELIVERED", async () => {
+  await withOfflineGhl(async () => {
+    let externalPosts = 0;
+    globalThis.fetch = async () => {
+      externalPosts++;
+      return {ok:true,status:200,json:async()=>({contact:{id:"synthetic-contact-123"}})};
+    };
+    for (const mode of ["stale lease", "database error", "database exception"]) {
+      const run = fixture(approved(),approved());
+      const rpc = run.client.rpc;
+      run.client.rpc = async (name, args) => {
+        if (name !== "alpha_ghl_finish") return rpc(name,args);
+        if (mode === "stale lease") return {data:false,error:null};
+        if (mode === "database error") return {data:null,error:{message:"synthetic SQL error"}};
+        throw Error("synthetic database unavailable");
+      };
+      assert.equal(await deliverToGhl(run.client,"synthetic-id"), "RECEIPT_UNCONFIRMED", mode);
+      assert.equal(run.claims,1,mode);
+      assert.equal(run.reads,2,mode);
+    }
+    assert.equal(externalPosts,3);
+  });
+});
+
+test("Task22: failed blocked receipt is not claimed as durably BLOCKED", async () => {
+  await withOfflineGhl(async () => {
+    let externalPosts=0;
+    globalThis.fetch = async()=>{externalPosts++;throw Error("No CRM call permitted");};
+    const run=fixture(approved(),{...approved(),contact_consent:false});
+    const rpc=run.client.rpc;
+    run.client.rpc=async(name,args)=>name==="alpha_ghl_finish"
+      ? {data:false,error:null} : rpc(name,args);
+    assert.equal(await deliverToGhl(run.client,"synthetic-id"),"RECEIPT_UNCONFIRMED");
+    assert.equal(externalPosts,0);
+    assert.equal(run.claims,1);
+  });
+});
