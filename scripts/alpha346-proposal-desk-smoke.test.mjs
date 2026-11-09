@@ -176,3 +176,21 @@ test('local JSON draft round-trips without storing or reapproving any business g
   await node('loadDraftFile').listeners.get('change')();
   assert.equal(node('brief').value,previous,'oversized file must leave form unchanged');
 });
+
+
+test('offline planning desk has no hosted checkout, payment capture, or external submission surface',()=>{
+  const forbidden=[
+    /https?:\/\/(?:buy|checkout|billing)\.stripe\.com/i,
+    /https?:\/\/[^\s"'<>]*paypal\.com\/checkout/i,
+    /<form\b/i,
+    /<iframe\b/i,
+    /<script\b[^>]+src=/i,
+    /<input\b[^>]+(?:name|id)=["'](?:card|cvc|cvv|payment_method|bank_account)/i,
+    /\b(?:window\.location|location\.href)\s*=/i
+  ];
+  for(const pattern of forbidden) assert.doesNotMatch(desk,pattern,String(pattern));
+  assert.match(desk,/form-action 'none'/);
+  assert.match(desk,/connect-src 'none'/);
+  assert.match(desk,/PAYMENT DISABLED/);
+  assert.match(desk,/DELIVERY NOT SENT/);
+});
