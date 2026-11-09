@@ -38,6 +38,27 @@ assert.ok(mail.text.includes(alert.alert_id));
 for(const privateText of [alert.full_name,alert.email,alert.description])
   assert.ok(!JSON.stringify(mail).includes(privateText));
 
+// The exported email builder must defend itself, even when an alternate
+// adapter accidentally bypasses the DB-backed envelope validator.
+for(const forged of [
+  {assigned_role:'SECURITY_REVIEW\\nCustomer: private@example.invalid'},
+  {assigned_role:'\u003cb\u003eADMIN\u003c/b\u003e'},
+  {assigned_role:'PRIVACY_REVIEW'}, // wrong severity for this CRITICAL alert
+  {assigned_role:undefined},
+  {severity:'NORMAL'},
+  {severity:'HIGH',assigned_role:'SECURITY_REVIEW'}
+]){
+  assert.throws(()=>prepareStagingEmail({...envelope,...forged},cfg.recipient),
+    /TASK21_EMAIL_INVALID/);
+}
+assert.throws(()=>prepareStagingEmail(envelope,'a'.repeat(250)+'@example.org'),
+  /TASK21_EMAIL_INVALID/);
+const privacyEnvelope=prepareInternalEscalation({
+  ...alert,category:'privacy',severity:'HIGH',assigned_role:'PRIVACY_REVIEW'
+});
+assert.match(prepareStagingEmail(privacyEnvelope,cfg.recipient).text,
+  /Queue: PRIVACY_REVIEW/);
+
 for(const changed of [
  {enableSyntheticInternalAlerts:false},{recipientApproved:false},
  {monitoredByHuman:false},{environment:'production'},
