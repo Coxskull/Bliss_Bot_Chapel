@@ -5,6 +5,24 @@ namespace Bliss.Tests.Demonstrations;
 public sealed class SourceMediaRulesTests
 {
     [Fact]
+    public void Only_iso_mp4_signatures_may_reach_native_decoders()
+    {
+        var ftyp = new byte[] { 0, 0, 0, 20, 0x66, 0x74, 0x79, 0x70,
+                                0x69, 0x73, 0x6f, 0x6d, 0, 0, 0, 0,
+                                0x69, 0x73, 0x6f, 0x6d };
+        Assert.True(SourceMediaRules.IsMp4Upload(ftyp, "valid.mp4"));
+        Assert.True(SourceMediaRules.IsMp4Upload(ftyp, "VALID.MP4"));
+        Assert.False(SourceMediaRules.IsMp4Upload(ftyp, "playlist.m3u8"));
+        Assert.False(SourceMediaRules.IsMp4Upload(ftyp, "source.mov"));
+        Assert.False(SourceMediaRules.IsMp4Upload(ftyp[..9], "incomplete.mp4"));
+        var playlist = System.Text.Encoding.UTF8.GetBytes("#EXTM3U\n#EXTINF:2\nasync:rist://example.invalid:7777\n");
+        Assert.False(SourceMediaRules.IsMp4Upload(playlist, "forged.mp4"));
+        var oversizedBox = ftyp.ToArray();
+        oversizedBox[3] = 200;
+        Assert.False(SourceMediaRules.IsMp4Upload(oversizedBox, "oversized.mp4"));
+    }
+
+    [Fact]
     public void Renamed_exact_duplicate_earns_no_quota_credit()
     {
         var status = SourceMediaRules.Classify(exactDuplicate: true, frameDistance: 0, usableDuration: true);

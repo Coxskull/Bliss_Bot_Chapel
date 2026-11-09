@@ -559,9 +559,12 @@ public sealed class DemonstrationsController(
         await using var stream = file.OpenReadStream();
         using var memory = new MemoryStream();
         await stream.CopyToAsync(memory, cancellationToken);
+        var uploadBytes = memory.ToArray();
+        if (!SourceMediaRules.IsMp4Upload(uploadBytes, file.FileName))
+            return BadRequest(new { error = "Only MP4 source clips with a valid media signature are accepted." });
         var clip = await demonstrations.SaveUploadAsync(
             file.FileName,
-            memory.ToArray(),
+            uploadBytes,
             market,
             country,
             culture ?? string.Empty,
