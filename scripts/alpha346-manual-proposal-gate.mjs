@@ -10,8 +10,8 @@ export function inspect(p) {
  const requirements=['ownerApprovedScope','verifiedCustomerSupport','commercialTermsApproved','refundPolicyApproved','commercialPrivacyApproved','financeApprovedQuote','verifiedCustomerIdentity','approvedTimelineAndRevisions'];
  const missing=requirements.filter(x=>p[x]!==true);
  if (!p.price||!Number.isSafeInteger(p.price.amountMinor)||p.price.amountMinor<=0||!/^[A-Z]{3}$/.test(p.price.currency??''))missing.push('approvedAmountAndCurrency');
- if (!/^[1-9][0-9]*$/.test(String(p.quoteVersion??'')))missing.push('quoteVersion');
- return Object.freeze({directiveId:'ALPHA-FIRST-CUSTOMER-LAUNCH-346',synthetic:true,validation:missing.length?'BLOCKED_PENDING_BUSINESS_APPROVALS':'OFFLINE_READY_FOR_HUMAN_REVIEW_ONLY',missingApprovals:missing,deliverableCount:5,fingerprintSha256:createHash('sha256').update(JSON.stringify({id:p.inquiryReceipt,requirements:missing,deliverables:p.deliverables})).digest('hex'),customerContactPerformed:false,paymentEnabled:false,creatorAuthorized:false,campaignReady:false,delivery:'NOT_SENT',globalStop:'ENGAGED'});
+ if (!Number.isSafeInteger(p.quoteVersion)||p.quoteVersion<=0)missing.push('quoteVersion');
+ return Object.freeze({directiveId:'ALPHA-FIRST-CUSTOMER-LAUNCH-346',synthetic:true,validation:missing.length?'BLOCKED_PENDING_BUSINESS_APPROVALS':'OFFLINE_READY_FOR_HUMAN_REVIEW_ONLY',missingApprovals:missing,deliverableCount:5,fingerprintSha256:createHash('sha256').update(JSON.stringify({schema:'ALPHA346_PROPOSAL_V2',id:p.inquiryReceipt,provider:p.provider,serviceId:p.serviceId,quoteVersion:p.quoteVersion??null,price:p.price?{amountMinor:p.price.amountMinor,currency:p.price.currency}:null,approvals:requirements.map(key=>[key,p[key]===true]),requirements:missing,deliverables:p.deliverables})).digest('hex'),customerContactPerformed:false,paymentEnabled:false,creatorAuthorized:false,campaignReady:false,delivery:'NOT_SENT',globalStop:'ENGAGED'});
 }
 if (process.argv[1]?.endsWith('alpha346-manual-proposal-gate.mjs')) {
  try {

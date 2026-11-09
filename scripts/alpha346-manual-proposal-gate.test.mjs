@@ -23,3 +23,16 @@ test('even completed fictional approvals do not send, pay or change STOP',()=>{
  assert.equal(r.validation,'OFFLINE_READY_FOR_HUMAN_REVIEW_ONLY');
  assert.equal(r.paymentEnabled,false);assert.equal(r.globalStop,'ENGAGED');assert.equal(r.customerContactPerformed,false);
 });
+test('proposal fingerprint binds price, currency, quote version and approval state',()=>{
+ const a={...p,price:{amountMinor:14900,currency:'USD'},quoteVersion:1};
+ for(const change of [{price:{amountMinor:15000,currency:'USD'}},{price:{amountMinor:14900,currency:'PHP'}},{quoteVersion:2},{financeApprovedQuote:true}]) {
+  assert.notEqual(inspect(a).fingerprintSha256,inspect({...a,...change}).fingerprintSha256);
+ }
+ assert.equal(inspect(a).fingerprintSha256,inspect({...a,price:{currency:'USD',amountMinor:14900}}).fingerprintSha256);
+});
+
+test('quote versions require positive safe integers, not coerced strings or arrays',()=>{
+ for(const quoteVersion of [0,-1,1.5,Number.MAX_SAFE_INTEGER+1,'1',[1],{}])
+  assert.ok(inspect({...p,quoteVersion}).missingApprovals.includes('quoteVersion'));
+ assert.ok(!inspect({...p,quoteVersion:1}).missingApprovals.includes('quoteVersion'));
+});
