@@ -35,6 +35,14 @@ public sealed class BlissAuthenticationOptions
     // verification and hosted recovery/ingress checks are accepted.
     public bool AdvertiserSelfServiceRequested { get; set; }
     public string[] ApprovedAdvertiserSubjects { get; set; } = [];
+    // Verified Supabase identities with no trusted roles may enter only the
+    // registration endpoint while this is explicitly enabled. It is OFF by default.
+    public bool AdvertiserRegistrationRequested { get; set; }
+    public const string AdvertiserRegistrationPendingMarkerClaimType = "bliss_advertiser_registration_pending";
+    // Creator registration is a separate, no-role Supabase identity lane.
+    // Like advertiser registration, it creates no verified creator authority.
+    public bool CreatorRegistrationRequested { get; set; }
+    public const string CreatorRegistrationPendingMarkerClaimType = "bliss_creator_registration_pending";
 
     // Requires explicit issuer configuration; defaults cannot enable visitor
     // claims as trusted evidence of historic conversation ownership.

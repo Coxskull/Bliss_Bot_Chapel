@@ -119,6 +119,32 @@ public sealed class CreatorSelfServiceScopeTests
     }
 
     [Fact]
+    public async Task Shared_creator_directory_and_detail_hide_unverified_registration_records()
+    {
+        await using var db = Database();
+        var pendingId = Guid.NewGuid();
+        db.Creators.Add(new Creator { Id = pendingId, Name = "Pending registration", AuthorityStatus = "UNVERIFIED" });
+        db.CreatorAccountMemberships.Add(new CreatorAccountMembership
+        {
+            Id = Guid.NewGuid(), Subject = "pending-subject", CreatorId = pendingId,
+            SubmittedChannelUrl = "https://creator.example/channel", Status = "PENDING_REVIEW",
+            CreatedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+        var staff = new ClaimsPrincipal(new ClaimsIdentity(new[] {
+            new Claim("sub", "synthetic-staff"),
+            new Claim("roles", "bliss.operator", ClaimValueTypes.String, Issuer)
+        }, "verified-issuer", "name", "roles"));
+        var controller = Controller(db, Auth(), staff);
+
+        var catalogResponse = await controller.GetAll(default);
+        var catalog = Assert.IsType<OkObjectResult>(catalogResponse.Result);
+        var items = Assert.IsAssignableFrom<IReadOnlyList<Bliss.Api.Contracts.CreatorListDto>>(catalog.Value);
+        Assert.DoesNotContain(items, x => x.Id == pendingId);
+        Assert.IsType<NotFoundResult>((await controller.GetById(pendingId, default)).Result);
+    }
+
+    [Fact]
     public async Task Mixed_or_case_variant_creator_role_also_cannot_read_creator_directory()
     {
         await using var db = Database();
