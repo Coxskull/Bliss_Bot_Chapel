@@ -1,0 +1,30 @@
+name: Task20 deployed public endpoint negative acceptance (nonbillable)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/task20-hosted-negative-acceptance.yml'
+      - 'scripts/agm-ask-alpha-hosted-negative.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: task20-hosted-negative-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  hosted-public-invalid-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Inspect safe synthetic hosted-negative contract
+        run: |
+          node --check scripts/agm-ask-alpha-hosted-negative.mjs
+          grep -q 'Never submit a fully valid inference request' scripts/agm-ask-alpha-hosted-negative.mjs
+          grep -q 'no-consent-denied' scripts/agm-ask-alpha-hosted-negative.mjs
+      - name: Probe deployed Supabase endpoint, invalid requests only (no keys or billable inference)
+        run: node scripts/agm-ask-alpha-hosted-negative.mjs
