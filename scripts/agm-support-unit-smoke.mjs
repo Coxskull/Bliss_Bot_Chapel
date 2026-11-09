@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { supportNotice,supportCategories,supportRoute,supportCrmEligible } from
   "../supabase/functions/alpha-public-intake/support-contract.mjs";
-import { mapGhlContact } from
+import { mapGhlContact, ghlNotice } from
   "../supabase/functions/alpha-public-intake/ghl-payload.mjs";
 
 const expected = {
@@ -77,4 +77,13 @@ assert.ok(browser.includes('kind !== "support" ||'));
 assert.ok(browser.includes("result.case_id"));
 for(const secret of ["SUPABASE_SERVICE_ROLE_KEY","ALPHA_GHL_PRIVATE_INTEGRATION_TOKEN",
  "ALPHA_GHL_SUPPORT_SYNC_ENABLED"]) assert.ok(!html.includes(secret));
+// Main-branch interest consent and Task21 source must stay in lockstep.
+assert.equal(ghlNotice,"AGM-INTEREST-2026-11-08-GHL-01");
+assert.ok(browser.includes(ghlNotice),"Interest form must use the CRM notice");
+assert.ok(edge.includes('const notice = "'+ghlNotice+'"'),"Edge must accept current interest notice");
+assert.ok(browser.includes(supportNotice),"Support must retain separate notice");
+const privacyNotice = path("frontend/public/alpha-privacy.html");
+assert.ok(privacyNotice.includes(ghlNotice),"Privacy notice must match interest form");
+assert.ok(privacyNotice.includes(supportNotice),"Privacy notice must disclose support");
+
 console.log("Task21 isolated source contract PASS: 8 categories, 5 sensitive CRM denials, private schema and durable-case receipt guards.");

@@ -6,7 +6,7 @@
   if (!form || !status || !submit) return;
 
   const noticeVersion = form?.dataset.kind === "support"
-    ? "AGM-SUPPORT-2026-11-08" : "AGM-INTEREST-2026-11-05-GHL";
+    ? "AGM-SUPPORT-2026-11-08" : "AGM-INTEREST-2026-11-08-GHL-01";
   let pendingKey = null;
   let pendingDraft = null;
   let saved = false;

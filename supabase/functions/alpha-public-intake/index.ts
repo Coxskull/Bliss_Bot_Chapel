@@ -11,7 +11,7 @@ const allowed = new Set([
   "https://www.alphacreativecontent.com",
   "https://bliss-bot.vercel.app"
 ]);
-const notice = "AGM-INTEREST-2026-11-05-GHL";
+const notice = "AGM-INTEREST-2026-11-08-GHL-01";
 const supportedNotices = new Set(["AGM-INTEREST-2026-11-05", notice, supportNotice]);
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
 const out = (origin: string | null, payload: unknown, status = 200): Response => {
