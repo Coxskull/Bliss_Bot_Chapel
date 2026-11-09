@@ -14,6 +14,8 @@ public sealed class SourceMediaRulesTests
         Assert.True(SourceMediaRules.IsMp4Upload(ftyp, "VALID.MP4"));
         Assert.False(SourceMediaRules.IsMp4Upload(ftyp, "playlist.m3u8"));
         Assert.False(SourceMediaRules.IsMp4Upload(ftyp, "source.mov"));
+        Assert.False(SourceMediaRules.IsMp4Upload(ftyp, null));
+        Assert.False(SourceMediaRules.IsMp4Upload(ftyp, ""));
         Assert.False(SourceMediaRules.IsMp4Upload(ftyp[..9], "incomplete.mp4"));
         var playlist = System.Text.Encoding.UTF8.GetBytes("#EXTM3U\n#EXTINF:2\nasync:rist://example.invalid:7777\n");
         Assert.False(SourceMediaRules.IsMp4Upload(playlist, "forged.mp4"));
