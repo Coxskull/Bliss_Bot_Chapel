@@ -13,6 +13,8 @@ on:
       - 'scripts/build-vercel-portal.mjs'
       - 'scripts/alpha346-consent-reconciled.test.mjs'
       - 'scripts/task7-release-security-gates.test.mjs'
+      - 'scripts/task20-ask-alpha-offline-acceptance.test.mjs'
+      - 'supabase/functions/alpha-public-intake/ask-alpha.mjs'
       - 'docs/commercial/ALPHA-346-CONSENT-COMBINED-RELEASE-20261109.md'
       - '.github/workflows/alpha346-consent-integration-ci.yml'
   workflow_dispatch:
@@ -44,3 +46,5 @@ jobs:
           node --test scripts/alpha346-generated-public-portal.test.mjs scripts/alpha346-approved-service.test.mjs
       - name: Task7 fail-closed public-intake and planning quote denial matrix (offline)
         run: node --test scripts/task7-release-security-gates.test.mjs
+      - name: Task20 Ask Alpha consent, metering, simulated provider and receipt acceptance (offline)
+        run: node --test scripts/task20-ask-alpha-offline-acceptance.test.mjs
