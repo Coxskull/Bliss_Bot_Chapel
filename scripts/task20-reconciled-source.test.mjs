@@ -1,0 +1,45 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const source=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
+test("Ask Alpha stays inactive by default and remains consent-gated",()=>{
+ const html=source("frontend/public/global-media.html");
+ const generated=source(".vercel-portal/index.html");
+ const script=source("frontend/public/wedding-planner.js");
+ assert.match(html,/<section id="ask-alpha" data-ask-alpha-ai="false"/);
+ assert.match(generated,/<section id="ask-alpha" data-ask-alpha-ai="false"/);
+ assert.match(html,/id="ask-alpha-ai-consent-panel" hidden/);
+ assert.match(html,/id="ask-alpha-ai-consent" type="checkbox"/);
+ assert.match(html,/href="\/alpha-privacy.html#ask-alpha-ai"/);
+ assert.match(script,/askAlphaAiConsent\?\.checked/);
+ assert.match(script,/credentials:"omit"/);
+ assert.match(script,/request_key:crypto\.randomUUID\(\)/);
+ assert.match(script,/if \(!askAlphaLive \|\| !askAlphaAiConsent/);
+});
+test("Current consent-first CRM, budget and identity protections survive reconciliation",()=>{
+ const s=source("supabase/functions/alpha-public-intake/index.ts");
+ const gh=source("supabase/functions/alpha-public-intake/ghl-sync.mjs");
+ const ai=source("supabase/functions/alpha-public-intake/ask-alpha.mjs");
+ const privacy=source("frontend/public/alpha-privacy.html");
+ assert.match(s,/BUDGET_NOTICE/);
+ assert.match(s,/handleAskAlpha/);
+ assert.match(gh,/isApprovedGhlInquiry/);
+ assert.match(gh,/crm_suppression_checked/);
+ assert.match(gh,/RECEIPT_UNCONFIRMED/);
+ assert.match(ai,/RATE_LIMIT_INGRESS_NOT_VERIFIED/);
+ assert.match(ai,/ALPHA_ASK_ALPHA_ENABLED/);
+ assert.match(privacy,/AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1/);
+ assert.match(privacy,/id="ask-alpha-ai"/);
+ assert.match(privacy,/UNKNOWN/);
+});
+test("AI pricing and provider safety tests stay isolated from live resources",()=>{
+ const opts=source("Bliss.Api/Runtime/ControlledAiOptions.cs");
+ const flow=source(".github/workflows/isolated-postgres-regressions.yml");
+ const build=source("scripts/build-vercel-portal.mjs");
+ assert.match(opts,/MonthlyBudgetUsd/);
+ assert.match(flow,/Task20 AI finance governor/);
+ assert.doesNotMatch(flow,/\n  ask-alpha-hosted-negative:/);
+ assert.match(build,/ALPHA_ASK_ALPHA_FRONTEND_ENABLED === 'true'/);
+ const generated=source(".vercel-portal/index.html");
+ assert.doesNotMatch(generated,/data-ask-alpha-ai="true"/);
+});

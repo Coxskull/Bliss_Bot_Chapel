@@ -26,7 +26,7 @@
       </div>
       <figure><img src="/assets/bliss-chapel-hero.jpg" alt="Illustrated Alpha Bliss Chapel bringing brands, creators, and an AI planner together" width="1400" height="1279"><figcaption>Bliss Chapel · Ideas. Partners. Possibilities.</figcaption></figure>
     </section>
-    <section id="ask-alpha" class="ask-alpha-panel" aria-labelledby="ask-alpha-title">
+    <section id="ask-alpha" data-ask-alpha-ai="false" class="ask-alpha-panel" aria-labelledby="ask-alpha-title">
       <div class="ask-alpha-intro">
         <p class="eyebrow">ASK ALPHA™ · GUIDED HELP AVAILABLE</p>
         <h2 id="ask-alpha-title">Questions about advertising or creators?</h2>
@@ -41,6 +41,12 @@
           <input id="ask-alpha-input" maxlength="400" autocomplete="off" aria-label="Ask Alpha a question" placeholder="Type a general question..." />
           <button id="ask-alpha-send" type="button" aria-label="Send question to guided Ask Alpha">Ask</button>
         </div>
+        <div id="ask-alpha-ai-consent-panel" hidden>
+          <p role="note"><strong>AI conversation disclosure.</strong> With your explicit permission, your question and up to four recent chat turns will be sent to OpenAI for AI processing. The ALPHA server records a consent version, pseudonymous request fingerprints, usage, and a receipt; this is not a marketing signup or an official support case. Avoid confidential or sensitive details. Read the <a href="/alpha-privacy.html#ask-alpha-ai">Ask Alpha AI processing notice</a> before choosing AI. This notice is pending launch approval.</p>
+          <label><input id="ask-alpha-ai-consent" type="checkbox"> I explicitly agree to AI processing of my chat messages for an informational reply. This is separate from optional marketing permission.</label>
+          <label><input id="ask-alpha-marketing-consent" type="checkbox"> Optional: I agree to receive marketing communications. This is not required for Ask Alpha.</label>
+        </div>
+        <p id="ask-alpha-ai-status" class="ask-alpha-disclosure" role="status" aria-live="polite"></p>
         <p class="ask-alpha-disclosure">12 questions per session. Messages are only shown in this tab and are never submitted or stored.</p>
         <div class="ask-alpha-suggestions" aria-label="Suggested questions">
           <button type="button" data-ask-alpha-prompt="How does advertising with Alpha work?">For advertisers</button>
