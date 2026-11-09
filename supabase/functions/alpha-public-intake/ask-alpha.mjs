@@ -61,7 +61,7 @@ export function calculateLunaUsd(usage) {
   return Math.ceil((((input - cached - writes) * 0.10 + cached * 0.01 +
     writes * 0.25 + output * 0.50) / 1_000_000) * 1e8) / 1e8;
 }
-export async function readBoundedProviderJson(response) {
+export async function readBoundedProviderJson(response, signal = null) {
   // Content-Length is advisory; chunked responses must also obey this cap.
   const limit = 30000;
   const sizeHint = response.headers.get("content-length");
@@ -71,15 +71,21 @@ export async function readBoundedProviderJson(response) {
   if (!reader) throw Error("PROVIDER_BODY_UNAVAILABLE");
   const chunks = [];
   let total = 0;
+  // Keep the provider deadline active until the full body is received.
+  const abortRead = () => { void reader.cancel().catch(() => {}); };
+  signal?.addEventListener("abort", abortRead, {once:true});
   try {
+    if (signal?.aborted) throw Error("PROVIDER_BODY_TIMEOUT");
     for (;;) {
       const {done,value} = await reader.read();
+      if (signal?.aborted) throw Error("PROVIDER_BODY_TIMEOUT");
       if (done) break;
       total += value.byteLength;
       if (total > limit) throw Error("PROVIDER_RESPONSE_TOO_LARGE");
       chunks.push(value);
     }
   } finally {
+    signal?.removeEventListener("abort", abortRead);
     try { await reader.cancel(); } catch { /* stream closed */ }
   }
   const bytes = new Uint8Array(total);
@@ -108,7 +114,7 @@ const instructions = [
   "Optional marketing consent is separate and never implied by AI processing consent.",
   "Reply concisely in the visitor's language. Identify unknown details and refer to published ALPHA policies."
 ].join(" ");
-export async function handleAskAlpha({payload, req, client, origin, out, env = k => Deno.env.get(k), providerFetch = fetch}) {
+export async function handleAskAlpha({payload, req, client, origin, out, env = k => Deno.env.get(k), providerFetch = fetch, providerTimeoutMs = 15000}) {
   const reject = validateAskAlpha(payload);
   if (reject) return out(origin, {error: reject}, reject === "CONSENT_REQUIRED" ? 403 : 422);
   if (env("ALPHA_ASK_ALPHA_ENABLED") !== "true")
@@ -155,10 +161,13 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
   let settleState = "UNKNOWN", usd = null, usage = null, answer = null, providerId = null, outputHash = null;
   try {
     const abort = new AbortController();
-    const timer = setTimeout(() => abort.abort(),15000);
-    let response;
+    // Test harness may shorten the deadline, never extend the live cap.
+    const timeoutMs = Number.isSafeInteger(providerTimeoutMs) &&
+      providerTimeoutMs > 0 && providerTimeoutMs <= 15000
+        ? providerTimeoutMs : 15000;
+    const timer = setTimeout(() => abort.abort(),timeoutMs);
     try {
-      response = await providerFetch("https://api.openai.com/v1/responses",{
+      const response = await providerFetch("https://api.openai.com/v1/responses",{
         method:"POST",
         headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json",
           "Idempotency-Key":payload.request_key},
@@ -170,9 +179,8 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
         }),
         signal:abort.signal
       });
-    } finally {clearTimeout(timer);}
-    if (!response.ok) throw Error("PROVIDER_NOT_SUCCESSFUL");
-    const data = await readBoundedProviderJson(response);
+      if (!response.ok) throw Error("PROVIDER_NOT_SUCCESSFUL");
+      const data = await readBoundedProviderJson(response,abort.signal);
     answer = responseText(data);
     usd = calculateLunaUsd(data.usage);
     if (usd > RESERVATION_USD || usd > DAILY_MAX_USD || usd > MONTHLY_MAX_USD)
@@ -182,6 +190,7 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
     if (!providerId) throw Error("PROVIDER_RECEIPT_UNVERIFIED");
     outputHash = await hmac(salt, "ask-alpha-output:v1\\n" + answer);
     settleState = "SETTLED";
+    } finally {clearTimeout(timer);}
   } catch {
     // Unknown provider usage or failed transport is never considered free.
     settleState = "UNKNOWN";

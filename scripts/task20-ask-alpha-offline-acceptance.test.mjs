@@ -208,3 +208,32 @@ test("provider body is capped independently from Content-Length",async()=>{
   await assert.rejects(()=>readBoundedProviderJson(
     new Response("{}",{headers:{"content-length":"30001"}})),/PROVIDER_RESPONSE_TOO_LARGE/);
 });
+
+test("header-only provider stream hits body deadline and settles UNKNOWN",async()=>{
+  const client=makeClient();let paidCalls=0,bodyAborted=false;
+  const providerFetch=async (_url,opts)=>{
+    paidCalls++;
+    const stream=new ReadableStream({
+      start(controller){
+        opts.signal.addEventListener("abort",()=>{
+          bodyAborted=true;
+          controller.error(Error("synthetic stalled body aborted"));
+        },{once:true});
+      }
+    });
+    return new Response(stream,{status:200});
+  };
+  const actual=await handleAskAlpha({
+    ...context(client,providerFetch),providerTimeoutMs:25
+  });
+  assert.equal(paidCalls,1);
+  assert.equal(bodyAborted,true);
+  assert.equal(actual.status,503);
+  assert.equal(actual.body.error,"AI_UNAVAILABLE_RECONCILIATION_REQUIRED");
+  assert.equal(actual.body.answer,undefined);
+  assert.deepEqual(client.calls.map(c=>c.name),[
+    "alpha_ask_alpha_reserve","alpha_ask_alpha_settle"
+  ]);
+  assert.equal(client.calls[1].params.p_state,"UNKNOWN");
+  assert.equal(client.calls[1].params.p_actual_usd,null);
+});
