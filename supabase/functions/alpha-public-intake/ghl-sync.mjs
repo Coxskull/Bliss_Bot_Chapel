@@ -1,5 +1,18 @@
 import { mapGhlContact, ghlNotice } from "./ghl-payload.mjs";
 
+// Reuse the same approval decision before claiming and after re-reading a
+// claimed inquiry. The later read matters: consent, suppression, or operator
+// approval can be revoked after preflight and before CRM transmission.
+export function isApprovedGhlInquiry(r) {
+  return !!r && ["creator", "advertiser"].includes(r.kind) &&
+    r.notice_version === ghlNotice &&
+    r.processing_acknowledged === true && r.adult_confirmed === true &&
+    r.contact_consent === true && r.contact_consent_version === ghlNotice &&
+    !!r.contact_consent_at && r.followup_gate === "CLEARED" &&
+    r.business_identity_verified === true && r.decision_authority_verified === true &&
+    r.crm_suppression_checked === true && !!r.followup_approved_at;
+}
+
 // Private server-to-server bridge. Never call this from a browser.
 // Disabled unless the owner has configured all secrets and approved contact
 // creation workflows in the intended HighLevel sub-account.
@@ -7,15 +20,10 @@ export async function deliverToGhl(client, requestId) {
   // Fail closed until identity, authority, CRM suppression, and the
   // one-time inquiry-contact consent scope have each been verified.
   const review = await client.from("alpha_public_intake_requests")
-    .select("kind,notice_version,contact_consent,contact_consent_version,contact_consent_at,followup_gate,business_identity_verified,decision_authority_verified,crm_suppression_checked,followup_approved_at")
+    .select("kind,notice_version,processing_acknowledged,adult_confirmed,contact_consent,contact_consent_version,contact_consent_at,followup_gate,business_identity_verified,decision_authority_verified,crm_suppression_checked,followup_approved_at")
     .eq("id", requestId).single();
   if (review.error || !review.data) return "HOLD";
-  const r = review.data;
-  if (!["creator","advertiser"].includes(r.kind) || r.notice_version !== ghlNotice ||
-      r.contact_consent !== true || r.contact_consent_version !== ghlNotice ||
-      !r.contact_consent_at || r.followup_gate !== "CLEARED" ||
-      r.business_identity_verified !== true || r.decision_authority_verified !== true ||
-      r.crm_suppression_checked !== true || !r.followup_approved_at) return "HOLD";
+  if (!isApprovedGhlInquiry(review.data)) return "HOLD";
   if (Deno.env.get("ALPHA_GHL_SYNC_ENABLED") !== "true") return "DISABLED";
   const locationId = Deno.env.get("ALPHA_GHL_LOCATION_ID");
   const token = Deno.env.get("ALPHA_GHL_PRIVATE_INTEGRATION_TOKEN");
@@ -41,7 +49,9 @@ export async function deliverToGhl(client, requestId) {
     const lookup = await client.from("alpha_public_intake_requests")
       .select("kind,full_name,email,organization,website,notice_version,processing_acknowledged,adult_confirmed,contact_consent,contact_consent_version,contact_consent_at,followup_gate,business_identity_verified,decision_authority_verified,crm_suppression_checked,followup_approved_at,budget_amount,budget_currency,market_code,campaign_objective,preferred_media_formats,audience_requirements,preferred_languages")
       .eq("id", requestId).single();
-    if (lookup.error || !lookup.data) {
+    if (lookup.error || !isApprovedGhlInquiry(lookup.data)) {
+      // A record can change while the delivery lease is being claimed.
+      // Invalidate that lease rather than transmitting revoked consent.
       await finish("BLOCKED", null, "invalid_record");
       return "BLOCKED";
     }
