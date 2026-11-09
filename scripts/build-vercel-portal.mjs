@@ -18,6 +18,20 @@ for (const route of ['/', '/production.html', '/brand-intake.html', '/login.html
   html = html.replaceAll(`href="${route}"`, `href="${new URL(route, origin).href}"`);
 }
 html = html.replaceAll('href="/global-media.html"', 'href="/"');
+if (process.env.ALPHA_ASK_ALPHA_FRONTEND_ENABLED === 'true') {
+  // Explicit release gate. A code merge or Vercel build alone cannot enable AI.
+  // Backend metering, approved privacy notice and hosted acceptance are separate gates.
+  html = html.replace('data-ask-alpha-ai="false"', 'data-ask-alpha-ai="true"');
+  html = html.replace(
+    'This is a scripted informational guide, not a live AI model or human support. The chat itself does not collect account data or submit forms.',
+    'AI answers require your explicit consent and may contain mistakes. This is not a human support channel, an approved campaign or a binding quote.'
+  );
+  html = html.replace(
+    '12 questions per session. Messages are only shown in this tab and are never submitted or stored.',
+    'Up to 12 AI requests per session. With consent, chat context is sent to OpenAI; ALPHA stores limited request and usage receipts. No automatic CRM submission.'
+  );
+}
+
 await mkdir(resolve(output, 'assets'), { recursive: true });
 await writeFile(resolve(output, 'index.html'), html);
 await copyFile(resolve(source, 'global-media.css'), resolve(output, 'global-media.css'));

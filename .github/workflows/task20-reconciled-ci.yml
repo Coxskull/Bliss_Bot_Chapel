@@ -1,0 +1,40 @@
+name: Task20 reconciled AI source and safe public guide
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/task20-reconciled-ci.yml'
+      - '.github/workflows/isolated-postgres-regressions.yml'
+      - 'Bliss.Api/Operations/ControlledAiService.cs'
+      - 'Bliss.Api/Runtime/ControlledAiOptions.cs'
+      - 'Bliss.Tests/Api/ControlledAiApiTests.cs'
+      - 'Bliss.Tests/Api/ControlledAiProviderTests.cs'
+      - 'frontend/public/alpha-privacy.html'
+      - 'frontend/public/global-media.html'
+      - 'frontend/public/wedding-planner.js'
+      - 'scripts/build-vercel-portal.mjs'
+      - 'scripts/task20-reconciled-source.test.mjs'
+      - 'supabase/migrations/20261108_alpha_ask_alpha_*.sql'
+permissions:
+  contents: read
+jobs:
+  task20-safe-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compile public JS and generate offline portal
+        env:
+          BLISS_APPLICATION_ORIGIN: https://example.org
+        run: |
+          node --check frontend/public/wedding-planner.js
+          node scripts/build-vercel-portal.mjs
+      - name: Verify source reconciliation and synthetic Ask Alpha controls
+        run: |
+          node --test scripts/task20-reconciled-source.test.mjs
+          node scripts/agm-ask-alpha-offline-guards.mjs
+          node scripts/agm-ghl-unit-smoke.mjs

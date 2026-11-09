@@ -10,7 +10,21 @@ public sealed class ControlledAiProviderTests
     public static BlissRuntimeOptions Runtime() => new() { ControlledAi = new ControlledAiOptions {
         Enabled = true, Protocol = "Gateway", Provider = "LOCAL_TEST_DOUBLE", ApiToken = "test-not-a-live-key",
         TextEndpoint = "https://fixture.example/text", ImageEndpoint = "https://fixture.example/image", TextModel = "fixture-text", ImageModel = "fixture-image",
-        MaxCallsPerDay = 10, DailyBudgetUsd = 1, TotalBudgetUsd = 1, TextReservationUsd = .1m, ImageReservationUsd = .1m, TimeoutSeconds = 1 } };
+        MaxCallsPerDay = 10, DailyBudgetUsd = 1, MonthlyBudgetUsd = 1, TotalBudgetUsd = 1, TextReservationUsd = .1m, ImageReservationUsd = .1m, TimeoutSeconds = 1 } };
+    [Fact]
+    public void Monthly_budget_defaults_to_zero_and_blocks_provider_configuration()
+    {
+        var options = new ControlledAiOptions
+        {
+            Enabled = true, Protocol = "Gateway", Provider = "LOCAL_TEST_DOUBLE", ApiToken = "test-not-a-live-key",
+            TextEndpoint = "https://fixture.example/text", TextModel = "fixture-text", DailyBudgetUsd = 1,
+            TotalBudgetUsd = 1, MaxCallsPerDay = 1, TextReservationUsd = .1m
+        };
+
+        Assert.Equal(0m, options.MonthlyBudgetUsd);
+        Assert.False(options.Configured("TEXT"));
+    }
+
     private sealed class Handler(Func<HttpRequestMessage, string, HttpResponseMessage> reply) : HttpMessageHandler
     {
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct) =>
