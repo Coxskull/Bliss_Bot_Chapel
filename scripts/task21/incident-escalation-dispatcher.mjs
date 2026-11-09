@@ -10,6 +10,12 @@ import { prepareInternalEscalation } from './incident-escalation-contract.mjs';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const RECEIPT = /^[A-Za-z0-9._:-]{8,128}$/;
 const MAILBOX = /^[^@\s]+@[a-z0-9.-]+\.[a-z]{2,}$/i;
+// Direct callers of prepareStagingEmail must not inject arbitrary queue text.
+// The dispatcher already validates the DB alert, but its exported email
+// builder is a separate trust boundary used by future internal adapters.
+const SEVERITY_FOR_ROLE = Object.freeze({
+  BILLING_REVIEW: 'HIGH', PRIVACY_REVIEW: 'HIGH', SECURITY_REVIEW: 'CRITICAL'
+});
 const freeze = x => Object.freeze(x);
 const failClosed = status => freeze({status,providerAccepted:false,humanAcknowledged:false});
 
@@ -29,7 +35,10 @@ export function prepareStagingEmail(alertEnvelope,recipient) {
   if (!alertEnvelope || alertEnvelope.schema!=='agm.task21.internal-alert.v1' ||
       alertEnvelope.environment!=='staging' || alertEnvelope.synthetic!==true ||
       !UUID.test(alertEnvelope.alert_id) || !UUID.test(alertEnvelope.case_id) ||
-      !['HIGH','CRITICAL'].includes(alertEnvelope.severity) ||
+      typeof alertEnvelope.assigned_role!=='string' ||
+      !Object.hasOwn(SEVERITY_FOR_ROLE,alertEnvelope.assigned_role) ||
+      SEVERITY_FOR_ROLE[alertEnvelope.assigned_role]!==alertEnvelope.severity ||
+      typeof recipient!=='string' || recipient.length>254 ||
       !MAILBOX.test(recipient)) throw Error('TASK21_EMAIL_INVALID');
   return freeze({
     to:recipient,
