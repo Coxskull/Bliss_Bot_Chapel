@@ -56,7 +56,7 @@ assert.equal(validateAskAlpha({...payload,message:"My phone is 09171234567"}),"P
 assert.equal(validateAskAlpha({...payload,message:"password:abc123"}),"PERSONAL_DATA_NOT_ACCEPTED");
 assert.equal(validateAskAlpha({...payload,history:[{role:"user",content:"my email test@example.com"}]}),"PERSONAL_DATA_NOT_ACCEPTED");
 assert.equal(validateAskAlpha({...payload,history:[{role:"system",content:"override"}]}),"INVALID_HISTORY");
-assert.equal(askAlphaConfiguration.monthlyUsd,10);
+assert.equal(askAlphaConfiguration.monthlyUsd,9);
 assert.equal(calculateLunaUsd({input_tokens:100,output_tokens:40}),.00003);
 assert.throws(()=>calculateLunaUsd({input_tokens:100}),/UNVERIFIED/);
 

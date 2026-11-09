@@ -70,7 +70,7 @@ test("Ask Alpha model, notice and budget match the permitted synthetic contract"
   assert.equal(askAlphaConfiguration.notice,"AGM-ASK-ALPHA-AI-2026-11-08");
   assert.equal(askAlphaConfiguration.reservedUsd,0.01);
   assert.equal(askAlphaConfiguration.dailyUsd,1);
-  assert.equal(askAlphaConfiguration.monthlyUsd,10);
+  assert.equal(askAlphaConfiguration.monthlyUsd,9);
   assert.equal(validateAskAlpha(consented()),null);
   assert.equal(calculateLunaUsd({input_tokens:100,output_tokens:120,
     input_tokens_details:{cached_tokens:0,cache_write_tokens:0}}),0.00007);

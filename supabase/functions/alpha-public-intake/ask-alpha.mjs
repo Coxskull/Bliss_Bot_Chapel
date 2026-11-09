@@ -5,7 +5,7 @@ const MODEL = "gpt-6-luna";
 const NOTICE = "AGM-ASK-ALPHA-AI-2026-11-08";
 const RESERVATION_USD = 0.01;
 const MAX_OUTPUT_TOKENS = 400;
-const MONTHLY_MAX_USD = 10;
+const MONTHLY_MAX_USD = 9;
 const DAILY_MAX_USD = 1;
 const uuid = x => typeof x === "string" &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
