@@ -4,6 +4,14 @@ on:
     paths:
       - 'docs/commercial/ALPHA-346-*'
       - 'scripts/alpha346-*'
+      - 'scripts/fixtures/alpha346-stripe-sandbox-readback-20261109.json'
+      - 'Bliss.Infrastructure/Financials/StripeSandboxVerifier.cs'
+      - 'Bliss.Infrastructure/Financials/StripePlanningSandboxWebhookVerifier.cs'
+      - 'Bliss.Infrastructure/Financials/PlanningSandboxStripeReceiptStore.cs'
+      - 'Bliss.Infrastructure/Migrations/Alpha346PlanningSandboxStripeReceiptsV1.sql'
+      - 'Bliss.Tests/Financials/PlanningSandboxStripeReceiptStoreTests.cs'
+      - 'tools/staging/Alpha346.StripeSandboxReceiver/**'
+      - 'Bliss.Tests/Financials/StripePlanningSandboxWebhookTests.cs'
       - 'tools/commercial/alpha346-*'
       - 'frontend/public/contact.html'
       - 'frontend/public/services.html'
@@ -25,6 +33,12 @@ jobs:
         env:
           BLISS_APPLICATION_ORIGIN: https://example.org
         run: node scripts/build-vercel-portal.mjs
+      - name: Deny unapproved hosted checkout links or fixed package pricing in the generated portal
+        run: node --test scripts/alpha346-no-public-payment-gate.test.mjs
+      - name: Reconcile real Stripe test-mode payment and declined transaction offline
+        run: |
+          node --test scripts/alpha346-stripe-sandbox-acceptance.test.mjs
+          node scripts/alpha346-stripe-sandbox-reconcile.mjs
       - name: Validate generated inquiry-only service and private-tool exclusion
         run: node --test scripts/alpha346-generated-public-portal.test.mjs
       - run: node --test scripts/alpha346-manual-proposal-gate.test.mjs scripts/alpha346-proposal-desk-smoke.test.mjs scripts/alpha346-support-receipt.test.mjs scripts/alpha346-approved-service.test.mjs
@@ -38,3 +52,60 @@ jobs:
           set -e
           test "$status" -eq 3
           node --input-type=module -e 'import fs from "node:fs";let d=JSON.parse(fs.readFileSync("/tmp/alpha346-gate.json"));if(d.paymentEnabled||d.delivery!=="NOT_SENT"||d.validation!=="BLOCKED_PENDING_BUSINESS_APPROVALS")process.exit(1)'
+
+  sandbox-signed-webhook-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: financial_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d financial_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      BLISS_FINANCIAL_TEST_POSTGRES: Host=127.0.0.1;Port=5432;Database=financial_test;Username=postgres;Password=postgres
+    steps:
+      - name: Checkout exact proposed sources without credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Apply sandbox-only immutable receipts schema to disposable local Postgres
+        env:
+          PGPASSWORD: postgres
+        run: >-
+          psql -h 127.0.0.1 -p 5432 -U postgres -d financial_test
+          -v ON_ERROR_STOP=1
+          -f Bliss.Infrastructure/Migrations/Alpha346PlanningSandboxStripeReceiptsV1.sql
+      - name: Validate signed Stripe SANDBOX checkout and existing scope verifier
+        run: >-
+          dotnet test Bliss.Tests/Bliss.Tests.csproj
+          --configuration Release
+          --filter "FullyQualifiedName~StripePlanningSandboxWebhookTests|FullyQualifiedName~StripeSandboxVerifierTests|FullyQualifiedName~PlanningSandboxStripeReceiptStoreTests"
+          --logger "console;verbosity=normal"
+      - name: Compile isolated sandbox-only HTTP receiver (no deployment)
+        run: dotnet build tools/staging/Alpha346.StripeSandboxReceiver/Alpha346.StripeSandboxReceiver.csproj --configuration Release
+      - name: Exercise raw-body HTTPS-compatible webhook receiver over local loopback
+        run: node --test scripts/alpha346-stripe-sandbox-http-acceptance.test.mjs
+      - name: Check durable local HTTP receipts were written once each
+        env:
+          PGPASSWORD: postgres
+        shell: bash
+        run: |
+          set -euo pipefail
+          count="$(psql -h 127.0.0.1 -p 5432 -U postgres -d financial_test -v ON_ERROR_STOP=1 -Atqc "SELECT count(*) FROM alpha_sandbox.planning_checkout_webhook_receipts WHERE event_id LIKE 'evt_synthetic_http_%'")"
+          test "$count" = "3"
+          echo "ALPHA-346: exactly three unique synthetic HTTP payment events persisted; replays and conflicts did not add rows."
