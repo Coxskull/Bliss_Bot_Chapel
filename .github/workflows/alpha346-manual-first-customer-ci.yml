@@ -5,6 +5,9 @@ on:
       - 'docs/commercial/ALPHA-346-*'
       - 'scripts/alpha346-*'
       - 'scripts/fixtures/alpha346-stripe-sandbox-readback-20261109.json'
+      - 'Bliss.Infrastructure/Financials/StripeSandboxVerifier.cs'
+      - 'Bliss.Infrastructure/Financials/StripePlanningSandboxWebhookVerifier.cs'
+      - 'Bliss.Tests/Financials/StripePlanningSandboxWebhookTests.cs'
       - 'tools/commercial/alpha346-*'
       - 'frontend/public/contact.html'
       - 'frontend/public/services.html'
@@ -45,3 +48,24 @@ jobs:
           set -e
           test "$status" -eq 3
           node --input-type=module -e 'import fs from "node:fs";let d=JSON.parse(fs.readFileSync("/tmp/alpha346-gate.json"));if(d.paymentEnabled||d.delivery!=="NOT_SENT"||d.validation!=="BLOCKED_PENDING_BUSINESS_APPROVALS")process.exit(1)'
+
+  sandbox-signed-webhook-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact proposed sources without credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Validate signed Stripe SANDBOX checkout and existing scope verifier
+        run: >-
+          dotnet test Bliss.Tests/Bliss.Tests.csproj
+          --configuration Release
+          --filter "FullyQualifiedName~StripePlanningSandboxWebhookTests|FullyQualifiedName~StripeSandboxVerifierTests"
+          --logger "console;verbosity=normal"
