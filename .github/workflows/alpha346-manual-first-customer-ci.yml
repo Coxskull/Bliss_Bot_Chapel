@@ -4,6 +4,7 @@ on:
     paths:
       - 'docs/commercial/ALPHA-346-*'
       - 'scripts/alpha346-*'
+      - 'scripts/fixtures/alpha346-stripe-sandbox-readback-20261109.json'
       - 'tools/commercial/alpha346-*'
       - 'frontend/public/contact.html'
       - 'frontend/public/services.html'
@@ -27,6 +28,10 @@ jobs:
         run: node scripts/build-vercel-portal.mjs
       - name: Deny unapproved hosted checkout links or fixed package pricing in the generated portal
         run: node --test scripts/alpha346-no-public-payment-gate.test.mjs
+      - name: Reconcile real Stripe test-mode payment and declined transaction offline
+        run: |
+          node --test scripts/alpha346-stripe-sandbox-acceptance.test.mjs
+          node scripts/alpha346-stripe-sandbox-reconcile.mjs
       - name: Validate generated inquiry-only service and private-tool exclusion
         run: node --test scripts/alpha346-generated-public-portal.test.mjs
       - run: node --test scripts/alpha346-manual-proposal-gate.test.mjs scripts/alpha346-proposal-desk-smoke.test.mjs scripts/alpha346-support-receipt.test.mjs scripts/alpha346-approved-service.test.mjs
