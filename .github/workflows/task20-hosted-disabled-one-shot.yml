@@ -1,0 +1,31 @@
+name: Task20 one-shot disabled AI hosted probe
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/task20-hosted-disabled-one-shot.yml'
+      - 'scripts/task20-hosted-disabled-one-shot.mjs'
+permissions:
+  contents: read
+concurrency:
+  group: task20-hosted-disabled-one-shot
+  cancel-in-progress: true
+jobs:
+  hosted-disabled-nonbillable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify synthetic probe source and no API credentials
+        run: |
+          node --check scripts/task20-hosted-disabled-one-shot.mjs
+          test -z "$(printenv OPENAI_API_KEY || true)"
+          grep -q 'TASK20_DISABLED_PROBE_EXPIRED' scripts/task20-hosted-disabled-one-shot.mjs
+      - name: One request; demand AI_NOT_ENABLED without an answer
+        env:
+          TASK20_OPERATOR_VERIFIED_DISABLED: 'YES'
+        run: node scripts/task20-hosted-disabled-one-shot.mjs
