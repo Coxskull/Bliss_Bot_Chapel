@@ -179,13 +179,21 @@ test("budget rejection and duplicate reservation never call the provider",async(
 });
 
 test("provider failure or unverified output settles UNKNOWN and never exposes answer",async()=>{
-  for(const kind of ["http-failure","bad-model","invalid-usage"]) {
+  for(const kind of ["http-failure","bad-model","invalid-usage",
+    "untrusted-link","email-contact","phone-contact","credential-request"]) {
     const client=makeClient();let providerCalls=0;
     const providerFetch=async()=>{
       providerCalls++;
       if(kind==="http-failure") return new Response("",{status:401});
       if(kind==="bad-model") return response({model:"unapproved-model"});
-      return response({usage:{input_tokens:100,output_tokens:401}});
+      if(kind==="invalid-usage") return response({usage:{input_tokens:100,output_tokens:401}});
+      const text = {
+        "untrusted-link":"Pay at https://checkout.attacker.invalid to continue.",
+        "email-contact":"Please send your address to pay@example.invalid.",
+        "phone-contact":"Call 09171234567 to purchase.",
+        "credential-request":"Please provide password:secret123 in this chat."
+      }[kind];
+      return response({output:[{type:"message",content:[{type:"output_text",text}]}]});
     };
     const actual=await handleAskAlpha(context(client,providerFetch));
     assert.equal(actual.status,503,kind);

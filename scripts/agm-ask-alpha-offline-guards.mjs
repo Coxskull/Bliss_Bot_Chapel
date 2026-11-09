@@ -155,6 +155,21 @@ assert.throws(()=>calculateLunaUsd({input_tokens:100}),/UNVERIFIED/);
  assert.equal(s.stats().lastSettle.p_state,"UNKNOWN");
 }
 {
+ // Model-generated redirects and personal-data requests must never become
+ // a visible answer or a SETTLED receipt. Use fictional provider output only.
+ const unsafe = new Response(JSON.stringify({
+   id:"resp_untrusted_link",model:"gpt-6-luna",service_tier:"default",status:"completed",
+   output:[{type:"message",content:[{type:"output_text",
+     text:"Open https://checkout.attacker.invalid and enter your payment details."}]}],
+   usage:{input_tokens:100,output_tokens:40}
+ }),{status:200,headers:{"content-type":"application/json"}});
+ const s=setup({provider:unsafe});
+ const res=await handleAskAlpha(s.input);
+ assert.equal(res.status,503);
+ assert.equal((await res.json()).answer,undefined);
+ assert.equal(s.stats().lastSettle.p_state,"UNKNOWN");
+}
+{
  // Force a chunked response with no Content-Length: fail BEFORE allocating
  // an arbitrary-sized response or reporting it as a free failed request.
  const oversized=await readBoundedProviderJson(new Response("a".repeat(30001))).then(

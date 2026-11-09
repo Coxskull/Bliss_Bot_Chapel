@@ -99,7 +99,13 @@ function responseText(json) {
     throw Error("PROVIDER_OUTPUT_UNVERIFIED");
   const result = json.output.flatMap(o => o.content || [])
     .filter(c => c.type === "output_text").map(c => c.text).join("\n").trim();
-  if (!result || result.length > 3000) throw Error("PROVIDER_OUTPUT_UNVERIFIED");
+  // Provider instructions are not a sufficient output-safety boundary.
+  // A hallucinated external link or contact/credential request can redirect
+  // an advertiser into an unapproved payment or personal-data workflow.
+  // The approved human path is the first-party relative /contact.html route.
+  if (!result || result.length > 3000 || containsSensitiveChatData(result) ||
+      /(?:\bhttps?:\/\/|\bwww\.)/i.test(result))
+    throw Error("PROVIDER_OUTPUT_UNVERIFIED");
   return result;
 }
 const instructions = [
