@@ -7,6 +7,9 @@ on:
       - 'scripts/fixtures/alpha346-stripe-sandbox-readback-20261109.json'
       - 'Bliss.Infrastructure/Financials/StripeSandboxVerifier.cs'
       - 'Bliss.Infrastructure/Financials/StripePlanningSandboxWebhookVerifier.cs'
+      - 'Bliss.Infrastructure/Financials/PlanningSandboxStripeReceiptStore.cs'
+      - 'Bliss.Infrastructure/Migrations/Alpha346PlanningSandboxStripeReceiptsV1.sql'
+      - 'Bliss.Tests/Financials/PlanningSandboxStripeReceiptStoreTests.cs'
       - 'Bliss.Tests/Financials/StripePlanningSandboxWebhookTests.cs'
       - 'tools/commercial/alpha346-*'
       - 'frontend/public/contact.html'
@@ -54,6 +57,22 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: financial_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d financial_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      BLISS_FINANCIAL_TEST_POSTGRES: Host=127.0.0.1;Port=5432;Database=financial_test;Username=postgres;Password=postgres
     steps:
       - name: Checkout exact proposed sources without credentials
         uses: actions/checkout@v4
@@ -63,9 +82,16 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
+      - name: Apply sandbox-only immutable receipts schema to disposable local Postgres
+        env:
+          PGPASSWORD: postgres
+        run: >-
+          psql -h 127.0.0.1 -p 5432 -U postgres -d financial_test
+          -v ON_ERROR_STOP=1
+          -f Bliss.Infrastructure/Migrations/Alpha346PlanningSandboxStripeReceiptsV1.sql
       - name: Validate signed Stripe SANDBOX checkout and existing scope verifier
         run: >-
           dotnet test Bliss.Tests/Bliss.Tests.csproj
           --configuration Release
-          --filter "FullyQualifiedName~StripePlanningSandboxWebhookTests|FullyQualifiedName~StripeSandboxVerifierTests"
+          --filter "FullyQualifiedName~StripePlanningSandboxWebhookTests|FullyQualifiedName~StripeSandboxVerifierTests|FullyQualifiedName~PlanningSandboxStripeReceiptStoreTests"
           --logger "console;verbosity=normal"
