@@ -5,7 +5,39 @@ import { randomUUID } from "node:crypto";
 // Never contacts HighLevel: kind=privacy is explicitly not CRM eligible.
 // All test identities use reserved @example.invalid domain and are
 // cleaned up by an independent exact-identity DB readback/delete step.
-const endpoint = "https://bkutbglzivfdnoerigyb.supabase.co/functions/v1/alpha-public-intake";
+// A nonproduction privacy-repeat test must never target the real public intake
+// by default. The three existing ALPHA projects are production-like; no hosted
+// POST runs until an owner has verified a distinct, disposable staging target.
+// This check runs BEFORE any network activity or synthetic identity creation.
+const productionRefs = new Set([
+  "bkutbglzivfdnoerigyb", // Bliss Bot
+  "giujjtscdvtpyjpnceag", // Alpha
+  "yyesqcyjhqjryaskrqip" // Alpha Lead Generation
+]);
+const env = process.env;
+const ref = (env.ALPHA_PRIVACY_STAGING_PROJECT_REF || "").trim();
+const endpointString = (env.ALPHA_PRIVACY_STAGING_ENDPOINT || "").trim();
+if (!ref || !endpointString || env.ALPHA_PRIVACY_STAGING_AUTHORIZED !== "CONFIRMED_ISOLATED_STAGING")
+  throw Error("ALPHA_PRIVACY_STAGING_TARGET_NOT_CONFIRMED");
+if (productionRefs.has(ref))
+  throw Error("ALPHA_PRIVACY_PRODUCTION_PROJECT_FORBIDDEN");
+if (!/^[a-z0-9]{20}$/.test(ref))
+  throw Error("ALPHA_PRIVACY_STAGING_PROJECT_REF_INVALID");
+let endpointUrl;
+try { endpointUrl = new URL(endpointString); }
+catch { throw Error("ALPHA_PRIVACY_STAGING_ENDPOINT_INVALID"); }
+if (endpointUrl.protocol !== "https:" || endpointUrl.hostname !== ref + ".supabase.co" ||
+    endpointUrl.port || endpointUrl.username || endpointUrl.password || endpointUrl.search || endpointUrl.hash)
+  throw Error("ALPHA_PRIVACY_STAGING_ENDPOINT_PROJECT_MISMATCH");
+if (endpointUrl.pathname !== "/functions/v1/alpha-public-intake")
+  throw Error("ALPHA_PRIVACY_STAGING_ENDPOINT_NOT_INTAKE");
+// Optional dry run validates target configuration without fetching the endpoint.
+if (env.ALPHA_PRIVACY_STAGING_DRY_RUN === "true") {
+  console.log("ALPHA_PRIVACY_STAGING_TARGET_PREFLIGHT_PASS: synthetic only, no HTTP or DB writes");
+  process.exit(0);
+}
+const endpoint = endpointUrl.toString();
+
 const origin = "https://alphacreativecontent.com";
 const suffix = [process.env.GITHUB_RUN_ID || "local",
   process.env.GITHUB_RUN_ATTEMPT || "1"].join("-");
