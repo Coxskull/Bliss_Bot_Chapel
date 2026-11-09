@@ -32,7 +32,7 @@ public static class StripeSandboxVerifier
   if(string.IsNullOrWhiteSpace(id)||!id.StartsWith("evt_",StringComparison.Ordinal)||o.GetProperty("id").GetString()!=expected.PaymentIntentId||o.GetProperty("object").GetString()!="payment_intent"||o.GetProperty("livemode").GetBoolean()||o.GetProperty("status").GetString()!=expectedStatus||expected.AmountMinor<=0||o.GetProperty("amount").GetInt64()!=expected.AmountMinor||o.GetProperty("amount_received").GetInt64()!=0||o.GetProperty("currency").GetString()!=expected.Currency.ToLowerInvariant()||metadata.GetProperty("merchant_id").GetString()!=expected.Scope.MerchantId.ToString()||metadata.GetProperty("campaign_id").GetString()!=expected.Scope.CampaignId.ToString()||metadata.GetProperty("module").GetString()!=expected.Scope.Module.ToString())throw new ArgumentException("Mock status does not match funding authority.");
   return new(id!,expected.PaymentIntentId,state);
  }
- private static JsonDocument VerifyEnvelope(byte[] body,string signature,string webhookSecret,DateTimeOffset now)
+ internal static JsonDocument VerifyEnvelope(byte[] body,string signature,string webhookSecret,DateTimeOffset now)
  {
   if (body is null || body.Length > 1_000_000 || string.IsNullOrWhiteSpace(signature) || signature.Length > 4096 || string.IsNullOrWhiteSpace(webhookSecret)) throw new ArgumentException("Bounded body and signing secret required.");
   var parts=signature.Split(',').Select(x=>x.Trim().Split('=',2)).ToArray();
