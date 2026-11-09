@@ -20,7 +20,8 @@ const liveDisabled = () => ({
   OPENAI_API_KEY: "synthetic-local-key",
   ALPHA_ASK_ALPHA_HASH_SECRET: "synthetic-only-salt-".repeat(4)
 });
-const enabled = () => ({ ...liveDisabled(), ALPHA_ASK_ALPHA_ENABLED: "true" });
+const enabled = () => ({ ...liveDisabled(), ALPHA_ASK_ALPHA_ENABLED: "true",
+  ALPHA_ASK_ALPHA_INGRESS_VERIFIED: "CF_IP_OVERWRITE_PROBE_PASS_V1" });
 const environment = vars => key => vars[key] ?? null;
 const request = (ip = "203.0.113.7") => new Request(
   "https://example.invalid/functions/v1/alpha-public-intake",
@@ -104,11 +105,13 @@ test("consent and personal-information denials happen before metering and provid
   }
 });
 
-test("disabled, unconfigured, or untrusted IP request fails without a paid call",async()=>{
+test("disabled, unverified ingress, unconfigured or untrusted IP request fails without a paid call",async()=>{
   const cases=[
     [liveDisabled(),"203.0.113.7","AI_NOT_ENABLED"],
     [ {...enabled(), OPENAI_API_KEY:""},"203.0.113.7","AI_SERVICE_NOT_CONFIGURED"],
     [ {...enabled(), ALPHA_ASK_ALPHA_HASH_SECRET:"too-short"},"203.0.113.7","AI_SERVICE_NOT_CONFIGURED"],
+    [ {...enabled(),ALPHA_ASK_ALPHA_INGRESS_VERIFIED:""},"203.0.113.7","RATE_LIMIT_INGRESS_NOT_VERIFIED"],
+    [ {...enabled(),ALPHA_ASK_ALPHA_INGRESS_VERIFIED:"UNVERIFIED"},"203.0.113.7","RATE_LIMIT_INGRESS_NOT_VERIFIED"],
     [enabled(),null,"RATE_LIMIT_IDENTITY_UNAVAILABLE"],
     [enabled(),"malformed-client-supplied-ip","RATE_LIMIT_IDENTITY_UNAVAILABLE"]
   ];
