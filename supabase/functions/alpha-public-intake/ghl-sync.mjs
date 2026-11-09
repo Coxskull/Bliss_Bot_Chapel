@@ -1,9 +1,21 @@
-import { mapGhlContact } from "./ghl-payload.mjs";
+import { mapGhlContact, ghlNotice } from "./ghl-payload.mjs";
 
 // Private server-to-server bridge. Never call this from a browser.
 // Disabled unless the owner has configured all secrets and approved contact
 // creation workflows in the intended HighLevel sub-account.
 export async function deliverToGhl(client, requestId) {
+  // Fail closed until identity, authority, CRM suppression, and the
+  // one-time inquiry-contact consent scope have each been verified.
+  const review = await client.from("alpha_public_intake_requests")
+    .select("kind,notice_version,contact_consent,contact_consent_version,contact_consent_at,followup_gate,business_identity_verified,decision_authority_verified,crm_suppression_checked,followup_approved_at")
+    .eq("id", requestId).single();
+  if (review.error || !review.data) return "HOLD";
+  const r = review.data;
+  if (!["creator","advertiser"].includes(r.kind) || r.notice_version !== ghlNotice ||
+      r.contact_consent !== true || r.contact_consent_version !== ghlNotice ||
+      !r.contact_consent_at || r.followup_gate !== "CLEARED" ||
+      r.business_identity_verified !== true || r.decision_authority_verified !== true ||
+      r.crm_suppression_checked !== true || !r.followup_approved_at) return "HOLD";
   if (Deno.env.get("ALPHA_GHL_SYNC_ENABLED") !== "true") return "DISABLED";
   const locationId = Deno.env.get("ALPHA_GHL_LOCATION_ID");
   const token = Deno.env.get("ALPHA_GHL_PRIVATE_INTEGRATION_TOKEN");
@@ -27,7 +39,7 @@ export async function deliverToGhl(client, requestId) {
 
   try {
     const lookup = await client.from("alpha_public_intake_requests")
-      .select("kind,full_name,email,organization,website,notice_version,processing_acknowledged,adult_confirmed")
+      .select("kind,full_name,email,organization,website,notice_version,processing_acknowledged,adult_confirmed,contact_consent,contact_consent_version,contact_consent_at,followup_gate,business_identity_verified,decision_authority_verified,crm_suppression_checked,followup_approved_at,budget_amount,budget_currency,market_code,campaign_objective,preferred_media_formats,audience_requirements,preferred_languages")
       .eq("id", requestId).single();
     if (lookup.error || !lookup.data) {
       await finish("BLOCKED", null, "invalid_record");
@@ -35,7 +47,16 @@ export async function deliverToGhl(client, requestId) {
     }
     let payload;
     try {
-      payload = mapGhlContact(lookup.data, locationId);
+      const fieldIds = {
+        budget_amount: Deno.env.get("ALPHA_GHL_FIELD_BUDGET_AMOUNT"),
+        budget_currency: Deno.env.get("ALPHA_GHL_FIELD_BUDGET_CURRENCY"),
+        market_code: Deno.env.get("ALPHA_GHL_FIELD_MARKET_CODE"),
+        campaign_objective: Deno.env.get("ALPHA_GHL_FIELD_CAMPAIGN_OBJECTIVE"),
+        preferred_media_formats: Deno.env.get("ALPHA_GHL_FIELD_MEDIA_FORMATS"),
+        audience_requirements: Deno.env.get("ALPHA_GHL_FIELD_AUDIENCE_REQUIREMENTS"),
+        preferred_languages: Deno.env.get("ALPHA_GHL_FIELD_LANGUAGES")
+      };
+      payload = mapGhlContact(lookup.data, locationId, fieldIds);
     } catch {
       await finish("BLOCKED", null, "invalid_record");
       return "BLOCKED";

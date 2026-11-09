@@ -1,6 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import { deliverToGhl } from "./ghl-sync.mjs";
+import { handleAskAlpha } from "./ask-alpha.mjs";
+import { BUDGET_NOTICE, normalizeStructuredAdvertiser } from "./marketplace-intake.mjs";
 
 // Public interest requests are not account enrollment, advertiser purchases,
 // creator verification, or a pathway into protected Railway workspaces.
@@ -10,8 +12,13 @@ const allowed = new Set([
   "https://www.alphacreativecontent.com",
   "https://bliss-bot.vercel.app"
 ]);
-const notice = "AGM-INTEREST-2026-11-05-GHL";
-const supportedNotices = new Set(["AGM-INTEREST-2026-11-05", notice]);
+const notice = BUDGET_NOTICE;
+const supportedNotices = new Set([
+  "AGM-INTEREST-2026-11-05",
+  "AGM-INTEREST-2026-11-05-GHL",
+  "AGM-INTEREST-2026-11-08-GHL-01",
+  notice
+]);
 const jsonHeaders = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" };
 const out = (origin: string | null, payload: unknown, status = 200): Response => {
   const headers = new Headers(jsonHeaders);
@@ -64,6 +71,18 @@ Deno.serve(async (req: Request) => {
     payload = parsed;
   } catch { return out(origin, { error: "Invalid submission" }, 400); }
 
+  // Task #20 is a separately consent-gated action within this EXISTING intake
+  // function. It cannot request a CRM contact, protected role or campaign action.
+  if (payload.action === "ask_alpha") {
+    const dbUrl = Deno.env.get("SUPABASE_URL");
+    const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!dbUrl || !secret) return out(origin, { error: "AI_SERVICE_NOT_CONFIGURED" }, 503);
+    const client = createClient(dbUrl, secret, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+    return await handleAskAlpha({ payload, req, client, origin, out });
+  }
+
   // Honeypot: no submission or personal-data write for automated fills.
   if (payload.middle_name) return out(origin, { error: "Unable to accept this submission" }, 400);
   const kind = payload.kind;
@@ -72,7 +91,7 @@ Deno.serve(async (req: Request) => {
   const email = rawEmail?.toLowerCase() ?? null;
   const organization = trimmed(payload.organization ?? "", 160);
   const website = trimmed(payload.website ?? "", 500);
-  const market = trimmed(payload.market ?? "", 120);
+  const rawMarket = trimmed(payload.market ?? "", 120);
   const category = trimmed(payload.category ?? "", 80);
   const description = trimmed(payload.description ?? "", 800);
   const ack = payload.processing_acknowledged === true;
@@ -80,14 +99,25 @@ Deno.serve(async (req: Request) => {
   const marketing = payload.marketing_opt_in === true;
   const key = payload.request_key;
   const expected = supportedNotices.has(String(payload.notice_version));
+  const contactConsent = payload.contact_consent === true;
+  let structured = null;
+  if (kind === "advertiser" && payload.notice_version === notice) {
+    try { structured = normalizeStructuredAdvertiser(payload); }
+    catch { return out(origin, { error: "Please check the campaign budget, market, media, language and consent fields." }, 422); }
+  }
+  // Compare and persist the normalized market label on every retry. The browser
+  // form's structured market code is not the legacy free-text market field.
+  const market = structured?.market ?? rawMarket;
 
   if (!["creator", "advertiser", "privacy"].includes(String(kind)) ||
       !full_name || full_name.length < 2 || !email || !validEmail(email) ||
       organization === null || website === null || market === null ||
       category === null || description === null ||
       !validUuid(key) || !expected || !ack || !adult ||
+      (payload.notice_version === notice && kind !== "privacy" && !contactConsent) ||
+      (kind === "advertiser" && payload.notice_version === notice && !structured) ||
       (kind === "creator" && (!website || !validUrl(website) || !market || !category || organization !== "")) ||
-      (kind === "advertiser" && (!organization || !market || (website !== "" && !validUrl(website)))) ||
+      (kind === "advertiser" && (!organization || (!structured && !market) || (website !== "" && !validUrl(website)))) ||
       (kind === "privacy" && !description) ||
       (website && !validUrl(website))) {
     return out(origin, { error: "Please complete the required fields, review the privacy notice, and try again." }, 422);
@@ -106,6 +136,10 @@ Deno.serve(async (req: Request) => {
     processing_acknowledged: true,
     adult_confirmed: true,
     marketing_opt_in: marketing,
+    contact_consent: contactConsent,
+    contact_consent_version: contactConsent ? payload.notice_version : null,
+    contact_consent_at: contactConsent ? new Date().toISOString() : null,
+    ...(structured ?? {}),
     notice_version: payload.notice_version
   };
   try {
@@ -117,7 +151,7 @@ Deno.serve(async (req: Request) => {
         // Same random request key and the identical submitted information only.
         // Never disclose another person's previously stored request.
         const old = await client.from("alpha_public_intake_requests")
-          .select("id,created_at,kind,email,full_name,organization,website,market,category,description,marketing_opt_in,notice_version")
+          .select("id,created_at,kind,email,full_name,organization,website,market,category,description,marketing_opt_in,contact_consent,contact_consent_version,budget_amount,budget_amount_minor,budget_currency,market_code,campaign_objective,preferred_media_formats,audience_requirements,preferred_languages,notice_version")
           .eq("request_key", key).maybeSingle();
         const existing = old.data;
         if (!existing || old.error ||
@@ -126,6 +160,15 @@ Deno.serve(async (req: Request) => {
             existing.website !== website || existing.market !== market ||
             existing.category !== category || existing.description !== description ||
             existing.marketing_opt_in !== marketing ||
+            existing.contact_consent !== contactConsent ||
+            existing.contact_consent_version !== (contactConsent ? payload.notice_version : null) ||
+            Number(existing.budget_amount_minor ?? 0) !== (structured?.budget_amount_minor ?? 0) ||
+            existing.budget_currency !== (structured?.budget_currency ?? null) ||
+            existing.market_code !== (structured?.market_code ?? null) ||
+            existing.campaign_objective !== (structured?.campaign_objective ?? null) ||
+            JSON.stringify(existing.preferred_media_formats ?? null) !== JSON.stringify(structured?.preferred_media_formats ?? null) ||
+            existing.audience_requirements !== (structured?.audience_requirements ?? null) ||
+            JSON.stringify(existing.preferred_languages ?? null) !== JSON.stringify(structured?.preferred_languages ?? null) ||
             existing.notice_version !== payload.notice_version)
           return out(origin, { error: "A request already exists for these details." }, 409);
         record = { id: existing.id, created_at: existing.created_at };

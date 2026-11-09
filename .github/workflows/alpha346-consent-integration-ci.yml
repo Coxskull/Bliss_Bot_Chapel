@@ -1,0 +1,50 @@
+name: ALPHA first-customer consent and planning-service integration
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/public/join-advertiser.html'
+      - 'frontend/public/join-creator.html'
+      - 'frontend/public/alpha-intake.js'
+      - 'frontend/public/alpha-privacy.html'
+      - 'frontend/public/global-media.html'
+      - 'frontend/public/services.html'
+      - 'frontend/public/contact.html'
+      - 'scripts/build-vercel-portal.mjs'
+      - 'scripts/alpha346-consent-reconciled.test.mjs'
+      - 'scripts/task7-release-security-gates.test.mjs'
+      - 'scripts/task20-ask-alpha-offline-acceptance.test.mjs'
+      - 'supabase/functions/alpha-public-intake/ask-alpha.mjs'
+      - 'docs/commercial/ALPHA-346-CONSENT-COMBINED-RELEASE-20261109.md'
+      - '.github/workflows/alpha346-consent-integration-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-source-and-artifact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate isolated public portal without deploying
+        env:
+          BLISS_APPLICATION_ORIGIN: https://bliss-bot-production-5eb8.up.railway.app
+        run: node scripts/build-vercel-portal.mjs
+      - name: Check consent and five planning deliverables
+        run: |
+          node --check scripts/alpha346-consent-reconciled.test.mjs
+          node scripts/alpha346-consent-reconciled.test.mjs
+          node --test scripts/alpha346-generated-public-portal.test.mjs scripts/alpha346-approved-service.test.mjs
+      - name: Task7 fail-closed public-intake and planning quote denial matrix (offline)
+        run: node --test scripts/task7-release-security-gates.test.mjs
+      - name: Task20 Ask Alpha consent, metering, simulated provider and receipt acceptance (offline)
+        run: node --test scripts/task20-ask-alpha-offline-acceptance.test.mjs

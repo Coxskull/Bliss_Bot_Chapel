@@ -5,13 +5,15 @@
   const submit = document.querySelector("#submit-button");
   if (!form || !status || !submit) return;
 
-  const noticeVersion = "AGM-INTEREST-2026-11-08-GHL-01";
+  const noticeVersion = "AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1";
   let pendingKey = null;
   let pendingDraft = null;
   let saved = false;
   const field = name => form.elements.namedItem(name);
   const value = name => String(field(name)?.value ?? "").trim();
   const checked = name => Boolean(field(name)?.checked);
+  const checkedValues = name => [...form.querySelectorAll('input[name="' + name + '"]:checked')].map(el => el.value);
+  const csvValues = name => value(name).split(",").map(v => v.trim()).filter(Boolean);
   const show = (message, type) => {
     status.hidden = false;
     status.textContent = message;
@@ -47,11 +49,26 @@
       processing_acknowledged: checked("processing_acknowledged"),
       adult_confirmed: checked("adult_confirmed"),
       marketing_opt_in: checked("marketing_opt_in"),
+      contact_consent: checked("contact_consent"),
       notice_version: noticeVersion
     };
-    if (!draft.processing_acknowledged || !draft.adult_confirmed) {
-      show("Please confirm your age and read the Privacy Notice before submitting.", "error");
+    if (!draft.processing_acknowledged || !draft.adult_confirmed ||
+        (kind !== "privacy" && !draft.contact_consent)) {
+      show("Please confirm your age, review the Privacy Notice, and choose whether ALPHA may follow up about this inquiry.", "error");
       return;
+    }
+    if (kind === "advertiser") {
+      draft.market_code = value("market_code");
+      draft.budget_amount = value("budget_amount");
+      draft.budget_currency = value("budget_currency");
+      draft.campaign_objective = value("campaign_objective");
+      draft.preferred_media_formats = checkedValues("preferred_media_formats");
+      draft.audience_requirements = value("audience_requirements");
+      draft.preferred_languages = csvValues("preferred_languages");
+      if (draft.preferred_media_formats.length === 0) {
+        show("Choose at least one media format you would consider.", "error");
+        return;
+      }
     }
     if (JSON.stringify(draft) !== pendingDraft || !pendingKey) {
       pendingKey = crypto.randomUUID();
