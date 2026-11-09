@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { BUDGET_NOTICE } from "../supabase/functions/alpha-public-intake/marketplace-intake.mjs";
+import { BUDGET_NOTICE, normalizeStructuredAdvertiser } from "../supabase/functions/alpha-public-intake/marketplace-intake.mjs";
 import { mapGhlContact, ghlNotice } from "../supabase/functions/alpha-public-intake/ghl-payload.mjs";
 import { calculatePlanningServiceQuote, calculateSustainableQuote } from "../supabase/functions/alpha-public-intake/marketplace-budget.mjs";
 
@@ -169,4 +169,30 @@ test("planning quote fails closed across all missing evidence and approval gates
     assert.equal(outcome.status,"DRAFT",name);
     assert.equal(outcome.reason,reason,name);
   }
+});
+
+
+test("same-key structured advertiser retry compares persisted normalized market (no false 409)", () => {
+  const edge=read("supabase/functions/alpha-public-intake/index.ts");
+  const parsePosition=edge.indexOf("normalizeStructuredAdvertiser(payload)");
+  const marketPosition=edge.indexOf("const market = structured?.market ?? rawMarket;");
+  const retryPosition=edge.indexOf("existing.market !== market");
+  assert.ok(parsePosition >= 0 && marketPosition > parsePosition && retryPosition > marketPosition,
+    "server must compare the persisted structured-market label during same-key idempotent retries");
+  assert.match(edge,/const rawMarket = trimmed\(payload\.market \?\? "", 120\)/);
+  const submitted={
+    kind:"advertiser", market:"", market_code:"MANILA",
+    budget_amount:"900.00", budget_currency:"PHP",
+    campaign_objective:"awareness", preferred_media_formats:["podcast"],
+    audience_requirements:"", preferred_languages:["English"],
+    contact_consent:true, notice_version:BUDGET_NOTICE
+  };
+  const normalized=normalizeStructuredAdvertiser(submitted);
+  const persisted={...submitted,...normalized};
+  assert.equal(persisted.market,"Manila, Philippines");
+  assert.notEqual(persisted.market,submitted.market,
+    "pre-fix empty legacy market must be distinguishable from normalized stored market");
+  const normalizedRetryMarket=normalizeStructuredAdvertiser({...submitted}).market ?? submitted.market;
+  assert.equal(persisted.market,normalizedRetryMarket,
+    "replay with identical request_key and fields must compare the same persisted market");
 });
