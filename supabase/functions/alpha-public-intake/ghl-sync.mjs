@@ -1,5 +1,18 @@
 import { mapGhlContact, ghlNotice } from "./ghl-payload.mjs";
 
+// Reuse the same approval decision before claiming and after re-reading a
+// claimed inquiry. The later read matters: consent, suppression, or operator
+// approval can be revoked after preflight and before CRM transmission.
+export function isApprovedGhlInquiry(r) {
+  return !!r && ["creator", "advertiser"].includes(r.kind) &&
+    r.notice_version === ghlNotice &&
+    r.processing_acknowledged === true && r.adult_confirmed === true &&
+    r.contact_consent === true && r.contact_consent_version === ghlNotice &&
+    !!r.contact_consent_at && r.followup_gate === "CLEARED" &&
+    r.business_identity_verified === true && r.decision_authority_verified === true &&
+    r.crm_suppression_checked === true && !!r.followup_approved_at;
+}
+
 // Private server-to-server bridge. Never call this from a browser.
 // Disabled unless the owner has configured all secrets and approved contact
 // creation workflows in the intended HighLevel sub-account.
@@ -7,15 +20,10 @@ export async function deliverToGhl(client, requestId) {
   // Fail closed until identity, authority, CRM suppression, and the
   // one-time inquiry-contact consent scope have each been verified.
   const review = await client.from("alpha_public_intake_requests")
-    .select("kind,notice_version,contact_consent,contact_consent_version,contact_consent_at,followup_gate,business_identity_verified,decision_authority_verified,crm_suppression_checked,followup_approved_at")
+    .select("kind,notice_version,processing_acknowledged,adult_confirmed,contact_consent,contact_consent_version,contact_consent_at,followup_gate,business_identity_verified,decision_authority_verified,crm_suppression_checked,followup_approved_at")
     .eq("id", requestId).single();
   if (review.error || !review.data) return "HOLD";
-  const r = review.data;
-  if (!["creator","advertiser"].includes(r.kind) || r.notice_version !== ghlNotice ||
-      r.contact_consent !== true || r.contact_consent_version !== ghlNotice ||
-      !r.contact_consent_at || r.followup_gate !== "CLEARED" ||
-      r.business_identity_verified !== true || r.decision_authority_verified !== true ||
-      r.crm_suppression_checked !== true || !r.followup_approved_at) return "HOLD";
+  if (!isApprovedGhlInquiry(review.data)) return "HOLD";
   if (Deno.env.get("ALPHA_GHL_SYNC_ENABLED") !== "true") return "DISABLED";
   const locationId = Deno.env.get("ALPHA_GHL_LOCATION_ID");
   const token = Deno.env.get("ALPHA_GHL_PRIVATE_INTEGRATION_TOKEN");
@@ -28,22 +36,30 @@ export async function deliverToGhl(client, requestId) {
   const lease = claimed.data[0];
   if (!lease?.claim_token) return "NOT_DUE";
   const finish = async (state, httpStatus, errorClass, contactId = null) => {
-    // Only the exact claim token can complete delivery; after an unexpected
-    // process crash the lease becomes eligible for a bounded retry.
-    await client.rpc("alpha_ghl_finish", {
-      p_request_id: requestId, p_claim_token: lease.claim_token,
-      p_new_state: state, p_http_status: httpStatus,
-      p_error_class: errorClass, p_contact_id: contactId
-    });
+    // Never report success unless the exact lease token was durably
+    // acknowledged. A stale token or database error means the delivery
+    // receipt is unconfirmed, even if HighLevel returned HTTP 200.
+    try {
+      const result = await client.rpc("alpha_ghl_finish", {
+        p_request_id: requestId, p_claim_token: lease.claim_token,
+        p_new_state: state, p_http_status: httpStatus,
+        p_error_class: errorClass, p_contact_id: contactId
+      });
+      return result.error == null && result.data === true;
+    } catch {
+      return false;
+    }
   };
 
   try {
     const lookup = await client.from("alpha_public_intake_requests")
       .select("kind,full_name,email,organization,website,notice_version,processing_acknowledged,adult_confirmed,contact_consent,contact_consent_version,contact_consent_at,followup_gate,business_identity_verified,decision_authority_verified,crm_suppression_checked,followup_approved_at,budget_amount,budget_currency,market_code,campaign_objective,preferred_media_formats,audience_requirements,preferred_languages")
       .eq("id", requestId).single();
-    if (lookup.error || !lookup.data) {
-      await finish("BLOCKED", null, "invalid_record");
-      return "BLOCKED";
+    if (lookup.error || !isApprovedGhlInquiry(lookup.data)) {
+      // A record can change while the delivery lease is being claimed.
+      // Invalidate that lease rather than transmitting revoked consent.
+      return await finish("BLOCKED", null, "invalid_record")
+        ? "BLOCKED" : "RECEIPT_UNCONFIRMED";
     }
     let payload;
     try {
@@ -58,8 +74,8 @@ export async function deliverToGhl(client, requestId) {
       };
       payload = mapGhlContact(lookup.data, locationId, fieldIds);
     } catch {
-      await finish("BLOCKED", null, "invalid_record");
-      return "BLOCKED";
+      return await finish("BLOCKED", null, "invalid_record")
+        ? "BLOCKED" : "RECEIPT_UNCONFIRMED";
     }
     const response = await fetch("https://services.leadconnectorhq.com/contacts/upsert", {
       method: "POST",
@@ -80,8 +96,8 @@ export async function deliverToGhl(client, requestId) {
       const final = category === "auth_failure" || category === "invalid_record"
         ? "BLOCKED" : "RETRY";
       // Deliberately never read or store response body: may contain PII or tokens.
-      await finish(final, status, category);
-      return final;
+      return await finish(final, status, category)
+        ? final : "RECEIPT_UNCONFIRMED";
     }
     let remote;
     try {
@@ -89,13 +105,13 @@ export async function deliverToGhl(client, requestId) {
       remote = reply?.contact?.id;
     } catch { /* invalid provider response */ }
     if (typeof remote !== "string" || !/^[A-Za-z0-9_-]{6,128}$/.test(remote)) {
-      await finish("RETRY", response.status, "invalid_response");
-      return "RETRY";
+      return await finish("RETRY", response.status, "invalid_response")
+        ? "RETRY" : "RECEIPT_UNCONFIRMED";
     }
-    await finish("DELIVERED", response.status, "", remote);
-    return "DELIVERED";
+    return await finish("DELIVERED", response.status, "", remote)
+      ? "DELIVERED" : "RECEIPT_UNCONFIRMED";
   } catch {
-    await finish("RETRY", null, "network_failure");
-    return "RETRY";
+    return await finish("RETRY", null, "network_failure")
+      ? "RETRY" : "RECEIPT_UNCONFIRMED";
   }
 }
