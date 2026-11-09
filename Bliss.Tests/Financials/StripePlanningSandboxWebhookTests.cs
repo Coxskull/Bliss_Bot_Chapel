@@ -7,11 +7,11 @@ namespace Bliss.Tests.Financials;
 
 public sealed class StripePlanningSandboxWebhookTests
 {
-    private const string Secret = "whsec_synthetic_for_offline_tests_only";
+    internal const string Secret = "whsec_synthetic_for_offline_tests_only";
     private const string SessionId = "cs_test_a127dclwqC9jOEq2Fzt0Rg6R05GEwdbi2U73Lp4R2AlIpb4a0dDkeQvdXI";
     private const string PaymentIntentId = "pi_3UZmosH23maIy3rz1QI0U6Lo";
     private const string EventId = "evt_fixture_planning_0001";
-    private static readonly DateTimeOffset Now = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000);
+    internal static readonly DateTimeOffset Now = DateTimeOffset.FromUnixTimeSeconds(1_800_000_000);
 
     private static byte[] Payload(
         string type = "checkout.session.completed", string paymentStatus = "paid",
@@ -41,7 +41,7 @@ public sealed class StripePlanningSandboxWebhookTests
     }
     // The production verifier rejects the property if present; ordinary
     // platform Stripe events omit 'account'. Remove the synthetic null.
-    private static byte[] Body(
+    internal static byte[] Body(
         string type = "checkout.session.completed", string paymentStatus = "paid",
         string link = StripePlanningSandboxWebhookVerifier.ExpectedPaymentLinkId,
         long amount = 14900, bool live = false,
@@ -61,7 +61,7 @@ public sealed class StripePlanningSandboxWebhookTests
             data = new { @object = root.GetProperty("data").GetProperty("object") }
         });
     }
-    private static string Signature(byte[] raw, long? at = null)
+    internal static string Signature(byte[] raw, long? at = null)
     {
         var time = at ?? Now.ToUnixTimeSeconds();
         var buffer = Encoding.UTF8.GetBytes(time + "." + Encoding.UTF8.GetString(raw));
