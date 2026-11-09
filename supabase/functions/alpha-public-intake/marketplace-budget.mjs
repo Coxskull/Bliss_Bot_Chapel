@@ -24,6 +24,13 @@ export function parseBudgetToMinor(amount, currency) {
 }
 const validText = (v,max) => typeof v === "string" && v.trim().length > 0 && v.trim().length <= max;
 const whole = v => Number.isSafeInteger(v) && v >= 0;
+// Integer multiplication must stay exact even when the monetary values are safe.
+const marginBasisPoints = (contribution,total) => {
+  if (total===0) return 0;
+  const numerator=BigInt(contribution)*10000n, denominator=BigInt(total);
+  const quotient=numerator/denominator;
+  return Number(quotient-(numerator<0n && numerator%denominator!==0n ? 1n : 0n));
+};
 const overlap = (a,b) => Array.isArray(a) && Array.isArray(b) &&
   a.some(x => b.map(y => String(y).toLowerCase()).includes(String(x).toLowerCase()));
 const nowMs = value => new Date(value).getTime();
@@ -33,7 +40,7 @@ export function validateAdvertiserBrief(brief) {
   if (!brief || brief.kind !== "advertiser" ||
       !Number.isSafeInteger(brief.budgetMinor) || brief.budgetMinor <= 0 ||
       !validText(brief.currency,3) || !validText(brief.marketCode,80) ||
-      (MARKET_CURRENCIES[brief.marketCode.trim().toUpperCase()] &&
+      (!Object.hasOwn(MARKET_CURRENCIES,brief.marketCode.trim().toUpperCase()) ||
         MARKET_CURRENCIES[brief.marketCode.trim().toUpperCase()] !== brief.currency.toUpperCase()) ||
       !validText(brief.objective,80) || !Array.isArray(formats) || !formats.length ||
       formats.some(x => !media.has(x)) ||
@@ -120,8 +127,7 @@ export function calculatePlanningServiceQuote(offer, policy, now = new Date()) {
   if (!Number.isSafeInteger(totalAdvertiserCostMinor) ||
       !Number.isSafeInteger(contributionMinor))
     return {eligible:false,reason:"SERVICE_COST_OUT_OF_RANGE",status:"DRAFT"};
-  const contributionBasisPoints=totalAdvertiserCostMinor===0?0:
-    Math.floor(contributionMinor*10000/totalAdvertiserCostMinor);
+  const contributionBasisPoints=marginBasisPoints(contributionMinor,totalAdvertiserCostMinor);
   if (totalAdvertiserCostMinor>offer.budgetMinor)
     return {eligible:false,reason:"OVER_CUSTOMER_BUDGET",status:"DRAFT",
       currency,totalAdvertiserCostMinor,budgetMinor:offer.budgetMinor};
@@ -178,8 +184,11 @@ export function calculateSustainableQuote(offer, policy, now = new Date()) {
     c.creatorCompensationMinor+c.alphaFeeMinor+c.paymentProcessingMinor+c.fulfillmentMinor+c.taxMinor;
   const contributionMinor =
     c.alphaFeeMinor-c.paymentProcessingMinor-c.fulfillmentMinor-c.taxMinor;
+  if (!Number.isSafeInteger(totalAdvertiserCostMinor) ||
+      !Number.isSafeInteger(contributionMinor))
+    return {eligible:false,reason:"COST_OUT_OF_RANGE"};
   const contributionBasisPoints = totalAdvertiserCostMinor === 0 ? 0
-    : Math.floor(contributionMinor*10000/totalAdvertiserCostMinor);
+    : Number(BigInt(contributionMinor)*10000n/BigInt(totalAdvertiserCostMinor));
   const meetsMargin=contributionMinor>=0 &&
     contributionMinor>=policy.minimumContributionMinor &&
     contributionBasisPoints>=policy.minimumContributionBasisPoints;
