@@ -123,6 +123,12 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
   const salt = env("ALPHA_ASK_ALPHA_HASH_SECRET");
   if (!apiKey || !salt || salt.length < 32)
     return out(origin, {error:"AI_SERVICE_NOT_CONFIGURED"},503);
+  // Pin every provider request to the owner's $9-limited OpenAI project.
+  // A key from a different project must not silently spend there.
+  const projectId = env("ALPHA_ASK_ALPHA_OPENAI_PROJECT_ID");
+  if (typeof projectId !== "string" ||
+      !/^proj_[A-Za-z0-9_-]{4,96}$/.test(projectId))
+    return out(origin,{error:"AI_PROJECT_NOT_CONFIGURED"},503);
   // Operator release interlock, not cryptographic identity proof.
   // The owner MUST independently confirm the managed Supabase gateway overwrites
   // a client-forged CF-Connecting-IP header on every allowed hosted path before
@@ -170,7 +176,7 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
       const response = await providerFetch("https://api.openai.com/v1/responses",{
         method:"POST",
         headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json",
-          "Idempotency-Key":payload.request_key},
+          "OpenAI-Project":projectId,"Idempotency-Key":payload.request_key},
         body:JSON.stringify({
           model:MODEL,service_tier:"default",store:false,max_output_tokens:MAX_OUTPUT_TOKENS,tools:[],
           reasoning:{effort:"none"},instructions,
