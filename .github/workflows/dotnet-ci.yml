@@ -201,19 +201,22 @@ jobs:
       - name: Test vulnerability evidence guardrails
         run: python3 -m unittest discover -s scripts -p 'test_container_vulnerabilities.py' -v
 
-      - name: Install checksum-pinned Grype scanner
+      - name: Extract digest-pinned official Grype scanner from OCI image
         shell: bash
         run: |
           set -euo pipefail
           scanner_dir="$(mktemp -d "$RUNNER_TEMP/agm-grype.XXXXXXXX")"
-          # Retry only transport failures; scanner stays checksum-pinned and mandatory.
-          # All repeated 5xx responses still fail the job, never skip the scan.
-          curl --retry 4 --retry-all-errors --retry-delay 5 --retry-max-time 120 \
-            --fail --show-error --silent --location --proto '=https' --tlsv1.2 \
-            https://github.com/anchore/grype/releases/download/v0.120.1/grype_0.120.1_linux_amd64.tar.gz \
-            --output "$scanner_dir/grype.tar.gz"
-          printf '%s  %s\n' '0a9ee97ef5ae2ee953b0a80098105052e846cdbe319a57d808b519c33cd1343d' "$scanner_dir/grype.tar.gz" | sha256sum --check
-          tar -xzf "$scanner_dir/grype.tar.gz" -C "$scanner_dir" grype
+          # Official Anchore grype v0.120.1 linux/amd64 manifest digest.
+          # No mutable tag, no GitHub release-asset dependency, no scan bypass.
+          scanner_image='anchore/grype@sha256:7bb1480f73d9a23b8e6137669c9b780389492778dc2da5c818d0add7e828ed45'
+          docker pull --platform linux/amd64 "$scanner_image"
+          scanner_cid="$(docker create --platform linux/amd64 "$scanner_image")"
+          trap 'docker rm -f "$scanner_cid" >/dev/null 2>&1 || true' EXIT
+          docker cp "$scanner_cid:/grype" "$scanner_dir/grype"
+          docker rm -f "$scanner_cid" >/dev/null
+          trap - EXIT
+          chmod 0500 "$scanner_dir/grype"
+          "$scanner_dir/grype" version --output json | python3 -c 'import json,sys; info=json.load(sys.stdin); assert info.get("version")=="0.120.1" and info.get("supportedDbSchema")==6, "Unexpected Grype version or DB schema"'
           echo "AGM_GRYPE_PATH=$scanner_dir/grype" >> "$GITHUB_ENV"
 
       - name: Collect container vulnerability findings for review

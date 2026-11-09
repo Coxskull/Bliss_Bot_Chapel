@@ -15,7 +15,8 @@ import tarfile
 import tempfile
 
 SCANNER_VERSION = "0.120.1"
-SCANNER_ARCHIVE_SHA256 = "0a9ee97ef5ae2ee953b0a80098105052e846cdbe319a57d808b519c33cd1343d"
+SCANNER_OCI_IMAGE = "anchore/grype"
+SCANNER_OCI_MANIFEST_SHA256 = "sha256:7bb1480f73d9a23b8e6137669c9b780389492778dc2da5c818d0add7e828ed45"
 
 
 def validate_database(status, now):
@@ -197,7 +198,8 @@ def main():
                    "source_revision": args.revision, "image_id": image_id,
                    "image_archive_sha256": archive_sha, "scanner_version": SCANNER_VERSION,
                    "image_export_provenance": provenance,
-                   "scanner_archive_sha256": SCANNER_ARCHIVE_SHA256,
+                   "scanner_distribution": SCANNER_OCI_IMAGE,
+                   "scanner_oci_manifest_sha256": SCANNER_OCI_MANIFEST_SHA256,
                    "database": database, "actual_completed_utc": dt.datetime.now(dt.timezone.utc).isoformat(),
                    **counts, "coverage": "Grype squashed image package catalog/matches; not exploitability or complete security assurance",
                    "application_credentials_forwarded": False, "image_executed_by_audit": False,
