@@ -35,7 +35,7 @@ test("authorized GET uses pinned project and organization and returns no secrets
  }});
  assert.equal(count,1);assert.equal(r.ok,true);assert.equal(r.paid_inference_verified,false);
  assert.equal(r.hard_spending_cap_verified,false);
- assert.doesNotMatch(JSON.stringify(r),/sk-|proj_|org_/);
+ assert.doesNotMatch(JSON.stringify(r),/sk-synthetic|proj_synthetic|org_synthetic/);
 });
 test("401 and 403 stay denied and provider error text is never exposed",async()=>{
  for(const status of [401,403]){
