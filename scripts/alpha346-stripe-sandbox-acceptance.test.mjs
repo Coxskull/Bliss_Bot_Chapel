@@ -71,3 +71,19 @@ test('sandbox-only policy is explicit; no real charge, outreach, or fulfillment 
   const x=fresh();x.session.metadata.real_customer_use='ALLOWED';
   assert.throws(()=>verify(x),/checkout_policy_boundary/);
 });
+
+test('inclusive tax cannot exceed the total paid by the sandbox buyer',()=>{
+  for(const amount of [14901, Number.MAX_SAFE_INTEGER, -1, 0.5, '0', null]){
+    const x=fresh();x.session.total_details.amount_tax=amount;
+    assert.throws(()=>verify(x),/tax_readback_incomplete/,'tax '+amount);
+  }
+  for(const amount of [0, 987, 14900]){
+    const x=fresh();x.session.total_details.amount_tax=amount;
+    assert.equal(verify(x).fulfillmentAuthorized,false);
+  }
+});
+
+test('one provider event cannot stand in for three distinct payment events',()=>{
+  const x=fresh();x.events.forEach(e=>{e.id=x.events[0].id;});
+  assert.throws(()=>verify(x),/event_identity_conflict/);
+});

@@ -46,7 +46,8 @@ export function reconcilePlanningSandboxEvidence(snapshot) {
   requireCondition(session?.automatic_tax?.enabled === true &&
     session?.automatic_tax?.status === 'complete' &&
     Number.isSafeInteger(session?.total_details?.amount_tax) &&
-    session?.total_details?.amount_tax >= 0, 'tax_readback_incomplete');
+    session?.total_details?.amount_tax >= 0 &&
+    session.total_details.amount_tax <= session.amount_total, 'tax_readback_incomplete');
   requireCondition(session?.metadata?.environment === 'SANDBOX_ONLY' &&
     session?.metadata?.payment === 'TEST_MODE_ONLY' &&
     session?.metadata?.real_customer_use === 'PROHIBITED', 'checkout_policy_boundary');
@@ -60,6 +61,9 @@ export function reconcilePlanningSandboxEvidence(snapshot) {
     paymentIntent?.amount === expected.amountMinor &&
     paymentIntent?.amount_received === expected.amountMinor &&
     paymentIntent?.currency === expected.currency, 'payment_not_confirmed');
+  requireCondition(Array.isArray(events) &&
+    new Set(events.map(e=>e?.id)).size === events.length,
+    'event_identity_conflict');
   requireCondition(eventMatches(events,'checkout.session.completed',session.id) &&
     eventMatches(events,'payment_intent.succeeded',paymentIntent.id), 'success_events_missing');
   requireCondition(isId(failedPaymentIntent?.id,'pi_') &&

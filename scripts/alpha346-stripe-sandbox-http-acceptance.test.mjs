@@ -11,7 +11,7 @@ assert.ok(db?.includes("Database=financial_test") &&
   /Host=127\.0\.0\.1/.test(db),"Require disposable loopback PostgreSQL test fixture");
 
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function start(enabled,port) {
+async function start(enabled,port,connection=db) {
   const base="http://127.0.0.1:"+port;
   const p=spawn("dotnet",[
     "run","--no-build","--no-launch-profile","--configuration","Release","--project",project
@@ -22,7 +22,7 @@ async function start(enabled,port) {
       ALPHA346_STRIPE_SANDBOX_WEBHOOK_ENABLED:enabled?"true":"false",
       ALPHA346_STRIPE_ACCOUNT_ID:"acct_1UOn83H23maIy3rz",
       ALPHA346_STRIPE_WEBHOOK_SECRET:enabled?secret:"",
-      ALPHA346_STRIPE_RECEIPTS_DATABASE:enabled?db:""
+      ALPHA346_STRIPE_RECEIPTS_DATABASE:enabled?connection:""
     },
     stdio:["ignore","pipe","pipe"]
   });
@@ -83,6 +83,16 @@ test("ALPHA-346 real local HTTP ingress: enabled only in isolated sandbox and re
     assert.equal((await post(disabled.base,ignored)).status,404);
   }finally{await shutdown(disabled.p);}
 
+  // A valid signed payload must never receive a success ACK if durable storage
+  // fails. Use an unreachable loopback port, never any hosted database.
+  const unavailable=await start(true,40519,
+    db.replace(/(?:^|;)Port=[^;]*/i,"")+";Port=1;Timeout=1;Pooling=false");
+  try{
+    const body=JSON.stringify(syntheticEvent());
+    assert.equal((await post(unavailable.base,body)).status,503,"Persistence failure remains retryable");
+    assert.equal((await post(unavailable.base,body,"t=0,v1=invalid")).status,400,"Invalid signatures rejected before DB access");
+  }finally{await shutdown(unavailable.p);}
+
   const enabled=await start(true,40517);
   try{
     assert.equal((await fetch(enabled.base+"/internal/alpha346/sandbox-health")).status,200);
@@ -100,6 +110,19 @@ test("ALPHA-346 real local HTTP ingress: enabled only in isolated sandbox and re
     assert.equal((await post(enabled.base,wrongLink)).status,400,"Wrong link denied");
     assert.equal((await post(enabled.base,first,signed(first,Math.floor(Date.now()/1000),"whsec_wrong_synthetic_secret"))).status,400,"Forged signature denied");
     assert.equal((await post(enabled.base,first,signed(first,Math.floor(Date.now()/1000)-301))).status,400,"Expired signature denied");
+    // Valid HMAC does not make malformed JSON types or impossible tax valid.
+    // These permanent input failures must not masquerade as retryable DB errors.
+    const malformed=[null, [], {livemode:"false"}, {livemode:false,object:123}];
+    const wrongTax=syntheticEvent();wrongTax.data.object.total_details.amount_tax=14901;
+    const wrongAmountType=syntheticEvent();wrongAmountType.data.object.amount_total="14900";
+    const expired=syntheticEvent({type:"checkout.session.expired",status:"unpaid"});
+    expired.data.object.status="expired";
+    for(const event of [...malformed,wrongTax,wrongAmountType,expired]){
+      const response=await post(enabled.base,JSON.stringify(event));
+      assert.equal(response.status,400,"Signed invalid payload rejected without persistence");
+      const text=await response.text();
+      assert.ok(!text.includes(secret) && !text.includes("payment_intent"),"No secret/payload in error response");
+    }
     const conflict=JSON.stringify(syntheticEvent({
       eventId:one.id,sessionId:one.data.object.id,
       intentId:one.data.object.payment_intent,type:"checkout.session.async_payment_failed",status:"unpaid"
