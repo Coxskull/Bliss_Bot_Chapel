@@ -71,4 +71,23 @@ public sealed class BlissStripeSandboxReceiptStoreTests
             "cs_test_a", new string('A', 64), "NO_FULFILLMENT");
         await Assert.ThrowsAsync<InvalidOperationException>(() => store.Record(e, CancellationToken.None));
     }
+    [Theory]
+    [InlineData("Host=db.example.neon.tech;Database=bliss_stripe_sandbox;Username=neondb_owner;Ssl Mode=VerifyFull", "bliss_stripe_sandbox")]
+    [InlineData("Host=db.example.neon.tech;Database=bliss_stripe_sandbox;Username=bliss_stripe_ingest;Ssl Mode=Require", "bliss_stripe_sandbox")]
+    [InlineData("Host=db.example.neon.tech;Database=production;Username=bliss_stripe_ingest;Ssl Mode=VerifyFull", "production")]
+    [InlineData("Host=127.0.0.1;Database=bliss_stripe_sandbox;Username=bliss_stripe_ingest;Ssl Mode=VerifyFull", "bliss_stripe_sandbox")]
+    public async Task Hosted_journal_rejects_wrong_role_weak_tls_or_nonstaging_target(
+        string connection, string expectedDatabase)
+    {
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["BlissStripeWebhook:JournalConnectionString"] = connection,
+            ["BlissStripeWebhook:ExpectedJournalDatabase"] = expectedDatabase
+        }).Build();
+        var store = new BlissStripeSandboxReceiptStore(config);
+        var e = new BlissStripeVerifiedEvent("evt_stage_fixture", "checkout.session.expired",
+            "cs_test_fixture", new string('A', 64), "NO_FULFILLMENT");
+        await Assert.ThrowsAsync<InvalidOperationException>(() => store.Record(e, CancellationToken.None));
+    }
+
 }
