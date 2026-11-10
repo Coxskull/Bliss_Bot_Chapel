@@ -17,9 +17,17 @@ public sealed class BlissStripeSandboxReceiptStore(IConfiguration config)
             throw new InvalidOperationException("Bliss staging journal connection is not configured.");
 
         var settings = new NpgsqlConnectionStringBuilder(connectionString);
+        var localFixture = settings.Database == "bliss_ci"
+            && settings.Host is "localhost" or "127.0.0.1";
+        var isolatedStaging = settings.Database == "bliss_stripe_sandbox"
+            && settings.Username == "bliss_stripe_ingest"
+            && settings.SslMode == SslMode.VerifyFull
+            && settings.Host is not ("localhost" or "127.0.0.1" or "::1")
+            && !string.IsNullOrWhiteSpace(settings.Host)
+            && settings.Host.Contains('.', StringComparison.Ordinal);
         if (!string.Equals(settings.Database, expectedDatabase, StringComparison.Ordinal)
-            || string.IsNullOrWhiteSpace(settings.Host))
-            throw new InvalidOperationException("Bliss webhook journal target is not the approved staging database.");
+            || (!localFixture && !isolatedStaging))
+            throw new InvalidOperationException("Bliss webhook journal target is not an isolated sandbox database.");
 
         await using var connection = new NpgsqlConnection(settings.ConnectionString);
         await connection.OpenAsync(ct);
