@@ -25,14 +25,19 @@ async function probe(label,agent,extra={}){
   body:JSON.stringify(body),redirect:"error",signal:AbortSignal.timeout(12000)
  });
  assert.equal(r.status,403,label+": must deny before paid inference");
- const raw=await r.text();
- assert.ok(raw.length<5000,label+": bounded response");
  const isJson=(r.headers.get("content-type")||"").includes("application/json");
+ if(label==="CLEAN") assert.ok(isJson,"clean request must reach consent gate");
  if(isJson){
+  const raw=await r.text();
+  assert.ok(raw.length<5000,label+": bounded JSON response");
   const json=JSON.parse(raw);
   assert.equal(json.error,"CONSENT_REQUIRED",label+": must deny with consent gate");
   assert.equal(json.answer,undefined,label+": no AI answer");
   assert.equal(json.receipt_id,undefined,label+": no AI receipt");
+ } else {
+  // A real WAF denial can have a large HTML body. Do not download it:
+  // only HTTP 403 matters, and logs are correlated separately.
+  await r.body?.cancel();
  }
  // A WAF can return HTML 403 before invoking the function. That is still
  // a safe denial, but log correlation is required to certify provenance.
