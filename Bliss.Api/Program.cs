@@ -101,6 +101,8 @@ builder.Services.AddSingleton(builder.Configuration.GetSection("FinancialPrepara
 builder.Services.AddScoped<Bliss.Api.Financials.AcceptedFinancialQuoteImporter>();
 builder.Services.AddScoped<Bliss.Api.Financials.IFinancialPreparation, Bliss.Api.Financials.FinancialPreparationService>();
 builder.Services.AddScoped<Bliss.Api.Financials.FinancialMockWorkflow>();
+// Isolated Stripe sandbox receipt store; disabled except approved staging.
+builder.Services.AddScoped<Bliss.Api.Financials.BlissStripeSandboxReceiptStore>();
 builder.Services.AddScoped<Bliss.Api.Financials.FinancialMockReviewWorkflow>();
 builder.Services.AddScoped<EconomicsNegotiationGate>();
 builder.Services.AddScoped<BlissRematchGate>();
