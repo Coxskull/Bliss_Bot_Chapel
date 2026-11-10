@@ -1,0 +1,17 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const privacy=readFileSync("frontend/public/alpha-privacy.html","utf8");
+const site=readFileSync("frontend/public/global-media.html","utf8");
+assert.match(privacy,/id="ask-alpha-ai"/);
+assert.match(privacy,/AGM-ASK-ALPHA-AI-2026-11-08/);
+assert.match(privacy,/owner authorized controlled activation on November 10, 2026/);
+assert.match(privacy,/secure project access, visitor identity protections and current-month billing checks/);
+assert.doesNotMatch(privacy,/public AI release not yet approved/);
+assert.match(site,/href="\/alpha-privacy\.html#ask-alpha-ai"/);
+assert.match(site,/id="ask-alpha-ai-consent"/);
+assert.match(site,/id="ask-alpha-marketing-consent"/);
+assert.match(site,/I explicitly agree to AI processing/);
+assert.match(site,/separate from optional marketing permission/);
+assert.match(site,/optional AI service stays unavailable until hosted access, gateway security and billing verification pass/);
+assert.doesNotMatch(site,/This notice is pending launch approval/);
+console.log("TASK20_PUBLIC_DISCLOSURE_OWNER_AUTHORIZATION_SOURCE_PASS no_activation_no_spend");
