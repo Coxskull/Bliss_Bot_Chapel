@@ -20,6 +20,8 @@ jobs:
         with:
           node-version: '22'
       - name: Assert public notice, same-page anchor and scripted guide isolation
+        env:
+          BLISS_APPLICATION_ORIGIN: https://bliss-bot-production-5eb8.up.railway.app
         run: |
           node scripts/task20-main-public-ai-notice-release.test.mjs
           node scripts/build-vercel-portal.mjs
