@@ -1,0 +1,25 @@
+name: Task20 OpenAI project-cost reconciliation (mock only)
+on:
+  pull_request:
+    paths:
+      - 'scripts/task20-openai-project-costs-readonly.mjs'
+      - 'scripts/task20-openai-project-costs-readonly.test.mjs'
+      - '.github/workflows/task20-openai-project-costs.yml'
+      - 'docs/task20-openai-costs-readonly-runbook-20261110.md'
+permissions:
+  contents: read
+jobs:
+  task20-costs-mock-no-credentials:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Mocked cost query and all fail-closed cases; no API credentials
+        run: |
+          test -z "$(printenv OPENAI_ADMIN_KEY || true)"
+          node --test scripts/task20-openai-project-costs-readonly.test.mjs
