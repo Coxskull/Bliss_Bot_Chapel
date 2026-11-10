@@ -101,28 +101,42 @@ jobs:
           --logger "console;verbosity=normal"
       - name: Compile isolated sandbox-only HTTP receiver (no deployment)
         run: dotnet build tools/staging/Alpha346.StripeSandboxReceiver/Alpha346.StripeSandboxReceiver.csproj --configuration Release
-      - name: Build Railway sandbox default image and verify fail-closed container
+      - name: Build dedicated sandbox webhook Docker image without pushing or deploying
+        run: docker build --file tools/staging/Alpha346.StripeSandboxReceiver/Dockerfile --tag alpha346-stripe-sandbox-receiver:ci .
+
+      - name: Verify root Dockerfiles select sandbox-only receiver
         shell: bash
         run: |
           set -euo pipefail
           cmp Dockerfile tools/staging/Alpha346.StripeSandboxReceiver/Dockerfile
           cmp Dockerfile.railway tools/staging/Alpha346.StripeSandboxReceiver/Dockerfile
-          docker build --file Dockerfile --tag alpha346-stripe-railway:ci .
-          docker run -d --name alpha346-container-ci -p 127.0.0.1:18080:8080 \
+          docker build --file Dockerfile --tag alpha346-railway-default:ci .
+          echo "PASS: Railway default and custom paths all build sandbox receiver"
+
+      - name: Verify container fails closed without test secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name alpha346-sandbox-ci -p 127.0.0.1:18080:8080 \
             -e ASPNETCORE_ENVIRONMENT=AlphaStripeSandbox \
             -e ALPHA346_STRIPE_SANDBOX_WEBHOOK_ENABLED=false \
-            alpha346-stripe-railway:ci
-          trap 'docker rm -f alpha346-container-ci >/dev/null 2>&1 || true' EXIT
+            alpha346-stripe-sandbox-receiver:ci
+          trap 'docker rm -f alpha346-sandbox-ci >/dev/null 2>&1 || true' EXIT
           ready=0
           for _ in $(seq 1 30); do
             status="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18080/internal/alpha346/sandbox-health || true)"
-            if [ "$status" = "404" ]; then ready=1; break; fi
+            if [ "$status" = '404' ]; then ready=1; break; fi
             sleep 1
           done
-          test "$ready" = "1"
-          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
-            -d '{}' http://127.0.0.1:18080/internal/alpha346/stripe-sandbox-webhook)" = "404"
-          echo "PASS: default Dockerfile runs only the fail-closed sandbox receiver"
+          if [ "$ready" != '1' ]; then
+            docker logs alpha346-sandbox-ci
+            exit 1
+          fi
+          status="$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+            -H 'Content-Type: application/json' -d '{}' \
+            http://127.0.0.1:18080/internal/alpha346/stripe-sandbox-webhook)"
+          test "$status" = '404'
+          echo 'Container build and fail-closed acceptance PASS'
 
       - name: Exercise raw-body HTTPS-compatible webhook receiver over local loopback
         run: node --test scripts/alpha346-stripe-sandbox-http-acceptance.test.mjs
