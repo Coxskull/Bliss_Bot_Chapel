@@ -52,3 +52,18 @@ The endpoint is **not a payment-completion handler**. It does not yet map Stripe
 - [ ] Live payments (requires separate owner approval)
 
 Do not claim complete on the strength of Stripe-origin events or the existence of this PR alone.
+
+## Pre-fulfillment quote/payment authority evaluator (read-only)
+
+`Bliss.Api/Financials/BlissStripeSandboxReconciliationGate.cs` compares one previously persisted verified webhook receipt and one independently retrieved test-mode PaymentIntent to an **immutable and database-verified** `PreparedPaymentOperation` (merchant, campaign, module, quote, recipient, amount and currency), a persisted **bound PaymentIntent ID**, and the approved frozen funding reference. The gate refuses live-mode/Connect evidence, non-success state, wrong amount/amount_received/currency, or wrong merchant/campaign/module/intent/funding reference.
+
+Even exact matching evidence returns `EVIDENCE_MATCHES_MANUAL_REVIEW_REQUIRED` and **`AuthorizesFulfillment=false`**. Its caller must provide the authoritative operation from the separate isolated staging database and must establish authenticated Stripe test-account origin; the evaluator itself does not make provider calls, invoke a settlement worker or consume real Stripe events. Tests exercise positive proof-of-match and multiple negative states. This gate is *not* a completed payment fulfillment workflow.
+
+### Current existing infrastructure overlap
+
+Connected Railway inspection on 2026-11-11 found:
+- `bliss-bot` project contains **production only** and therefore is not an approved staging environment.
+- `alpha-henry-ford-factory-staging` contains a separate **staged-create**, not deployed, service `alpha346-stripe-sandbox-receiver`. Its source is the `deploy-only/alpha346-stripe-sandbox-railway-20261110` branch and is a distinct, planning-service receipt boundary; it is **not** a Bliss advertiser/campaign settlement endpoint.
+- The ALPHA-346 receiver targets an isolated Neon `alpha346_stripe_sandbox` database and a different schema. Do not point this Bliss Bot journal at that existing ALPHA-346 database without a reviewed isolation and data ownership decision.
+- The staging patch has pending changes; applying it would create a service and requires verified actual billing protections and explicit deployment authorization. The pending patch has **not** been accepted by this work.
+
