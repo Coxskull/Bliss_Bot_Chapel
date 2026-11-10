@@ -67,3 +67,12 @@ Connected Railway inspection on 2026-11-11 found:
 - The ALPHA-346 receiver targets an isolated Neon `alpha346_stripe_sandbox` database and a different schema. Do not point this Bliss Bot journal at that existing ALPHA-346 database without a reviewed isolation and data ownership decision.
 - The staging patch has pending changes; applying it would create a service and requires verified actual billing protections and explicit deployment authorization. The pending patch has **not** been accepted by this work.
 
+
+## 2026-11-11 real Stripe sandbox readback — why historical Payment Links cannot settle Bliss orders
+
+An authenticated read-only Stripe test-account lookup returned:
+- The previously successful USD 149.00 PaymentIntent is `succeeded`, `amount_received=14900`, `livemode=false` and has **zero metadata keys**.
+- The previously declined/canceled USD 149.00 PaymentIntent is `canceled`, `amount_received=0`, `livemode=false` and also has **zero metadata keys**.
+- Neither has the immutable `merchant_id`, `campaign_id`, `module`, or `funding_reference` required for a Bliss advertising funding operation.
+
+These historic Checkout tests validate Stripe sandbox payment behavior, **not authorized Bliss advertising fulfillment**. The new preflight gate must refuse both as payment-to-campaign settlement evidence, even though one Stripe test payment succeeded. There were no Stripe writes, new payment objects, or registration during this check.
