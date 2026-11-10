@@ -18,6 +18,23 @@ public static class StripePlanningSandboxWebhookVerifier
     public static VerifiedPlanningSandboxWebhook Verify(
         byte[] rawBody, string signature, string signingSecret, DateTimeOffset now)
     {
+        try
+        {
+            return VerifyPayload(rawBody, signature, signingSecret, now);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException
+            or FormatException or OverflowException or KeyNotFoundException or JsonException)
+        {
+            // JSON shape/type failures are permanent bad input, not DB failures.
+            // Keep this conversion inside verification so persistence exceptions
+            // still return 503 and are retried by Stripe. Never echo the payload.
+            throw new ArgumentException("Invalid sandbox checkout payload.");
+        }
+    }
+
+    private static VerifiedPlanningSandboxWebhook VerifyPayload(
+        byte[] rawBody, string signature, string signingSecret, DateTimeOffset now)
+    {
         if (string.IsNullOrWhiteSpace(signingSecret) ||
             !signingSecret.StartsWith("whsec_", StringComparison.Ordinal) ||
             signingSecret.Length < 16 || signingSecret.Any(char.IsWhiteSpace))
@@ -59,7 +76,7 @@ public static class StripePlanningSandboxWebhookVerifier
         var totals = session.GetProperty("total_details");
         if (!tax.GetProperty("enabled").GetBoolean() ||
             tax.GetProperty("status").GetString() != "complete" ||
-            totals.GetProperty("amount_tax").GetInt64() < 0)
+            totals.GetProperty("amount_tax").GetInt64() is < 0 or > ExpectedAmountMinor)
             throw new ArgumentException("Incomplete sandbox checkout/tax evidence.");
 
         var paid = session.GetProperty("payment_status").GetString();

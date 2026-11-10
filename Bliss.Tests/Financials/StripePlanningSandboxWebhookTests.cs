@@ -71,6 +71,28 @@ public sealed class StripePlanningSandboxWebhookTests
     private static VerifiedPlanningSandboxWebhook Verify(byte[] raw) =>
         StripePlanningSandboxWebhookVerifier.Verify(raw, Signature(raw), Secret, Now);
 
+    [Theory]
+    [InlineData("null")]
+    [InlineData("[]")]
+    [InlineData("{\"livemode\":\"false\"}")]
+    [InlineData("{\"livemode\":false,\"object\":123}")]
+    public void Signed_wrong_JSON_types_are_invalid_input_not_retryable_server_errors(string json)
+    {
+        Assert.Throws<ArgumentException>(() => Verify(Encoding.UTF8.GetBytes(json)));
+    }
+
+    [Theory]
+    [InlineData("14901")]
+    [InlineData("9223372036854775808")]
+    [InlineData("0.5")]
+    [InlineData("\"0\"")]
+    [InlineData("null")]
+    public void Inclusive_tax_must_be_an_integer_bounded_by_total(string amount)
+    {
+        var body = Encoding.UTF8.GetString(Body()).Replace("\"amount_tax\":0", "\"amount_tax\":" + amount);
+        Assert.Throws<ArgumentException>(() => Verify(Encoding.UTF8.GetBytes(body)));
+    }
+
     [Fact]
     public void Signed_completed_test_checkout_is_sandbox_receipt_only()
     {
