@@ -1,0 +1,27 @@
+name: Task20 main public AI notice release-only regression
+on:
+  pull_request:
+    paths:
+      - 'frontend/public/alpha-privacy.html'
+      - 'frontend/public/global-media.html'
+      - 'scripts/task20-main-public-ai-notice-release.test.mjs'
+      - '.github/workflows/task20-main-public-ai-notice-release.yml'
+permissions:
+  contents: read
+jobs:
+  task20-main-notice-no-inference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assert public notice, same-page anchor and scripted guide isolation
+        env:
+          BLISS_APPLICATION_ORIGIN: https://bliss-bot-production-5eb8.up.railway.app
+        run: |
+          node scripts/task20-main-public-ai-notice-release.test.mjs
+          node scripts/build-vercel-portal.mjs
