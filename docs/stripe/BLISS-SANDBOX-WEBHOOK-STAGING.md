@@ -76,3 +76,18 @@ An authenticated read-only Stripe test-account lookup returned:
 - Neither has the immutable `merchant_id`, `campaign_id`, `module`, or `funding_reference` required for a Bliss advertising funding operation.
 
 These historic Checkout tests validate Stripe sandbox payment behavior, **not authorized Bliss advertising fulfillment**. The new preflight gate must refuse both as payment-to-campaign settlement evidence, even though one Stripe test payment succeeded. There were no Stripe writes, new payment objects, or registration during this check.
+
+## 2026-11-11 Bliss-specific Neon staging database acceptance (provider readback)
+
+Connected Neon organization `Alpha Global Media.` remains on the **Free** plan; existing staging project `alpha-task22-staging` (`empty-glitter-56197229`), default branch `br-old-frog-bdmrtc9y`, contains the **new separate database** `bliss_stripe_sandbox`. This database is distinct from the existing `alpha346_stripe_sandbox` and from any production Railway/Supabase database.
+
+- Created separate `bliss_stripe_sandbox` DB under `neondb_owner`.
+- Applied the explicit `bliss_stripe_sandbox.event_receipts` journal table, receipt review index, and append-only SQL trigger.
+- Created `bliss_stripe_ingest` as a **database/schema-scoped read-only role** with separate explicit INSERT privilege on only the new journal table. Password was not written to source or shared in chat.
+- Independently verified privileges: schema USAGE=true, CREATE=false; table SELECT=true, INSERT=true, UPDATE=false, DELETE=false, TRUNCATE=false.
+- Cross-database privilege verification on ALPHA-346 receipt schema/table: schema USAGE=false, table SELECT=false, INSERT=false.
+- Inserted one clearly labeled **synthetic** `REVIEW_ONLY` receipt as the restricted role, repeated identical INSERT ON CONFLICT DO NOTHING; readback exactly **one row**. No live provider event was fabricated or claimed delivered.
+- No new Neon project, paid plan, subscription, Railway deployment, production mutation, or real customer data transfer.
+
+The hosted sender remains **NOT DEPLOYED**; Stripe destination registration, actual HMAC-signed external HTTP delivery, certified readback, and commercial fulfillment are separate OPEN gates. The CI localhost test permits `bliss_ci` and a loopback host, while external staging DSNs are now hard-gated in code to `Database=bliss_stripe_sandbox`, `Username=bliss_stripe_ingest`, `SslMode=VerifyFull`, and a nonloopback FQDN.
+
