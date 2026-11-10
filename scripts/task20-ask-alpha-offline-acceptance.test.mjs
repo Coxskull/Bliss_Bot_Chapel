@@ -19,6 +19,7 @@ const liveDisabled = () => ({
   ALPHA_ASK_ALPHA_ENABLED: "false",
   OPENAI_API_KEY: "synthetic-local-key",
   ALPHA_ASK_ALPHA_OPENAI_PROJECT_ID: "proj_alpha_test_2026",
+  ALPHA_ASK_ALPHA_OPENAI_ORGANIZATION_ID: "org_alpha_test_2026",
   ALPHA_ASK_ALPHA_HASH_SECRET: "synthetic-only-salt-".repeat(4)
 });
 const enabled = () => ({ ...liveDisabled(), ALPHA_ASK_ALPHA_ENABLED: "true",
@@ -114,6 +115,9 @@ test("disabled, unverified ingress, unconfigured or untrusted IP request fails w
     [ {...enabled(), ALPHA_ASK_ALPHA_OPENAI_PROJECT_ID:""},"203.0.113.7","AI_PROJECT_NOT_CONFIGURED"],
     [ {...enabled(), ALPHA_ASK_ALPHA_OPENAI_PROJECT_ID:"proj_invalid\nInjected"},"203.0.113.7","AI_PROJECT_NOT_CONFIGURED"],
     [ {...enabled(), ALPHA_ASK_ALPHA_OPENAI_PROJECT_ID:"proj_other project"},"203.0.113.7","AI_PROJECT_NOT_CONFIGURED"],
+    [ {...enabled(), ALPHA_ASK_ALPHA_OPENAI_ORGANIZATION_ID:""},"203.0.113.7","AI_ORGANIZATION_NOT_CONFIGURED"],
+    [ {...enabled(), ALPHA_ASK_ALPHA_OPENAI_ORGANIZATION_ID:"org_bad\nInjected"},"203.0.113.7","AI_ORGANIZATION_NOT_CONFIGURED"],
+    [ {...enabled(), ALPHA_ASK_ALPHA_OPENAI_ORGANIZATION_ID:"org_other organization"},"203.0.113.7","AI_ORGANIZATION_NOT_CONFIGURED"],
     [ {...enabled(),ALPHA_ASK_ALPHA_INGRESS_VERIFIED:""},"203.0.113.7","RATE_LIMIT_INGRESS_NOT_VERIFIED"],
     [ {...enabled(),ALPHA_ASK_ALPHA_INGRESS_VERIFIED:"UNVERIFIED"},"203.0.113.7","RATE_LIMIT_INGRESS_NOT_VERIFIED"],
     [enabled(),null,"RATE_LIMIT_IDENTITY_UNAVAILABLE"],
@@ -139,6 +143,7 @@ test("valid synthetic request reserves budget, settles exact usage, returns rece
     assert.equal(opts.method,"POST");
     assert.equal(opts.headers["Idempotency-Key"],validId(2));
     assert.equal(opts.headers["OpenAI-Project"],"proj_alpha_test_2026");
+    assert.equal(opts.headers["OpenAI-Organization"],"org_alpha_test_2026");
     const posted=JSON.parse(opts.body);
     assert.equal(posted.model,"gpt-6-luna");
     assert.equal(posted.store,false);

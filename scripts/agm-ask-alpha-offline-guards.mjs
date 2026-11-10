@@ -14,7 +14,7 @@ const out=(_origin,data,status=200)=>new Response(JSON.stringify(data),{status,
 const req=new Request("https://example.org",{
  headers:{"cf-connecting-ip":"203.0.113.9"}});
 function setup(overrides={}) {
- let providerCalls=0, reserveCalls=0, settleCalls=0, lastSettle=null, lastReserve=null, providerBody=null, providerProject=null;
+ let providerCalls=0, reserveCalls=0, settleCalls=0, lastSettle=null, lastReserve=null, providerBody=null, providerProject=null, providerOrganization=null;
  const client={rpc:async(name,args)=>{
   if(name==="alpha_ask_alpha_reserve"){
     reserveCalls++;lastReserve=args;
@@ -30,6 +30,7 @@ function setup(overrides={}) {
   providerCalls++;
   providerBody=JSON.parse(options.body);
   providerProject=options.headers["OpenAI-Project"];
+  providerOrganization=options.headers["OpenAI-Organization"];
   return overrides.provider ?? new Response(JSON.stringify({
     id:"resp_synthetic_test",model:"gpt-6-luna",service_tier:"default",status:"completed",
     output:[{type:"message",content:[{type:"output_text",text:"An advertiser can submit an interest inquiry for human review."}]}],
@@ -42,9 +43,10 @@ function setup(overrides={}) {
     env: k=>({"ALPHA_ASK_ALPHA_ENABLED":"true","OPENAI_API_KEY":"synthetic-test-not-real",
       "ALPHA_ASK_ALPHA_HASH_SECRET":"synthetic-test-key-with-32-plus-bytes",
       "ALPHA_ASK_ALPHA_OPENAI_PROJECT_ID":"proj_alpha_test_2026",
+      "ALPHA_ASK_ALPHA_OPENAI_ORGANIZATION_ID":"org_alpha_test_2026",
       "ALPHA_ASK_ALPHA_INGRESS_VERIFIED":"CF_IP_OVERWRITE_PROBE_PASS_V1"}[k]??null),
     providerFetch},
-  stats:()=>({providerCalls,reserveCalls,settleCalls,lastSettle,lastReserve,providerBody,providerProject})
+  stats:()=>({providerCalls,reserveCalls,settleCalls,lastSettle,lastReserve,providerBody,providerProject,providerOrganization})
  };
 }
 assert.equal(validateAskAlpha({...payload,ai_processing_consent:false}),"CONSENT_REQUIRED");
@@ -101,6 +103,7 @@ assert.throws(()=>calculateLunaUsd({input_tokens:100}),/UNVERIFIED/);
  assert.equal(body.support_case_created,false);
  assert.equal(s.stats().providerCalls,1);assert.equal(s.stats().settleCalls,1);
  assert.equal(s.stats().providerProject,"proj_alpha_test_2026");
+ assert.equal(s.stats().providerOrganization,"org_alpha_test_2026");
  assert.equal(s.stats().lastSettle.p_state,"SETTLED");
  assert.match(s.stats().lastReserve.p_input_hash,/^[0-9a-f]{64}$/);
  assert.match(s.stats().lastReserve.p_session_hash,/^[0-9a-f]{64}$/);
@@ -201,6 +204,18 @@ assert.throws(()=>calculateLunaUsd({input_tokens:100}),/UNVERIFIED/);
      env:k=>k==="ALPHA_ASK_ALPHA_OPENAI_PROJECT_ID"?project:s.input.env(k)});
    assert.equal(res.status,503);
    assert.equal((await res.json()).error,"AI_PROJECT_NOT_CONFIGURED");
+ }
+ assert.equal(s.stats().reserveCalls,0);
+ assert.equal(s.stats().providerCalls,0);
+}
+{
+ // A missing or malformed organization ID fails before budget reserve/call.
+ const s=setup();
+ for(const org of [null,"org_bad\nHeader","org_other organization"]){
+   const res=await handleAskAlpha({...s.input,
+     env:k=>k==="ALPHA_ASK_ALPHA_OPENAI_ORGANIZATION_ID"?org:s.input.env(k)});
+   assert.equal(res.status,503);
+   assert.equal((await res.json()).error,"AI_ORGANIZATION_NOT_CONFIGURED");
  }
  assert.equal(s.stats().reserveCalls,0);
  assert.equal(s.stats().providerCalls,0);
