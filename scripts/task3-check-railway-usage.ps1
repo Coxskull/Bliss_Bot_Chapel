@@ -18,9 +18,9 @@ function Invoke-RailwayReadOnly([string[]]$ArgsArray) {
         throw ("Read-only Railway query failed (exit " + $LASTEXITCODE + "). No changes made.")
     }
 }
-Invoke-RailwayReadOnly @("usage", "--workspace", $workspaceId, "--json")
-Invoke-RailwayReadOnly @("usage", "projects", "--workspace", $workspaceId, "--limit", "20", "--json")
-Invoke-RailwayReadOnly @("usage", "limit", "status", "--target", "workspace", "--workspace", $workspaceId, "--json")
+Invoke-RailwayReadOnly -ArgsArray @("usage", "--workspace", $workspaceId, "--json")
+Invoke-RailwayReadOnly -ArgsArray @("usage", "projects", "--workspace", $workspaceId, "--limit", "20", "--json")
+Invoke-RailwayReadOnly -ArgsArray @("usage", "limit", "status", "--target", "workspace", $workspaceId, "--json")
 Write-Host ""
 Write-Host "READ_ONLY_INSPECTION=PASS"
 Write-Host "ISOLATED_TASK3_COMPUTE_BUDGET=NOT_PROVEN_BY_SHARED_WORKSPACE_LIMIT"
