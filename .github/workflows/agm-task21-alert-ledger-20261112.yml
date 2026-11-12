@@ -1,0 +1,22 @@
+name: Task21 staging Gmail alert receipt ledger (offline)
+on:
+  pull_request:
+    paths:
+      - 'scripts/task21/staging-alert-gmail-agent-receipt-ledger-20261112.sql'
+      - 'scripts/task21/staging-alert-ledger-contract.test.mjs'
+      - '.github/workflows/agm-task21-alert-ledger-20261112.yml'
+permissions:
+  contents: read
+jobs:
+  default-deny-staging-alert-ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assert only a private, explicitly staged provider/ACK receipt schema
+        run: node scripts/task21/staging-alert-ledger-contract.test.mjs
