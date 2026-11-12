@@ -4,6 +4,7 @@ on:
     paths:
       - 'scripts/task21/production-locked-single-operator-20261112.sql'
       - 'scripts/task21-production-operator-locked-smoke.mjs'
+      - 'scripts/task21-production-operator-hosted-deny.mjs'
       - 'supabase/functions/alpha-support-manual-operator/**'
       - '.github/workflows/task21-protected-manual-operator.yml'
 permissions:
@@ -21,3 +22,5 @@ jobs:
           node-version: '22'
       - name: Confirm prod JWT/MFA and one-operator server-verified claims fail closed
         run: node scripts/task21-production-operator-locked-smoke.mjs
+      - name: Verify exact live Supabase staff endpoint denies anonymous callers
+        run: node scripts/task21-production-operator-hosted-deny.mjs
