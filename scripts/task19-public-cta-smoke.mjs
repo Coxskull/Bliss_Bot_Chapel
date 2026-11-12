@@ -42,7 +42,15 @@ assert.ok(source.includes('href="#main-content"') && page.includes('<main id="ma
 assert.ok(page.includes('<meta name="viewport"'), "mobile viewport provided");
 assert.match(hero, /role="group" aria-label="Choose a public next step"/, "CTA grouping must be announced");
 assert.ok(page.includes("not create an account or purchase a campaign"), "interest-only scope is clear");
-assert.ok(page.includes("not a live AI model"), "Ask Alpha remains transparently scripted");
+if (process.env.ALPHA_ASK_ALPHA_FRONTEND_ENABLED === "true") {
+  assert.ok(page.includes('data-ask-alpha-ai="true"'), "AI preview requires exact release flag");
+  assert.ok(page.includes('id="ask-alpha-ai-consent-panel" hidden'), "AI preview requires explicit consent panel");
+  assert.ok(page.includes("Optional AI answers are available with your explicit processing consent"),
+    "AI preview clearly discloses optional model processing");
+} else {
+  assert.ok(page.includes('data-ask-alpha-ai="false"'), "AI stays off without release flag");
+  assert.ok(page.includes("not a live AI model"), "Ask Alpha remains transparently scripted");
+}
 assert.match(css, /\.hero-actions a:focus-visible\s*\{/, "visible keyboard focus style exists");
 assert.match(css, /\.hero-actions a\s*\{[^}]*min-height:\s*48px/, "tap targets >= 48px");
 assert.match(css, /@media\s*\(max-width:\s*600px\)[\s\S]*?\.hero-actions a\s*\{[^}]*width:\s*100%/, "mobile CTA stacking exists");
