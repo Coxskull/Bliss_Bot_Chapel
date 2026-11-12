@@ -29,7 +29,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$function$
+$function$;
 
 CREATE OR REPLACE FUNCTION public.alpha_ghl_claim(p_request_id uuid)
  RETURNS TABLE(request_id uuid, claim_token uuid)
@@ -69,7 +69,7 @@ BEGIN
    )
  RETURNING d.request_id,d.claim_token;
 END;
-$function$
+$function$;
 
 -- Keep existing private server-only RPC and intake triggers non-callable by the browser.
 REVOKE EXECUTE ON FUNCTION public.alpha_ghl_claim(uuid) FROM PUBLIC,anon,authenticated;
