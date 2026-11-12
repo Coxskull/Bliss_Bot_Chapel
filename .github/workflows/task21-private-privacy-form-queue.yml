@@ -1,0 +1,22 @@
+name: Task21 privacy form to private staff queue (offline)
+on:
+  pull_request:
+    paths:
+      - 'scripts/task21/production-privacy-form-private-queue-20261112.sql'
+      - 'scripts/task21-production-privacy-form-queue-contract.mjs'
+      - '.github/workflows/task21-private-privacy-form-queue.yml'
+permissions:
+  contents: read
+jobs:
+  private-consented-privacy-intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify private metadata-only privacy intake and existing queue authorization
+        run: node scripts/task21-production-privacy-form-queue-contract.mjs
