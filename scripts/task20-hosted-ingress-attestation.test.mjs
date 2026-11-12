@@ -15,7 +15,7 @@ const config={
   OPENAI_API_KEY:"synthetic-credential-never-sent",
   ALPHA_ASK_ALPHA_HASH_SECRET:"a".repeat(64),
   ALPHA_ASK_ALPHA_OPENAI_PROJECT_ID:"proj_example",
-  ALPHA_ASK_ALPHA_OPENAI_ORGANIZATION_ID:"org_example"
+  ALPHA_ASK_ALPHA_OPENAI_ORGANIZATION_ID:"org-example"
 };
 async function probe(value){
   const env=k=>k==="ALPHA_ASK_ALPHA_INGRESS_VERIFIED"?value:config[k];
