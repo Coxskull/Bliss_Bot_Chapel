@@ -20,7 +20,7 @@ for(const required of [
   "PROVIDER_ACCEPTED",
   "UNCERTAIN",
   "claim_token=gen_random_uuid()",
-  "human_acknowledgment",
+  "independent human ACK",
   "REVOKE EXECUTE ON FUNCTION",
   "service_role"
 ]) assert.ok(schema.toLowerCase().includes(required.toLowerCase()),"Missing stage-only outbox invariant "+required);
