@@ -6,6 +6,7 @@ on:
       - 'frontend/public/support-operator.html'
       - 'frontend/public/support-operator.js'
       - 'scripts/task22-staff-ghl-readback-smoke.mjs'
+      - 'scripts/task22-ghl-operator-hosted-deny.mjs'
       - '.github/workflows/task22-staff-crm-readback.yml'
 permissions:
   contents: read
@@ -24,6 +25,8 @@ jobs:
         run: node --check frontend/public/support-operator.js
       - name: Test MFA and operator-grant verification, aggregate only
         run: node scripts/task22-staff-ghl-readback-smoke.mjs
+      - name: Verify hosted staff review denies all unsigned calls
+        run: node scripts/task22-ghl-operator-hosted-deny.mjs
       - name: Test existing safe portal build contract
         env:
           BLISS_APPLICATION_ORIGIN: https://example.com
