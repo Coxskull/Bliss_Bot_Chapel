@@ -5,6 +5,7 @@
 const PROJECT="https://bkutbglzivfdnoerigyb.supabase.co";
 const PUBLISHABLE_KEY="sb_publishable_6eUPcIl4irVSlm1Z117KTQ_KVhdjPgU";
 const OPERATOR_API=PROJECT+"/functions/v1/alpha-support-manual-operator";
+const CRM_REVIEW_API=PROJECT+"/functions/v1/alpha-ghl-operator-review";
 const AUTH_API=PROJECT+"/auth/v1";
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const $=id=>document.getElementById(id);
@@ -27,6 +28,7 @@ function resetSession(){
  $("staff-password").value="";$("mfa-code").value="";$("mfa-enroll-code").value="";
  $("mfa-enroll-secret").textContent="";$("pending-user-id").textContent="";
  clearCaseRows();cases=[];page=0;
+ $("crm-review-result").textContent="Not checked in this session. Follow-up remains on hold.";
  showPanel("signin-panel");
 }
 function guardUI(){
@@ -269,6 +271,44 @@ async function signOut(){
  if(oldToken)try{await authRequest("/logout",{method:"POST",body:{},access:oldToken});}catch{/* local session already gone */}
  setBusy(false);
 }
+// Read-only GHL verification; the browser receives only aggregate suppression
+// states from a JWT+AAL2+private-grant protected server endpoint.
+async function runCrmReadback(){
+ if(busy)return;
+ setBusy(true);
+ try{
+  guardUI();
+  $("crm-review-result").textContent="Checking five existing HighLevel delivery links; no contact or marketing is sent.";
+  const response=await fetch(CRM_REVIEW_API,{
+   method:"POST",
+   headers:{"apikey":PUBLISHABLE_KEY,"Authorization":"Bearer "+token,
+      "Content-Type":"application/json"},
+   body:"{}",credentials:"omit",cache:"no-store",
+   referrerPolicy:"no-referrer",redirect:"error",signal:AbortSignal.timeout(55000)
+  });
+  if(!response.ok){
+   $("crm-review-result").textContent=response.status===429
+     ?"Readback already checked recently. Follow-up remains on HOLD."
+     :"Provider suppression could not be verified. Follow-up remains on HOLD.";
+   return;
+  }
+  const v=await response.json();
+  if(!Number.isInteger(v?.processed)||v.processed>20||
+      !v?.suppression||typeof v.suppression!=="object")
+   throw Error("INVALID_AGGREGATE");
+  const c=v.suppression;
+  const amounts=["SUPPRESSED","CLEAR","UNKNOWN"].map(k=>Number.isInteger(c[k])&&c[k]>=0?c[k]:null);
+  if(amounts.some(x=>x===null)||amounts.reduce((a,b)=>a+b,0)!==v.processed)
+   throw Error("INVALID_AGGREGATE");
+  $("crm-review-result").textContent=
+   "Remote CRM check recorded: "+v.processed+" links. Suppressed: "+amounts[0]+
+   "; clear: "+amounts[1]+"; unknown: "+amounts[2]+
+   ". This does not authorize outreach. Review history remains in the protected audit ledger.";
+ }catch{
+  $("crm-review-result").textContent=
+    "Remote CRM verification unavailable. Do not contact historical leads; follow-up remains on HOLD.";
+ }finally{setBusy(false);}
+}
 $("signin-form").addEventListener("submit",authenticate);
 $("begin-enroll").addEventListener("click",enroll);
 $("enroll-verify-form").addEventListener("submit",verifyEnrolled);
@@ -284,6 +324,7 @@ $("copy-user-id").addEventListener("click",async()=>{
  try{await navigator.clipboard.writeText(verifiedId);announce("Verified user ID copied for owner review only.");}
  catch{announce("Copy was unavailable. The verified account ID is displayed above.");}
 });
+$("crm-readback").addEventListener("click",runCrmReadback);
 $("refresh").addEventListener("click",async()=>{if(busy)return;setBusy(true);await loadQueue(page);setBusy(false);});
 $("previous").addEventListener("click",async()=>{if(busy||page===0)return;setBusy(true);await loadQueue(page-1);setBusy(false);});
 $("next").addEventListener("click",async()=>{if(busy||cases.length!==20||page>=100)return;setBusy(true);await loadQueue(page+1);setBusy(false);});
