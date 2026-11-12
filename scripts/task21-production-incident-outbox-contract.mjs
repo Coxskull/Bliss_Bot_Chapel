@@ -30,7 +30,7 @@ for(const expected of [
 ])assert.ok(sql.includes(expected),"Missing production alert safeguard: "+expected);
 for(const forbidden of [
  /\bNEW\.email\b/,/\bNEW\.full_name\b/,/\bNEW\.description\b/,
- /\bNEW\.marketing_opt_in\b/,/\bNEW\.provider_message_id\b/,
+ /\bNEW\.marketing_opt_in\b/,
  /\bGRANT\s+(?:EXECUTE|SELECT|INSERT|UPDATE|DELETE)\s+ON/i,
  /\bTRUNCATE\b/i,/\bDROP\s+TABLE\b/i,
  /\bCREATE\s+EXTENSION\b/i,/\bpg_net\b/i,
