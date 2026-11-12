@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'scripts/task21/production-privacy-form-private-queue-20261112.sql'
+      - 'scripts/task21/production-mailcase-retention-cascade-fix-20261112.sql'
       - 'scripts/task21-production-privacy-form-queue-contract.mjs'
       - '.github/workflows/task21-private-privacy-form-queue.yml'
 permissions:
