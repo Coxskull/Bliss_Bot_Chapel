@@ -11,6 +11,7 @@ on:
       - 'frontend/public/global-media.html'
       - 'scripts/build-vercel-portal.mjs'
       - 'scripts/com261004-public-*.mjs'
+      - 'scripts/alpha-intake-inflight-regression.mjs'
       - '.github/workflows/com261004-public-forms.yml'
 
 permissions:
@@ -33,6 +34,8 @@ jobs:
         run: node scripts/build-vercel-portal.mjs
       - name: Verify public forms, notice and private-file exclusion
         run: node scripts/com261004-public-forms-smoke.mjs
+      - name: Verify in-flight public inquiry retry safety with fictional data
+        run: node scripts/alpha-intake-inflight-regression.mjs
       - name: Package exact public-only build for offline owner QA
         shell: bash
         run: |
