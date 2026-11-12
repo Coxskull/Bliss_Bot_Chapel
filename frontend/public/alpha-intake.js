@@ -9,6 +9,7 @@
   let pendingKey = null;
   let pendingDraft = null;
   let saved = false;
+  let submitting = false;
   const field = name => form.elements.namedItem(name);
   const value = name => String(field(name)?.value ?? "").trim();
   const checked = name => Boolean(field(name)?.checked);
@@ -21,7 +22,7 @@
     status.focus();
   };
   form.addEventListener("input", () => {
-    if (saved) return;
+    if (saved || submitting) return;
     // Edited drafts are new intents, rather than replay of old parameters.
     pendingKey = null;
     pendingDraft = null;
@@ -29,7 +30,7 @@
 
   form.addEventListener("submit", async e => {
     e.preventDefault();
-    if (saved) return;
+    if (saved || submitting) return;
     if (!form.reportValidity()) return;
     if (!window.crypto?.randomUUID || !window.fetch) {
       show("Your browser cannot securely submit this form. Please use an updated browser.", "error");
@@ -79,7 +80,13 @@
       show("The verified submission service is unavailable.", "error");
       return;
     }
-    submit.disabled = true;
+    // Freeze the intent until the server confirms or rejects it. Otherwise an
+    // edit during an uncertain network response can rotate the request key
+    // and accidentally create a second, non-idempotent inquiry on retry.
+    const controls = [...form.querySelectorAll("input,textarea,select,button")];
+    const previousDisabled = controls.map(el => el.disabled);
+    submitting = true;
+    controls.forEach(el => { el.disabled = true; });
     submit.textContent = "Submitting…";
     status.hidden = true;
     try {
@@ -107,9 +114,10 @@
       show("We could not verify a saved submission. Please retry from this page; the same request key will be reused.", "error");
     } finally {
       if (!saved) {
-        submit.disabled = false;
+        controls.forEach((el, index) => { el.disabled = previousDisabled[index]; });
         submit.textContent = kind === "privacy" ? "Submit privacy request →" : "Submit interest →";
       }
+      submitting = false;
     }
   });
 })();
