@@ -1,0 +1,23 @@
+name: Task21 protected production manual operator (offline)
+on:
+  pull_request:
+    paths:
+      - 'scripts/task21/production-locked-single-operator-20261112.sql'
+      - 'scripts/task21-production-operator-locked-smoke.mjs'
+      - 'supabase/functions/alpha-support-manual-operator/**'
+      - '.github/workflows/task21-protected-manual-operator.yml'
+permissions:
+  contents: read
+jobs:
+  restricted-single-operator-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm prod JWT/MFA and one-operator server-verified claims fail closed
+        run: node scripts/task21-production-operator-locked-smoke.mjs
