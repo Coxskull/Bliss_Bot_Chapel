@@ -43,7 +43,9 @@ export function validateAskAlpha(payload) {
   if (payload.history !== undefined) {
     if (!Array.isArray(payload.history) || payload.history.length > 4 ||
         payload.history.some(h => !h || !["user","assistant"].includes(h.role) ||
-          typeof h.content !== "string" || h.content.length > 400)) return "INVALID_HISTORY";
+          typeof h.content !== "string" || !text(h.content) ||
+          h.content.length > 400 || /[\u0000-\u0008\u000b-\u001f]/.test(h.content)))
+      return "INVALID_HISTORY";
   }
   if (payload.history?.some(h => containsSensitiveChatData(h.content)))
     return "PERSONAL_DATA_NOT_ACCEPTED";
