@@ -18,7 +18,9 @@ const consented = () => ({
 const liveDisabled = () => ({
   ALPHA_ASK_ALPHA_ENABLED: "false",
   OPENAI_API_KEY: "synthetic-local-key",
-  ALPHA_ASK_ALPHA_HASH_SECRET: "synthetic-only-salt-".repeat(4)
+  ALPHA_ASK_ALPHA_HASH_SECRET: "synthetic-only-salt-".repeat(4),
+  ALPHA_ASK_ALPHA_OPENAI_PROJECT_ID: "proj_example",
+  ALPHA_ASK_ALPHA_OPENAI_ORGANIZATION_ID: "org-example"
 });
 const enabled = () => ({ ...liveDisabled(), ALPHA_ASK_ALPHA_ENABLED: "true",
   ALPHA_ASK_ALPHA_INGRESS_VERIFIED: "CF_IP_OVERWRITE_PROBE_PASS_V1" });
@@ -70,7 +72,7 @@ test("Ask Alpha model, notice and budget match the permitted synthetic contract"
   assert.equal(askAlphaConfiguration.notice,"AGM-ASK-ALPHA-AI-2026-11-08");
   assert.equal(askAlphaConfiguration.reservedUsd,0.01);
   assert.equal(askAlphaConfiguration.dailyUsd,1);
-  assert.equal(askAlphaConfiguration.monthlyUsd,10);
+  assert.equal(askAlphaConfiguration.monthlyUsd,9);
   assert.equal(validateAskAlpha(consented()),null);
   assert.equal(calculateLunaUsd({input_tokens:100,output_tokens:120,
     input_tokens_details:{cached_tokens:0,cache_write_tokens:0}}),0.00007);
@@ -134,6 +136,8 @@ test("valid synthetic request reserves budget, settles exact usage, returns rece
     assert.equal(_url,"https://api.openai.com/v1/responses");
     assert.equal(opts.method,"POST");
     assert.equal(opts.headers["Idempotency-Key"],validId(2));
+    assert.equal(opts.headers["OpenAI-Project"],"proj_example");
+    assert.equal(opts.headers["OpenAI-Organization"],"org-example");
     const posted=JSON.parse(opts.body);
     assert.equal(posted.model,"gpt-6-luna");
     assert.equal(posted.store,false);
