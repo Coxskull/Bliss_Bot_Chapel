@@ -1,0 +1,25 @@
+name: Task20 one-shot production paid answer acceptance
+on:
+  pull_request:
+    paths:
+      - 'scripts/task20-production-paid-one-shot-20261112.mjs'
+      - '.github/workflows/task20-production-paid-one-shot-20261112.yml'
+permissions:
+  contents: read
+concurrency:
+  group: task20-production-paid-one-shot-20261112
+  cancel-in-progress: false
+jobs:
+  single-consented-provider-answer:
+    if: github.event.pull_request.head.ref == 'ops/task20-production-paid-one-shot-20261112' && github.event.pull_request.head.repo.full_name == 'Coxskull/Bliss_Bot_Chapel'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute one approved synthetic live Ask Alpha request (no retry, no secrets)
+        run: node scripts/task20-production-paid-one-shot-20261112.mjs
