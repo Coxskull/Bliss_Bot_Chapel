@@ -4,6 +4,19 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const ddl=readFileSync(new URL("./task21/production-privacy-form-private-queue-20261112.sql",import.meta.url),"utf8");
 const privacy=readFileSync(new URL("../frontend/public/privacy-request.html",import.meta.url),"utf8");
+const retention=readFileSync(new URL("./task21/production-mailcase-retention-cascade-fix-20261112.sql",import.meta.url),"utf8");
+for(const necessary of [
+ "TASK21_90DAY_MAIL_RETENTION_GUARD_FAILED",
+ "TASK21_EXISTING_AUDIT_TRIGGER_CHANGED",
+ "CREATE OR REPLACE TRIGGER manual_mail_events_no_changes",
+ "BEFORE UPDATE ON alpha_support_private.manual_mail_case_events",
+ "REVOKE DELETE,UPDATE ON alpha_support_private.manual_mail_case_events",
+ "ON DELETE CASCADE",
+ "90-day case purge"
+])assert.ok(retention.includes(necessary),"Missing safe existing support mail retention repair: "+necessary);
+assert.doesNotMatch(retention,/DELETE FROM alpha_support_private\.manual_mail_cases/i);
+assert.doesNotMatch(retention,/DROP\s+TRIGGER/i);
+
 const edge=readFileSync(new URL("../supabase/functions/alpha-public-intake/index.ts",import.meta.url),"utf8");
 for(const key of [
  "TASK21_PRIVACY_FORM_PRIVATE_QUEUE_GATE_FAILED",
