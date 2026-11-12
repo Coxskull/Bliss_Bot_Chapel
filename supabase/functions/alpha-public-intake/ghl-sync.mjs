@@ -7,12 +7,12 @@ export async function deliverToGhl(client, requestId) {
   // Fail closed until identity, authority, CRM suppression, and the
   // one-time inquiry-contact consent scope have each been verified.
   const review = await client.from("alpha_public_intake_requests")
-    .select("kind,notice_version,contact_consent,contact_consent_version,contact_consent_at,followup_gate,business_identity_verified,decision_authority_verified,crm_suppression_checked,followup_approved_at")
+    .select("kind,notice_version,contact_consent,marketing_opt_in,contact_consent_version,contact_consent_at,followup_gate,business_identity_verified,decision_authority_verified,crm_suppression_checked,followup_approved_at")
     .eq("id", requestId).single();
   if (review.error || !review.data) return "HOLD";
   const r = review.data;
   if (!["creator","advertiser"].includes(r.kind) || r.notice_version !== ghlNotice ||
-      r.contact_consent !== true || r.contact_consent_version !== ghlNotice ||
+      r.contact_consent !== true || r.marketing_opt_in !== true || r.contact_consent_version !== ghlNotice ||
       !r.contact_consent_at || r.followup_gate !== "CLEARED" ||
       r.business_identity_verified !== true || r.decision_authority_verified !== true ||
       r.crm_suppression_checked !== true || !r.followup_approved_at) return "HOLD";
@@ -39,7 +39,7 @@ export async function deliverToGhl(client, requestId) {
 
   try {
     const lookup = await client.from("alpha_public_intake_requests")
-      .select("kind,full_name,email,organization,website,notice_version,processing_acknowledged,adult_confirmed,contact_consent,contact_consent_version,contact_consent_at,followup_gate,business_identity_verified,decision_authority_verified,crm_suppression_checked,followup_approved_at,budget_amount,budget_currency,market_code,campaign_objective,preferred_media_formats,audience_requirements,preferred_languages")
+      .select("kind,full_name,email,organization,website,notice_version,processing_acknowledged,adult_confirmed,contact_consent,marketing_opt_in,contact_consent_version,contact_consent_at,followup_gate,business_identity_verified,decision_authority_verified,crm_suppression_checked,followup_approved_at,budget_amount,budget_currency,market_code,campaign_objective,preferred_media_formats,audience_requirements,preferred_languages")
       .eq("id", requestId).single();
     if (lookup.error || !lookup.data) {
       await finish("BLOCKED", null, "invalid_record");
