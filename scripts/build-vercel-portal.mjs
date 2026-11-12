@@ -47,7 +47,7 @@ await copyFile(resolve(source, 'global-media.css'), resolve(output, 'global-medi
 for (const filename of [
   'join-creator.html', 'join-advertiser.html', 'privacy-request.html',
   'creator-account.html', 'creator-login.html', 'advertiser-login.html',
-  'alpha-privacy.html', 'alpha-terms.html', 'services.html', 'contact.html',
+  'alpha-privacy.html', 'alpha-terms.html', 'services.html', 'contact.html', 'support.html',
   'alpha-intake.css', 'alpha-intake.js'
 ]) {
   await copyFile(resolve(source, filename), resolve(output, filename));
