@@ -21,6 +21,7 @@ on:
       - 'scripts/build-vercel-portal.mjs'
       - 'scripts/task20-hosted-browser-consent-smoke.mjs'
       - 'scripts/task20-ask-alpha-history-negative.mjs'
+      - 'scripts/task20-hosted-ingress-attestation.test.mjs'
       - 'scripts/agm-marketplace-budget-smoke.mjs'
       - '.github/workflows/agm-ghl-contact-bridge.yml'
 permissions:
@@ -39,6 +40,7 @@ jobs:
       - run: node scripts/agm-ghl-unit-smoke.mjs
       - run: node scripts/agm-ghl-readback-smoke.mjs
       - run: node scripts/agm-marketplace-budget-smoke.mjs
+      - run: node scripts/task20-hosted-ingress-attestation.test.mjs
       - name: Assert Ask Alpha public AI consent and hosted endpoint (offline)
         run: |
           node --check frontend/public/wedding-planner.js
