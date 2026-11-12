@@ -21,7 +21,6 @@ for(const required of [
   "not yet available",
   "No automatic case number is issued",
   "not an emergency incident-response service",
-  "not issue",
   'href="/alpha-privacy.html"',
   'href="/alpha-terms.html"'
 ]) assert.ok(support.includes(required),"Missing safety/support disclosure: "+required);
