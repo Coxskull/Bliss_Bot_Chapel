@@ -30,7 +30,6 @@ function resetSession(){
  showPanel("signin-panel");
 }
 function guardUI(){
- if(busy)throw Error("BUSY");
  if(!token||expiresAt<=Date.now()+1500)throw Error("SESSION_EXPIRED");
 }
 function setBusy(value){
