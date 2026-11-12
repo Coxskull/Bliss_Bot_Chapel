@@ -16,6 +16,10 @@ on:
       - 'frontend/public/alpha-privacy.html'
       - 'frontend/public/alpha-terms.html'
       - 'scripts/agm-ghl-*.mjs'
+      - 'frontend/public/global-media.html'
+      - 'frontend/public/wedding-planner.js'
+      - 'scripts/build-vercel-portal.mjs'
+      - 'scripts/task20-hosted-browser-consent-smoke.mjs'
       - 'scripts/task20-ask-alpha-history-negative.mjs'
       - 'scripts/agm-marketplace-budget-smoke.mjs'
       - '.github/workflows/agm-ghl-contact-bridge.yml'
@@ -35,6 +39,10 @@ jobs:
       - run: node scripts/agm-ghl-unit-smoke.mjs
       - run: node scripts/agm-ghl-readback-smoke.mjs
       - run: node scripts/agm-marketplace-budget-smoke.mjs
+      - name: Assert Ask Alpha public AI consent and hosted endpoint (offline)
+        run: |
+          node --check frontend/public/wedding-planner.js
+          node scripts/task20-hosted-browser-consent-smoke.mjs
       - name: Verify Ask Alpha history privacy and pre-metering denials (offline)
         run: node scripts/task20-ask-alpha-history-negative.mjs
       - name: Verify GoHighLevel is not in browser code
