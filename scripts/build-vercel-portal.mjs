@@ -18,6 +18,25 @@ for (const route of ['/', '/production.html', '/brand-intake.html', '/login.html
   html = html.replaceAll(`href="${route}"`, `href="${new URL(route, origin).href}"`);
 }
 html = html.replaceAll('href="/global-media.html"', 'href="/"');
+
+if (process.env.ALPHA_ASK_ALPHA_FRONTEND_ENABLED === 'true') {
+  // Website release switch: NOT sufficient for paid API activation.
+  // The existing Supabase gateway independently checks consent, network
+  // provenance, provider configuration and a fail-closed $9 SQL governor.
+  if (!html.includes('data-ask-alpha-ai="false"') ||
+      !html.includes('id="ask-alpha-ai-consent-panel" hidden'))
+    throw Error('Ask Alpha AI consent/release controls missing; refuse public build');
+  html = html.replace('data-ask-alpha-ai="false"', 'data-ask-alpha-ai="true"');
+  html = html.replace(
+    'This is a scripted informational guide, not a live AI model or human support. The chat itself does not collect account data or submit forms.',
+    'Optional AI answers are available with your explicit processing consent. AI can make mistakes and is not a human representative, approved campaign or binding quote.'
+  );
+  html = html.replace(
+    '12 questions per session. Messages are only shown in this tab and are never submitted or stored.',
+    'Up to 12 questions per session. When AI is explicitly selected, chat context is sent to OpenAI and ALPHA stores limited consent/usage receipts; the guided mode stays local.'
+  );
+}
+
 await mkdir(resolve(output, 'assets'), { recursive: true });
 await writeFile(resolve(output, 'index.html'), html);
 await copyFile(resolve(source, 'global-media.css'), resolve(output, 'global-media.css'));
