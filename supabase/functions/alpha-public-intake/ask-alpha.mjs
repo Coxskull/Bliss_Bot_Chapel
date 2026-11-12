@@ -125,15 +125,19 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
   const salt = env("ALPHA_ASK_ALPHA_HASH_SECRET");
   if (!apiKey || !salt || salt.length < 32)
     return out(origin, {error:"AI_SERVICE_NOT_CONFIGURED"},503);
-  // Operator release interlock, not cryptographic identity proof.
-  // The owner MUST independently confirm the managed Supabase gateway overwrites
-  // a client-forged CF-Connecting-IP header on every allowed hosted path before
-  // configuring this flag. No new gateway or provider is introduced.
-  // Both ALPHA_ASK_ALPHA_ENABLED and this attestation are required.
-  if (env("ALPHA_ASK_ALPHA_INGRESS_VERIFIED") !== "CF_IP_OVERWRITE_PROBE_PASS_V1")
+  // Operator release interlock, NOT cryptographic identity proof.
+  // Approve only after a real hosted negative probe demonstrates either:
+  // (1) the managed gateway overwrites forged CF-Connecting-IP on the same
+  //     function URL used by the public browser; or
+  // (2) the managed edge/WAF rejects the forged header BEFORE function entry,
+  //     while ordinary accepted requests carry the managed CF client IP.
+  // The second finding has its own explicit attestation to avoid falsely
+  // describing a WAF block as a header overwrite. No XFF fallback is allowed.
+  const verifiedIngress = env("ALPHA_ASK_ALPHA_INGRESS_VERIFIED");
+  if (verifiedIngress !== "CF_IP_OVERWRITE_PROBE_PASS_V1" &&
+      verifiedIngress !== "CF_IP_SPOOF_DENIED_AT_EDGE_V1")
     return out(origin,{error:"RATE_LIMIT_INGRESS_NOT_VERIFIED"},503);
-  // The upstream gateway must overwrite cf-connecting-ip on every request;
-  // never fall back to untrusted X-Forwarded-For or a caller-supplied token.
+  // Never fall back to untrusted X-Forwarded-For or a caller-supplied token.
   const ip = req.headers.get("cf-connecting-ip")?.trim();
   if (!ip || ip.length > 45 || !/^[a-fA-F0-9.:]+$/.test(ip))
     return out(origin, {error:"RATE_LIMIT_IDENTITY_UNAVAILABLE"},503);
