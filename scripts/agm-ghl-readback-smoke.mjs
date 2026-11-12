@@ -31,8 +31,10 @@ assert.equal(reconcileContact({request,delivery,contacts:[{...contact,id:"other"
   "HOLD_CRM_IDENTITY_MISMATCH");
 assert.equal(reconcileContact({request:{...request,business_identity_verified:false},delivery,contacts:[contact],providerTotal:1,internalDuplicateCount:1,locationId}).classification,
   "HOLD_IDENTITY_OR_AUTHORITY_UNVERIFIED");
+// A global dnd=false alone is NOT provider proof that outbound email is clear.
+// The prior expectation was the vacuous-truth bug: [].every(inactive) === true.
 assert.equal(reconcileContact({request,delivery,contacts:[{...contact,dndSettings:undefined,inboundDndSettings:undefined}],providerTotal:1,internalDuplicateCount:1,locationId}).suppressionStatus,
-  "CLEAR");
+  "UNKNOWN");
 
 const [preflightSource,readbackSource]=await Promise.all([
   readFile(new URL("../supabase/functions/alpha-ghl-preflight/index.ts",import.meta.url),"utf8"),
