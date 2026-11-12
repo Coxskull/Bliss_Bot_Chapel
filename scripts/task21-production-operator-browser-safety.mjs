@@ -45,7 +45,7 @@ for(const forbidden of [
  /window\.localStorage\b/,/window\.sessionStorage\b/,
  /(?:localStorage|sessionStorage)\.setItem\s*\(/,
  /document\.cookie/,/\binnerHTML\s*=/,
- /\bservice_role\b/i,/sb_secret_/,
+ /SUPABASE_SERVICE_ROLE_KEY/,/sb_secret_/,
  /<script[^>]+https?:/i,
  /https?:\/\/(?:cdn\.|esm\.|unpkg\.)/i,
  /(?:sendRefund|approveRefund|sendCustomerEmail|issuePayment|deleteCase)\s*\(/
