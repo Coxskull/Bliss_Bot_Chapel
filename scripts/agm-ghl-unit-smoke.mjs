@@ -12,7 +12,7 @@ const record = {
   full_name: "Mock Contract Creator", email: "creator@unit.test",
   organization: "", website: "https://example.org/public-channel",
   market: "Test Manila", category: "Podcast", description: "Never forward me",
-  marketing_opt_in: false
+  marketing_opt_in: true
 };
 const creator = mapGhlContact(record, loc);
 assert.deepEqual(creator, {
@@ -48,6 +48,7 @@ for (const forbidden of [
 for(const invalid of [
   {...record,kind:"privacy"}, {...record,notice_version:"AGM-INTEREST-2026-11-05"},
   {...record,processing_acknowledged:false}, {...record,contact_consent:false},
+  {...record,marketing_opt_in:false},
   {...record,email:"fake@example.invalid"}
 ]) assert.throws(()=>mapGhlContact(invalid,loc));
 
@@ -56,6 +57,7 @@ const oldDeno=globalThis.Deno;
 let env={};
 globalThis.Deno={env:{get:k=>env[k]}};
 let fetches=0, completions=[], claims=0, httpResponse={ok:true,status:200};
+let selectedRecord=record;
 const fakeDb={
   rpc: async(name,args)=>{
     if(name==="alpha_ghl_claim"){
@@ -70,10 +72,15 @@ const fakeDb={
   },
   from: name=>{
     assert.equal(name,"alpha_public_intake_requests");
-    return {select:()=>({eq:()=>({single:async()=>({data:record,error:null})})})};
+    return {select:()=>({eq:()=>({single:async()=>({data:selectedRecord,error:null})})})};
   }
 };
 try {
+  selectedRecord={...record,marketing_opt_in:false};
+  assert.equal(await deliverToGhl(fakeDb,"test-id"),"HOLD");
+  assert.equal(claims,0);
+  assert.equal(fetches,0);
+  selectedRecord=record;
   env={}; // Fail closed with no toggle and no GHL account access.
   assert.equal(await deliverToGhl(fakeDb,"test-id"),"DISABLED");
   assert.equal(claims,0);

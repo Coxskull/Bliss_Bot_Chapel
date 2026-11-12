@@ -5,7 +5,7 @@ import { emailSuppressionStatus, reconcileContact } from "../supabase/functions/
 const locationId = "aBcD1234EFgh5678IJkl";
 const request = {
   email: "buyer@example.invalid", notice_version: "AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1",
-  contact_consent: true, contact_consent_version: "AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1",
+  contact_consent: true, marketing_opt_in: true, contact_consent_version: "AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1",
   contact_consent_at: "2026-11-08T12:00:00Z", business_identity_verified: true,
   decision_authority_verified: true, followup_gate: "HOLD", followup_approved_at: null
 };
@@ -19,6 +19,8 @@ assert.equal(reconcileContact({request,delivery,contacts:[contact],providerTotal
   "HOLD_EXPLICIT_APPROVAL_REQUIRED");
 assert.equal(reconcileContact({request,delivery,contacts:[contact, {...contact,id:"duplicate"}],providerTotal:2,internalDuplicateCount:1,locationId}).classification,
   "HOLD_DUPLICATE_REVIEW");
+assert.equal(reconcileContact({request:{...request,marketing_opt_in:false},delivery,contacts:[contact],providerTotal:1,internalDuplicateCount:1,locationId}).classification,
+  "HOLD_MARKETING_OPTOUT");
 assert.equal(reconcileContact({request:{...request,contact_consent:false},delivery,contacts:[contact],providerTotal:1,internalDuplicateCount:1,locationId}).classification,
   "HOLD_NO_CURRENT_INQUIRY_CONTACT_CONSENT");
 assert.equal(reconcileContact({request,delivery,contacts:[{...contact,dnd:true}],providerTotal:1,internalDuplicateCount:1,locationId}).classification,

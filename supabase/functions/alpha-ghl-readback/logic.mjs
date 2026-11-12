@@ -24,10 +24,12 @@ export function reconcileContact({ request, delivery, contacts, providerTotal, i
     request?.contact_consent_version === request?.notice_version &&
     request?.notice_version === "AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1" &&
     Boolean(request?.contact_consent_at);
+  const marketingApproved = request?.marketing_opt_in === true;
   const duplicates = Math.max(Number.isSafeInteger(providerTotal) ? providerTotal : matches.length,
     matches.length, Number.isSafeInteger(internalDuplicateCount) ? internalDuplicateCount : 0);
   let classification = "HOLD_MANUAL_REVIEW_REQUIRED";
   if (!consentValid) classification = "HOLD_NO_CURRENT_INQUIRY_CONTACT_CONSENT";
+  else if (!marketingApproved) classification = "HOLD_MARKETING_OPTOUT";
   else if (duplicates > 1) classification = "HOLD_DUPLICATE_REVIEW";
   else if (!identityContact) classification = "HOLD_CRM_IDENTITY_MISMATCH";
   else if (suppressionStatus === "SUPPRESSED") classification = "HOLD_CRM_SUPPRESSED";

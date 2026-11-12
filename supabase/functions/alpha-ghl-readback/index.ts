@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
   const ids = rows.map((row: any) => row.request_id);
   const [{ data: requests, error: requestError }, { data: allEmails, error: duplicateError }] = await Promise.all([
     db.from("alpha_public_intake_requests")
-      .select("id,kind,email,notice_version,contact_consent,contact_consent_version,contact_consent_at,business_identity_verified,decision_authority_verified,followup_gate,followup_approved_at")
+      .select("id,kind,email,notice_version,contact_consent,marketing_opt_in,contact_consent_version,contact_consent_at,business_identity_verified,decision_authority_verified,followup_gate,followup_approved_at")
       .in("id", ids),
     db.from("alpha_public_intake_requests")
       .select("id,email")
