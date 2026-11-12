@@ -23,6 +23,8 @@ on:
       - 'scripts/task20-ask-alpha-history-negative.mjs'
       - 'scripts/task20-hosted-ingress-attestation.test.mjs'
       - 'scripts/agm-marketplace-budget-smoke.mjs'
+      - 'scripts/task21/staging-alert-ledger-contract.test.mjs'
+      - 'scripts/task21/staging-alert-gmail-agent-receipt-ledger-20261112.sql'
       - '.github/workflows/agm-ghl-contact-bridge.yml'
 permissions:
   contents: read
@@ -40,6 +42,8 @@ jobs:
       - run: node scripts/agm-ghl-unit-smoke.mjs
       - run: node scripts/agm-ghl-readback-smoke.mjs
       - run: node scripts/agm-marketplace-budget-smoke.mjs
+      - name: Assert Task21 private staging-only alert provider/ACK ledger (offline)
+        run: node scripts/task21/staging-alert-ledger-contract.test.mjs
       - run: node scripts/task20-hosted-ingress-attestation.test.mjs
       - name: Assert Ask Alpha public AI consent and hosted endpoint (offline)
         run: |
