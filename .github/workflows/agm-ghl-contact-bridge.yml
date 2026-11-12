@@ -16,6 +16,8 @@ on:
       - 'frontend/public/alpha-privacy.html'
       - 'frontend/public/alpha-terms.html'
       - 'scripts/agm-ghl-*.mjs'
+      - 'scripts/task22/production-crm-optout-local-transport-hold-20261112.sql'
+      - 'scripts/task22-crm-optout-source-contract.mjs'
       - 'frontend/public/global-media.html'
       - 'frontend/public/wedding-planner.js'
       - 'scripts/build-vercel-portal.mjs'
@@ -41,6 +43,8 @@ jobs:
           node-version: '22'
       - run: node scripts/agm-ghl-unit-smoke.mjs
       - run: node scripts/agm-ghl-readback-smoke.mjs
+      - name: Assert Task22 local CRM opt-out prevention gates
+        run: node scripts/task22-crm-optout-source-contract.mjs
       - run: node scripts/agm-marketplace-budget-smoke.mjs
       - name: Assert Task21 private staging-only alert provider/ACK ledger (offline)
         run: node scripts/task21/staging-alert-ledger-contract.test.mjs
