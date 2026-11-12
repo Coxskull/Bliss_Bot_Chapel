@@ -16,6 +16,7 @@ on:
       - 'frontend/public/alpha-privacy.html'
       - 'frontend/public/alpha-terms.html'
       - 'scripts/agm-ghl-*.mjs'
+      - 'scripts/task20-ask-alpha-history-negative.mjs'
       - 'scripts/agm-marketplace-budget-smoke.mjs'
       - '.github/workflows/agm-ghl-contact-bridge.yml'
 permissions:
@@ -34,6 +35,8 @@ jobs:
       - run: node scripts/agm-ghl-unit-smoke.mjs
       - run: node scripts/agm-ghl-readback-smoke.mjs
       - run: node scripts/agm-marketplace-budget-smoke.mjs
+      - name: Verify Ask Alpha history privacy and pre-metering denials (offline)
+        run: node scripts/task20-ask-alpha-history-negative.mjs
       - name: Verify GoHighLevel is not in browser code
         run: |
           node - <<'NODE'
