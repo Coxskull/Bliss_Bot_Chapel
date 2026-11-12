@@ -19,7 +19,7 @@ for(const expected of [
  "state='UNCERTAIN'",
  "AND state='CLAIMED'",
  "AND state='PROVIDER_ACCEPTED'",
- "p_ack_message_id<>p_provider_message_id",
+ "p_ack_message_id=p_provider_message_id",
  "human_ack_message_id<>provider_message_id",
  "ON DELETE CASCADE",
  "REVOKE ALL ON SCHEMA alpha_support_private",
