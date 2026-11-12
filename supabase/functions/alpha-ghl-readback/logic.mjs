@@ -2,13 +2,21 @@ const normalize = value => typeof value === "string" ? value.trim().toLowerCase(
 
 export function emailSuppressionStatus(contact) {
   if (!contact || typeof contact !== "object") return "UNKNOWN";
+  // HighLevel's GET Contact response documents lowercase "email", while
+  // older Update/Upsert examples show uppercase "Email". Accept both.
+  // Do not confuse inboundDndSettings (inbound calls/SMS) with outbound email.
   const statuses = [
-    contact.dndSettings?.Email?.status,
-    contact.inboundDndSettings?.Email?.status,
-    contact.inboundDndSettings?.all?.status
-  ].filter(value => value !== undefined && value !== null).map(value => String(value).toLowerCase());
-  if (contact.dnd === true || statuses.includes("active")) return "SUPPRESSED";
-  if (contact.dnd === false && statuses.every(value => value === "inactive")) return "CLEAR";
+    contact.dndSettings?.email?.status,
+    contact.dndSettings?.Email?.status
+  ].filter(value => typeof value === "string")
+    .map(value => value.trim().toLowerCase());
+  // "permanent" represents DND just as much as "active".
+  if (contact.dnd === true ||
+      statuses.includes("active") || statuses.includes("permanent")) return "SUPPRESSED";
+  // Never infer CLEAR from an empty array (vacuous .every) or solely from
+  // dnd=false; an explicit inactive outbound email-channel status is required.
+  if (statuses.length > 0 && statuses.every(value => value === "inactive"))
+    return "CLEAR";
   return "UNKNOWN";
 }
 
