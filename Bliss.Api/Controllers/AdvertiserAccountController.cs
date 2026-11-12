@@ -29,6 +29,16 @@ public sealed class AdvertiserAccountController : ControllerBase
         if (!BlissAuthorization.TryResolveVerifiedAdvertiserId(User, _auth, out var advertiserId))
             return StatusCode(StatusCodes.Status403Forbidden);
 
+        var subject = User.FindFirst("sub")?.Value;
+        if (string.IsNullOrWhiteSpace(subject)) return StatusCode(StatusCodes.Status403Forbidden);
+        var membership = await _db.AdvertiserAccountMemberships.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Subject == subject && x.AdvertiserId == advertiserId, cancellationToken);
+        // Existing workspaces remain bound by the issuer's approved subject →
+        // advertiser_id assignment. New self-registrations must additionally
+        // have an active database owner link before any workspace access.
+        if (membership is not null && membership.Status != "ACTIVE")
+            return StatusCode(StatusCodes.Status403Forbidden);
+
         var record = await _db.Advertisers.AsNoTracking()
             .Where(a => a.Id == advertiserId)
             .Select(a => new AdvertiserSelfSummaryDto(a.Id, a.Name, a.CountryCode, a.Website))
