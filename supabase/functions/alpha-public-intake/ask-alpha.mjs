@@ -5,7 +5,7 @@ const MODEL = "gpt-6-luna";
 const NOTICE = "AGM-ASK-ALPHA-AI-2026-11-08";
 const RESERVATION_USD = 0.01;
 const MAX_OUTPUT_TOKENS = 400;
-const MONTHLY_MAX_USD = 10;
+const MONTHLY_MAX_USD = 9;
 const DAILY_MAX_USD = 1;
 const uuid = x => typeof x === "string" &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(x);
@@ -99,9 +99,27 @@ function responseText(json) {
   if (json?.status !== "completed" || json.model !== MODEL || json.service_tier !== "default" ||
       !Array.isArray(json.output) || json.output.some(o => o.type !== "message"))
     throw Error("PROVIDER_OUTPUT_UNVERIFIED");
-  const result = json.output.flatMap(o => o.content || [])
-    .filter(c => c.type === "output_text").map(c => c.text).join("\n").trim();
-  if (!result || result.length > 3000) throw Error("PROVIDER_OUTPUT_UNVERIFIED");
+  // Responses can include a refusal part alongside ordinary output_text.
+  // Never silently drop refusal/tool/annotation parts and display the rest
+  // as approved advertising or support guidance. All parts must be plain text.
+  if (json.output.length === 0 ||
+      json.output.some(o => !o || (o.role != null && o.role !== "assistant") ||
+        !Array.isArray(o.content) || o.content.length === 0 ||
+        o.content.some(c => !c || c.type !== "output_text" ||
+          typeof c.text !== "string" || !c.text.trim() ||
+          c.text.length > 3000 ||
+          (c.annotations !== undefined &&
+            (!Array.isArray(c.annotations) || c.annotations.length > 0)))))
+    throw Error("PROVIDER_OUTPUT_UNVERIFIED");
+  const result = json.output.flatMap(o => o.content)
+    .map(c => c.text).join("\n").trim();
+  // Provider instructions are not a sufficient output-safety boundary.
+  // A hallucinated external link or contact/credential request can redirect
+  // an advertiser into an unapproved payment or personal-data workflow.
+  // The approved human path is the first-party relative /contact.html route.
+  if (!result || result.length > 3000 || containsSensitiveChatData(result) ||
+      /(?:\bhttps?:\/\/|\bwww\.|\bmailto:|\btel:|\bsms:|\]\(\s*\/\/)/i.test(result))
+    throw Error("PROVIDER_OUTPUT_UNVERIFIED");
   return result;
 }
 const instructions = [
@@ -125,6 +143,20 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
   const salt = env("ALPHA_ASK_ALPHA_HASH_SECRET");
   if (!apiKey || !salt || salt.length < 32)
     return out(origin, {error:"AI_SERVICE_NOT_CONFIGURED"},503);
+  // Pin every provider request to the owner's $9-limited OpenAI project.
+  // A key from a different project must not silently spend there.
+  const projectId = env("ALPHA_ASK_ALPHA_OPENAI_PROJECT_ID");
+  if (typeof projectId !== "string" ||
+      !/^proj_[A-Za-z0-9_-]{4,96}$/.test(projectId))
+    return out(origin,{error:"AI_PROJECT_NOT_CONFIGURED"},503);
+  // Pin the organization as well as the project so a legacy/multi-org
+  // credential cannot silently attribute paid usage outside ALPHA's budget.
+  // Both IDs are server-only configuration; syntax checks are not a proof of
+  // actual provider permission or the project's effective spend limit.
+  const organizationId = env("ALPHA_ASK_ALPHA_OPENAI_ORGANIZATION_ID");
+  if (typeof organizationId !== "string" ||
+      !/^org-[A-Za-z0-9_-]{4,96}$/.test(organizationId))
+    return out(origin,{error:"AI_ORGANIZATION_NOT_CONFIGURED"},503);
   // Operator release interlock, NOT cryptographic identity proof.
   // Approve only after a real hosted negative probe demonstrates either:
   // (1) the managed gateway overwrites forged CF-Connecting-IP on the same
@@ -176,6 +208,7 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
       const response = await providerFetch("https://api.openai.com/v1/responses",{
         method:"POST",
         headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json",
+          "OpenAI-Project":projectId,"OpenAI-Organization":organizationId,
           "Idempotency-Key":payload.request_key},
         body:JSON.stringify({
           model:MODEL,service_tier:"default",store:false,max_output_tokens:MAX_OUTPUT_TOKENS,tools:[],
