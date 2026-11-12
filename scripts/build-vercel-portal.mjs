@@ -48,6 +48,7 @@ for (const filename of [
   'join-creator.html', 'join-advertiser.html', 'privacy-request.html',
   'creator-account.html', 'creator-login.html', 'advertiser-login.html',
   'alpha-privacy.html', 'alpha-terms.html', 'services.html', 'contact.html', 'support.html',
+  'support-operator.html', 'support-operator.css', 'support-operator.js',
   'alpha-intake.css', 'alpha-intake.js'
 ]) {
   await copyFile(resolve(source, filename), resolve(output, filename));
@@ -82,4 +83,5 @@ await copyFile(resolve(source, 'assets/bliss-chapel-hero.jpg'), resolve(output, 
 // Fail Vercel builds if the public inquiry hero loses safe routes or disclosures.
 await import('./task19-public-cta-smoke.mjs');
 await import('./task21-public-manual-support-smoke.mjs');
+await import('./task21-production-operator-browser-safety.mjs');
 console.log('Built Vercel workspace portal. Application origin is public configuration, not a credential.');

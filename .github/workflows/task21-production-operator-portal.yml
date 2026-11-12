@@ -1,0 +1,32 @@
+name: Task21 production one-operator UI (locked)
+on:
+  pull_request:
+    paths:
+      - 'frontend/public/support-operator.html'
+      - 'frontend/public/support-operator.css'
+      - 'frontend/public/support-operator.js'
+      - 'scripts/task21-production-operator-browser-safety.mjs'
+      - 'scripts/build-vercel-portal.mjs'
+      - 'vercel.json'
+      - '.github/workflows/task21-production-operator-portal.yml'
+permissions:
+  contents: read
+jobs:
+  locked-operator-browser-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify staff UI syntax and no dynamic code execution
+        run: node --check frontend/public/support-operator.js
+      - name: Build public portal, including restricted staff entrypoint
+        env:
+          BLISS_APPLICATION_ORIGIN: https://example.com
+        run: node scripts/build-vercel-portal.mjs
+      - name: Independently assert signed-out hosted operator endpoint denies case data
+        run: node scripts/task21-production-operator-hosted-deny.mjs
