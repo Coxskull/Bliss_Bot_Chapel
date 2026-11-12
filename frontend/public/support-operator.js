@@ -6,6 +6,7 @@ const PROJECT="https://bkutbglzivfdnoerigyb.supabase.co";
 const PUBLISHABLE_KEY="sb_publishable_6eUPcIl4irVSlm1Z117KTQ_KVhdjPgU";
 const OPERATOR_API=PROJECT+"/functions/v1/alpha-support-manual-operator";
 const CRM_REVIEW_API=PROJECT+"/functions/v1/alpha-ghl-operator-review";
+const CRM_CONSENT_API=PROJECT+"/functions/v1/alpha-ghl-consent-readiness";
 const AUTH_API=PROJECT+"/auth/v1";
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const $=id=>document.getElementById(id);
@@ -29,6 +30,7 @@ function resetSession(){
  $("mfa-enroll-secret").textContent="";$("pending-user-id").textContent="";
  clearCaseRows();cases=[];page=0;
  $("crm-review-result").textContent="Not checked in this session. Follow-up remains on hold.";
+ $("crm-consent-result").textContent="Not checked. All historical inquiries remain on HOLD. This report cannot approve outreach.";
  showPanel("signin-panel");
 }
 function guardUI(){
@@ -324,6 +326,46 @@ $("copy-user-id").addEventListener("click",async()=>{
  try{await navigator.clipboard.writeText(verifiedId);announce("Verified user ID copied for owner review only.");}
  catch{announce("Copy was unavailable. The verified account ID is displayed above.");}
 });
+// Local consent readiness ONLY: no contact names, IDs, messages or provider writes.
+// The JWT+AAL2+existing operator grant is verified again by the server.
+async function runConsentReadiness(){
+ if(busy)return;
+ setBusy(true);
+ try{
+  guardUI();
+  $("crm-consent-result").textContent="Checking only aggregate source consent and hold status.";
+  const response=await fetch(CRM_CONSENT_API,{
+   method:"GET",
+   headers:{"apikey":PUBLISHABLE_KEY,Authorization:"Bearer "+token},
+   credentials:"omit",cache:"no-store",referrerPolicy:"no-referrer",
+   redirect:"error",signal:AbortSignal.timeout(18000)
+  });
+  if(!response.ok)throw Error("NO_CONSENT_STATUS");
+  const v=await response.json();
+  if(v?.status!=="READ_ONLY_LOCAL_READINESS"||typeof v?.followup_permission!=="string"
+   ||!v.followup_permission.startsWith("HOLD"))
+   throw Error("UNTRUSTED_CONSENT_RESULT");
+  const keys=["inquiries","contact_consent_recorded","missing_current_contact_consent",
+   "marketing_opted_in","marketing_opted_out","pending_operator_review",
+   "locally_cleared","hold_count","reviewed_identity_and_authority","revocation_events"];
+  if(keys.some(k=>!Number.isSafeInteger(v[k])||v[k]<0)||v.inquiries!==v.hold_count+v.locally_cleared)
+   throw Error("INVALID_CONSENT_TOTALS");
+  $("crm-consent-result").textContent=
+    "Local inquiry records: "+v.inquiries+
+    ". Current contact consent recorded: "+v.contact_consent_recorded+
+    ". Missing valid contact consent: "+v.missing_current_contact_consent+
+    ". Marketing opted out: "+v.marketing_opted_out+
+    ". Awaiting operator review: "+v.pending_operator_review+
+    ". Locally CLEARED: "+v.locally_cleared+
+    ". HOLD: "+v.hold_count+
+    ". Recorded consent withdrawal events: "+v.revocation_events+
+    ". Report is read-only. No outreach has been authorized.";
+ }catch{
+  $("crm-consent-result").textContent=
+    "Consent readiness unavailable. All historical inquiries remain on HOLD; no outreach approved.";
+ }finally{setBusy(false);}
+}
+$("crm-consent-readiness").addEventListener("click",runConsentReadiness);
 $("crm-readback").addEventListener("click",runCrmReadback);
 $("refresh").addEventListener("click",async()=>{if(busy)return;setBusy(true);await loadQueue(page);setBusy(false);});
 $("previous").addEventListener("click",async()=>{if(busy||page===0)return;setBusy(true);await loadQueue(page-1);setBusy(false);});
