@@ -92,7 +92,7 @@ const fixture = {
   business_identity_verified: true, decision_authority_verified: true,
   crm_suppression_checked: true,
   description: "Private data never for CRM", market: "Fixture City",
-  category: "Podcast", marketing_opt_in: false
+  category: "Podcast", marketing_opt_in: true
 };
 const location = "aBcD1234EFgh5678IJkl";
 const mapped = mapGhlContact(fixture, location);
@@ -110,7 +110,7 @@ for (const key of ["description","market","category","marketing_opt_in","tags","
 }
 for (const altered of [
   {kind:"privacy"}, {notice_version:"UNAPPROVED"}, {processing_acknowledged:false},
-  {adult_confirmed:false}, {contact_consent:false}, {email:"synthetic@example.invalid"}
+  {adult_confirmed:false}, {contact_consent:false}, {marketing_opt_in:false}, {email:"synthetic@example.invalid"}
 ]) {
   assert.throws(() => mapGhlContact({...fixture,...altered}, location));
   assertions++;
