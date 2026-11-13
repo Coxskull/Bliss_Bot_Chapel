@@ -19,6 +19,7 @@ if ($null -eq $railway) { throw 'Task3: Railway CLI is not available. No changes
 $probe = @'
 use strict;
 use warnings;
+print "TASK3_REMOTE_EXEC=PASS\n";
 sub trim { my $v = shift; $v =~ s/^\s+|\s+$//g; return $v; }
 sub split_fields {
   my ($s) = @_;
@@ -96,9 +97,40 @@ print "TASK3_SCHEMA_AND_BACKUP_ACCEPTANCE=NOT_ESTABLISHED\n";
 
 Write-Output 'TASK3_OPERATION=READ_ONLY_REMOTE_ENV_CLASSIFIER'
 Write-Output 'TASK3_TARGET_SERVICE=bliss-bot / production'
-# The project/service/environment are explicit; no guessed local railway link is used.
-& $railway.Source ssh -p 'fb33c1b7-03fb-42c8-89b1-081951a738fd' -s 'bliss-bot' -e 'production' -- perl -e $probe
-if ($LASTEXITCODE -ne 0) {
-    throw 'Task3: safe database identity classification was not completed; do not migrate or activate registration.'
+# Pipe the NONSECRET Perl source through stdin rather than passing a multiline
+# command as a Windows SSH argument. Railway SSH detects piped input and avoids
+# a PTY. A private SSH key passphrase remains human-only, never read by script.
+# The only remotely read environment value stays in the Railway app process.
+$scriptOutput = @($probe | & $railway.Source ssh -p 'fb33c1b7-03fb-42c8-89b1-081951a738fd' -s 'bliss-bot' -e 'production' -- perl -)
+$remoteExitCode = $LASTEXITCODE
+$lines = @($scriptOutput | ForEach-Object { ([string]$_).Trim() } | Where-Object { $_ -ne '' })
+
+# A Railway SSH wrapper may return zero even if its remote command never ran.
+# The previous version treated that as success. Require a remote marker AND a
+# complete allowlisted classification, otherwise fail closed.
+if (@($lines | Where-Object { $_ -ceq 'TASK3_REMOTE_EXEC=PASS' }).Count -ne 1) {
+    Write-Output 'TASK3_REMOTE_EXEC=NOT_VERIFIED'
+    Write-Output 'TASK3_DB_IDENTITY=NOT_VERIFIED'
+    throw 'Task3: Railway SSH closed without proof the remote Perl command ran. Check Railway SSH access; no database changes were made.'
 }
+Write-Output 'TASK3_REMOTE_EXEC=PASS'
+if ($remoteExitCode -ne 0) {
+    Write-Output 'TASK3_DB_IDENTITY=INVALID_OR_UNSUPPORTED'
+    throw 'Task3: remote classifier refused the connection setting or failed; no database changes were made.'
+}
+$hostLines = @($lines | Where-Object { $_ -cmatch '^TASK3_HOST_CLASS=(RAILWAY_INTERNAL|RAILWAY_PUBLIC_PROXY|BLISS_SUPABASE_DIRECT|OTHER_OR_EXTERNAL)$' })
+$dbLines = @($lines | Where-Object { $_ -cmatch '^TASK3_DATABASE_CLASS=(BLISS|POSTGRES|OTHER)$' })
+$identityLines = @($lines | Where-Object { $_ -ceq 'TASK3_DB_IDENTITY=CLASSIFIED' })
+$noWriteLines = @($lines | Where-Object { $_ -ceq 'TASK3_NO_DATABASE_WRITES=PASS' })
+$holdLines = @($lines | Where-Object { $_ -ceq 'TASK3_SCHEMA_AND_BACKUP_ACCEPTANCE=NOT_ESTABLISHED' })
+if ($identityLines.Count -ne 1 -or $hostLines.Count -ne 1 -or
+    $dbLines.Count -ne 1 -or $noWriteLines.Count -ne 1 -or $holdLines.Count -ne 1) {
+    Write-Output 'TASK3_DB_IDENTITY=NOT_VERIFIED'
+    throw 'Task3: remote classifier output incomplete. Never infer the database identity from an SSH exit code.'
+}
+Write-Output 'TASK3_DB_IDENTITY=CLASSIFIED'
+Write-Output $hostLines[0]
+Write-Output $dbLines[0]
+Write-Output 'TASK3_NO_DATABASE_WRITES=PASS'
+Write-Output 'TASK3_SCHEMA_AND_BACKUP_ACCEPTANCE=NOT_ESTABLISHED'
 Write-Output 'TASK3_REGISTRATION_ACTIVATION=NOT_AUTHORIZED'
