@@ -1,0 +1,27 @@
+name: Task3 private database target classifier
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/task3-private-db-target-check.ps1'
+      - 'scripts/task3-private-db-target-check-smoke.mjs'
+      - '.github/workflows/task3-private-db-target-check.yml'
+  push:
+    branches:
+      - codex/task3-safe-db-identity-20261113
+    paths:
+      - 'scripts/task3-private-db-target-check.ps1'
+      - 'scripts/task3-private-db-target-check-smoke.mjs'
+      - '.github/workflows/task3-private-db-target-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  offline-classifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify embedded Perl classifier with synthetic connection strings
+        run: node scripts/task3-private-db-target-check-smoke.mjs
