@@ -11,7 +11,11 @@ BEGIN
     OR to_regclass('alpha_support_private.manual_operator_claims') IS NULL
     OR to_regclass('alpha_support_private.manual_privacy_form_cases') IS NOT NULL
     OR (SELECT count(*) FROM public.alpha_public_intake_requests WHERE kind='privacy')<>0
-    OR (SELECT count(*) FROM alpha_support_private.manual_operator_grants WHERE enabled=true)<>1
+    -- A new data-less preview has zero Auth users/grants. Schema-only replay
+    -- must succeed while the existing operator RPC stays fail-closed.
+    -- Reject multiple enabled operators; a real single grant is required
+    -- at request time by alpha_support_manual_operator_authorized().
+    OR (SELECT count(*) FROM alpha_support_private.manual_operator_grants WHERE enabled=true)>1
  THEN RAISE EXCEPTION 'TASK21_PRIVACY_FORM_PRIVATE_QUEUE_GATE_FAILED'; END IF;
 END $task21_pre$;
 
