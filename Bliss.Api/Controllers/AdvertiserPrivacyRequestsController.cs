@@ -87,6 +87,78 @@ public sealed class AdvertiserPrivacyRequestsController(BlissDbContext db, Bliss
         return Ok(requests);
     }
 
+    // Staff visibility is independently default-denied: both a verified issuer role
+    // and an explicitly configured trusted operator subject are required.
+    [HttpGet("operator-queue")]
+    public async Task<IActionResult> OperatorQueue(CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!IsVerifiedPrivacyOperator(out _)) return StatusCode(StatusCodes.Status403Forbidden);
+
+        var cases = await db.AdvertiserPrivacyRequests.AsNoTracking()
+            .Where(x => x.Status == "RECEIVED" || x.Status == "VERIFYING")
+            .OrderBy(x => x.CreatedAt)
+            .Take(50)
+            .Select(x => new AdvertiserPrivacyOperatorCase(x.Id, x.Subject, x.AdvertiserId,
+                x.RequestType, x.Status, x.CreatedAt, x.AcknowledgedAt))
+            .ToArrayAsync(cancellationToken);
+        return Ok(cases);
+    }
+
+    // This is an ACK / identity-verification queue transition, NOT an erasure,
+    // marketing withdrawal, or resolution claim. It records who acknowledged it.
+    [HttpPost("{caseId:guid}/acknowledge")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    public async Task<IActionResult> Acknowledge(Guid caseId, CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!IsVerifiedPrivacyOperator(out var operatorSubject))
+            return StatusCode(StatusCodes.Status403Forbidden);
+        if (caseId == Guid.Empty) return BadRequest(new { error = "Invalid case identifier." });
+
+        var acknowledgedAt = DateTime.UtcNow;
+        var count = await db.AdvertiserPrivacyRequests
+            .Where(x => x.Id == caseId && x.Status == "RECEIVED")
+            .ExecuteUpdateAsync(update => update
+                .SetProperty(x => x.Status, "VERIFYING")
+                .SetProperty(x => x.AcknowledgedBySubject, operatorSubject)
+                .SetProperty(x => x.AcknowledgedAt, acknowledgedAt), cancellationToken);
+        if (count == 1)
+            return Ok(new { caseId, status = "VERIFYING", acknowledgedAt });
+        var exists = await db.AdvertiserPrivacyRequests.AsNoTracking()
+            .AnyAsync(x => x.Id == caseId, cancellationToken);
+        return exists ? Conflict(new { error = "Case already acknowledged or disposition changed." }) : NotFound();
+    }
+
+    private bool IsVerifiedPrivacyOperator(out string operatorSubject)
+    {
+        operatorSubject = string.Empty;
+        if (!auth.Enabled || !auth.SupabaseEnabled || User.Identity?.IsAuthenticated != true
+            || string.IsNullOrWhiteSpace(auth.Authority) || string.IsNullOrWhiteSpace(auth.RoleClaimType)
+            || BlissAuthorization.IsPendingAdvertiserRegistration(User, auth))
+            return false;
+        var subjects = User.Claims.Where(c => string.Equals(c.Type, "sub", StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (subjects.Length != 1 || subjects[0].Type != "sub"
+            || string.IsNullOrWhiteSpace(subjects[0].Value)
+            || auth.ApprovedPrivacyOperatorSubjects?.Contains(subjects[0].Value, StringComparer.Ordinal) != true
+            || auth.ApprovedTestSubjects.Contains(subjects[0].Value, StringComparer.Ordinal))
+            return false;
+
+        var roles = User.Claims.Where(c => string.Equals(c.Type, auth.RoleClaimType, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Type, System.Security.Claims.ClaimTypes.Role, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Type, "role", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Type, "roles", StringComparison.OrdinalIgnoreCase)).ToArray();
+        if (roles.Length != 1 || roles[0].Type != auth.RoleClaimType
+            || roles[0].Issuer != auth.Authority || roles[0].OriginalIssuer != auth.Authority
+            || (roles[0].Value != auth.OperatorRole && roles[0].Value != auth.AdminRole)
+            || User.HasClaim(c => c.Type == auth.AdvertiserIdClaimType
+                || c.Type == auth.CreatorIdClaimType
+                || c.Type == auth.ReviewerWorkspaceClaimType))
+            return false;
+        operatorSubject = subjects[0].Value;
+        return true;
+    }
+
     private async Task<AdvertiserAccountMembership?> ResolveMembershipAsync(CancellationToken cancellationToken)
     {
         if (!auth.Enabled || !auth.SupabaseEnabled || User.Identity?.IsAuthenticated != true)
@@ -120,3 +192,6 @@ public sealed class AdvertiserPrivacyRequestsController(BlissDbContext db, Bliss
 
 public sealed record AdvertiserPrivacyCaseRequest(Guid RequestKey, string RequestType);
 public sealed record AdvertiserPrivacyCaseReceipt(Guid CaseId, string RequestType, string Status, DateTime CreatedAt);
+
+public sealed record AdvertiserPrivacyOperatorCase(Guid CaseId, string Subject, Guid AdvertiserId,
+    string RequestType, string Status, DateTime CreatedAt, DateTime? AcknowledgedAt);
