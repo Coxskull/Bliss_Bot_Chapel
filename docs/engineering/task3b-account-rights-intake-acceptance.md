@@ -17,7 +17,7 @@
 | GET /api/advertisers/privacy-requests/operator-queue | Issuer-bound staff role AND `Authentication:ApprovedPrivacyOperatorSubjects` allowlist | 50 oldest open case records for authorized operator only |
 | POST /api/advertisers/privacy-requests/{id}/acknowledge | Same explicit operator role+allowlist, CSRF and rate limit | Transitions RECEIVED → VERIFYING and stores operator subject/time. No erasure or withdrawal. |
 
-**Default-closed:** `Authentication:AdvertiserRegistrationRequested=false` and `Authentication:ApprovedPrivacyOperatorSubjects=[]`. No operator access, live signups, payments, customer notifications or data-processor action is enabled by this source patch.
+**Default-closed:** `Authentication:AdvertiserRegistrationRequested=false`, `Authentication:AdvertiserPrivacyRequestsRequested=false`, and `Authentication:ApprovedPrivacyOperatorSubjects=[]`. Account-case access is now independent of the signup switch. No operator access, live signups, payments, customer notifications or data-processor action is enabled by this source patch.
 
 Request types are a fixed allowlist; no free text, password, email, IP or identification number is stored in the case. Request keys are unique; one subject cannot replay another subject's receipt. PostgreSQL public/anon/authenticated table access revoked.
 
@@ -39,3 +39,10 @@ Request types are a fixed allowlist; no free text, password, email, IP or identi
 - Commercial activation, Global STOP, payment, outreach and registration flags remain untouched.
 
 **Disposition:** mark only the exact independently verified source/CI milestones COMPLETE; keep Task #3B and documentation publication OPEN until full hosted and legal-policy acceptance.
+
+## November 15 source correctness fixes (not hosted proof)
+
+- Existing approved self-service advertiser middleware denied the exact new privacy-request route; it now permits GET/POST **only** on `/api/advertisers/privacy-requests` and **only** when the separate privacy feature switch is enabled. It continues to deny the queue, acknowledgment, nested tenant paths, all other methods and legacy marketplace endpoints. Controller subject/active membership checks remain mandatory.
+- The client registration and privacy-case scripts incorrectly sent `RequestVerificationToken` while the existing ASP.NET antiforgery middleware configured `X-CSRF-TOKEN`. Both scripts now send the exact existing configured `X-CSRF-TOKEN`; the source contract test asserts parity.
+- Preview config now separately exposes `advertiserPrivacyRequestsEnabled` only when authentication, Supabase and the privacy-request feature have been explicitly enabled; the rights page no longer relies on `advertiserRegistrationEnabled`.
+- New .NET and Python regressions assert default-off and exact-route boundaries, including approved self-service advertiser sessions, and feature flag refusal. This remains *source/CI* verification; it is not hosted identity, human response or live erasure acceptance.
