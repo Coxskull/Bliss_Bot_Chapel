@@ -134,7 +134,8 @@ public sealed class AdvertiserPrivacyRequestsController(BlissDbContext db, Bliss
     private bool IsVerifiedPrivacyOperator(out string operatorSubject)
     {
         operatorSubject = string.Empty;
-        if (!auth.Enabled || !auth.SupabaseEnabled || User.Identity?.IsAuthenticated != true
+        if (!auth.Enabled || !auth.SupabaseEnabled || !auth.AdvertiserPrivacyRequestsRequested
+            || User.Identity?.IsAuthenticated != true
             || string.IsNullOrWhiteSpace(auth.Authority) || string.IsNullOrWhiteSpace(auth.RoleClaimType)
             || BlissAuthorization.IsPendingAdvertiserRegistration(User, auth))
             return false;
