@@ -84,10 +84,31 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertIn("disabled", rights)
         self.assertNotIn('data-endpoint="https://bkutbglzivfdnoerigyb.', rights)
         self.assertIn('"/api/advertisers/privacy-requests"', js)
-        self.assertIn("advertiserRegistrationEnabled === true", js)
+        self.assertIn("advertiserPrivacyRequestsEnabled === true", js)
         self.assertIn("session?.csrfToken", js)
-        self.assertIn("RequestVerificationToken", js)
+        self.assertIn('"X-CSRF-TOKEN"', js)
         self.assertIn("not a completed deletion", js)
+
+    def test_registration_and_account_case_csrf_headers_match_server(self):
+        program = (ROOT / "Bliss.Api" / "Program.cs").read_text(encoding="utf-8")
+        options = (ROOT / "Bliss.Api" / "Security" / "BlissAuthenticationOptions.cs").read_text(encoding="utf-8")
+        registration = self.js
+        case_js = (PUBLIC / "advertiser-account-rights.js").read_text(encoding="utf-8")
+        self.assertIn('options.HeaderName = "X-CSRF-TOKEN";', program)
+        self.assertIn('"X-CSRF-TOKEN": session.csrfToken', registration)
+        self.assertIn('"X-CSRF-TOKEN": session.csrfToken', case_js)
+        self.assertIn("AdvertiserPrivacyRequestsRequested", options)
+        self.assertIn("advertiserPrivacyRequestsEnabled", program)
+        self.assertNotIn("RequestVerificationToken", registration)
+        self.assertNotIn("RequestVerificationToken", case_js)
+
+    def test_approved_advertiser_case_access_is_exact_and_default_off(self):
+        gate = (ROOT / "Bliss.Api" / "Security" / "AdvertiserApiBoundary.cs").read_text(encoding="utf-8")
+        pending = (ROOT / "Bliss.Api" / "Security" / "AdvertiserRegistrationBoundary.cs").read_text(encoding="utf-8")
+        self.assertIn("auth.AdvertiserPrivacyRequestsRequested", gate)
+        self.assertIn('path.Equals("/api/advertisers/privacy-requests"', gate)
+        self.assertIn("options.AdvertiserPrivacyRequestsRequested", pending)
+        self.assertIn('path.Equals("/api/advertisers/privacy-requests"', pending)
 
     def test_account_request_backend_is_scoped_and_does_not_claim_auto_erasure(self):
         boundary = (ROOT / "Bliss.Api" / "Security" / "AdvertiserRegistrationBoundary.cs").read_text(encoding="utf-8")
