@@ -340,6 +340,8 @@ namespace Bliss.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uuid");
                     b.Property<Guid>("AdvertiserId").HasColumnType("uuid");
+                    b.Property<DateTime?>("AcknowledgedAt").HasColumnType("timestamp with time zone");
+                    b.Property<string>("AcknowledgedBySubject").HasMaxLength(255).HasColumnType("character varying(255)");
                     b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
                     b.Property<Guid>("RequestKey").HasColumnType("uuid");
                     b.Property<string>("RequestType").IsRequired().HasMaxLength(32).HasColumnType("character varying(32)");
