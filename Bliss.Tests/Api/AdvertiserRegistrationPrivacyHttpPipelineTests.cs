@@ -315,10 +315,10 @@ internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = AdvertiserPrivacyTestAuthHandler.FixtureScheme;
-                options.DefaultChallengeScheme = AdvertiserPrivacyTestAuthHandler.Scheme;
-                options.DefaultForbidScheme = AdvertiserPrivacyTestAuthHandler.Scheme;
+                options.DefaultChallengeScheme = AdvertiserPrivacyTestAuthHandler.FixtureScheme;
+                options.DefaultForbidScheme = AdvertiserPrivacyTestAuthHandler.FixtureScheme;
             }).AddScheme<AuthenticationSchemeOptions, AdvertiserPrivacyTestAuthHandler>(
-                AdvertiserPrivacyTestAuthHandler.Scheme, _ => { });
+                AdvertiserPrivacyTestAuthHandler.FixtureScheme, _ => { });
         });
     }
 
