@@ -78,7 +78,7 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         # A JSON POST cannot rely on the framework's hidden HTML form token.
         # A mismatch here previously rejected valid browser registrations.
         program = (ROOT / "Bliss.Api" / "Program.cs").read_text(encoding="utf-8")
-        configured = re.search(r'options\\.HeaderName\\s*=\\s*"([^"]+)"', program)
+        configured = re.search(r'options\.HeaderName\s*=\s*"([^"]+)"', program)
         self.assertIsNotNone(configured, "API antiforgery header")
         self.assertEqual("X-CSRF-TOKEN", configured.group(1))
         self.assertIn(f'"{configured.group(1)}": session.csrfToken', self.js)
