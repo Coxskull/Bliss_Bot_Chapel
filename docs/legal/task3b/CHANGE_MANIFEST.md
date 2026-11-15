@@ -18,6 +18,7 @@
 | `docs/legal/task3b/INTERNATIONAL_APPLICABILITY_CHECKLIST.md` | **New** country-conditional statutes for PH/MY/ID/CO/PA/DO/TH, EU GDPR and NJ where triggered; official references; required factual tests | Not universal legal certification |
 | `docs/legal/task3b/LEGAL_REVIEW_FINDINGS.md` | Reclassifies generic counsel-only blockers into concrete jurisdictional checks and identifies narrowed source fixed/hosted open rights-route defect | Engineering finding only |
 | `docs/legal/task3b/OWNER_APPROVAL_PACKET.md` | Records settled international strategy and refusal of paid outside counsel; lists specific factual publication and operational requirements | No assumed signature/launch approval |
+| `docs/legal/task3b/ACCOUNT_PRIVACY_CASE_OPERATOR_RUNBOOK.md` | **New** single-human operator case handling: subject verification, jurisdiction classification, privacy rights categories, lawful exceptions, evidence/ACK procedure, no false response/suppression promises | Operational source candidate, not hosted |
 | `docs/legal/task3b/CHANGE_MANIFEST.md` | This reconciled change and evidence index | Source only |
 
 **PR #423 contains seven task3b Markdown documents.** Its changes are to documentation, not a new auth, database, or registration architecture. Six original docs were present before this continuation; the international applicability checklist is the seventh.
