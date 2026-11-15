@@ -3,7 +3,7 @@
 -- or creator flow, existing mail cases, CRM, Ask Alpha, payments or STOP.
 -- No operator grant is required to install this schema on an empty branch.
 -- Queue and claim RPCs still use the existing alpha_support_manual_operator_authorized
--- runtime gate (verified Auth user + single owner-authorized active grant);
+-- runtime gate (verified Auth user + an enabled owner-authorized grant);
 -- zero enabled grants means NO staff access, not an implicit bootstrap actor.
 -- Source of truth is existing consented privacy form; never copy its personal
 -- name, email, description, country, or marketing preference into staff queue.
