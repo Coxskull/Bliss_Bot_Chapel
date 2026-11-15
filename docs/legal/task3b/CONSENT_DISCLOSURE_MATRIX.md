@@ -1,5 +1,5 @@
 # Task #3B — Field-level consent and disclosure matrix
-Reviewed source: PR #349 commit cdc8852c1079316e7edb00f541e32218321d2ed0. Source-only evidence, NOT hosted confirmation.
+Reviewed source: PR #349 baseline cdc8852c1079316e7edb00f541e32218321d2ed0, with privacy-link correction 8c1de9549bc7f06fbed530e36a88def9b605346e and source regression ef7fae3e265b7b34e288ead4189ebf855a6c8bdc. Source-only evidence, NOT hosted confirmation.
 
 | Field / record | Purpose; collection trigger | Required? / candidate legal basis | Proposed storage / recipients | Retention and deletion | Transfer / evidence / disclosure |
 |---|---|---|---|---|---|
@@ -22,3 +22,11 @@ Reviewed source: PR #349 commit cdc8852c1079316e7edb00f541e32218321d2ed0. Source
 **Disclosure checks:** existing public /alpha-privacy.html describes an **inquiry** 90-day purge and optional HighLevel routing; that rule is not an account-retention policy. Existing /privacy-request.html is scoped to **public interest data**; no verified account-specific rights implementation. Proposed separate review-v2 version identifiers are **not** used by the current UI/API and MUST NOT be published as operative without exact-version rebind and acceptance tests.
 
 **Current consent engineering:** signup uses one combined privacy/terms read acknowledgment; business POST uses separate required privacy and terms checkboxes; marketing is separate unchecked. Receipt stores the selections and timestamp by subject. Hosted persistence/withdrawal flow remains unverified.
+
+## Processing basis and request-routing disposition (2026-11-15)
+
+- **Required application processing vs optional marketing:** The form records separate required privacy-processing and terms checkboxes, and an unchecked marketing selection. Do **not** assume a required checkbox proves consent is the sole lawful basis; assess contractual steps, legitimate interests, obligations and consent for each purpose under the relevant jurisdiction. Do not send marketing without a verified lawful basis and withdrawal/suppression workflow.
+- **Proof of acceptance:** The existing v1 version IDs in UI, browser JavaScript and API match the v1 HTML drafts on PR #349. The v2 Markdown documents in PR #423 are unpublished candidates and **not accepted** into the running API. No document may claim v2 consent captured until exact server, frontend, published notice and receipt migration/checks are accepted.
+- **Data-subject rights:** The inquiry-only /privacy-request.html is not a verified advertiser-account intake channel. PR #349 removes the inaccurate account notice hyperlink and adds a regression test. A working account-specific, verified and auditable route (with human resolution, deadlines, processor deletion and optional marketing withdrawal) remains mandatory before activation.
+- **Retention:** Use purposes, legal holds, issuer/receipt constraints and actual provider retention to define documented periods or objective criteria. No 90-day account purge, immediate receipt erasure or guaranteed backup deletion can be inferred from the public inquiry policy.
+- **International law:** See INTERNATIONAL_APPLICABILITY_CHECKLIST.md for specific conditional statutes and primary references. The owner has rejected paid outside counsel; specific requirements still apply when their scope triggers.
