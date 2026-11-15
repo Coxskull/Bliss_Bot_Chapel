@@ -68,6 +68,12 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertIn("legally approved", self.form)
         self.assertIn("Registration is disabled", self.form)
 
+    def test_account_privacy_does_not_claim_inquiry_only_privacy_form_handles_accounts(self):
+        # The public interest-form privacy endpoint is not an account data-subject request route.
+        self.assertNotIn('href="/privacy-request.html"', self.privacy)
+        self.assertIn("limited to public-interest submissions", self.privacy)
+        self.assertIn("not</strong> a verified account-registration privacy request channel", self.privacy)
+
     def test_marketing_is_optional_and_not_preselected(self):
         marketing = [x for x in self.parsed.inputs if x.get("id") == "marketing-consent"]
         self.assertEqual(1, len(marketing))
