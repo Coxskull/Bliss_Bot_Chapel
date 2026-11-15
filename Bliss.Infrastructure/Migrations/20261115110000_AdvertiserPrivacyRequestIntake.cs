@@ -43,6 +43,7 @@ public sealed class AdvertiserPrivacyRequestIntake : Migration
 
         // The existing server-side EF database user owns case access.
         // Neither public REST role nor Supabase client role may browse case records.
+        migrationBuilder.Sql("ALTER TABLE \"AdvertiserPrivacyRequests\" ENABLE ROW LEVEL SECURITY;");
         migrationBuilder.Sql("REVOKE ALL ON TABLE \"AdvertiserPrivacyRequests\" FROM PUBLIC;");
         migrationBuilder.Sql("DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN EXECUTE 'REVOKE ALL ON TABLE \"AdvertiserPrivacyRequests\" FROM anon'; END IF; IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN EXECUTE 'REVOKE ALL ON TABLE \"AdvertiserPrivacyRequests\" FROM authenticated'; END IF; END $$;");
     }
