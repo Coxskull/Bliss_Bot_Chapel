@@ -107,18 +107,24 @@ public sealed class AdvertiserPrivacyRequestSecurityTests
     {
         var source = Environment.GetEnvironmentVariable("BLISS_TEST_POSTGRES_CONNECTION");
         if (string.IsNullOrWhiteSpace(source)) return;
-        var schema = "task3b_" + Guid.NewGuid().ToString("N");
+        // A separate disposable database is necessary: other CI fixtures create a
+        // shared "financials" schema, so a per-test search_path alone is not isolated.
+        // Never allow this synthetic test to create a database on a remote host.
         var adminBuilder = new NpgsqlConnectionStringBuilder(source);
+        if (!string.Equals(adminBuilder.Host, "localhost", StringComparison.OrdinalIgnoreCase)
+            && adminBuilder.Host != "127.0.0.1" && adminBuilder.Host != "::1")
+            return;
+        var databaseName = "task3b_ci_" + Guid.NewGuid().ToString("N");
         await using (var admin = new NpgsqlConnection(adminBuilder.ConnectionString))
         {
             await admin.OpenAsync();
-            await using var create = new NpgsqlCommand($"CREATE SCHEMA \"{schema}\"", admin);
+            await using var create = new NpgsqlCommand($"CREATE DATABASE \"{databaseName}\"", admin);
             await create.ExecuteNonQueryAsync();
         }
 
         try
         {
-            var tenantBuilder = new NpgsqlConnectionStringBuilder(source) { SearchPath = schema };
+            var tenantBuilder = new NpgsqlConnectionStringBuilder(source) { Database = databaseName };
             var dbOptions = new DbContextOptionsBuilder<BlissDbContext>().UseNpgsql(tenantBuilder.ConnectionString).Options;
             await using var db = new BlissDbContext(dbOptions);
             await db.Database.MigrateAsync();
@@ -213,7 +219,8 @@ public sealed class AdvertiserPrivacyRequestSecurityTests
         {
             await using var admin = new NpgsqlConnection(adminBuilder.ConnectionString);
             await admin.OpenAsync();
-            await using var drop = new NpgsqlCommand($"DROP SCHEMA IF EXISTS \"{schema}\" CASCADE", admin);
+            // Force-closes idle connections left in the local Npgsql pool.
+            await using var drop = new NpgsqlCommand($"DROP DATABASE IF EXISTS \"{databaseName}\" WITH (FORCE)", admin);
             await drop.ExecuteNonQueryAsync();
         }
     }
