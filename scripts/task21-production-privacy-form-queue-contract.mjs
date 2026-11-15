@@ -4,6 +4,18 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const ddl=readFileSync(new URL("./task21/production-privacy-form-private-queue-20261112.sql",import.meta.url),"utf8");
 const privacy=readFileSync(new URL("../frontend/public/privacy-request.html",import.meta.url),"utf8");
+const operator=readFileSync(new URL("./task21/production-locked-single-operator-20261112.sql",import.meta.url),"utf8");
+// A Supabase with_data=false branch has no staff Auth account and no grant.
+// The queue schema MUST still install; protected RPCs must remain default-deny.
+assert.match(ddl,/count\(\*\) FROM alpha_support_private\.manual_operator_grants WHERE enabled=true\)>1/,
+    "Schema must allow zero or one verified operator, never multiple");
+assert.doesNotMatch(ddl,/count\(\*\) FROM alpha_support_private\.manual_operator_grants WHERE enabled=true\)<>1/,
+    "Migration may not depend on operator data absent on a clean branch");
+assert.match(operator,/JOIN auth\.users u ON u\.id=g\.user_id/);
+assert.match(operator,/g\.enabled=true/);
+assert.match(operator,/public\.alpha_support_manual_operator_authorized\(p_actor_user_id\)/);
+assert.doesNotMatch(ddl,/INSERT\s+INTO\s+(?:auth\.users|alpha_support_private\.manual_operator_grants)/i,
+    "Never create a synthetic staff identity or enabled grant in a real migration");
 const retention=readFileSync(new URL("./task21/production-mailcase-retention-cascade-fix-20261112.sql",import.meta.url),"utf8");
 for(const necessary of [
  "TASK21_90DAY_MAIL_RETENTION_GUARD_FAILED",
