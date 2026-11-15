@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace Bliss.Tests.Api;
 
@@ -83,7 +84,12 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
     [Fact]
     public async Task Http_registration_case_receipts_tenant_isolation_and_staff_ack_use_real_csrf_pipeline()
     {
-        await using var factory = new AdvertiserPrivacyHttpFactory();
+        // The successful operator ACK uses EF ExecuteUpdate, which only a real
+        // relational provider can execute. CI supplies a localhost PostgreSQL
+        // service; the fixture creates and destroys its own database.
+        await using var isolated = Task3bHttpPostgresDatabase.TryCreate();
+        await using var factory = new AdvertiserPrivacyHttpFactory(
+            postgresConnectionString: isolated?.ConnectionString);
         using var a = IdentityClient(factory, "fixture-a");
         using var b = IdentityClient(factory, "fixture-b");
         var advertiserA = await Register(a, "Fictional A Studio");
@@ -131,6 +137,8 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
             Assert.Single(json.RootElement.EnumerateArray());
             Assert.Equal(caseId, json.RootElement[0].GetProperty("caseId").GetGuid());
         }
+        if (isolated is null) return; // Local source-only builds lack Postgres; CI exercises ACK.
+
         using var acknowledged = await operatorClient.PostAsJsonAsync(Base + "/" + caseId + "/acknowledge", new { });
         Assert.Equal(HttpStatusCode.OK, acknowledged.StatusCode);
         using (var json = JsonDocument.Parse(await acknowledged.Content.ReadAsStringAsync()))
@@ -222,8 +230,57 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
     }
 }
 
-internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true)
-    : WebApplicationFactory<Program>
+/// <summary>
+/// One test-owned database on local CI PostgreSQL only. No hosted or remote
+/// target is eligible; all storage is synthetic and removed at test exit.
+/// </summary>
+internal sealed class Task3bHttpPostgresDatabase : IAsyncDisposable
+{
+    private readonly string adminConnection;
+    private readonly string databaseName;
+    public string ConnectionString { get; }
+
+    private Task3bHttpPostgresDatabase(string adminConnection, string databaseName, string connectionString)
+    {
+        this.adminConnection = adminConnection;
+        this.databaseName = databaseName;
+        ConnectionString = connectionString;
+    }
+
+    public static Task3bHttpPostgresDatabase? TryCreate()
+    {
+        var source = Environment.GetEnvironmentVariable("BLISS_TEST_POSTGRES_CONNECTION");
+        if (string.IsNullOrWhiteSpace(source)) return null;
+        var builder = new NpgsqlConnectionStringBuilder(source);
+        if (!string.Equals(builder.Host, "localhost", StringComparison.OrdinalIgnoreCase)
+            && builder.Host != "127.0.0.1" && builder.Host != "::1")
+            throw new InvalidOperationException("Task #3B HTTP integration requires localhost PostgreSQL.");
+
+        var name = "task3b_http_" + Guid.NewGuid().ToString("N");
+        using (var admin = new NpgsqlConnection(builder.ConnectionString))
+        {
+            admin.Open();
+            using var create = new NpgsqlCommand($"CREATE DATABASE \\"{name}\\"", admin);
+            create.ExecuteNonQuery();
+        }
+        var scoped = new NpgsqlConnectionStringBuilder(source) { Database = name };
+        var options = new DbContextOptionsBuilder<BlissDbContext>().UseNpgsql(scoped.ConnectionString).Options;
+        using var db = new BlissDbContext(options);
+        db.Database.Migrate();
+        return new Task3bHttpPostgresDatabase(builder.ConnectionString, name, scoped.ConnectionString);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await using var admin = new NpgsqlConnection(adminConnection);
+        await admin.OpenAsync();
+        await using var drop = new NpgsqlCommand($"DROP DATABASE IF EXISTS \\"{databaseName}\\" WITH (FORCE)", admin);
+        await drop.ExecuteNonQueryAsync();
+    }
+}
+
+internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
+    string? postgresConnectionString = null) : WebApplicationFactory<Program>
 {
     private const string Issuer = "https://identity.example.test";
     private readonly string dbName = "task3b_http_" + Guid.NewGuid().ToString("N");
@@ -247,16 +304,17 @@ internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true)
                 d.ServiceType == typeof(DbContextOptions<BlissDbContext>)
                 || d.ServiceType == typeof(BlissDbContext)).ToArray();
             foreach (var item in toRemove) services.Remove(item);
-            // The registration controller begins an EF transaction. InMemory has
-            // no transactional durability: this warning is ignored ONLY here,
-            // while real PostgreSQL atomicity is covered by separate CI fixtures.
-            services.AddDbContext<BlissDbContext>(
-                options => options.UseInMemoryDatabase(dbName)
+            if (!string.IsNullOrWhiteSpace(postgresConnectionString))
+                services.AddDbContext<BlissDbContext>(options => options.UseNpgsql(postgresConnectionString));
+            else
+                // The registration controller begins an EF transaction. InMemory
+                // cannot enforce transactions; this is only for no-Postgres tests.
+                services.AddDbContext<BlissDbContext>(options => options.UseInMemoryDatabase(dbName)
                     .ConfigureWarnings(warnings => warnings.Ignore(
                         Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning)));
             services.AddAuthentication(options =>
             {
-                options.DefaultAuthenticateScheme = AdvertiserPrivacyTestAuthHandler.Scheme;
+                options.DefaultAuthenticateScheme = AdvertiserPrivacyTestAuthHandler.FixtureScheme;
                 options.DefaultChallengeScheme = AdvertiserPrivacyTestAuthHandler.Scheme;
                 options.DefaultForbidScheme = AdvertiserPrivacyTestAuthHandler.Scheme;
             }).AddScheme<AuthenticationSchemeOptions, AdvertiserPrivacyTestAuthHandler>(
@@ -278,7 +336,7 @@ internal sealed class AdvertiserPrivacyTestAuthHandler(
     UrlEncoder encoder)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
-    public const string Scheme = "Task3bSyntheticOnly";
+    public const string FixtureScheme = "Task3bSyntheticOnly";
     private const string Issuer = "https://identity.example.test";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -315,7 +373,7 @@ internal sealed class AdvertiserPrivacyTestAuthHandler(
         }
 
         return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(
-            new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme)),
-            Scheme)));
+            new ClaimsPrincipal(new ClaimsIdentity(claims, FixtureScheme)),
+            FixtureScheme)));
     }
 }
