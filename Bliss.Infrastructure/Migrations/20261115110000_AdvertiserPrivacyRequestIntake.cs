@@ -22,7 +22,9 @@ public sealed class AdvertiserPrivacyRequestIntake : Migration
                 AdvertiserId = table.Column<Guid>(type: "uuid", nullable: false),
                 RequestType = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                 Status = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false, defaultValue: "RECEIVED"),
-                CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                AcknowledgedBySubject = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                AcknowledgedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
             }, constraints: table =>
             {
                 table.PrimaryKey("PK_AdvertiserPrivacyRequests", x => x.Id);
