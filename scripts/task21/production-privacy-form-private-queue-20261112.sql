@@ -11,7 +11,18 @@ BEGIN
     OR to_regclass('alpha_support_private.manual_operator_claims') IS NULL
     OR to_regclass('alpha_support_private.manual_privacy_form_cases') IS NOT NULL
     OR (SELECT count(*) FROM public.alpha_public_intake_requests WHERE kind='privacy')<>0
-    OR (SELECT count(*) FROM alpha_support_private.manual_operator_grants WHERE enabled=true)<>1
+    -- A brand-new data-less Supabase preview has no Auth users and therefore
+    -- cannot contain the real, FK-backed operator grant. Allow the SCHEMA to
+    -- install without creating or impersonating a privileged staff identity.
+    -- Once any Auth user exists, preserve the existing exactly-one operator gate.
+    -- More than one enabled operator always fails, even on an empty preview.
+    -- The queue/claim RPCs independently deny all callers until a REAL
+    -- owner-approved Auth user has the existing verified enabled grant.
+    OR (SELECT count(*) FROM alpha_support_private.manual_operator_grants WHERE enabled=true)>1
+    OR (
+      EXISTS (SELECT 1 FROM auth.users)
+      AND (SELECT count(*) FROM alpha_support_private.manual_operator_grants WHERE enabled=true)<>1
+    )
  THEN RAISE EXCEPTION 'TASK21_PRIVACY_FORM_PRIVATE_QUEUE_GATE_FAILED'; END IF;
 END $task21_pre$;
 
