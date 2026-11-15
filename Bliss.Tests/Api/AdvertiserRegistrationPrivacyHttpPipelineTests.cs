@@ -260,7 +260,7 @@ internal sealed class Task3bHttpPostgresDatabase : IAsyncDisposable
         using (var admin = new NpgsqlConnection(builder.ConnectionString))
         {
             admin.Open();
-            using var create = new NpgsqlCommand($"CREATE DATABASE \\"{name}\\"", admin);
+            using var create = new NpgsqlCommand($"CREATE DATABASE \"{name}\"", admin);
             create.ExecuteNonQuery();
         }
         var scoped = new NpgsqlConnectionStringBuilder(source) { Database = name };
@@ -274,7 +274,7 @@ internal sealed class Task3bHttpPostgresDatabase : IAsyncDisposable
     {
         await using var admin = new NpgsqlConnection(adminConnection);
         await admin.OpenAsync();
-        await using var drop = new NpgsqlCommand($"DROP DATABASE IF EXISTS \\"{databaseName}\\" WITH (FORCE)", admin);
+        await using var drop = new NpgsqlCommand($"DROP DATABASE IF EXISTS \"{databaseName}\" WITH (FORCE)", admin);
         await drop.ExecuteNonQueryAsync();
     }
 }
