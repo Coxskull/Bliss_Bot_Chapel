@@ -1,47 +1,56 @@
-# Advertiser Account Registration Terms — OWNER / LEGAL REVIEW CANDIDATE
+# Advertiser Account Registration Terms — release candidate, NOT PUBLISHED
 
-**Proposed contracting entity:** ALPHA GLOBAL MEDIA LLC.
-**Review date:** 2026-11-14. **Status:** DRAFT ONLY, NOT BINDING.
-**Source draft:** frontend/public/advertiser-account-terms.html at cdc8852c1079316e7edb00f541e32218321d2ed0.
-**Candidate identifier:** advertiser-terms-2026-11-14-review-v2 (NOT configured in the registration application).
-**Current pinned identifier:** advertiser-terms-2026-11-07-v1.
-**Effective date, controlling law and legal contact:** OWNER / COUNSEL DECISION REQUIRED.
+**Proposed contracting party:** ALPHA GLOBAL MEDIA LLC.
+**Reviewed:** 2026-11-15. **Status:** non-production release candidate, not an accepted or effective customer agreement.
+**Candidate ID:** `advertiser-terms-2026-11-14-review-v2`. **Current source UI/API ID:** `advertiser-terms-2026-11-07-v1`.
+**Effective date:** not set; publication, full version binding and hosted acceptance are outstanding.
 
-## 1. Registration scope
-These proposed terms concern a business applicant's request for an **advertiser account**, not a public interest inquiry, campaign order, creator placement or purchase. Submission of an application and receipt do **not** guarantee approval, access, advertising performance, availability of creators, acceptance of an offer, or any future service.
+## 1. Purpose
 
-## 2. Who may apply and applicant representations
-An applicant should be legally capable of contracting and authorized to submit information and act for the named business. The authorized representative must supply accurate email and business details, use an email address they control, complete available verification steps and update material inaccuracies if an approved correction path exists. Any minimum-age or business-verification requirement must be confirmed by the owner and reflected in actual UI/server rules; the inspected registration UI does **not** contain a dedicated age attestation or verified corporate authority check.
+An application requests review for a potential ALPHA advertiser account. It is **not** a public-interest inquiry, purchase, advertising campaign order or guarantee of account approval. A sign-in or registration receipt does not grant access to an advertiser workspace, creators, inventory or paid services.
 
-## 3. Credentials and security
-Sign-in credentials are submitted to the configured Supabase Auth service. Applicants should safeguard their accounts, avoid sharing credentials, and report suspected misuse through an owner-approved support channel. No representation is made that every account will be accepted or that an account is active simply because a sign-in succeeds.
+## 2. Applicant responsibilities and eligibility
 
-## 4. Application review and privileges
-ALPHA may undertake a separately authorized verification/review process and may decline or seek clarification of an application subject to applicable law. The current engineering proposal creates a PENDING_REVIEW application and receipt; it does not grant workspace privileges. Operational criteria, response timing, approval decision maker, appeal process and any suspension/termination procedures remain to be approved and implemented.
+A person applying for an organization must be legally capable of using the service, authorized to submit that organization's information and entitled to control the supplied email address. Provide accurate business name, country code and optional HTTPS website; do not impersonate others or submit another person's private material. **The reviewed UI verifies an email through Auth when enabled but does not independently prove age, entity incorporation or representative authority**; these remain potential manual review subjects, not asserted automated checks. Country-specific eligibility rules may apply at actual release.
 
-## 5. Submitted content and intellectual property
-Applicants must have authority to provide their business name and website information and must not misrepresent ownership or infringe another person's rights. **Proposed limited permission for review:** allow ALPHA to use the submitted business information only to verify and assess the account application and provide necessary responses; this is not an advertising-content production license, rights assignment or a right to publicly publish the brand. License scope, applicant rights and any later campaign deliverables must be reviewed by counsel before being made binding.
+## 3. Sign-in and security
 
-## 6. Unacceptable submissions and conduct
-Do not impersonate a person or organization, submit malicious or unlawful materials, include payment credentials or sensitive government identifiers in the form, misrepresent a business, interfere with security, or attempt to access another applicant's data. Any advertising-content policy is a **separate future service policy** and is not already enacted merely by agreeing to registration terms. Owner/counsel must approve categories, moderation process and jurisdictional rules before advertising activity starts.
+The reviewed frontend sends credentials to Supabase Auth, not the business registration API. Protect sign-in details and promptly report suspected unauthorized access via the account-support route once it has been verified and published. ALPHA may prevent abuse, reject forged requests and restrict access while applications await review, subject to applicable law. An accepted sign-in is not an approved advertiser account.
 
-## 7. No account registration fee or payment authority
-The reviewed registration implementation does not charge a fee or authorize payment. An application is **not** an order for advertising and does not establish a nonrefundable charge or automatically create a subscription. Any future campaign planning/coordination service, fee, tax, cancellation/refund rule or payment agreement must be separately disclosed and approved in a written proposal/order. These registration terms make **no refund promise** for a service not purchased.
+## 4. Application review
 
-## 8. Data choices
-The separate proposed Advertiser Account Privacy Notice describes data handling subject to final approval. Required acknowledgment and terms acceptance are independent of any optional marketing opt-in. Marketing must remain unchecked by default, and withholding marketing consent must not prevent submission. The owner must verify a compliant withdrawal and privacy-rights route.
+The source registration path is designed to create `PENDING_REVIEW` membership with a durable receipt. ALPHA may request clarification or decline an application based on a lawful, consistently applied eligibility/security policy. It must establish who conducts review, how to correct records or contest an error, how any approval is recorded, and how closure works **before claiming those capabilities exist in production**. No automatic workspace authorization follows from a successful POST.
 
-## 9. Rejection, suspension and account closure
-**Proposed owner policy:** ALPHA may refuse or pause applications where identity/authority cannot be verified or where application security is at risk, subject to applicable law and nondiscrimination requirements. Conditions for notice, appeals, inactivity, closure and termination must be finalized; retention/deletion of receipts and auth identities follows the approved privacy and retention policy and cannot be promised here yet.
+## 5. Business information and restricted permission
 
-## 10. Support, complaints and disputes
-The existing public /contact.html concerns inquiries and does not establish a verified paid-support SLA or account dispute process. The owner must identify a workable account-specific support route, how the organization handles corrections and account review disputes, and any service-specific procedures before live activation. Do not impose arbitration, jurisdiction or waiver language without counsel review.
+The applicant represents they are authorized to submit the supplied business name and website. For an application **only**, they propose to permit ALPHA to use those details solely for validation, fraud prevention, review and necessary responses. That is **not** a license to run advertisements using the applicant's marks, publish creative assets, sublicense content or claim ownership of applicant intellectual property. Any future creative, placement or campaign rights must appear in a separate, specifically accepted written order.
 
-## 11. Liability and legal terms — RESERVED FOR COUNSEL
-No limitation of liability, warranty disclaimer, indemnification, consumer-rights waiver, governing-law or court-selection provision is included as an approved business commitment in this candidate. Those clauses need qualified review for the company's actual contracting entity, targeted markets, applicable law and potential mandatory consumer/privacy rights. Do not infer universal enforceability.
+## 6. Prohibited conduct
 
-## 12. Updates and effective date
-ALPHA must approve a final dated version, ensure the browser form and API/receipt version constants exactly match it, and preserve proof of the versions accepted. Changes to material rights or purposes may require fresh notice and/or acceptance as applicable. Registration must remain disabled until that binding publication, independent technical hosted acceptance and owner release authorization occur.
+No false identity, unauthorized third-party personal data, injected malicious content, credentials or government identifiers in business fields, unauthorized access attempts or misuse of the registration system. Future advertisement-content rules are a separate decision and are **not silently incorporated** into account application terms.
 
-**Related proposed notice:** ADVERTISER_REGISTRATION_PRIVACY_NOTICE.md.
-**No payment, registration activation or publication is authorized by this review text.**
+## 7. Separate processing and marketing choices
+
+Account processing acknowledgment, terms acceptance and optional marketing are distinct. Marketing is unchecked by default; declining it must not prevent a registration application. A valid privacy notice must give purposes, recipients, retention criteria, actual privacy request route, and other information required by the relevant law. The receipt design captures versions and choices, but actual hosted persistence and optional marketing withdrawal remain unverified. No consent to share account records with a CRM or send marketing arises from these terms.
+
+## 8. No fee, payments or campaign entitlement
+
+There is no fee for filing the reviewed account application, no automatic order and no payment authorization. Advertising prices, tax treatment, revision limits, campaign permissions, refund/cancellation terms and delivery obligations must be separately agreed for a paid transaction. These application terms offer no refund for a payment that has not been made.
+
+## 9. Applicant support, privacy complaints and account closure
+
+Before activation, publish one verified route for account review questions, incident reports, correction, deletion and marketing withdrawal. ALPHA's human operator should classify requests, verify identity proportionately, assign a case reference, escalate security/privacy issues, record a lawful disposition and communicate within applicable local deadlines. Existing `/contact.html` and `/privacy-request.html` currently address public inquiries, and their successful use for account-specific requests is **not verified**. No guarantee of a support response time or deletion date is offered without operational evidence.
+
+ALPHA may suspend an account for a genuine security risk or close a declined application when authorized, subject to mandatory notice, fairness and data-rights requirements. Procedures for review/reversal and retention exceptions must be documented before making any further promise.
+
+## 10. Applicable law and disputes
+
+Mandatory consumer, privacy, communications and other laws apply where their jurisdictional tests are satisfied, regardless of what these terms say. The company does **not** impose an unreviewed arbitration clause, venue waiver, automatic damages cap, indemnity, nonrefundable registration fee or universal choice of law. Complaints should first use the verified support route once available; legally protected rights to contact a regulator or pursue court remedies are not waived.
+
+The international jurisdiction matrix identifies concrete checks; it is not a claim that a single notice is legally sufficient for every country. Paid legal counsel is **not a blanket deployment prerequisite**, but neither is the absence of counsel proof of compliance.
+
+## 11. Updates and effective date
+
+These terms are not live. An effective dated version must be approved by the company, published, and bound exactly to browser, server-side version check and immutable receipt. Material changes may require separate notice or acceptance in affected markets. Registration remains disabled until independently accepted hosted Auth/API/database, privacy-request and launch controls pass; global STOP stays engaged.
+
+**Related:** `ADVERTISER_REGISTRATION_PRIVACY_NOTICE.md`, `CONSENT_DISCLOSURE_MATRIX.md`, `INTERNATIONAL_APPLICABILITY_CHECKLIST.md`, Issue #401.
