@@ -38,6 +38,28 @@ public sealed class AdvertiserPrivacyRequestSecurityTests
         return controller;
     }
 
+    private static AdvertiserPrivacyRequestsController OperatorController(
+        BlissDbContext db, bool allowlisted = true, string issuer = Issuer, string role = "bliss.operator")
+    {
+        var options = new BlissAuthenticationOptions
+        {
+            Enabled = true, SupabaseEnabled = true, AdvertiserRegistrationRequested = true,
+            Authority = Issuer, ClientId = "synthetic-client",
+            ApprovedPrivacyOperatorSubjects = allowlisted ? new[] { "operator-sub" } : []
+        };
+        var roleClaim = new Claim(options.RoleClaimType, role, ClaimValueTypes.String, issuer, issuer);
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("sub", "operator-sub"), roleClaim
+        }, "oidc"));
+        var controller = new AdvertiserPrivacyRequestsController(db, options);
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext { User = principal }
+        };
+        return controller;
+    }
+
     private static AdvertiserRegistrationController Registration(BlissDbContext db, string subject)
     {
         var controller = new AdvertiserRegistrationController(db, Options);
@@ -152,9 +174,36 @@ public sealed class AdvertiserPrivacyRequestSecurityTests
             Assert.Single(a);
             Assert.Equal(receipt.CaseId, a[0].CaseId);
 
+            var deniedPendingQueue = await Controller(db, "subject-a").OperatorQueue(CancellationToken.None);
+            Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeResult>(deniedPendingQueue).StatusCode);
+            var notApproved = await OperatorController(db, allowlisted: false).OperatorQueue(CancellationToken.None);
+            Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeResult>(notApproved).StatusCode);
+            var forgedRole = await OperatorController(db, issuer: "untrusted.example.invalid").OperatorQueue(CancellationToken.None);
+            Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeResult>(forgedRole).StatusCode);
+            var nonStaffRole = await OperatorController(db, role: "bliss.viewer").OperatorQueue(CancellationToken.None);
+            Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeResult>(nonStaffRole).StatusCode);
+
+            var queue = Assert.IsType<OkObjectResult>(
+                await OperatorController(db).OperatorQueue(CancellationToken.None));
+            var queued = Assert.IsType<AdvertiserPrivacyOperatorCase[]>(queue.Value);
+            Assert.Equal(2, queued.Length);
+            var deniedAck = await Controller(db, "subject-a").Acknowledge(receipt.CaseId, CancellationToken.None);
+            Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeResult>(deniedAck).StatusCode);
+            var ack = Assert.IsType<OkObjectResult>(
+                await OperatorController(db).Acknowledge(receipt.CaseId, CancellationToken.None));
+            Assert.NotNull(ack.Value);
+            Assert.IsType<ConflictObjectResult>(
+                await OperatorController(db).Acknowledge(receipt.CaseId, CancellationToken.None));
+            var acknowledged = await db.AdvertiserPrivacyRequests.AsNoTracking()
+                .SingleAsync(x => x.Id == receipt.CaseId);
+            Assert.Equal("VERIFYING", acknowledged.Status);
+            Assert.Equal("operator-sub", acknowledged.AcknowledgedBySubject);
+            Assert.NotNull(acknowledged.AcknowledgedAt);
+
             var records = await db.AdvertiserPrivacyRequests.AsNoTracking().ToArrayAsync();
             Assert.Equal(2, records.Length);
-            Assert.All(records, x => Assert.Equal("RECEIVED", x.Status));
+            Assert.Single(records, x => x.Status == "VERIFYING");
+            Assert.Single(records, x => x.Status == "RECEIVED");
             Assert.Equal(2, await db.AdvertiserAccountMemberships.CountAsync());
             Assert.Equal(2, await db.AdvertiserRegistrationReceipts.CountAsync());
             // A request for withdrawal or erasure never mutates the immutable consent receipt.
