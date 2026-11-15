@@ -74,6 +74,34 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertIn("limited to public-interest submissions", self.privacy)
         self.assertIn("not</strong> a verified account-registration privacy request channel", self.privacy)
 
+    def test_account_rights_preview_is_separate_from_public_inquiry_and_not_live(self):
+        rights = (PUBLIC / "advertiser-account-rights.html").read_text(encoding="utf-8")
+        js = (PUBLIC / "advertiser-account-rights.js").read_text(encoding="utf-8")
+        self.assertIn('href="/advertiser-account-rights.html"', self.form)
+        self.assertIn('name="robots" content="noindex,nofollow"', rights)
+        self.assertIn("Not available for live account requests yet.", rights)
+        self.assertIn('id="account-right-submit"', rights)
+        self.assertIn("disabled", rights)
+        self.assertNotIn('data-endpoint="https://bkutbglzivfdnoerigyb.', rights)
+        self.assertIn('"/api/advertisers/privacy-requests"', js)
+        self.assertIn("advertiserRegistrationEnabled === true", js)
+        self.assertIn("session?.csrfToken", js)
+        self.assertIn("RequestVerificationToken", js)
+        self.assertIn("not a completed deletion", js)
+
+    def test_account_request_backend_is_scoped_and_does_not_claim_auto_erasure(self):
+        boundary = (ROOT / "Bliss.Api" / "Security" / "AdvertiserRegistrationBoundary.cs").read_text(encoding="utf-8")
+        controller = (ROOT / "Bliss.Api" / "Controllers" / "AdvertiserPrivacyRequestsController.cs").read_text(encoding="utf-8")
+        migration = (ROOT / "Bliss.Infrastructure" / "Migrations" / "20261115110000_AdvertiserPrivacyRequestIntake.cs").read_text(encoding="utf-8")
+        self.assertIn('path.Equals("/api/advertisers/privacy-requests"', boundary)
+        self.assertIn("IsPendingAdvertiserRegistration", controller)
+        self.assertIn("TryResolveVerifiedAdvertiserId", controller)
+        self.assertIn("RequestKey", controller)
+        self.assertIn("RECEIVED", controller)
+        self.assertIn("REVOKE ALL ON TABLE", migration)
+        self.assertNotIn('HttpDelete', controller)
+        self.assertNotIn('MarketingOptIn = false', controller)
+
     def test_marketing_is_optional_and_not_preselected(self):
         marketing = [x for x in self.parsed.inputs if x.get("id") == "marketing-consent"]
         self.assertEqual(1, len(marketing))
