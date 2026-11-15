@@ -16,6 +16,7 @@ public sealed class AdvertiserPrivacyRequestSecurityTests
     private static readonly BlissAuthenticationOptions Options = new()
     {
         Enabled = true, SupabaseEnabled = true, AdvertiserRegistrationRequested = true,
+        AdvertiserPrivacyRequestsRequested = true,
         Authority = Issuer, ClientId = "synthetic-client"
     };
 
@@ -44,6 +45,7 @@ public sealed class AdvertiserPrivacyRequestSecurityTests
         var options = new BlissAuthenticationOptions
         {
             Enabled = true, SupabaseEnabled = true, AdvertiserRegistrationRequested = true,
+            AdvertiserPrivacyRequestsRequested = true,
             Authority = Issuer, ClientId = "synthetic-client",
             ApprovedPrivacyOperatorSubjects = allowlisted ? new[] { "operator-sub" } : []
         };
@@ -89,6 +91,31 @@ public sealed class AdvertiserPrivacyRequestSecurityTests
         Assert.True(denied("GET", "/api/advertisers/privacy-requests/another-subject"));
         Assert.True(denied("POST", "/api/advertisers/privacy-requests/another-subject"));
         Assert.True(denied("GET", "/api/advertisers/me"));
+    }
+
+    [Fact]
+    public async Task Privacy_case_intake_is_rejected_when_independent_feature_flag_is_off()
+    {
+        var modelOptions = new DbContextOptionsBuilder<BlissDbContext>()
+            .UseNpgsql("Host=localhost;Database=synthetic_missing;Username=synthetic;Password=synthetic").Options;
+        using var db = new BlissDbContext(modelOptions);
+        var disabled = new BlissAuthenticationOptions
+        {
+            Enabled = true, SupabaseEnabled = true, AdvertiserRegistrationRequested = true,
+            AdvertiserPrivacyRequestsRequested = false, Authority = Issuer, ClientId = "synthetic-client"
+        };
+        var controller = new AdvertiserPrivacyRequestsController(db, disabled)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = Pending("subject-a") }
+            }
+        };
+        var received = await controller.Create(
+            new AdvertiserPrivacyCaseRequest(Guid.NewGuid(), "ACCESS"), CancellationToken.None);
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeResult>(received).StatusCode);
+        Assert.Equal(StatusCodes.Status403Forbidden,
+            Assert.IsType<StatusCodeResult>(await controller.Mine(CancellationToken.None)).StatusCode);
     }
 
     [Fact]
