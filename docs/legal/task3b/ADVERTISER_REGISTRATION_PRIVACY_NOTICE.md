@@ -1,44 +1,54 @@
-# Advertiser Account Registration Privacy Notice — OWNER / LEGAL REVIEW CANDIDATE
+# Advertiser Account Registration Privacy Notice — release candidate, NOT PUBLISHED
 
-**Controller / proposed publisher:** ALPHA GLOBAL MEDIA LLC ("ALPHA", "we").
-**Review date:** 2026-11-14. **Status:** DRAFT ONLY — not an effective or published notice.
-**Source draft:** frontend/public/advertiser-account-privacy.html at cdc8852c1079316e7edb00f541e32218321d2ed0.
-**Candidate identifier:** advertiser-privacy-2026-11-14-review-v2 (NOT configured in the registration application).
-**Application identifier currently pinned:** advertiser-privacy-2026-11-07-v1.
-**Effective date:** PENDING owner and counsel approval. No production acceptance authorized.
-**Privacy contact:** Existing website contact route /contact.html; applicability of /privacy-request.html to account registration is NOT verified. Owner must approve a working account-privacy request channel before publication.
+**Controller:** ALPHA GLOBAL MEDIA LLC ("ALPHA").
+**Reviewed:** 2026-11-15. **Status:** unpublished non-production documentation. Do not present as a live notice.
+**Candidate ID:** `advertiser-privacy-2026-11-14-review-v2`. **Current UI/API/receipt ID:** `advertiser-privacy-2026-11-07-v1`.
+**Effective date:** not set. A published, effective version must match browser, server and receipt exactly before any authorized registration.
+**Controller contact:** existing `/contact.html` identifies public inquiry channels ONLY. A verified account-privacy request channel and company contact details have not yet been established.
 
-## 1. Which service this notice covers
-This proposal describes an **advertiser account application**, which is different from the public advertiser-interest form governed by /alpha-privacy.html. Creating a sign-in or receiving an application receipt does not mean an advertiser has been approved, does not create an advertising order, and grants no automatic marketplace access. Registration is currently disabled.
+## 1. Scope and lawful processing
 
-## 2. Information collected and how it enters the service
-- **Sign-in step:** the applicant provides an email address and password to the configured Supabase Auth endpoint. On the reviewed browser implementation, the password travels directly from the browser to Supabase Auth over HTTPS and is not included in the request body sent to ALPHA's registration API. Supabase Auth's separate storage, verification, logs, and retention require a provider-specific confirmation.
-- **Business registration:** the applicant enters a required business name and two-letter country code, plus an optional HTTPS business website. The registration API checks length/format, and obtains an identity subject from verified session claims. A verified email claim is required for the pending-applicant lane.
-- **Registration evidence:** the service is designed to store the opaque subject, advertiser identifier, registration request key, canonical request SHA-256 digest, privacy and terms version identifiers, required processing/terms choices, optional marketing choice, receipt identifier, pending-review state, and creation timestamps. These are retained as a registration record and append-only receipt in the proposed database schema.
-- **Technical metadata:** hosting, authentication and network providers may process IP addresses, diagnostics and request metadata. Specific categories, destinations and provider retention are unverified and must be confirmed rather than assumed.
+This proposed notice concerns the **advertiser account application**, not public advertiser interest or a paid campaign. The application is designed to create a `PENDING_REVIEW` record; an auth sign-in or receipt grants no marketplace privileges. Registration is disabled in the reviewed source.
 
-Do not include payment credentials, government-issued identity documents, or another person's confidential information in this application.
+ALPHA's processing purposes are: accepting and assessing an application, confirming sign-in, preventing duplicates and abuse, recording required acknowledgments and separate marketing choices, enforcing access controls, handling privacy/support requests, and meeting applicable legal obligations. Depending on jurisdiction and processing purpose, a valid basis may be steps requested before entering a contract, legitimate interests where permitted and balanced, legal obligations, or freely given specific consent. **A required checkbox does not itself establish that consent is the correct legal basis for all processing.** Optional marketing authorization is separate, unchecked by default, and must be withdrawable through a real channel before any marketing is enabled.
 
-## 3. Why the information is used
-The proposed purposes are creating and confirming a sign-in; associating a verified applicant with a business application; validating, deduplicating and securely processing submissions; documenting acknowledgment and marketing choices; preventing unauthorized account access; reviewing applications; handling support/privacy requests; and meeting applicable security or recordkeeping duties. Each purpose and applicable **lawful basis** must be reviewed for the relevant jurisdictions. Acceptance of terms is not automatic consent to marketing. Where consent is the applicable basis, it must be separately captured and capable of withdrawal as required by law.
+## 2. Information and source-to-destination accuracy
 
-## 4. Who handles the information
-The source code identifies **Supabase Auth** for sign-in; an ALPHA-controlled registration database/API designed for the proposed membership and receipt records; **Railway** as the contemplated application/database host when independently authorized; and **Vercel** for the web/preview interface. Their effective deployed roles, processing regions, subprocessors, agreements and cross-border safeguards are **NOT VERIFIED** for this registration flow. The existing public inquiry flow separately mentions GoHighLevel/LeadConnector; account registration alone does not authorize HighLevel marketing or establish an account-to-CRM sync. If ALPHA later adds a recipient, processor or transfer, its legal disclosure must first be reviewed and updated.
+- **Supabase Auth:** the applicant submits email and password directly from the reviewed browser to the configured Auth endpoint over HTTPS, rather than sending plaintext password in the Bliss registration API request. Supabase handles credential verification and related identity records, subject to deployment and provider verification.
+- **Business API and proposed PostgreSQL records:** business name, two-letter country code and optional HTTPS website; verified identity subject; request key; canonical request digest; selected privacy and terms version IDs; required processing and terms selections; separate marketing choice; registration and receipt IDs; `PENDING_REVIEW` membership; timestamps. The source represents a proposed design, **not verified hosted storage**.
+- **Technical providers:** security logs, device/network identifiers, IP address or diagnostics may be processed by the actual Auth/hosting providers. Do not assert specific log contents or regions without provider evidence.
+- **Recipients:** source identifies Supabase Auth; Railway as contemplated backend/database host; Vercel as preview/frontend host. Their effective deployed roles, regions, retention and subprocessors remain unverified. The public inquiry flow may use HighLevel/LeadConnector, but **there is no demonstrated account-to-CRM sync** and no automatic authorization to send marketing or share account records with a CRM.
+- **No payment:** account registration is not an advertising order and the reviewed registration API has no payment collection.
 
-## 5. Review status and account access
-A successful business submission is designed to create a PENDING_REVIEW membership and an application receipt, not a marketplace entitlement. ALPHA would need a separately authorized review/approval process before granting privileges. The production deployment of this behavior has not been demonstrated.
+## 3. Retention criteria and deletion limitations
 
-## 6. Retention and deletion — POLICY DECISION REQUIRED
-The registration identity, application profile, receipts, security logs, backups and any provider-held data **do not yet have an owner-approved retention schedule**. Do not rely on the separate 90-day public interest-form cleanup period for account registration. The existing receipt design prevents ordinary receipt updates/deletes and may be subject to lawful audit retention; the company must define an authorized erasure/anonymization approach, relevant legal exceptions, backup lifecycle and processor deletion process. These rules must be approved and reflected accurately in the published notice **before the feature is enabled**.
+The controlling principle is purpose limitation and data minimization: retain only while needed for application review, authorized account administration, security evidence, a legitimate documented dispute, or a specific legal obligation; then delete or irreversibly de-identify when technically and legally possible. This **does not imply a currently implemented deletion schedule**.
 
-## 7. Access, correction, deletion and marketing choices
-An applicant may seek information about records associated with the application, request corrections/deletion where legally applicable, or ask to withdraw optional marketing consent. Requests require appropriate identity verification and review of lawful retention exceptions; do not send passwords or payment information in a form. The current /privacy-request.html is explicitly scoped to public interest forms, so it **cannot yet be represented as a verified end-to-end account privacy-rights channel**. ALPHA must approve and verify a suitable account channel and processing workflow before activation. Applicable rights and response periods depend on governing law and must be checked by counsel.
+| Record class | Policy criterion to implement | Current technical limit |
+|---|---|---|
+| Auth identity / credentials | While sign-in is needed; on verified account closure assess revocation and identity deletion | Supabase Auth account-deletion and session-revocation flow not verified |
+| Pending, declined or approved business profile | Through review/appeal or active account; minimize after the relevant purpose ends | No hosted expiry/deletion job accepted |
+| Consent/registration audit receipt | Preserve only the minimum defensible evidence for specific audit/claims obligations | Existing proposed receipt is append-only and ordinary updates/deletes are restricted; erasure/anonymization must be designed rather than promised |
+| Security and support logs | Shortest documented operational or mandated period | Actual host/provider logging and expiry unverified |
+| Encrypted backups and processor copies | Defined rolling backup lifecycle, legal hold exception and verified expiry | No account-specific backup deletion/retention acceptance |
+| Marketing preference/withdrawal | Retain minimal suppression/evidence data needed to honor the choice | No verified account-marketing withdrawal endpoint or CRM propagation |
 
-## 8. International handling and security
-The submitted data may be processed in the jurisdictions used by the selected auth, hosting, delivery and backup providers. Actual locations, transfer mechanisms and security agreements are **PENDING verification**. ALPHA intends to restrict pending accounts and require HTTPS, but this draft makes no guarantee of absolute security, universal legal compliance, deletion timing or currently deployed isolation.
+Before publication, ALPHA must fill in **the actual retention periods or objectively determinable criteria**, applicable local exceptions, ownership of the deletion workflow, provider obligations and backup expiry. The separate **90-day public interest-form** rule is not an account retention schedule. Do not claim all traces or immutable audit records will be immediately deleted.
 
-## 9. Changes and contact
-For material changes, ALPHA should publish a dated notice with a new version identifier and update the account registration UI/API/receipt binding before accepting new submissions. The final legal entity contact details, effective date, request channel, geographic scope and approved retention schedule require owner decision and independent counsel review.
+## 4. Data-subject requests and account support
 
-**Related proposed terms:** ADVERTISER_REGISTRATION_TERMS.md.
-**Do not publish or rely on this draft as operational consent text.**
+Subject to applicable law, applicants can request information, access, correction, deletion/restriction, objection, portability and withdrawal of optional marketing choice where the right applies. The operational procedure to implement is: receive request in a clearly labeled account channel; record case/reference and receipt time; verify identity proportionately without asking for passwords or payment credentials; classify jurisdiction and request type; locate the relevant Auth/profile/receipt/provider records; apply lawful retention exceptions; safely fulfill or explain the result within the applicable legal deadline; record evidence of resolution and securely communicate outcome.
+
+**Current implementation exception:** `/privacy-request.html` explicitly handles **public interest form submissions only**, and `/contact.html` lists public inquiries rather than a verified account-specific case queue. Neither may be represented as accepted account privacy-request processing. The frontend source must not link to the inquiry-only request form as an account-rights solution. No account rights or support response SLA is currently proven.
+
+## 5. Security and international processing
+
+The proposed API uses verified issuer-bound identity, pending-review role restrictions, CSRF protections, explicit consent versions and an immutable receipt model. These are source-level observations only: hosted login, tenant denial, rollback, isolation and backup readiness have not passed. ALPHA cannot guarantee absolute security. A country code on the application does not automatically determine which privacy law applies. Territorial scope, collection location, processor countries, transfer mechanism, local notice language, regulator and response deadline must be established **per actual market and deployment**, using the companion international legal applicability matrix. Do not state universal GDPR or global legal compliance.
+
+## 6. Notice changes and launch gate
+
+An operative notice needs a real effective date, correct controller/privacy contact, accurate providers/transfer description, approved retention criteria and a verified request route. After those are confirmed, bind **one** new identifier across HTML, JavaScript, server constants and immutable receipt version evidence, with tests. Do not enable registration or infer prior consent from draft versions. Material changes may require fresh disclosure and/or acceptance under applicable law.
+
+**Related:** `ADVERTISER_REGISTRATION_TERMS.md`, `CONSENT_DISCLOSURE_MATRIX.md`, `INTERNATIONAL_APPLICABILITY_CHECKLIST.md`, Issue #401.
+
+**Decision already settled:** owner chose international business orientation and no paid external counsel. This does not waive jurisdiction-triggered requirements or the need for technically truthful disclosures. No generic counsel-approval gate is imposed by this document.
