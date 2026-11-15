@@ -46,3 +46,13 @@ Request types are a fixed allowlist; no free text, password, email, IP or identi
 - The client registration and privacy-case scripts incorrectly sent `RequestVerificationToken` while the existing ASP.NET antiforgery middleware configured `X-CSRF-TOKEN`. Both scripts now send the exact existing configured `X-CSRF-TOKEN`; the source contract test asserts parity.
 - Preview config now separately exposes `advertiserPrivacyRequestsEnabled` only when authentication, Supabase and the privacy-request feature have been explicitly enabled; the rights page no longer relies on `advertiserRegistrationEnabled`.
 - New .NET and Python regressions assert default-off and exact-route boundaries, including approved self-service advertiser sessions, and feature flag refusal. This remains *source/CI* verification; it is not hosted identity, human response or live erasure acceptance.
+
+## Current hosting inventory — read-only November 15 verification
+
+- Railway `bliss-bot` project `fb33c1b7-03fb-42c8-89b1-081951a738fd`: only environment `production` (`b67a9836-36bf-4083-93f7-00c867b13f39`), with the Bliss app on `main` and a production PostgreSQL service and volumes. Do NOT reuse this for isolated rights acceptance.
+- Supabase `bkutbglzivfdnoerigyb` (Bliss Bot): development branch inventory is empty. The effective Railway PostgreSQL connection remains unverified, and no protected data may be copied or migrated.
+- Railway Factory staging belongs to a different application and must not be repurposed; other Alpha backend projects are also unrelated. The DR362 recovery project is isolated for **disaster recovery**, not advertiser registration testing.
+- No eligible already-provisioned, independently recoverable and zero-incremental-spend **Bliss** hosted test target was verified. Avoid creating paid services or claiming a hosted acceptance PASS.
+- The source unit/integration tests are intentionally isolated, synthetic and disposable; they do not replace the required deployed OIDC, HTTPS ingress, case workflow, backup and rollback receipt.
+
+**CI note:** The repository's existing .NET and PostgreSQL workflows run for pull requests to `main`. PR #424 is temporarily pointed to `main` only for exact-head CI after the source repairs; return it to its stacked parent PR #349 for engineering review when CI is accepted. No merge or deploy is authorized.
