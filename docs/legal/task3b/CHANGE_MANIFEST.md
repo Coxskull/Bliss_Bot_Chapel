@@ -21,7 +21,7 @@
 | `docs/legal/task3b/ACCOUNT_PRIVACY_CASE_OPERATOR_RUNBOOK.md` | **New** single-human operator case handling: subject verification, jurisdiction classification, privacy rights categories, lawful exceptions, evidence/ACK procedure, no false response/suppression promises | Operational source candidate, not hosted |
 | `docs/legal/task3b/CHANGE_MANIFEST.md` | This reconciled change and evidence index | Source only |
 
-**PR #423 contains seven task3b Markdown documents.** Its changes are to documentation, not a new auth, database, or registration architecture. Six original docs were present before this continuation; the international applicability checklist is the seventh.
+**PR #423 contains eight task3b Markdown documents.** Its changes are to documentation, not a new auth, database, or registration architecture. Six original docs were present before this continuation; international applicability checklist and human privacy-case operator runbook are the two additional documents.
 
 ## Separate already existing registration implementation and scoped repair
 
