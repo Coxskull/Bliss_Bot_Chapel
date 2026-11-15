@@ -1,19 +1,46 @@
-# Task #3B legal review change manifest
+# Task #3B — change manifest and acceptance boundaries
 
-Source commit pinned: cdc8852c1079316e7edb00f541e32218321d2ed0 (PR349).
-Review branch: review/task3b-legal-readiness-20261114.
-Status: source/documentation-only proposed review packet. **No production publication**.
+**Directive:** ALPHA-P0-TASK3B-FINAL-RESOLUTION-20261114
+**Updated:** 2026-11-15
+**Repository:** Coxskull/Bliss_Bot_Chapel
+**Documentation PR:** #423, branch `review/task3b-legal-readiness-20261114`, stacked on the original PR #349 source baseline.
+**Source engineering PR:** #349, branch `codex/task3-secure-advertiser-registration-20261107`.
+**Private DB identification PR:** #421 (read-only owner-operated classifier; not deployed).
+**Status:** non-production source candidates, not published/effective; Global STOP and registration activation remain held.
 
-| Existing source / before | Review packet / after (proposed, not effective) |
-|---|---|
-| frontend/public/advertiser-account-privacy.html v1, vague rights link to public-inquiry-only privacy form | ADVERTISER_REGISTRATION_PRIVACY_NOTICE.md differentiates account rights, explicitly marks current route unverified, reserves contact, retention, regions, legal basis decisions |
-| frontend/public/advertiser-account-terms.html v1, account-only/no-charge core, missing material conditions | ADVERTISER_REGISTRATION_TERMS.md clarifies review workflow, IP/content/suspension/security/account closure concepts; dispute/liability/jurisdiction reserved to counsel |
-| Existing form + controller v1 version constants, source contract tests | NO CODE OR HTML CHANGE in this branch. Proposed review-v2 identifiers in documents are NOT live. On approval only, version-bind browser, API, effective notice/terms and receipt in a separate reviewed implementation PR |
-| No field-level legal mapping in PR349 | CONSENT_DISCLOSURE_MATRIX.md lists fields, triggers, storage, open retention/legal basis/transfer questions, citations to source |
-| No consolidated issue-level legal decisions | LEGAL_REVIEW_FINDINGS.md and OWNER_APPROVAL_PACKET.md inventory severity, owner decisions, counsel, hosted gates |
+## Actual reviewed changes
 
-**Files added:** five Markdown documents and this manifest, all under docs/legal/task3b. **Files modified/deleted:** none. **Data/credentials accessed:** none. **Hosted writes:** none. **Cost:** $0 new infrastructure. **Registration/payment/outreach:** OFF / NOT AUTHORIZED.
+| File | Change / evidence | Acceptance |
+|---|---|---|
+| `docs/legal/task3b/ADVERTISER_REGISTRATION_PRIVACY_NOTICE.md` | Reconciles known source data categories and separate application/inquiry purposes; documents provider uncertainty, per-purpose lawful basis, retention class criteria, rights-request process, missing verified account case route | Draft content only; not published |
+| `docs/legal/task3b/ADVERTISER_REGISTRATION_TERMS.md` | Registration-only no-fee terms, applicant representations, PENDING_REVIEW, restricted business-data permission, required rights, no unsupported universal law/arbitration claims | Draft content only; not binding |
+| `docs/legal/task3b/CONSENT_DISCLOSURE_MATRIX.md` | Source-field inventory, v1 UI/API parity, explicit separate optional unchecked marketing; v2 candidate not deployed; consent withdrawal unverified | Source evidence only |
+| `docs/legal/task3b/INTERNATIONAL_APPLICABILITY_CHECKLIST.md` | **New** country-conditional statutes for PH/MY/ID/CO/PA/DO/TH, EU GDPR and NJ where triggered; official references; required factual tests | Not universal legal certification |
+| `docs/legal/task3b/LEGAL_REVIEW_FINDINGS.md` | Reclassifies generic counsel-only blockers into concrete jurisdictional checks and identifies narrowed source fixed/hosted open rights-route defect | Engineering finding only |
+| `docs/legal/task3b/OWNER_APPROVAL_PACKET.md` | Records settled international strategy and refusal of paid outside counsel; lists specific factual publication and operational requirements | No assumed signature/launch approval |
+| `docs/legal/task3b/CHANGE_MANIFEST.md` | This reconciled change and evidence index | Source only |
 
-**Validation scope:** existing PR349 legal-contract test established relative paths and pinned browser/API/form/document v1 parity at accepted source commit; this review-only PR does not alter those source files. Verify actual checks on this PR's resulting head before claiming new CI results. Link resolution in production, actual rights intake, hosted consent receipts, data recovery and legal approval remain OPEN.
+**PR #423 contains seven task3b Markdown documents.** Its changes are to documentation, not a new auth, database, or registration architecture. Six original docs were present before this continuation; the international applicability checklist is the seventh.
 
-**Traceability:** PR349 https://github.com/Coxskull/Bliss_Bot_Chapel/pull/349 ; issue401 https://github.com/Coxskull/Bliss_Bot_Chapel/issues/401 ; separate engineering PR421 https://github.com/Coxskull/Bliss_Bot_Chapel/pull/421 .
+## Separate already existing registration implementation and scoped repair
+
+PR #349 source contains versioned `advertiser-privacy-2026-11-07-v1` and `advertiser-terms-2026-11-07-v1` browser and API constants, independent required processing/terms choices, unchecked optional marketing, and append-only registration receipts. These are **source features**, not evidence of a working hosted registration.
+
+- [8c1de954](https://github.com/Coxskull/Bliss_Bot_Chapel/commit/8c1de9549bc7f06fbed530e36a88def9b605346e) — Corrects misleading account-privacy draft hyperlink pointing to inquiry-only `/privacy-request.html`.
+- [ef7fae3e](https://github.com/Coxskull/Bliss_Bot_Chapel/commit/ef7fae3e265b7b34e288ead4189ebf855a6c8bdc) — Regression test to prevent that false account-privacy routing assertion.
+- Exact-head PR #349 GitHub CI: five retrieved workflow runs completed SUCCESS, including .NET restore/build/regression and account notice source contract, initial disposable PG migrations and synthetic browser/PG regressions. [CI evidence](https://github.com/Coxskull/Bliss_Bot_Chapel/actions/runs/43671795460).
+- This source repair **does not** implement verified account-specific privacy intake, erasure/withdrawal or hosted acceptance.
+
+## Decision and hold reconciliation
+
+The owner settled global/international commercial orientation and declined paid outside counsel. Generic external counsel approval is **not an independent Task #3B stage**. Specific privacy statutes, required disclosures, consent/rights and security controls still apply under the actual deployment/target markets.
+
+**Version gate:** candidate review-v2 IDs in PR #423 have not been bound to PR #349 source v1 frontend/API, database receipt or a published effective notice. Do NOT claim v2 acceptance.
+
+**Hosted gate:** existing `bliss-bot` Railway project has production environment only. Bliss Supabase `bkutbglzivfdnoerigyb` reports no development branches and read-only table inventory lacks proposed registration receipt/membership tables; this does **not** classify the actual Railway application's effective database. Protected isolated Auth/API/PostgreSQL, recoverable backup and hosted 201/200/409 + tenant-denial tests are not accepted.
+
+**Operational claims not authorized:** No new registration customers or payments, outreach, production DB writes, unrestricted host access, new software purchases, deployed migrations, Global STOP changes or published legal documents.
+
+**Completion accounting:** One precisely scoped false privacy routing claim was removed and protected by successful source regression CI; the full Task #3B and documentation publication remain OPEN. Record this as `PARTIAL_WITH_EVIDENCE`, not `COMPLETE_VERIFIED`.
+
+**Tracking:** [Issue #401](https://github.com/Coxskull/Bliss_Bot_Chapel/issues/401), [PR #349](https://github.com/Coxskull/Bliss_Bot_Chapel/pull/349), [PR #423](https://github.com/Coxskull/Bliss_Bot_Chapel/pull/423), [PR #421](https://github.com/Coxskull/Bliss_Bot_Chapel/pull/421), [Alpha Daily Operations](https://docs.google.com/spreadsheets/d/12ZLd1_L8mnvMO6fky9jkd-CVY8HX5XscuT56Yql_if4/edit).
