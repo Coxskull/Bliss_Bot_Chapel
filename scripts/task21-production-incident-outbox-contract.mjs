@@ -44,4 +44,12 @@ assert.match(sql,/CREATE FUNCTION alpha_support_private\.record_production_incid
 assert.match(sql,/OLD\.state='CLAIMED'[\s\S]*?NEW\.state IN \('PROVIDER_ACCEPTED','UNCERTAIN'\)/);
 assert.match(sql,/OLD\.state='PROVIDER_ACCEPTED'[\s\S]*?NEW\.state='HUMAN_ACKNOWLEDGED'/);
 assert.match(sql,/NEW\.category IN \('security','privacy','billing','refund'\)/);
+// The schema is installable with no Auth users, but the private sender
+// lease must be unavailable until exactly one real Auth-backed operator
+// is enabled. These source checks run with no provider calls or data.
+assert.ok(sql.includes("WHERE enabled AND role='GENERAL_SUPPORT') > 1"),"Migration must accept data-less branch");
+assert.doesNotMatch(sql,/WHERE enabled AND role='GENERAL_SUPPORT'\)\s*<>\s*1/);
+assert.match(sql,/claim_next_production_incident\(\)[\s\S]*?WHERE q\.state='QUEUED'[\s\S]*?JOIN auth\.users u ON u\.id=g\.user_id[\s\S]*?WHERE g\.enabled AND g\.role='GENERAL_SUPPORT'\)=1/);
+assert.doesNotMatch(sql,/\bINSERT\s+INTO\s+alpha_support_private\.manual_operator_grants\b/i);
+console.log("TASK21_EMPTY_BRANCH_INCIDENT_CLAIM_DEFAULT_DENY_PASS zero_grants_no_sender_lease");
 console.log("TASK21_PRODUCTION_INCIDENT_OUTBOX_DEFAULT_DENY_PASS source_only no_customer_data no_auto_retry");
