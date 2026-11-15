@@ -56,4 +56,12 @@ for(const forbidden of [
  /\bDELETE\s+FROM\s+public\.alpha_public_intake_requests\b/i,
  /\bhttps?:\/\//i
 ])assert.doesNotMatch(ddl,forbidden,"Prohibited privacy/form/CRM mutation or personal data duplication");
+// A data-less preview has zero auth.users and zero operator grants.
+// DDL creation must allow 0/1 grants, but never two enabled operators;
+// all operator API actions still call the real authorization function.
+assert.ok(ddl.includes("WHERE enabled=true)>1"),"Preview migration must allow zero active operators");
+assert.doesNotMatch(ddl,/WHERE enabled=true\)\s*<>\s*1/,"Do not require copied production operator identities");
+assert.match(ddl,/IF NOT public\.alpha_support_manual_operator_authorized\(p_actor_user_id\)[\s\S]*?Operator not authorized/);
+assert.match(ddl,/p_case_id IS NULL OR NOT public\.alpha_support_manual_operator_authorized\(p_actor_user_id\)/);
+console.log("TASK21_EMPTY_BRANCH_PRIVACY_SCHEMA_DEFAULT_DENY_PASS zero_operator_grants no_staff_access");
 console.log("TASK21_REAL_PRIVACY_FORM_TO_PRIVATE_QUEUE_SOURCE_PASS no_customer_PII_duplication no_provider_egress no_existing_flow_changes");
