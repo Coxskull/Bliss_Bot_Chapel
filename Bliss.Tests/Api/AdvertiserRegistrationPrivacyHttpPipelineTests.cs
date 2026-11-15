@@ -247,8 +247,13 @@ internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true)
                 d.ServiceType == typeof(DbContextOptions<BlissDbContext>)
                 || d.ServiceType == typeof(BlissDbContext)).ToArray();
             foreach (var item in toRemove) services.Remove(item);
+            // The registration controller begins an EF transaction. InMemory has
+            // no transactional durability: this warning is ignored ONLY here,
+            // while real PostgreSQL atomicity is covered by separate CI fixtures.
             services.AddDbContext<BlissDbContext>(
-                options => options.UseInMemoryDatabase(dbName));
+                options => options.UseInMemoryDatabase(dbName)
+                    .ConfigureWarnings(warnings => warnings.Ignore(
+                        Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning)));
             services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = AdvertiserPrivacyTestAuthHandler.Scheme;
