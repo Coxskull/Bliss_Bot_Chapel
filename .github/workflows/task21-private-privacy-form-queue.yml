@@ -5,6 +5,7 @@ on:
       - 'scripts/task21/production-privacy-form-private-queue-20261112.sql'
       - 'scripts/task21/production-mailcase-retention-cascade-fix-20261112.sql'
       - 'scripts/task21-production-privacy-form-queue-contract.mjs'
+      - 'scripts/task21/privacy-empty-branch-replay.ci.sql'
       - '.github/workflows/task21-private-privacy-form-queue.yml'
 permissions:
   contents: read
@@ -21,3 +22,33 @@ jobs:
           node-version: '22'
       - name: Verify private metadata-only privacy intake and existing queue authorization
         run: node scripts/task21-production-privacy-form-queue-contract.mjs
+
+  empty-branch-postgres-16-replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: task21_rehearsal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d task21_rehearsal"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: task21_rehearsal
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Replay production SQL in isolated, empty PostgreSQL (no actual users)
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/task21/privacy-empty-branch-replay.ci.sql
