@@ -3,6 +3,10 @@
 **Authority:** ALPHA-P0-TASK3B-FINAL-RESOLUTION-20261114. **Updated:** 2026-11-15.
 **Status:** non-production legal documents REVISED, **NOT published or technically accepted**. PR #349 registration source unmerged; Global STOP engaged. This packet does not purport to sign for the owner.
 
+## November 15 continuation authorization
+
+The owner stated **“i approved all proceed”** on November 15, 2026. Record this as explicit authorization to continue Task #3B's safe engineering, case-operator procedure, source/isolated tests and completion efforts **without repetitive generic counsel escalation**. It is not a signed legal attestation, actual production test receipt, approval of an undisclosed recurring charge or proof that real people have accepted published terms. Any nonzero infrastructure cost must be disclosed and confirmed under the provider's cost approval controls. Publication and live registration must still accurately describe real processing and satisfy the independently verifiable security and privacy safeguards.
+
 ## Decisions conclusively supplied by the owner
 
 1. **Internationally oriented advertiser registration strategy** — settled; do not reopen as an undefined legal strategy gate. Per-market mandatory privacy requirements are assessed against actual launch scope.
