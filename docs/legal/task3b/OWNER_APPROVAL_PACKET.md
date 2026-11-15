@@ -1,52 +1,44 @@
-# Task #3B — Owner legal approval packet (review-ready, not approved)
+# Task #3B — owner direction and narrow release decision record
 
-**Directive:** ALPHA-TASK3B-LEGAL-REVIEW-20261113 / ALPHA-A2A-EXECUTION/4.0.
-**Prepared:** 2026-11-14. **Source:** Coxskull/Bliss_Bot_Chapel PR349 exact commit cdc8852c1079316e7edb00f541e32218321d2ed0.
-**Scope:** Draft legal readiness ONLY. PR349 unmerged; global STOP engaged; live registration NOT AUTHORIZED.
+**Authority:** ALPHA-P0-TASK3B-FINAL-RESOLUTION-20261114. **Updated:** 2026-11-15.
+**Status:** non-production legal documents REVISED, **NOT published or technically accepted**. PR #349 registration source unmerged; Global STOP engaged. This packet does not purport to sign for the owner.
 
-## Documents for owner examination
-1. ADVERTISER_REGISTRATION_PRIVACY_NOTICE.md — proposed dedicated account notice, covering exactly the observed auth/application fields, separate inquiry vs account, conditional providers, privacy rights and retention placeholders.
-2. ADVERTISER_REGISTRATION_TERMS.md — proposed application-only obligations, accuracy, pending-review, no fee/order, IP/content/security/suspension concepts; material legal remedies reserved for counsel.
-3. CONSENT_DISCLOSURE_MATRIX.md — field-by-field source evidence, destinations and policy unknowns.
-4. LEGAL_REVIEW_FINDINGS.md — coded classifications PASS/REQUIRES_REVISION/REQUIRES_OWNER_DECISION/REQUIRES_LEGAL_COUNSEL/BLOCKED.
-5. CHANGE_MANIFEST.md — exact before/after and safe release boundary.
+## Decisions conclusively supplied by the owner
 
-## Important proposed provisions
-- Application and public inquiry are different; only pending review is created, never automatic workspace access.
-- Email/password reach Supabase Auth directly from browser; business fields and receipt enter the registration API/database only if independently deployed/approved.
-- Marketing is **separate, optional, unchecked** and does not automatically authorize CRM outreach.
-- Registration itself creates **no payment or refund promise**; future paid services need separately approved orders.
-- Notice and terms cannot become effective until dated, reviewed, version-bound and published with verified technical controls.
+1. **Internationally oriented advertiser registration strategy** — settled; do not reopen as an undefined legal strategy gate. Per-market mandatory privacy requirements are assessed against actual launch scope.
+2. **No paid outside counsel** — settled. Remove any routine "independent counsel required" stage from Task #3B acceptance. This does not override a law that requires a particular action, representative, language, consent model, regulator notice or data-protection safeguard.
+3. **Non-production repair authorization granted**; zero new software purchases, no new paid outside services, global STOP maintained, no unauthorized production registration, payment or outreach. $300/month incremental ceiling remains; no spending authorization follows from that maximum.
 
-## Owner decisions requested — NOT presumed approved
-| Decision ID | Owner to determine | Why it matters |
+## Documentation now available on PR #423
+
+- `ADVERTISER_REGISTRATION_PRIVACY_NOTICE.md`: source-grounded data categories, role/recipient uncertainty, purpose-by-purpose basis, retention criteria, limitations of immutable receipts and honest rights-route status.
+- `ADVERTISER_REGISTRATION_TERMS.md`: business-application only, authority/accuracy, pending review, no fee/automatic order, bounded IP permission and mandatory-law reservation; avoids speculative arbitration, liability caps or waivers.
+- `CONSENT_DISCLOSURE_MATRIX.md`: field-level source contract, separate unchecked marketing, unverified hosted retention/withdrawal.
+- `INTERNATIONAL_APPLICABILITY_CHECKLIST.md`: law-specific conditional applicability matrix and official references, not universal compliance.
+- `LEGAL_REVIEW_FINDINGS.md`: changed proof/decision classifications and technical action gates.
+
+## Specific unresolved facts — not a blanket legal approval blocker
+
+| Gate | Exact decision or evidence missing | Narrow accountable action |
 |---|---|---|
-| O01 | Company legal mailing/contact address and accountable privacy/support contact/channel | Required accurate published identification and requests |
-| O02 | Retention and deletion policy for Supabase identities, applicant profile, receipt, logs, backups and third-party copies | Append-only receipt and legal rights must align |
-| O03 | Jurisdictions/eligible applicants, representative authority and any minimum age | Do not claim identity/business authority is verified when code only verifies email/subject |
-| O04 | Which processors/transfers are actually used and approved, including Supabase, Railway, Vercel and any future HighLevel | Accurate recipients, regions, contractual safeguards |
-| O05 | Manual advertiser review, rejection/appeal, suspension and account closure, customer complaints and withdrawal routing | Terms must match a real supported workflow |
-| O06 | Whether registration needs a separate legally-approved feature gate beyond default-OFF engineering flag; who may release it | Owner approval must fail closed |
-| O07 | Any future campaign/order, fee/tax, IP, refund/cancellation and support obligations (distinct from registration) | Avoid binding unapproved commercial terms |
-| O08 | Final notice and terms effective date, published version IDs and rollout/re-consent policy | UI/API/receipts must reflect exactly what was approved |
+| Contact + privacy-rights intake | Company contact for account privacy requests, independently durable identity-checked case route and acknowledgment/response evidence | Engineering + owner support operator establish and test **account-specific** intake; public interest-only form cannot substitute |
+| Retention + erasure | Actual period/criteria by Auth/account/receipt/log/backup class, exception authority, deletion/anonymization method, withdrawal workflow | Owner adopts practical schedule and engineering proves source/host handling; no false immediate-erasure promise |
+| Processor/transfer | Confirm deployed database, Auth, frontend, logs, hosting regions, subprocessors and applicable transfer mechanism | Engineering obtain provider configuration without copying secrets; scope claims to findings |
+| Application approval | Business eligibility, human applicant review/appeal and authorization rules | Engineering implements and tests pending-review denial and a restricted operator workflow |
+| Document publication/version parity | Effective dated, reachable notice/terms; current v1 UI/API vs nonoperative v2 candidates | After above facts resolved, bind one chosen version in browser, API, docs and receipt; run source and hosted acceptance |
+| Isolated hosted technical stack | Effective runtime DB identity, approved $0 isolated API/Auth/PostgreSQL, safe backup/rollback, end-to-end 201/200/409 and cross-tenant denial | Reuse PR #349 and #421; do not mutate the production-only Railway database for staging |
 
-## Independent qualified legal review
-Counsel should evaluate applicable privacy frameworks and lawful bases; cross-border transfer requirements and processor agreements; notice/consent vs contract design and withdrawal; age/representative eligibility; retention exceptions, erasure vs immutable audit records; fairness/enforceability of any IP license, suspension, disclaimer, liability, indemnity, dispute resolution, governing law, waiver and change clauses. No assumption of global enforceability or ready-to-publish legal text.
+## Account-rights operational procedure proposed for implementation
 
-## Engineering continuation kept independent
-- PR349 at cdc8852: previously accepted 9/9 source checks; account-specific v1 drafts wired, optional unchecked marketing and append-only receipt in source. No hosted 201/200/409 demonstration.
-- PR421 at a766937: draft, source-only classifier with 9/9 offline synthetic fixtures; no verified effective live app DB identity.
-- Issue401 records that the existing Railway app's historic safe diagnostic was connected/TLS PASS but table count 0/migration history absent; the separate Supabase Bliss project had 29 public tables / seven EF migrations but lacks the proposed membership and receipt tables. **Do not assume those are the same target.**
-- Next independent work: classify live app target privately; confirm correct off-host encrypted backup and isolated PG18 restoration; reviewed migration order and OIDC/tenant test host under zero new spend. No host deployment or production writes authorized.
+Single trained human operator (no paid platform required) must classify inbound account requests and incidents, issue a reference, verify identity via proportionate means, apply the correct local response deadline, locate processor-held records, execute or escalate lawful correction/withdrawal/deletion, record legal-hold exceptions and completion, and notify the requester securely. Do **not** claim this route is verified before hosted test receipts exist. Send no account-specific requests to a public inquiry route without updating consent disclosures and proving correct separation and routing.
 
-## Approval record (intentionally unsigned)
-Privacy notice: PENDING OWNER REVIEW.
-Terms: PENDING OWNER REVIEW.
-Retention policy: PENDING.
-Privacy-rights request path: PENDING TECHNICAL VERIFICATION.
-Independent counsel: REQUIRED.
-Version binding + hosted regression: BLOCKED.
-Global STOP: ENGAGED.
-Production publication / payment / outreach / live registration: NOT AUTHORIZED.
+## Acceptance dispositions
 
-**Owner may approve only after editing the open decisions and independent review. No checkbox or automated CI result substitutes for signed approval.**
+- **Documentation content:** source-revised candidate, accurate about current limits; **not effective/published**, no closed documentation acceptance yet.
+- **Generic counsel gate:** **REMOVED as an internal procedural prerequisite** by owner's directive. The conditional market-specific law matrix replaces it.
+- **Legal compliance:** **not universally certified**; identified statutory obligations must be met before exposing a covered market.
+- **Technical registration:** **BLOCKED for hosted acceptance** (no isolated verified API/DB/Auth, migrations, current recoverable backup, protected end-to-end testing).
+- **Global STOP / registration flag:** still **OFF** until separate verified production release approval.
+- **Issue #401:** remains OPEN until all full acceptance criteria pass.
+
+This document is an accurate engineering/decision artifact, not an executed owner signature or a production publication order.
