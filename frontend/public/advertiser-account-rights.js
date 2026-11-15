@@ -40,7 +40,7 @@
       ]);
       const config = configRes.ok ? await configRes.json() : null;
       session = sessionRes.ok ? await sessionRes.json() : null;
-      enabled = config?.advertiserRegistrationEnabled === true && session?.isAuthenticated === true
+      enabled = config?.advertiserPrivacyRequestsEnabled === true && session?.isAuthenticated === true
         && typeof session?.csrfToken === "string" && session.csrfToken.length > 0;
       submit.disabled = !enabled;
       status.textContent = enabled
