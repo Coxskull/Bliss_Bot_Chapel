@@ -20,7 +20,7 @@ public static class AdvertiserRegistrationBoundary
             return false;
         // Applicant privacy request intake and own receipts are explicitly scoped.
         // This does not grant access to other advertiser APIs or any workspace.
-        if (HttpMethods.IsGet(context.Request.Method)
+        if (options.AdvertiserPrivacyRequestsRequested && HttpMethods.IsGet(context.Request.Method)
             && path.Equals("/api/advertisers/privacy-requests", StringComparison.OrdinalIgnoreCase))
             return false;
         if (HttpMethods.IsPost(context.Request.Method)
