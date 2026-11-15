@@ -13,6 +13,10 @@ The owner stated **“i approved all proceed”** on November 15, 2026. Record t
 2. **No paid outside counsel** — settled. Remove any routine "independent counsel required" stage from Task #3B acceptance. This does not override a law that requires a particular action, representative, language, consent model, regulator notice or data-protection safeguard.
 3. **Non-production repair authorization granted**; zero new software purchases, no new paid outside services, global STOP maintained, no unauthorized production registration, payment or outreach. $300/month incremental ceiling remains; no spending authorization follows from that maximum.
 
+## Provider cost-control result (2026-11-15)
+
+The connected Supabase organization returned a **development-branch quote of USD $0.01344 per hour**. The provider rejected branch creation without an explicit cost-confirmation identifier. That identifier requires separately informed agreement to the quoted recurring rate; a blanket directive to proceed is not an indication that a particular newly disclosed charge was accepted. **No development branch was provisioned and no additional Supabase charges were initiated by this work.** Railway `bliss-bot` still exposes production only. Existing Factory and DR362 recovery infrastructure are not acceptable substitutes for independent Bliss advertiser staging.
+
 ## Documentation now available on PR #423
 
 - `ADVERTISER_REGISTRATION_PRIVACY_NOTICE.md`: source-grounded data categories, role/recipient uncertainty, purpose-by-purpose basis, retention criteria, limitations of immutable receipts and honest rights-route status.
