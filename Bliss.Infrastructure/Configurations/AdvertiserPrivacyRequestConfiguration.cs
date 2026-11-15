@@ -20,6 +20,8 @@ public sealed class AdvertiserPrivacyRequestConfiguration : IEntityTypeConfigura
         builder.Property(x => x.RequestType).IsRequired().HasMaxLength(32);
         builder.Property(x => x.Status).IsRequired().HasMaxLength(16).HasDefaultValue("RECEIVED");
         builder.Property(x => x.CreatedAt).IsRequired();
+        builder.Property(x => x.AcknowledgedBySubject).HasMaxLength(255);
+        builder.Property(x => x.AcknowledgedAt);
         builder.HasIndex(x => x.RequestKey).IsUnique();
         builder.HasIndex(x => new { x.Subject, x.CreatedAt });
         builder.HasOne(x => x.Advertiser).WithMany().HasForeignKey(x => x.AdvertiserId)
