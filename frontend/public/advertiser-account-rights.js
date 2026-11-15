@@ -62,7 +62,7 @@
     try {
       const res = await fetch(endpoint, {
         method: "POST", credentials: "same-origin",
-        headers: { "Content-Type": "application/json", "RequestVerificationToken": session.csrfToken },
+        headers: { "Content-Type": "application/json", "X-CSRF-TOKEN": session.csrfToken },
         body: JSON.stringify({ requestKey, requestType: form.elements.requestType.value })
       });
       const payload = await res.json().catch(() => ({}));
