@@ -17,6 +17,15 @@ for(const necessary of [
 assert.doesNotMatch(retention,/DELETE FROM alpha_support_private\.manual_mail_cases/i);
 assert.doesNotMatch(retention,/DROP\s+TRIGGER/i);
 
+// An empty development branch must replay schema with NO production Auth user
+// and NO enabled staff grant. The live RPC still denies every ungranted actor.
+const grants=readFileSync(new URL("./task21/production-locked-single-operator-20261112.sql",import.meta.url),"utf8");
+assert.doesNotMatch(ddl,/SELECT count\(\*\) FROM alpha_support_private\.manual_operator_grants WHERE enabled=true/i);
+assert.match(grants,/CREATE FUNCTION public\.alpha_support_manual_operator_authorized\(p_actor_user_id uuid\)/);
+assert.match(grants,/JOIN auth\.users u ON u\.id=g\.user_id/);
+assert.match(grants,/g\.role='GENERAL_SUPPORT'[\s\S]*?g\.enabled=true/);
+assert.match(ddl,/public\.alpha_support_manual_operator_authorized\(p_actor_user_id\)/);
+assert.doesNotMatch(ddl,/\bINSERT\s+INTO\s+(?:auth\.users|alpha_support_private\.manual_operator_grants)\b/i);
 const edge=readFileSync(new URL("../supabase/functions/alpha-public-intake/index.ts",import.meta.url),"utf8");
 for(const key of [
  "TASK21_PRIVACY_FORM_PRIVATE_QUEUE_GATE_FAILED",
