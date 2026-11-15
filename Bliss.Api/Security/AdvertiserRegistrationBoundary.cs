@@ -26,7 +26,8 @@ public static class AdvertiserRegistrationBoundary
         if (HttpMethods.IsPost(context.Request.Method)
             && (path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase)
                 || path.Equals("/api/advertisers/register", StringComparison.OrdinalIgnoreCase)
-                || path.Equals("/api/advertisers/privacy-requests", StringComparison.OrdinalIgnoreCase)))
+                || (options.AdvertiserPrivacyRequestsRequested
+                    && path.Equals("/api/advertisers/privacy-requests", StringComparison.OrdinalIgnoreCase))))
             return false;
         return true;
     }
