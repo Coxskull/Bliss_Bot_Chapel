@@ -14,5 +14,7 @@ public sealed class AdvertiserPrivacyRequest
     public string RequestType { get; set; } = string.Empty;
     public string Status { get; set; } = "RECEIVED";
     public DateTime CreatedAt { get; set; }
+    public string? AcknowledgedBySubject { get; set; }
+    public DateTime? AcknowledgedAt { get; set; }
     public Advertiser Advertiser { get; set; } = null!;
 }
