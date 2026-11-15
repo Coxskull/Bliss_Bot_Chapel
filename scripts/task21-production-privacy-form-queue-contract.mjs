@@ -17,6 +17,19 @@ for(const necessary of [
 assert.doesNotMatch(retention,/DELETE FROM alpha_support_private\.manual_mail_cases/i);
 assert.doesNotMatch(retention,/DROP\s+TRIGGER/i);
 
+// Regression for no-data Supabase development branches. The prior schema gate
+// required an enabled operator row before installing tables, although the row
+// requires a pre-existing Auth user and Supabase branches deliberately copy none.
+// Do not relax the production populated-Auth rule or the runtime staff grant.
+const operatorDdl=readFileSync(new URL("./task21/production-locked-single-operator-20261112.sql",import.meta.url),"utf8");
+const prereq=ddl.split("END $task21_pre$;")[0];
+assert.match(prereq,/enabled=true\)>1/,"Multiple enabled staff operators must still block installation");
+assert.match(prereq,/EXISTS\s*\(SELECT 1 FROM auth\.users\)/,"Only empty-Auth branches can install without a grant");
+assert.match(prereq,/enabled=true\)<>1/,"Any populated-Auth DB must still have exactly one enabled operator");
+assert.match(operatorDdl,/JOIN auth\.users u ON u\.id=g\.user_id/,"Authorization needs a real Auth identity");
+assert.match(operatorDdl,/g\.enabled=true/,"Authorization must still require explicit enabled operator grant");
+assert.doesNotMatch(ddl,/INSERT\s+INTO\s+(?:auth\.users|alpha_support_private\.manual_operator_grants)/i,"Never seed privileged staff in schema migrations");
+
 const edge=readFileSync(new URL("../supabase/functions/alpha-public-intake/index.ts",import.meta.url),"utf8");
 for(const key of [
  "TASK21_PRIVACY_FORM_PRIVATE_QUEUE_GATE_FAILED",
