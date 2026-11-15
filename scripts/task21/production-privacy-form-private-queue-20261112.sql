@@ -1,6 +1,10 @@
 -- ALPHA Task #21 — production real-privacy-form to private staff queue.
 -- Additive only: no change to public intake constraints, existing advertiser
 -- or creator flow, existing mail cases, CRM, Ask Alpha, payments or STOP.
+-- No operator grant is required to install this schema on an empty branch.
+-- Queue and claim RPCs still use the existing alpha_support_manual_operator_authorized
+-- runtime gate (verified Auth user + single owner-authorized active grant);
+-- zero enabled grants means NO staff access, not an implicit bootstrap actor.
 -- Source of truth is existing consented privacy form; never copy its personal
 -- name, email, description, country, or marketing preference into staff queue.
 DO $task21_pre$
@@ -11,7 +15,6 @@ BEGIN
     OR to_regclass('alpha_support_private.manual_operator_claims') IS NULL
     OR to_regclass('alpha_support_private.manual_privacy_form_cases') IS NOT NULL
     OR (SELECT count(*) FROM public.alpha_public_intake_requests WHERE kind='privacy')<>0
-    OR (SELECT count(*) FROM alpha_support_private.manual_operator_grants WHERE enabled=true)<>1
  THEN RAISE EXCEPTION 'TASK21_PRIVACY_FORM_PRIVATE_QUEUE_GATE_FAILED'; END IF;
 END $task21_pre$;
 
