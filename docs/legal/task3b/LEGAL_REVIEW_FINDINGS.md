@@ -30,3 +30,6 @@
 ## 2026-11-15 directive implementation
 
 Owner has settled international orientation and rejected paid outside counsel. L07/L13 now require law-specific applicability verification instead of a generic counsel sign-off. The source privacy-request misrouting claim is removed on PR #349 with a new regression test, but actual account rights routing remains an independently demonstrable release dependency. The documentation candidate on PR #423 has not been published or bound to a hosted registration API. Global STOP remains engaged.
+
+## 2026-11-15 source continuation (PR #424; not published)
+Draft [PR #424](https://github.com/Coxskull/Bliss_Bot_Chapel/pull/424) adds a minimal authenticated account-specific request intake and a staff-allowlisted case ACK source candidate. It is **not** evidence of a working deployed customer rights channel, final human resolution, deletion/erasure, processor cleanup or marketing suppression. An ACK moves a case to identity verification, not completion. All cases and UI remain in preview/source, and exact-head tests and hosted acceptance must be checked before claims change. Do not treat the public inquiry form as an account data subject request route.
