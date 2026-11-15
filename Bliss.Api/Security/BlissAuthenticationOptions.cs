@@ -38,6 +38,9 @@ public sealed class BlissAuthenticationOptions
     // Verified Supabase identities with no trusted roles may enter only the
     // registration endpoint while this is explicitly enabled. It is OFF by default.
     public bool AdvertiserRegistrationRequested { get; set; }
+    // Explicit single-operator or small staff allowlist for pending privacy cases.
+    // Empty by default: operator queues and ACK are inaccessible until verified.
+    public string[] ApprovedPrivacyOperatorSubjects { get; set; } = [];
     public const string AdvertiserRegistrationPendingMarkerClaimType = "bliss_advertiser_registration_pending";
 
     // Requires explicit issuer configuration; defaults cannot enable visitor
