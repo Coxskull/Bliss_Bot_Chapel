@@ -162,7 +162,8 @@ public sealed class AdvertiserPrivacyRequestsController(BlissDbContext db, Bliss
 
     private async Task<AdvertiserAccountMembership?> ResolveMembershipAsync(CancellationToken cancellationToken)
     {
-        if (!auth.Enabled || !auth.SupabaseEnabled || User.Identity?.IsAuthenticated != true)
+        if (!auth.Enabled || !auth.SupabaseEnabled || !auth.AdvertiserPrivacyRequestsRequested
+            || User.Identity?.IsAuthenticated != true)
             return null;
         var subjects = User.FindAll("sub").ToArray();
         if (subjects.Length != 1 || subjects[0].Type != "sub" || string.IsNullOrWhiteSpace(subjects[0].Value))
