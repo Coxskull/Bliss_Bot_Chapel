@@ -74,6 +74,16 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertIn("limited to public-interest submissions", self.privacy)
         self.assertIn("not</strong> a verified account-registration privacy request channel", self.privacy)
 
+    def test_registration_csrf_header_matches_api(self):
+        # A JSON POST cannot rely on the framework's hidden HTML form token.
+        # A mismatch here previously rejected valid browser registrations.
+        program = (ROOT / "Bliss.Api" / "Program.cs").read_text(encoding="utf-8")
+        configured = re.search(r'options\\.HeaderName\\s*=\\s*"([^"]+)"', program)
+        self.assertIsNotNone(configured, "API antiforgery header")
+        self.assertEqual("X-CSRF-TOKEN", configured.group(1))
+        self.assertIn(f'"{configured.group(1)}": session.csrfToken', self.js)
+        self.assertNotIn('"RequestVerificationToken": session.csrfToken', self.js)
+
     def test_marketing_is_optional_and_not_preselected(self):
         marketing = [x for x in self.parsed.inputs if x.get("id") == "marketing-consent"]
         self.assertEqual(1, len(marketing))
