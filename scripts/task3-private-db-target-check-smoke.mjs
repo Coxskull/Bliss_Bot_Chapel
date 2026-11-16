@@ -32,6 +32,12 @@ classify(
   "quoted delimiter and Railway internal target"
 );
 classify(
+  "Host=postgres.railway.internal;Database=railway;Username=test;Password=never-print-this",
+  { ok: true, lines: ["TASK3_DB_IDENTITY=CLASSIFIED", "TASK3_HOST_CLASS=RAILWAY_INTERNAL", "TASK3_DATABASE_CLASS=RAILWAY", "TASK3_NO_DATABASE_WRITES=PASS", "TASK3_SCHEMA_AND_BACKUP_ACCEPTANCE=NOT_ESTABLISHED"] },
+  "documented Railway private Postgres name"
+);
+
+classify(
   "Host=db.bkutbglzivfdnoerigyb.supabase.co;Database=postgres;Username=test;Password=never-print-this",
   { ok: true, lines: ["TASK3_HOST_CLASS=BLISS_SUPABASE_DIRECT", "TASK3_DATABASE_CLASS=POSTGRES"] },
   "known Bliss Supabase target"
@@ -72,4 +78,4 @@ classify(
   "unterminated quoted value"
 );
 
-console.log("Task3 private DB target classifier: 9/9 synthetic fixtures PASS");
+console.log("Task3 private DB target classifier: 10/10 synthetic fixtures PASS");
