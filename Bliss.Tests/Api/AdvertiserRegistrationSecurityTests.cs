@@ -228,6 +228,20 @@ public sealed class AdvertiserRegistrationSecurityTests
             await using var db = new BlissDbContext(dbOptions);
             await db.Database.MigrateAsync();
 
+            // The actual disposable PostgreSQL migration must enable RLS on
+            // account memberships and consent receipts, not merely revoke
+            // current anonymous grants. No client-scoped row policy is added.
+            await using (var securityConnection = new NpgsqlConnection(tenantBuilder.ConnectionString))
+            {
+                await securityConnection.OpenAsync();
+                await using var securityCheck = new NpgsqlCommand(
+                    "SELECT COUNT(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace " +
+                    "WHERE n.nspname = @schema AND c.relname IN ('AdvertiserAccountMemberships', 'AdvertiserRegistrationReceipts') " +
+                    "AND c.relrowsecurity AND NOT c.relforcerowsecurity", securityConnection);
+                securityCheck.Parameters.AddWithValue("schema", schema);
+                Assert.Equal(2L, (long)(await securityCheck.ExecuteScalarAsync())!);
+            }
+
             var request = new AdvertiserRegistrationRequest(Guid.NewGuid(), "Synthetic Northwind Studio", "PH",
                 "https://example.invalid", true, true, false,
                 AdvertiserRegistrationController.PrivacyNoticeVersion, AdvertiserRegistrationController.TermsVersion);
