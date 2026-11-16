@@ -44,10 +44,13 @@ async function mount({ configOk = true, sessionOk = true, historyOk = true, post
         if (postMode === "conflict") return response(false, {}, 409);
         const receipt = {
           caseId: "11111111-1111-4111-8111-111111111111",
+          requestKey: payload.requestKey,
           requestType: "ACCESS", status: "RECEIVED",
           createdAt: "2026-11-16T03:00:00Z"
         };
         if (postMode === "missing") return response(true, {}, 201);
+        if (postMode === "unrelated-key") return response(true, { ...receipt, requestKey: "99999999-9999-4999-8999-999999999999" }, 201);
+        if (postMode === "missing-key") return response(true, { ...receipt, requestKey: undefined }, 201);
         if (postMode === "wrong-type") return response(true, { ...receipt, requestType: "ERASURE" }, 201);
         if (postMode === "wrong-status") return response(true, { ...receipt, status: "COMPLETED" }, 201);
         if (postMode === "bad-date") return response(true, { ...receipt, createdAt: "not-a-date" }, 201);
@@ -118,7 +121,7 @@ assert.equal(replay.resetCount, 1, "verified 200 idempotent replay is accepted")
 assert.notEqual(replay.storedKey, replay.initialKey);
 assert.match(replay.status.textContent, /Request VERIFYING/);
 
-for (const postMode of ["missing", "wrong-type", "wrong-status", "bad-date", "bad-id", "unexpected", "network-error"]) {
+for (const postMode of ["missing", "unrelated-key", "missing-key", "wrong-type", "wrong-status", "bad-date", "bad-id", "unexpected", "network-error"]) {
   const client = await mount({ postMode });
   await client.send();
   assert.equal(client.postCount, 1, postMode + ": no automatic extra POST");
