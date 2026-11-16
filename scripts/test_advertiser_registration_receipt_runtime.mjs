@@ -65,13 +65,20 @@ async function scenario(mode, { enabled = true, authenticated = true } = {}) {
     if (mode === "network-error") throw Error("synthetic interrupted transport");
     const valid = {
       status: "PENDING_REVIEW", receiptId: uuid(100),
-      advertiserId: uuid(101), marketingOptIn: false
+      advertiserId: uuid(101), marketingOptIn: false,
+      requestKey: payload.requestKey,
+      privacyNoticeVersion: payload.privacyNoticeVersion,
+      termsVersion: payload.termsVersion
     };
     const responses = {
       accepted: { status: 201, body: valid },
       replay: { status: 200, body: valid },
       missing: { status: 201, body: {} },
       mismatch: { status: 201, body: { ...valid, marketingOptIn: true } },
+      unrelated: { status: 201, body: { ...valid, requestKey: uuid(999) } },
+      missingbinding: { status: 201, body: { ...valid, requestKey: undefined } },
+      wrongnotice: { status: 201, body: { ...valid, privacyNoticeVersion: "unapproved-notice" } },
+      wrongterms: { status: 200, body: { ...valid, termsVersion: "unapproved-terms" } },
       unexpected: { status: 202, body: valid },
       conflict: { status: 409, body: {} }
     };
@@ -120,7 +127,7 @@ for (const mode of ["accepted", "replay"]) {
   assert.match(client.outputs.registration.textContent, /PENDING_REVIEW/);
 }
 
-for (const mode of ["missing", "mismatch", "unexpected", "network-error", "conflict"]) {
+for (const mode of ["missing", "mismatch", "unrelated", "missingbinding", "wrongnotice", "wrongterms", "unexpected", "network-error", "conflict"]) {
   const client = await scenario(mode);
   await client.send();
   assert.equal(client.requestCount, 1, mode);
@@ -135,4 +142,4 @@ for (const mode of [{ enabled: false }, { authenticated: false }]) {
   assert.equal(client.requestCount, 0, "disabled or unauthenticated accounts cannot POST");
 }
 console.log("TASK3B_REGISTRATION_VALID_RECEIPT_AND_IDEMPOTENCY_PASS");
-console.log("TASK3B_REGISTRATION_MALFORMED_RECEIPT_AND_AUTH_DENIED_PASS");
+console.log("TASK3B_REGISTRATION_REQUEST_BOUND_RECEIPT_AND_AUTH_DENIED_PASS");
