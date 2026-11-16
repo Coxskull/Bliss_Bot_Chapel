@@ -7,10 +7,12 @@ public static class BlissAuthorization
     public const string WritePolicy = "BlissWrite";
     public const string ReviewPolicy = "BlissReview";
 
-    public static bool IsPendingAdvertiserRegistration(ClaimsPrincipal user, BlissAuthenticationOptions options)
+    // An issuer-stamped pending-applicant cookie may outlive the enrollment
+    // feature flag. Recognize it independently of that flag so closing signup
+    // never restores access to legacy generic authenticated marketplace APIs.
+    public static bool IsPendingAdvertiserIdentity(ClaimsPrincipal user, BlissAuthenticationOptions options)
     {
-        if (!options.Enabled || !options.SupabaseEnabled || !options.AdvertiserRegistrationRequested
-            || user.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(options.Authority))
+        if (user.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(options.Authority))
             return false;
         var markers = user.Claims.Where(c => string.Equals(c.Type,
             BlissAuthenticationOptions.AdvertiserRegistrationPendingMarkerClaimType,
@@ -35,6 +37,11 @@ public static class BlissAuthorization
                 || string.Equals(c.Type, options.CreatorIdClaimType, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(c.Type, options.ReviewerWorkspaceClaimType, StringComparison.OrdinalIgnoreCase));
     }
+
+    // Authorization to create a NEW registration remains separately fail-closed.
+    public static bool IsPendingAdvertiserRegistration(ClaimsPrincipal user, BlissAuthenticationOptions options) =>
+        options.Enabled && options.SupabaseEnabled && options.AdvertiserRegistrationRequested
+        && IsPendingAdvertiserIdentity(user, options);
 
     public static bool CanWrite(ClaimsPrincipal user, BlissAuthenticationOptions options) =>
         !options.Enabled
