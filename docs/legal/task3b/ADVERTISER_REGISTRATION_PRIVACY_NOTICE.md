@@ -4,7 +4,7 @@
 **Reviewed:** 2026-11-15. **Status:** unpublished non-production documentation. Do not present as a live notice.
 **Candidate ID:** `advertiser-privacy-2026-11-14-review-v2`. **Current UI/API/receipt ID:** `advertiser-privacy-2026-11-07-v1`.
 **Effective date:** not set. A published, effective version must match browser, server and receipt exactly before any authorized registration.
-**Controller contact:** existing `/contact.html` identifies public inquiry channels ONLY. A verified account-privacy request channel and company contact details have not yet been established.
+**Owner-designated controller privacy contact (2026-11-16):** `alpha7auto@gmail.com` for ALPHA GLOBAL MEDIA LLC. This address is approved for the eventual advertiser-account privacy notice; actual mailbox delivery, monitoring, identity-verified case handling and response outcomes have **not yet** been independently accepted. Existing `/contact.html` and `/privacy-request.html` remain public-inquiry-only routes.
 
 ## 1. Scope and lawful processing
 
@@ -39,7 +39,7 @@ Before publication, ALPHA must fill in **the actual retention periods or objecti
 
 Subject to applicable law, applicants can request information, access, correction, deletion/restriction, objection, portability and withdrawal of optional marketing choice where the right applies. The operational procedure to implement is: receive request in a clearly labeled account channel; record case/reference and receipt time; verify identity proportionately without asking for passwords or payment credentials; classify jurisdiction and request type; locate the relevant Auth/profile/receipt/provider records; apply lawful retention exceptions; safely fulfill or explain the result within the applicable legal deadline; record evidence of resolution and securely communicate outcome.
 
-**Current implementation exception:** `/privacy-request.html` explicitly handles **public interest form submissions only**, and `/contact.html` lists public inquiries rather than a verified account-specific case queue. Neither may be represented as accepted account privacy-request processing. The frontend source must not link to the inquiry-only request form as an account-rights solution. No account rights or support response SLA is currently proven.
+**Current implementation exception:** ALPHA has designated `alpha7auto@gmail.com` as its advertiser-account privacy contact, but authenticated intake, monitored email acknowledgment and final resolution have not yet passed hosted acceptance. `/privacy-request.html` explicitly handles **public interest form submissions only**, and `/contact.html` lists public inquiries rather than a verified account-specific case queue. Neither may be represented as accepted account privacy-request processing. The frontend source must not link to the inquiry-only request form as an account-rights solution. No account rights or support response SLA is currently proven.
 
 ## 5. Security and international processing
 
