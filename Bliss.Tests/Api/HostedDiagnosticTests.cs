@@ -23,6 +23,30 @@ public sealed class HostedDiagnosticTests
         Assert.DoesNotContain(configuration.Length > 0 ? configuration : "Password", evidence);
     }
 
+    [Theory]
+    [InlineData(true, false, 0, "schema_not_initialized", true, false, false)]
+    [InlineData(true, false, 3, "migration_history_missing", true, false, false)]
+    [InlineData(true, true, 0, "public_tables_missing", true, false, false)]
+    [InlineData(true, true, 3, "", true, true, true)]
+    [InlineData(false, true, 3, "tls_not_active", false, true, false)]
+    public void Catalog_result_distinguishes_verified_transport_from_minimum_schema_metadata(
+        bool tls, bool history, long publicTables, string expectedCode,
+        bool expectedTransport, bool expectedCatalog, bool expectedSuccess)
+    {
+        var result = HostedDatabaseDiagnosticResult.FromReadOnlyCatalog(tls, history, publicTables);
+        Assert.True(result.Connected);
+        Assert.Equal(tls, result.TlsVerified);
+        Assert.Equal(expectedCode, result.ErrorCode);
+        Assert.Equal(expectedTransport, result.ConnectionVerified);
+        Assert.Equal(expectedCatalog, result.CatalogMetadataPresent);
+        Assert.Equal(expectedSuccess, result.Success);
+
+        // An empty database must fail closed even if a caller accidentally
+        // supplies the historical blank ErrorCode with verified TLS.
+        if (tls && !history && publicTables == 0)
+            Assert.False(new HostedDatabaseDiagnosticResult(true, true, false, 0, "").Success);
+    }
+
     [Fact]
     public void Ingress_observation_uses_transport_peer_and_ignores_forged_identity_headers()
     {
