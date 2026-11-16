@@ -250,7 +250,16 @@ internal sealed class Task3bHttpPostgresDatabase : IAsyncDisposable
     public static Task3bHttpPostgresDatabase? TryCreate()
     {
         var source = Environment.GetEnvironmentVariable("BLISS_TEST_POSTGRES_CONNECTION");
-        if (string.IsNullOrWhiteSpace(source)) return null;
+        // The dedicated PG18 registration/rights acceptance job must never
+        // silently fall back to EF InMemory. Local no-Postgres source tests
+        // retain their existing lightweight behavior.
+        var requirePg18 = Environment.GetEnvironmentVariable("TASK3B_REQUIRE_PG18") == "1";
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            if (requirePg18)
+                throw new InvalidOperationException("TASK3B_PG18_RELATIONAL_TARGET_REQUIRED");
+            return null;
+        }
         var builder = new NpgsqlConnectionStringBuilder(source);
         if (!string.Equals(builder.Host, "localhost", StringComparison.OrdinalIgnoreCase)
             && builder.Host != "127.0.0.1" && builder.Host != "::1")
@@ -260,6 +269,15 @@ internal sealed class Task3bHttpPostgresDatabase : IAsyncDisposable
         using (var admin = new NpgsqlConnection(builder.ConnectionString))
         {
             admin.Open();
+            if (requirePg18)
+            {
+                using var major = new NpgsqlCommand("SHOW server_version_num", admin);
+                var version = int.Parse((string)(major.ExecuteScalar()
+                    ?? throw new InvalidOperationException("TASK3B_PG18_VERSION_UNAVAILABLE")),
+                    System.Globalization.CultureInfo.InvariantCulture);
+                if (version < 180000 || version >= 190000)
+                    throw new InvalidOperationException("TASK3B_PG18_VERSION_MISMATCH");
+            }
             using var create = new NpgsqlCommand($"CREATE DATABASE \"{name}\"", admin);
             create.ExecuteNonQuery();
         }
