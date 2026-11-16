@@ -77,6 +77,10 @@
       if ((response.status !== 200 && response.status !== 201)
           || body.status !== "PENDING_REVIEW"
           || !isUuid(body.receiptId) || !isUuid(body.advertiserId)
+          || !isUuid(body.requestKey)
+          || body.requestKey.toLowerCase() !== payload.requestKey.toLowerCase()
+          || body.privacyNoticeVersion !== payload.privacyNoticeVersion
+          || body.termsVersion !== payload.termsVersion
           || body.marketingOptIn !== payload.marketingOptIn) {
         throw new Error("Registration receipt could not be verified. Keep this form and retry only with the same request key; do not create a second registration.");
       }
