@@ -7,6 +7,7 @@ on:
       - 'scripts/task21/production-real-incident-alert-outbox-20261112.sql'
       - 'scripts/task21-production-incident-outbox-contract.mjs'
       - 'scripts/task21/fixtures/**'
+      - 'scripts/task3b/**'
       - 'scripts/task21-production-privacy-form-queue-contract.mjs'
       - '.github/workflows/task21-private-privacy-form-queue.yml'
 permissions:
@@ -42,6 +43,7 @@ jobs:
         run: |
           node scripts/task21-production-privacy-form-queue-contract.mjs
           node scripts/task21-production-incident-outbox-contract.mjs
+          node scripts/task3b/supabase-managed-migration-custody-check.mjs
       - name: Rehearse five actual Task21 migrations (cron job stub is test-only) on empty Auth-backed PostgreSQL
         env:
           DISPOSABLE_PG_CONTAINER: ${{ job.services.postgres.id }}
