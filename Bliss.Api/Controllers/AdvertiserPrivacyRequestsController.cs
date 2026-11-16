@@ -137,7 +137,9 @@ public sealed class AdvertiserPrivacyRequestsController(BlissDbContext db, Bliss
         if (!auth.Enabled || !auth.SupabaseEnabled || !auth.AdvertiserPrivacyRequestsRequested
             || User.Identity?.IsAuthenticated != true
             || string.IsNullOrWhiteSpace(auth.Authority) || string.IsNullOrWhiteSpace(auth.RoleClaimType)
-            || BlissAuthorization.IsPendingAdvertiserRegistration(User, auth))
+            || User.Claims.Any(claim => string.Equals(claim.Type,
+                BlissAuthenticationOptions.AdvertiserRegistrationPendingMarkerClaimType,
+                StringComparison.OrdinalIgnoreCase)))
             return false;
         var subjects = User.Claims.Where(c => string.Equals(c.Type, "sub", StringComparison.OrdinalIgnoreCase)).ToArray();
         if (subjects.Length != 1 || subjects[0].Type != "sub"
@@ -170,7 +172,7 @@ public sealed class AdvertiserPrivacyRequestsController(BlissDbContext db, Bliss
         if (subjects.Length != 1 || subjects[0].Type != "sub" || string.IsNullOrWhiteSpace(subjects[0].Value))
             return null;
 
-        var pending = BlissAuthorization.IsPendingAdvertiserRegistration(User, auth);
+        var pending = BlissAuthorization.IsPendingAdvertiserIdentity(User, auth);
         var approved = BlissAuthorization.TryResolveVerifiedAdvertiserId(User, auth, out var advertiserId);
         if (!pending && !approved) return null;
 
