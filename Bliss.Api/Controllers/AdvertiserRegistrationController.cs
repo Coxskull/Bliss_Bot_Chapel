@@ -105,12 +105,14 @@ public sealed class AdvertiserRegistrationController(BlissDbContext db, BlissAut
         }
 
         return StatusCode(StatusCodes.Status201Created, new AdvertiserRegistrationReceiptDto(
-            receipt.Id, advertiser.Id, "PENDING_REVIEW", receipt.CreatedAt, receipt.MarketingOptIn));
+            receipt.Id, advertiser.Id, "PENDING_REVIEW", receipt.CreatedAt, receipt.MarketingOptIn,
+            receipt.RequestKey, receipt.PrivacyNoticeVersion, receipt.TermsVersion));
     }
 
     private IActionResult ReplayOrConflict(AdvertiserRegistrationReceipt prior, string subject, string digest) =>
         prior.Subject == subject && prior.RequestSha256 == digest
-            ? Ok(new AdvertiserRegistrationReceiptDto(prior.Id, prior.AdvertiserId, "PENDING_REVIEW", prior.CreatedAt, prior.MarketingOptIn))
+            ? Ok(new AdvertiserRegistrationReceiptDto(prior.Id, prior.AdvertiserId, "PENDING_REVIEW", prior.CreatedAt, prior.MarketingOptIn,
+                prior.RequestKey, prior.PrivacyNoticeVersion, prior.TermsVersion))
             : Conflict(new { error = "Registration key was already used with different or unauthorized content." });
 }
 
@@ -126,4 +128,5 @@ public sealed record AdvertiserRegistrationRequest(
     string TermsVersion);
 
 public sealed record AdvertiserRegistrationReceiptDto(
-    Guid ReceiptId, Guid AdvertiserId, string Status, DateTime CreatedAt, bool MarketingOptIn);
+    Guid ReceiptId, Guid AdvertiserId, string Status, DateTime CreatedAt, bool MarketingOptIn,
+    Guid RequestKey, string PrivacyNoticeVersion, string TermsVersion);
