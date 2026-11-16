@@ -243,6 +243,67 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
     }
 
     [Fact]
+    public async Task Http_signup_shutdown_preserves_existing_pending_own_rights_but_denies_new_registration_and_other_APIs()
+    {
+        // Production feature flags can change while a signed pending cookie
+        // remains valid. Fake identity only; no remote Auth, CRM or user data.
+        await using var isolated = Task3bHttpPostgresDatabase.TryCreate();
+        await using var factory = new AdvertiserPrivacyHttpFactory(
+            postgresConnectionString: isolated?.ConnectionString, registrationEnabled: false);
+        const string applicantSubject = "fixture-a";
+        var advertiserId = Guid.NewGuid();
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+            db.Advertisers.Add(new Advertiser
+            {
+                Id = advertiserId, Name = "Fictional Rights Continuity",
+                CountryCode = "PH", CreatedAt = DateTime.UtcNow
+            });
+            db.AdvertiserAccountMemberships.Add(new AdvertiserAccountMembership
+            {
+                Id = Guid.NewGuid(), AdvertiserId = advertiserId,
+                Subject = applicantSubject, Status = "PENDING_REVIEW",
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+
+        using var applicant = IdentityClient(factory, applicantSubject);
+        applicant.DefaultRequestHeaders.Add("X-CSRF-TOKEN", await Csrf(applicant));
+        using var blockedLegacy = await applicant.GetAsync("/api/creators");
+        Assert.Equal(HttpStatusCode.Forbidden, blockedLegacy.StatusCode);
+        using var blockedRegistration = await applicant.PostAsJsonAsync("/api/advertisers/register",
+            new { requestKey = Guid.NewGuid(), businessName = "Should not create",
+                  countryCode = "PH", processingConsent = true, termsAccepted = true,
+                  marketingOptIn = false,
+                  privacyNoticeVersion = AdvertiserRegistrationController.PrivacyNoticeVersion,
+                  termsVersion = AdvertiserRegistrationController.TermsVersion });
+        Assert.Equal(HttpStatusCode.Forbidden, blockedRegistration.StatusCode);
+        using var caseRead = await applicant.GetAsync(Base);
+        Assert.Equal(HttpStatusCode.OK, caseRead.StatusCode);
+        using var casePost = await applicant.PostAsJsonAsync(Base,
+            new { requestKey = Guid.NewGuid(), requestType = "ACCESS" });
+        Assert.Equal(HttpStatusCode.Created, casePost.StatusCode);
+        using var staff = await applicant.GetAsync(Base + "/operator-queue");
+        Assert.Equal(HttpStatusCode.Forbidden, staff.StatusCode);
+
+        using var unrelated = IdentityClient(factory, "fixture-b");
+        unrelated.DefaultRequestHeaders.Add("X-CSRF-TOKEN", await Csrf(unrelated));
+        using var missingMemberRead = await unrelated.GetAsync(Base);
+        Assert.Equal(HttpStatusCode.Forbidden, missingMemberRead.StatusCode);
+        using var missingMemberWrite = await unrelated.PostAsJsonAsync(Base,
+            new { requestKey = Guid.NewGuid(), requestType = "ACCESS" });
+        Assert.Equal(HttpStatusCode.Forbidden, missingMemberWrite.StatusCode);
+
+        using var scopeAfter = factory.Services.CreateScope();
+        var check = scopeAfter.ServiceProvider.GetRequiredService<BlissDbContext>();
+        Assert.Single(await check.Advertisers.AsNoTracking().ToListAsync());
+        Assert.Empty(await check.AdvertiserRegistrationReceipts.AsNoTracking().ToListAsync());
+        Assert.Single(await check.AdvertiserPrivacyRequests.AsNoTracking().ToListAsync());
+    }
+
+    [Fact]
     public async Task Http_privacy_feature_off_denies_intake_despite_registration_being_enabled()
     {
         await using var factory = new AdvertiserPrivacyHttpFactory(privacyEnabled: false);
@@ -325,7 +386,8 @@ internal sealed class Task3bHttpPostgresDatabase : IAsyncDisposable
 }
 
 internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
-    string? postgresConnectionString = null, int? writePermitLimit = null) : WebApplicationFactory<Program>
+    string? postgresConnectionString = null, int? writePermitLimit = null,
+    bool registrationEnabled = true) : WebApplicationFactory<Program>
 {
     private const string Issuer = "https://identity.example.test";
     private readonly string dbName = "task3b_http_" + Guid.NewGuid().ToString("N");
@@ -337,7 +399,7 @@ internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
         builder.UseSetting("Authentication:SupabaseEnabled", "true");
         builder.UseSetting("Authentication:Authority", Issuer);
         builder.UseSetting("Authentication:ClientId", "synthetic-http-fixture");
-        builder.UseSetting("Authentication:AdvertiserRegistrationRequested", "true");
+        builder.UseSetting("Authentication:AdvertiserRegistrationRequested", registrationEnabled ? "true" : "false");
         builder.UseSetting("Authentication:AdvertiserSelfServiceRequested", "true");
         builder.UseSetting("Authentication:AdvertiserPrivacyRequestsRequested", privacyEnabled ? "true" : "false");
         builder.UseSetting("Authentication:ApprovedAdvertiserSubjects:0", "fixture-a");
