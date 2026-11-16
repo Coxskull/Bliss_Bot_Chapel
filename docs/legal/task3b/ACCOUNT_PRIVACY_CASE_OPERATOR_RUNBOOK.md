@@ -2,7 +2,7 @@
 
 **Directive:** ALPHA-P0-TASK3B-FINAL-RESOLUTION-20261114
 **Authority:** owner authorized continuation of Task #3B on 2026-11-15, including non-production technical and legal completion.
-**Status:** operational draft, NOT a live support commitment or published account privacy channel. The existing single human support operator is the intended accountable handler. Never claim an action or deadline has been met without its receipt.
+**Status:** operational draft, NOT a live support commitment or published account privacy channel. **Owner-designated company privacy contact (2026-11-16):** `alpha7auto@gmail.com`. The existing single human support operator is the intended accountable handler. Verify mailbox access, actual delivery, private case creation, owner/operator acknowledgment, identity verification and response evidence before describing this address as an operationally accepted account privacy queue. Never claim an action or deadline has been met without its receipt.
 
 ## 1. Activation boundary
 
