@@ -86,6 +86,19 @@
         throw new Error("This request key was already used. No new case was created. Review your request and submit again.");
       }
       if (!res.ok) throw new Error("The account request was not accepted. Please verify your sign-in.");
+      // A successful HTTP code alone does not prove that a case was recorded.
+      // A failed or malformed receipt must retain the SAME idempotency key,
+      // including after a possible upstream acceptance or delayed response.
+      const isUuid = value => typeof value === "string"
+        && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+      if ((res.status !== 200 && res.status !== 201)
+          || !isUuid(payload.caseId)
+          || payload.requestType !== form.elements.requestType.value
+          || (payload.status !== "RECEIVED" && payload.status !== "VERIFYING")
+          || typeof payload.createdAt !== "string"
+          || !Number.isFinite(Date.parse(payload.createdAt))) {
+        throw new Error("The privacy request receipt could not be verified. Keep this request and retry with the same request key.");
+      }
       // The POST receipt is authoritative. A later GET/history failure must
       // never turn an accepted privacy request into a "submission failed"
       // message or encourage another request with a newly rotated key.
