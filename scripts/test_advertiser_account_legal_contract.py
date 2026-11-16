@@ -132,7 +132,7 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         controller = (ROOT / "Bliss.Api" / "Controllers" / "AdvertiserPrivacyRequestsController.cs").read_text(encoding="utf-8")
         migration = (ROOT / "Bliss.Infrastructure" / "Migrations" / "20261115110000_AdvertiserPrivacyRequestIntake.cs").read_text(encoding="utf-8")
         self.assertIn('path.Equals("/api/advertisers/privacy-requests"', boundary)
-        self.assertIn("IsPendingAdvertiserRegistration", controller)
+        self.assertIn("IsPendingAdvertiserIdentity", controller)
         self.assertIn("TryResolveVerifiedAdvertiserId", controller)
         self.assertIn("RequestKey", controller)
         self.assertIn("RECEIVED", controller)
