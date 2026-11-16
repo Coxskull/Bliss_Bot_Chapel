@@ -8,7 +8,7 @@ BEGIN
     to_regclass('alpha_support_private.manual_operator_grants') IS NULL OR
     to_regclass('alpha_support_private.production_incident_alerts') IS NOT NULL OR
     (SELECT count(*) FROM alpha_support_private.manual_operator_grants
-     WHERE enabled AND role='GENERAL_SUPPORT') <> 1
+     WHERE enabled AND role='GENERAL_SUPPORT') > 1
  THEN RAISE EXCEPTION 'TASK21_PROD_INCIDENT_OUTBOX_PREREQUISITE_FAILED'; END IF;
 END $gate$;
 
@@ -175,6 +175,13 @@ LANGUAGE sql SECURITY INVOKER SET search_path=pg_catalog AS $claim$
   SELECT q.alert_id
   FROM alpha_support_private.production_incident_alerts q
   WHERE q.state='QUEUED'
+    -- No staffed and verified Auth-backed operator = no incident dispatch.
+    -- This remains enforced at runtime, not at schema-install time.
+    AND (SELECT count(*)
+      FROM alpha_support_private.manual_operator_grants g
+      JOIN auth.users u ON u.id=g.user_id
+      WHERE g.enabled=true AND g.role='GENERAL_SUPPORT'
+        AND g.allowed_origin='https://alphacreativecontent.com')=1
   ORDER BY q.queued_at,q.alert_id
   FOR UPDATE SKIP LOCKED LIMIT 1
  ), changed AS (
