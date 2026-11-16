@@ -65,6 +65,97 @@ public sealed class AdvertiserRegistrationSecurityTests
     }
 
     [Fact]
+    public void Closing_signup_does_not_turn_existing_pending_cookie_into_generic_API_access()
+    {
+        // Existing signed cookies can survive a feature-switch transition.
+        // The identity marker is trusted separately from NEW signup permission.
+        var closed = new BlissAuthenticationOptions
+        {
+            Enabled = true, SupabaseEnabled = true, Authority = Issuer,
+            AdvertiserRegistrationRequested = false,
+            AdvertiserPrivacyRequestsRequested = false
+        };
+        var principal = Pending();
+        Assert.True(BlissAuthorization.IsPendingAdvertiserIdentity(principal, closed));
+        Assert.False(BlissAuthorization.IsPendingAdvertiserRegistration(principal, closed));
+
+        bool denied(BlissAuthenticationOptions settings, string method, string path)
+        {
+            var context = new DefaultHttpContext { User = principal };
+            context.Request.Method = method;
+            context.Request.Path = path;
+            return AdvertiserRegistrationBoundary.ShouldDeny(context, settings);
+        }
+
+        Assert.True(denied(closed, "GET", "/api/creators"));
+        Assert.True(denied(closed, "GET", "/api/advertisers/me"));
+        Assert.True(denied(closed, "POST", "/api/advertisers/register"));
+        Assert.True(denied(closed, "GET", "/api/advertisers/privacy-requests"));
+        Assert.True(denied(closed, "POST", "/api/advertisers/privacy-requests"));
+        Assert.False(denied(closed, "POST", "/api/auth/logout"));
+
+        var privacyOnly = new BlissAuthenticationOptions
+        {
+            Enabled = true, SupabaseEnabled = true, Authority = Issuer,
+            AdvertiserRegistrationRequested = false,
+            AdvertiserPrivacyRequestsRequested = true
+        };
+        Assert.True(BlissAuthorization.IsPendingAdvertiserIdentity(principal, privacyOnly));
+        Assert.False(BlissAuthorization.IsPendingAdvertiserRegistration(principal, privacyOnly));
+        Assert.True(denied(privacyOnly, "POST", "/api/advertisers/register"));
+        Assert.True(denied(privacyOnly, "GET", "/api/creators"));
+        Assert.True(denied(privacyOnly, "GET", "/api/advertisers/privacy-requests/operator-queue"));
+        Assert.True(denied(privacyOnly, "POST", "/api/advertisers/privacy-requests/not-mine/acknowledge"));
+        Assert.False(denied(privacyOnly, "GET", "/api/advertisers/privacy-requests"));
+        Assert.False(denied(privacyOnly, "POST", "/api/advertisers/privacy-requests"));
+        // The controller independently requires a matching DB membership.
+    }
+
+    [Fact]
+    public void Supabase_privacy_only_login_preserves_pending_marker_but_does_not_authorize_new_registration()
+    {
+        var privacyOnly = new BlissAuthenticationOptions
+        {
+            Enabled = true, SupabaseEnabled = true, Authority = Issuer,
+            ClientId = "synthetic-client",
+            AdvertiserRegistrationRequested = false, AdvertiserPrivacyRequestsRequested = true
+        };
+        var id = new ClaimsIdentity(new[]
+        {
+            new Claim("sub", "prior-applicant-123"),
+            new Claim("email_verified", "true")
+        }, "test-oidc");
+        var access = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("sub", "prior-applicant-123"),
+            new Claim("client_id", privacyOnly.ClientId),
+            new Claim("app_metadata", "{}")
+        }, "test-access"));
+
+        SupabaseOidc.ApplyVerifiedAccessToken(id, access, privacyOnly);
+        var principal = new ClaimsPrincipal(id);
+        Assert.True(BlissAuthorization.IsPendingAdvertiserIdentity(principal, privacyOnly));
+        Assert.False(BlissAuthorization.IsPendingAdvertiserRegistration(principal, privacyOnly));
+        Assert.Single(id.FindAll(BlissAuthenticationOptions.AdvertiserRegistrationPendingMarkerClaimType));
+        Assert.Empty(id.Claims.Where(c => c.Type == privacyOnly.RoleClaimType
+            || c.Type == privacyOnly.AdvertiserIdClaimType));
+
+        // No independent privacy enrollment means an unlisted identity is refused.
+        var allOff = new BlissAuthenticationOptions
+        {
+            Enabled = true, SupabaseEnabled = true, Authority = Issuer,
+            ClientId = privacyOnly.ClientId
+        };
+        var fresh = new ClaimsIdentity(new[]
+        {
+            new Claim("sub", "prior-applicant-123"),
+            new Claim("email_verified", "true")
+        }, "test-oidc");
+        Assert.Throws<Microsoft.IdentityModel.Tokens.SecurityTokenValidationException>(
+            () => SupabaseOidc.ApplyVerifiedAccessToken(fresh, access, allOff));
+    }
+
+    [Fact]
     public void Supabase_access_token_maps_new_verified_user_to_registration_only_identity()
     {
         var identity = new ClaimsIdentity(new[]
