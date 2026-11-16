@@ -82,6 +82,33 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
     }
 
     [Fact]
+    public async Task Http_registration_rejects_excess_writes_with_429_before_database_access()
+    {
+        // Actual ASP.NET endpoint limiter; fake issuer + a separate in-memory
+        // factory. Only intentionally invalid requests: zero database writes.
+        await using var factory = new AdvertiserPrivacyHttpFactory(writePermitLimit: 1);
+        using var client = IdentityClient(factory, "fixture-throttle");
+        client.DefaultRequestHeaders.Add("X-CSRF-TOKEN", await Csrf(client));
+        var invalid = new
+        {
+            requestKey = Guid.Empty,
+            businessName = "No business created",
+            countryCode = "PH",
+            website = (string?)null,
+            processingConsent = false,
+            termsAccepted = false,
+            marketingOptIn = false,
+            privacyNoticeVersion = AdvertiserRegistrationController.PrivacyNoticeVersion,
+            termsVersion = AdvertiserRegistrationController.TermsVersion
+        };
+        using var first = await client.PostAsJsonAsync("/api/advertisers/register", invalid);
+        Assert.Equal(HttpStatusCode.BadRequest, first.StatusCode);
+        using var throttled = await client.PostAsJsonAsync("/api/advertisers/register", invalid);
+        Assert.Equal(HttpStatusCode.TooManyRequests, throttled.StatusCode);
+        Assert.Contains("600", throttled.Headers.GetValues("Retry-After"));
+    }
+
+    [Fact]
     public async Task Http_registration_case_receipts_tenant_isolation_and_staff_ack_use_real_csrf_pipeline()
     {
         // The successful operator ACK uses EF ExecuteUpdate, which only a real
@@ -298,7 +325,7 @@ internal sealed class Task3bHttpPostgresDatabase : IAsyncDisposable
 }
 
 internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
-    string? postgresConnectionString = null) : WebApplicationFactory<Program>
+    string? postgresConnectionString = null, int? writePermitLimit = null) : WebApplicationFactory<Program>
 {
     private const string Issuer = "https://identity.example.test";
     private readonly string dbName = "task3b_http_" + Guid.NewGuid().ToString("N");
@@ -315,6 +342,11 @@ internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
         builder.UseSetting("Authentication:AdvertiserPrivacyRequestsRequested", privacyEnabled ? "true" : "false");
         builder.UseSetting("Authentication:ApprovedAdvertiserSubjects:0", "fixture-a");
         builder.UseSetting("Authentication:ApprovedPrivacyOperatorSubjects:0", "fixture-operator");
+        if (writePermitLimit.HasValue)
+        {
+            builder.UseSetting("Runtime:WriteRateLimitPermitLimit", writePermitLimit.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            builder.UseSetting("Runtime:RateLimitWindowSeconds", "600");
+        }
 
         builder.ConfigureServices(services =>
         {
