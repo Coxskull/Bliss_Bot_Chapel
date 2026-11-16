@@ -100,6 +100,14 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertIn("app.UseRateLimiter();", program)
         self.assertIn('public const string Writes = "writes"', runtime)
 
+    def test_registration_db_failures_are_not_misreported_as_duplicate_conflicts(self):
+        # Only unique-key races are mapped to replay/409; all other
+        # database failures bubble to the server's normal error path.
+        self.assertIn("using Npgsql;", self.server)
+        self.assertIn("catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg", self.server)
+        self.assertIn("pg.SqlState == PostgresErrorCodes.UniqueViolation", self.server)
+        self.assertNotIn("catch (DbUpdateException)\n", self.server)
+
     def test_marketing_is_optional_and_not_preselected(self):
         marketing = [x for x in self.parsed.inputs if x.get("id") == "marketing-consent"]
         self.assertEqual(1, len(marketing))
