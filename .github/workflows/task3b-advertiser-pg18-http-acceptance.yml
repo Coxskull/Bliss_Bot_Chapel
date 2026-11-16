@@ -15,6 +15,7 @@ on:
       - 'Bliss.Tests/Api/AdvertiserPrivacyRequestSecurityTests.cs'
       - 'frontend/public/advertiser-account-rights.js'
       - 'scripts/test_advertiser_account_legal_contract.py'
+      - 'scripts/test_advertiser_account_rights_runtime.mjs'
       - '.github/workflows/task3b-advertiser-pg18-http-acceptance.yml'
   workflow_dispatch:
 
@@ -51,6 +52,8 @@ jobs:
           persist-credentials: false
       - name: Verify registration and privacy-rights source contract
         run: python3 -m unittest discover -s scripts -p 'test_advertiser_account_legal_contract.py' -v
+      - name: Verify browser privacy form behavior when case history is unavailable
+        run: node scripts/test_advertiser_account_rights_runtime.mjs
       - name: Set up .NET 8
         uses: actions/setup-dotnet@v4
         with:
