@@ -100,8 +100,8 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertLess(rotate, refresh)
         self.assertRegex(
             js[receipt:],
-            r"try\\s*\\{\\s*await refreshHistory\\(\\);\\s*\\}"
-            r"\\s*catch \\(_\\) \\{\\s*status\\.textContent = receiptMessage \\+"
+            r"try\s*\{\s*await refreshHistory\(\);\s*\}"
+            r"\s*catch \(_\) \{\s*status\.textContent = receiptMessage \+"
         )
         self.assertIn("your request was accepted. Do not resubmit it.", js[refresh:])
         self.assertIn("status.textContent = receiptMessage;", js[receipt:refresh])
