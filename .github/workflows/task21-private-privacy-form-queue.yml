@@ -42,7 +42,7 @@ jobs:
         run: |
           node scripts/task21-production-privacy-form-queue-contract.mjs
           node scripts/task21-production-incident-outbox-contract.mjs
-      - name: Rehearse four actual Task21 migrations on empty Auth-backed PostgreSQL
+      - name: Rehearse five actual Task21 migrations (cron job stub is test-only) on empty Auth-backed PostgreSQL
         env:
           DISPOSABLE_PG_CONTAINER: ${{ job.services.postgres.id }}
         run: |
@@ -52,10 +52,12 @@ jobs:
           test -n "$DISPOSABLE_PG_CONTAINER"
           for file in \
             scripts/task21/fixtures/empty_branch_privacy_prerequisites.sql \
+            scripts/task21/fixtures/empty_branch_pgcron_stub.sql \
             scripts/task21/production-manual-mailbox-metadata-20261112.sql \
             scripts/task21/production-locked-single-operator-20261112.sql \
             scripts/task21/production-privacy-form-private-queue-20261112.sql \
             scripts/task21/production-real-incident-alert-outbox-20261112.sql \
+            scripts/task21/production-mailcase-retention-cascade-fix-20261112.sql \
             scripts/task21/fixtures/empty_branch_privacy_assertions.sql
           do
             docker exec -i "$DISPOSABLE_PG_CONTAINER" \
