@@ -46,7 +46,17 @@
       status.textContent = enabled
         ? "Verified sign-in detected. This case intake remains subject to the environment's privacy handling approval."
         : "Account privacy requests are not enabled for this environment or sign-in. No request can be accepted here.";
-      if (enabled) await refreshHistory();
+      if (enabled) {
+        // Reading older receipts is optional to accepting a NEW request.
+        // A transient history failure must not turn a verified, CSRF-protected
+        // session into a disabled privacy-rights form. The POST still passes
+        // all independent server-side authorization and account checks.
+        try {
+          await refreshHistory();
+        } catch (_) {
+          status.textContent = "Account request history is unavailable. You may submit a new request, subject to account verification.";
+        }
+      }
     } catch (_) {
       submit.disabled = true;
       enabled = false;
