@@ -89,12 +89,12 @@ public static class SupabaseOidc
             && auth.ApprovedCreatorSubjects.Contains(subject, StringComparer.Ordinal);
         var approvedAdvertiser = auth.Enabled && auth.SupabaseEnabled && auth.AdvertiserSelfServiceRequested
             && auth.ApprovedAdvertiserSubjects.Contains(subject, StringComparer.Ordinal);
-        // A verified existing pending applicant must retain a restricted
-        // sign-in path for their own privacy-case receipts after signup closes.
-        // This does NOT enable new registration: the controller and middleware
-        // independently require AdvertiserRegistrationRequested=true.
+        // Enrollment requires its own explicit feature flag. Stale pending
+        // cookies are still restricted by IsPendingAdvertiserIdentity even if
+        // registration is turned off; privacy-only login is implemented in the
+        // separately reviewed stacked account-rights PR, not this parent.
         var pendingAdvertiserRegistration = auth.Enabled && auth.SupabaseEnabled
-            && (auth.AdvertiserRegistrationRequested || auth.AdvertiserPrivacyRequestsRequested)
+            && auth.AdvertiserRegistrationRequested
             && !auth.ApprovedTestSubjects.Contains(subject, StringComparer.Ordinal)
             && !auth.ApprovedCreatorSubjects.Contains(subject, StringComparer.Ordinal)
             && !auth.ApprovedAdvertiserSubjects.Contains(subject, StringComparer.Ordinal);
