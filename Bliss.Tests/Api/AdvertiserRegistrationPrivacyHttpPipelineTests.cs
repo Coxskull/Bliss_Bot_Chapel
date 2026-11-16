@@ -304,6 +304,89 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
     }
 
     [Fact]
+    public async Task Http_revoked_membership_retains_exact_privacy_intake_without_regaining_workspace()
+    {
+        // Historical registered users retain lawful data-rights intake when
+        // their account is revoked. No API activation, restoration or erasure.
+        await using var isolated = Task3bHttpPostgresDatabase.TryCreate();
+        await using var factory = new AdvertiserPrivacyHttpFactory(
+            postgresConnectionString: isolated?.ConnectionString,
+            registrationEnabled: false);
+        var advertiserId = Guid.NewGuid();
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+            db.Advertisers.Add(new Advertiser
+            {
+                Id = advertiserId, Name = "Fictional Revoked Account",
+                CountryCode = "PH", CreatedAt = DateTime.UtcNow
+            });
+            db.AdvertiserAccountMemberships.Add(new AdvertiserAccountMembership
+            {
+                Id = Guid.NewGuid(), AdvertiserId = advertiserId,
+                Subject = "fixture-a", Status = "REVOKED", CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+
+        using var pending = IdentityClient(factory, "fixture-a");
+        pending.DefaultRequestHeaders.Add("X-CSRF-TOKEN", await Csrf(pending));
+        var requestKey = Guid.NewGuid();
+        using var privacyRequest = await pending.PostAsJsonAsync(Base, new
+        {
+            requestKey, requestType = "ERASURE"
+        });
+        Assert.Equal(HttpStatusCode.Created, privacyRequest.StatusCode);
+        using var replay = await pending.PostAsJsonAsync(Base, new
+        {
+            requestKey, requestType = "ERASURE"
+        });
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+        using var myCases = await pending.GetAsync(Base);
+        Assert.Equal(HttpStatusCode.OK, myCases.StatusCode);
+        using (var json = JsonDocument.Parse(await myCases.Content.ReadAsStringAsync()))
+        {
+            Assert.Single(json.RootElement.EnumerateArray());
+            Assert.Equal("ERASURE", json.RootElement[0].GetProperty("requestType").GetString());
+            Assert.Equal("RECEIVED", json.RootElement[0].GetProperty("status").GetString());
+        }
+        using var registration = await pending.PostAsJsonAsync("/api/advertisers/register",
+            new { requestKey = Guid.NewGuid() });
+        Assert.Equal(HttpStatusCode.Forbidden, registration.StatusCode);
+        using var legacy = await pending.GetAsync("/api/creators");
+        Assert.Equal(HttpStatusCode.Forbidden, legacy.StatusCode);
+        using var queue = await pending.GetAsync(Base + "/operator-queue");
+        Assert.Equal(HttpStatusCode.Forbidden, queue.StatusCode);
+
+        using var approved = IdentityClient(factory, "fixture-a", "approved", advertiserId);
+        approved.DefaultRequestHeaders.Add("X-CSRF-TOKEN", await Csrf(approved));
+        using var profile = await approved.GetAsync("/api/advertisers/me");
+        Assert.Equal(HttpStatusCode.Forbidden, profile.StatusCode);
+        using var approvedPrivacy = await approved.GetAsync(Base);
+        Assert.Equal(HttpStatusCode.OK, approvedPrivacy.StatusCode);
+        using var approvedCase = await approved.PostAsJsonAsync(Base,
+            new { requestKey = Guid.NewGuid(), requestType = "CORRECTION" });
+        Assert.Equal(HttpStatusCode.Created, approvedCase.StatusCode);
+
+        using var other = IdentityClient(factory, "fixture-b");
+        other.DefaultRequestHeaders.Add("X-CSRF-TOKEN", await Csrf(other));
+        using var otherPrivacy = await other.GetAsync(Base);
+        Assert.Equal(HttpStatusCode.Forbidden, otherPrivacy.StatusCode);
+        using var otherWrite = await other.PostAsJsonAsync(Base,
+            new { requestKey = Guid.NewGuid(), requestType = "ACCESS" });
+        Assert.Equal(HttpStatusCode.Forbidden, otherWrite.StatusCode);
+
+        using var checkScope = factory.Services.CreateScope();
+        var check = checkScope.ServiceProvider.GetRequiredService<BlissDbContext>();
+        Assert.Single(await check.AdvertiserAccountMemberships.AsNoTracking().ToListAsync());
+        Assert.Equal("REVOKED", (await check.AdvertiserAccountMemberships.AsNoTracking()
+            .SingleAsync()).Status);
+        Assert.Equal(2, await check.AdvertiserPrivacyRequests.AsNoTracking().CountAsync());
+        Assert.Empty(await check.AdvertiserRegistrationReceipts.AsNoTracking().ToListAsync());
+        // Cases are only RECEIVED; no automatic erasure or account reactivation.
+    }
+
+    [Fact]
     public async Task Http_privacy_feature_off_denies_intake_despite_registration_being_enabled()
     {
         await using var factory = new AdvertiserPrivacyHttpFactory(privacyEnabled: false);
