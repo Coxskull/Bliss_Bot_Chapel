@@ -177,6 +177,7 @@ public sealed class AdvertiserPrivacyRequestSecurityTests
             var receipt = Assert.IsType<AdvertiserPrivacyCaseReceipt>(created.Value);
             Assert.Equal("RECEIVED", receipt.Status);
             Assert.Equal("MARKETING_WITHDRAWAL", receipt.RequestType);
+            Assert.Equal(caseRequest.RequestKey, receipt.RequestKey);
 
             var replay = Assert.IsType<OkObjectResult>(
                 await Controller(db, "subject-a").Create(caseRequest, CancellationToken.None));
