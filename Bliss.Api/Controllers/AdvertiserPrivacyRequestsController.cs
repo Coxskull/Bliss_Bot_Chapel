@@ -180,8 +180,15 @@ public sealed class AdvertiserPrivacyRequestsController(BlissDbContext db, Bliss
             .SingleOrDefaultAsync(x => x.Subject == subjects[0].Value, cancellationToken);
         if (member is null) return null;
 
-        if (pending && member.Status == "PENDING_REVIEW") return member;
-        return approved && member.Status == "ACTIVE" && member.AdvertiserId == advertiserId
+        // Account revocation must never reactivate business or marketplace
+        // permissions, but it must not silently remove a verified person's
+        // ability to request access/correction/deletion of retained records.
+        // The issuer-bound subject and exact database membership remain
+        // mandatory; this exception is scoped to this privacy-only controller.
+        if (pending && (member.Status == "PENDING_REVIEW" || member.Status == "REVOKED"))
+            return member;
+        return approved && (member.Status == "ACTIVE" || member.Status == "REVOKED")
+            && member.AdvertiserId == advertiserId
             ? member
             : null;
     }
