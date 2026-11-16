@@ -23,7 +23,9 @@ print "TASK3_REMOTE_EXEC=PASS\n";
 sub trim { my $v = shift; $v =~ s/^\s+|\s+$//g; return $v; }
 sub split_fields {
   my ($s) = @_;
-  my (@parts, $buffer, $quote) = ((), '', '');
+  my @parts;
+  my $buffer = '';
+  my $quote = '';
   for (my $i=0; $i<length($s); $i++) {
     my $c=substr($s,$i,1);
     if ($quote ne '') {
