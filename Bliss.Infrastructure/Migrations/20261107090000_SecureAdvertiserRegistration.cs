@@ -54,6 +54,11 @@ public sealed class SecureAdvertiserRegistration : Migration
         migrationBuilder.CreateIndex("IX_AdvertiserRegistrationReceipts_RequestKey", "AdvertiserRegistrationReceipts", "RequestKey", unique: true);
         migrationBuilder.CreateIndex("IX_AdvertiserRegistrationReceipts_Subject_AdvertiserId", "AdvertiserRegistrationReceipts", new[] { "Subject", "AdvertiserId" }, unique: true);
 
+        // Public-schema account identities and consent receipts must remain
+        // inaccessible to non-owner REST/database clients if grants drift.
+        // Do not FORCE RLS: the existing trusted EF server role is the owner.
+        migrationBuilder.Sql("ALTER TABLE \"AdvertiserAccountMemberships\" ENABLE ROW LEVEL SECURITY;");
+        migrationBuilder.Sql("ALTER TABLE \"AdvertiserRegistrationReceipts\" ENABLE ROW LEVEL SECURITY;");
         migrationBuilder.Sql("REVOKE ALL ON TABLE \"AdvertiserAccountMemberships\", \"AdvertiserRegistrationReceipts\" FROM PUBLIC;");
         migrationBuilder.Sql("DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN EXECUTE 'REVOKE ALL ON TABLE \"AdvertiserAccountMemberships\", \"AdvertiserRegistrationReceipts\" FROM anon'; END IF; IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN EXECUTE 'REVOKE ALL ON TABLE \"AdvertiserAccountMemberships\", \"AdvertiserRegistrationReceipts\" FROM authenticated'; END IF; END $$;");
         migrationBuilder.Sql("CREATE FUNCTION prevent_advertiser_registration_receipt_mutation() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'advertiser registration receipts are append-only'; END; $$;");
