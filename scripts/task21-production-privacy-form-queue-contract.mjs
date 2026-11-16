@@ -26,7 +26,12 @@ for(const necessary of [
  "ON DELETE CASCADE",
  "90-day case purge"
 ])assert.ok(retention.includes(necessary),"Missing safe existing support mail retention repair: "+necessary);
-assert.doesNotMatch(retention,/DELETE FROM alpha_support_private\.manual_mail_cases/i);
+// The ONLY allowed DELETE in the migration is the SQL-only 90-day pg_cron
+// command. Neither the migration itself nor a trigger may delete a live row.
+assert.match(retention,/PERFORM cron\.schedule\(/);
+assert.match(retention,/\$retention\$DELETE FROM alpha_support_private\.manual_mail_cases[\s\S]*?interval '90 days';\$retention\$/);
+const retentionNoScheduledCommand=retention.replace(/\$retention\$[\s\S]*?\$retention\$/g,"'[SCHEDULED_SQL_ONLY]'");
+assert.doesNotMatch(retentionNoScheduledCommand,/DELETE FROM alpha_support_private\.manual_mail_cases/i);
 assert.doesNotMatch(retention,/DROP\s+TRIGGER/i);
 
 const edge=readFileSync(new URL("../supabase/functions/alpha-public-intake/index.ts",import.meta.url),"utf8");
