@@ -63,28 +63,28 @@ jobs:
           trap 'rm -rf "$bin_dir"' EXIT
           cat > "$bin_dir/dotnet" <<'STUB'
           #!/bin/sh
-          printf 'TASK3B_DOTNET_STUB_EXECUTED\\n'
-          printf 'TASK3B_KEY_PATH=%s\\n' "${Runtime__DataProtectionKeysPath:-}"
+          printf 'TASK3B_DOTNET_STUB_EXECUTED\n'
+          printf 'TASK3B_KEY_PATH=%s\n' "${Runtime__DataProtectionKeysPath:-}"
           STUB
           chmod 700 "$bin_dir/dotnet"
           run_preview() {
-            env -u BLISS_DP_CERTIFICATE_BASE64 \\
-              -u Runtime__DataProtectionCertificatePath \\
-              -u Runtime__DataProtectionCertificatePassword \\
-              PATH="$bin_dir:$PATH" \\
-              Runtime__RestrictedPreview=true \\
-              Authentication__Enabled=false \\
-              Authentication__SupabaseEnabled=false \\
-              Authentication__AdvertiserRegistrationRequested=false \\
-              Authentication__AdvertiserPrivacyRequestsRequested=false \\
-              Authentication__AdvertiserSelfServiceRequested=false \\
+            env -u BLISS_DP_CERTIFICATE_BASE64 \
+              -u Runtime__DataProtectionCertificatePath \
+              -u Runtime__DataProtectionCertificatePassword \
+              PATH="$bin_dir:$PATH" \
+              Runtime__RestrictedPreview=true \
+              Authentication__Enabled=false \
+              Authentication__SupabaseEnabled=false \
+              Authentication__AdvertiserRegistrationRequested=false \
+              Authentication__AdvertiserPrivacyRequestsRequested=false \
+              Authentication__AdvertiserSelfServiceRequested=false \
               "$@"
           }
           output="$(run_preview sh scripts/railway-entrypoint.sh)"
           [[ "$output" == *"TASK3B_DOTNET_STUB_EXECUTED"* ]]
           [[ "$output" == *"TASK3B_KEY_PATH=/tmp/bliss-restricted-preview-keys"* ]]
-          for blocked in Runtime__RestrictedPreview Authentication__Enabled Authentication__SupabaseEnabled \\
-            Authentication__AdvertiserRegistrationRequested Authentication__AdvertiserPrivacyRequestsRequested \\
+          for blocked in Runtime__RestrictedPreview Authentication__Enabled Authentication__SupabaseEnabled \
+            Authentication__AdvertiserRegistrationRequested Authentication__AdvertiserPrivacyRequestsRequested \
             Authentication__AdvertiserSelfServiceRequested; do
             if [[ "$blocked" == "Runtime__RestrictedPreview" ]]; then
               value=false
@@ -100,7 +100,7 @@ jobs:
               exit 1
             fi
           done
-          if run_preview env Runtime__DataProtectionCertificatePassword=incomplete \\
+          if run_preview env Runtime__DataProtectionCertificatePassword=incomplete \
             sh scripts/railway-entrypoint.sh >"$bin_dir/rejected" 2>&1; then
             echo "::error::Partially configured certificate was accepted"
             exit 1
