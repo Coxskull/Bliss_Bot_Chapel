@@ -4,6 +4,8 @@ on:
     paths:
       - 'scripts/task21/production-privacy-form-private-queue-20261112.sql'
       - 'scripts/task21/production-mailcase-retention-cascade-fix-20261112.sql'
+      - 'scripts/task21/production-real-incident-alert-outbox-20261112.sql'
+      - 'scripts/task21-production-incident-outbox-contract.mjs'
       - 'scripts/task21/fixtures/**'
       - 'scripts/task21-production-privacy-form-queue-contract.mjs'
       - '.github/workflows/task21-private-privacy-form-queue.yml'
@@ -37,8 +39,10 @@ jobs:
         with:
           node-version: '22'
       - name: Verify private metadata-only source and runtime operator authorization
-        run: node scripts/task21-production-privacy-form-queue-contract.mjs
-      - name: Rehearse three actual Task21 migrations on empty Auth-backed PostgreSQL
+        run: |
+          node scripts/task21-production-privacy-form-queue-contract.mjs
+          node scripts/task21-production-incident-outbox-contract.mjs
+      - name: Rehearse four actual Task21 migrations on empty Auth-backed PostgreSQL
         env:
           DISPOSABLE_PG_CONTAINER: ${{ job.services.postgres.id }}
         run: |
@@ -51,6 +55,7 @@ jobs:
             scripts/task21/production-manual-mailbox-metadata-20261112.sql \
             scripts/task21/production-locked-single-operator-20261112.sql \
             scripts/task21/production-privacy-form-private-queue-20261112.sql \
+            scripts/task21/production-real-incident-alert-outbox-20261112.sql \
             scripts/task21/fixtures/empty_branch_privacy_assertions.sql
           do
             docker exec -i "$DISPOSABLE_PG_CONTAINER" \
