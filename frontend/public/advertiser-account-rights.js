@@ -69,11 +69,19 @@
       if (!res.ok) throw new Error(res.status === 409
         ? "This request key was already used. Refresh before retrying a different request."
         : "The account request was not accepted. Please verify your sign-in.");
-      status.textContent = `Request ${payload.status}. Reference: ${payload.caseId}. This is not a completed deletion, marketing withdrawal, or resolution.`;
+      // The POST receipt is authoritative. A later GET/history failure must
+      // never turn an accepted privacy request into a "submission failed"
+      // message or encourage another request with a newly rotated key.
+      const receiptMessage = `Request ${payload.status}. Reference: ${payload.caseId}. This is not a completed deletion, marketing withdrawal, or resolution.`;
+      status.textContent = receiptMessage;
       requestKey = crypto.randomUUID();
       sessionStorage.setItem(keyName, requestKey);
       form.reset();
-      await refreshHistory();
+      try {
+        await refreshHistory();
+      } catch (_) {
+        status.textContent = receiptMessage + " Case history could not be refreshed; your request was accepted. Do not resubmit it.";
+      }
     } catch (error) {
       status.textContent = error.message || "Request not verified; please retry with the same request key.";
     } finally {
