@@ -3,6 +3,11 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const rd=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
 const sql=rd("scripts/task22/production-crm-optout-local-transport-hold-20261112.sql");
+// A no-data preview environment has no historical contact deliveries.
+// Non-empty histories must still match the protected five-delivery baseline.
+assert.match(sql,/EXISTS\(SELECT 1 FROM public\.alpha_ghl_delivery\)/);
+assert.match(sql,/WHERE state='DELIVERED'\)<>5/);
+assert.doesNotMatch(sql,/WHERE state='DELIVERED'\)<>5\s*\n\s*THEN/);
 const send=rd("supabase/functions/alpha-public-intake/ghl-sync.mjs");
 const payload=rd("supabase/functions/alpha-public-intake/ghl-payload.mjs");
 const readback=rd("supabase/functions/alpha-ghl-readback/logic.mjs");
