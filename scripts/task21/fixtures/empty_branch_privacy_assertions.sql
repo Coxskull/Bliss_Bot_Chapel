@@ -1,5 +1,5 @@
 -- Run ONLY after actual Task21 mailbox, operator and privacy queue source
--- migrations on disposable PostgreSQL 16/18 with no Auth or grant records.
+-- and incident-outbox migrations on disposable PostgreSQL 16/18 with no Auth or grant records.
 DO $assert$
 DECLARE
  v_actor uuid := gen_random_uuid();
@@ -47,6 +47,27 @@ BEGIN
   WHERE f.source_request_id=v_request AND e.event_type='CREATED')<>1
  THEN RAISE EXCEPTION 'TASK21_SYNTHETIC_PRIVACY_RECEIPT_NOT_DURABLE'; END IF;
 
+ -- The incident outbox is schema-ready but MUST NOT dispatch without the
+ -- human operator whom production Auth independently verifies.
+ IF (SELECT count(*) FROM alpha_support_private.production_incident_alerts a
+   JOIN alpha_support_private.manual_privacy_form_cases f
+     ON a.source_case_id=f.case_id
+   WHERE a.source_kind='PRIVACY_FORM' AND a.state='QUEUED'
+     AND f.source_request_id=v_request)<>1
+ THEN RAISE EXCEPTION 'TASK21_EMPTY_BRANCH_INCIDENT_NOT_QUEUED'; END IF;
+ IF EXISTS(SELECT 1 FROM alpha_support_private.claim_next_production_incident())
+ THEN RAISE EXCEPTION 'TASK21_UNSTAFFED_INCIDENT_DISPATCHED'; END IF;
+ IF (SELECT count(*) FROM alpha_support_private.production_incident_alerts
+       WHERE state='QUEUED')<>1
+ THEN RAISE EXCEPTION 'TASK21_UNSTAFFED_INCIDENT_CLAIMED'; END IF;
+ IF pg_catalog.has_function_privilege('anon',
+   'alpha_support_private.claim_next_production_incident()','EXECUTE')
+ OR pg_catalog.has_function_privilege('authenticated',
+   'alpha_support_private.claim_next_production_incident()','EXECUTE')
+ OR pg_catalog.has_function_privilege('service_role',
+   'alpha_support_private.claim_next_production_incident()','EXECUTE')
+ THEN RAISE EXCEPTION 'TASK21_INCIDENT_CLAIM_LEAKED_TO_PUBLIC_ROLE'; END IF;
+
  IF EXISTS (
   SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
   WHERE n.nspname='alpha_support_private'
@@ -56,3 +77,4 @@ BEGIN
  THEN RAISE EXCEPTION 'TASK21_PRIVATE_TABLE_RLS_DISABLED'; END IF;
 END $assert$;
 SELECT 'TASK21_EMPTY_BRANCH_REPLAY_AND_DENY_PASS' AS result;
+SELECT 'TASK21_UNSTAFFED_INCIDENT_HOLD_PASS' AS result;
