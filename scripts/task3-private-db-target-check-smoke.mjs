@@ -25,6 +25,10 @@ function classify(connection, expected, label) {
   else env.ConnectionStrings__DefaultConnection = connection;
   const result = spawnSync("perl", ["-"], { input: probe, encoding: "utf8", env });
   assert.equal(result.error, undefined, `${label}: Perl must be available`);
+  // Live owner SSH revealed repeated "uninitialized $quote" warnings even
+  // while classification returned success. Both success and fail-closed
+  // fixtures must complete with no raw runtime warnings on stderr.
+  assert.equal(result.stderr ?? "", "", `${label}: unexpected Perl warning/error`);
   const output = result.stdout ?? "";
   assert.ok(!output.includes("never-print-this"), `${label}: password leaked`);
   assert.ok(!output.includes("evil.internal"), `${label}: injected host leaked`);
