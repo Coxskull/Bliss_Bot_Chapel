@@ -66,9 +66,16 @@
         body: JSON.stringify({ requestKey, requestType: form.elements.requestType.value })
       });
       const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(res.status === 409
-        ? "This request key was already used. Refresh before retrying a different request."
-        : "The account request was not accepted. Please verify your sign-in.");
+      if (res.status === 409) {
+        // A rejected key may belong to an earlier request or sign-in.
+        // Refresh would restore that same key from sessionStorage and loop.
+        // Rotate only after the server definitively rejects it; never
+        // silently retry a POST or rotate on a network/unknown failure.
+        requestKey = crypto.randomUUID();
+        sessionStorage.setItem(keyName, requestKey);
+        throw new Error("This request key was already used. No new case was created. Review your request and submit again.");
+      }
+      if (!res.ok) throw new Error("The account request was not accepted. Please verify your sign-in.");
       // The POST receipt is authoritative. A later GET/history failure must
       // never turn an accepted privacy request into a "submission failed"
       // message or encourage another request with a newly rotated key.
