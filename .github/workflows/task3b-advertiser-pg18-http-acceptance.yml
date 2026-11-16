@@ -18,6 +18,7 @@ on:
       - 'scripts/test_advertiser_account_legal_contract.py'
       - 'scripts/test_advertiser_account_rights_runtime.mjs'
       - 'scripts/test_advertiser_registration_receipt_runtime.mjs'
+      - 'scripts/railway-entrypoint.sh'
       - '.github/workflows/task3b-advertiser-pg18-http-acceptance.yml'
   workflow_dispatch:
 
@@ -52,6 +53,59 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Verify locked preview can boot without credentials but unlocked modes fail closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          sh -n scripts/railway-entrypoint.sh
+          [[ "$(id -u)" != 0 ]] || { echo "::error::Test must run as unprivileged runner"; exit 1; }
+          bin_dir="$(mktemp -d)"
+          trap 'rm -rf "$bin_dir"' EXIT
+          cat > "$bin_dir/dotnet" <<'STUB'
+          #!/bin/sh
+          printf 'TASK3B_DOTNET_STUB_EXECUTED\\n'
+          printf 'TASK3B_KEY_PATH=%s\\n' "${Runtime__DataProtectionKeysPath:-}"
+          STUB
+          chmod 700 "$bin_dir/dotnet"
+          run_preview() {
+            env -u BLISS_DP_CERTIFICATE_BASE64 \\
+              -u Runtime__DataProtectionCertificatePath \\
+              -u Runtime__DataProtectionCertificatePassword \\
+              PATH="$bin_dir:$PATH" \\
+              Runtime__RestrictedPreview=true \\
+              Authentication__Enabled=false \\
+              Authentication__SupabaseEnabled=false \\
+              Authentication__AdvertiserRegistrationRequested=false \\
+              Authentication__AdvertiserPrivacyRequestsRequested=false \\
+              Authentication__AdvertiserSelfServiceRequested=false \\
+              "$@"
+          }
+          output="$(run_preview sh scripts/railway-entrypoint.sh)"
+          [[ "$output" == *"TASK3B_DOTNET_STUB_EXECUTED"* ]]
+          [[ "$output" == *"TASK3B_KEY_PATH=/tmp/bliss-restricted-preview-keys"* ]]
+          for blocked in Runtime__RestrictedPreview Authentication__Enabled Authentication__SupabaseEnabled \\
+            Authentication__AdvertiserRegistrationRequested Authentication__AdvertiserPrivacyRequestsRequested \\
+            Authentication__AdvertiserSelfServiceRequested; do
+            if [[ "$blocked" == "Runtime__RestrictedPreview" ]]; then
+              value=false
+            else
+              value=true
+            fi
+            if run_preview env "$blocked=$value" sh scripts/railway-entrypoint.sh >"$bin_dir/rejected" 2>&1; then
+              echo "::error::Unsafe preview mode was permitted: $blocked"
+              exit 1
+            fi
+            if grep -q 'TASK3B_DOTNET_STUB_EXECUTED' "$bin_dir/rejected"; then
+              echo "::error::Unsafe preview executed dotnet: $blocked"
+              exit 1
+            fi
+          done
+          if run_preview env Runtime__DataProtectionCertificatePassword=incomplete \\
+            sh scripts/railway-entrypoint.sh >"$bin_dir/rejected" 2>&1; then
+            echo "::error::Partially configured certificate was accepted"
+            exit 1
+          fi
+          echo "TASK3B_LOCKED_CERTLESS_PREVIEW_ONLY_PASS"
       - name: Verify registration and privacy-rights source contract
         run: python3 -m unittest discover -s scripts -p 'test_advertiser_account_legal_contract.py' -v
       - name: Verify browser privacy form behavior when case history is unavailable
