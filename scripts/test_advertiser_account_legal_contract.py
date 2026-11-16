@@ -89,6 +89,23 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertIn('"X-CSRF-TOKEN"', js)
         self.assertIn("not a completed deletion", js)
 
+    def test_accepted_privacy_case_receipt_survives_history_refresh_failure(self):
+        # The mutation response is durable even if the separate history GET
+        # fails. Avoid telling users to retry a successful privacy request.
+        js = (PUBLIC / "advertiser-account-rights.js").read_text(encoding="utf-8")
+        receipt = js.index("const receiptMessage = `Request ")
+        refresh = js.index("await refreshHistory();", receipt)
+        rotate = js.index("requestKey = crypto.randomUUID();", receipt)
+        self.assertLess(receipt, rotate)
+        self.assertLess(rotate, refresh)
+        self.assertRegex(
+            js[receipt:],
+            r"try\\s*\\{\\s*await refreshHistory\\(\\);\\s*\\}"
+            r"\\s*catch \\(_\\) \\{\\s*status\\.textContent = receiptMessage \\+"
+        )
+        self.assertIn("your request was accepted. Do not resubmit it.", js[refresh:])
+        self.assertIn("status.textContent = receiptMessage;", js[receipt:refresh])
+
     def test_registration_and_account_case_csrf_headers_match_server(self):
         program = (ROOT / "Bliss.Api" / "Program.cs").read_text(encoding="utf-8")
         options = (ROOT / "Bliss.Api" / "Security" / "BlissAuthenticationOptions.cs").read_text(encoding="utf-8")
