@@ -60,6 +60,16 @@ BEGIN
  IF (SELECT count(*) FROM alpha_support_private.production_incident_alerts
        WHERE state='QUEUED')<>1
  THEN RAISE EXCEPTION 'TASK21_UNSTAFFED_INCIDENT_CLAIMED'; END IF;
+ IF (SELECT count(*) FROM cron.job
+       WHERE jobname='alpha_task21_support_mail_90d_purge'
+         AND active=true AND schedule='17 3 * * *')<>1
+ OR NOT EXISTS(SELECT 1 FROM cron.job
+       WHERE jobname='alpha_task21_support_mail_90d_purge'
+         AND position('DELETE FROM alpha_support_private.manual_mail_cases'
+             IN command)>0
+         AND position('90 days' IN command)>0)
+ THEN RAISE EXCEPTION 'TASK21_RETENTION_SCHEDULE_NOT_INSTALLED'; END IF;
+
  IF pg_catalog.has_function_privilege('anon',
    'alpha_support_private.claim_next_production_incident()','EXECUTE')
  OR pg_catalog.has_function_privilege('authenticated',
@@ -78,3 +88,4 @@ BEGIN
 END $assert$;
 SELECT 'TASK21_EMPTY_BRANCH_REPLAY_AND_DENY_PASS' AS result;
 SELECT 'TASK21_UNSTAFFED_INCIDENT_HOLD_PASS' AS result;
+SELECT 'TASK21_90DAY_RETENTION_SCHEDULE_FIXTURE_PASS' AS result;
