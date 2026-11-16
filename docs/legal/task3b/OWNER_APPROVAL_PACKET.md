@@ -109,3 +109,25 @@ All of the following explicit **STAGED** environment variables are set for the u
 A request to stage per-service resource limits returned **Service Instance not found** while the service exists only in the pending patch; no limit was applied, and no actual runtime resource was started. The paid `bliss-bot / production` application and Postgres 18 remain wholly separate, including keys, schemas and flags.
 
 **Hold reason:** Railway's shared-workspace hard limit cannot be lowered without risking the other existing Alpha apps; staging has no verified independent hard cost cap. The dedicated Neon Free PostgreSQL 18 project `autumn-grass-58047756` still has `block_public_connections=true`, intentionally denying SQL connections until a reviewed private/specific-egress path is established. The owner must retain a strict budget and choose safe connectivity/host before committing the staged service. No credentials, payment activation, customer data or Factory STOP change occurred. **Task #3B remains OPEN — HOSTED ACCEPTANCE HELD.**
+
+## 2026-11-16 16:59 PHT — staging cost and network boundary verified
+
+**Dedicated Neon PG18 project hard consumption quotas applied and read back successfully** on the existing Free project `alpha-task3b-pg18-staging` (`autumn-grass-58047756`), without modifying DR361, Task22, Supabase, or production:
+
+| Hard project quota | Value |
+|---|---:|
+| Active compute time / billing month | 36,000 seconds (10 hours) |
+| Compute time / billing month | 9,000 CU-seconds (2.5 CU-hours at fixed 0.25 CU) |
+| Written data / billing month | 1,000,000,000 bytes |
+| Data transfer / billing month | 500,000,000 bytes |
+| Per-branch logical size | 100,000,000 bytes |
+
+Provider readback shows current branch logical size **31,711,232 bytes**, active time **312 seconds**, compute time **79 CU-seconds**, written data **0**, transfer **0**. The compute remains fixed at 0.25 CU and auto-suspends. Neon's documented quota behavior is a **hard stop**: once a project-level quota is reached all project computes suspend until the next billing period or a quota change; branch-size quota blocks writes. These are resource quotas, **not a USD price guarantee**, and no paid plan was selected.
+
+**Network-path feasibility check (current provider plan limitations):**
+- Neon provider reports the project owner subscription as `free_v3`. Neon documentation identifies both **IP Allow** and **Private Networking** as **Scale-plan** features. The API schema contains `allowed_ips`, but a Free project must not be assumed to enforce it; no allowlist or public-network change was made.
+- Railway documents **Static Outbound IPs** as a **Pro-plan** feature. The existing `alpha-task3b-staging` project is in the personal `alpha7auto's Projects` workspace, which also contains the existing Factory staging and Bliss Bot projects. No plan upgrade was requested or made.
+- Railway's hard compute limit is a **workspace-level** control, not a verified Task3B-project-only ceiling. No change was made to the shared workspace usage limit, avoiding disruption to existing ALPHA services.
+- The Neon project remains `block_public_connections=true`, `allowed_ips=[]`; endpoint is idle/suspended. The pending Railway API service is still **STAGED-CREATE**, not deployed, with registration/auth/privacy switches off and exact CI-accepted source pinned to `80ecbd039101dfed687cfa35397959d9f9cfd017`.
+
+**Conclusion:** A genuine low-cost database quota boundary is now in place, but a secure Railway-to-Neon path cannot be enabled under the currently verified Free Neon + existing Railway workspace constraints without a plan/architecture change and owner-approved spend. Do not weaken public blocking, copy production credentials, change shared workspace billing limits, or deploy the API merely to bypass this gate. Task #3B remains **OPEN / HOSTED NO-GO**.
