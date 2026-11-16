@@ -149,3 +149,17 @@ The following is a **privacy-minimizing operational proposal**, not an adopted p
 **Owner approval required:** accept or revise these proposed periods and exceptions. If any applicable market requires a different period, use the stricter/required market-specific rule and document why. No version of this proposal may be represented as effective until actual deletion, Auth revocation, case closure, log expiry and backup lifecycle controls have passed.
 
 **Controller contact decision also remains open:** the live `/contact.html` offers public-interest inquiry forms only; the existing `/privacy-request.html` is explicitly limited to public-form records. A personal operator mailbox is not to be published as the company's privacy contact without explicit owner approval. Choose a **company-controlled privacy email** or approve the **authenticated account-rights form** as the public account-request channel once its hosted OIDC/API/operator route is genuinely accepted.
+## 2026-11-16 — direct Railway staging config pinned (STAGED only)
+
+The staged-create service is new, so Railway's current documentation says new services cannot opt into deprecated `railway.json` Config as Code. To avoid relying on a config file that may be ignored, the existing pending Railway patch was updated **directly through the service configuration API** and provider read back all fields:
+
+- Dockerfile: `Dockerfile.railway` (source file independently exists and uses the reviewed entrypoint).
+- Staging healthcheck: `/health/live` (the only readiness route permitted by RestrictedPreviewGate).
+- Healthcheck timeout: 300 seconds.
+- Region: `us-west2`, exactly one replica.
+- Auto-sleep: enabled.
+- Restart: `ON_FAILURE`, maximum one retry.
+- Source pinned to exact CI-passing PR #424 commit `80ecbd039101dfed687cfa35397959d9f9cfd017`.
+- Auth, Supabase, advertiser registration, privacy case intake and self-service remain explicitly **false**; Restricted Preview remains **true**.
+
+The pending patch is now `d3540a54-2838-455c-b0ee-ba2954145cb9`, **19 non-destructive staged changes**, one staged-create service, zero deployments, zero attached volumes. No deployment has been accepted. The Railway provider refused resource limits on a service with no running instance (`Service Instance not found`); therefore no per-instance CPU/memory cap is claimed. Auto-sleep and one replica reduce idle/replica exposure but are **not a hard dollar limit**. Do not accept the patch until the shared workspace cost boundary and secure database network path are owner-approved and verifiable.
