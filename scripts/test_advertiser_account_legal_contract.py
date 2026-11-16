@@ -106,6 +106,29 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertIn("your request was accepted. Do not resubmit it.", js[refresh:])
         self.assertIn("status.textContent = receiptMessage;", js[receipt:refresh])
 
+    def test_privacy_request_conflict_rotates_key_only_after_definitive_409(self):
+        # The old UI told applicants to refresh after HTTP 409, but reload
+        # restored the same sessionStorage key and reproduced the conflict.
+        # Network/unknown failures MUST keep the key for safe idempotent retry.
+        js = (PUBLIC / "advertiser-account-rights.js").read_text(encoding="utf-8")
+        conflict = re.search(
+            r"if \\(res\\.status === 409\\) \\{(?P<body>.*?)\\n      \\}", js, re.S
+        )
+        self.assertIsNotNone(conflict)
+        body = conflict.group("body")
+        self.assertIn("requestKey = crypto.randomUUID();", body)
+        self.assertIn("sessionStorage.setItem(keyName, requestKey);", body)
+        self.assertIn("No new case was created.", body)
+        self.assertNotIn("fetch(", body)
+        # A rejected key is not silently resubmitted or changed on 5xx/timeout.
+        self.assertIn(
+            'if (!res.ok) throw new Error("The account request was not accepted.',
+            js[conflict.end():]
+        )
+        self.assertNotIn("Refresh before retrying", js)
+        self.assertIn("if (!res.ok)", js)
+        self.assertIn("Request not verified; please retry with the same request key.", js)
+
     def test_registration_and_account_case_csrf_headers_match_server(self):
         program = (ROOT / "Bliss.Api" / "Program.cs").read_text(encoding="utf-8")
         options = (ROOT / "Bliss.Api" / "Security" / "BlissAuthenticationOptions.cs").read_text(encoding="utf-8")
