@@ -7,10 +7,17 @@ const match = script.match(/\$probe\s*=\s*@'\r?\n([\s\S]*?)\r?\n'@/);
 assert.ok(match, "embedded Perl probe must remain present");
 const probe = match[1];
 
-// Regression for the owner-run PowerShell wrapper (previously the Perl-only
-// fixtures passed even though an unterminated -cmatch expression made the
-// complete .ps1 non-executable). Syntax is also parsed by real pwsh in CI.
-assert.match(script, /\$dbLines\s*=\s*@\(\$lines\s*\|\s*Where-Object\s*\{\s*\$_\s*-cmatch\s*'\^TASK3_DATABASE_CLASS=\(BLISS\|POSTGRES\|RAILWAY\|OTHER\)\
+// Regression for the complete owner-only PowerShell wrapper: the Perl-only
+// fixtures previously passed even though the .ps1 had broken parsing and
+// a duplicated final block. GitHub CI additionally runs the real pwsh parser.
+const dbValidator = "$dbLines = @($lines | Where-Object { $_ -cmatch '^TASK3_DATABASE_CLASS=(BLISS|POSTGRES|RAILWAY|OTHER)$' })";
+assert.ok(script.includes(dbValidator), "PowerShell must validate the exact known database classes");
+assert.equal((script.match(/TASK3_REGISTRATION_ACTIVATION=NOT_AUTHORIZED/g) ?? []).length, 1,
+  "PowerShell final release hold must appear exactly once");
+assert.ok(script.includes("TASK3_REMOTE_EXEC=NOT_VERIFIED"),
+  "A bare SSH exit code cannot prove remote execution");
+assert.ok(script.includes("$dbLines.Count -ne 1"),
+  "PowerShell must reject incomplete or duplicated DB class markers");
 
 function classify(connection, expected, label) {
   const env = { ...process.env };
