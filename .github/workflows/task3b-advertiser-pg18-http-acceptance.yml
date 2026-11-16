@@ -1,0 +1,80 @@
+name: Task3B advertiser registration and privacy rights - disposable PostgreSQL 18 HTTP
+
+on:
+  pull_request:
+    branches:
+      - main
+      - codex/task3-secure-advertiser-registration-20261107
+    paths:
+      - 'Bliss.Api/Controllers/AdvertiserRegistrationController.cs'
+      - 'Bliss.Api/Controllers/AdvertiserPrivacyRequestsController.cs'
+      - 'Bliss.Api/Security/AdvertiserRegistrationBoundary.cs'
+      - 'Bliss.Api/Security/AdvertiserApiBoundary.cs'
+      - 'Bliss.Infrastructure/Migrations/**'
+      - 'Bliss.Tests/Api/AdvertiserRegistrationPrivacyHttpPipelineTests.cs'
+      - 'Bliss.Tests/Api/AdvertiserPrivacyRequestSecurityTests.cs'
+      - '.github/workflows/task3b-advertiser-pg18-http-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pg18-http-registration-privacy:
+    name: Full ASP.NET HTTP and EF privacy intake / PostgreSQL 18
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: task3b_disposable_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d task3b_disposable_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Exactly local CI; no hosted credentials, Railway target or live customer data.
+      BLISS_TEST_POSTGRES_CONNECTION: Host=127.0.0.1;Port=5432;Database=task3b_disposable_ci;Username=postgres;Password=disposable-only
+      TASK3B_REQUIRE_PG18: '1'
+    steps:
+      - name: Check out reviewed source without persisted token
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Verify exact disposable database target and major version
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TASK3B_REQUIRE_PG18" == 1 ]]
+          [[ "$BLISS_TEST_POSTGRES_CONNECTION" == Host=127.0.0.1\;* ]]
+          version="$(docker exec "${{ job.services.postgres.id }}"             psql -X -A -t -v ON_ERROR_STOP=1 -U postgres -d task3b_disposable_ci             -c 'SHOW server_version_num')"
+          [[ "$version" =~ ^18[0-9]{4}$ ]] || {
+            echo "::error::Only disposable PostgreSQL 18 is authorized for this acceptance"
+            exit 1
+          }
+          echo "TASK3B_DISPOSABLE_POSTGRES18_TARGET_PASS"
+      - name: Restore and run actual HTTP, EF migration, tenant and operator tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet restore Bliss.Tests/Bliss.Tests.csproj
+          dotnet test Bliss.Tests/Bliss.Tests.csproj --configuration Release --no-restore             --filter 'FullyQualifiedName~AdvertiserRegistrationPrivacyHttpPipelineTests|FullyQualifiedName~AdvertiserPrivacyRequestSecurityTests'             --logger 'trx;LogFileName=task3b-relational-pg18.trx'             --results-directory Task3bPg18Results
+          echo "TASK3B_PG18_RELATIONAL_HTTP_SOURCE_ACCEPTANCE_PASS"
+      - name: Preserve exact-head test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task3b-pg18-relational-http-${{ github.run_id }}
+          path: Task3bPg18Results/*.trx
+          if-no-files-found: warn
+          retention-days: 14
