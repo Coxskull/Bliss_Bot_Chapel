@@ -238,6 +238,9 @@ public sealed class AdvertiserRegistrationSecurityTests
             var receipt = Assert.IsType<AdvertiserRegistrationReceiptDto>(createdResult.Value);
             Assert.Equal("PENDING_REVIEW", receipt.Status);
             Assert.False(receipt.MarketingOptIn);
+            Assert.Equal(request.RequestKey, receipt.RequestKey);
+            Assert.Equal(request.PrivacyNoticeVersion, receipt.PrivacyNoticeVersion);
+            Assert.Equal(request.TermsVersion, receipt.TermsVersion);
             Assert.Equal(1, await db.Advertisers.CountAsync());
             Assert.Equal(1, await db.AdvertiserAccountMemberships.CountAsync());
             var saved = await db.AdvertiserRegistrationReceipts.SingleAsync();
@@ -252,7 +255,11 @@ public sealed class AdvertiserRegistrationSecurityTests
                 "DELETE FROM \"AdvertiserRegistrationReceipts\" WHERE \"Id\" = {0}", saved.Id));
 
             var retry = Assert.IsType<OkObjectResult>(await CallRegister(db, "auth-subject-123", request));
-            Assert.Equal(receipt.ReceiptId, Assert.IsType<AdvertiserRegistrationReceiptDto>(retry.Value).ReceiptId);
+            var replayReceipt = Assert.IsType<AdvertiserRegistrationReceiptDto>(retry.Value);
+            Assert.Equal(receipt.ReceiptId, replayReceipt.ReceiptId);
+            Assert.Equal(request.RequestKey, replayReceipt.RequestKey);
+            Assert.Equal(request.PrivacyNoticeVersion, replayReceipt.PrivacyNoticeVersion);
+            Assert.Equal(request.TermsVersion, replayReceipt.TermsVersion);
 
             var mismatch = await CallRegister(db, "auth-subject-123", request with { Website = "https://different.example.invalid" });
             Assert.IsType<ConflictObjectResult>(mismatch);
