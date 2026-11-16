@@ -80,6 +80,7 @@ sub classify {
   my $dclass='OTHER';
   if (lc(trim($database)) eq 'bliss') { $dclass='BLISS'; }
   elsif (lc(trim($database)) eq 'postgres') { $dclass='POSTGRES'; }
+  elsif (lc(trim($database)) eq 'railway') { $dclass='RAILWAY'; }
   return ($hclass,$dclass);
 }
 my @result=eval { classify() };
@@ -119,7 +120,22 @@ if ($remoteExitCode -ne 0) {
     throw 'Task3: remote classifier refused the connection setting or failed; no database changes were made.'
 }
 $hostLines = @($lines | Where-Object { $_ -cmatch '^TASK3_HOST_CLASS=(RAILWAY_INTERNAL|RAILWAY_PUBLIC_PROXY|BLISS_SUPABASE_DIRECT|OTHER_OR_EXTERNAL)$' })
-$dbLines = @($lines | Where-Object { $_ -cmatch '^TASK3_DATABASE_CLASS=(BLISS|POSTGRES|OTHER)$' })
+$dbLines = @($lines | Where-Object { $_ -cmatch '^TASK3_DATABASE_CLASS=(BLISS|POSTGRES|RAILWAY|OTHER)
+$identityLines = @($lines | Where-Object { $_ -ceq 'TASK3_DB_IDENTITY=CLASSIFIED' })
+$noWriteLines = @($lines | Where-Object { $_ -ceq 'TASK3_NO_DATABASE_WRITES=PASS' })
+$holdLines = @($lines | Where-Object { $_ -ceq 'TASK3_SCHEMA_AND_BACKUP_ACCEPTANCE=NOT_ESTABLISHED' })
+if ($identityLines.Count -ne 1 -or $hostLines.Count -ne 1 -or
+    $dbLines.Count -ne 1 -or $noWriteLines.Count -ne 1 -or $holdLines.Count -ne 1) {
+    Write-Output 'TASK3_DB_IDENTITY=NOT_VERIFIED'
+    throw 'Task3: remote classifier output incomplete. Never infer the database identity from an SSH exit code.'
+}
+Write-Output 'TASK3_DB_IDENTITY=CLASSIFIED'
+Write-Output $hostLines[0]
+Write-Output $dbLines[0]
+Write-Output 'TASK3_NO_DATABASE_WRITES=PASS'
+Write-Output 'TASK3_SCHEMA_AND_BACKUP_ACCEPTANCE=NOT_ESTABLISHED'
+Write-Output 'TASK3_REGISTRATION_ACTIVATION=NOT_AUTHORIZED'
+ })
 $identityLines = @($lines | Where-Object { $_ -ceq 'TASK3_DB_IDENTITY=CLASSIFIED' })
 $noWriteLines = @($lines | Where-Object { $_ -ceq 'TASK3_NO_DATABASE_WRITES=PASS' })
 $holdLines = @($lines | Where-Object { $_ -ceq 'TASK3_SCHEMA_AND_BACKUP_ACCEPTANCE=NOT_ESTABLISHED' })
