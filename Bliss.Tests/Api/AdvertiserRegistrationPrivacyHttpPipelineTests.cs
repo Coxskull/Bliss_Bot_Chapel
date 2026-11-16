@@ -168,7 +168,9 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         {
             Assert.Single(json.RootElement.EnumerateArray());
             Assert.Equal(caseId, json.RootElement[0].GetProperty("caseId").GetGuid());
-            Assert.Equal(key, json.RootElement[0].GetProperty("requestKey").GetGuid());
+            // Operator queue is deliberately a different minimal DTO.
+            // It must not disclose the applicant's replay/idempotency key.
+            Assert.False(json.RootElement[0].TryGetProperty("requestKey", out _));
         }
         if (isolated is null) return; // Local source-only builds lack Postgres; CI exercises ACK.
 
