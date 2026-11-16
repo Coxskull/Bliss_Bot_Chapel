@@ -25,3 +25,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify embedded Perl classifier with synthetic connection strings
         run: node scripts/task3-private-db-target-check-smoke.mjs
+      - name: Parse owner-only PowerShell wrapper without executing Railway SSH
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'scripts/task3-private-db-target-check.ps1').Path,
+            [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -ne 0) {
+            throw 'TASK3_POWERSHELL_WRAPPER_SYNTAX_INVALID'
+          }
+          Write-Output 'TASK3_POWERSHELL_WRAPPER_PARSE_PASS'
+
