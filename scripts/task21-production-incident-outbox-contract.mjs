@@ -6,9 +6,13 @@ const sql=readFileSync(new URL("./task21/production-real-incident-alert-outbox-2
 // still fail closed until a real Auth-backed enabled single human exists.
 assert.match(sql,/WHERE enabled AND role='GENERAL_SUPPORT'\) > 1/);
 assert.doesNotMatch(sql,/WHERE enabled AND role='GENERAL_SUPPORT'\) <> 1/);
-assert.match(sql,/JOIN auth\.users u ON u\.id=g\.user_id/);
-assert.match(sql,/g\.allowed_origin='https:\/\/alphacreativecontent\.com'/);
-assert.match(sql,/g\.enabled=true AND g\.role='GENERAL_SUPPORT'/);
+// Delegate to the existing canonical check: this verifies a real
+// auth.users identity, allowed origin, role, and enabled grant at runtime.
+const authz=readFileSync(new URL("./task21/production-locked-single-operator-20261112.sql",import.meta.url),"utf8");
+assert.match(sql,/public\.alpha_support_manual_operator_authorized\(g\.user_id\)/);
+assert.match(authz,/JOIN auth\.users u ON u\.id=g\.user_id/);
+assert.match(authz,/g\.enabled=true/);
+assert.match(authz,/g\.allowed_origin='https:\/\/alphacreativecontent\.com'/);
 assert.match(sql,/FROM picked p[\s\S]*?q\.state='QUEUED'/);
 assert.doesNotMatch(sql,/INSERT\s+INTO\s+(?:auth\.users|alpha_support_private\.manual_operator_grants)/i);
 for(const expected of [
