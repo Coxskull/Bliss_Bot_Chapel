@@ -11,8 +11,29 @@ BEGIN
  OR NOT EXISTS(SELECT 1 FROM pg_constraint
    WHERE conrelid='alpha_support_private.manual_mail_case_events'::regclass
      AND pg_get_constraintdef(oid) LIKE '%ON DELETE CASCADE%')
- OR NOT EXISTS(SELECT 1 FROM cron.job
+ OR to_regclass('cron.job') IS NULL
+ THEN RAISE EXCEPTION 'TASK21_90DAY_MAIL_RETENTION_GUARD_FAILED'; END IF;
+ -- Production already has this retention schedule: leave it untouched.
+ -- An empty Supabase development branch has no scheduled support-mail job;
+ -- create its normal 90-day SQL-only cleanup, never a provider/network call.
+ IF NOT EXISTS(SELECT 1 FROM cron.job
    WHERE jobname='alpha_task21_support_mail_90d_purge' AND active=true)
+ THEN
+   -- Never silently replace a disabled or nonstandard historical job,
+   -- or retroactively schedule a purge on live pre-existing support cases.
+   IF EXISTS (SELECT 1 FROM cron.job
+     WHERE jobname='alpha_task21_support_mail_90d_purge')
+   OR EXISTS (SELECT 1 FROM alpha_support_private.manual_mail_cases)
+   THEN RAISE EXCEPTION 'TASK21_90DAY_MAIL_RETENTION_GUARD_FAILED'; END IF;
+   PERFORM cron.schedule(
+     'alpha_task21_support_mail_90d_purge',
+     '17 3 * * *',
+     $retention$DELETE FROM alpha_support_private.manual_mail_cases
+       WHERE created_at < now() - interval '90 days';$retention$
+   );
+ END IF;
+ IF (SELECT count(*) FROM cron.job
+   WHERE jobname='alpha_task21_support_mail_90d_purge' AND active=true)<>1
  THEN RAISE EXCEPTION 'TASK21_90DAY_MAIL_RETENTION_GUARD_FAILED'; END IF;
  SELECT pg_get_triggerdef(t.oid) INTO v_trigger
  FROM pg_trigger t
