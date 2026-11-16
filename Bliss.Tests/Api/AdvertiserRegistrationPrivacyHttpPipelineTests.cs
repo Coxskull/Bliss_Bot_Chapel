@@ -78,6 +78,7 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.Equal("RECEIVED", json.RootElement.GetProperty("status").GetString());
+        Assert.Equal(key, json.RootElement.GetProperty("requestKey").GetGuid());
         return json.RootElement.GetProperty("caseId").GetGuid();
     }
 
@@ -128,7 +129,10 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         using var replay = await a.PostAsJsonAsync(Base, new { requestKey = key, requestType = "MARKETING_WITHDRAWAL" });
         Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
         using (var json = JsonDocument.Parse(await replay.Content.ReadAsStringAsync()))
+        {
             Assert.Equal(caseId, json.RootElement.GetProperty("caseId").GetGuid());
+            Assert.Equal(key, json.RootElement.GetProperty("requestKey").GetGuid());
+        }
         using var wrongType = await a.PostAsJsonAsync(Base, new { requestKey = key, requestType = "ERASURE" });
         Assert.Equal(HttpStatusCode.Conflict, wrongType.StatusCode);
         using var crossTenant = await b.PostAsJsonAsync(Base, new { requestKey = key, requestType = "MARKETING_WITHDRAWAL" });
@@ -142,6 +146,7 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         {
             Assert.Single(json.RootElement.EnumerateArray());
             Assert.Equal(caseId, json.RootElement[0].GetProperty("caseId").GetGuid());
+            Assert.Equal(key, json.RootElement[0].GetProperty("requestKey").GetGuid());
         }
         using var otherOwn = await b.GetAsync(Base);
         Assert.Equal(HttpStatusCode.OK, otherOwn.StatusCode);
@@ -163,6 +168,7 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         {
             Assert.Single(json.RootElement.EnumerateArray());
             Assert.Equal(caseId, json.RootElement[0].GetProperty("caseId").GetGuid());
+            Assert.Equal(key, json.RootElement[0].GetProperty("requestKey").GetGuid());
         }
         if (isolated is null) return; // Local source-only builds lack Postgres; CI exercises ACK.
 
