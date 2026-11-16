@@ -112,7 +112,7 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         # Network/unknown failures MUST keep the key for safe idempotent retry.
         js = (PUBLIC / "advertiser-account-rights.js").read_text(encoding="utf-8")
         conflict = re.search(
-            r"if \\(res\\.status === 409\\) \\{(?P<body>.*?)\\n      \\}", js, re.S
+            r"if \(res\.status === 409\) \{(?P<body>.*?)\n      \}", js, re.S
         )
         self.assertIsNotNone(conflict)
         body = conflict.group("body")
