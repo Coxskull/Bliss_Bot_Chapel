@@ -93,6 +93,8 @@
         && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
       if ((res.status !== 200 && res.status !== 201)
           || !isUuid(payload.caseId)
+          || !isUuid(payload.requestKey)
+          || payload.requestKey.toLowerCase() !== requestKey.toLowerCase()
           || payload.requestType !== form.elements.requestType.value
           || (payload.status !== "RECEIVED" && payload.status !== "VERIFYING")
           || typeof payload.createdAt !== "string"
