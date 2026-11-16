@@ -83,7 +83,7 @@ public sealed class AdvertiserPrivacyRequestsController(BlissDbContext db, Bliss
             .Where(x => x.Subject == membership.Subject && x.AdvertiserId == membership.AdvertiserId)
             .OrderByDescending(x => x.CreatedAt)
             .Take(25)
-            .Select(x => new AdvertiserPrivacyCaseReceipt(x.Id, x.RequestType, x.Status, x.CreatedAt))
+            .Select(x => new AdvertiserPrivacyCaseReceipt(x.Id, x.RequestType, x.Status, x.CreatedAt, x.RequestKey))
             .ToArrayAsync(cancellationToken);
         return Ok(requests);
     }
@@ -199,11 +199,11 @@ public sealed class AdvertiserPrivacyRequestsController(BlissDbContext db, Bliss
             : Conflict(new { error = "The request key is already in use." });
 
     private static AdvertiserPrivacyCaseReceipt Receipt(AdvertiserPrivacyRequest record) =>
-        new(record.Id, record.RequestType, record.Status, record.CreatedAt);
+        new(record.Id, record.RequestType, record.Status, record.CreatedAt, record.RequestKey);
 }
 
 public sealed record AdvertiserPrivacyCaseRequest(Guid RequestKey, string RequestType);
-public sealed record AdvertiserPrivacyCaseReceipt(Guid CaseId, string RequestType, string Status, DateTime CreatedAt);
+public sealed record AdvertiserPrivacyCaseReceipt(Guid CaseId, string RequestType, string Status, DateTime CreatedAt, Guid RequestKey);
 
 public sealed record AdvertiserPrivacyOperatorCase(Guid CaseId, string Subject, Guid AdvertiserId,
     string RequestType, string Status, DateTime CreatedAt, DateTime? AcknowledgedAt);
