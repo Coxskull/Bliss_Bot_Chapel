@@ -2,12 +2,14 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Bliss.Api.Runtime;
 using Bliss.Api.Security;
 using Bliss.Domain.Entities;
 using Bliss.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Bliss.Api.Controllers;
@@ -21,6 +23,7 @@ public sealed class AdvertiserRegistrationController(BlissDbContext db, BlissAut
 
     [Authorize]
     [HttpPost("register")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [RequestSizeLimit(16 * 1024)]
     public async Task<IActionResult> Register([FromBody] AdvertiserRegistrationRequest request, CancellationToken cancellationToken)
     {
