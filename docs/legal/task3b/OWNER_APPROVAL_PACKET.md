@@ -131,3 +131,21 @@ Provider readback shows current branch logical size **31,711,232 bytes**, active
 - The Neon project remains `block_public_connections=true`, `allowed_ips=[]`; endpoint is idle/suspended. The pending Railway API service is still **STAGED-CREATE**, not deployed, with registration/auth/privacy switches off and exact CI-accepted source pinned to `80ecbd039101dfed687cfa35397959d9f9cfd017`.
 
 **Conclusion:** A genuine low-cost database quota boundary is now in place, but a secure Railway-to-Neon path cannot be enabled under the currently verified Free Neon + existing Railway workspace constraints without a plan/architecture change and owner-approved spend. Do not weaken public blocking, copy production credentials, change shared workspace billing limits, or deploy the API merely to bypass this gate. Task #3B remains **OPEN / HOSTED NO-GO**.
+## 2026-11-16 — proposed retention policy for owner decision (NOT effective)
+
+The following is a **privacy-minimizing operational proposal**, not an adopted policy, not legal advice, and not a statement of current system behavior. It must be reconciled with each market's mandatory retention/limitation rules and implemented/tested before publication:
+
+| Data class | Proposed default criterion | Required technical proof / exception |
+|---|---|---|
+| Unsubmitted registration draft | Do not persist server-side; clear transient browser data at session end | Verify browser behavior; do not put credentials or unnecessary profile fields in local storage |
+| Declined/withdrawn pending application | Delete or de-identify business profile and associated Auth identity within **90 days after final decision/withdrawal** | Verify provider Auth deletion, database deletion/anonymization and case/appeal exceptions |
+| Approved advertiser profile | Retain while account is active; delete or de-identify **90 days after verified closure** | Revoke sessions immediately; separate legal/tax/dispute records from profile |
+| Registration and consent receipt | Keep minimum necessary proof for **3 years after final decision/closure**, then delete or irreversibly de-identify where lawful | Current receipt is append-only and identifies subject; schema and lawful anonymization must be designed and tested; longer legal hold must be documented |
+| Account privacy/support case | Keep minimal case record for **3 years after verified final resolution** | Final disposition, actual action and customer communication must be recorded; current API only accepts and ACKs cases, no final resolution or erasure endpoint |
+| Application/security logs | **90 days**, except a documented incident/security/legal hold | Configure and verify each provider's actual log retention; do not claim third-party defaults are controlled by ALPHA |
+| Encrypted backups | **30-day rolling retention** with documented key custody and expiry | Actual schedule, restore test and backup deletion lifecycle must be verified; account-level erasure may only complete after backup expiry |
+| Optional account marketing | Remains **disabled** until send-side suppression and withdrawal are proven | If later enabled, retain only the minimum suppression marker needed to honor withdrawal; prove downstream processor/CRM suppression |
+
+**Owner approval required:** accept or revise these proposed periods and exceptions. If any applicable market requires a different period, use the stricter/required market-specific rule and document why. No version of this proposal may be represented as effective until actual deletion, Auth revocation, case closure, log expiry and backup lifecycle controls have passed.
+
+**Controller contact decision also remains open:** the live `/contact.html` offers public-interest inquiry forms only; the existing `/privacy-request.html` is explicitly limited to public-form records. A personal operator mailbox is not to be published as the company's privacy contact without explicit owner approval. Choose a **company-controlled privacy email** or approve the **authenticated account-rights form** as the public account-request channel once its hosted OIDC/API/operator route is genuinely accepted.
