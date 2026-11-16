@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-11-16",
+  "purpose": "Non-secret read-only custody snapshot of seven Supabase public-intake/support migrations; not a deploy command or actual hosted replay acceptance",
+  "supabase_parent_project_ref": "bkutbglzivfdnoerigyb",
+  "supabase_runtime": "public intake and support workflows, PostgreSQL 17",
+  "railway_service_scope": "Bliss app and separate Railway Postgres 18; actual protected application connection-string target NOT independently read",
+  "expected_managed_replay_status": "UNRECONCILED; historic SQL in production schema_migrations.statements must not be overwritten",
+  "migrations": [
+    {
+      "version": "20261112042025",
+      "name": "task21_private_manual_mailbox_metadata_20261112",
+      "source": "scripts/task21/production-manual-mailbox-metadata-20261112.sql",
+      "historic_md5": "7cf38334a3425d8e288beabf05e00ba3",
+      "source_relation": "unchanged"
+    },
+    {
+      "version": "20261112054014",
+      "name": "task21_production_locked_single_operator_20261112",
+      "source": "scripts/task21/production-locked-single-operator-20261112.sql",
+      "historic_md5": "305850fc1e9e45befd4a47a67b7a06d1",
+      "source_relation": "unchanged"
+    },
+    {
+      "version": "20261112070921",
+      "name": "task21_privacy_form_private_staff_queue_20261112",
+      "source": "scripts/task21/production-privacy-form-private-queue-20261112.sql",
+      "historic_md5": "edf64a7b24b61d0b5b2ab5ba3c6235d5",
+      "source_relation": "changed_review_only"
+    },
+    {
+      "version": "20261112071252",
+      "name": "task21_mailcase_90day_retention_cascade_fix_20261112",
+      "source": "scripts/task21/production-mailcase-retention-cascade-fix-20261112.sql",
+      "historic_md5": "7e70b96f8d81acc088c94f0d8fbcfa6f",
+      "source_relation": "changed_review_only"
+    },
+    {
+      "version": "20261112072944",
+      "name": "task21_production_high_risk_alert_outbox_20261112",
+      "source": "scripts/task21/production-real-incident-alert-outbox-20261112.sql",
+      "historic_md5": "c52e16f7ab5a830dfe1c5c2c9c995652",
+      "source_relation": "changed_review_only"
+    },
+    {
+      "version": "20261112074018",
+      "name": "task22_ghl_marketing_optout_fail_closed_20261112",
+      "source": "scripts/task22/production-crm-optout-local-transport-hold-20261112.sql",
+      "historic_md5": "6c659335db5266a5c7efcde271a9afab",
+      "source_relation": "changed_review_only"
+    },
+    {
+      "version": "20261112100346",
+      "name": "task22_current_explicit_optin_and_revocation_audit_20261112",
+      "source": "scripts/task22/production-consent-readiness-optout-guard-20261112.sql",
+      "historic_md5": "080e940e237368ed5baf9f1c7a6130b4",
+      "source_relation": "unchanged"
+    }
+  ]
+}
