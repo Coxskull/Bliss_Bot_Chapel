@@ -69,6 +69,17 @@
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(response.status === 409 ? "This sign-in or request already has a registration." : "Registration was rejected. Check required consent and details.");
+      // HTTP success alone is not an immutable consent/registration receipt.
+      // Never clear the form or rotate its idempotency key when the response
+      // may have been accepted upstream but the authoritative receipt is absent.
+      const isUuid = value => typeof value === "string"
+        && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+      if ((response.status !== 200 && response.status !== 201)
+          || body.status !== "PENDING_REVIEW"
+          || !isUuid(body.receiptId) || !isUuid(body.advertiserId)
+          || body.marketingOptIn !== payload.marketingOptIn) {
+        throw new Error("Registration receipt could not be verified. Keep this form and retry only with the same request key; do not create a second registration.");
+      }
       registration.reset();
       registrationResult.textContent = `Registration received. Status: ${body.status}. Receipt: ${body.receiptId}. Workspace access remains pending review.`;
       requestKey = randomKey();
