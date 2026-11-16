@@ -8,7 +8,7 @@ public static class AdvertiserRegistrationBoundary
 {
     public static bool ShouldDeny(HttpContext context, BlissAuthenticationOptions options)
     {
-        if (!BlissAuthorization.IsPendingAdvertiserRegistration(context.User, options)
+        if (!BlissAuthorization.IsPendingAdvertiserIdentity(context.User, options)
             || !context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
             return false;
 
@@ -20,7 +20,7 @@ public static class AdvertiserRegistrationBoundary
             return false;
         if (HttpMethods.IsPost(context.Request.Method)
             && (path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase)
-                || path.Equals("/api/advertisers/register", StringComparison.OrdinalIgnoreCase)))
+                || (options.AdvertiserRegistrationRequested && path.Equals("/api/advertisers/register", StringComparison.OrdinalIgnoreCase))))
             return false;
         return true;
     }
