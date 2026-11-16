@@ -179,9 +179,7 @@ LANGUAGE sql SECURITY INVOKER SET search_path=pg_catalog AS $claim$
     -- This remains enforced at runtime, not at schema-install time.
     AND (SELECT count(*)
       FROM alpha_support_private.manual_operator_grants g
-      JOIN auth.users u ON u.id=g.user_id
-      WHERE g.enabled=true AND g.role='GENERAL_SUPPORT'
-        AND g.allowed_origin='https://alphacreativecontent.com')=1
+      WHERE public.alpha_support_manual_operator_authorized(g.user_id))=1
   ORDER BY q.queued_at,q.alert_id
   FOR UPDATE SKIP LOCKED LIMIT 1
  ), changed AS (
