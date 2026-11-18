@@ -11,6 +11,16 @@
   let saved = false;
   let submitting = false;
   const field = name => form.elements.namedItem(name);
+  // A public, same-origin planning link may prefill ONLY this fixed topic.
+  // It must never submit a form, grant consent, or infer an account/order.
+  if (form.dataset.kind === "advertiser" &&
+      new URLSearchParams(window.location.search).get("service") === "planning") {
+    const description = form.elements.namedItem("description");
+    if (description && !description.value) {
+      description.value = "Please send me a Campaign Planning & Coordination planning-only proposal. I understand that this inquiry is free and creates no order or payment obligation.";
+    }
+  }
+
   const value = name => String(field(name)?.value ?? "").trim();
   const checked = name => Boolean(field(name)?.checked);
   const checkedValues = name => [...form.querySelectorAll('input[name="' + name + '"]:checked')].map(el => el.value);
