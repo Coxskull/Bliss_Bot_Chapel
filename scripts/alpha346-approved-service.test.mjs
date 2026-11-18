@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+import {runInNewContext} from 'node:vm';
+import {URLSearchParams} from 'node:url';
 const get=async path=>readFile(new URL(path,import.meta.url),'utf8');
 const services=await get('../frontend/public/services.html');
 const approval=await get('../docs/commercial/ALPHA-346-PLANNING-SERVICE-APPROVAL-20261107.md');
@@ -13,7 +15,7 @@ test('public service has exactly five planning outputs and existing request form
  const section=services.slice(start,end);
  assert.equal((section.match(/<li>/g)||[]).length,5);
  for(const x of ['Campaign discovery brief','Creator/channel suitability plan','Creative direction outline','Coordination schedule','Final planning summary'])assert.ok(section.includes(x));
- assert.match(section,/href="\/join-advertiser.html"/);
+ assert.match(section,/href="\\/join-advertiser.html\\?service=planning"/);
  assert.match(section,/creates no order or payment obligation/);
  assert.match(services,/No online checkout is enabled/);
 });
@@ -31,4 +33,35 @@ test('private draft proposal desk is absent from public build and no checkout is
  assert.ok(!builder.includes('alpha346-proposal-desk.html'));
  assert.ok(!services.includes('stripe.com/checkout'));
  assert.ok(!services.includes('type="payment"'));
+});
+
+test('launch planning URL prefills only fixed customer-visible service text',async()=>{
+ const script=await get('../frontend/public/alpha-intake.js');
+ for(const [kind,search,before,prefill] of [
+  ['advertiser','?service=planning','',true],
+  ['advertiser','?service=other','',false],
+  ['creator','?service=planning','',false],
+  ['advertiser','?service=planning','Existing customer text',false],
+  ['advertiser','?service=planning%3Cscript%3E','',false]
+ ]){
+  const description={value:before};
+  const consent={checked:false},marketing={checked:false};
+  const events=[];
+  const form={dataset:{kind},elements:{namedItem(n){
+    return n==='description'?description:
+      n==='contact_consent'?consent:
+      n==='marketing_opt_in'?marketing:null;
+  }},addEventListener(event){events.push(event);}};
+  const document={querySelector(sel){
+    return sel==='#alpha-intake-form'?form:
+      sel==='#form-status'?{hidden:true}:
+      sel==='#submit-button'?{textContent:'Submit'}:null;
+  }};
+  runInNewContext(script,{document,window:{location:{search}},URLSearchParams});
+  assert.deepEqual(events,['input','submit']);
+  assert.equal(description.value.startsWith('Please send me a Campaign Planning & Coordination planning-only proposal.'),prefill);
+  if(!prefill)assert.equal(description.value,before);
+  assert.equal(consent.checked,false);
+  assert.equal(marketing.checked,false);
+ }
 });
