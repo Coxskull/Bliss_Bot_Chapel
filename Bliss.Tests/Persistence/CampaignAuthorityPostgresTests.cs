@@ -67,8 +67,9 @@ public sealed class CampaignAuthorityPostgresTests
             await db.SaveChangesAsync();
             var migrator = db.GetService<IMigrator>();
             var migrations = db.Database.GetMigrations().ToList();
-            Assert.EndsWith("CampaignAuthorityLineage", migrations[^1]);
-            await migrator.MigrateAsync(migrations[^2]);
+            var authorityMigration = migrations.FindIndex(x => x.EndsWith("CampaignAuthorityLineage", StringComparison.Ordinal));
+            Assert.True(authorityMigration > 0, "CampaignAuthorityLineage migration must be present after its predecessor.");
+            await migrator.MigrateAsync(migrations[authorityMigration - 1]);
             await migrator.MigrateAsync();
             db.ChangeTracker.Clear();
             Assert.Equal(RecordAuthorityStatuses.Unverified, (await db.Creators.SingleAsync(x => x.Id == unknown)).AuthorityStatus);

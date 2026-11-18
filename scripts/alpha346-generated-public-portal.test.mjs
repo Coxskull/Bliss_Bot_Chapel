@@ -39,6 +39,14 @@ test('generated contact provides the selected inquiry mailbox without claiming p
   assert.match(contact, /href="\/privacy-request.html"/);
 });
 
+test('public advertiser login does not expose a missing registration route before hosted release', async () => {
+  const login = await load('advertiser-login.html');
+  assert.match(login, /Account registration not yet available/);
+  assert.match(login, /aria-disabled="true"/);
+  assert.ok(!login.includes('href="/advertiser-registration.html"'));
+  assert.ok(login.includes('href="https://')); // Private sign-in remains on Railway.
+});
+
 test('generated portal does not publish internal proposal tools or restricted operator routes', async () => {
   const index = await load('index.html');
   assert.ok(index.length > 100);

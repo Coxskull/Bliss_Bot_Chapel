@@ -104,6 +104,39 @@ public sealed class AdvertiserSelfServiceGateTests
     }
 
     [Fact]
+    public void Approved_advertiser_privacy_case_boundary_allows_only_exact_get_and_post_when_requested()
+    {
+        var options = Options();
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(
+        [
+            new Claim("sub", Subject),
+            new Claim("roles", "bliss.advertiser", ClaimValueTypes.String, Issuer),
+            new Claim(BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType,
+                "true", ClaimValueTypes.Boolean, Issuer)
+        ], "oidc"));
+
+        bool denied(string verb, string path)
+        {
+            var context = new DefaultHttpContext { User = principal };
+            context.Request.Method = verb;
+            context.Request.Path = path;
+            return AdvertiserApiBoundary.ShouldDeny(context, options);
+        }
+
+        Assert.True(denied("GET", "/api/advertisers/privacy-requests"));
+        Assert.True(denied("POST", "/api/advertisers/privacy-requests"));
+        options.AdvertiserPrivacyRequestsRequested = true;
+        Assert.False(denied("GET", "/api/advertisers/privacy-requests"));
+        Assert.False(denied("POST", "/api/advertisers/privacy-requests"));
+        Assert.True(denied("PUT", "/api/advertisers/privacy-requests"));
+        Assert.True(denied("DELETE", "/api/advertisers/privacy-requests"));
+        Assert.True(denied("GET", "/api/advertisers/privacy-requests/operator-queue"));
+        Assert.True(denied("POST", "/api/advertisers/privacy-requests/00000000-0000-0000-0000-000000000001/acknowledge"));
+        Assert.True(denied("GET", "/api/advertisers/privacy-requests/another-tenant"));
+        Assert.True(denied("GET", "/api/creators"));
+    }
+
+    [Fact]
     public void Legacy_advertiser_staff_role_does_not_inherit_customer_api_boundary()
     {
         var context = new DefaultHttpContext();
