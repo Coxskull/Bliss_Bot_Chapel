@@ -29,7 +29,7 @@ The accepted Order must list the review/revision cycle, what constitutes an acce
 No public inquiry guarantees any creator, impressions, results or placement. If the Provider cannot supply an accepted deliverable or the verified creator withdraws, promptly disclose the issue, offer a documented reasonable reschedule or substitute **only with the Customer's consent**, or apply an agreed, lawful refund for the undelivered work. Provider-caused nonperformance must not be disguised as a customer's cancellation or shift undisclosed risk to the Customer. No substitute creator/format is automatic.
 
 ### 7. Requesting cancellation, refund or complaint
-Customer contacts the **owner-approved, monitored business support channel: [SUPPORT EMAIL / TELEPHONE OR VERIFIED SUPPORT FORM — CAPTAIN TO APPROVE]** and references the Order/receipt ID (avoid submitting full card data or sensitive credentials). Provider should acknowledge the request, preserve the original scope, milestone and delivery evidence, review the issue objectively, and communicate a reasoned decision and any proposed remedy through a verified channel.
+For **pre-payment business inquiries only**, the existing owner-designated contact is **dejesuserwin1@gmail.com**, with a previously recorded two-way noncustomer mail test. This does **not** certify a staffed paid-customer support desk. Before taking any future paid order, ALPHA must verify and approve the actual monitored paid-order support route, name its responsible human operator and escalation procedure, and show that route to the Customer in the accepted Order. For a future cancellation, refund or complaint the Customer would use that separately approved Order contact and reference the Order/receipt ID (never submit card details or credentials). Provider should acknowledge the request, preserve the original scope, milestone and delivery evidence, review the issue objectively, and communicate a reasoned decision and any proposed remedy through a verified channel.
 
 **Proposed service standards for approval:** acknowledgement within **[N] business days**; initial decision within **[M] business days** unless verification/investigation requires more time, with a status update; escalation point **[RESPONSIBLE CONTACT / ROLE]**. None are effective until completed and approved. Define time zones, business days, and the official channel.
 
@@ -49,7 +49,7 @@ Do not apply later policy changes retroactively without lawful agreement. Show t
 
 ### CAPTAIN DECISION RECORD (REQUIRED)
 - Legal/entity/payment-country confirmation: **NOT PROVIDED**
-- Approved live customer support channel and support owner: **NOT PROVIDED**
+- Owner-designated business inquiry contact: **dejesuserwin1@gmail.com** (prior two-way noncustomer test documented). Paid-order support route, monitoring coverage, escalation owner and service terms: **NOT APPROVED / NO SLA**
 - Refund before commencement and authorized third-party cost allocation: **NOT APPROVED**
 - Refund after commencement and milestone cost calculation: **NOT APPROVED**
 - Revision/acceptance and nonperformance remedies: **NOT APPROVED**
