@@ -43,8 +43,8 @@ test('public advertiser login does not expose a missing registration route befor
   const login = await load('advertiser-login.html');
   assert.match(login, /Account registration not yet available/);
   assert.match(login, /aria-disabled="true"/);
-  assert.doesNotMatch(login, /href="\\/advertiser-registration\\.html"/);
-  assert.match(login, /href="https:\/\//); // Existing private sign-in stays on Railway.
+  assert.ok(!login.includes('href="/advertiser-registration.html"'));
+  assert.ok(login.includes('href="https://')); // Private sign-in remains on Railway.
 });
 
 test('generated portal does not publish internal proposal tools or restricted operator routes', async () => {
