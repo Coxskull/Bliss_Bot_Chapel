@@ -75,6 +75,11 @@ if (LoopbackIngress.IsConfigured(runtime, builder.Configuration))
 
 var posture = ProductionPostureEvaluator.Evaluate(
     ProductionPostureEvaluator.CreateInput(builder.Environment, builder.Configuration, authentication, runtime));
+// Production startup emits only fixed readiness categories; never log secrets,
+// configuration values, customer identifiers, or a false hosted acceptance.
+if (!builder.Environment.IsDevelopment())
+    foreach (var marker in RegistrationReleaseReadinessMarkers.Build(posture, authentication, runtime))
+        Console.WriteLine(marker);
 if (!runtime.RestrictedPreview) ProductionPostureEvaluator.Ensure(posture);
 if (runtime.RestrictedPreview && applyMigrations)
     throw new InvalidOperationException("Migrations are unavailable in restricted preview.");
