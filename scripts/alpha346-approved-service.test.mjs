@@ -15,7 +15,7 @@ test('public service has exactly five planning outputs and existing request form
  const section=services.slice(start,end);
  assert.equal((section.match(/<li>/g)||[]).length,5);
  for(const x of ['Campaign discovery brief','Creator/channel suitability plan','Creative direction outline','Coordination schedule','Final planning summary'])assert.ok(section.includes(x));
- assert.match(section,/href="\\/join-advertiser.html\\?service=planning"/);
+ assert.ok(section.includes('href="/join-advertiser.html?service=planning"'));
  assert.match(section,/creates no order or payment obligation/);
  assert.match(services,/No online checkout is enabled/);
 });
