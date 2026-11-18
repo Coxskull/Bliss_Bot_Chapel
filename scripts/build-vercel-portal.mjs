@@ -75,6 +75,22 @@ for (const [filename, routes] of [
   for (const route of routes) {
     page = page.replaceAll(`href="${route}"`, `href="${new URL(route, origin).href}"`);
   }
+  if (filename === 'advertiser-login.html') {
+    // Account creation and auth cookies must remain on the application origin.
+    // Until a separately verified hosted-registration release, do not send
+    // Vercel visitors to an unbuilt registration page (a misleading 404).
+    const link = '<a class="submit secondary-action" href="/advertiser-registration.html">Register advertiser account</a>';
+    if (!page.includes(link)) throw new Error('Advertiser registration entry changed; fail closed');
+    if (process.env.ALPHA_ADVERTISER_REGISTRATION_PUBLIC_ENABLED === 'true') {
+      page = page.replace(link, link.replace(
+        'href="/advertiser-registration.html"',
+        `href="${new URL('/advertiser-registration.html', origin).href}"`
+      ));
+    } else {
+      page = page.replace(link,
+        '<span class="submit secondary-action" aria-disabled="true">Account registration not yet available</span>');
+    }
+  }
   await writeFile(resolve(output, filename), page);
 }
 
