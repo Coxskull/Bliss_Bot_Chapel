@@ -397,7 +397,10 @@ var operationsFrontend = Path.Combine(frontendRoot, "operations");
 var generatedCreativeRoot = string.IsNullOrWhiteSpace(runtime.CreativeGeneration.OutputPath)
     ? Path.Combine(operationsFrontend, "generated")
     : Path.GetFullPath(runtime.CreativeGeneration.OutputPath);
-Directory.CreateDirectory(generatedCreativeRoot);
+// A locked interface preview cannot serve generated media and must never
+// attempt to write into the immutable /app image as an unprivileged user.
+if (!runtime.RestrictedPreview)
+    Directory.CreateDirectory(generatedCreativeRoot);
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(publicFrontend)
@@ -407,7 +410,7 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = new PhysicalFileProvider(operationsFrontend),
     RequestPath = "/operations"
 });
-if (!Path.GetFullPath(generatedCreativeRoot).StartsWith(
+if (!runtime.RestrictedPreview && !Path.GetFullPath(generatedCreativeRoot).StartsWith(
         Path.GetFullPath(operationsFrontend) + Path.DirectorySeparatorChar,
         StringComparison.Ordinal))
 {
@@ -559,7 +562,9 @@ app.MapGet("/api/auth/supabase-config", () =>
     authentication.SupabaseEnabled && authentication.SupabasePublishableKey.StartsWith("sb_publishable_", StringComparison.Ordinal)
         ? Results.Json(new { url = new Uri(authentication.Authority).GetLeftPart(UriPartial.Authority),
             publishableKey = authentication.SupabasePublishableKey, clientId = authentication.ClientId,
-            advertiserRegistrationEnabled = authentication.Enabled && authentication.AdvertiserRegistrationRequested })
+            advertiserRegistrationEnabled = authentication.Enabled && authentication.AdvertiserRegistrationRequested,
+            advertiserPrivacyRequestsEnabled = authentication.Enabled && authentication.SupabaseEnabled
+                && authentication.AdvertiserPrivacyRequestsRequested })
         : Results.Problem("Supabase login is not configured.", statusCode: 503))
     .AllowAnonymous();
 app.MapHealthChecks(

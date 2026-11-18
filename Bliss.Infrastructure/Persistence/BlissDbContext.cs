@@ -18,6 +18,7 @@ public class BlissDbContext : DbContext
     public DbSet<Advertiser> Advertisers => Set<Advertiser>();
     public DbSet<AdvertiserAccountMembership> AdvertiserAccountMemberships => Set<AdvertiserAccountMembership>();
     public DbSet<AdvertiserRegistrationReceipt> AdvertiserRegistrationReceipts => Set<AdvertiserRegistrationReceipt>();
+    public DbSet<AdvertiserPrivacyRequest> AdvertiserPrivacyRequests => Set<AdvertiserPrivacyRequest>();
     public DbSet<AdvertiserProgram> AdvertiserPrograms => Set<AdvertiserProgram>();
     public DbSet<AdvertiserOpportunity> AdvertiserOpportunities => Set<AdvertiserOpportunity>();
 

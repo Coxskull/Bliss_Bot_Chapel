@@ -74,15 +74,94 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertIn("limited to public-interest submissions", self.privacy)
         self.assertIn("not</strong> a verified account-registration privacy request channel", self.privacy)
 
-    def test_registration_csrf_header_matches_api(self):
-        # A JSON POST cannot rely on the framework's hidden HTML form token.
-        # A mismatch here previously rejected valid browser registrations.
+    def test_account_rights_preview_is_separate_from_public_inquiry_and_not_live(self):
+        rights = (PUBLIC / "advertiser-account-rights.html").read_text(encoding="utf-8")
+        js = (PUBLIC / "advertiser-account-rights.js").read_text(encoding="utf-8")
+        self.assertIn('href="/advertiser-account-rights.html"', self.form)
+        self.assertIn('name="robots" content="noindex,nofollow"', rights)
+        self.assertIn("Not available for live account requests yet.", rights)
+        self.assertIn('id="account-right-submit"', rights)
+        self.assertIn("disabled", rights)
+        self.assertNotIn('data-endpoint="https://bkutbglzivfdnoerigyb.', rights)
+        self.assertIn('"/api/advertisers/privacy-requests"', js)
+        self.assertIn("advertiserPrivacyRequestsEnabled === true", js)
+        self.assertIn("session?.csrfToken", js)
+        self.assertIn('"X-CSRF-TOKEN"', js)
+        self.assertIn("not a completed deletion", js)
+
+    def test_accepted_privacy_case_receipt_survives_history_refresh_failure(self):
+        # The mutation response is durable even if the separate history GET
+        # fails. Avoid telling users to retry a successful privacy request.
+        js = (PUBLIC / "advertiser-account-rights.js").read_text(encoding="utf-8")
+        receipt = js.index("const receiptMessage = `Request ")
+        refresh = js.index("await refreshHistory();", receipt)
+        rotate = js.index("requestKey = crypto.randomUUID();", receipt)
+        self.assertLess(receipt, rotate)
+        self.assertLess(rotate, refresh)
+        self.assertRegex(
+            js[receipt:],
+            r"try\s*\{\s*await refreshHistory\(\);\s*\}"
+            r"\s*catch \(_\) \{\s*status\.textContent = receiptMessage \+"
+        )
+        self.assertIn("your request was accepted. Do not resubmit it.", js[refresh:])
+        self.assertIn("status.textContent = receiptMessage;", js[receipt:refresh])
+
+    def test_privacy_request_conflict_rotates_key_only_after_definitive_409(self):
+        # The old UI told applicants to refresh after HTTP 409, but reload
+        # restored the same sessionStorage key and reproduced the conflict.
+        # Network/unknown failures MUST keep the key for safe idempotent retry.
+        js = (PUBLIC / "advertiser-account-rights.js").read_text(encoding="utf-8")
+        conflict = re.search(
+            r"if \(res\.status === 409\) \{(?P<body>.*?)\n      \}", js, re.S
+        )
+        self.assertIsNotNone(conflict)
+        body = conflict.group("body")
+        self.assertIn("requestKey = crypto.randomUUID();", body)
+        self.assertIn("sessionStorage.setItem(keyName, requestKey);", body)
+        self.assertIn("No new case was created.", body)
+        self.assertNotIn("fetch(", body)
+        # A rejected key is not silently resubmitted or changed on 5xx/timeout.
+        self.assertIn(
+            'if (!res.ok) throw new Error("The account request was not accepted.',
+            js[conflict.end():]
+        )
+        self.assertNotIn("Refresh before retrying", js)
+        self.assertIn("if (!res.ok)", js)
+        self.assertIn("Request not verified; please retry with the same request key.", js)
+
+    def test_registration_and_account_case_csrf_headers_match_server(self):
         program = (ROOT / "Bliss.Api" / "Program.cs").read_text(encoding="utf-8")
-        configured = re.search(r'options\.HeaderName\s*=\s*"([^"]+)"', program)
-        self.assertIsNotNone(configured, "API antiforgery header")
-        self.assertEqual("X-CSRF-TOKEN", configured.group(1))
-        self.assertIn(f'"{configured.group(1)}": session.csrfToken', self.js)
-        self.assertNotIn('"RequestVerificationToken": session.csrfToken', self.js)
+        options = (ROOT / "Bliss.Api" / "Security" / "BlissAuthenticationOptions.cs").read_text(encoding="utf-8")
+        registration = self.js
+        case_js = (PUBLIC / "advertiser-account-rights.js").read_text(encoding="utf-8")
+        self.assertIn('options.HeaderName = "X-CSRF-TOKEN";', program)
+        self.assertIn('"X-CSRF-TOKEN": session.csrfToken', registration)
+        self.assertIn('"X-CSRF-TOKEN": session.csrfToken', case_js)
+        self.assertIn("AdvertiserPrivacyRequestsRequested", options)
+        self.assertIn("advertiserPrivacyRequestsEnabled", program)
+        self.assertNotIn("RequestVerificationToken", registration)
+        self.assertNotIn("RequestVerificationToken", case_js)
+
+    def test_approved_advertiser_case_access_is_exact_and_default_off(self):
+        gate = (ROOT / "Bliss.Api" / "Security" / "AdvertiserApiBoundary.cs").read_text(encoding="utf-8")
+        pending = (ROOT / "Bliss.Api" / "Security" / "AdvertiserRegistrationBoundary.cs").read_text(encoding="utf-8")
+        self.assertIn("auth.AdvertiserPrivacyRequestsRequested", gate)
+        self.assertIn('path.Equals("/api/advertisers/privacy-requests"', gate)
+        self.assertIn("options.AdvertiserPrivacyRequestsRequested", pending)
+        self.assertIn('path.Equals("/api/advertisers/privacy-requests"', pending)
+
+    def test_account_request_backend_is_scoped_and_does_not_claim_auto_erasure(self):
+        boundary = (ROOT / "Bliss.Api" / "Security" / "AdvertiserRegistrationBoundary.cs").read_text(encoding="utf-8")
+        controller = (ROOT / "Bliss.Api" / "Controllers" / "AdvertiserPrivacyRequestsController.cs").read_text(encoding="utf-8")
+        migration = (ROOT / "Bliss.Infrastructure" / "Migrations" / "20261115110000_AdvertiserPrivacyRequestIntake.cs").read_text(encoding="utf-8")
+        self.assertIn('path.Equals("/api/advertisers/privacy-requests"', boundary)
+        self.assertIn("IsPendingAdvertiserIdentity", controller)
+        self.assertIn("TryResolveVerifiedAdvertiserId", controller)
+        self.assertIn("RequestKey", controller)
+        self.assertIn("RECEIVED", controller)
+        self.assertIn("REVOKE ALL ON TABLE", migration)
+        self.assertNotIn('HttpDelete', controller)
+        self.assertNotIn('MarketingOptIn = false', controller)
 
     def test_registration_writes_use_existing_authenticated_rate_limit(self):
         # Signup creates three relational records. A valid OIDC+CSRF session
