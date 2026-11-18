@@ -80,7 +80,7 @@ test("GHL mapping requires explicit, current contact consent; marketing is never
     contact_consent: true, contact_consent_version: ghlNotice,
     processing_acknowledged: true, adult_confirmed: true,
     full_name: "Synthetic Creator", email: "creator@unit.test",
-    website: "https://example.org/fixture", marketing_opt_in: false
+    website: "https://example.org/fixture", marketing_opt_in: true
   };
   const loc = "aBcD1234EFgh5678IJkl";
   const mapped = mapGhlContact(record, loc);
@@ -90,6 +90,7 @@ test("GHL mapping requires explicit, current contact consent; marketing is never
     assert.equal(Object.hasOwn(mapped, prohibited), false, "unexpected CRM field: " + prohibited);
   for (const change of [
     {contact_consent:false},
+    {marketing_opt_in:false},
     {contact_consent_version:"LEGACY_NOTICE"},
     {notice_version:"LEGACY_NOTICE"},
     {processing_acknowledged:false},
@@ -110,7 +111,7 @@ test("advertiser CRM field mapping fails closed on incomplete or ambiguous IDs",
     budget_currency:"PHP", market_code:"MANILA",
     campaign_objective:"awareness", preferred_media_formats:["podcast"],
     audience_requirements:null, preferred_languages:["Filipino"],
-    marketing_opt_in:false
+    marketing_opt_in:true
   };
   const loc="aBcD1234EFgh5678IJkl";
   assert.throws(() => mapGhlContact(record,loc,{}), /mapping is incomplete/);
