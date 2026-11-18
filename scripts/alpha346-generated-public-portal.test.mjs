@@ -26,7 +26,7 @@ test('generated services explain exactly five planning-only outputs and no check
   assert.ok(start >= 0 && end > start);
   const offer = services.slice(start, end);
   assert.equal((offer.match(/<li>/g) || []).length, 5);
-  assert.match(offer, /href="\\/join-advertiser.html\\?service=planning"/);
+  assert.ok(offer.includes('href="/join-advertiser.html?service=planning"'));
   assert.match(offer, /creates no order or payment obligation/);
   assert.match(services, /No online checkout is enabled/);
 });
