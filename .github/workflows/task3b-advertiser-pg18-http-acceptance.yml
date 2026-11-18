@@ -6,6 +6,7 @@ on:
       - main
       - codex/task3-secure-advertiser-registration-20261107
     paths:
+      - 'Bliss.Api/Program.cs'
       - 'Bliss.Api/Controllers/AdvertiserRegistrationController.cs'
       - 'Bliss.Api/Controllers/AdvertiserPrivacyRequestsController.cs'
       - 'Bliss.Api/Security/AdvertiserRegistrationBoundary.cs'
@@ -66,6 +67,10 @@ jobs:
           assert config["environments"]["staging"]["deploy"]["healthcheckPath"] == "/health/live", "Staging preview must check liveness only"
           gate = Path("Bliss.Api/Runtime/RestrictedPreviewGate.cs").read_text()
           assert '"/health/live"' in gate and '"/health/ready"' not in gate, "Restricted preview route boundary drifted"
+          program = Path("Bliss.Api/Program.cs").read_text()
+          assert 'if (!runtime.RestrictedPreview)\n    Directory.CreateDirectory(generatedCreativeRoot);' in program, "Preview must not write generated media to the immutable image"
+          assert 'if (!runtime.RestrictedPreview && !Path.GetFullPath(generatedCreativeRoot).StartsWith(' in program, "Preview must not mount generated media outside the operations tree"
+          print("TASK3B_PREVIEW_READONLY_GENERATED_MEDIA_PASS")
           print("TASK3B_STAGING_PREVIEW_HEALTH_OVERRIDE_PASS")
           PY
       - name: Verify locked preview can boot without credentials but unlocked modes fail closed
