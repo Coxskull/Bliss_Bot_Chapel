@@ -7,6 +7,42 @@ public static class BlissAuthorization
     public const string WritePolicy = "BlissWrite";
     public const string ReviewPolicy = "BlissReview";
 
+    // An issuer-stamped pending-applicant cookie may outlive the enrollment
+    // feature flag. Recognize it independently of that flag so closing signup
+    // never restores access to legacy generic authenticated marketplace APIs.
+    public static bool IsPendingAdvertiserIdentity(ClaimsPrincipal user, BlissAuthenticationOptions options)
+    {
+        if (user.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(options.Authority))
+            return false;
+        var markers = user.Claims.Where(c => string.Equals(c.Type,
+            BlissAuthenticationOptions.AdvertiserRegistrationPendingMarkerClaimType,
+            StringComparison.OrdinalIgnoreCase)).ToArray();
+        var subjects = user.Claims.Where(c => string.Equals(c.Type, "sub", StringComparison.OrdinalIgnoreCase)).ToArray();
+        var verified = user.Claims.Where(c => string.Equals(c.Type, "email_verified", StringComparison.OrdinalIgnoreCase)).ToArray();
+        var roles = user.Claims.Where(c => string.Equals(c.Type, options.RoleClaimType, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Type, ClaimTypes.Role, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Type, "role", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(c.Type, "roles", StringComparison.OrdinalIgnoreCase)).ToArray();
+        return markers.Length == 1
+            && markers[0].Type == BlissAuthenticationOptions.AdvertiserRegistrationPendingMarkerClaimType
+            && markers[0].Value == "true"
+            && markers[0].Issuer == options.Authority
+            && markers[0].OriginalIssuer == options.Authority
+            && subjects.Length == 1 && subjects[0].Type == "sub"
+            && !string.IsNullOrWhiteSpace(subjects[0].Value)
+            && verified.Length == 1 && verified[0].Type == "email_verified"
+            && string.Equals(verified[0].Value, "true", StringComparison.OrdinalIgnoreCase)
+            && roles.Length == 0
+            && !user.Claims.Any(c => string.Equals(c.Type, options.AdvertiserIdClaimType, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(c.Type, options.CreatorIdClaimType, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(c.Type, options.ReviewerWorkspaceClaimType, StringComparison.OrdinalIgnoreCase));
+    }
+
+    // Authorization to create a NEW registration remains separately fail-closed.
+    public static bool IsPendingAdvertiserRegistration(ClaimsPrincipal user, BlissAuthenticationOptions options) =>
+        options.Enabled && options.SupabaseEnabled && options.AdvertiserRegistrationRequested
+        && IsPendingAdvertiserIdentity(user, options);
+
     public static bool CanWrite(ClaimsPrincipal user, BlissAuthenticationOptions options) =>
         !options.Enabled
         || user.IsInRole(options.OperatorRole)
