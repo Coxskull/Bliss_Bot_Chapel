@@ -35,7 +35,7 @@ public sealed class CreativeGenerationOptions
     public string Provider { get; set; } = string.Empty;
     public string Endpoint { get; set; } = string.Empty;
     public string ApiToken { get; set; } = string.Empty;
-    public string Model { get; set; } = "gpt-image-1";
+    public string Model { get; set; } = "gpt-image-2.5-flare";
     public string OutputPath { get; set; } = string.Empty;
     public int TimeoutSeconds { get; set; } = 120;
     public int MaxImageBytes { get; set; } = 20 * 1024 * 1024;
