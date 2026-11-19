@@ -51,12 +51,16 @@
   }
   function render(input) {
     const square = input?.format === "square";
+    const fullHd = input?.format === "hd-landscape";
+    // Keep one original vector layout while rasterizing the HD option directly
+    // at 1920x1080. This is not a resized/cropped downloaded advertisement.
     const width = square ? 1080 : 1280, height = square ? 1080 : 720;
     const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = fullHd ? 1920 : width;
+    canvas.height = fullHd ? 1080 : height;
     const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) throw new Error("Canvas artwork is not available in this browser.");
+    if (fullHd) ctx.scale(1.5, 1.5);
     const [brandColor, accent] = colors(input?.colors);
     const brand = clean(input?.brandName, 120) || "YOUR BRAND";
     const headline = clean(input?.headline, 500);
