@@ -383,7 +383,7 @@ public sealed class CreativeAcademyApiTests
         Assert.StartsWith("/operations/generated/", first.GetProperty("imagePath").GetString());
         Assert.Equal(1, first.GetProperty("modelCalls").GetInt32());
         Assert.Equal("UNNAMED", first.GetProperty("provider").GetString());
-        Assert.Equal("gpt-image-1", first.GetProperty("model").GetString());
+        Assert.Equal("gpt-image-2.5-flare", first.GetProperty("model").GetString());
         Assert.Equal("UNRECORDED", first.GetProperty("costStatus").GetString());
         Assert.False(first.TryGetProperty("cost", out _));
         Assert.False(first.GetProperty("campaignReady").GetBoolean());

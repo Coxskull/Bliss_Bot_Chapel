@@ -62,7 +62,7 @@ public sealed class CreativeAcademyImageGeneratorTests
             {
                 Provider = "OpenAI",
                 ApiToken = "secret-token",
-                Model = "gpt-image-1",
+                Model = "gpt-image-2.5-flare",
                 TimeoutSeconds = 30,
                 MaxImageBytes = 1024 * 1024
             }
@@ -76,8 +76,8 @@ public sealed class CreativeAcademyImageGeneratorTests
         Assert.True(generator.Configured);
         Assert.Equal("image/png", result.MediaType);
         Assert.Equal(OnePixelPng, result.Content);
-        Assert.Contains("\"model\":\"gpt-image-1\"", handler.Body);
-        Assert.Contains("\"size\":\"1536x1024\"", handler.Body);
+        Assert.Contains("\"model\":\"gpt-image-2.5-flare\"", handler.Body);
+        Assert.Contains("\"size\":\"1536x864\"", handler.Body);
         Assert.Contains("Create Ruta Libre Motos", handler.Body);
         Assert.DoesNotContain("response_format", handler.Body);
         Assert.DoesNotContain("responseFormat", handler.Body);
@@ -108,7 +108,10 @@ public sealed class CreativeAcademyImageGeneratorTests
     [Fact]
     public void OpenAi_size_mapping_uses_supported_landscape_sizes()
     {
-        Assert.Equal("1536x1024", ConfiguredCreativeImageGenerator.MapOpenAiSize(1536, 864, "gpt-image-1"));
+        Assert.Equal("1536x864", ConfiguredCreativeImageGenerator.MapOpenAiSize(1536, 864, "gpt-image-2.5-flare"));
+        Assert.Equal("1024x1536", ConfiguredCreativeImageGenerator.MapOpenAiSize(864, 1536, "gpt-image-1.5"));
+        Assert.Equal("1536x1024", ConfiguredCreativeImageGenerator.MapOpenAiSize(1535, 863, "gpt-image-2.5-flare"));
+        Assert.Equal("gpt-image-2.5-flare", new CreativeGenerationOptions().Model);
         Assert.Equal("1792x1024", ConfiguredCreativeImageGenerator.MapOpenAiSize(1536, 864, "dall-e-3"));
         var body = ConfiguredCreativeImageGenerator.OpenAiBody(
             new CreativeImageRequest("request-123", "prompt", 1536, 864),
@@ -133,7 +136,7 @@ public sealed class CreativeAcademyImageGeneratorTests
             {
                 Provider = "OpenAI",
                 ApiToken = "secret-token",
-                Model = "gpt-image-1",
+                Model = "gpt-image-2.5-flare",
                 TimeoutSeconds = 30,
                 MaxImageBytes = 1024 * 1024
             }
