@@ -18,6 +18,13 @@ for (const route of ['/', '/production.html', '/brand-intake.html', '/login.html
   html = html.replaceAll(`href="${route}"`, `href="${new URL(route, origin).href}"`);
 }
 html = html.replaceAll('href="/global-media.html"', 'href="/"');
+// Owner-authorized fictional, browser-only advertising trial. Never expose protected
+// Creative Academy, registered accounts, campaigns, payment, or live creator inventory.
+if (!html.includes('</main>') || html.includes('id="alpha-demo-heading"')) {
+  throw new Error('Public demo placement missing or duplicate');
+}
+html = html.replace('</main>', '<section class="journey" aria-labelledby="alpha-demo-heading"><div><p class="eyebrow">FICTIONAL ADVERTISING DEMONSTRATION</p><h2 id="alpha-demo-heading">Try our 2, 4 and 6-space creative layout.</h2><p>Preview original fictional advertisement frames in your browser. This is not a creator booking, paid campaign, or available placement.</p></div><div><p>Generate an original PNG draft or a short fictional WebM illustration. Zero AI credits and no account required; nothing is uploaded or delivered.</p><p><a href="/real-estate-showcase.html">Open the free fictional ad composer</a></p></div></section>\n</main>');
+
 
 if (process.env.ALPHA_ASK_ALPHA_FRONTEND_ENABLED === 'true') {
   // Website release switch: NOT sufficient for paid API activation.
@@ -94,10 +101,20 @@ for (const [filename, routes] of [
   await writeFile(resolve(output, filename), page);
 }
 
+// Public-only files: deterministic vectors and non-sensitive browser-side rendering.
+for (const filename of [
+  'ad-composer.js', 'real-estate-showcase.js',
+  'real-estate-showcase-page.js', 'production.css'
+]) await copyFile(resolve(source, filename), resolve(output, filename));
+let demoHtml = await readFile(resolve(source, 'real-estate-showcase.html'), 'utf8');
+demoHtml = demoHtml.replace('href="/production.html"', 'href="/"');
+await writeFile(resolve(output, 'real-estate-showcase.html'), demoHtml);
+
 await copyFile(resolve(source, 'wedding-planner.js'), resolve(output, 'wedding-planner.js'));
 await copyFile(resolve(source, 'assets/bliss-chapel-hero.jpg'), resolve(output, 'assets/bliss-chapel-hero.jpg'));
 // Fail Vercel builds if the public inquiry hero loses safe routes or disclosures.
 await import('./task19-public-cta-smoke.mjs');
 await import('./task21-public-manual-support-smoke.mjs');
 await import('./task21-production-operator-browser-safety.mjs');
+await import('./alpha-public-demo-safety.test.mjs');
 console.log('Built Vercel workspace portal. Application origin is public configuration, not a credential.');
