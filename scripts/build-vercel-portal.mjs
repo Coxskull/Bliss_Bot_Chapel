@@ -116,4 +116,5 @@ await copyFile(resolve(source, 'assets/bliss-chapel-hero.jpg'), resolve(output, 
 await import('./task19-public-cta-smoke.mjs');
 await import('./task21-public-manual-support-smoke.mjs');
 await import('./task21-production-operator-browser-safety.mjs');
+await import('./alpha-public-demo-safety.test.mjs');
 console.log('Built Vercel workspace portal. Application origin is public configuration, not a credential.');
