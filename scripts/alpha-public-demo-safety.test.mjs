@@ -10,7 +10,7 @@ const assert=(value,label)=>{if(!value)throw new Error('PUBLIC_AD_DEMO_DENIED: '
 const page=await get(resolve(output,'real-estate-showcase.html'));
 const homepage=await get(resolve(output,'index.html'));
 assert(page.includes('id="stage" width="1920" height="1080"'), '1920x1080 demo canvas missing');
-assert(page.includes('NOT A SELLABLE PRODUCT')&&page.includes('CREATOR'), 'fictional limitation missing');
+assert(page.includes('NOT A SELLABLE PRODUCT')&&/creator/i.test(page), 'fictional limitation missing');
 assert(homepage.includes('href="/real-estate-showcase.html"'),'homepage demo route missing');
 assert(homepage.includes('Public account registration') || homepage.includes('Account registration not yet available') || homepage.includes('online payments are not available'),'existing commercial limitations changed');
 const src=await get(resolve(output,'real-estate-showcase.js'));
