@@ -135,6 +135,24 @@ jobs:
         run: node scripts/test_advertiser_registration_receipt_runtime.mjs
       - name: Verify owner-only guarded Task3B PG18 installation contract
         run: node scripts/task3b-guarded-railway-install-contract.test.mjs
+      - name: Verify private Bliss PG18 encrypted backup and isolated restore contract
+        run: node scripts/task3b-bliss-pg18-recovery-contract.test.mjs
+      - name: Parse four owner-only Task3B PowerShell scripts, never execute backup or migration
+        shell: pwsh
+        run: |
+          foreach ($path in @(
+              'scripts/task3b-bliss-pg18-capture.ps1',
+              'scripts/task3b-bliss-pg18-offhost.ps1',
+              'scripts/task3b-bliss-pg18-isolated-restore.ps1',
+              'scripts/task3b-guarded-railway-install.ps1')) {
+            $tokens = $null
+            $parseErrors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              $path, [ref]$tokens, [ref]$parseErrors)
+            if ($parseErrors.Count -gt 0) {
+              throw "Task3B PowerShell parse failed: $path"
+            }
+          }
       - name: Parse owner-only guarded Task3B PowerShell without executing it
         shell: pwsh
         run: |
