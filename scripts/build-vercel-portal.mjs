@@ -48,13 +48,18 @@ await mkdir(resolve(output, 'assets'), { recursive: true });
 await writeFile(resolve(output, 'index.html'), html);
 await copyFile(resolve(source, 'global-media.css'), resolve(output, 'global-media.css'));
 
+// The two account-specific notices are READ-ONLY, effective-dated policy pages.
+// Publishing them NEVER publishes advertiser-registration.html, sign-in cookies,
+// private account-rights forms or protected API endpoints.
 // Public interest forms, policy pages and the creator account explainer may
 // be published on Vercel. The authenticated dashboard and password setup stay
 // on Railway so OIDC cookies, CSRF and API calls remain same-origin.
 for (const filename of [
   'join-creator.html', 'join-advertiser.html', 'privacy-request.html',
   'creator-account.html', 'creator-login.html', 'advertiser-login.html',
-  'alpha-privacy.html', 'alpha-terms.html', 'services.html', 'contact.html', 'support.html',
+  'alpha-privacy.html', 'alpha-terms.html',
+  'advertiser-account-privacy.html', 'advertiser-account-terms.html',
+  'services.html', 'contact.html', 'support.html',
   'support-operator.html', 'support-operator.css', 'support-operator.js',
   'alpha-intake.css', 'alpha-intake.js'
 ]) {
