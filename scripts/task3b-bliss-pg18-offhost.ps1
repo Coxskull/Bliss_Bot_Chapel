@@ -10,6 +10,11 @@ param(
     [Parameter(Mandatory = $true)][string] $RemoteDirectory
 )
 $ErrorActionPreference = 'Stop'
+# Pin the actual existing DigitalOcean Droplet 571399692, verified through
+# the connected owner account on 2026-11-20. Refuse an unrelated SSH target.
+if ($DropletIPv4 -cne '159.89.238.136') {
+    throw 'TASK3B_OFFHOST=REFUSED_DROPLET_IDENTITY; destination is not the existing owner DigitalOcean droplet.'
+}
 if ($RemoteDirectory -cnotmatch '^/[a-zA-Z0-9_.\/-]+$' -or
     $RemoteDirectory -match '(^|/)\.\.(/|$)' -or
     $RemoteDirectory -match '(?i)dr362|supabase|factory' -or
