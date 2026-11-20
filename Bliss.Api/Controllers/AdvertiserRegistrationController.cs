@@ -19,8 +19,8 @@ namespace Bliss.Api.Controllers;
 [Route("api/advertisers")]
 public sealed class AdvertiserRegistrationController(BlissDbContext db, BlissAuthenticationOptions auth) : ControllerBase
 {
-    public const string PrivacyNoticeVersion = "advertiser-privacy-2026-11-07-v1";
-    public const string TermsVersion = "advertiser-terms-2026-11-07-v1";
+    public const string PrivacyNoticeVersion = "advertiser-privacy-2026-11-20-v2";
+    public const string TermsVersion = "advertiser-terms-2026-11-20-v2";
 
     [Authorize]
     [HttpPost("register")]

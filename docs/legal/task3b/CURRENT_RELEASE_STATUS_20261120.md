@@ -1,5 +1,19 @@
 # Task #3B — current release disposition (2026-11-20)
 
+## November 20 — Owner-directed account notice publication lane (supersedes historical draft status below)
+
+The owner instructed **approved / proceed** for Task #3B launch work. A new, accurately limited advertiser account-specific public notice and application terms have been authored with effective date **November 20, 2026**, and new IDs advertiser-privacy-2026-11-20-v2 and advertiser-terms-2026-11-20-v2. The browser's required consent text and payload and the server's immutable registration receipt version checks now use exactly these IDs; no earlier draft consent is silently accepted as the new version.
+
+The notice accurately describes Supabase Auth, Railway PostgreSQL, optional Vercel informational delivery, separate public inquiry/CRM handling, the ALPHA GLOBAL MEDIA LLC designated account privacy contact alpha7auto@gmail.com, human review of access/correction/deletion/marketing withdrawal, no uniform global response time, and **no claimed automated deletion of immutable receipts or backups**. The terms make clear a free PENDING_REVIEW application never grants marketplace access, creator placement or any payment. Publication is a disclosure/versioning change, **not** completed hosted account privacy handling, verified company-mailbox delivery, legal certification, or fully effective privacy-request fulfillment.
+
+The two account notice pages become eligible for public **read-only** Vercel publication. Protected account-registration and account-rights form pages remain excluded from Vercel bundles; real login callbacks, sessions and CSRF belong on the Railway origin. Historical PR #423 draft documents remain dated evidence and are not silently rewritten.
+
+**Separate launch gate not waived:** Owner's prior DigitalOcean recovery is the separate DR362 Factory/Supabase scope, not a verified restore receipt for the Bliss Railway PostgreSQL 18 application database. No actual application migration or customer registration was performed in this branch. Runtime:RestrictedPreview and registration remain OFF. Publishing notices and binding IDs do not automatically authorize live accounts.
+
+---
+
+
+
 **Scope:** The files alongside this note are original existing PR #423 **legal engineering candidates**, copied unchanged into the CURRENT Bliss source so reviewers do not need a divergent historical PR. They are NOT effective notices, contracts, a signature, or an authorization to enable account creation.
 
 ## Current source and operations

@@ -60,19 +60,23 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
             self.assertIn(f"<code>{value}</code>", self.form)
             self.assertIn(f"<code>{value}</code>", page)
 
-    def test_draft_pages_cannot_be_mistaken_for_approved_live_terms(self):
+    def test_effective_account_notices_are_published_but_signup_still_locked(self):
         for page in (self.privacy, self.terms):
-            self.assertIn('name="robots" content="noindex,nofollow"', page)
-            self.assertIn("Not yet approved for live registration.", page)
-            self.assertIn("LEGAL REVIEW DRAFT", page)
-        self.assertIn("legally approved", self.form)
-        self.assertIn("Registration is disabled", self.form)
+            self.assertIn('name="robots" content="index,follow"', page)
+            self.assertIn("Effective November 20, 2026", page)
+            self.assertNotIn("LEGAL REVIEW DRAFT", page)
+            self.assertNotIn("Not yet approved for live registration.", page)
+        self.assertIn("Registration is disabled until the hosted registration database", self.form)
+        self.assertIn("The privacy notice and terms alone do not enable account registration", self.form)
+        self.assertIn("no charge simply to submit", self.terms.lower())
+        self.assertIn("PENDING_REVIEW", self.terms)
 
     def test_account_privacy_does_not_claim_inquiry_only_privacy_form_handles_accounts(self):
-        # The public interest-form privacy endpoint is not an account data-subject request route.
+        # Public-interest case intake is NEVER a verified account-rights endpoint.
         self.assertNotIn('href="/privacy-request.html"', self.privacy)
-        self.assertIn("limited to public-interest submissions", self.privacy)
-        self.assertIn("not</strong> a verified account-registration privacy request channel", self.privacy)
+        self.assertIn("public-interest privacy form is not an authenticated account-rights channel", self.privacy)
+        self.assertIn("do not claim to have an automated account-deletion schedule", self.privacy)
+        self.assertIn("mailto:alpha7auto@gmail.com", self.privacy)
 
     def test_account_rights_preview_is_separate_from_public_inquiry_and_not_live(self):
         rights = (PUBLIC / "advertiser-account-rights.html").read_text(encoding="utf-8")

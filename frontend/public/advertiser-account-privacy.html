@@ -1,28 +1,37 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<meta name="robots" content="index,follow"><meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#160934">
-<title>Advertiser Account Privacy Notice — Draft | ALPHA GLOBAL MEDIA</title>
+<title>Advertiser Account Privacy Notice | ALPHA GLOBAL MEDIA</title>
 <link rel="stylesheet" href="/alpha-intake.css"></head>
 <body><a class="skip" href="#policy">Skip to privacy notice</a>
 <header class="topbar"><a class="brand" href="/">ALPHA <span>GLOBAL MEDIA™</span></a>
-<nav aria-label="Account"><a href="/advertiser-registration.html">Advertiser registration</a><a href="/contact.html">Contact</a></nav></header>
+<nav aria-label="Account"><a href="/join-advertiser.html">Advertiser inquiries</a><a href="/contact.html">Contact</a></nav></header>
 <main><article class="policy" id="policy">
-<p class="eyebrow">ACCOUNT REGISTRATION — LEGAL REVIEW DRAFT</p>
-<h1>Advertiser Account Privacy Notice — Draft</h1>
-<p><strong>Not yet approved for live registration.</strong> This draft documents the registration implementation and is not an operative privacy notice until reviewed, approved, and published by ALPHA GLOBAL MEDIA LLC.</p>
-<p><strong>Proposed notice version: <code>advertiser-privacy-2026-11-07-v1</code>.</strong> The version identifier is reserved in the application; the effective date and final retention schedule require owner approval.</p>
-<h2>What this account flow collects</h2>
-<p>The sign-in step sends the email address and password directly over HTTPS to the configured Supabase Auth service. ALPHA's registration API does not receive the plaintext password. A separate step asks for a business name, two-letter country code, and optional HTTPS business website.</p>
-<p>When an applicant confirms the required privacy-processing choice and terms acceptance, the registration service stores an opaque identity subject, the business profile, a unique request key, the two approved-version identifiers, consent and optional-marketing choices, a receipt identifier, a hash of the canonical request, and timestamps in its registration database. Email verification is required before the business registration endpoint accepts a pending applicant.</p>
-<h2>Purpose and access</h2>
-<p>This information is used for sign-in verification, preventing duplicate requests, recording the application and the choices made, security checks, and human review. A receipt means <strong>pending review</strong>; it does not grant a marketplace workspace or authorize paid advertising activity. Account roles are assigned separately only after authorized review. Optional marketing consent is unchecked and must not affect application eligibility.</p>
-<h2>Service providers and data sharing</h2>
-<p>Supabase provides the identity service, Railway hosts the application/database when authorized and deployed, and Vercel serves the preview/web interface. Relevant providers may process technical metadata. This account flow is distinct from the public advertiser-interest form and its CRM routing; submitting a business registration does not automatically authorize CRM marketing or ad purchases.</p>
-<h2>Retention, correction and deletion</h2>
-<p>The retention criteria and deletion workflow for Supabase identities, advertiser applications, immutable audit receipts, technical logs, and backups have <strong>not yet been implemented or approved</strong>. Before account registration is enabled, ALPHA must publish accurate retention criteria and verify authenticated access, correction, deletion and optional-marketing withdrawal routing, including lawful recordkeeping exceptions and backup handling. The existing public <code>/privacy-request.html</code> form is limited to public-interest submissions; it is <strong>not</strong> a verified account-registration privacy request channel. Do not include passwords, identity documents, or payment details in an inquiry.</p>
-<h2>Changes</h2>
-<p>Any approved change affecting the purposes or required choices must be assigned an updated notice version before new registrations are accepted.</p>
-<p><a href="/advertiser-account-terms.html">Draft advertiser account terms</a> · <a href="/advertiser-account-rights.html">Account-rights engineering preview (not live)</a> · <a href="/advertiser-registration.html">Back to advertiser registration</a></p>
+<p class="eyebrow">ADVERTISER ACCOUNT PRIVACY</p>
+<h1>Advertiser Account Privacy Notice</h1>
+<p><strong>Effective November 20, 2026.</strong> Notice version <code>advertiser-privacy-2026-11-20-v2</code>.
+Controller: <strong>ALPHA GLOBAL MEDIA LLC</strong> (“ALPHA”). Account registration may remain disabled until its separate technical acceptance is complete. This notice describes the account application process when enabled, not an assertion that public signups are active.</p>
+
+<h2>Information we use and why</h2>
+<p>The identity provider, Supabase Auth, processes the email address, password, and email-verification/security details submitted directly to its HTTPS service. ALPHA's business registration API does not receive your plaintext password. After successful verified sign-in, the applicant may supply a business name, two-letter country code, and optional HTTPS website. The account application stores the opaque authenticated identity reference, business profile, request key and hash, required privacy/terms choices and version identifiers, separate optional-marketing choice, timestamps, and a pending-review registration receipt. Technical security logs may contain limited device/network information.</p>
+<p>These records support identity verification, application review, duplicate/fraud prevention, authorization, security, and a record of what the applicant accepted. The application remains <strong>PENDING_REVIEW</strong> until a human decision. A signup or receipt is not a paid campaign order, creator booking, or automatic advertiser workspace approval.</p>
+
+<h2>Service providers and processing locations</h2>
+<p>Supabase provides identity services. Railway hosts the business API and its PostgreSQL database; Vercel may deliver public informational pages. These providers may process infrastructure or security data in regions different from your own country. Relevant transfers and retention depend on their actual infrastructure and legal obligations; we do not promise that all records remain in one country. Public advertiser interest forms and the optional HighLevel CRM follow-up system are <strong>separate</strong> from authenticated advertiser accounts. Account registration does not automatically opt you into CRM marketing.</p>
+
+<h2>Required choices and optional marketing</h2>
+<p>The application asks you to acknowledge this privacy notice and accept the advertiser account terms to submit an application. Optional marketing is a <strong>separate, initially unchecked</strong> choice and does not affect eligibility. No advertising message is authorized solely by creating an account. A prior immutable consent receipt records the choice at submission; it does not by itself prove continuing permission after a withdrawal.</p>
+
+<h2>Retention, deletion and backup limitations</h2>
+<p>We retain application information while needed to assess a pending application, administer an accepted account, protect security, respond to disputes and privacy requests, or meet a specific legal obligation. Following closure, withdrawal, or rejection, the controller reviews whether each category remains necessary and removes or restricts records when lawfully possible. Relevant audit receipts may need limited preservation to prove prior actions or comply with legal requirements. Operational security logs and independently held backups may follow separate provider retention cycles. <strong>We do not claim to have an automated account-deletion schedule or instant erasure of audit receipts and backups.</strong> Requests are assessed manually, including identity verification and legitimate retention exceptions.</p>
+
+<h2>Your requests and contact channel</h2>
+<p>Depending on the law applicable to you, you may request access, correction, deletion, restriction, object to certain processing, or withdraw optional marketing permission. Contact ALPHA GLOBAL MEDIA LLC's designated account privacy address, <a href="mailto:alpha7auto@gmail.com">alpha7auto@gmail.com</a>, describing the request type and the account email used. Do not email passwords, full identity documents, sensitive files, or payment credentials. We may require proportionate, secure identity verification before disclosing or changing an account. The technical account privacy-case form is a separate authenticated feature and may still be disabled; the public-interest privacy form is not an authenticated account-rights channel.</p>
+<p>A case acknowledgment means only that the request was received for verification. It does <strong>not</strong> establish that erasure, optional-marketing suppression, or account closure has already happened. Any outcome is subject to applicable law and recorded human assessment; we do not promise a uniform international deadline or automated fulfillment.</p>
+
+<h2>Security and changes</h2>
+<p>We use issuer-bound authentication, role and tenant restrictions, anti-forgery safeguards and audit receipts in the account design. No system is guaranteed absolutely secure. Material changes to required processing or terms are versioned; the browser and server must present and record the same version for new submissions. This notice does not override mandatory rights under applicable law.</p>
+<p><a href="/advertiser-account-terms.html">Advertiser Account Registration Terms</a> · <a href="/join-advertiser.html">Public advertiser inquiry</a> · <a href="/contact.html">Contact</a></p>
 </article></main>
 <footer>© 2026 ALPHA GLOBAL MEDIA LLC. <a href="/contact.html">Contact</a></footer></body></html>
