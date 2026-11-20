@@ -7,7 +7,7 @@
 - Railway project: fb33c1b7-03fb-42c8-89b1-081951a738fd / production environment b67a9836-36bf-4083-93f7-00c867b13f39.
 - Existing Postgres service: 6aa78407-1632-48c9-8ea4-0289a7d36a5b, PostgreSQL 18, database name bliss per prior owner-target classifier. Existing app bliss-bot still has registration locked.
 - Database has **no public TCP proxy**; preserve that. Railway Postgres service has provider-private PGUSER, PGPASSWORD, PGHOST, PGPORT vars. The owner-only Railway CLI SSH executes the dump inside that service, not on the public network.
-- Existing DigitalOcean Droplet: 571399692, public IPv4 159.89.238.136, attached volume. Use a separate Bliss-only encrypted-backup directory, not the DR362 database/recovery path.
+- Existing DigitalOcean Droplet: 571399692, the current public IPv4 privately visible in the owner DigitalOcean account, attached volume. Use a separate Bliss-only encrypted-backup directory, not the DR362 database/recovery path.
 - Connected OAuth tools do not expose direct shell execution in live Railway or DigitalOcean. These scripts are for the owner's existing authenticated Windows terminal, not a simulated hosted success.
 
 ## Prerequisites (existing free local tools, no new cloud subscription)
@@ -36,7 +36,7 @@ Script pins actual project/environment/Postgres service, SQL-checks that source 
 First ensure a suitable existing mounted filesystem has space and the exact SSH user/host key are correct. Remote folder must be Bliss-specific; no changes to the DR362 database location. Example:
 
 ~~~powershell
-.\scripts\task3b-bliss-pg18-offhost.ps1 -ManifestPath "C:\path\bliss-pg18-xxxx.pending.json" -DropletIPv4 "159.89.238.136" -SshUser "EXISTING_USER" -RemoteDirectory "/mounted/volume/alpha-bliss-pg18"
+.\scripts\task3b-bliss-pg18-offhost.ps1 -ManifestPath "C:\path\bliss-pg18-xxxx.pending.json" -DropletIPv4 "OWNER_DIGITALOCEAN_IPV4" -SshUser "EXISTING_USER" -RemoteDirectory "/mounted/volume/alpha-bliss-pg18"
 ~~~
 
 The tool pins the existing DigitalOcean public IP, requires OpenSSH StrictHostKeyChecking=yes, makes a separate private 0700 directory, uploads only the encrypted archive, checks remote SHA-256 against source ciphertext, then creates .offhost.json. Remote shell permissions/space remain owner-controlled.
