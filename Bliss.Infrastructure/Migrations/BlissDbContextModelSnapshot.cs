@@ -358,7 +358,7 @@ namespace Bliss.Infrastructure.Migrations
                     b.ToTable("AdvertiserPrivacyRequests", (string)null, t =>
                     {
                         t.HasCheckConstraint("CK_AdvertiserPrivacyRequests_DispositionEvidence",
-                            "\\\"Status\\\" IN ('RECEIVED', 'VERIFYING') OR (\\\"DispositionEvidenceSha256\\\" IS NOT NULL AND length(\\\"DispositionEvidenceSha256\\\") = 64 AND \\\"DisposedBySubject\\\" IS NOT NULL AND \\\"DisposedAt\\\" IS NOT NULL)");
+                            @"""Status"" IN ('RECEIVED', 'VERIFYING') OR (""DispositionEvidenceSha256"" IS NOT NULL AND length(""DispositionEvidenceSha256"") = 64 AND ""DisposedBySubject"" IS NOT NULL AND ""DisposedAt"" IS NOT NULL)");
                         t.HasCheckConstraint("CK_AdvertiserPrivacyRequests_Type", "\"RequestType\" IN ('ACCESS', 'CORRECTION', 'ERASURE', 'MARKETING_WITHDRAWAL', 'OBJECTION', 'ACCOUNT_CLOSURE')");
                         t.HasCheckConstraint("CK_AdvertiserPrivacyRequests_Status", "\"Status\" IN ('RECEIVED', 'VERIFYING', 'RESOLVED', 'DECLINED')");
                     });
