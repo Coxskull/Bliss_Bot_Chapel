@@ -31,7 +31,7 @@ matches(capture, /isolatedRestoreVerified = \$false/, "cannot claim unperformed 
 assert.doesNotMatch(capture, /pg_dump.*--file=|Write-Output\s+\$raw|Write-Output\s+\$plain/,
   "no plaintext dump file or raw output to console");
 
-matches(upload, /159\.89\.238\.136/, "pin actual connected existing DO droplet");
+matches(upload, /007cf7213de8a2ca89232d840afe2e1d98e2e69cef221acb6fbbbdc94c5fbd83/, "pin actual connected existing DO droplet");
 matches(upload, /TASK3B_OFFHOST=REFUSED_DROPLET_IDENTITY/, "refuse unknown destination");
 matches(upload, /StrictHostKeyChecking=yes/g, "SSH host key verification");
 matches(upload, /Get-FileHash/, "verify local archive");
