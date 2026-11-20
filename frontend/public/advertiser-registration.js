@@ -1,7 +1,7 @@
 "use strict";
 (function () {
-  const privacyVersion = "advertiser-privacy-2026-11-07-v1";
-  const termsVersion = "advertiser-terms-2026-11-07-v1";
+  const privacyVersion = "advertiser-privacy-2026-11-20-v2";
+  const termsVersion = "advertiser-terms-2026-11-20-v2";
   const signup = document.getElementById("signup-form");
   const registration = document.getElementById("registration-form");
   const signupResult = document.getElementById("signup-result");
