@@ -77,7 +77,7 @@ await writeFile(resolve(output, 'creator-account.html'), creatorAccount);
 // on Railway. Never publish protected dashboards or their API requests here.
 for (const [filename, routes] of [
   ['creator-login.html', ['/creator-signin-preview.html']],
-  ['advertiser-login.html', ['/advertiser-signin-preview.html', '/advertiser-registration.html']]
+  ['advertiser-login.html', ['/advertiser-signin-preview.html']]
 ]) {
   let page = await readFile(resolve(source, filename), 'utf8');
   for (const route of routes) {
