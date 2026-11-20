@@ -593,8 +593,7 @@ app.MapGet("/api/auth/supabase-config", () =>
         ? Results.Json(new { url = new Uri(authentication.Authority).GetLeftPart(UriPartial.Authority),
             publishableKey = authentication.SupabasePublishableKey, clientId = authentication.ClientId,
             advertiserRegistrationEnabled = authentication.Enabled && authentication.AdvertiserRegistrationRequested,
-            advertiserRegistrationEnabled = authentication.Enabled && authentication.AdvertiserRegistrationRequested,
-            creatorRegistrationEnabled = authentication.Enabled && authentication.CreatorRegistrationRequested })
+            creatorRegistrationEnabled = authentication.Enabled && authentication.CreatorRegistrationRequested,
             advertiserPrivacyRequestsEnabled = authentication.Enabled && authentication.SupabaseEnabled
                 && authentication.AdvertiserPrivacyRequestsRequested })
         : Results.Problem("Supabase login is not configured.", statusCode: 503))
