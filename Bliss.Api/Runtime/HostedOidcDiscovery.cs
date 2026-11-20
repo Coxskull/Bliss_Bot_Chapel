@@ -98,7 +98,8 @@ public static class HostedOidcDiscovery
         try
         {
             using var doc = JsonDocument.Parse(body);
-            if (!doc.RootElement.TryGetProperty("keys", out var keys)
+            if (doc.RootElement.ValueKind != JsonValueKind.Object
+                || !doc.RootElement.TryGetProperty("keys", out var keys)
                 || keys.ValueKind != JsonValueKind.Array) return false;
             return keys.EnumerateArray().Any(key =>
                 key.ValueKind == JsonValueKind.Object
