@@ -342,6 +342,9 @@ namespace Bliss.Infrastructure.Migrations
                     b.Property<Guid>("AdvertiserId").HasColumnType("uuid");
                     b.Property<DateTime?>("AcknowledgedAt").HasColumnType("timestamp with time zone");
                     b.Property<string>("AcknowledgedBySubject").HasMaxLength(255).HasColumnType("character varying(255)");
+                    b.Property<DateTime?>("DisposedAt").HasColumnType("timestamp with time zone");
+                    b.Property<string>("DisposedBySubject").HasMaxLength(255).HasColumnType("character varying(255)");
+                    b.Property<string>("DispositionEvidenceSha256").HasMaxLength(64).HasColumnType("character varying(64)");
                     b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
                     b.Property<Guid>("RequestKey").HasColumnType("uuid");
                     b.Property<string>("RequestType").IsRequired().HasMaxLength(32).HasColumnType("character varying(32)");
@@ -354,6 +357,8 @@ namespace Bliss.Infrastructure.Migrations
                     b.HasIndex("Subject", "CreatedAt");
                     b.ToTable("AdvertiserPrivacyRequests", (string)null, t =>
                     {
+                        t.HasCheckConstraint("CK_AdvertiserPrivacyRequests_DispositionEvidence",
+                            @"""Status"" IN ('RECEIVED', 'VERIFYING') OR (""DispositionEvidenceSha256"" IS NOT NULL AND length(""DispositionEvidenceSha256"") = 64 AND ""DisposedBySubject"" IS NOT NULL AND ""DisposedAt"" IS NOT NULL)");
                         t.HasCheckConstraint("CK_AdvertiserPrivacyRequests_Type", "\"RequestType\" IN ('ACCESS', 'CORRECTION', 'ERASURE', 'MARKETING_WITHDRAWAL', 'OBJECTION', 'ACCOUNT_CLOSURE')");
                         t.HasCheckConstraint("CK_AdvertiserPrivacyRequests_Status", "\"Status\" IN ('RECEIVED', 'VERIFYING', 'RESOLVED', 'DECLINED')");
                     });

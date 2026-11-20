@@ -16,5 +16,11 @@ public sealed class AdvertiserPrivacyRequest
     public DateTime CreatedAt { get; set; }
     public string? AcknowledgedBySubject { get; set; }
     public DateTime? AcknowledgedAt { get; set; }
+    // A final human operator attestation; no automatic deletion, marketing opt-out
+    // propagation, legal ruling or customer notification occurs in this API.
+    // Private evidence remains only in the owner-held case file; store its hash.
+    public string? DisposedBySubject { get; set; }
+    public DateTime? DisposedAt { get; set; }
+    public string? DispositionEvidenceSha256 { get; set; }
     public Advertiser Advertiser { get; set; } = null!;
 }

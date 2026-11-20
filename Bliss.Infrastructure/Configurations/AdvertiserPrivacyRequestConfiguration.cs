@@ -14,6 +14,10 @@ public sealed class AdvertiserPrivacyRequestConfiguration : IEntityTypeConfigura
                 "\"RequestType\" IN ('ACCESS', 'CORRECTION', 'ERASURE', 'MARKETING_WITHDRAWAL', 'OBJECTION', 'ACCOUNT_CLOSURE')");
             table.HasCheckConstraint("CK_AdvertiserPrivacyRequests_Status",
                 "\"Status\" IN ('RECEIVED', 'VERIFYING', 'RESOLVED', 'DECLINED')");
+            table.HasCheckConstraint("CK_AdvertiserPrivacyRequests_DispositionEvidence",
+                "\"Status\" IN ('RECEIVED', 'VERIFYING') OR ("
+                + "\"DispositionEvidenceSha256\" IS NOT NULL AND length(\"DispositionEvidenceSha256\") = 64 "
+                + "AND \"DisposedBySubject\" IS NOT NULL AND \"DisposedAt\" IS NOT NULL)");
         });
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Subject).IsRequired().HasMaxLength(255);
@@ -22,6 +26,9 @@ public sealed class AdvertiserPrivacyRequestConfiguration : IEntityTypeConfigura
         builder.Property(x => x.CreatedAt).IsRequired();
         builder.Property(x => x.AcknowledgedBySubject).HasMaxLength(255);
         builder.Property(x => x.AcknowledgedAt);
+        builder.Property(x => x.DisposedBySubject).HasMaxLength(255);
+        builder.Property(x => x.DisposedAt);
+        builder.Property(x => x.DispositionEvidenceSha256).HasMaxLength(64);
         builder.HasIndex(x => x.RequestKey).IsUnique();
         builder.HasIndex(x => new { x.Subject, x.CreatedAt });
         builder.HasOne(x => x.Advertiser).WithMany().HasForeignKey(x => x.AdvertiserId)
