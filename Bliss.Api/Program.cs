@@ -27,7 +27,21 @@ if (args.Contains("--verify-hosted-database=true", StringComparer.Ordinal))
 {
     var diagnostic = await HostedDatabaseDiagnostic.RunAsync(builder.Configuration.GetConnectionString("DefaultConnection"));
     Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(diagnostic));
-    Environment.ExitCode = diagnostic.Success ? 0 : 2;
+    // Keep the intentionally locked public interface deployable while its
+    // separate business DB has not had a backed-up initial migration.
+    // All account-write requests must remain OFF. Do not call this schema-ready.
+    var lockedInterfaceOnly = builder.Configuration.GetValue<bool>("Runtime:RestrictedPreview")
+        && !builder.Configuration.GetValue<bool>("Authentication:AdvertiserRegistrationRequested")
+        && !builder.Configuration.GetValue<bool>("Authentication:AdvertiserSelfServiceRequested")
+        && !builder.Configuration.GetValue<bool>("Authentication:AdvertiserPrivacyRequestsRequested")
+        && !builder.Configuration.GetValue<bool>("Authentication:CreatorSelfServiceRequested")
+        && !builder.Configuration.GetValue<bool>("Authentication:AskAlphaVisitorEnrollmentRequested");
+    var lockedPreviewAccepted = diagnostic.AllowsLockedPreviewPredeploy(lockedInterfaceOnly);
+    Console.WriteLine(lockedPreviewAccepted
+        ? "TASK3B_DEPLOYMENT_SCOPE=LOCKED_INTERFACE_PREVIEW_ONLY"
+        : diagnostic.Success ? "TASK3B_DEPLOYMENT_SCOPE=SCHEMA_METADATA_PRESENT_NOT_ACCOUNT_ACCEPTANCE"
+            : "TASK3B_DEPLOYMENT_SCOPE=UNVERIFIED");
+    Environment.ExitCode = diagnostic.Success || lockedPreviewAccepted ? 0 : 2;
     return;
 }
 var applyMigrations = MigrationCommand.Requested(args);

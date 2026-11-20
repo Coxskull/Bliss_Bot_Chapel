@@ -14,6 +14,13 @@ public sealed record HostedDatabaseDiagnosticResult(
     public bool CatalogMetadataPresent => MigrationHistoryPresent && PublicTableCount > 0;
     public bool Success => ConnectionVerified && CatalogMetadataPresent && string.IsNullOrEmpty(ErrorCode);
 
+    // This permits ONLY a deliberately locked, account-write-disabled interface
+    // preview to redeploy while its separate hosted business DB is uninitialized.
+    // The diagnostic Success above remains false, and full registration stays held.
+    public bool AllowsLockedPreviewPredeploy(bool previewOnly) =>
+        previewOnly && ConnectionVerified && !Success
+        && ErrorCode is ("schema_not_initialized" or "migration_history_missing" or "public_tables_missing");
+
     // Basic catalog presence is a prerequisite, NOT proof the full application
     // schema, backup, authorization or hosted registration has been accepted.
     public static HostedDatabaseDiagnosticResult FromReadOnlyCatalog(
