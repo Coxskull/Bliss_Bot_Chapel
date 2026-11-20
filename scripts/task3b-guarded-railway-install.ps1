@@ -82,8 +82,17 @@ if ($remote.Contains('__EVIDENCE_DIGEST__')) {
 # No public DB proxy, second service, GitHub secret, or persistent flag change.
 # Piping the shell script avoids a long Windows SSH command and keeps the
 # digest out of process arguments. Do not enable PowerShell transcripts.
-$raw = @($remote | & $railway.Source ssh -p $projectId -s $serviceName -e $environmentName -- sh -se)
-$remoteExit = $LASTEXITCODE
+# Capture BOTH streams; failure diagnostics can contain driver connection details.
+# Never print them into CI, chat, command history, or normal operator output.
+$raw = @()
+$remoteExit = 1
+try {
+    $raw = @($remote | & $railway.Source ssh -p $projectId -s $serviceName -e $environmentName -- sh -se 2>&1)
+    $remoteExit = $LASTEXITCODE
+} catch {
+    $raw = @()
+    $remoteExit = 1
+}
 
 # Do not echo raw application output: an unexpected runtime could emit secrets.
 # Only the already-reviewed, fixed-vocabulary .NET completion line is trusted.
