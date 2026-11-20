@@ -320,6 +320,13 @@ public sealed class CreativeGenerationService(
     IWebHostEnvironment environment,
     BlueprintPhaseService phases)
 {
+    // Single-replica idempotency fence: an identical concurrent request must
+    // not make a second paid provider call before the first draft is persisted.
+    // Fixed stripes avoid an unbounded lock per request key. This does not
+    // replace a durable claim before enabling multiple service replicas.
+    private static readonly SemaphoreSlim[] GenerationLanes =
+        Enumerable.Range(0, 128).Select(_ => new SemaphoreSlim(1, 1)).ToArray();
+
     public bool Configured => generator.Configured;
 
     public async Task<IReadOnlyList<CreativeAcademyGenerationRow>> ReadAsync(
@@ -344,6 +351,11 @@ public sealed class CreativeGenerationService(
         CancellationToken cancellationToken)
     {
         var key = RequireKey(requestKey);
+        var lane = GenerationLanes[(int)((uint)StringComparer.Ordinal.GetHashCode(key)
+            % (uint)GenerationLanes.Length)];
+        await lane.WaitAsync(cancellationToken);
+        try
+        {
         var prior = await database.CreativeAcademyGenerations.AsNoTracking()
             .FirstOrDefaultAsync(item => item.RequestKey == key, cancellationToken);
         if (prior is not null)
@@ -459,6 +471,11 @@ public sealed class CreativeGenerationService(
         }
 
         return Decision(row, false);
+        }
+        finally
+        {
+            lane.Release();
+        }
     }
 
     private string ResolveOutputRoot()
