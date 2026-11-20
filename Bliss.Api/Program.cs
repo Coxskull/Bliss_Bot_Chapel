@@ -44,6 +44,12 @@ if (args.Contains("--verify-hosted-database=true", StringComparer.Ordinal))
     Environment.ExitCode = diagnostic.Success || lockedPreviewAccepted ? 0 : 2;
     return;
 }
+// The destructive initial-install mode must be an EXACT two-argument opt-in.
+// A lone or malformed flag never becomes a normal migration or HTTP start.
+var initialInstall = MigrationCommand.InitialInstallRequested(args);
+if (args.Contains(MigrationCommand.InitialInstallArgument, StringComparer.Ordinal)
+    && !initialInstall)
+    throw new InvalidOperationException("Invalid guarded initial-install invocation.");
 var applyMigrations = MigrationCommand.Requested(args);
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 var authentication = builder.Configuration
@@ -95,7 +101,9 @@ if (!builder.Environment.IsDevelopment())
     foreach (var marker in RegistrationReleaseReadinessMarkers.Build(posture, authentication, runtime))
         Console.WriteLine(marker);
 if (!runtime.RestrictedPreview) ProductionPostureEvaluator.Ensure(posture);
-if (runtime.RestrictedPreview && applyMigrations)
+// The only migration allowed with preview locked is the separately attested,
+// one-shot installation of the EMPTY hosted application database.
+if (runtime.RestrictedPreview && applyMigrations && !initialInstall)
     throw new InvalidOperationException("Migrations are unavailable in restricted preview.");
 
 builder.Services.AddControllers()
@@ -349,10 +357,30 @@ var app = builder.Build();
 
 if (applyMigrations)
 {
+    // Before any DB schema write, independently verify a TLS-authenticated,
+    // as-yet-empty catalog AND exactly the backed-up owner-approved target.
+    // Backup receipt and target identity live only in private environment vars.
+    // This mode does not start HTTP, enable signups or relax Global STOP.
+    if (initialInstall)
+    {
+        var databaseConnection = app.Configuration.GetConnectionString("DefaultConnection");
+        var catalog = await HostedDatabaseDiagnostic.RunAsync(databaseConnection);
+        MigrationCommand.ValidateInitialEmptyHostedInstall(
+            runtime.RestrictedPreview,
+            app.Environment.IsProduction(),
+            databaseConnection,
+            catalog,
+            Environment.GetEnvironmentVariable("BLISS_INITIAL_INSTALL_EXPECTED_DB_HOST"),
+            Environment.GetEnvironmentVariable("BLISS_INITIAL_INSTALL_EXPECTED_DB_NAME"),
+            Environment.GetEnvironmentVariable("BLISS_INITIAL_INSTALL_BACKUP_EVIDENCE_ID"));
+    }
+
     using var migrateScope = app.Services.CreateScope();
     var migrateDb = migrateScope.ServiceProvider.GetRequiredService<BlissDbContext>();
     migrateDb.Database.Migrate();
-    Console.WriteLine(MigrationCommand.CompletionLine);
+    Console.WriteLine(initialInstall
+        ? MigrationCommand.InitialInstallCompletionLine
+        : MigrationCommand.CompletionLine);
     return;
 }
 
