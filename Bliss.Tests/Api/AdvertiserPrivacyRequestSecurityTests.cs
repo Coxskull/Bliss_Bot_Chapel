@@ -234,9 +234,53 @@ public sealed class AdvertiserPrivacyRequestSecurityTests
             Assert.Equal("operator-sub", acknowledged.AcknowledgedBySubject);
             Assert.NotNull(acknowledged.AcknowledgedAt);
 
+            // An acknowledged case still cannot be closed by the applicant,
+            // a non-allowlisted operator, or with an invented/absent manifest.
+            var evidence = new string('a', 64); // fictional hash, CI only
+            var attested = new AdvertiserPrivacyCaseFinalization(
+                "RESOLVED", evidence, true, true, true, true, true);
+            var pendingClose = await Controller(db, "subject-a")
+                .FinalizeCase(receipt.CaseId, attested, CancellationToken.None);
+            Assert.Equal(StatusCodes.Status403Forbidden,
+                Assert.IsType<StatusCodeResult>(pendingClose).StatusCode);
+            var noOperator = await OperatorController(db, allowlisted: false)
+                .FinalizeCase(receipt.CaseId, attested, CancellationToken.None);
+            Assert.Equal(StatusCodes.Status403Forbidden,
+                Assert.IsType<StatusCodeResult>(noOperator).StatusCode);
+            Assert.IsType<BadRequestObjectResult>(await OperatorController(db)
+                .FinalizeCase(receipt.CaseId, attested with { EvidenceSha256 = null }, CancellationToken.None));
+            Assert.IsType<BadRequestObjectResult>(await OperatorController(db)
+                .FinalizeCase(receipt.CaseId, attested with { IdentityVerified = false }, CancellationToken.None));
+            Assert.IsType<BadRequestObjectResult>(await OperatorController(db)
+                .FinalizeCase(receipt.CaseId, attested with { ApplicantNotified = false }, CancellationToken.None));
+            Assert.IsType<BadRequestObjectResult>(await OperatorController(db)
+                .FinalizeCase(receipt.CaseId, attested with { RequiredActionsVerified = false }, CancellationToken.None));
+            Assert.IsType<BadRequestObjectResult>(await OperatorController(db)
+                .FinalizeCase(receipt.CaseId, attested with { MarketingSuppressionVerified = false }, CancellationToken.None));
+            Assert.IsType<BadRequestObjectResult>(await OperatorController(db)
+                .FinalizeCase(receipt.CaseId, attested with { Decision = "DECLINED" }, CancellationToken.None));
+            Assert.IsType<NotFoundResult>(await OperatorController(db)
+                .FinalizeCase(Guid.NewGuid(), attested, CancellationToken.None));
+            var completed = Assert.IsType<OkObjectResult>(
+                await OperatorController(db).FinalizeCase(receipt.CaseId, attested, CancellationToken.None));
+            Assert.NotNull(completed.Value);
+            Assert.IsType<ConflictObjectResult>(await OperatorController(db)
+                .FinalizeCase(receipt.CaseId, attested, CancellationToken.None));
+            var closed = await db.AdvertiserPrivacyRequests.AsNoTracking()
+                .SingleAsync(x => x.Id == receipt.CaseId);
+            Assert.Equal("RESOLVED", closed.Status);
+            Assert.Equal("operator-sub", closed.DisposedBySubject);
+            Assert.NotNull(closed.DisposedAt);
+            Assert.Equal(evidence, closed.DispositionEvidenceSha256);
+            // Terminal disposition removes it from the private open-case queue,
+            // but never rewrites the immutable initial consent receipt.
+            var postQueue = Assert.IsType<OkObjectResult>(
+                await OperatorController(db).OperatorQueue(CancellationToken.None));
+            Assert.Single(Assert.IsType<AdvertiserPrivacyOperatorCase[]>(postQueue.Value));
+
             var records = await db.AdvertiserPrivacyRequests.AsNoTracking().ToArrayAsync();
             Assert.Equal(2, records.Length);
-            Assert.Single(records, x => x.Status == "VERIFYING");
+            Assert.Single(records, x => x.Status == "RESOLVED");
             Assert.Single(records, x => x.Status == "RECEIVED");
             Assert.Equal(2, await db.AdvertiserAccountMemberships.CountAsync());
             Assert.Equal(2, await db.AdvertiserRegistrationReceipts.CountAsync());
