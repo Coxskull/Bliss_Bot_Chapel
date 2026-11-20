@@ -133,6 +133,16 @@ jobs:
         run: python3 -m unittest discover -s scripts -p 'test_advertiser_account_legal_contract.py' -v
       - name: Verify immutable registration receipt and retry key in offline browser
         run: node scripts/test_advertiser_registration_receipt_runtime.mjs
+      - name: Verify owner-only guarded Task3B PG18 installation contract
+        run: node scripts/task3b-guarded-railway-install-contract.test.mjs
+      - name: Parse owner-only guarded Task3B PowerShell without executing it
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'scripts/task3b-guarded-railway-install.ps1', [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -gt 0) { throw 'Task3B PowerShell parse failed' }
 
       - name: Restore solution
         run: dotnet restore BlissBotChapel.sln
