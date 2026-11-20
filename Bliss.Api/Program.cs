@@ -22,6 +22,26 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 SecretFileLoader.Apply(builder.Configuration, builder.Environment.ContentRootPath);
+// Private one-shot HTTPS/OIDC metadata and signing-key preflight for the existing
+// Railway app container. No HTTP listener, customer identity, token, or database.
+if (args.Contains("--verify-hosted-oidc=true", StringComparer.Ordinal))
+{
+    if (args.Length != 1)
+    {
+        Console.WriteLine("TASK3B_HOSTED_OIDC_DISCOVERY=DENIED_INVALID_INVOCATION");
+        Environment.ExitCode = 2;
+        return;
+    }
+    var issuerAuth = builder.Configuration
+        .GetSection(BlissAuthenticationOptions.SectionName)
+        .Get<BlissAuthenticationOptions>() ?? new BlissAuthenticationOptions();
+    var providerResult = await HostedOidcDiscovery.RunAsync(
+        issuerAuth.Authority, issuerAuth.Enabled, issuerAuth.SupabaseEnabled, issuerAuth.ClientId);
+    // Fixed vocabulary only. Do NOT log issuer, OAuth secrets or discovery JSON.
+    Console.WriteLine("TASK3B_HOSTED_OIDC_DISCOVERY=" + providerResult);
+    Environment.ExitCode = providerResult == HostedOidcDiscovery.Pass ? 0 : 2;
+    return;
+}
 // Explicit process-local diagnostic mode: no HTTP listener or application jobs.
 if (args.Contains("--verify-hosted-database=true", StringComparer.Ordinal))
 {
