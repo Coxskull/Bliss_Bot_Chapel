@@ -544,6 +544,17 @@ app.Use(async (context, next) =>
     }
     await next();
 });
+app.Use(async (context, next) =>
+{
+    if (CreatorRegistrationBoundary.ShouldDeny(context, authentication))
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        await context.Response.WriteAsJsonAsync(new { error = "Creator registration is limited to its own registration endpoints." });
+        return;
+    }
+    await next();
+});
 app.UseRateLimiter();
 app.UseAuthorization();
 app.Use(async (context, next) =>
@@ -582,6 +593,8 @@ app.MapGet("/api/auth/supabase-config", () =>
         ? Results.Json(new { url = new Uri(authentication.Authority).GetLeftPart(UriPartial.Authority),
             publishableKey = authentication.SupabasePublishableKey, clientId = authentication.ClientId,
             advertiserRegistrationEnabled = authentication.Enabled && authentication.AdvertiserRegistrationRequested,
+            advertiserRegistrationEnabled = authentication.Enabled && authentication.AdvertiserRegistrationRequested,
+            creatorRegistrationEnabled = authentication.Enabled && authentication.CreatorRegistrationRequested })
             advertiserPrivacyRequestsEnabled = authentication.Enabled && authentication.SupabaseEnabled
                 && authentication.AdvertiserPrivacyRequestsRequested })
         : Results.Problem("Supabase login is not configured.", statusCode: 503))

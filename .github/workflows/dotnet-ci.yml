@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - codex/task3-secure-advertiser-registration-20261107
   push:
     branches:
       - main

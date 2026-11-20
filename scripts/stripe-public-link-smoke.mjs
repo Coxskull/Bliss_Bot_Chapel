@@ -32,6 +32,8 @@ for (const file of pages) {
     assert.ok(existsSync(resolve(out, clean)), file + " links to missing " + dest);
   }
 }
+for (const file of ["creator-registration.html", "creator-registration.js", "advertiser-registration.html", "advertiser-registration.js"])
+  assert.ok(!existsSync(resolve(out, file)), file + " must stay on the Railway application origin");
 const contact = read("contact.html");
 for (const route of ["join-advertiser.html", "join-creator.html", "privacy-request.html"])
   assert.ok(contact.includes('href="/' + route + '"'), "Contact inquiry route unavailable");
