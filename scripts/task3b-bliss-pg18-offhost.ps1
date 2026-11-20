@@ -12,7 +12,16 @@ param(
 $ErrorActionPreference = 'Stop'
 # Pin the actual existing DigitalOcean Droplet 571399692, verified through
 # the connected owner account on 2026-11-20. Refuse an unrelated SSH target.
-if ($DropletIPv4 -cne '159.89.238.136') {
+# This public-source commitment prevents accidentally targeting a different
+# host without publishing the current infrastructure IP in repository code.
+# It is NOT a secret or substitute for verified OpenSSH host-key checking.
+$sha = [Security.Cryptography.SHA256]::Create()
+try {
+    $hostDigest = ([BitConverter]::ToString(
+        $sha.ComputeHash([Text.Encoding]::ASCII.GetBytes($DropletIPv4))
+    )).Replace('-', '').ToLowerInvariant()
+} finally { $sha.Dispose() }
+if ($hostDigest -cne '007cf7213de8a2ca89232d840afe2e1d98e2e69cef221acb6fbbbdc94c5fbd83') {
     throw 'TASK3B_OFFHOST=REFUSED_DROPLET_IDENTITY; destination is not the existing owner DigitalOcean droplet.'
 }
 if ($RemoteDirectory -cnotmatch '^/[a-zA-Z0-9_.\/-]+$' -or
