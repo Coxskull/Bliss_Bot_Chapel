@@ -150,6 +150,9 @@ jobs:
             [void][System.Management.Automation.Language.Parser]::ParseFile(
               $path, [ref]$tokens, [ref]$parseErrors)
             if ($parseErrors.Count -gt 0) {
+              foreach ($err in $parseErrors) {
+                Write-Error ("Task3B parser: " + $path + ":" + $err.Extent.StartLineNumber + " " + $err.Message) -ErrorAction Continue
+              }
               throw "Task3B PowerShell parse failed: $path"
             }
           }
