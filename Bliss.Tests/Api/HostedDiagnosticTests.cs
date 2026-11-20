@@ -47,6 +47,30 @@ public sealed class HostedDiagnosticTests
             Assert.False(new HostedDatabaseDiagnosticResult(true, true, false, 0, "").Success);
     }
 
+    [Theory]
+    [InlineData(true, false, 0, true, true)]
+    [InlineData(true, false, 3, true, true)]
+    [InlineData(true, true, 0, true, true)]
+    [InlineData(true, false, 0, false, false)]
+    [InlineData(false, true, 3, true, false)]
+    [InlineData(true, true, 3, true, false)]
+    public void Locked_preview_predeploy_allows_only_verified_transport_and_incomplete_schema(
+        bool tls, bool migrations, long tables, bool lockedNoAccountWrites, bool expected)
+    {
+        var diagnostic = HostedDatabaseDiagnosticResult.FromReadOnlyCatalog(tls, migrations, tables);
+        Assert.Equal(expected, diagnostic.AllowsLockedPreviewPredeploy(lockedNoAccountWrites));
+        if (expected)
+            Assert.False(diagnostic.Success); // Never claim a complete schema.
+    }
+
+    [Fact]
+    public void Locked_preview_predeploy_never_waives_a_non_schema_diagnostic_error()
+    {
+        var failure = new HostedDatabaseDiagnosticResult(
+            true, true, false, 0, "database_connection_failed");
+        Assert.False(failure.AllowsLockedPreviewPredeploy(true));
+    }
+
     [Fact]
     public void Ingress_observation_uses_transport_peer_and_ignores_forged_identity_headers()
     {
