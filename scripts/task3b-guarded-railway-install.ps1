@@ -110,6 +110,14 @@ if ($acknowledgement -cne 'BLISS-PG18-RESTORE-VERIFIED') {
 $remote = @'
 set -eu
 umask 077
+# Independently verify the actual running Railway application identity.
+# A wrong service/environment must not be able to run the schema installer.
+if [ "${RAILWAY_PROJECT_ID:-}" != "fb33c1b7-03fb-42c8-89b1-081951a738fd" ] ||
+   [ "${RAILWAY_ENVIRONMENT_ID:-}" != "b67a9836-36bf-4083-93f7-00c867b13f39" ] ||
+   [ "${RAILWAY_SERVICE_ID:-}" != "8b22ff53-ccf5-4341-a473-ff146ca497f1" ]; then
+    echo "TASK3B_INSTALL=REFUSED_SERVICE_IDENTITY"
+    exit 2
+fi
 if [ "${ASPNETCORE_ENVIRONMENT:-}" != "Production" ] ||
    [ "${Runtime__RestrictedPreview:-}" != "true" ] ||
    [ "${Authentication__AdvertiserRegistrationRequested:-false}" = "true" ]; then
