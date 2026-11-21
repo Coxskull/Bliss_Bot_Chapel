@@ -18,6 +18,9 @@ public static class PublicAdvertiserRegistrationGate
         "/advertiser-registration.html", "/advertiser-registration.js",
         "/advertiser-account-privacy.html", "/advertiser-account-terms.html",
         "/advertiser-login.html", "/alpha-intake.css", "/contact.html",
+        // Static dashboard shell; exact read-only endpoints enforce issuer/subject authorization.
+        "/advertiser-dashboard.html", "/advertiser-dashboard.js", "/creator-dashboard.css",
+        "/api/advertisers/registration-status", "/api/advertisers/me",
         // Supabase custom OAuth consent screen follows the verified 302 challenge.
         // These are only static sign-in assets, not additional business APIs.
         "/oauth-consent.html", "/oauth-consent.css", "/oauth-consent.bundle.js",
