@@ -217,7 +217,7 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertIn('method: "PUT"', self.js)
         self.assertIn('method: "GET"', self.js)
         self.assertIn('method: "POST"', self.js)
-        self.assertIn('recoveryToken = fragment.get("access_token")', self.js)
+        self.assertIn('fragment.get("type") === "recovery" ? fragment.get("access_token") : null', self.js)
         self.assertIn('history.replaceState(null, "", window.location.pathname', self.js)
         self.assertIn('if (!recoveryToken || configuration?.advertiserRegistrationEnabled !== true) return;', self.js)
         self.assertIn('recoveryRequest.querySelector("button").disabled = !enabled', self.js)
