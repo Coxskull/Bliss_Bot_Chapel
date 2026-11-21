@@ -193,6 +193,12 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertIn("pg.SqlState == PostgresErrorCodes.UniqueViolation", self.server)
         self.assertNotIn("catch (DbUpdateException)\n", self.server)
 
+    def test_registration_forms_fail_closed_until_client_auth_readback(self):
+        self.assertIn('<button class="submit" type="submit" disabled>Create sign-in</button>', self.form)
+        self.assertIn('<button class="submit" type="submit" disabled>Submit registration</button>', self.form)
+        self.assertIn('signup.querySelector("button").disabled = !enabled', self.js)
+        self.assertIn('registration.querySelector("button").disabled = !enabled || session?.isAuthenticated !== true', self.js)
+
     def test_marketing_is_optional_and_not_preselected(self):
         marketing = [x for x in self.parsed.inputs if x.get("id") == "marketing-consent"]
         self.assertEqual(1, len(marketing))

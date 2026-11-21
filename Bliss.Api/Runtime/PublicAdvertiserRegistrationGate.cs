@@ -18,6 +18,9 @@ public static class PublicAdvertiserRegistrationGate
         "/advertiser-registration.html", "/advertiser-registration.js",
         "/advertiser-account-privacy.html", "/advertiser-account-terms.html",
         "/advertiser-login.html", "/alpha-intake.css", "/contact.html",
+        // Supabase custom OAuth consent screen follows the verified 302 challenge.
+        // These are only static sign-in assets, not additional business APIs.
+        "/oauth-consent.html", "/oauth-consent.css", "/oauth-consent.bundle.js",
         "/api/auth/supabase-config", "/api/auth/session", "/api/auth/login",
         "/signin-oidc", "/signout-callback-oidc"
     };
