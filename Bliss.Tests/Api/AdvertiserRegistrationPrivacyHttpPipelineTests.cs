@@ -172,7 +172,7 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         Assert.False(contract.RootElement.GetProperty("signedAuthorization").GetBoolean());
         var expectedSha = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
             System.Text.Encoding.UTF8.GetBytes(key.ToString("D") +
-                "\\nFictional campaign\\nA fictional planning brief."))).ToLowerInvariant();
+                "\nFictional campaign\nA fictional planning brief."))).ToLowerInvariant();
         Assert.Equal(expectedSha, contract.RootElement.GetProperty("briefSha256").GetString());
         Assert.Equal(HttpStatusCode.NotFound,
             (await b.PostAsJsonAsync(handoff, new { campaignId = key })).StatusCode);
