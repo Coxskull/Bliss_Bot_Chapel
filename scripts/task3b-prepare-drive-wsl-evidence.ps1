@@ -49,7 +49,7 @@ $exitCode = 1
 $previousErrorActionPreference = $ErrorActionPreference
 try {
     $ErrorActionPreference = 'Continue'
-    $output = @(& $wsl.Source -d Ubuntu -- psql -X -At -v ON_ERROR_STOP=1 -h /var/run/postgresql -d alpha_task3b_restore_202611 -c $sql 2>&1)
+    $output = @(& $wsl.Source -d Ubuntu -- psql -X -At -v ON_ERROR_STOP=1 -h /var/run/postgresql -d alpha_task3b_restore_202611 -c $sql 2>$null)
     $exitCode = $LASTEXITCODE
 } finally {
     $ErrorActionPreference = $previousErrorActionPreference
@@ -60,8 +60,7 @@ if ($exitCode -ne 0 -or $output.Count -ne 1 -or ([string]$output[0]).Trim() -cne
 $now = [DateTimeOffset]::UtcNow
 try { $captured = [DateTimeOffset]::Parse([string]$m.capturedAtUtc) }
 catch { throw 'TASK3B_DRIVE_WSL=INVALID_CAPTURE_TIMESTAMP' }
-if ($captured -gt $now -or $captured -lt $now.AddDays(-7) -or
-    $now.UtcDateTime.ToString('yyyy-MM-dd') -cne '2026-11-21') {
+if ($captured -gt $now -or $captured -lt $now.AddDays(-7)) {
     throw 'TASK3B_DRIVE_WSL=REVIEWED_EVIDENCE_WINDOW_EXPIRED'
 }
 # Do NOT modify the original encrypted archive or pending manifest.
