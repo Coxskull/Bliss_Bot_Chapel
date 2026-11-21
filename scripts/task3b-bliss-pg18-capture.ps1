@@ -86,7 +86,10 @@ if ($remoteExit -ne 0) {
 # Never display raw output, raw errors, or the encoded plaintext archive.
 $lines = @($raw | ForEach-Object { [string]$_ })
 $dataLines = @($lines | Where-Object {
-    $_ -cnotmatch '^Using SSH key from file .+
+    -not (($_ -match '^Using SSH key from file ') -or ($_ -eq 'Connection to ssh.railway.com closed.'))
+})
+$joined = ($dataLines -join [Environment]::NewLine).Trim()
+$m = [regex]::Match($joined, '\ATASK3B_SOURCE=bliss\|18\|([0-9]+)\r?\nTASK3B_DUMP_BEGIN\r?\n([A-Za-z0-9+/=]+)\r?\nTASK3B_DUMP_END\z')
 if (-not $m.Success) {
     throw 'BLISS_PG18_BACKUP=INVALID_REMOTE_RECEIPT; no archive accepted.'
 }
