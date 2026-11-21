@@ -151,10 +151,11 @@ async function scenario(mode, { enabled = true, authenticated = true,
     "same sign-in should retain the request key after interrupted transport");
   await replay.send();
   assert.notEqual(replay.storedKey,replay.initialKey,"only an authoritative receipt rotates key");
+  const oldAccountRotatedKey = replay.storedKey; // take a snapshot BEFORE shared storage changes
   const other = await scenario("accepted", {
     saved:sameTab, email:"beta@example.invalid"
   });
-  assert.notEqual(other.initialKey,replay.storedKey,
+  assert.notEqual(other.initialKey,oldAccountRotatedKey,
     "different signed-in applicant must not reuse old applicant's key");
   const persisted = JSON.stringify([...sameTab.entries()]);
   assert.doesNotMatch(persisted, /alpha@example\.invalid|beta@example\.invalid/i,
