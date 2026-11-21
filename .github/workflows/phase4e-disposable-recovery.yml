@@ -5,6 +5,12 @@ on:
       - '.github/workflows/phase4e-disposable-recovery.yml'
       - 'scripts/phase4c-nonprod-backup.sh'
       - 'tests/phase4e-ci.sh'
+      - 'tests/phase4c-backup-guard.sh'
+      - 'scripts/bliss-logical-backup-operator.sh'
+      - 'tests/bliss-logical-backup-operator-ci.sh'
+      - 'docs/bliss/RAILWAY-LOGICAL-BACKUP-OPERATOR.md'
+      - 'scripts/bliss-google-drive-upload-operator.sh'
+      - 'tests/bliss-google-drive-upload-mock-ci.sh'
   workflow_dispatch:
 permissions:
   contents: read
@@ -42,6 +48,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Assert production-mode backup refuses before reading any database
+        run: bash tests/phase4c-backup-guard.sh
       - name: Install age and PostgreSQL 18 client
         run: |
           sudo apt-get update
@@ -57,3 +65,14 @@ jobs:
           test "$(pg_dump --version | awk '{print $3}' | cut -d. -f1)" = 18
           test "$(psql --version | awk '{print $3}' | cut -d. -f1)" = 18
           bash tests/phase4e-ci.sh
+      - name: Test opt-in operator backup only with fictional source and independent restore
+        run: |
+          export PATH="/usr/lib/postgresql/18/bin:$PATH"
+          bash -n scripts/bliss-logical-backup-operator.sh
+          bash -n tests/bliss-logical-backup-operator-ci.sh
+          bash tests/bliss-logical-backup-operator-ci.sh
+      - name: Test pinned Google Drive uploader with offline mock only
+        run: |
+          bash -n scripts/bliss-google-drive-upload-operator.sh
+          bash -n tests/bliss-google-drive-upload-mock-ci.sh
+          bash tests/bliss-google-drive-upload-mock-ci.sh
