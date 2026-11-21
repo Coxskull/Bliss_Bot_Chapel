@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Bliss.Api.Runtime;
 using Bliss.Domain.CreativeAcademy;
 
@@ -13,9 +14,12 @@ public interface IControlledAiProvider
     bool Configured(string kind);
     Task<AiProviderResult> ExecuteAsync(AiProviderRequest request, CancellationToken ct);
 }
-public sealed class AiProviderException(string code) : Exception(code)
+public sealed class AiProviderException(string code, string? providerRequestId = null) : Exception(code)
 {
     public string Code { get; } = code;
+    // Only a strictly checked x-request-id from the provider response. It
+    // assists human reconciliation of unknown charges, never auto-retry.
+    public string? ProviderRequestId { get; } = providerRequestId;
 }
 
 public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRuntimeOptions runtime) : IControlledAiProvider
@@ -39,7 +43,16 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
         message.Headers.Add("Idempotency-Key", request.RunId.ToString());
         message.Content = JsonContent.Create(body);
         using var response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, ct);
-        if (!response.IsSuccessStatusCode) throw new AiProviderException("PROVIDER_HTTP_" + (int)response.StatusCode);
+        if (!response.IsSuccessStatusCode)
+        {
+            var status = "PROVIDER_HTTP_" + (int)response.StatusCode;
+            if (Options.Protocol == "OpenAI" && request.Kind == "IMAGE" && Options.ImagePilotEnabled)
+            {
+                var evidence = await SafeRejectedImageEvidenceAsync(response, ct);
+                throw new AiProviderException(status + evidence.CodeSuffix, evidence.RequestId);
+            }
+            throw new AiProviderException(status);
+        }
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var bounded = new MemoryStream(); var buffer = new byte[8192];
         int count;
@@ -106,6 +119,58 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or FormatException or IndexOutOfRangeException)
         { throw new AiProviderException("INVALID_PROVIDER_RESPONSE"); }
     }
+    // A 429 is ambiguous without a provider machine-readable reason.
+    // Read at most 8192 BYTES of error JSON, never the free-form message.
+    // Only syntax-constrained machine tokens enter the 128-char FailureCode
+    // column; only validated x-request-id enters ProviderRequestId.
+    private static async Task<(string CodeSuffix, string? RequestId)> SafeRejectedImageEvidenceAsync(
+        HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        string? requestId = null;
+        if (response.Headers.TryGetValues("x-request-id", out var values))
+        {
+            var raw = values.FirstOrDefault();
+            if (raw is not null && Regex.IsMatch(raw, @"\Areq_[A-Za-z0-9_-]{1,128}\z", RegexOptions.CultureInvariant))
+                requestId = raw;
+        }
+        if (response.Content is null || response.Content.Headers.ContentLength > 8192)
+            return ("", requestId);
+        try
+        {
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using var bounded = new MemoryStream();
+            var buffer = new byte[1024];
+            int count;
+            while ((count = await stream.ReadAsync(buffer.AsMemory(), cancellationToken)) > 0)
+            {
+                if (bounded.Length + count > 8192) return ("", requestId);
+                bounded.Write(buffer, 0, count);
+            }
+            using var document = JsonDocument.Parse(bounded.ToArray());
+            if (!document.RootElement.TryGetProperty("error", out var error)
+                || error.ValueKind != JsonValueKind.Object) return ("", requestId);
+            static string? SafeToken(JsonElement parent, string name)
+            {
+                if (!parent.TryGetProperty(name, out var node) || node.ValueKind != JsonValueKind.String)
+                    return null;
+                var candidate = node.GetString();
+                return candidate is not null
+                    && Regex.IsMatch(candidate, @"\A[a-z][a-z0-9_.-]{0,63}\z", RegexOptions.CultureInvariant)
+                    ? candidate : null;
+            }
+            var code = SafeToken(error, "code");
+            if (code is not null) return ("_CODE_" + code, requestId);
+            var type = SafeToken(error, "type");
+            return (type is null ? "" : "_TYPE_" + type, requestId);
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) when (ex is JsonException or IOException or HttpRequestException
+                                     or InvalidOperationException or NotSupportedException)
+        {
+            return ("", requestId);
+        }
+    }
+
     // OpenAI Standard Images API rates as of 2026-11-21: text input $5,
     // image input $8, image output $30 per million tokens. This is a metered
     // provider-usage calculation, not proof that an invoice has settled.
