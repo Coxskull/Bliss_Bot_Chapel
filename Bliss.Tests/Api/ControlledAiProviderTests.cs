@@ -53,6 +53,7 @@ public sealed class ControlledAiProviderTests
             runtime.ControlledAi.TotalBudgetUsd = 20m;
             runtime.ControlledAi.DailyBudgetUsd = 20m;
             runtime.ControlledAi.ImageReservationUsd = 1.8m;
+            runtime.ControlledAi.MaxResponseBytes = 24_000_000;
         }
         var handler = new Handler((_, body) =>
         {
