@@ -94,6 +94,20 @@ jobs:
             bash "$script"
           grep -q "BLISS_HOSTED_DB_PASSWORD is missing" "$output"
 
+      - name: Task3B WSL local schema guard contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/task3b-wsl-local-schema.sh
+          bash -n scripts/task3b-bliss-pg18-isolated-restore.sh
+          python3 scripts/test_task3b_pg18_isolated_restore_preflight.py
+          output=$(env -u WSL_DISTRO_NAME bash scripts/task3b-wsl-local-schema.sh 2>&1) && {
+            echo "::error::WSL-only schema command unexpectedly allowed non-WSL CI"
+            exit 1
+          }
+          [[ "$output" == *"TASK3B_WSL_SCHEMA=NOT_WSL"* ]]
+          echo "TASK3B_WSL_SCHEMA_NON_WSL_REFUSAL_PASS"
+
       - name: Set up .NET 8 SDK
         uses: actions/setup-dotnet@v4
         with:
