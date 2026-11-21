@@ -71,6 +71,65 @@ public sealed class CreatorRegistrationSecurityTests
     }
 
     [Fact]
+    public void Login_lane_selection_requires_the_exact_creator_registration_path()
+    {
+        Assert.Equal(SupabaseOidc.CreatorLane,
+            SupabaseOidc.ResolvePublicRegistrationLane("/creator-registration.html"));
+        Assert.Equal(SupabaseOidc.AdvertiserLane,
+            SupabaseOidc.ResolvePublicRegistrationLane("/advertiser-registration.html"));
+        Assert.Equal(SupabaseOidc.AdvertiserLane,
+            SupabaseOidc.ResolvePublicRegistrationLane("/"));
+        Assert.Equal(SupabaseOidc.AdvertiserLane,
+            SupabaseOidc.ResolvePublicRegistrationLane("/creator-registration.html?role=creator"));
+    }
+
+    [Fact]
+    public void Protected_oidc_lane_stamps_one_pending_marker_and_cross_lane_apis_stay_denied()
+    {
+        var options = new BlissAuthenticationOptions
+        {
+            Enabled = true, SupabaseEnabled = true, CreatorRegistrationRequested = true,
+            AdvertiserRegistrationRequested = true, Authority = Issuer, ClientId = Options.ClientId
+        };
+        var access = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("sub", "synthetic-applicant"),
+            new Claim("client_id", Options.ClientId), new Claim("app_metadata", "{}")
+        }, "access"));
+        ClaimsIdentity Identity() => new(new[]
+        {
+            new Claim("sub", "synthetic-applicant"), new Claim("email_verified", "true")
+        }, "oidc");
+
+        var creator = Identity();
+        SupabaseOidc.ApplyVerifiedAccessToken(creator, access, options, SupabaseOidc.CreatorLane);
+        var creatorPrincipal = new ClaimsPrincipal(creator);
+        Assert.True(BlissAuthorization.IsPendingCreatorRegistration(creatorPrincipal, options));
+        Assert.False(BlissAuthorization.IsPendingAdvertiserRegistration(creatorPrincipal, options));
+        var creatorContext = new DefaultHttpContext { User = creatorPrincipal };
+        creatorContext.Request.Method = "POST";
+        creatorContext.Request.Path = "/api/advertisers/register";
+        Assert.True(CreatorRegistrationBoundary.ShouldDeny(creatorContext, options));
+        creatorContext.Request.Path = "/api/creators/register";
+        Assert.False(CreatorRegistrationBoundary.ShouldDeny(creatorContext, options));
+
+        var advertiser = Identity();
+        SupabaseOidc.ApplyVerifiedAccessToken(advertiser, access, options, SupabaseOidc.AdvertiserLane);
+        var advertiserPrincipal = new ClaimsPrincipal(advertiser);
+        Assert.True(BlissAuthorization.IsPendingAdvertiserRegistration(advertiserPrincipal, options));
+        Assert.False(BlissAuthorization.IsPendingCreatorRegistration(advertiserPrincipal, options));
+        var advertiserContext = new DefaultHttpContext { User = advertiserPrincipal };
+        advertiserContext.Request.Method = "POST";
+        advertiserContext.Request.Path = "/api/creators/register";
+        Assert.True(AdvertiserRegistrationBoundary.ShouldDeny(advertiserContext, options));
+        advertiserContext.Request.Path = "/api/advertisers/register";
+        Assert.False(AdvertiserRegistrationBoundary.ShouldDeny(advertiserContext, options));
+
+        Assert.Throws<Microsoft.IdentityModel.Tokens.SecurityTokenValidationException>(() =>
+            SupabaseOidc.ApplyVerifiedAccessToken(Identity(), access, options, "admin"));
+    }
+
+    [Fact]
     public void Simultaneous_signup_flags_reject_an_ambiguous_pending_cookie()
     {
         var bothOptions = new BlissAuthenticationOptions
