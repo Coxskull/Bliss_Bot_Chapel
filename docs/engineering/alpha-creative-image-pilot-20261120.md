@@ -37,6 +37,14 @@ An authenticated browser inspection of the **Alpha Global Media LLC** OpenAI API
 
 **Remaining owner action:** organization owner confirms current billed spend / available balance / auto-recharge OFF / dedicated project model access and signed-in API key privilege, then verifies adequate headroom before single-master generation. If permissions remain unavailable, leave the pilot blocked; do not work around by increasing spend or routing through a shared key.
 
+## Image-size acceptance repair (2026-11-21, no paid requests)
+
+The original Controlled AI worker used the same **1 MiB** `CandidatePng.Validate` limit and roughly **2 MB JSON response ceiling** for both manually submitted pictures and provider-generated `1024x1024` art. A valid paid model image could exceed those limits and be discarded **after** billing, wasting the approved test budget.
+
+The hardened provider permits at most **16 MiB of PNG bytes** and **24 MB of response JSON** exclusively for the isolated `gpt-image-2.5-flare` image pilot, preserving PNG signature, dimensions, CRC, zlib scanline, and IEND verification. The existing manual/public upload PNG limit remains 1 MiB. The pilot's runtime must explicitly configure `Runtime__ControlledAi__MaxResponseBytes=24000000`; an undersized value fails before any provider call. This is only source-level compatibility/guarding evidence; no charged real model output has been received.
+
+At last authenticated owner-readonly project inspection the spending limit showed **$9**, current project usage **$0**, and project headroom **$9**; model was listed in its project model limits. **Billing overview still denies `api.billing.read`**, so prepaid credits and auto-recharge state are unknown. Project displayed headroom is not equivalent to available prepaid funding. No image API call or billing setting change is authorized until the organization billing owner verifies these remaining facts.
+
 ## Owner-only prerequisites (DO NOT post secrets)
 
 1. Use the existing OpenAI API Platform organization. In the official developer console, confirm the model is available to the selected project and organization verification if required. The owner's action may be required to add a **payment method** or buy up to $20 prepaid API credits, **with auto-recharge OFF**. This is not ChatGPT subscription billing.
