@@ -45,6 +45,22 @@ The hardened provider permits at most **16 MiB of PNG bytes** and **24 MB of res
 
 At last authenticated owner-readonly project inspection the spending limit showed **$9**, current project usage **$0**, and project headroom **$9**; model was listed in its project model limits. **Billing overview still denies `api.billing.read`**, so prepaid credits and auto-recharge state are unknown. Project displayed headroom is not equivalent to available prepaid funding. No image API call or billing setting change is authorized until the organization billing owner verifies these remaining facts.
 
+## November 21, 2026 owner project-limit update
+
+The owner supplied a new screenshot showing **Project Settings > Limits: enforced $20.00 project spend limit, displayed current spend $0.00**, superseding the earlier $9 screen for that project. The owner separately reports **$10 prepaid credits** and **auto-recharge OFF**; these two points are not independently visible in the provided screenshot. A $20 project limit does not itself guarantee $20 of prepaid funding or confirm access to billing details. The previously missing `api.billing.read` access has not been retested with an authorized account.
+
+Official API reference currently lists **`gpt-image-2.5-flare`** as a supported Images API generation model. Published model availability is not the same as authenticated project entitlement. The existing Railway Bliss service has no `Runtime__ControlledAi__ApiToken` or `Runtime__ControlledAi__ImagePilotEnabled` variable configured; no paid pilot can be activated from that app by this change.
+
+The new read-only, $0 project model visibility check uses only **GET `/v1/models/gpt-image-2.5-flare`**, reports no private credentials, and never makes a charged image-generation request. A successful 200 confirms model listing under the specific private project key, **not** that generation permissions, payment funding or quality are accepted. Run it with the project key already available privately to an isolated Node process:
+
+~~~powershell
+$env:ALPHA_IMAGE_PILOT_SCOPE = "ISOLATED_NO_DELIVERY"
+$env:ALPHA_GLOBAL_STOP = "ENGAGED"
+node scripts/alpha-creative-image-model-permission.mjs
+~~~
+
+Keep any API key outside command history, logs and this repository. Do not trigger `--execute` while key custody, project billing and private ledger are unverified.
+
 ## Owner-only prerequisites (DO NOT post secrets)
 
 1. Use the existing OpenAI API Platform organization. In the official developer console, confirm the model is available to the selected project and organization verification if required. The owner's action may be required to add a **payment method** or buy up to $20 prepaid API credits, **with auto-recharge OFF**. This is not ChatGPT subscription billing.
