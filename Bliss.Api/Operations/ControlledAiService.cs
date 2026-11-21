@@ -181,6 +181,7 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         AddEvent(run, "RUNNING", "AI_RUNNER");
         try { await db.SaveChangesAsync(stopping); } catch (Exception ex) when (ReservationConflict(ex)) { db.ChangeTracker.Clear(); return true; }
         AiProviderResult? result = null; string status = "SUCCEEDED_PENDING_REVIEW", failure = "";
+        string? rejectedProviderRequestId = null;
         var billingAnomaly = await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", stopping)
             || (Options.ImagePilotEnabled && (await db.ControlledAiRuns.AsNoTracking()
                 .Where(x => x.Id != run.Id && x.Kind == "IMAGE" && x.Model == "gpt-image-2.5-flare")
@@ -214,7 +215,7 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
                 if (result.RequestId.Length > 200 || result.InputTokens < 0 || result.OutputTokens < 0 || result.ActualUsd < 0) throw new AiProviderException("INVALID_USAGE_RECEIPT");
             }
             catch (OperationCanceledException) { status = stopping.IsCancellationRequested ? "UNKNOWN" : "TIMED_OUT"; failure = stopping.IsCancellationRequested ? "HOST_INTERRUPTED" : "CALL_INTERRUPTED"; result = null; }
-            catch (AiProviderException ex) { status = "FAILED"; failure = ex.Code; result = null; }
+            catch (AiProviderException ex) { status = "FAILED"; failure = ex.Code; rejectedProviderRequestId = ex.ProviderRequestId; result = null; }
             catch (Exception) { status = "FAILED"; failure = "PROVIDER_FAILURE"; result = null; }
             finally
             {
@@ -233,6 +234,13 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
             {
                 run.OutputText = run.Kind == "TEXT" ? result.Text : ""; run.OutputImage = run.Kind == "IMAGE" ? result.Image : null;
                 run.OutputSha256 = run.Kind == "TEXT" ? Hash(run.OutputText) : Convert.ToHexString(SHA256.HashData(result.Image!)).ToLowerInvariant();
+            }
+            if (receipt is null && !string.IsNullOrWhiteSpace(rejectedProviderRequestId)
+                && status == "FAILED" && failure.StartsWith("PROVIDER_HTTP_", StringComparison.Ordinal))
+            {
+                // Preserve the provider-assigned correlation ID for manual
+                // charge investigation; never take it as evidence of zero cost.
+                run.ProviderRequestId = rejectedProviderRequestId;
             }
             if (receipt is not null)
             {
