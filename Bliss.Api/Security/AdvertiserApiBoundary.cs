@@ -45,6 +45,10 @@ public static class AdvertiserApiBoundary
             && (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsPost(context.Request.Method))
             && path.Equals("/api/advertisers/my-campaign-drafts", StringComparison.OrdinalIgnoreCase))
             return false;
+        if (auth.AdvertiserCampaignDraftsRequested && auth.AdvertiserCreativeHandoffPreviewRequested
+            && HttpMethods.IsPost(context.Request.Method)
+            && path.Equals("/api/advertisers/my-campaign-drafts/creative-handoff-preview", StringComparison.OrdinalIgnoreCase))
+            return false;
         // One verified advertiser may access only its own privacy-case receipts
         // when the separately approved privacy feature is on. The controller
         // additionally enforces the issuer/subject/active membership binding.
