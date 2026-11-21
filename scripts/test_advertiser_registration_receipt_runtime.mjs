@@ -107,7 +107,8 @@ async function scenario(mode, { enabled = true, authenticated = true,
       wrongnotice: { status: 201, body: { ...valid, privacyNoticeVersion: "unapproved-notice" } },
       wrongterms: { status: 200, body: { ...valid, termsVersion: "unapproved-terms" } },
       unexpected: { status: 202, body: valid },
-      conflict: { status: 409, body: {} }
+      conflict: { status: 409, body: {} },
+      "staff-forbidden": { status: 403, body: {} }
     };
     const result = responses[mode];
     assert.ok(result, "unrecognized fixture");
@@ -235,6 +236,18 @@ for (const mode of ["missing", "mismatch", "unrelated", "missingbinding", "wrong
   assert.equal(client.resetCount, 0, mode + ": form must not be cleared");
   assert.equal(client.storedKey, client.initialKey, mode + ": preserve idempotency key");
   assert.doesNotMatch(client.outputs.registration.textContent, /Registration received/);
+}
+{
+  // A correctly authenticated staff/operator subject must remain forbidden
+  // from creating a second pending advertiser account. Show actionable UX;
+  // do not mistake HTTP 403 for missing consent or an invalid website.
+  const staff = await scenario("staff-forbidden");
+  await staff.send();
+  assert.equal(staff.requestCount, 1);
+  assert.equal(staff.resetCount, 0);
+  assert.equal(staff.storedKey, staff.initialKey);
+  assert.match(staff.outputs.registration.textContent, /staff\/operator accounts must use a separate verified applicant account/i);
+  assert.doesNotMatch(staff.outputs.registration.textContent, /check required consent and details/i);
 }
 for (const mode of [{ enabled: false }, { authenticated: false }]) {
   const client = await scenario("accepted", mode);

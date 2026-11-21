@@ -202,7 +202,19 @@
         }, body: JSON.stringify(payload)
       });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(response.status === 409 ? "This sign-in or request already has a registration." : "Registration was rejected. Check required consent and details.");
+      if (!response.ok) {
+        // A verified operator/staff or already assigned identity is NOT a
+        // pending advertiser applicant. Never weaken server role boundaries
+        // or imply that changing business fields would solve HTTP 403.
+        const messages = {
+          400: "Registration details or required consent were invalid. Review the form.",
+          401: "Your sign-in has expired. Sign in again before submitting.",
+          403: "This signed-in account cannot create a new advertiser registration. ALPHA staff/operator accounts must use a separate verified applicant account to register a business.",
+          409: "This sign-in or request already has an advertiser registration.",
+          429: "Too many attempts. Please retry later."
+        };
+        throw new Error(messages[response.status] || "Registration could not be completed. Please contact ALPHA support.");
+      }
       // HTTP success alone is not an immutable consent/registration receipt.
       // Never clear the form or rotate its idempotency key when the response
       // may have been accepted upstream but the authoritative receipt is absent.
