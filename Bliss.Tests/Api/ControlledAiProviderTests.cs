@@ -60,7 +60,9 @@ public sealed class ControlledAiProviderTests
             if (protocol == "OpenAI") Assert.Contains("\\\"quality\\\":\\\"low\\\"", body);
             var json = protocol == "OpenAI" ? $$"""{"data":[{"b64_json":"{{AcademyProductionTests.Pixel}}"}],"usage":{"input_tokens":10,"input_tokens_details":{"text_tokens":10,"image_tokens":0},"output_tokens":100}}"""
                 : $$"""{"imageBase64":"{{AcademyProductionTests.Pixel}}","providerRequestId":"fixture-image"}""";
-            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) };
+            var reply = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) };
+            if (protocol == "OpenAI") reply.Headers.TryAddWithoutValidation("x-request-id", "req-test-image");
+            return reply;
         });
         var result = await new ConfiguredControlledAiProvider(new HttpClient(handler), runtime).ExecuteAsync(
             new AiProviderRequest(Guid.NewGuid(), "IMAGE", protocol == "OpenAI" ? "gpt-image-2.5-flare" : "fixture-image", "{\"recipe\":\"Original candidate\"}", 100), default);
