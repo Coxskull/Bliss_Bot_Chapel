@@ -26,6 +26,22 @@ public sealed class AdvertiserAccountController : ControllerBase
     public async Task<ActionResult<AdvertiserSelfSummaryDto>> GetMyBusiness(CancellationToken cancellationToken)
     {
         Response.Headers.CacheControl = "no-store";
+        if (BlissAuthorization.CanResolveAdvertiserMembershipProfile(User, _auth))
+        {
+            var verifiedSubject = User.FindFirst("sub")!.Value;
+            // One query binds the signed-in subject to the approved membership,
+            // original consents and business row. Revocation takes effect at the
+            // next request, even with a previously authenticated browser cookie.
+            var own = await (from m in _db.AdvertiserAccountMemberships.AsNoTracking()
+                             join r in _db.AdvertiserRegistrationReceipts.AsNoTracking()
+                                 on new { m.Subject, m.AdvertiserId } equals new { r.Subject, r.AdvertiserId }
+                             join b in _db.Advertisers.AsNoTracking() on m.AdvertiserId equals b.Id
+                             where m.Subject == verifiedSubject && m.Status == "ACTIVE"
+                                 && r.ProcessingConsent && r.TermsAccepted
+                             select new AdvertiserSelfSummaryDto(b.Id, b.Name, b.CountryCode, b.Website))
+                .SingleOrDefaultAsync(cancellationToken);
+            return own is null ? StatusCode(StatusCodes.Status403Forbidden) : Ok(own);
+        }
         if (!BlissAuthorization.TryResolveVerifiedAdvertiserId(User, _auth, out var advertiserId))
             return StatusCode(StatusCodes.Status403Forbidden);
 

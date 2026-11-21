@@ -110,6 +110,62 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
     }
 
     [Fact]
+    public async Task Http_membership_approval_activates_only_own_profile_and_revocation_denies_existing_session()
+    {
+        await using var isolated = Task3bHttpPostgresDatabase.TryCreate();
+        await using var factory = new AdvertiserPrivacyHttpFactory(
+            postgresConnectionString: isolated?.ConnectionString, operatorReviewEnabled: true,
+            membershipProfileEnabled: true);
+        const string review = "/api/advertisers/operator-review";
+        const string profile = "/api/advertisers/me";
+        using var applicant = IdentityClient(factory, "fixture-b");
+        using var other = IdentityClient(factory, "fixture-c");
+        using var unregistered = IdentityClient(factory, "fixture-d");
+        var advertiserId = await Register(applicant, "Fictional Membership B");
+        var otherId = await Register(other, "Fictional Membership C");
+        Assert.Equal(HttpStatusCode.Forbidden, (await applicant.GetAsync(profile)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await unregistered.GetAsync(profile)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await applicant.GetAsync(review)).StatusCode);
+        using var staff = IdentityClient(factory, "fixture-operator", "operator");
+        Assert.Equal(HttpStatusCode.Forbidden, (await staff.GetAsync(profile)).StatusCode);
+        using var queue = await staff.GetAsync(review);
+        Assert.Equal(HttpStatusCode.OK, queue.StatusCode);
+        using var json = JsonDocument.Parse(await queue.Content.ReadAsStringAsync());
+        var receiptId = json.RootElement.EnumerateArray()
+            .Single(x => x.GetProperty("advertiserId").GetGuid() == advertiserId)
+            .GetProperty("receiptId").GetGuid();
+        staff.DefaultRequestHeaders.Add("X-CSRF-TOKEN", await Csrf(staff));
+        if (isolated is null) return; // The atomic approval is exercised in PG18 CI.
+        using var approval = await staff.PostAsJsonAsync(review, new
+        {
+            receiptId, advertiserId, subject = "fixture-b",
+            businessIdentityReviewed = true, consentReviewed = true
+        });
+        Assert.Equal(HttpStatusCode.OK, approval.StatusCode);
+        using var approved = JsonDocument.Parse(await approval.Content.ReadAsStringAsync());
+        Assert.Equal("MEMBERSHIP_PROFILE_ENABLED", approved.RootElement.GetProperty("identityProvisioning").GetString());
+
+        // The original restricted applicant session can access its own active
+        // profile immediately, without issuer changes or a deployment.
+        using var result = await applicant.GetAsync(profile + "?advertiserId=" + otherId.ToString("D"));
+        Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+        using var own = JsonDocument.Parse(await result.Content.ReadAsStringAsync());
+        Assert.Equal(advertiserId, own.RootElement.GetProperty("advertiserId").GetGuid());
+        Assert.Equal(HttpStatusCode.Forbidden, (await other.GetAsync(profile)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await applicant.GetAsync(review)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await applicant.GetAsync("/api/campaigns")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await applicant.PostAsJsonAsync(profile, new { advertiserId })).StatusCode);
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+            var membership = await db.AdvertiserAccountMemberships.SingleAsync(m => m.AdvertiserId == advertiserId);
+            membership.Status = "REVOKED";
+            await db.SaveChangesAsync();
+        }
+        Assert.Equal(HttpStatusCode.Forbidden, (await applicant.GetAsync(profile)).StatusCode);
+    }
+
+    [Fact]
     public async Task Http_operator_review_requires_explicit_scope_csrf_and_exact_receipt()
     {
         await using var isolated = Task3bHttpPostgresDatabase.TryCreate();
@@ -574,7 +630,8 @@ internal sealed class Task3bHttpPostgresDatabase : IAsyncDisposable
 
 internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
     string? postgresConnectionString = null, int? writePermitLimit = null,
-    bool registrationEnabled = true, bool operatorReviewEnabled = false) : WebApplicationFactory<Program>
+    bool registrationEnabled = true, bool operatorReviewEnabled = false,
+    bool membershipProfileEnabled = false) : WebApplicationFactory<Program>
 {
     private const string Issuer = "https://identity.example.test";
     private readonly string dbName = "task3b_http_" + Guid.NewGuid().ToString("N");
@@ -588,6 +645,7 @@ internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
         builder.UseSetting("Authentication:ClientId", "synthetic-http-fixture");
         builder.UseSetting("Authentication:AdvertiserRegistrationRequested", registrationEnabled ? "true" : "false");
         builder.UseSetting("Authentication:AdvertiserSelfServiceRequested", "true");
+        builder.UseSetting("Authentication:AdvertiserMembershipSelfServiceRequested", membershipProfileEnabled ? "true" : "false");
         builder.UseSetting("Authentication:AdvertiserPrivacyRequestsRequested", privacyEnabled ? "true" : "false");
         builder.UseSetting("Authentication:ApprovedAdvertiserSubjects:0", "fixture-a");
         builder.UseSetting("Authentication:ApprovedPrivacyOperatorSubjects:0", "fixture-operator");

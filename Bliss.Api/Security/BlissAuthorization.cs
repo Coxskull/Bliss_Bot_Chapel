@@ -110,6 +110,23 @@ public static class BlissAuthorization
         return true;
     }
 
+    // Membership-backed applicants remain in the restricted registration cookie
+    // lane. Privileged/legacy allowlisted subjects cannot use this alternative.
+    public static bool CanResolveAdvertiserMembershipProfile(ClaimsPrincipal user, BlissAuthenticationOptions options)
+    {
+        if (!options.Enabled || !options.SupabaseEnabled || !options.AdvertiserSelfServiceRequested
+            || !options.AdvertiserMembershipSelfServiceRequested || !IsPendingAdvertiserIdentity(user, options))
+            return false;
+        var subject = user.FindFirst("sub")!.Value;
+        return !options.ApprovedTestSubjects.Contains(subject, StringComparer.Ordinal)
+            && !options.ApprovedCreatorSubjects.Contains(subject, StringComparer.Ordinal)
+            && !options.ApprovedAdvertiserSubjects.Contains(subject, StringComparer.Ordinal)
+            && !options.ApprovedRegistrationOperatorSubjects.Contains(subject, StringComparer.Ordinal)
+            && !options.ApprovedPrivacyOperatorSubjects.Contains(subject, StringComparer.Ordinal)
+            && !user.Claims.Any(c => string.Equals(c.Type, BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType,
+                StringComparison.OrdinalIgnoreCase));
+    }
+
     // Read-only advertiser self-profile authorization. An email match,
     // public interest form, or generic authenticated role never grants it.
     public static bool TryResolveVerifiedAdvertiserId(

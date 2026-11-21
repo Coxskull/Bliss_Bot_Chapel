@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Bliss.Api.Controllers;
 
-// Human business review only. Identity provisioning is a separate, explicit
-// operation; this controller never writes issuer claims or widens allowlists.
+// Human business review. The optional membership-backed profile lane consumes
+// the approved membership directly; this controller never writes issuer claims.
 [ApiController]
 [Authorize]
 [Route("api/advertisers/operator-review")]
@@ -66,7 +66,14 @@ public sealed class AdvertiserOperatorReviewController(
         logger.LogInformation("Advertiser membership review approved: ReceiptId={ReceiptId} AdvertiserId={AdvertiserId} OperatorSubject={OperatorSubject}",
             request.ReceiptId, request.AdvertiserId, operatorSubject);
         return Ok(new { receiptId = request.ReceiptId, advertiserId = request.AdvertiserId,
-            status = "ACTIVE", identityProvisioning = "REQUIRED_SEPARATELY" });
+            status = "ACTIVE", identityProvisioning = auth.AdvertiserMembershipSelfServiceRequested
+                && auth.AdvertiserSelfServiceRequested
+                && !auth.ApprovedTestSubjects.Contains(request.Subject, StringComparer.Ordinal)
+                && !auth.ApprovedCreatorSubjects.Contains(request.Subject, StringComparer.Ordinal)
+                && !auth.ApprovedAdvertiserSubjects.Contains(request.Subject, StringComparer.Ordinal)
+                && !auth.ApprovedRegistrationOperatorSubjects.Contains(request.Subject, StringComparer.Ordinal)
+                && !auth.ApprovedPrivacyOperatorSubjects.Contains(request.Subject, StringComparer.Ordinal)
+                ? "MEMBERSHIP_PROFILE_ENABLED" : "REQUIRED_SEPARATELY" });
     }
 
     private bool TryOperator(out string subject)

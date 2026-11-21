@@ -34,6 +34,10 @@ public sealed class BlissAuthenticationOptions
     // Advertiser-only self-service stays off until identity-to-business
     // verification and hosted recovery/ingress checks are accepted.
     public bool AdvertiserSelfServiceRequested { get; set; }
+    // Narrow application-owned authorization of the read-only profile, based on
+    // a verified registration identity and an ACTIVE receipt-bound membership.
+    // Does not mint roles, change issuer metadata or open other business APIs.
+    public bool AdvertiserMembershipSelfServiceRequested { get; set; }
     public string[] ApprovedAdvertiserSubjects { get; set; } = [];
     // Verified Supabase identities with no trusted roles may enter only the
     // registration endpoint while this is explicitly enabled. It is OFF by default.
