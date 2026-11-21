@@ -57,7 +57,7 @@ public sealed class ControlledAiProviderTests
         var handler = new Handler((_, body) =>
         {
             Assert.Contains("recipe", body);
-            if (protocol == "OpenAI") Assert.Contains("\\\"quality\\\":\\\"low\\\"", body);
+            if (protocol == "OpenAI") { using var payload = System.Text.Json.JsonDocument.Parse(body); Assert.Equal("low", payload.RootElement.GetProperty("quality").GetString()); }
             var json = protocol == "OpenAI" ? System.Text.Json.JsonSerializer.Serialize(new { data = new[] { new { b64_json = AcademyProductionTests.Pixel } }, usage = new { input_tokens = 10, input_tokens_details = new { text_tokens = 10, image_tokens = 0 }, output_tokens = 100 } })
                 : $$"""{"imageBase64":"{{AcademyProductionTests.Pixel}}","providerRequestId":"fixture-image"}""";
             var reply = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) };
