@@ -52,7 +52,11 @@ public sealed class CreativeGenerationOptions
     public bool Configured =>
         !string.IsNullOrWhiteSpace(ApiToken)
         && Uri.TryCreate(ResolvedEndpoint, UriKind.Absolute, out var endpoint)
-        && endpoint.Scheme == Uri.UriSchemeHttps;
+        && endpoint.Scheme == Uri.UriSchemeHttps
+        // The legacy Creative Academy image generator does not own a USD ledger.
+        // During the $20 pilot, OpenAI calls must flow through ControlledAiService.
+        // Do not revive this unmetered path by merely adding a provider token.
+        && !IsOpenAi;
 }
 
 public static class BlissRateLimitPolicies
