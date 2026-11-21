@@ -58,9 +58,10 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
     public async Task<IActionResult> Mine(CancellationToken ct)
     {
         Response.Headers.CacheControl = "no-store";
-        var id = await ActiveBusiness().SingleOrDefaultAsync(ct);
+        var allowed = ActiveBusiness();
+        var id = await allowed.SingleOrDefaultAsync(ct);
         if (id == Guid.Empty) return StatusCode(403);
-        return Ok(await OwnDrafts(id).Where(_ => ActiveBusiness().Contains(id))
+        return Ok(await OwnDrafts(id).Where(_ => allowed.Contains(id))
             .OrderByDescending(x => x.CreatedAt).ThenBy(x => x.CampaignId).Take(50).ToArrayAsync(ct));
     }
 
