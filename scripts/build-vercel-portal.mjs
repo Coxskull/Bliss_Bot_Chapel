@@ -68,6 +68,7 @@ for (const filename of [
 let creatorAccount = await readFile(resolve(source, 'creator-account.html'), 'utf8');
 for (const route of [
   '/creator-dashboard.html',
+  '/creator-registration.html',
   '/api/auth/login?returnUrl=%2Fcreator-dashboard.html'
 ]) {
   creatorAccount = creatorAccount.replaceAll(
