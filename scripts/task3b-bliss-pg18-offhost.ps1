@@ -89,14 +89,14 @@ case "$mount_type" in ext4|xfs|btrfs) ;; *) exit 2 ;; esac
 free_kib=$(df -Pk "$existing" | awk 'NR==2 { print $4 }')
 case "$free_kib" in ''|*[!0-9]*) exit 2 ;; esac
 [ "$free_kib" -ge "$needed_kib" ] || exit 2
-[ ! -e "$archive" ] && [ ! -L "$archive" ] || exit 2
+test ! -e "$archive" && test ! -L "$archive" || exit 2
 mkdir -p "$dir"
 [ -d "$dir" ] && [ ! -L "$dir" ] || exit 2
 [ "$(readlink -f "$dir")" = "$dir" ] || exit 2
 [ "$(findmnt -T "$dir" -n -o TARGET)" = "$mount_target" ] || exit 2
 chmod 700 "$dir"
 [ -w "$dir" ] || exit 2
-[ ! -e "$archive" ] && [ ! -L "$archive" ] || exit 2
+test ! -e "$archive" && test ! -L "$archive" || exit 2
 printf 'TASK3B_MOUNTED_VOLUME_READY\n'
 '@
 $remoteCommand = $remoteCommand.Replace('__REMOTE_DIRECTORY__', $RemoteDirectory)
