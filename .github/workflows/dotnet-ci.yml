@@ -137,16 +137,19 @@ jobs:
         run: node scripts/task3b-guarded-railway-install-contract.test.mjs
       - name: Verify private Bliss PG18 encrypted backup and isolated restore contract
         run: node scripts/task3b-bliss-pg18-recovery-contract.test.mjs
+      - name: Verify Task3B owner's one-command backup preflight is offline and fail-closed
+        run: node scripts/task3b-owner-start-backup.test.mjs
       - name: Verify isolated DigitalOcean volume guard with synthetic local mounts only
         run: node scripts/task3b-bliss-pg18-offhost-volume.test.mjs
       - name: Verify Alpha Flare pilot request budget and STOP refusal without API
         run: node scripts/alpha-creative-image-pilot.test.mjs
       - name: Verify private image receipts and fail-closed QA without paid API
         run: node scripts/alpha-creative-image-pilot-offline-acceptance.test.mjs
-      - name: Parse four owner-only Task3B PowerShell scripts, never execute backup or migration
+      - name: Parse five owner-only Task3B PowerShell scripts, never execute backup or migration
         shell: pwsh
         run: |
           foreach ($path in @(
+              'scripts/task3b-owner-start-backup.ps1',
               'scripts/task3b-bliss-pg18-capture.ps1',
               'scripts/task3b-bliss-pg18-offhost.ps1',
               'scripts/task3b-bliss-pg18-isolated-restore.ps1',
