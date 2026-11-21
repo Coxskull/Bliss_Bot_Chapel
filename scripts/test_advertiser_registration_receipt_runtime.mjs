@@ -14,7 +14,7 @@ async function scenario(mode, { enabled = true, authenticated = true,
   email = "applicant@example.invalid", saved = new Map() } = {}) {
   const outputs = { signup: { textContent: "" }, registration: { textContent: "" } };
   const signupButton = { disabled: true }, registrationButton = { disabled: true };
-  let submitRegistration, requestCount = 0, resetCount = 0;
+  let submitRegistration, requestCount = 0, resetCount = 0, releasePending = null;
   const submitted = [];
   const registration = {
     elements: {
@@ -67,6 +67,7 @@ async function scenario(mode, { enabled = true, authenticated = true,
     assert.equal(payload.marketingOptIn, false);
     submitted.push(payload.requestKey);
     if (mode === "network-error") throw Error("synthetic interrupted transport");
+    if (mode === "slow-accepted") await new Promise(resolve => { releasePending = resolve; });
     const valid = {
       status: "PENDING_REVIEW", receiptId: uuid(100),
       advertiserId: uuid(101), marketingOptIn: false,
@@ -76,6 +77,7 @@ async function scenario(mode, { enabled = true, authenticated = true,
     };
     const responses = {
       accepted: { status: 201, body: valid },
+      "slow-accepted": { status: 201, body: valid },
       replay: { status: 200, body: valid },
       missing: { status: 201, body: {} },
       mismatch: { status: 201, body: { ...valid, marketingOptIn: true } },
@@ -126,6 +128,7 @@ async function scenario(mode, { enabled = true, authenticated = true,
     get saved() { return saved; },
     get resetCount() { return resetCount; },
     get requestCount() { return requestCount; },
+    release() { assert.ok(releasePending, "expected a blocked response"); releasePending(); },
     async send() { await submitRegistration({ preventDefault() {} }); }
   };
 }
@@ -172,6 +175,19 @@ async function scenario(mode, { enabled = true, authenticated = true,
     "logging out must clear the previous applicant's stored retry key");
 }
 
+{
+  const client = await scenario("slow-accepted");
+  const first = client.send(); // response deliberately still pending
+  assert.equal(client.registrationButton.disabled,true);
+  const duplicate = client.send();
+  assert.equal(client.requestCount,1,
+    "second click while first is in flight must not issue another registration POST");
+  client.release();
+  await Promise.all([first,duplicate]);
+  assert.equal(client.registrationButton.disabled,false);
+  assert.equal(client.resetCount,1);
+}
+
 for (const mode of ["accepted", "replay"]) {
   const client = await scenario(mode);
   assert.equal(client.registrationButton.disabled, false);
@@ -201,3 +217,4 @@ for (const mode of [{ enabled: false }, { authenticated: false }]) {
 console.log("TASK3B_REGISTRATION_VALID_RECEIPT_AND_IDEMPOTENCY_PASS");
 console.log("TASK3B_REGISTRATION_REQUEST_BOUND_RECEIPT_AND_AUTH_DENIED_PASS");
 console.log("TASK3B_REGISTRATION_TAB_KEY_CROSS_IDENTITY_CONTAINMENT_PASS");
+console.log("TASK3B_REGISTRATION_DUPLICATE_INFLIGHT_POST_REFUSAL_PASS");
