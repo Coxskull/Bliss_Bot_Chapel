@@ -245,6 +245,15 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         pending.DefaultRequestHeaders.Add("X-CSRF-TOKEN", token);
 
         var advertiserId = await RegisterWithoutResettingCsrf(pending, "Fictional Pending Studio");
+        using var secondApplicant = IdentityClient(factory, "fixture-b");
+        var otherAdvertiserId = await Register(secondApplicant, "Fictional Other Studio");
+        using var unapprovedProfile = IdentityClient(factory, "fixture-a", "approved", advertiserId);
+        using var blockedPending = await unapprovedProfile.GetAsync("/api/advertisers/me");
+        Assert.Equal(HttpStatusCode.Forbidden, blockedPending.StatusCode);
+        using var wrongTenant = IdentityClient(factory, "fixture-a", "approved", otherAdvertiserId);
+        using var blockedWrongTenant = await wrongTenant.GetAsync("/api/advertisers/me");
+        Assert.Equal(HttpStatusCode.Forbidden, blockedWrongTenant.StatusCode);
+
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
@@ -255,6 +264,12 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         }
         using var approved = IdentityClient(factory, "fixture-a", "approved", advertiserId);
         approved.DefaultRequestHeaders.Add("X-CSRF-TOKEN", await Csrf(approved));
+        using var ownProfile = await approved.GetAsync("/api/advertisers/me");
+        Assert.Equal(HttpStatusCode.OK, ownProfile.StatusCode);
+        using (var ownProfileJson = JsonDocument.Parse(await ownProfile.Content.ReadAsStringAsync()))
+            Assert.Equal(advertiserId, ownProfileJson.RootElement.GetProperty("advertiserId").GetGuid());
+        using var wrongAfterApproval = await wrongTenant.GetAsync("/api/advertisers/me");
+        Assert.Equal(HttpStatusCode.Forbidden, wrongAfterApproval.StatusCode);
         using var getOwn = await approved.GetAsync(Base);
         Assert.Equal(HttpStatusCode.OK, getOwn.StatusCode);
         using var created = await approved.PostAsJsonAsync(Base, new
