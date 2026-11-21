@@ -124,25 +124,33 @@ fi
 export BLISS_INITIAL_INSTALL_BACKUP_EVIDENCE_ID=__EVIDENCE_DIGEST__
 exec /usr/local/bin/bliss-railway-entrypoint --migrate --initial-install-empty-hosted-db
 '@
+# Execute in the EXISTING running application via the owner's Railway CLI SSH.
+# On owner Windows PowerShell 5.1, the Railway CLI does not forward client stdin
+# into 'bash -se': observed exit 127. Use the already verified direct SSH path
+# from the existing pg_dump capture helper. Encode ONLY reviewed shell source,
+# NOT a DB password, private GPG key, backup contents, or login token.
+# The 64-hex evidence digest is a non-secret, one-time immutable reference.
+# Railway SSH status banners on native stderr can throw NativeCommandError
+# under Windows PowerShell 5.1 'Stop'; scope 'Continue' to the single native
+# process, preserve its true exit code, and never log raw CLI output.
 $remote = $remote.Replace('__EVIDENCE_DIGEST__', $hash)
 if ($remote.Contains('__EVIDENCE_DIGEST__')) {
-    throw 'Task3B: Evidence substitution failed. No database changes made.'
+    throw 'Task3B: Evidence substitution incomplete. No changes made.'
 }
-
-# Execute in the EXISTING running application via the owner's Railway CLI SSH.
-# No public DB proxy, second service, GitHub secret, or persistent flag change.
-# Piping the shell script avoids a long Windows SSH command and keeps the
-# digest out of process arguments. Do not enable PowerShell transcripts.
-# Capture BOTH streams; failure diagnostics can contain driver connection details.
-# Never print them into CI, chat, command history, or normal operator output.
+$scriptBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($remote))
+$runner = 'set -o pipefail; printf %s ' + $scriptBase64 + ' | base64 -d | sh'
 $raw = @()
 $remoteExit = 1
+$previousErrorActionPreference = $ErrorActionPreference
 try {
-    $raw = @($remote | & $railway.Source ssh -p $projectId -s $serviceName -e $environmentName -- sh -se 2>&1)
+    $ErrorActionPreference = 'Continue'
+    $raw = @(& $railway.Source ssh -p $projectId -s $serviceName -e $environmentName -- bash -c $runner 2>&1)
     $remoteExit = $LASTEXITCODE
 } catch {
     $raw = @()
     $remoteExit = 1
+} finally {
+    $ErrorActionPreference = $previousErrorActionPreference
 }
 
 # Do not echo raw application output: an unexpected runtime could emit secrets.
