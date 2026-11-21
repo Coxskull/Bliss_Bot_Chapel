@@ -78,7 +78,9 @@ before=$(psql -X -At -v ON_ERROR_STOP=1 -h "$socket" -d "$target" -c "SELECT cou
 [[ "$before" == 0 ]] || fail TARGET_NOT_EMPTY
 # In a shell with pipefail, both GPG decryption and pg_restore must succeed.
 # No plaintext file, --clean, --create, --jobs, or remote DB connection.
-if ! (gpg --batch --no-tty --decrypt -- "$archive" 2>/dev/null | pg_restore --exit-on-error --single-transaction --no-owner --no-acl -h "$socket" -d "$target" >/dev/null 2>&1); then
+# The owner-observed WSL Windows-GPG stream had a UTF-8 BOM before PGDMP.
+# Filter permits native PGDMP or exactly one BOM + PGDMP, never arbitrary bytes.
+if ! (gpg --batch --no-tty --decrypt -- "$archive" 2>/dev/null | python3 "$(dirname -- "${BASH_SOURCE[0]}")/task3b_pg18_stream_header.py" | pg_restore --exit-on-error --single-transaction --no-owner --no-acl -h "$socket" -d "$target" >/dev/null 2>&1); then
   fail DECRYPT_OR_RESTORE_FAILED
 fi
 after=$(psql -X -At -v ON_ERROR_STOP=1 -h "$socket" -d "$target" -c "SELECT count(*) FROM pg_catalog.pg_tables WHERE schemaname='public'" 2>/dev/null) || fail POST_RESTORE_READ_FAILED
