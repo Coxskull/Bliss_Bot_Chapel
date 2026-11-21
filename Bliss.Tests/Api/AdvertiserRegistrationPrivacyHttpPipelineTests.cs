@@ -141,7 +141,13 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         var key = Guid.NewGuid();
         var draft = new { requestKey = key, name = "Fictional campaign", brief = "A fictional planning brief." };
         using var created = await a.PostAsJsonAsync(route, draft);
-        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        // This disposable database and request are entirely fictional; preserve a
+        // bounded response detail on failures so CI does not hide the root cause.
+        if (created.StatusCode != HttpStatusCode.Created)
+        {
+            var detail = await created.Content.ReadAsStringAsync();
+            Assert.True(false, $"Expected Created; got {created.StatusCode}: {detail[..Math.Min(detail.Length, 6000)]}");
+        }
         using var replay = await a.PostAsJsonAsync(route, draft);
         Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await a.PostAsJsonAsync(route,
