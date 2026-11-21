@@ -26,6 +26,7 @@ stub('findmnt',[
 '  TARGET) printf "%s\\n" "$FAKE_MOUNT_TARGET" ;;',
 '  SOURCE) printf "%s\\n" "$FAKE_MOUNT_SOURCE" ;;',
 '  FSTYPE) printf "%s\\n" "$FAKE_MOUNT_TYPE" ;;',
+'  MAJ:MIN) if [ "$2" = "/" ]; then printf "8:1\\n"; else printf "%s\\n" "$FAKE_MOUNT_DEVICE"; fi ;;',
 '  *) exit 8 ;;',
 'esac',''].join('\n'));
 stub('df',[
@@ -40,12 +41,15 @@ const script=match[1].replaceAll('__REMOTE_DIRECTORY__',path)
   .replaceAll('__REQUIRED_KIB__','102500');
 const env=(override={})=>({...process.env,PATH:bin+':'+process.env.PATH,
   FAKE_MOUNT_TARGET:disk,FAKE_MOUNT_SOURCE:'/dev/mock-block-volume',
-  FAKE_MOUNT_TYPE:'ext4',FAKE_FREE_KIB:'500000',...override});
+  FAKE_MOUNT_TYPE:'ext4',FAKE_MOUNT_DEVICE:'8:2',FAKE_FREE_KIB:'500000',...override});
 const run=(e={})=>spawnSync('sh',['-c',script],{encoding:'utf8',timeout:10000,env:env(e)});
 try {
   let result=run({FAKE_MOUNT_TARGET:'/'});
   assert.notEqual(result.status,0,'root filesystem must not be accepted');
   assert.equal(existsSync(path),false,'root disk must have no directory writes');
+  result=run({FAKE_MOUNT_DEVICE:'8:1'});
+  assert.notEqual(result.status,0,'root-backed bind mounts must not be accepted');
+  assert.equal(existsSync(path),false);
   result=run({FAKE_MOUNT_SOURCE:'tmpfs'});
   assert.notEqual(result.status,0,'non-disk mount must be rejected');
   assert.equal(existsSync(path),false);
