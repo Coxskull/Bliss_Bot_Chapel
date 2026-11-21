@@ -83,6 +83,9 @@ done
 mount_target=$(findmnt -T "$existing" -n -o TARGET) || exit 2
 mount_source=$(findmnt -T "$existing" -n -o SOURCE) || exit 2
 mount_type=$(findmnt -T "$existing" -n -o FSTYPE) || exit 2
+mount_device=$(findmnt -T "$existing" -n -o MAJ:MIN) || exit 2
+root_device=$(findmnt -T / -n -o MAJ:MIN) || exit 2
+[ -n "$mount_device" ] && [ -n "$root_device" ] && [ "$mount_device" != "$root_device" ] || exit 2
 [ -n "$mount_target" ] && [ "$mount_target" != "/" ] || exit 2
 case "$mount_source" in /dev/*) ;; *) exit 2 ;; esac
 case "$mount_type" in ext4|xfs|btrfs) ;; *) exit 2 ;; esac
