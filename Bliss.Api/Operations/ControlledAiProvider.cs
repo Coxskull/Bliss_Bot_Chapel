@@ -80,6 +80,8 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
                 inputTokens = Integer(root, "inputTokens"); outputTokens = Integer(root, "outputTokens");
                 if (root.TryGetProperty("actualUsd", out var price) && price.ValueKind != JsonValueKind.Null) cost = price.GetDecimal();
             }
+            if (request.Kind == "IMAGE" && request.Model == "gpt-image-2.5-flare" && string.IsNullOrWhiteSpace(id))
+                throw new AiProviderException("IMAGE_REQUEST_ID_MISSING");
             if (id.Length > 200 || inputTokens < 0 || outputTokens < 0 || cost < 0 || cost > 1_000_000) throw new AiProviderException("INVALID_USAGE_RECEIPT");
             byte[]? bytes = null;
             if (request.Kind == "TEXT")
