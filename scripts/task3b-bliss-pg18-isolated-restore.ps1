@@ -3,6 +3,9 @@
 # Reads existing GPG-encrypted archive, decrypts only into a binary pipe,
 # restores into an isolated --network none container, checks table count, and
 # destroys that ephemeral container BEFORE writing a success receipt.
+# Default: require independent DigitalOcean off-host SHA evidence.
+# -LocalVerificationOnly: allow verified original .pending.json for a strictly
+# local-only receipt; NEVER imply DigitalOcean verified or unlock production.
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string] $OffhostManifestPath,
