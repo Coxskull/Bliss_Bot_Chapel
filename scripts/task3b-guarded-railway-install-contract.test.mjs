@@ -38,4 +38,30 @@ assert.ok(!/Runtime__RestrictedPreview\s*=\s*false|Authentication__AdvertiserReg
   'must never unlock the public signup or production preview');
 assert.ok(!/Write-Output\s+\$raw|Write-Host\s+\$raw|Start-Transcript/.test(script),
   'must not disclose unexpected remote output or enable transcripts');
+const drivePrep = readFileSync('scripts/task3b-prepare-drive-wsl-evidence.ps1', 'utf8');
+const expectedSha = 'df487fcdeefb99db69956849c4b3ae5a1035456c8823b1b142fee4a0ff43fb3b';
+assert.ok(script.includes(expectedSha) && drivePrep.includes(expectedSha),
+  'only the independently verified existing encrypted Drive archive can use the alternative');
+assert.ok(script.includes('GOOGLE_DRIVE_WSL_ONE_ARCHIVE_OWNER_REVIEW'),
+  'alternative receipt must be separately classified');
+assert.ok(script.includes('INDEPENDENT_CONNECTED_DRIVE_RETRIEVED_CIPHERTEXT_SHA256_20261121'),
+  'exact independent cloud copy readback is required');
+assert.ok(script.includes('OWNER_SCREENSHOT_AND_CURRENT_LOCAL_READBACK'),
+  'local restore evidence must be explicitly scoped');
+assert.ok(script.includes('WSL2 PostgreSQL 18 local Unix socket'),
+  'only local PG18 recovery can count for WSL alternative');
+assert.ok(script.includes("offhostProvider -cne 'DigitalOcean'"),
+  'existing DigitalOcean alternative remains strict');
+assert.ok(script.includes("isolatedRestoreEngine -cne 'Docker PostgreSQL 18 --network none'"),
+  'existing Docker restore controls remain intact');
+assert.ok(script.includes('ownerAttestationRequiredAtProductionInstall -ne $true'),
+  'Google Drive/WSL alternative must never waive owner attestation');
+assert.ok(drivePrep.includes('Get-FileHash -LiteralPath $archive -Algorithm SHA256'),
+  'local source ciphertext must be verified');
+assert.ok(drivePrep.includes('RECEIPT_ALREADY_EXISTS_REFUSE_OVERWRITE'),
+  'cannot replace existing operator custody receipt');
+assert.ok(drivePrep.includes('TASK3B_PRODUCTION_MIGRATION=NOT_EXECUTED'),
+  'evidence preparation cannot claim hosted migration');
+assert.ok(!drivePrep.includes('railway.cmd ssh') && !drivePrep.includes('dotnet run'),
+  'recovery evidence preparation cannot invoke hosting or run migrations');
 console.log('Task3B guarded Railway installation source-contract: PASS (not hosted migration)');
