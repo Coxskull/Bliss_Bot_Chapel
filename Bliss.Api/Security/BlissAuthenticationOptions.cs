@@ -38,6 +38,8 @@ public sealed class BlissAuthenticationOptions
     // a verified registration identity and an ACTIVE receipt-bound membership.
     // Does not mint roles, change issuer metadata or open other business APIs.
     public bool AdvertiserMembershipSelfServiceRequested { get; set; }
+    // Independent customer DRAFT intake gate; never enables campaign execution.
+    public bool AdvertiserCampaignDraftsRequested { get; set; }
     public string[] ApprovedAdvertiserSubjects { get; set; } = [];
     // Verified Supabase identities with no trusted roles may enter only the
     // registration endpoint while this is explicitly enabled. It is OFF by default.

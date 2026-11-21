@@ -110,6 +110,80 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
     }
 
     [Fact]
+    public async Task Http_customer_campaign_drafts_are_idempotent_owned_and_never_executable()
+    {
+        await using var isolated = Task3bHttpPostgresDatabase.TryCreate();
+        await using var factory = new AdvertiserPrivacyHttpFactory(
+            postgresConnectionString: isolated?.ConnectionString, operatorReviewEnabled: true,
+            membershipProfileEnabled: true, campaignDraftsEnabled: true);
+        const string route = "/api/advertisers/my-campaign-drafts";
+        const string review = "/api/advertisers/operator-review";
+        using var a = IdentityClient(factory, "fixture-b");
+        using var b = IdentityClient(factory, "fixture-c");
+        var aId = await Register(a, "Fictional Draft A");
+        var bId = await Register(b, "Fictional Draft B");
+        Assert.Equal(HttpStatusCode.Forbidden, (await a.GetAsync(route)).StatusCode);
+        using var staff = IdentityClient(factory, "fixture-operator", "operator");
+        Assert.Equal(HttpStatusCode.Forbidden, (await staff.GetAsync(route)).StatusCode);
+        if (isolated is null) return; // PostgreSQL CI exercises serializable writes.
+        using var queue = await staff.GetAsync(review);
+        using var json = JsonDocument.Parse(await queue.Content.ReadAsStringAsync());
+        staff.DefaultRequestHeaders.Add("X-CSRF-TOKEN", await Csrf(staff));
+        foreach (var pair in new[] { (aId, "fixture-b"), (bId, "fixture-c") })
+        {
+            var receiptId = json.RootElement.EnumerateArray()
+                .Single(x => x.GetProperty("advertiserId").GetGuid() == pair.Item1)
+                .GetProperty("receiptId").GetGuid();
+            using var approval = await staff.PostAsJsonAsync(review, new { receiptId, advertiserId = pair.Item1,
+                subject = pair.Item2, businessIdentityReviewed = true, consentReviewed = true });
+            Assert.Equal(HttpStatusCode.OK, approval.StatusCode);
+        }
+        var key = Guid.NewGuid();
+        var draft = new { requestKey = key, name = "Fictional campaign", brief = "A fictional planning brief." };
+        using var created = await a.PostAsJsonAsync(route, draft);
+        // This disposable database and request are entirely fictional; preserve a
+        // bounded response detail on failures so CI does not hide the root cause.
+        if (created.StatusCode != HttpStatusCode.Created)
+        {
+            var detail = await created.Content.ReadAsStringAsync();
+            Assert.True(false, $"Expected Created; got {created.StatusCode}: {detail[..Math.Min(detail.Length, 6000)]}");
+        }
+        using var replay = await a.PostAsJsonAsync(route, draft);
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await a.PostAsJsonAsync(route,
+            new { requestKey = key, name = "Changed name", brief = draft.brief })).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await b.PostAsJsonAsync(route, draft)).StatusCode);
+        using var listA = await a.GetAsync(route + "?advertiserId=" + bId);
+        Assert.Equal(HttpStatusCode.OK, listA.StatusCode);
+        using var own = JsonDocument.Parse(await listA.Content.ReadAsStringAsync());
+        Assert.Equal(key, own.RootElement.EnumerateArray().Single().GetProperty("campaignId").GetGuid());
+        using var listB = await b.GetAsync(route + "?advertiserId=" + aId);
+        Assert.Equal(HttpStatusCode.OK, listB.StatusCode);
+        using var other = JsonDocument.Parse(await listB.Content.ReadAsStringAsync());
+        Assert.Equal(0, other.RootElement.GetArrayLength());
+        Assert.Equal(HttpStatusCode.Forbidden, (await a.GetAsync("/api/campaigns")).StatusCode);
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+            var campaign = await db.Campaigns.SingleAsync(c => c.Id == key);
+            Assert.Equal("DRAFT", campaign.Status);
+            Assert.Equal("UNVERIFIED", campaign.AuthorityStatus);
+            var opp = await db.AdvertiserOpportunities.SingleAsync(o => o.Id == campaign.AdvertiserOpportunityId);
+            Assert.Equal("DRAFT", opp.Status);
+            Assert.Equal("UNVERIFIED", opp.AuthorityStatus);
+            var program = await db.AdvertiserPrograms.SingleAsync(p => p.Id == opp.AdvertiserProgramId);
+            Assert.Equal(aId, program.AdvertiserId);
+            Assert.Equal("DRAFT", program.Status);
+            Assert.False(await db.CampaignPlacements.AnyAsync(p => p.CampaignId == key));
+            var membership = await db.AdvertiserAccountMemberships.SingleAsync(m => m.AdvertiserId == aId);
+            membership.Status = "REVOKED";
+            await db.SaveChangesAsync();
+        }
+        Assert.Equal(HttpStatusCode.Forbidden, (await a.GetAsync(route)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await a.PostAsJsonAsync(route, draft)).StatusCode);
+    }
+
+    [Fact]
     public async Task Http_membership_approval_activates_only_own_profile_and_revocation_denies_existing_session()
     {
         await using var isolated = Task3bHttpPostgresDatabase.TryCreate();
@@ -631,7 +705,7 @@ internal sealed class Task3bHttpPostgresDatabase : IAsyncDisposable
 internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
     string? postgresConnectionString = null, int? writePermitLimit = null,
     bool registrationEnabled = true, bool operatorReviewEnabled = false,
-    bool membershipProfileEnabled = false) : WebApplicationFactory<Program>
+    bool membershipProfileEnabled = false, bool campaignDraftsEnabled = false) : WebApplicationFactory<Program>
 {
     private const string Issuer = "https://identity.example.test";
     private readonly string dbName = "task3b_http_" + Guid.NewGuid().ToString("N");
@@ -646,6 +720,7 @@ internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
         builder.UseSetting("Authentication:AdvertiserRegistrationRequested", registrationEnabled ? "true" : "false");
         builder.UseSetting("Authentication:AdvertiserSelfServiceRequested", "true");
         builder.UseSetting("Authentication:AdvertiserMembershipSelfServiceRequested", membershipProfileEnabled ? "true" : "false");
+        builder.UseSetting("Authentication:AdvertiserCampaignDraftsRequested", campaignDraftsEnabled ? "true" : "false");
         builder.UseSetting("Authentication:AdvertiserPrivacyRequestsRequested", privacyEnabled ? "true" : "false");
         builder.UseSetting("Authentication:ApprovedAdvertiserSubjects:0", "fixture-a");
         builder.UseSetting("Authentication:ApprovedPrivacyOperatorSubjects:0", "fixture-operator");
