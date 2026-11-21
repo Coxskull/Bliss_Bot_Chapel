@@ -154,9 +154,19 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
                 if (!parent.TryGetProperty(name, out var node) || node.ValueKind != JsonValueKind.String)
                     return null;
                 var candidate = node.GetString();
-                return candidate is not null
-                    && Regex.IsMatch(candidate, @"\A[a-z][a-z0-9_.-]{0,63}\z", RegexOptions.CultureInvariant)
-                    ? candidate : null;
+                // A syntax regex alone is insufficient: lowercase secrets
+                // and tenant IDs can also look like valid machine tokens.
+                // Persist only fixed, explicitly supported provider reasons.
+                // An unknown future error remains a generic HELD HTTP 429
+                // until a reviewed adapter update recognizes that reason.
+                return name switch
+                {
+                    "code" when candidate is "insufficient_quota" or "credit_balance_exhausted" or "rate_limit_exceeded"
+                        => candidate,
+                    "type" when candidate is "rate_limit_exceeded" or "rate_limit_error" or "insufficient_quota"
+                        => candidate,
+                    _ => null
+                };
             }
             var code = SafeToken(error, "code");
             if (code is not null) return ("_CODE_" + code, requestId);
