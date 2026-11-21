@@ -593,7 +593,8 @@ internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
         builder.UseSetting("Authentication:ApprovedPrivacyOperatorSubjects:0", "fixture-operator");
         builder.UseSetting("Authentication:AdvertiserOperatorReviewRequested", operatorReviewEnabled ? "true" : "false");
         builder.UseSetting("Authentication:ApprovedRegistrationOperatorSubjects:0", "fixture-operator");
-        builder.UseSetting("Authentication:ApprovedTestSubjects:0", "fixture-operator");
+        if (operatorReviewEnabled)
+            builder.UseSetting("Authentication:ApprovedTestSubjects:0", "fixture-operator");
         if (writePermitLimit.HasValue)
         {
             builder.UseSetting("Runtime:WriteRateLimitPermitLimit", writePermitLimit.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));
