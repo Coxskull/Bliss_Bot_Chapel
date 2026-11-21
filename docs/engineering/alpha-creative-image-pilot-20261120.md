@@ -54,10 +54,10 @@ Official API reference currently lists **`gpt-image-2.5-flare`** as a supported 
 The new read-only, $0 project model visibility check uses only **GET `/v1/models/gpt-image-2.5-flare`**, reports no private credentials, and never makes a charged image-generation request. A successful 200 confirms model listing under the specific private project key, **not** that generation permissions, payment funding or quality are accepted. Run it with the project key already available privately to an isolated Node process:
 
 ~~~powershell
-$env:ALPHA_IMAGE_PILOT_SCOPE = "ISOLATED_NO_DELIVERY"
-$env:ALPHA_GLOBAL_STOP = "ENGAGED"
-node scripts/alpha-creative-image-model-permission.mjs
+powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\alpha-creative-image-model-permission.ps1
 ~~~
+
+The Windows helper requests the key through a hidden secure prompt, passes it only to the child Node process, performs the same GET-only probe, and clears/restores the process environment afterward. It does not write the key to a file or print it. Do not run this under a terminal transcript or screen recording. A successful 200 proves model metadata visibility only; it does not authorize or run paid generation.
 
 Keep any API key outside command history, logs and this repository. Do not trigger `--execute` while key custody, project billing and private ledger are unverified.
 
