@@ -45,14 +45,21 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
                select m.AdvertiserId;
     }
 
-    private IQueryable<CampaignDraftSummary> OwnDrafts(Guid advertiserId) =>
-        from c in db.Campaigns.AsNoTracking()
-        join o in db.AdvertiserOpportunities.AsNoTracking() on c.AdvertiserOpportunityId equals (Guid?)o.Id
-        join p in db.AdvertiserPrograms.AsNoTracking() on o.AdvertiserProgramId equals p.Id
-        where p.AdvertiserId == advertiserId && p.ExternalProgramId == DraftProgramMarker
-            && p.Status == Draft && o.Status == Draft && o.AuthorityStatus == Unverified
-            && c.Status == Draft && c.AuthorityStatus == Unverified
-        select new CampaignDraftSummary(c.Id, c.Name, o.Description!, c.Status, c.CreatedAt);
+    // Compose predicates and ordering over mapped EF entities, not over a
+    // constructed positional DTO. Project only at the final SQL boundary.
+    private IQueryable<Campaign> OwnDrafts(Guid advertiserId) =>
+        db.Campaigns.AsNoTracking().Where(c =>
+            c.AdvertiserOpportunity != null
+            && c.AdvertiserOpportunity.AdvertiserProgram.AdvertiserId == advertiserId
+            && c.AdvertiserOpportunity.AdvertiserProgram.ExternalProgramId == DraftProgramMarker
+            && c.AdvertiserOpportunity.AdvertiserProgram.Status == Draft
+            && c.AdvertiserOpportunity.Status == Draft
+            && c.AdvertiserOpportunity.AuthorityStatus == Unverified
+            && c.Status == Draft && c.AuthorityStatus == Unverified);
+
+    private static IQueryable<CampaignDraftSummary> Summaries(IQueryable<Campaign> source) =>
+        source.Select(c => new CampaignDraftSummary(c.Id, c.Name,
+            c.AdvertiserOpportunity!.Description!, c.Status, c.CreatedAt));
 
     [HttpGet]
     public async Task<IActionResult> Mine(CancellationToken ct)
@@ -61,8 +68,8 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
         var allowed = ActiveBusiness();
         var id = await allowed.SingleOrDefaultAsync(ct);
         if (id == Guid.Empty) return StatusCode(403);
-        return Ok(await OwnDrafts(id).Where(_ => allowed.Contains(id))
-            .OrderByDescending(x => x.CreatedAt).ThenBy(x => x.CampaignId).Take(50).ToArrayAsync(ct));
+        return Ok(await Summaries(OwnDrafts(id).Where(_ => allowed.Contains(id))
+            .OrderByDescending(x => x.CreatedAt).ThenBy(x => x.Id).Take(50)).ToArrayAsync(ct));
     }
 
     [HttpPost]
@@ -81,7 +88,8 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
         {
             var id = await ActiveBusiness().SingleOrDefaultAsync(ct);
             if (id == Guid.Empty) return StatusCode(403);
-            var existing = await OwnDrafts(id).SingleOrDefaultAsync(x => x.CampaignId == request.RequestKey, ct);
+            var existing = await Summaries(OwnDrafts(id).Where(x => x.Id == request.RequestKey))
+                .SingleOrDefaultAsync(ct);
             if (existing is not null)
                 return existing.Name == name && existing.Brief == brief
                     ? Ok(existing) : Conflict(new { error = "Draft request conflicts with an existing record." });
