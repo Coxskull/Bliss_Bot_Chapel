@@ -15,13 +15,19 @@ assert.match(script, /fb33c1b7-03fb-42c8-89b1-081951a738fd/);
 assert.match(script, /Runtime__RestrictedPreview:-/);
 assert.match(script, /BLISS_INITIAL_INSTALL_EXPECTED_DB_HOST:-/);
 assert.match(script, /BLISS_INITIAL_INSTALL_EXPECTED_DB_NAME:-/);
-assert.match(script, /-- sh -se 2>&1/);
+assert.match(script, /-- bash -c \\$runner 2>&1/, "Windows direct Railway SSH path");
+assert.match(script, /ToBase64String\\(\\[Text\\.Encoding\\]::UTF8\\.GetBytes\\(\\$remote\\)\\)/, "encode reviewed remote script only");
+assert.match(script, /set -o pipefail; printf %s /, "remote streaming runner fails closed");
+assert.match(script, /\\$ErrorActionPreference = 'Continue'/, "native status banner handled under PS5.1");
+assert.match(script, /\\$ErrorActionPreference = \\$previousErrorActionPreference/, "restore strict errors");
+assert.doesNotMatch(script, /\\$remote\\s*\\|\\s*&\\s*\\$railway\\.Source ssh/,
+  "reject known broken stdin passthrough");
 assert.match(script, /\$remoteExit = 1/);
 assert.match(script, /\} catch \{/);
 assert.match(script, /TASK3B_PUBLIC_REGISTRATION=HELD/);
 assert.match(script, /Initial schema installed\. Restricted preview still required\. Delivery remains NOT_SENT\./);
 assert.match(script, /\$remoteExit -ne 0 -or \$successCount -ne 1/);
-assert.ok(script.indexOf("Read-Host") < script.indexOf('-- sh -se'),
+assert.ok(script.indexOf("Read-Host") < script.indexOf('-- bash -c $runner'),
   'owner-specific restore attestation must precede remote execution');
 assert.ok(!/Runtime__RestrictedPreview\s*=\s*false|Authentication__AdvertiserRegistrationRequested\s*=\s*true/.test(script),
   'must never unlock the public signup or production preview');
