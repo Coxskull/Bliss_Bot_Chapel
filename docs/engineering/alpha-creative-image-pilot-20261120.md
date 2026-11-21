@@ -66,7 +66,13 @@ When separately verified by the owner, set private process-only environment flag
 
 ~~~powershell
 $env:ALPHA_IMAGE_PILOT_OWNER_APPROVAL='ALPHA-CREATIVE-IMAGE-PILOT-20261120'
-$env:ALPHA_IMAGE_PILOT_PROVIDER_LIMIT_USD='20.00'
+# Populate these ONLY after the organization's billing owner verifies each
+# numeric value against the same project's latest billing page.
+# 9.00 is the last observed PROJECT LIMIT, not proof of prepaid funds.
+$env:ALPHA_IMAGE_PILOT_PROVIDER_LIMIT_USD='9.00'
+$env:ALPHA_IMAGE_PILOT_PROVIDER_SPENT_USD='REPLACE_WITH_CURRENT_PROJECT_SPEND'
+$env:ALPHA_IMAGE_PILOT_PREPAID_AVAILABLE_USD='REPLACE_WITH_VERIFIED_PREPAID_CREDIT'
+$env:ALPHA_IMAGE_PILOT_BILLING_ADMIN_VERIFIED='YES'
 $env:ALPHA_IMAGE_PILOT_AUTO_RECHARGE='OFF'
 $env:ALPHA_IMAGE_PILOT_SCOPE='ISOLATED_NO_DELIVERY'
 $env:ALPHA_GLOBAL_STOP='ENGAGED'
@@ -74,10 +80,12 @@ $env:ALPHA_GLOBAL_STOP='ENGAGED'
 node scripts/alpha-creative-image-pilot.mjs --execute --max-new=1
 ~~~
 
-**Run just the master first**. Review image and actual usage receipt; compare incurred usage to API project billing. If acceptable and budget remains, the owner can explicitly execute another ten with:
+**Run just the master first**. Review image and actual usage receipt; compare incurred usage to API project billing. For additional variations, the runner now requires a fresh owner billing attestation and accepts only ONE billable image per execution. Do not reuse stale spend/credit values; the owner can repeat the following command separately until ten variations or the remaining authorized funds are exhausted:
 
 ~~~powershell
-node scripts/alpha-creative-image-pilot.mjs --execute --max-new=10
+# Recheck the provider billing page, update both numeric values above,
+# then run ONE variation only, and repeat for each variation while funded.
+node scripts/alpha-creative-image-pilot.mjs --execute --max-new=1
 node scripts/alpha-creative-image-pilot-qa.mjs
 ~~~
 
