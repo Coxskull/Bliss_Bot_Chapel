@@ -168,14 +168,17 @@ public sealed class ControlledAiProviderTests
     }
 
     [Fact]
-    public async Task Safe_provider_error_parser_does_not_reclassify_non_429_billing_errors()
+    public async Task Non_429_errors_remain_generic_even_when_provider_body_mentions_credits()
     {
-        using var response = new HttpResponseMessage(HttpStatusCode.Unauthorized)
-        {
-            Content = new StringContent("""{"error":{"code":"credit_balance_exhausted","type":"insufficient_quota"}}""")
-        };
-        var code = await ConfiguredControlledAiProvider.ClassifiedProviderRejectionAsync(
-            response, CancellationToken.None);
-        Assert.Equal("PROVIDER_HTTP_401", code);
+        var handler = new Handler((_, _) =>
+            new HttpResponseMessage(HttpStatusCode.Unauthorized)
+            {
+                Content = new StringContent("""{"error":{"code":"credit_balance_exhausted","type":"insufficient_quota"}}""")
+            });
+        var provider = new ConfiguredControlledAiProvider(new HttpClient(handler), Runtime());
+        var ex = await Assert.ThrowsAsync<AiProviderException>(() =>
+            provider.ExecuteAsync(new AiProviderRequest(Guid.NewGuid(), "TEXT", "fixture-text", "{}", 100), default));
+        Assert.Equal("PROVIDER_HTTP_401", ex.Code);
+        Assert.Empty(ex.ProviderRequestId);
     }
 }
