@@ -127,10 +127,8 @@ if (runtime.PublicAdvertiserRegistrationOnly
         || !authentication.AdvertiserRegistrationRequested))
     throw new InvalidOperationException(
         "Public advertiser signup requires preview isolation, issuer authentication and an explicit registration flag.");
-// The same email-verified role-free OIDC subject otherwise receives BOTH
-// pending signup markers. Keep the already-live advertiser lane isolated.
-if (authentication.CreatorRegistrationRequested && authentication.AdvertiserRegistrationRequested)
-    throw new InvalidOperationException("Concurrent creator and advertiser registration requires an issuer-bound lane scope.");
+// A pending applicant's enrollment lane is selected by the server during
+// challenge, bound into protected OIDC state, and reduced to exactly one marker.
 if (!runtime.RestrictedPreview || runtime.PublicAdvertiserRegistrationOnly)
     ProductionPostureEvaluator.Ensure(posture);
 // The only migration allowed with preview locked is the separately attested,
