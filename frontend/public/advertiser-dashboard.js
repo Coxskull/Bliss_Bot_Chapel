@@ -13,6 +13,7 @@
     for (const id of ["business-name", "business-id", "business-country", "business-website"])
       el(id).textContent = "—";
     show("profile-panel", false);
+    document.dispatchEvent(new Event("alpha-profile-cleared"));
     show("application-panel", false);
     for (const id of ["application-status", "application-receipt", "application-privacy", "application-terms", "application-consent", "application-marketing"])
       el(id).textContent = "—";
@@ -102,8 +103,9 @@
       el("business-country").textContent = body.countryCode || "Not recorded";
       el("business-website").textContent = body.website || "Not recorded";
       badge.textContent = "APPROVED";
-      message("Your approved business profile is available. Other services remain disabled.");
+      message("Your approved business profile is available. Campaign execution and payments remain disabled.");
       show("profile-panel", true);
+      document.dispatchEvent(new Event("alpha-profile-approved"));
     } catch {
       badge.textContent = "UNAVAILABLE";
       message("The secure account service could not be reached.", true);
