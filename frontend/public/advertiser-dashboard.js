@@ -13,6 +13,9 @@
     for (const id of ["business-name", "business-id", "business-country", "business-website"])
       el(id).textContent = "—";
     show("profile-panel", false);
+    show("application-panel", false);
+    for (const id of ["application-status", "application-receipt", "application-privacy", "application-terms", "application-consent", "application-marketing"])
+      el(id).textContent = "—";
   }
   async function get(path) {
     const response = await fetch(path, {
@@ -45,7 +48,7 @@
       }
       if (!session.isAuthenticated) {
         badge.textContent = "SIGN IN";
-        message("Sign in with your approved advertiser account.");
+        message("Sign in with your verified advertiser account.");
         show("signin-panel", true);
         return;
       }
@@ -57,6 +60,32 @@
         return;
       }
       if (response.status === 403 || response.status === 404) {
+        const application = await get("/api/advertisers/registration-status");
+        const own = application.body;
+        if (application.response.ok && own && typeof own.receiptId === "string"
+            && typeof own.status === "string") {
+          el("application-status").textContent = own.status;
+          el("application-receipt").textContent = own.receiptId;
+          el("application-privacy").textContent = own.privacyNoticeVersion;
+          el("application-terms").textContent = own.termsVersion;
+          el("application-consent").textContent = own.processingConsent && own.termsAccepted ? "Accepted" : "Not confirmed";
+          el("application-marketing").textContent = own.marketingOptIn ? "Opted in" : "Not opted in";
+          badge.textContent = own.status === "PENDING_REVIEW" ? "PENDING REVIEW" : "ACCESS PENDING";
+          message("Your application is recorded. Workspace access requires separate approval.");
+          show("application-panel", true);
+          return;
+        }
+        if (application.response.status === 401) {
+          badge.textContent = "SESSION EXPIRED";
+          message("Your session expired. Sign in again.", true);
+          logout.hidden = true; show("signin-panel", true);
+          return;
+        }
+        if (application.response.status !== 403 && application.response.status !== 404) {
+          badge.textContent = "UNAVAILABLE";
+          message("Your application status is temporarily unavailable.", true);
+          return;
+        }
         badge.textContent = "ACCESS PENDING";
         message("No verified business profile is assigned to this account.");
         show("pending-panel", true);
