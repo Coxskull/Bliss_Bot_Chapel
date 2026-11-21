@@ -13,6 +13,7 @@ import tempfile
 import unittest
 
 SCRIPT = Path(__file__).with_name("task3b-bliss-pg18-isolated-restore.sh")
+FILTER = Path(__file__).with_name("task3b_pg18_stream_header.py")
 
 class GuardTests(unittest.TestCase):
     def setUp(self):
@@ -106,6 +107,34 @@ class GuardTests(unittest.TestCase):
                            extra_env={"TASK3B_OFFLINE_RECOVERY_HOST_ACK": "OFFLINE_RECOVERY_HOST",
                                       "RAILWAY_PROJECT_ID": "pretend-railway"})
         self.refused(result, "RAILWAY_RUNTIME_CONTEXT_REFUSED")
+
+class HeaderFilterTests(unittest.TestCase):
+    def run_filter(self, data):
+        return subprocess.run(["python3", str(FILTER)], input=data,
+                              capture_output=True, timeout=10)
+
+    def test_plain_pg_dump(self):
+        raw = b"PGDMP" + bytes(range(64))
+        result = self.run_filter(raw)
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(raw, result.stdout)
+
+    def test_one_leading_utf8_bom(self):
+        raw = b"PGDMP" + bytes(range(64))
+        result = self.run_filter(b"\\xef\\xbb\\xbf" + raw)
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(raw, result.stdout)
+
+    def test_unknown_header_refused(self):
+        result = self.run_filter(b"NOT_ARCHIVE" + bytes(range(64)))
+        self.assertEqual(42, result.returncode)
+
+    def test_double_bom_refused(self):
+        result = self.run_filter(b"\\xef\\xbb\\xbf\\xef\\xbb\\xbfPGDMP")
+        self.assertEqual(42, result.returncode)
+
+    def test_empty_input_refused(self):
+        self.assertEqual(42, self.run_filter(b"").returncode)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
