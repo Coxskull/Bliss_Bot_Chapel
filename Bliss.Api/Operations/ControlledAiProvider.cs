@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net;
 using System.Text.Json;
 using Bliss.Api.Runtime;
 using Bliss.Domain.CreativeAcademy;
@@ -13,9 +14,12 @@ public interface IControlledAiProvider
     bool Configured(string kind);
     Task<AiProviderResult> ExecuteAsync(AiProviderRequest request, CancellationToken ct);
 }
-public sealed class AiProviderException(string code) : Exception(code)
+public sealed class AiProviderException(string code, string providerRequestId = "") : Exception(code)
 {
     public string Code { get; } = code;
+    // Only a strictly allowlisted provider request ID may be recorded on a
+    // failed/unknown-cost attempt. It is NOT a receipt or proof of settlement.
+    public string ProviderRequestId { get; } = providerRequestId;
 }
 
 public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRuntimeOptions runtime) : IControlledAiProvider
@@ -39,7 +43,8 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
         message.Headers.Add("Idempotency-Key", request.RunId.ToString());
         message.Content = JsonContent.Create(body);
         using var response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, ct);
-        if (!response.IsSuccessStatusCode) throw new AiProviderException("PROVIDER_HTTP_" + (int)response.StatusCode);
+        if (!response.IsSuccessStatusCode)
+            throw new AiProviderException(await ClassifiedProviderRejectionAsync(response, ct), SafeProviderRequestId(response));
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var bounded = new MemoryStream(); var buffer = new byte[8192];
         int count;
@@ -106,6 +111,82 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or FormatException or IndexOutOfRangeException)
         { throw new AiProviderException("INVALID_PROVIDER_RESPONSE"); }
     }
+
+    // This diagnostic only observes the *already rejected* response. It
+    // never retries or dispatches a second request and never trusts prose.
+    // Opaque HTTP 429s remain unreconciled, not evidence of available credit.
+    internal static async Task<string> ClassifiedProviderRejectionAsync(
+        HttpResponseMessage response, CancellationToken ct)
+    {
+        var status = (int)response.StatusCode;
+        var generic = "PROVIDER_HTTP_" + status;
+        if (response.StatusCode != HttpStatusCode.TooManyRequests)
+            return generic;
+
+        const int maxErrorBytes = 8192;
+        if (response.Content?.Headers.ContentLength is long n && (n < 0 || n > maxErrorBytes))
+            return generic;
+
+        try
+        {
+            await using var stream = await response.Content!.ReadAsStreamAsync(ct);
+            using var bytes = new MemoryStream();
+            var buffer = new byte[1024];
+            int read;
+            // Only ever read maxErrorBytes + 1 bytes from an untrusted body.
+            while ((read = await stream.ReadAsync(buffer.AsMemory(
+                0, Math.Min(buffer.Length, maxErrorBytes + 1 - (int)bytes.Length)), ct)) > 0)
+            {
+                bytes.Write(buffer, 0, read);
+                if (bytes.Length > maxErrorBytes)
+                    return generic;
+            }
+
+            using var parsed = JsonDocument.Parse(bytes.ToArray());
+            if (!parsed.RootElement.TryGetProperty("error", out var error)
+                || error.ValueKind != JsonValueKind.Object)
+                return generic;
+            var code = error.TryGetProperty("code", out var codeValue)
+                && codeValue.ValueKind == JsonValueKind.String ? codeValue.GetString() : null;
+            var type = error.TryGetProperty("type", out var typeValue)
+                && typeValue.ValueKind == JsonValueKind.String ? typeValue.GetString() : null;
+
+            // All emitted values are constant local classifications; arbitrary
+            // provider codes, raw bodies, prompts and error messages are discarded.
+            if (code is "credit_balance_exhausted" or "insufficient_quota"
+                || type is "insufficient_quota")
+                return "PROVIDER_HTTP_429_QUOTA_OR_CREDITS_UNAVAILABLE";
+            if (code is "rate_limit_exceeded" or "rate_limit_error"
+                || type is "rate_limit_error")
+                return "PROVIDER_HTTP_429_RATE_LIMIT";
+        }
+        catch (Exception ex) when (ex is JsonException or IOException
+                                   or InvalidOperationException or ObjectDisposedException)
+        {
+            // No raw provider response or exception text is logged or exposed.
+        }
+        return generic;
+    }
+
+    internal static string SafeProviderRequestId(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues("x-request-id", out var values))
+            return string.Empty;
+        var id = values.FirstOrDefault();
+        if (id is null || id.Length < 5 || id.Length > 132
+            || !id.StartsWith("req_", StringComparison.Ordinal))
+            return string.Empty;
+        foreach (var character in id.AsSpan(4))
+        {
+            if (!((character >= 'a' && character <= 'z')
+                  || (character >= 'A' && character <= 'Z')
+                  || (character >= '0' && character <= '9')
+                  || character is '_' or '-'))
+                return string.Empty;
+        }
+        return id;
+    }
+
     // OpenAI Standard Images API rates as of 2026-11-21: text input $5,
     // image input $8, image output $30 per million tokens. This is a metered
     // provider-usage calculation, not proof that an invoice has settled.
