@@ -33,13 +33,17 @@ Script pins actual project/environment/Postgres service, SQL-checks that source 
 
 ## Stage 2: verified copy of ONLY the encrypted file to existing DigitalOcean droplet
 
-First ensure a suitable existing mounted filesystem has space and the exact SSH user/host key are correct. Remote folder must be Bliss-specific; no changes to the DR362 database location. Example:
+DigitalOcean API confirms that the existing Droplet **571399692** has an attached Block Storage Volume (**67b86c56-dc80-11f1-b677-e23269a37b43**). This confirms attachment, **not** the Linux filesystem mountpoint or available bytes. An incorrect destination could otherwise write ciphertext to the Droplet's root disk and consume its capacity. Identify the actual mounted volume in your existing SSH session (for example, a read-only `findmnt -t ext4,xfs,btrfs` or `lsblk -f`) and choose a **separate Bliss-only directory below that mountpoint**. Do not change its mount settings or the DR362 recovery directory. The owner must know the existing SSH user and verified host key.
+
+The repaired off-host script now checks, **before any mkdir or transfer**, that the nearest existing destination parent is on a non-root, disk-backed ext4/xfs/btrfs mount and has the encrypted archive's size **plus 100 MiB** free. It also rejects canonicalized symlink paths, archive collisions, and destinations on the root filesystem, then checks the remote archive SHA-256 after SCP. If it reports `TASK3B_OFFHOST=NONROOT_ATTACHED_VOLUME_OR_SPACE_NOT_VERIFIED`, leave the source backup local, inspect the existing volume path/space and do **not** substitute the Droplet root disk.
+
+Example (replace placeholders with values verified privately on your workstation):
 
 ~~~powershell
-.\scripts\task3b-bliss-pg18-offhost.ps1 -ManifestPath "C:\path\bliss-pg18-xxxx.pending.json" -DropletIPv4 "OWNER_DIGITALOCEAN_IPV4" -SshUser "EXISTING_USER" -RemoteDirectory "/mounted/volume/alpha-bliss-pg18"
+.\scripts\task3b-bliss-pg18-offhost.ps1 -ManifestPath "C:\path\bliss-pg18-xxxx.pending.json" -DropletIPv4 "OWNER_DIGITALOCEAN_IPV4" -SshUser "EXISTING_USER" -RemoteDirectory "/ACTUAL_MOUNTED_VOLUME/alpha-bliss-pg18"
 ~~~
 
-The tool pins the existing DigitalOcean public IP, requires OpenSSH StrictHostKeyChecking=yes, makes a separate private 0700 directory, uploads only the encrypted archive, checks remote SHA-256 against source ciphertext, then creates .offhost.json. Remote shell permissions/space remain owner-controlled.
+The tool pins the existing DigitalOcean public IP, requires OpenSSH StrictHostKeyChecking=yes, refuses root/unmounted/unsafe destinations **before writing**, creates a separate private 0700 directory only on an existing mounted disk with sufficient free space, uploads only the encrypted archive, checks remote SHA-256 against source ciphertext, then creates .offhost.json. No second Droplet, paid volume, database TCP proxy or account is created. It does not prove source recovery until Stage 3 actually restores and validates the ciphertext.
 
 ## Stage 3: actual isolated restore to disposable PostgreSQL 18, without DR362 writes
 

@@ -62,16 +62,68 @@ $scp = (Get-Command scp.exe).Source
 $target = $SshUser + '@' + $DropletIPv4
 $remotePath = $RemoteDirectory.TrimEnd('/') + '/' + $m.archiveFileName
 # Shell inputs strictly constrained to non-metacharacter path characters.
-$remoteCommand = 'umask 077; mkdir -p "' + $RemoteDirectory + '"; chmod 700 "' + $RemoteDirectory + '"; test -d "' + $RemoteDirectory + '" && test -w "' + $RemoteDirectory + '" && test ! -e "' + $remotePath + '"'
-& $ssh -o BatchMode=yes -o StrictHostKeyChecking=yes $target $remoteCommand *> $null
-if ($LASTEXITCODE -ne 0) {
-    throw 'TASK3B_OFFHOST=SSH_DESTINATION_NOT_READY; check private DO SSH and available storage.'
+# Block Storage is already attached to this Droplet, but the previous script
+# accepted any writable path (even the root filesystem). Require an actual
+# non-root, disk-backed mountpoint and enough storage BEFORE remote writes.
+$archiveBytes = (Get-Item -LiteralPath $archivePath).Length
+$requiredKiB = [int64][Math]::Ceiling($archiveBytes / 1024.0) + 102400
+$remoteCommand = @'
+set -eu
+umask 077
+dir="__REMOTE_DIRECTORY__"
+archive="__REMOTE_ARCHIVE__"
+needed_kib=__REQUIRED_KIB__
+existing="$dir"
+while [ ! -e "$existing" ]; do
+  [ "$existing" != "/" ] || exit 2
+  existing=$(dirname "$existing")
+done
+[ -d "$existing" ] || exit 2
+[ "$(readlink -m "$dir")" = "$dir" ] || exit 2
+mount_target=$(findmnt -T "$existing" -n -o TARGET) || exit 2
+mount_source=$(findmnt -T "$existing" -n -o SOURCE) || exit 2
+mount_type=$(findmnt -T "$existing" -n -o FSTYPE) || exit 2
+mount_device=$(findmnt -T "$existing" -n -o MAJ:MIN) || exit 2
+root_device=$(findmnt -T / -n -o MAJ:MIN) || exit 2
+[ -n "$mount_device" ] && [ -n "$root_device" ] && [ "$mount_device" != "$root_device" ] || exit 2
+[ -n "$mount_target" ] && [ "$mount_target" != "/" ] || exit 2
+case "$mount_source" in /dev/*) ;; *) exit 2 ;; esac
+case "$mount_type" in ext4|xfs|btrfs) ;; *) exit 2 ;; esac
+free_kib=$(df -Pk "$existing" | awk 'NR==2 { print $4 }')
+case "$free_kib" in ''|*[!0-9]*) exit 2 ;; esac
+[ "$free_kib" -ge "$needed_kib" ] || exit 2
+test ! -e "$archive" && test ! -L "$archive" || exit 2
+mkdir -p "$dir"
+[ -d "$dir" ] && [ ! -L "$dir" ] || exit 2
+[ "$(readlink -f "$dir")" = "$dir" ] || exit 2
+[ "$(findmnt -T "$dir" -n -o TARGET)" = "$mount_target" ] || exit 2
+chmod 700 "$dir"
+[ -w "$dir" ] || exit 2
+test ! -e "$archive" && test ! -L "$archive" || exit 2
+printf 'TASK3B_MOUNTED_VOLUME_READY\n'
+'@
+$remoteCommand = $remoteCommand.Replace('__REMOTE_DIRECTORY__', $RemoteDirectory)
+$remoteCommand = $remoteCommand.Replace('__REMOTE_ARCHIVE__', $remotePath)
+$remoteCommand = $remoteCommand.Replace('__REQUIRED_KIB__', [string]$requiredKiB)
+$preflight = @()
+$preflightExit = 1
+try {
+    $preflight = @(& $ssh -o BatchMode=yes -o StrictHostKeyChecking=yes $target $remoteCommand 2>&1)
+    $preflightExit = $LASTEXITCODE
+} catch {
+    $preflight = @()
+    $preflightExit = 1
 }
+$mountReady = @($preflight | Where-Object { ([string]$_).Trim() -ceq 'TASK3B_MOUNTED_VOLUME_READY' }).Count
+if ($preflightExit -ne 0 -or $mountReady -ne 1) {
+    throw 'TASK3B_OFFHOST=NONROOT_ATTACHED_VOLUME_OR_SPACE_NOT_VERIFIED; no encrypted copy attempted.'
+}
+
 & $scp -o BatchMode=yes -o StrictHostKeyChecking=yes $archivePath ($target + ':' + $remotePath) *> $null
 if ($LASTEXITCODE -ne 0) {
     throw 'TASK3B_OFFHOST=ENCRYPTED_TRANSFER_NOT_VERIFIED'
 }
-$checksumCommand = 'sha256sum "' + $remotePath + '"'
+$checksumCommand = 'test -f "' + $remotePath + '" && test ! -L "' + $remotePath + '" && test "$(findmnt -T "' + $remotePath + '" -n -o TARGET)" != / && sha256sum "' + $remotePath + '"'
 $reply = @(& $ssh -o BatchMode=yes -o StrictHostKeyChecking=yes $target $checksumCommand 2>&1)
 $sshExit = $LASTEXITCODE
 $checksumText = ($reply -join ' ').Trim()
