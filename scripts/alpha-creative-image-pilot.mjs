@@ -7,6 +7,7 @@ import { mkdirSync, openSync, closeSync, readFileSync, writeFileSync, renameSync
 import { resolve, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
+import { summarizeProviderRejection } from './alpha-creative-image-provider-error.mjs';
 
 const DIRECTIVE = 'ALPHA-CREATIVE-IMAGE-PILOT-20261120';
 const MODEL = 'gpt-image-2.5-flare';
@@ -129,7 +130,16 @@ async function paidOne(job, ledger, providerRemainingMicroUsd) {
         n:1,output_format:'png',prompt:job.prompt})
     });
     // Never auto-retry including on 429, 5xx, network interruption, or missing billing receipt.
-    if (!response.ok) abort('PROVIDER_REJECTED_HTTP_' + response.status);
+    if (!response.ok) {
+      const rejected = await summarizeProviderRejection(response);
+      receipt.providerHttpStatus = rejected.httpStatus;
+      receipt.providerErrorCode = rejected.errorCode;
+      receipt.providerErrorType = rejected.errorType;
+      if (rejected.providerRequestId !== 'UNAVAILABLE') receipt.providerRequestId = rejected.providerRequestId;
+      // The original $2 reservation remains held and the ledger is closed.
+      // No automatic retry, no trust in provider error text, no billing assumption.
+      abort('PROVIDER_REJECTED_HTTP_' + response.status + '_CODE_' + rejected.errorCode);
+    }
     const raw = await response.text();
     if (raw.length > 36_000_000) abort('PROVIDER_RESPONSE_TOO_LARGE');
     const payload = JSON.parse(raw);
