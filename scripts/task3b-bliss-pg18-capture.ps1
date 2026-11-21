@@ -71,15 +71,25 @@ $remoteBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($remote
 $runner = 'set -o pipefail; printf %s ' + $remoteBase64 + ' | base64 -d | bash'
 $raw = @()
 $remoteExit = 1
+# Windows PowerShell 5.1 treats native stderr redirected with 2>&1 as
+# NativeCommandError. Under the script-wide 'Stop' preference, Railway's
+# harmless "Using SSH key ..." notice can TERMINATE this block before the
+# remote command exits, even when SSH authentication and pg_dump work.
+# Capture both streams privately with Continue ONLY during native execution.
+# A nonzero exit code and any unrecognized output still fail closed below.
+$priorErrorActionPreference = $ErrorActionPreference
 try {
+    $ErrorActionPreference = 'Continue'
     $raw = @(& $railway.Source ssh -p $project -s 'Postgres' -e $environment -- bash -c $runner 2>&1)
     $remoteExit = $LASTEXITCODE
 } catch {
     $raw = @()
     $remoteExit = 1
+} finally {
+    $ErrorActionPreference = $priorErrorActionPreference
 }
 if ($remoteExit -ne 0) {
-    throw 'BLISS_PG18_BACKUP=REMOTE_COMMAND_FAILED; Railway SSH key may work but remote bash -c, database identity or pg_dump failed. No backup accepted.'
+    throw 'BLISS_PG18_BACKUP=REMOTE_COMMAND_FAILED; remote execution, database identity, or pg_dump was refused. No backup accepted.'
 }
 # The CLI can print exactly these human-facing SSH status messages around
 # remote stdout on Windows. Remove only these known fixed-format lines.
