@@ -169,4 +169,5 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
 
 public sealed record CampaignDraftRequest(Guid RequestKey, string Name, string Brief);
 public sealed record CampaignDraftSummary(Guid CampaignId, string Name, string Brief, string Status, DateTime CreatedAt);
-\npublic sealed record CreativeHandoffPreviewRequest(Guid CampaignId);\n
+
+public sealed record CreativeHandoffPreviewRequest(Guid CampaignId);
