@@ -15,13 +15,13 @@ assert.match(script, /fb33c1b7-03fb-42c8-89b1-081951a738fd/);
 assert.match(script, /Runtime__RestrictedPreview:-/);
 assert.match(script, /BLISS_INITIAL_INSTALL_EXPECTED_DB_HOST:-/);
 assert.match(script, /BLISS_INITIAL_INSTALL_EXPECTED_DB_NAME:-/);
-assert.match(script, /-- bash -c \\$runner 2>&1/, "Windows direct Railway SSH path");
-assert.match(script, /ToBase64String\\(\\[Text\\.Encoding\\]::UTF8\\.GetBytes\\(\\$remote\\)\\)/, "encode reviewed remote script only");
-assert.match(script, /set -o pipefail; printf %s /, "remote streaming runner fails closed");
-assert.match(script, /\\$ErrorActionPreference = 'Continue'/, "native status banner handled under PS5.1");
-assert.match(script, /\\$ErrorActionPreference = \\$previousErrorActionPreference/, "restore strict errors");
-assert.doesNotMatch(script, /\\$remote\\s*\\|\\s*&\\s*\\$railway\\.Source ssh/,
-  "reject known broken stdin passthrough");
+assert.ok(script.includes('-- bash -c $runner 2>&1'), "Windows direct Railway SSH path");
+assert.ok(script.includes('ToBase64String([Text.Encoding]::UTF8.GetBytes($remote))'),
+  "encode only reviewed remote script source");
+assert.ok(script.includes('set -o pipefail; printf %s '), "remote streaming runner fails closed");
+assert.ok(script.includes("$ErrorActionPreference = 'Continue'"), "native status banner handled under PS5.1");
+assert.ok(script.includes('$ErrorActionPreference = $previousErrorActionPreference'), "restore strict errors");
+assert.ok(!script.includes('$remote | & $railway.Source ssh'), "reject broken CLI stdin passthrough");
 assert.match(script, /\$remoteExit = 1/);
 assert.match(script, /\} catch \{/);
 assert.match(script, /TASK3B_PUBLIC_REGISTRATION=HELD/);
