@@ -11,8 +11,11 @@ assert.doesNotMatch(wrapper, /Get-Command railway(?:\s|-ErrorAction)/,
   "Windows owner launcher must not fall back to execution-policy-blocked npm .ps1 shim");
 assert.match(wrapper, /& \$railway\.Source whoami \*> \$null/);
 assert.match(wrapper, /RAILWAY_OWNER_LOGIN_REQUIRED/);
-assert.match(wrapper, /--list-secret-keys/);
-assert.match(wrapper, /GPG_PRIVATE_KEY_UNAVAILABLE/);
+assert.match(wrapper, /--list-keys/);
+assert.doesNotMatch(wrapper, /--list-secret-keys|--import-secret/, 'offline recovery private key must stay separate');
+assert.match(wrapper, /GPG_PUBLIC_RECIPIENT_UNAVAILABLE/);
+assert.match(wrapper, /RECOVERY-KEY-HELD/);
+assert.match(wrapper, /PRIVATE_DECRYPTION_KEY_CUSTODY_NOT_ATTESTED/);
 assert.match(wrapper, /GPG_PUBLIC_FINGERPRINT=/);
 assert.match(wrapper, /\^\[A-F0-9\]\{40\}\$/);
 assert.match(wrapper, /Read-Host/);
@@ -24,13 +27,13 @@ assert.doesNotMatch(wrapper, /Set-ExecutionPolicy|RAILWAY_TOKEN=|PGPASSWORD=|GPG
 assert.ok(wrapper.indexOf("RAILWAY_OWNER_LOGIN_REQUIRED") <
           wrapper.indexOf("& $backupScript -GpgRecipientFingerprint"),
   "Railway authentication must precede the only invocation that can query production DB");
-assert.ok(wrapper.indexOf("RECIPIENT_NOT_AN_OWNER_HELD_GPG_KEY") <
+assert.ok(wrapper.indexOf("PRIVATE_DECRYPTION_KEY_CUSTODY_NOT_ATTESTED") <
           wrapper.indexOf("& $backupScript -GpgRecipientFingerprint"),
-  "GPG secret-key custody and explicit owner choice precede production read");
+  "GPG public recipient and separately-held decryption key owner attestation precede production read");
 assert.match(capture, /pg_dump --dbname="\$db" --format=custom --no-owner --no-acl/);
 assert.match(capture, /--encrypt --recipient/);
 assert.match(capture, /TASK3B_OFFHOST_DIGITALOCEAN_COPY=NOT_VERIFIED/);
 assert.match(capture, /TASK3B_ISOLATED_PG18_RESTORE=NOT_VERIFIED/);
 assert.match(runbook, /task3b-owner-start-backup\.ps1/);
 assert.match(runbook, /GPG.*private key/i);
-console.log("TASK3B_OWNER_BACKUP_WINDOWS_CMD_GPG_CUSTODY_AND_NO_IMPLICIT_PRODUCTION_ACTION=PASS");
+console.log("TASK3B_OWNER_BACKUP_WINDOWS_CMD_PUBLIC_RECIPIENT_OFFLINE_DECRYPTION_CUSTODY=PASS");
