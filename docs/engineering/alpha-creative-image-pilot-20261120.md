@@ -24,6 +24,19 @@ The existing Bliss ControlledAiService already has a PostgreSQL reservation ledg
 
 The Henry Ford Factory POC QA handoff is read-only: it verifies digest/usage evidence and returns NOT_LIVE_FACTORY_ACCEPTANCE while preserving STOP. No Sailor, public endpoint, queue, mailing, campaign activation, Stripe charge, or outside contact is created. The Factory's actual Global STOP is not independently attested by these local fixtures.
 
+## Connected-account permission readback (2026-11-21; READ ONLY)
+
+An authenticated browser inspection of the **Alpha Global Media LLC** OpenAI API Platform organization confirmed one accessible API project and these constraints:
+
+- **Current project spending limit observed: $9 USD**, resetting in approximately 10 days from the inspection, with a 100%-of-$9 alert. **This is not proof that $9 remains unspent.** The approved pilot maximum remains $20 total, but existing project restrictions take precedence.
+- The signed-in account was refused billing inspection with the exact error **required permission: `api.billing.read`**; organization settings editing `organization.write` was also unavailable.
+- Actual payment method, prepaid balance, used/remaining funds, auto-recharge setting, and availability of `gpt-image-2.5-flare` for this project **could not be verified**.
+- No payment method, model entitlement, key, image generation or spending-limit change was performed.
+- A separate organization owner/billing administrator must either grant **minimum access** for billing read/model verification or inspect these details and provide an approved evidence summary. Organization-wide write access is not inherently required for the engineering operator.
+- **No live paid image request is permitted yet.** A monthly project limit is not a trusted fixed remaining balance and can lag or apply to other consumers. Avoid falsely setting `ALPHA_IMAGE_PILOT_PROVIDER_LIMIT_USD=20.00` while the actual project limit remains $9; owner-side environmental assertions are not authoritative provider billing evidence.
+
+**Remaining owner action:** organization owner confirms current billed spend / available balance / auto-recharge OFF / dedicated project model access and signed-in API key privilege, then verifies adequate headroom before single-master generation. If permissions remain unavailable, leave the pilot blocked; do not work around by increasing spend or routing through a shared key.
+
 ## Owner-only prerequisites (DO NOT post secrets)
 
 1. Use the existing OpenAI API Platform organization. In the official developer console, confirm the model is available to the selected project and organization verification if required. The owner's action may be required to add a **payment method** or buy up to $20 prepaid API credits, **with auto-recharge OFF**. This is not ChatGPT subscription billing.
