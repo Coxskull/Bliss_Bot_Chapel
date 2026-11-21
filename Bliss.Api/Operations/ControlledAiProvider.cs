@@ -101,7 +101,7 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
     // OpenAI Standard Images API rates as of 2026-11-21: text input $5,
     // image input $8, image output $30 per million tokens. This is a metered
     // provider-usage calculation, not proof that an invoice has settled.
-    internal static decimal ImagePilotCost(JsonElement usage)
+    public static decimal ImagePilotCost(JsonElement usage)
     {
         if (!usage.TryGetProperty("input_tokens_details", out var inputs)
             || inputs.ValueKind != JsonValueKind.Object)
