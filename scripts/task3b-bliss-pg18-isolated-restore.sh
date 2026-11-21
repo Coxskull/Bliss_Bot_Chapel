@@ -60,6 +60,8 @@ fi
 target=$4
 [[ "$target" =~ ^alpha_task3b_restore_[a-z0-9_]{6,32}$ ]] || fail TARGET_NAME_REFUSED
 [[ "${TASK3B_OFFLINE_RECOVERY_HOST_ACK:-}" == OFFLINE_RECOVERY_HOST ]] || fail RECOVERY_HOST_ATTESTATION_MISSING
+# Refuse an active Railway service, even with a mistaken operator attestation.
+[[ -z "${RAILWAY_PROJECT_ID:-}" && -z "${RAILWAY_SERVICE_ID:-}" && -z "${RAILWAY_ENVIRONMENT_ID:-}" ]] || fail RAILWAY_RUNTIME_CONTEXT_REFUSED
 for tool in psql pg_restore gpg; do
   command -v "$tool" >/dev/null 2>&1 || fail REQUIRED_TOOL_MISSING
 done
