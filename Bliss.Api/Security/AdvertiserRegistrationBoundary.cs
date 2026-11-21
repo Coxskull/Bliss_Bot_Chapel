@@ -16,7 +16,8 @@ public static class AdvertiserRegistrationBoundary
         if (HttpMethods.IsGet(context.Request.Method)
             && (path.Equals("/api/auth/session", StringComparison.OrdinalIgnoreCase)
                 || path.Equals("/api/auth/login", StringComparison.OrdinalIgnoreCase)
-                || path.Equals("/api/auth/supabase-config", StringComparison.OrdinalIgnoreCase)))
+                || path.Equals("/api/auth/supabase-config", StringComparison.OrdinalIgnoreCase)
+                || path.Equals("/api/advertisers/registration-status", StringComparison.OrdinalIgnoreCase)))
             return false;
         // Applicant privacy request intake and own receipts are explicitly scoped.
         // This does not grant access to other advertiser APIs or any workspace.

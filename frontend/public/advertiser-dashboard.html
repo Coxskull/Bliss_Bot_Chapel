@@ -5,9 +5,9 @@
 <link rel="stylesheet" href="/creator-dashboard.css"><script defer src="/advertiser-dashboard.js"></script></head>
 <body><a class="skip" href="#dashboard">Skip to advertiser dashboard</a>
 <header class="topbar"><a class="brand" href="/">ALPHA <span>GLOBAL MEDIA™</span></a>
-<nav aria-label="Advertiser navigation"><a href="/advertiser-login.html">Advertiser login</a><a href="/join-advertiser.html">Business interest</a></nav></header>
+<nav aria-label="Advertiser navigation"><a href="/advertiser-login.html">Advertiser login</a><a href="/advertiser-registration.html">Registration</a></nav></header>
 <main id="dashboard"><section class="welcome"><p class="eyebrow">ALPHA GLOBAL MEDIA™ · ADVERTISER WORKSPACE</p>
-<h1>Your advertiser dashboard.</h1><p>Only a verified, explicitly approved business account can view its own profile here.</p></section>
+<h1>Your advertiser dashboard.</h1><p>Track your own registration after signing in. Only a verified, explicitly approved business account can view its own business profile.</p></section>
 <section class="panel" aria-labelledby="access-title"><div class="panel-head">
 <div><p class="kicker">ACCOUNT ACCESS</p><h2 id="access-title">Your business</h2></div>
 <span id="access-badge" class="badge">CHECKING</span></div>
@@ -17,6 +17,15 @@
 <a class="secondary" href="/advertiser-login.html">Account instructions</a></div>
 <div id="pending-panel" hidden><h3>Advertiser access is not yet approved</h3>
 <p>Submitting an interest form does not create a dashboard. ALPHA must verify your account and associate it with a specific business record.</p></div>
+<section id="application-panel" class="profile" aria-labelledby="application-title" hidden>
+<h3 id="application-title">Your registration receipt</h3>
+<dl><div><dt>Application status</dt><dd id="application-status">—</dd></div>
+<div><dt>Receipt</dt><dd id="application-receipt">—</dd></div>
+<div><dt>Privacy notice</dt><dd id="application-privacy">—</dd></div>
+<div><dt>Registration terms</dt><dd id="application-terms">—</dd></div>
+<div><dt>Required consent</dt><dd id="application-consent">—</dd></div>
+<div><dt>Marketing at registration</dt><dd id="application-marketing">—</dd></div></dl>
+<p class="muted">This receipt records your application, not workspace approval. You do not need to submit it again.</p></section>
 <section id="profile-panel" class="profile" aria-labelledby="profile-title" hidden>
 <div class="profile-heading"><div><p class="kicker">APPROVED BUSINESS PROFILE</p><h3 id="profile-title">Your profile</h3></div><span class="verified">APPROVED</span></div>
 <dl><div><dt>Business name</dt><dd id="business-name">—</dd></div>

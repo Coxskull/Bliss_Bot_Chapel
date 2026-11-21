@@ -22,6 +22,31 @@ public sealed class AdvertiserRegistrationController(BlissDbContext db, BlissAut
     public const string PrivacyNoticeVersion = "advertiser-privacy-2026-11-20-v2";
     public const string TermsVersion = "advertiser-terms-2026-11-20-v2";
 
+    // A verified applicant may retrieve only their own original registration
+    // receipt and membership state. No caller-provided subject or tenant ID.
+    [Authorize]
+    [HttpGet("registration-status")]
+    public async Task<IActionResult> GetRegistrationStatus(CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.Enabled || !auth.SupabaseEnabled || !BlissAuthorization.IsPendingAdvertiserIdentity(User, auth))
+            return StatusCode(StatusCodes.Status403Forbidden);
+
+        var subject = User.FindFirst("sub")!.Value;
+        var result = await (from membership in db.AdvertiserAccountMemberships.AsNoTracking()
+                            join receipt in db.AdvertiserRegistrationReceipts.AsNoTracking()
+                                on new { membership.Subject, membership.AdvertiserId }
+                                equals new { receipt.Subject, receipt.AdvertiserId }
+                            where membership.Subject == subject
+                            select new AdvertiserApplicationStatusDto(receipt.Id,
+                                membership.Status, receipt.CreatedAt, receipt.ProcessingConsent,
+                                receipt.TermsAccepted, receipt.MarketingOptIn,
+                                receipt.PrivacyNoticeVersion, receipt.TermsVersion))
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return result is null ? NotFound() : Ok(result);
+    }
+
     [Authorize]
     [HttpPost("register")]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
@@ -132,3 +157,7 @@ public sealed record AdvertiserRegistrationRequest(
 public sealed record AdvertiserRegistrationReceiptDto(
     Guid ReceiptId, Guid AdvertiserId, string Status, DateTime CreatedAt, bool MarketingOptIn,
     Guid RequestKey, string PrivacyNoticeVersion, string TermsVersion);
+
+public sealed record AdvertiserApplicationStatusDto(Guid ReceiptId, string Status,
+    DateTime CreatedAt, bool ProcessingConsent, bool TermsAccepted, bool MarketingOptIn,
+    string PrivacyNoticeVersion, string TermsVersion);

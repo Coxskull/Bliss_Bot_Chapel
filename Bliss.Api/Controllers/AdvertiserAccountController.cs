@@ -31,12 +31,16 @@ public sealed class AdvertiserAccountController : ControllerBase
 
         var subject = User.FindFirst("sub")?.Value;
         if (string.IsNullOrWhiteSpace(subject)) return StatusCode(StatusCodes.Status403Forbidden);
-        var membership = await _db.AdvertiserAccountMemberships.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.Subject == subject && x.AdvertiserId == advertiserId, cancellationToken);
-        // Existing workspaces remain bound by the issuer's approved subject →
-        // advertiser_id assignment. New self-registrations must additionally
-        // have an active database owner link before any workspace access.
-        if (membership is not null && membership.Status != "ACTIVE")
+        // If either the subject or claimed business participates in registration,
+        // an exact ACTIVE pair is mandatory. A mismatched issuer assignment
+        // must not look like an old workspace with no membership.
+        var memberships = await _db.AdvertiserAccountMemberships.AsNoTracking()
+            .Where(x => x.Subject == subject || x.AdvertiserId == advertiserId)
+            .Select(x => new { x.Subject, x.AdvertiserId, x.Status })
+            .ToListAsync(cancellationToken);
+        if (memberships.Count != 0 && (memberships.Count != 1
+            || memberships[0].Subject != subject || memberships[0].AdvertiserId != advertiserId
+            || memberships[0].Status != "ACTIVE"))
             return StatusCode(StatusCodes.Status403Forbidden);
 
         var record = await _db.Advertisers.AsNoTracking()
