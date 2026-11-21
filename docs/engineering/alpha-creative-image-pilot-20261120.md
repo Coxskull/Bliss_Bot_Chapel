@@ -123,3 +123,22 @@ It returns only a **local hash-consistency QA receipt**, no new Factory worker, 
 Commercial creative activation is a separate decision after the owner demonstrates: (a) provider account/project hard spend control and key custody; (b) actual original master + up to ten generated variations with genuine token usage and API costs; (c) independent budget reconciliation against console; (d) human visual QA on realism, can count/volume/label, brand identity, translations, speed, quality; (e) no charged unknown requests, no cross-tenant exposure, and continued Global STOP.
 
 **Never claim generated artwork, elapsed timings, actual spend, active paid model, or commercial readiness from GitHub CI alone.**
+
+
+## Owner-local HTTP 429 billing reconciliation packet (read-only, 2026-11-21)
+
+**Problem:** An earlier owner-workstation Images API request returned HTTP 429. The original client did not record the provider error body, so the specific cause (rate or credit restriction) cannot be retrospectively derived. The original local `pilot-ledger.json` had `spentMicroUsd=0`, `heldMicroUsd=2000000`, `closed=true`. **The $2 is a local reservation, NOT a confirmed OpenAI charge.** This remains a hold even if the platform's project usage dashboard displays $0.
+
+On the *original owner workstation containing that private ledger*, from the existing repository checkout, run:
+
+~~~powershell
+node scripts/alpha-creative-image-billing-reconcile.mjs
+~~~
+
+This does **not** require an API key, GitHub permissions, a second computer, Railway configuration or the image request flag. It makes no API calls, creates no file, and never edits the ledger. The JSON output is a **local evidence inventory**, not a provider invoice. It includes a SHA-256 of the exact local ledger bytes, local reserved versus spent amounts, UTC attempt timestamp and only strictly validated error/request IDs. It never includes prompts, key values or file paths. **Do not upload the private ledger, new API key, screenshots with secrets, or any billing account identifiers to GitHub.**
+
+The billing/account owner must inspect usage and billing within the **same OpenAI organization and project** as the original attempt, covering the relevant UTC attempt time and later settlement, verify the actual charged amount, request-ID record if available, current prepaid balance, remaining spending headroom and auto-recharge OFF. If no matching request ID was captured, verify with provider billing support rather than inventing one. A date-filtered $0 usage screenshot alone is not authoritative proof of no delayed billing.
+
+**Never treat the local script's output as an authorization to submit a second paid image request.** It always outputs `requestPermission=NOT_GRANTED`, `unlockAuthorized=false`, `providerCalls=0`. The original closed ledger must not be deleted, edited, or bypassed by changing `ALPHA_IMAGE_PILOT_DIR`. Only a separately reviewed, explicitly authorized, evidence-preserving resolution procedure after actual provider billing reconciliation can determine how to proceed. There is intentionally no `--reconcile`, `--unlock`, `--retry`, `--execute` or charge operation in this tool.
+
+Failure of ledger integrity, unsafe file paths, missing billing data or uncertain charges is **HELD**, not "no charge". The deployed hosted .NET/Node diagnostic fixes will classify *future* 429 errors but cannot retroactively recover the first provider response.
