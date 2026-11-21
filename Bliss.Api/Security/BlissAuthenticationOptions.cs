@@ -40,6 +40,8 @@ public sealed class BlissAuthenticationOptions
     public bool AdvertiserMembershipSelfServiceRequested { get; set; }
     // Independent customer DRAFT intake gate; never enables campaign execution.
     public bool AdvertiserCampaignDraftsRequested { get; set; }
+    // Read-only, no-cost creative/Factory QA preview; never permits provider calls.
+    public bool AdvertiserCreativeHandoffPreviewRequested { get; set; }
     public string[] ApprovedAdvertiserSubjects { get; set; } = [];
     // Verified Supabase identities with no trusted roles may enter only the
     // registration endpoint while this is explicitly enabled. It is OFF by default.

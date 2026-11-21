@@ -30,6 +30,11 @@ public static class AdvertiserRegistrationBoundary
             && path.Equals("/api/advertisers/my-campaign-drafts", StringComparison.OrdinalIgnoreCase)
             && BlissAuthorization.CanResolveAdvertiserMembershipProfile(context.User, options))
             return false;
+        if (options.AdvertiserCampaignDraftsRequested && options.AdvertiserCreativeHandoffPreviewRequested
+            && HttpMethods.IsPost(context.Request.Method)
+            && path.Equals("/api/advertisers/my-campaign-drafts/creative-handoff-preview", StringComparison.OrdinalIgnoreCase)
+            && BlissAuthorization.CanResolveAdvertiserMembershipProfile(context.User, options))
+            return false;
         // Applicant privacy request intake and own receipts are explicitly scoped.
         // This does not grant access to other advertiser APIs or any workspace.
         if (options.AdvertiserPrivacyRequestsRequested && HttpMethods.IsGet(context.Request.Method)

@@ -72,6 +72,52 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
             .OrderByDescending(x => x.CreatedAt).ThenBy(x => x.Id).Take(50)).ToArrayAsync(ct));
     }
 
+    // Source-only export of a customer-owned DRAFT to the existing offline
+    // image/Factory QA workflow. This is data, not an executable AI instruction.
+    // No customer-provided ID can select another advertiser's campaign.
+    [HttpPost("creative-handoff-preview")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(1024)]
+    public async Task<IActionResult> Preview([FromBody] CreativeHandoffPreviewRequest request, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.AdvertiserCreativeHandoffPreviewRequested || request.CampaignId == Guid.Empty)
+            return StatusCode(403);
+        var allowed = ActiveBusiness();
+        var id = await allowed.SingleOrDefaultAsync(ct);
+        if (id == Guid.Empty) return StatusCode(403);
+        var draft = await Summaries(OwnDrafts(id).Where(c => c.Id == request.CampaignId && allowed.Contains(id)))
+            .SingleOrDefaultAsync(ct);
+        if (draft is null) return NotFound();
+        // This checksum detects accidental changes in an offline handoff only.
+        // It is NOT a signature, issuer authority, approval, or delivery permit.
+        var binding = draft.CampaignId.ToString("D") + "\n" + draft.Name + "\n" + draft.Brief;
+        var digest = Convert.ToHexString(
+            System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(binding)))
+            .ToLowerInvariant();
+        return Ok(new
+        {
+            schema = "alpha.advertiser.campaign-creative-handoff.v1",
+            source = "Bliss_Bot_Chapel",
+            campaignId = draft.CampaignId,
+            campaignName = draft.Name,
+            creativeBrief = draft.Brief,
+            briefSha256 = digest,
+            status = "DRAFT",
+            authorityStatus = "UNVERIFIED",
+            candidateModel = "gpt-image-2.5-flare",
+            modelCall = "NOT_REQUESTED",
+            billingAuthorization = "NOT_GRANTED",
+            customerProviderConsent = "NOT_COLLECTED",
+            humanReview = "PENDING",
+            factoryAction = "OFFLINE_QA_ONLY",
+            globalStop = "NOT_READ_NOT_CHANGED",
+            release = "HELD",
+            delivery = "NOT_SENT",
+            signedAuthorization = false
+        });
+    }
+
     [HttpPost]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [RequestSizeLimit(16 * 1024)]
@@ -123,3 +169,5 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
 
 public sealed record CampaignDraftRequest(Guid RequestKey, string Name, string Brief);
 public sealed record CampaignDraftSummary(Guid CampaignId, string Name, string Brief, string Status, DateTime CreatedAt);
+
+public sealed record CreativeHandoffPreviewRequest(Guid CampaignId);

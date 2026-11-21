@@ -35,6 +35,7 @@ public static class PublicAdvertiserRegistrationGate
     {
         "/api/advertisers/register", "/api/auth/logout",
         "/api/advertisers/my-campaign-drafts",
+        "/api/advertisers/my-campaign-drafts/creative-handoff-preview",
         "/api/advertisers/operator-review",
         // OIDC uses the framework-protected code/nonce/state callback. Some
         // providers send the authorization response as a form POST.
