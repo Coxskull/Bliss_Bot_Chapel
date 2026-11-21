@@ -176,7 +176,7 @@
       });
       if (!response.ok) throw new Error("signup rejected");
       signup.reset();
-      signupResult.textContent = "Sign-in request accepted. Confirm your email, then use Continue after confirming email. No advertiser workspace is created until you submit the separate business registration.";
+      signupResult.textContent = "Sign-up request received. If this is a new account, check your confirmation email. If you already have an account, use Sign in or Forgot password instead; creating another sign-in will not replace your current password.";
     } catch (_) { signupResult.textContent = "Sign-in could not be created. Check the email and try again."; }
   });
   registration.addEventListener("submit", async (event) => {
