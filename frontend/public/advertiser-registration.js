@@ -10,9 +10,35 @@
   let configuration;
   let session;
   const randomKey = () => crypto.randomUUID();
-  const requestKeyStorage = "alpha.advertiser-registration.request-key.v1";
-  let requestKey = sessionStorage.getItem(requestKeyStorage) || randomKey();
-  sessionStorage.setItem(requestKeyStorage, requestKey);
+  // Browser retry state is a UX hint ONLY. Authenticated database ownership
+  // and receipt replay are independently enforced by the issuer+subject API.
+  // Never reuse a tab-wide v1 key across distinct signed-in applicants.
+  const requestKeyStorage = "alpha.advertiser-registration.request-key.v2";
+  let requestKey = randomKey();
+  let browserScope = null;
+  let submitting = false;
+  const validKey = value => typeof value === "string"
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  async function bindRetryKey() {
+    sessionStorage.removeItem("alpha.advertiser-registration.request-key.v1");
+    const email = typeof session?.email === "string" ? session.email.trim().toLowerCase() : "";
+    if (!session?.isAuthenticated || !email || !crypto.subtle?.digest) {
+      sessionStorage.removeItem(requestKeyStorage);
+      browserScope = null;
+      requestKey = randomKey();
+      return;
+    }
+    // Store a digest of the *displayed* session email, never the email itself.
+    // This is not an authorization decision and never assigns a tenant.
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(email));
+    browserScope = Array.from(new Uint8Array(digest),
+      byte => byte.toString(16).padStart(2, "0")).join("");
+    let prior = null;
+    try { prior = JSON.parse(sessionStorage.getItem(requestKeyStorage) || "null"); }
+    catch (_) { /* corrupt legacy/forged storage becomes a fresh request */ }
+    requestKey = prior?.scope === browserScope && validKey(prior.key) ? prior.key : randomKey();
+    sessionStorage.setItem(requestKeyStorage, JSON.stringify({ scope: browserScope, key: requestKey }));
+  }
   async function initialize() {
     try {
       const [configResponse, sessionResponse] = await Promise.all([
@@ -21,6 +47,7 @@
       ]);
       configuration = configResponse.ok ? await configResponse.json() : null;
       session = sessionResponse.ok ? await sessionResponse.json() : null;
+      await bindRetryKey();
       const enabled = configuration?.advertiserRegistrationEnabled === true;
       signup.querySelector("button").disabled = !enabled;
       registration.querySelector("button").disabled = !enabled || session?.isAuthenticated !== true;
@@ -50,7 +77,10 @@
   });
   registration.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!configuration || configuration.advertiserRegistrationEnabled !== true || !session?.isAuthenticated || !session.csrfToken) return;
+    if (submitting || !configuration || configuration.advertiserRegistrationEnabled !== true
+        || !session?.isAuthenticated || !session.csrfToken) return;
+    submitting = true;
+    registration.querySelector("button").disabled = true;
     registrationResult.textContent = "Submitting registration…";
     const payload = {
       requestKey, businessName: registration.elements.businessName.value.trim(),
@@ -87,8 +117,15 @@
       registration.reset();
       registrationResult.textContent = `Registration received. Status: ${body.status}. Receipt: ${body.receiptId}. Workspace access remains pending review.`;
       requestKey = randomKey();
-      sessionStorage.setItem(requestKeyStorage, requestKey);
-    } catch (error) { registrationResult.textContent = error.message || "Registration could not be completed."; }
+      if (browserScope)
+        sessionStorage.setItem(requestKeyStorage, JSON.stringify({ scope: browserScope, key: requestKey }));
+    } catch (error) {
+      registrationResult.textContent = error.message || "Registration could not be completed.";
+    } finally {
+      submitting = false;
+      registration.querySelector("button").disabled =
+        configuration?.advertiserRegistrationEnabled !== true || !session?.isAuthenticated;
+    }
   });
   initialize();
 })();
