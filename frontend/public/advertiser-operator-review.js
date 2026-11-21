@@ -32,7 +32,7 @@
     identity.addEventListener("change", sync); consent.addEventListener("change", sync);
     approve.addEventListener("click", async () => {
       if (approve.disabled || busy) return;
-      if (!window.confirm("Approve only this exact business membership? Customer access requires separate identity provisioning.")) return;
+      if (!window.confirm("Approve only this exact business membership? This permits read-only customer access when membership-based access is enabled.")) return;
       busy = true; refresh.disabled = true; approve.disabled = true;
       try {
         const response = await fetch(endpoint, { method: "POST", credentials: "same-origin", cache: "no-store",
@@ -44,8 +44,13 @@
         if (result.status !== "ACTIVE" || result.receiptId !== row.receiptId || result.advertiserId !== row.advertiserId)
           throw new Error("Approval response could not be verified. Refresh before retrying.");
         identity.disabled = consent.disabled = true; approve.remove();
-        add(card, "p", "Membership ACTIVE. Identity provisioning is REQUIRED SEPARATELY. Keep this receipt and exact subject/business IDs for the approved provisioning process.");
-        status.textContent = "Membership approved; workspace activation is not yet complete.";
+        if (result.identityProvisioning === "MEMBERSHIP_PROFILE_ENABLED") {
+          add(card, "p", "Membership ACTIVE. The verified applicant can refresh their own dashboard. Other business APIs remain disabled.");
+          status.textContent = "Membership approved; read-only profile access enabled for the verified applicant.";
+        } else {
+          add(card, "p", "Membership ACTIVE. Separate identity provisioning is still required for this account.");
+          status.textContent = "Membership approved; workspace activation is not yet complete.";
+        }
       } catch (error) { status.textContent = error.message; }
       finally { busy = false; refresh.disabled = false; if (approve.isConnected) sync(); }
     });
