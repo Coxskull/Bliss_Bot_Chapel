@@ -39,18 +39,19 @@ if ($null -eq $gpg) { $gpg = Get-Command gpg -ErrorAction SilentlyContinue }
 if ($null -eq $gpg) {
     throw 'TASK3B_OWNER_BACKUP=GPG_NOT_FOUND; no database operation.'
 }
-# Print ONLY public fingerprints of locally held secret keys; never secret
-# key material, passphrases, key file contents or full GPG account details.
-$keyList = @(& $gpg.Source --batch --no-tty --with-colons --list-secret-keys 2>$null)
+# The encryption public key must exist locally; its matching private key may
+# (and preferably should) be stored separately in offline owner custody.
+# Print ONLY public fingerprints, never key file contents or full user IDs.
+$keyList = @(& $gpg.Source --batch --no-tty --with-colons --list-keys 2>$null)
 if ($LASTEXITCODE -ne 0) {
-    throw 'TASK3B_OWNER_BACKUP=GPG_PRIVATE_KEY_UNAVAILABLE; no database operation.'
+    throw 'TASK3B_OWNER_BACKUP=GPG_PUBLIC_RECIPIENT_UNAVAILABLE; no database operation.'
 }
 $found = New-Object 'System.Collections.Generic.List[string]'
 $nextFingerprintIsPrimary = $false
 foreach ($item in $keyList) {
     $line = [string] $item
-    if ($line -cmatch '^sec:') { $nextFingerprintIsPrimary = $true; continue }
-    if ($line -cmatch '^(ssb|pub):') { $nextFingerprintIsPrimary = $false; continue }
+    if ($line -cmatch '^pub:') { $nextFingerprintIsPrimary = $true; continue }
+    if ($line -cmatch '^(sub|sec):') { $nextFingerprintIsPrimary = $false; continue }
     if ($nextFingerprintIsPrimary -and $line -cmatch '^fpr:') {
         $pieces = $line.Split(':')
         if ($pieces.Length -ge 10 -and $pieces[9] -cmatch '^[A-Fa-f0-9]{40}$') {
@@ -61,20 +62,26 @@ foreach ($item in $keyList) {
     }
 }
 if ($found.Count -lt 1) {
-    throw 'TASK3B_OWNER_BACKUP=RECOVERABLE_SECRET_KEY_NOT_FOUND; no backup attempted.'
+    throw 'TASK3B_OWNER_BACKUP=GPG_PUBLIC_KEY_NOT_FOUND; no backup attempted.'
 }
 Write-Output 'TASK3B_RAILWAY_OWNER_AUTH=AVAILABLE'
-Write-Output 'TASK3B_GPG_OWNER_SECRET_KEYS=DETECTED_LOCAL'
+Write-Output 'TASK3B_GPG_OWNER_PUBLIC_KEYS=DETECTED_LOCAL'
 Write-Output 'TASK3B_FINGERPRINTS_ARE_PUBLIC_IDENTIFIERS_ONLY'
 foreach ($fingerprint in $found) { Write-Output ('GPG_PUBLIC_FINGERPRINT=' + $fingerprint) }
 
 $selected = (Read-Host 'Enter ONE listed public fingerprint for an existing RECOVERABLE GPG key (40 hex characters)').Trim().ToUpperInvariant()
 if ($selected -cnotmatch '^[A-F0-9]{40}$' -or -not $found.Contains($selected)) {
-    throw 'TASK3B_OWNER_BACKUP=RECIPIENT_NOT_AN_OWNER_HELD_GPG_KEY; no backup attempted.'
+    throw 'TASK3B_OWNER_BACKUP=RECIPIENT_NOT_A_LISTED_PUBLIC_GPG_KEY; no backup attempted.'
 }
-Write-Output 'TASK3B_GPG_RECOVERY_PRIVATE_KEY_CUSTODY=OWNER_MUST_VERIFY_OFFLINE'
+# Do not require or import the decryption private key into this workstation.
+# Owner affirms that a recoverable offline copy exists, without disclosing it.
+$recoveryCustody = (Read-Host 'Confirm the matching PRIVATE decryption key is recoverable in secure owner custody, separately from the backup (type RECOVERY-KEY-HELD)').Trim()
+if ($recoveryCustody -cne 'RECOVERY-KEY-HELD') {
+    throw 'TASK3B_OWNER_BACKUP=PRIVATE_DECRYPTION_KEY_CUSTODY_NOT_ATTESTED; no backup attempted.'
+}
+Write-Output 'TASK3B_GPG_RECOVERY_PRIVATE_KEY_CUSTODY=OWNER_ATTESTED_OFFLINE'
 Write-Output 'TASK3B_BACKUP_CAPTURE=STARTING_READ_ONLY_EXISTING_RAILWAY_PG18'
-# Execution cannot proceed without an explicit, locally held GPG recipient.
+# Execution cannot proceed without a present encryption public recipient.
 # No passwords or private keys are copied into process arguments or logs.
 & $backupScript -GpgRecipientFingerprint $selected -OutputDirectory $OutputDirectory
 if (-not $?) {
