@@ -42,9 +42,31 @@ public static class PublicAdvertiserRegistrationGate
         "/signin-oidc", "/signout-callback-oidc"
     };
 
-    public static bool IsAllowed(string? method, PathString path)
+    // The creator addition never changes the advertiser allowlist; each new
+    // route is gated independently and public business APIs stay closed.
+    private static readonly HashSet<string> CreatorGetPaths = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "/creator-registration.html", "/creator-registration.js",
+        "/api/creators/registration",
+        "/alpha-privacy.html", "/alpha-terms.html",
+        "/join-creator.html", "/alpha-intake.js"
+    };
+    private static readonly HashSet<string> CreatorPostPaths = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "/api/creators/register"
+    };
+
+    public static bool IsAllowed(string? method, PathString path, bool creatorRegistrationEnabled = false)
     {
         var value = path.Value ?? "";
+        if (creatorRegistrationEnabled)
+        {
+            if ((string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(method, "HEAD", StringComparison.OrdinalIgnoreCase))
+                && CreatorGetPaths.Contains(value)) return true;
+            if (string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase)
+                && CreatorPostPaths.Contains(value)) return true;
+        }
         return (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(method, "HEAD", StringComparison.OrdinalIgnoreCase))
             ? PublicGetPaths.Contains(value)
@@ -52,9 +74,12 @@ public static class PublicAdvertiserRegistrationGate
                 && PublicPostPaths.Contains(value);
     }
 
-    public static async Task InvokeAsync(HttpContext context, Func<Task> next)
+    public static async Task InvokeAsync(HttpContext context, Func<Task> next,
+        bool creatorRegistrationEnabled = false)
     {
-        context.Response.Headers["X-Bliss-Mode"] = "advertiser-registration-only";
+        var releaseMode = creatorRegistrationEnabled
+            ? "advertiser-and-creator-registration" : "advertiser-registration-only";
+        context.Response.Headers["X-Bliss-Mode"] = releaseMode;
         context.Response.Headers.CacheControl = "no-store";
         if (HttpMethods.IsGet(context.Request.Method)
             && context.Request.Path == "/preview-status")
@@ -63,12 +88,13 @@ public static class PublicAdvertiserRegistrationGate
             {
                 restrictedPreview = true,
                 operational = false,
-                advertiserRegistrationOpen = true
+                advertiserRegistrationOpen = true,
+                creatorRegistrationOpen = creatorRegistrationEnabled
             });
             return;
         }
 
-        if (IsAllowed(context.Request.Method, context.Request.Path))
+        if (IsAllowed(context.Request.Method, context.Request.Path, creatorRegistrationEnabled))
         {
             await next();
             return;
@@ -78,7 +104,7 @@ public static class PublicAdvertiserRegistrationGate
         await context.Response.WriteAsJsonAsync(new
         {
             status = "Unavailable",
-            mode = "advertiser-registration-only",
+            mode = releaseMode,
             operational = false,
             error = "This service is limited to advertiser registration. Other operations remain unavailable."
         });
