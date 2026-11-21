@@ -66,12 +66,13 @@ assert.ok(!existsSync(base+"advertiser-registration.js"),"advertiser registratio
 
 for (const [file, route] of [
   ["creator-login.html", "/creator-signin-preview.html"],
-  ["advertiser-login.html", "/advertiser-signin-preview.html"]
+  ["advertiser-login.html", "/api/auth/login?returnUrl=%2Fadvertiser-registration.html"]
 ]) {
   assert.ok(existsSync(base + file), file + " is publicly discoverable");
   const page = read(file);
   const expected = "href=\"https://bliss-bot-production-5eb8.up.railway.app" + route + "\"";
   assert.ok(page.includes(expected), file + " authenticates on protected Railway origin");
+  assert.ok(!page.includes('href="/api/auth/login?returnUrl='), file + " must not submit auth on public Vercel origin");
   assert.ok(!page.includes('<input type="password"'), file + " does not solicit passwords on Vercel");
   assert.ok(!page.includes("SUPABASE_SERVICE_ROLE_KEY"), file + " contains no service credential");
 }
