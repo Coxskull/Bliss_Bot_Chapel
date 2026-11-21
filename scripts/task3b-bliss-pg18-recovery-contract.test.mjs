@@ -41,6 +41,7 @@ matches(upload, /dr362\|supabase\|factory/, "block unrelated DR362 destination")
 matches(upload, /findmnt -T "\$existing" -n -o TARGET/, "preflight effective mounted volume");
 matches(upload, /mount_target" != "\/"/, "reject root filesystem");
 matches(upload, /mount_source" in \/dev\/\*/, "require disk-backed source");
+matches(upload, /mount_device" != "\$root_device"/, "refuse same block device as root, including bind mounts");
 matches(upload, /ext4\|xfs\|btrfs/, "require disk-backed volume filesystem");
 matches(upload, /free_kib.*df -Pk/, "check free disk capacity before encrypted upload");
 matches(upload, /NONROOT_ATTACHED_VOLUME_OR_SPACE_NOT_VERIFIED/, "fail closed before scp");
