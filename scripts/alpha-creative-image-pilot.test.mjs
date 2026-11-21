@@ -19,7 +19,11 @@ assert.match(script,/UNKNOWN_AFTER_RESERVATION/);
 assert.match(script,/NO_RETRY/);
 assert.match(script,/ALPHA_GLOBAL_STOP !== 'ENGAGED'/);
 assert.match(script,/ALPHA_IMAGE_PILOT_AUTO_RECHARGE !== 'OFF'/);
-assert.match(script,/ALPHA_IMAGE_PILOT_PROVIDER_LIMIT_USD !== '20.00'/);
+assert.match(script,/ALPHA_IMAGE_PILOT_PROVIDER_LIMIT_USD, 'PROJECT_LIMIT'/);
+assert.match(script,/ALPHA_IMAGE_PILOT_PROVIDER_SPENT_USD, 'PROJECT_SPEND'/);
+assert.match(script,/ALPHA_IMAGE_PILOT_PREPAID_AVAILABLE_USD, 'PREPAID'/);
+assert.match(script,/ALPHA_IMAGE_PILOT_BILLING_ADMIN_VERIFIED !== 'YES'/);
+assert.match(script,/count !== 1/);
 assert.match(script,/NEVER_RUN_PAID_CALL_IN_CI/);
 assert.match(script,/quality:QUALITY,size:SIZE/);
 assert.match(script,/n:1,output_format:'png'/);
@@ -37,4 +41,34 @@ const refused=spawnSync(process.execPath,['scripts/alpha-creative-image-pilot.mj
 });
 assert.equal(refused.status,2);
 assert.match(refused.stderr,/OWNER_BILLING_OR_ISOLATION_ATTESTATION_MISSING/);
+const fakeEnv={
+  ...process.env,
+  CI:'',GITHUB_ACTIONS:'',
+  OPENAI_API_KEY:'sk-fixture-not-real',
+  ALPHA_IMAGE_PILOT_OWNER_APPROVAL:'ALPHA-CREATIVE-IMAGE-PILOT-20261120',
+  ALPHA_IMAGE_PILOT_AUTO_RECHARGE:'OFF',
+  ALPHA_IMAGE_PILOT_SCOPE:'ISOLATED_NO_DELIVERY',
+  ALPHA_GLOBAL_STOP:'ENGAGED',
+  ALPHA_IMAGE_PILOT_BILLING_ADMIN_VERIFIED:'YES',
+  ALPHA_IMAGE_PILOT_PROVIDER_LIMIT_USD:'9.00',
+  ALPHA_IMAGE_PILOT_PROVIDER_SPENT_USD:'0.00',
+  ALPHA_IMAGE_PILOT_PREPAID_AVAILABLE_USD:''
+};
+const unverified=spawnSync(process.execPath,['scripts/alpha-creative-image-pilot.mjs','--execute'],
+  {encoding:'utf8',timeout:10000,env:fakeEnv});
+assert.equal(unverified.status,2);
+assert.match(unverified.stderr,/INVALID_BILLING_ATTESTATION_PREPAID/);
+const exhausted=spawnSync(process.execPath,['scripts/alpha-creative-image-pilot.mjs','--execute'],{
+  encoding:'utf8',timeout:10000,env:{...fakeEnv,
+    ALPHA_IMAGE_PILOT_PROVIDER_SPENT_USD:'9.00',ALPHA_IMAGE_PILOT_PREPAID_AVAILABLE_USD:'20.00'}
+});
+assert.equal(exhausted.status,2);
+assert.match(exhausted.stderr,/PROVIDER_PROJECT_OR_PREPAID_HEADROOM_INSUFFICIENT/);
+const multi=spawnSync(process.execPath,['scripts/alpha-creative-image-pilot.mjs','--execute','--max-new=10'],{
+  encoding:'utf8',timeout:10000,env:{...fakeEnv,
+    ALPHA_IMAGE_PILOT_PROVIDER_SPENT_USD:'0.00',ALPHA_IMAGE_PILOT_PREPAID_AVAILABLE_USD:'9.00'}
+});
+assert.equal(multi.status,2);
+assert.match(multi.stderr,/ONE_BILLABLE_IMAGE_PER_INVOCATION_REVERIFY_BILLING/);
+
 console.log('ALPHA creative image pilot: 11 design specs and offline budget/STOP refusal PASS; $0 spent');
