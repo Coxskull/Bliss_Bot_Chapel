@@ -3,7 +3,7 @@
 // Existing Bliss Creative Academy / controlled-AI owner-side image pilot adapter.
 // Default is OFFLINE DRY RUN. No customer, Factory STOP, Sailor, or payment action.
 // One paid image per HTTPS request, no auto retries, durable debit BEFORE dispatch.
-import { mkdirSync, openSync, closeSync, readFileSync, writeFileSync, renameSync, existsSync, unlinkSync, chmodSync, readdirSync } from 'node:fs';
+import { mkdirSync, openSync, closeSync, readFileSync, writeFileSync, renameSync, existsSync, unlinkSync, chmodSync, fsyncSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
@@ -41,8 +41,13 @@ function accurateUsd(u) {
 function atomicWrite(path, body) {
   const tmp = path + '.new-' + process.pid;
   const fd = openSync(tmp, 'wx', 0o600);
-  try { writeFileSync(fd, body); } finally { closeSync(fd); }
+  try { writeFileSync(fd, body); fsyncSync(fd); } finally { closeSync(fd); }
   renameSync(tmp, path);
+  // Best-effort directory metadata durability across OS/filesystems.
+  let dirFd;
+  try { dirFd=openSync(stateDir,'r'); fsyncSync(dirFd); }
+  catch { /* Windows may refuse directory flush; file content was fsynced. */ }
+  finally { if(dirFd !== undefined) closeSync(dirFd); }
 }
 function readState() {
   if (!existsSync(statePath)) return {schema:'alpha.creative.pilot.ledger.v1',
