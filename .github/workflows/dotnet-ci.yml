@@ -155,6 +155,8 @@ jobs:
         run: node --test scripts/alpha-creative-image-model-permission.test.mjs
       - name: Verify private image receipts and fail-closed QA without paid API
         run: node scripts/alpha-creative-image-pilot-offline-acceptance.test.mjs
+      - name: Verify read-only image billing reconciliation has no API, unlock or ledger writes
+        run: node --test scripts/alpha-creative-image-billing-reconcile.test.mjs
       - name: Parse five owner-only Task3B PowerShell scripts, never execute backup or migration
         shell: pwsh
         run: |
