@@ -124,6 +124,41 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         var advertiserB = await Register(b, "Fictional B Studio");
         Assert.NotEqual(advertiserA, advertiserB);
 
+        // The dashboard's status read must bind to the signed-in subject,
+        // never a receipt or advertiser ID supplied by a browser.
+        const string statusPath = "/api/advertisers/registration-status";
+        using var statusA = await a.GetAsync(statusPath);
+        using var statusB = await b.GetAsync(statusPath);
+        Assert.Equal(HttpStatusCode.OK, statusA.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, statusB.StatusCode);
+        using var ownA = JsonDocument.Parse(await statusA.Content.ReadAsStringAsync());
+        using var ownB = JsonDocument.Parse(await statusB.Content.ReadAsStringAsync());
+        var receiptA = ownA.RootElement.GetProperty("receiptId").GetGuid();
+        var receiptB = ownB.RootElement.GetProperty("receiptId").GetGuid();
+        Assert.NotEqual(receiptA, receiptB);
+        Assert.Equal("PENDING_REVIEW", ownA.RootElement.GetProperty("status").GetString());
+        Assert.Equal("PENDING_REVIEW", ownB.RootElement.GetProperty("status").GetString());
+        Assert.True(ownA.RootElement.GetProperty("processingConsent").GetBoolean());
+        Assert.True(ownA.RootElement.GetProperty("termsAccepted").GetBoolean());
+        Assert.False(ownA.RootElement.GetProperty("marketingOptIn").GetBoolean());
+        Assert.False(ownA.RootElement.TryGetProperty("subject", out _));
+        Assert.False(ownA.RootElement.TryGetProperty("advertiserId", out _));
+        Assert.False(ownA.RootElement.TryGetProperty("requestKey", out _));
+        using var overrideAttempt = await b.GetAsync(statusPath + "?receiptId=" + receiptA.ToString("D")
+            + "&advertiserId=" + advertiserA.ToString("D"));
+        Assert.Equal(HttpStatusCode.OK, overrideAttempt.StatusCode);
+        using var overrideJson = JsonDocument.Parse(await overrideAttempt.Content.ReadAsStringAsync());
+        Assert.Equal(receiptB, overrideJson.RootElement.GetProperty("receiptId").GetGuid());
+        using var noRegistration = IdentityClient(factory, "fixture-no-registration");
+        using var noReceipt = await noRegistration.GetAsync(statusPath);
+        Assert.Equal(HttpStatusCode.NotFound, noReceipt.StatusCode);
+        using var anonymousStatusClient = factory.CreateSecureClient();
+        using var anonymousStatus = await anonymousStatusClient.GetAsync(statusPath);
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymousStatus.StatusCode);
+        using var pendingProfile = await a.GetAsync("/api/advertisers/me");
+        Assert.Equal(HttpStatusCode.Forbidden, pendingProfile.StatusCode);
+
+
         var key = Guid.NewGuid();
         var caseId = await CreateCase(a, key, "MARKETING_WITHDRAWAL");
         using var replay = await a.PostAsJsonAsync(Base, new { requestKey = key, requestType = "MARKETING_WITHDRAWAL" });
