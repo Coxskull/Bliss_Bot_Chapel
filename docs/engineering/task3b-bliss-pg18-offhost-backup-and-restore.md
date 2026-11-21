@@ -25,11 +25,25 @@ If any required tool is missing, do not run the database installer or substitute
 
 ## Stage 1: private read-only pg_dump and GPG-encrypted archive
 
+**Windows PowerShell 5.1, shortest supported route.** From your trusted local checkout of this existing repository, use this single command (the process-local execution policy does not persist or change the machine policy):
+
+~~~powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\task3b-owner-start-backup.ps1
+~~~
+
+It checks the existing `railway.cmd` npm launcher (avoids the Windows `railway.ps1` execution-policy failure already observed on the owner PC), confirms authenticated `railway.cmd whoami` locally, and reads **only public fingerprints** of GPG encryption keys installed locally. The matching private decryption key may remain **offline in separate owner custody** and does not need to be on the active PC. The owner must type one printed **40-character public fingerprint** and explicitly confirm `RECOVERY-KEY-HELD` only if that matching private decryption key is independently recoverable; **never enter a GPG passphrase, API key or database password in this chat**. The wrapper refuses missing login, untrusted recipient or missing private-key custody attestation before any production database read.
+
+It invokes the existing `task3b-bliss-pg18-capture.ps1` unchanged. If Railway's SSH host key is not registered yet, follow the local **Railway CLI's** SSH-key prompts using the trusted owner account; do not disable host-key verification or publish SSH keys. The CLI explicitly supports piped `ssh -- bash -se` requests on current Railway versions. Do not paste backup stdout, secret filenames, or logs into GitHub.
+
+Alternatively, an experienced operator who already knows the recoverable secret-key fingerprint may invoke the underlying helper directly:
+
 ~~~powershell
 .\scripts\task3b-bliss-pg18-capture.ps1 -GpgRecipientFingerprint "YOUR_EXISTING_TRUSTED_40_HEX_GPG_FINGERPRINT"
 ~~~
 
 Script pins actual project/environment/Postgres service, SQL-checks that source is database bliss / PostgreSQL 18, streams pg_dump custom bytes over private Railway SSH as base64, decodes only in workstation RAM, then GPG-encrypts directly to a unique local .gpg file (maximum 64 MiB unencrypted). No plaintext file. Outputs a .pending.json manifest with source identity, public table count, ciphertext SHA-256 and offhost/restore status explicitly false.
+
+A GPG public key alone is insufficient for recovery; verify the private decryption key is held by the owner, backed up securely, and passphrase recoverable. Never print or transfer the secret key here.
 
 ## Stage 2: verified copy of ONLY the encrypted file to existing DigitalOcean droplet
 
