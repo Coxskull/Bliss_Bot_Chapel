@@ -1,0 +1,80 @@
+{
+  "directive": "ALPHA-CREATIVE-IMAGE-PILOT-20261120",
+  "model": "gpt-image-2.5-flare",
+  "productSpec": {
+    "synthetic": true,
+    "brand": "HARBORLIGHT DEMO",
+    "type": "cold brew beverage concept",
+    "packaging": "one midnight-blue can",
+    "volumeMl": 350,
+    "emblem": "gold lighthouse"
+  },
+  "artworks": [
+    {
+      "id": 0,
+      "role": "MASTER",
+      "language": "English",
+      "prompt": "A fictional, non-sale test product: one matte midnight-blue 350 mL canned cold-brew coffee labeled HARBORLIGHT DEMO, with a small gold lighthouse symbol. The product is a synthetic laboratory prop, not a real commercial item. Exactly one cylindrical can, no invented certifications, ingredients, nutrition panel, health benefits, price or endorsements. Photorealistic studio ad, premium layout, clean realistic edges, readable brand text, no people, no QR or web addresses. Include a small legible footer 'ALPHA PILOT • NOT FOR PUBLICATION'. Hero master: on neutral warm ivory background, 3/4 view of can, subtle condensation, dramatic editorial product light, heading 'A NEW CREATIVE HORIZON', elegant clean typography."
+    },
+    {
+      "id": 1,
+      "role": "VARIATION",
+      "language": "Filipino",
+      "prompt": "A fictional, non-sale test product: one matte midnight-blue 350 mL canned cold-brew coffee labeled HARBORLIGHT DEMO, with a small gold lighthouse symbol. The product is a synthetic laboratory prop, not a real commercial item. Exactly one cylindrical can, no invented certifications, ingredients, nutrition panel, health benefits, price or endorsements. Photorealistic studio ad, premium layout, clean realistic edges, readable brand text, no people, no QR or web addresses. Include a small legible footer 'ALPHA PILOT • NOT FOR PUBLICATION'. Contemporary Filipino-language version. Heading 'Bagong Gawa, Bagong Sigla'. Same product and logo exactly; soft Manila sunrise gradient, locally relevant but no misleading cultural symbols."
+    },
+    {
+      "id": 2,
+      "role": "VARIATION",
+      "language": "English",
+      "prompt": "A fictional, non-sale test product: one matte midnight-blue 350 mL canned cold-brew coffee labeled HARBORLIGHT DEMO, with a small gold lighthouse symbol. The product is a synthetic laboratory prop, not a real commercial item. Exactly one cylindrical can, no invented certifications, ingredients, nutrition panel, health benefits, price or endorsements. Photorealistic studio ad, premium layout, clean realistic edges, readable brand text, no people, no QR or web addresses. Include a small legible footer 'ALPHA PILOT • NOT FOR PUBLICATION'. Minimal monochrome architectural poster, lots of whitespace, can precisely 350 mL, single headline 'MAKE ROOM FOR IDEAS'."
+    },
+    {
+      "id": 3,
+      "role": "VARIATION",
+      "language": "Spanish",
+      "prompt": "A fictional, non-sale test product: one matte midnight-blue 350 mL canned cold-brew coffee labeled HARBORLIGHT DEMO, with a small gold lighthouse symbol. The product is a synthetic laboratory prop, not a real commercial item. Exactly one cylindrical can, no invented certifications, ingredients, nutrition panel, health benefits, price or endorsements. Photorealistic studio ad, premium layout, clean realistic edges, readable brand text, no people, no QR or web addresses. Include a small legible footer 'ALPHA PILOT • NOT FOR PUBLICATION'. Spanish-language version for LATAM market, accurate phrase 'Ideas que brillan'. Warm golden tropical light, no extra product copy."
+    },
+    {
+      "id": 4,
+      "role": "VARIATION",
+      "language": "Bahasa Melayu",
+      "prompt": "A fictional, non-sale test product: one matte midnight-blue 350 mL canned cold-brew coffee labeled HARBORLIGHT DEMO, with a small gold lighthouse symbol. The product is a synthetic laboratory prop, not a real commercial item. Exactly one cylindrical can, no invented certifications, ingredients, nutrition panel, health benefits, price or endorsements. Photorealistic studio ad, premium layout, clean realistic edges, readable brand text, no people, no QR or web addresses. Include a small legible footer 'ALPHA PILOT • NOT FOR PUBLICATION'. Malay-language version, accurate heading 'Idea Baharu, Gaya Baharu'. Clean modern editorial product shot with elegant teal accents."
+    },
+    {
+      "id": 5,
+      "role": "VARIATION",
+      "language": "Bahasa Indonesia",
+      "prompt": "A fictional, non-sale test product: one matte midnight-blue 350 mL canned cold-brew coffee labeled HARBORLIGHT DEMO, with a small gold lighthouse symbol. The product is a synthetic laboratory prop, not a real commercial item. Exactly one cylindrical can, no invented certifications, ingredients, nutrition panel, health benefits, price or endorsements. Photorealistic studio ad, premium layout, clean realistic edges, readable brand text, no people, no QR or web addresses. Include a small legible footer 'ALPHA PILOT • NOT FOR PUBLICATION'. Indonesian-language version, heading 'Ide Baru, Tampilan Baru'. Black and copper studio composition, stable label and can dimensions."
+    },
+    {
+      "id": 6,
+      "role": "VARIATION",
+      "language": "Thai",
+      "prompt": "A fictional, non-sale test product: one matte midnight-blue 350 mL canned cold-brew coffee labeled HARBORLIGHT DEMO, with a small gold lighthouse symbol. The product is a synthetic laboratory prop, not a real commercial item. Exactly one cylindrical can, no invented certifications, ingredients, nutrition panel, health benefits, price or endorsements. Photorealistic studio ad, premium layout, clean realistic edges, readable brand text, no people, no QR or web addresses. Include a small legible footer 'ALPHA PILOT • NOT FOR PUBLICATION'. Thai-language version, simple accurate headline 'ไอเดียใหม่ในทุกวัน' with legible Thai letterforms. Soft coral and slate background, no spurious English claims."
+    },
+    {
+      "id": 7,
+      "role": "VARIATION",
+      "language": "English",
+      "prompt": "A fictional, non-sale test product: one matte midnight-blue 350 mL canned cold-brew coffee labeled HARBORLIGHT DEMO, with a small gold lighthouse symbol. The product is a synthetic laboratory prop, not a real commercial item. Exactly one cylindrical can, no invented certifications, ingredients, nutrition panel, health benefits, price or endorsements. Photorealistic studio ad, premium layout, clean realistic edges, readable brand text, no people, no QR or web addresses. Include a small legible footer 'ALPHA PILOT • NOT FOR PUBLICATION'. Social media square advertising crop, bold type 'A SAMPLE OF WHAT WE CAN IMAGINE', a single can in clean spotlight, original layout."
+    },
+    {
+      "id": 8,
+      "role": "VARIATION",
+      "language": "Spanish",
+      "prompt": "A fictional, non-sale test product: one matte midnight-blue 350 mL canned cold-brew coffee labeled HARBORLIGHT DEMO, with a small gold lighthouse symbol. The product is a synthetic laboratory prop, not a real commercial item. Exactly one cylindrical can, no invented certifications, ingredients, nutrition panel, health benefits, price or endorsements. Photorealistic studio ad, premium layout, clean realistic edges, readable brand text, no people, no QR or web addresses. Include a small legible footer 'ALPHA PILOT • NOT FOR PUBLICATION'. Bright minimalist editorial color-block campaign, Spanish heading 'Creatividad en cada detalle'. Product centered with label consistency."
+    },
+    {
+      "id": 9,
+      "role": "VARIATION",
+      "language": "English",
+      "prompt": "A fictional, non-sale test product: one matte midnight-blue 350 mL canned cold-brew coffee labeled HARBORLIGHT DEMO, with a small gold lighthouse symbol. The product is a synthetic laboratory prop, not a real commercial item. Exactly one cylindrical can, no invented certifications, ingredients, nutrition panel, health benefits, price or endorsements. Photorealistic studio ad, premium layout, clean realistic edges, readable brand text, no people, no QR or web addresses. Include a small legible footer 'ALPHA PILOT • NOT FOR PUBLICATION'. Premium dark mode cinematic product photo with spotlight, droplets and gentle smoke-like mist, heading 'STUDIO TEST No. 09'."
+    },
+    {
+      "id": 10,
+      "role": "VARIATION",
+      "language": "Filipino",
+      "prompt": "A fictional, non-sale test product: one matte midnight-blue 350 mL canned cold-brew coffee labeled HARBORLIGHT DEMO, with a small gold lighthouse symbol. The product is a synthetic laboratory prop, not a real commercial item. Exactly one cylindrical can, no invented certifications, ingredients, nutrition panel, health benefits, price or endorsements. Photorealistic studio ad, premium layout, clean realistic edges, readable brand text, no people, no QR or web addresses. Include a small legible footer 'ALPHA PILOT • NOT FOR PUBLICATION'. High-key pastel lifestyle mockup without people or real retail setting, Filipino line 'Disenyong may bagong pananaw', visible authentic can dimensions and legible label."
+    }
+  ]
+}

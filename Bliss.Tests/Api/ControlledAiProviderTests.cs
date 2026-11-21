@@ -44,17 +44,30 @@ public sealed class ControlledAiProviderTests
     public async Task Image_adapter_returns_png_bytes_for_private_review(string protocol)
     {
         var runtime = Runtime(); runtime.ControlledAi.Protocol = protocol;
+        if (protocol == "OpenAI")
+        {
+            runtime.ControlledAi.Provider = "OpenAI";
+            runtime.ControlledAi.ImagePilotEnabled = true;
+            runtime.ControlledAi.ImageModel = "gpt-image-2.5-flare";
+            runtime.ControlledAi.ImageEndpoint = "https://api.openai.com/v1/images/generations";
+            runtime.ControlledAi.TotalBudgetUsd = 20m;
+            runtime.ControlledAi.DailyBudgetUsd = 20m;
+            runtime.ControlledAi.ImageReservationUsd = 1.8m;
+        }
         var handler = new Handler((_, body) =>
         {
             Assert.Contains("recipe", body);
-            var json = protocol == "OpenAI" ? $$"""{"data":[{"b64_json":"{{AcademyProductionTests.Pixel}}"}]}"""
+            if (protocol == "OpenAI") { using var payload = System.Text.Json.JsonDocument.Parse(body); Assert.Equal("low", payload.RootElement.GetProperty("quality").GetString()); }
+            var json = protocol == "OpenAI" ? System.Text.Json.JsonSerializer.Serialize(new { data = new[] { new { b64_json = AcademyProductionTests.Pixel } }, usage = new { input_tokens = 10, input_tokens_details = new { text_tokens = 10, image_tokens = 0 }, output_tokens = 100 } })
                 : $$"""{"imageBase64":"{{AcademyProductionTests.Pixel}}","providerRequestId":"fixture-image"}""";
-            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) };
+            var reply = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) };
+            if (protocol == "OpenAI") reply.Headers.TryAddWithoutValidation("x-request-id", "req-test-image");
+            return reply;
         });
         var result = await new ConfiguredControlledAiProvider(new HttpClient(handler), runtime).ExecuteAsync(
-            new AiProviderRequest(Guid.NewGuid(), "IMAGE", "fixture-image", "{\"recipe\":\"Original candidate\"}", 100), default);
+            new AiProviderRequest(Guid.NewGuid(), "IMAGE", protocol == "OpenAI" ? "gpt-image-2.5-flare" : "fixture-image", "{\"recipe\":\"Original candidate\"}", 100), default);
         Assert.Equal(Convert.FromBase64String(AcademyProductionTests.Pixel), result.Image);
-        Assert.Null(result.ActualUsd);
+        Assert.Equal(protocol == "OpenAI" ? .00305m : null, result.ActualUsd);
     }
     [Fact]
     public async Task Provider_errors_and_tool_requests_are_rejected_without_exposing_response_text()

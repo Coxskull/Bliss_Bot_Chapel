@@ -41,46 +41,25 @@ public sealed class CreativeAcademyImageGeneratorTests
     }
 
     [Fact]
-    public async Task OpenAi_adapter_sends_the_images_payload_and_reads_b64_json()
+    public async Task OpenAi_legacy_unmetered_path_refuses_even_when_a_token_is_present()
     {
-        var handler = new RecordingHandler(request =>
-        {
-            Assert.Equal(
-                CreativeGenerationOptions.OpenAiImagesEndpoint,
-                request.RequestUri!.ToString());
-            return new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(
-                    $$"""{"created":1,"data":[{"b64_json":"{{Convert.ToBase64String(OnePixelPng)}}"}]}""",
-                    Encoding.UTF8,
-                    "application/json")
-            };
-        });
+        var handler = new RecordingHandler(_ => throw new InvalidOperationException("paid call leaked"));
         var runtime = new BlissRuntimeOptions
         {
             CreativeGeneration = new CreativeGenerationOptions
             {
-                Provider = "OpenAI",
-                ApiToken = "secret-token",
-                Model = "gpt-image-2.5-flare",
-                TimeoutSeconds = 30,
-                MaxImageBytes = 1024 * 1024
+                Provider = "OpenAI", ApiToken = "test-secret", Model = "gpt-image-2.5-flare"
             }
         };
         var generator = new ConfiguredCreativeImageGenerator(new HttpClient(handler), runtime);
-
-        var result = await generator.GenerateAsync(
-            new CreativeImageRequest("request-123", "Create Ruta Libre Motos", 1536, 864),
-            CancellationToken.None);
-
-        Assert.True(generator.Configured);
-        Assert.Equal("image/png", result.MediaType);
-        Assert.Equal(OnePixelPng, result.Content);
-        Assert.Contains("\"model\":\"gpt-image-2.5-flare\"", handler.Body);
-        Assert.Contains("\"size\":\"1536x864\"", handler.Body);
-        Assert.Contains("Create Ruta Libre Motos", handler.Body);
-        Assert.DoesNotContain("response_format", handler.Body);
-        Assert.DoesNotContain("responseFormat", handler.Body);
+        Assert.False(generator.Configured);
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            generator.GenerateAsync(new CreativeImageRequest("request-123", "fictional ad", 1536, 864), default));
+        Assert.Contains("not configured", error.Message);
+        Assert.Equal(0, handler.Calls);
+        var body = JsonSerializer.Serialize(ConfiguredCreativeImageGenerator.OpenAiBody(
+            new CreativeImageRequest("request-123", "fictional ad", 1536, 864), "gpt-image-2.5-flare"));
+        Assert.Contains("gpt-image-2.5-flare", body);
     }
 
     [Fact]
@@ -121,35 +100,13 @@ public sealed class CreativeAcademyImageGeneratorTests
     }
 
     [Fact]
-    public async Task OpenAi_credit_refusal_is_reported_without_storing_an_image()
+    public void OpenAi_direct_generation_is_not_enabled_by_a_model_and_token()
     {
-        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.TooManyRequests)
-        {
-            Content = new StringContent(
-                """{"error":{"message":"You have no credits remaining.","type":"insufficient_quota","code":"credit_balance_exhausted"}}""",
-                Encoding.UTF8,
-                "application/json")
-        });
-        var runtime = new BlissRuntimeOptions
-        {
-            CreativeGeneration = new CreativeGenerationOptions
-            {
-                Provider = "OpenAI",
-                ApiToken = "secret-token",
-                Model = "gpt-image-2.5-flare",
-                TimeoutSeconds = 30,
-                MaxImageBytes = 1024 * 1024
-            }
+        var settings = new CreativeGenerationOptions {
+            Provider = "OpenAI", Model = "gpt-image-2.5-flare",
+            ApiToken = "a-secret-would-otherwise-enable-unmetered-charge"
         };
-        var generator = new ConfiguredCreativeImageGenerator(new HttpClient(handler), runtime);
-
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            generator.GenerateAsync(
-                new CreativeImageRequest("request-123", "prompt", 1536, 864),
-                CancellationToken.None));
-
-        Assert.Contains("no remaining API credits", error.Message);
-        Assert.Contains("No advertisement was stored", error.Message);
+        Assert.False(settings.Configured);
     }
 
     private static BlissRuntimeOptions Runtime() => new()

@@ -31,7 +31,7 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
         if (Options.Protocol == "OpenAI")
             body = request.Kind == "TEXT"
                 ? new { model = request.Model, messages = new[] { new { role = "system", content = Instructions }, new { role = "user", content = request.InputJson } }, max_completion_tokens = request.MaxOutputTokens, store = false }
-                : new { model = request.Model, prompt = Instructions + "\n" + request.InputJson, n = 1, size = "1024x1024", output_format = "png" };
+                : new { model = request.Model, prompt = Instructions + "\n" + request.InputJson, n = 1, size = "1024x1024", quality = "low", output_format = "png" };
         else body = new { kind = request.Kind, model = request.Model, instructions = Instructions, input = input.RootElement,
             requestId = request.RunId, maxOutputTokens = request.MaxOutputTokens, width = 1024, height = 1024, responseFormat = "base64" };
         using var message = new HttpRequestMessage(HttpMethod.Post, request.Kind == "TEXT" ? Options.TextEndpoint : Options.ImageEndpoint);
@@ -66,7 +66,11 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
                 {
                     inputTokens = Integer(usage, "prompt_tokens") ?? Integer(usage, "input_tokens");
                     outputTokens = Integer(usage, "completion_tokens") ?? Integer(usage, "output_tokens");
+                    if (request.Kind == "IMAGE" && request.Model == "gpt-image-2.5-flare")
+                        cost = ImagePilotCost(usage);
                 }
+                else if (request.Kind == "IMAGE")
+                    throw new AiProviderException("IMAGE_USAGE_RECEIPT_MISSING");
             }
             else
             {
@@ -76,6 +80,8 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
                 inputTokens = Integer(root, "inputTokens"); outputTokens = Integer(root, "outputTokens");
                 if (root.TryGetProperty("actualUsd", out var price) && price.ValueKind != JsonValueKind.Null) cost = price.GetDecimal();
             }
+            if (request.Kind == "IMAGE" && request.Model == "gpt-image-2.5-flare" && string.IsNullOrWhiteSpace(id))
+                throw new AiProviderException("IMAGE_REQUEST_ID_MISSING");
             if (id.Length > 200 || inputTokens < 0 || outputTokens < 0 || cost < 0 || cost > 1_000_000) throw new AiProviderException("INVALID_USAGE_RECEIPT");
             byte[]? bytes = null;
             if (request.Kind == "TEXT")
@@ -92,5 +98,24 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
         catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or FormatException or IndexOutOfRangeException)
         { throw new AiProviderException("INVALID_PROVIDER_RESPONSE"); }
     }
+    // OpenAI Standard Images API rates as of 2026-11-21: text input $5,
+    // image input $8, image output $30 per million tokens. This is a metered
+    // provider-usage calculation, not proof that an invoice has settled.
+    public static decimal ImagePilotCost(JsonElement usage)
+    {
+        if (!usage.TryGetProperty("input_tokens_details", out var inputs)
+            || inputs.ValueKind != JsonValueKind.Object)
+            throw new AiProviderException("IMAGE_USAGE_BREAKDOWN_MISSING");
+        var text = Integer(inputs, "text_tokens");
+        var image = Integer(inputs, "image_tokens");
+        var billedInput = Integer(usage, "input_tokens");
+        var output = Integer(usage, "output_tokens");
+        if (text is null || image is null || billedInput is null || output is null
+            || text < 0 || image < 0 || output <= 0 || billedInput != text + image)
+            throw new AiProviderException("IMAGE_USAGE_BREAKDOWN_INVALID");
+        var amount = (text.Value * 5m + image.Value * 8m + output.Value * 30m) / 1_000_000m;
+        return Math.Ceiling(amount * 1_000_000m) / 1_000_000m;
+    }
+
     private static int? Integer(JsonElement value, string name) => value.TryGetProperty(name, out var node) && node.ValueKind != JsonValueKind.Null ? node.GetInt32() : null;
 }

@@ -137,6 +137,8 @@ jobs:
         run: node scripts/task3b-guarded-railway-install-contract.test.mjs
       - name: Verify private Bliss PG18 encrypted backup and isolated restore contract
         run: node scripts/task3b-bliss-pg18-recovery-contract.test.mjs
+      - name: Verify Alpha Flare pilot request budget and STOP refusal without API
+        run: node scripts/alpha-creative-image-pilot.test.mjs
       - name: Parse four owner-only Task3B PowerShell scripts, never execute backup or migration
         shell: pwsh
         run: |
