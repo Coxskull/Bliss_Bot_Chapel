@@ -1,7 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { probeModel } from './alpha-creative-image-model-permission.mjs';
 const options={key:'sk-offline-fake-test-key',scope:'ISOLATED_NO_DELIVERY',stop:'ENGAGED'};
+test('Windows helper accepts the project key only as hidden input and restores process environment',()=>{
+ const root=dirname(fileURLToPath(import.meta.url));
+ const helper=readFileSync(join(root,'alpha-creative-image-model-permission.ps1'),'utf8');
+ assert.match(helper,/Read-Host[\\s\\S]*?-AsSecureString/i);
+ assert.match(helper,/SecureStringToBSTR/);
+ assert.match(helper,/ZeroFreeBSTR/);
+ assert.match(helper,/alpha-creative-image-model-permission\\.mjs/);
+ assert.match(helper,/ISOLATED_NO_DELIVERY/);
+ assert.match(helper,/ALPHA_GLOBAL_STOP/);
+ assert.match(helper,/finally[\\s\\S]*?OPENAI_API_KEY = \\$previousKey/);
+ assert.doesNotMatch(helper,/--execute|images\\/generations|Write-Host.*plainKey|Write-Output.*plainKey/i);
+});
+
 test('uses only GET model metadata and never performs paid generation',async()=>{
  let called=0;
  const result=await probeModel(async (url,opts)=>{
