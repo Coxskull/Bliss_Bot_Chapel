@@ -39,7 +39,28 @@ async function scenario(mode, { enabled = true, authenticated = true,
     addEventListener() {},
     elements: {}
   };
+  // Recovery forms are inert in this authenticated registration fixture.
+  // The production flow only activates them after a real user-initiated action
+  // or a verified issuer recovery token; never manufacture one in tests.
+  const recoveryRequest = {
+    elements: { email: { value: "synthetic@example.invalid" } },
+    querySelector() { return { disabled: true }; },
+    addEventListener() {},
+    reset() {},
+    hidden: false
+  };
+  const recoveryUpdate = {
+    elements: { password: { value: "" }, confirmPassword: { value: "" } },
+    querySelector() { return { disabled: true }; },
+    addEventListener() {},
+    reset() {},
+    hidden: true
+  };
   const elements = {
+    "account-recovery": { open: false },
+    "recovery-request-form": recoveryRequest,
+    "recovery-update-form": recoveryUpdate,
+    "recovery-result": { textContent: "" },
     "signup-form": signup,
     "registration-form": registration,
     "signup-result": outputs.signup,
@@ -116,7 +137,13 @@ async function scenario(mode, { enabled = true, authenticated = true,
       getItem(name) { return saved.get(name) ?? null; },
       setItem(name, value) { saved.set(name, value); },
       removeItem(name) { saved.delete(name); }
-    }
+    },
+    URL, URLSearchParams,
+    window: { location: {
+      hash: "", pathname: "/advertiser-registration.html",
+      search: "", origin: "https://example.invalid"
+    } },
+    history: { replaceState() { throw Error("No recovery fragment expected in registration receipt fixtures"); } }
   }, { filename: "advertiser-registration.js" });
   await new Promise(resolve => setImmediate(resolve));
   await new Promise(resolve => setImmediate(resolve));
