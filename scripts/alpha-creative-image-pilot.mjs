@@ -66,15 +66,32 @@ function readState() {
     abort('LEDGER_MISMATCH_OR_OVER_BUDGET');
   return s;
 }
+function verifiedMoney(value, label) {
+  if (typeof value !== 'string' || !/^(0|[1-9][0-9]{0,5})\.[0-9]{2}$/.test(value))
+    abort('INVALID_BILLING_ATTESTATION_' + label);
+  const micro = Number(value) * 1_000_000;
+  if (!Number.isSafeInteger(micro)) abort('INVALID_BILLING_ATTESTATION_' + label);
+  return micro;
+}
 function verifyIntent() {
   if (process.env.ALPHA_IMAGE_PILOT_OWNER_APPROVAL !== DIRECTIVE ||
-      process.env.ALPHA_IMAGE_PILOT_PROVIDER_LIMIT_USD !== '20.00' ||
       process.env.ALPHA_IMAGE_PILOT_AUTO_RECHARGE !== 'OFF' ||
       process.env.ALPHA_IMAGE_PILOT_SCOPE !== 'ISOLATED_NO_DELIVERY' ||
-      process.env.ALPHA_GLOBAL_STOP !== 'ENGAGED') abort('OWNER_BILLING_OR_ISOLATION_ATTESTATION_MISSING');
+      process.env.ALPHA_GLOBAL_STOP !== 'ENGAGED' ||
+      process.env.ALPHA_IMAGE_PILOT_BILLING_ADMIN_VERIFIED !== 'YES')
+    abort('OWNER_BILLING_OR_ISOLATION_ATTESTATION_MISSING');
+  // Explicit owner-confirmed console values. Do not mistake the $20 owner
+  // authorization for the provider's actual configured project limit.
+  const projectLimit = verifiedMoney(process.env.ALPHA_IMAGE_PILOT_PROVIDER_LIMIT_USD, 'PROJECT_LIMIT');
+  const projectSpent = verifiedMoney(process.env.ALPHA_IMAGE_PILOT_PROVIDER_SPENT_USD, 'PROJECT_SPEND');
+  const prepaidRemaining = verifiedMoney(process.env.ALPHA_IMAGE_PILOT_PREPAID_AVAILABLE_USD, 'PREPAID');
+  if (projectLimit <= 0 || projectLimit > CAP * 1_000_000 ||
+      projectSpent < 0 || projectSpent > projectLimit || prepaidRemaining < 0)
+    abort('PROVIDER_BUDGET_NOT_VERIFIED_WITHIN_OWNER_CAP');
   if (!process.env.OPENAI_API_KEY || !process.env.OPENAI_API_KEY.startsWith('sk-'))
     abort('PRIVATE_OPENAI_PROJECT_KEY_MISSING');
   if (process.env.CI || process.env.GITHUB_ACTIONS) abort('NEVER_RUN_PAID_CALL_IN_CI');
+  return Math.min(projectLimit - projectSpent, prepaidRemaining);
 }
 function validateBrief(b) {
   if (b.directive !== DIRECTIVE || b.model !== MODEL || !Array.isArray(b.artworks) ||
@@ -84,9 +101,10 @@ function validateBrief(b) {
       x.prompt.length < 35 || x.prompt.length > 1200 || typeof x.language !== 'string'))
     abort('INVALID_ARTWORK_PROMPT');
 }
-async function paidOne(job, ledger) {
+async function paidOne(job, ledger, providerRemainingMicroUsd) {
   const reservedMicroUsd = Math.round(RESERVATION * 1_000_000);
-  if (ledger.spentMicroUsd + ledger.heldMicroUsd + reservedMicroUsd > CAP * 1_000_000)
+  if (providerRemainingMicroUsd < reservedMicroUsd ||
+      ledger.spentMicroUsd + ledger.heldMicroUsd + reservedMicroUsd > CAP * 1_000_000)
     abort('INSUFFICIENT_REMAINING_RESERVATION');
   const receipt = {
     index:job.id, role:job.role, language:job.language, model:MODEL,
@@ -146,6 +164,7 @@ async function paidOne(job, ledger) {
     atomicWrite(statePath, JSON.stringify(ledger,null,2) + '\n');
     console.log('PILOT_IMAGE_COMPLETE=' + job.id + ' COST_USD=' + costUsd.toFixed(6) +
       ' CUMULATIVE_USD=' + (ledger.spentMicroUsd/1e6).toFixed(6));
+    return costMicroUsd;
   } catch (err) {
     ledger.closed = true;
     // Keep the entire uncertain reserve permanently held. No retry allowed.
@@ -164,7 +183,10 @@ async function main() {
       stop:'ENGAGED_NOT_MODIFIED',delivery:'NOT_SENT',liveUsageUsd:'NOT_VERIFIED'},null,2));
     return;
   }
-  verifyIntent();
+  const verifiedProviderRemaining = verifyIntent();
+  if (count !== 1) abort('ONE_BILLABLE_IMAGE_PER_INVOCATION_REVERIFY_BILLING');
+  if (verifiedProviderRemaining < RESERVATION * 1_000_000)
+    abort('PROVIDER_PROJECT_OR_PREPAID_HEADROOM_INSUFFICIENT');
   mkdirSync(stateDir,{recursive:true,mode:0o700});
   chmodSync(stateDir,0o700);
   let lock;
@@ -176,11 +198,12 @@ async function main() {
     for(const job of b.artworks) {
       if (state.entries.some(e=>e.index===job.id)) continue; // no replay, no new cost
       if(submitted>=count) break;
-      await paidOne(job,state);
+      await paidOne(job,state,verifiedProviderRemaining);
       submitted++;
     }
     console.log('PILOT_REMAINING_AUTHORIZED_USD=' +
-      ((CAP*1e6-state.spentMicroUsd-state.heldMicroUsd)/1e6).toFixed(6));
+      (Math.min(CAP*1e6-state.spentMicroUsd-state.heldMicroUsd,
+                verifiedProviderRemaining - (state.entries.at(-1)?.costMicroUsd || 0))/1e6).toFixed(6));
     console.log('PILOT_ACCOUNTING=PROVIDER_TOKEN_ESTIMATE_RECONCILE_WITH_ACTUAL_API_BILLING');
     console.log('PILOT_GLOBAL_STOP=UNMODIFIED; PUBLIC_DELIVERY=NOT_SENT');
   } finally {

@@ -20,7 +20,7 @@ public sealed class AlphaCreativeImagePilotTests
         TotalBudgetUsd = 20m,
         ImageReservationUsd = 1.80m,
         TimeoutSeconds = 120,
-        MaxResponseBytes = 2_000_000
+        MaxResponseBytes = 24_000_000
     };
 
     [Fact]
@@ -29,6 +29,7 @@ public sealed class AlphaCreativeImagePilotTests
         var p = Pilot();
         Assert.True(p.Configured("IMAGE"));
         p.ImagePilotEnabled = false; Assert.False(p.Configured("IMAGE")); p.ImagePilotEnabled = true;
+        p.MaxResponseBytes = 2_000_000; Assert.False(p.Configured("IMAGE")); p.MaxResponseBytes = 24_000_000;
         p.TotalBudgetUsd = 20.01m; Assert.False(p.Configured("IMAGE")); p.TotalBudgetUsd = 20m;
         p.DailyBudgetUsd = 20.01m; Assert.False(p.Configured("IMAGE")); p.DailyBudgetUsd = 20m;
         p.ImageReservationUsd = 1.79m; Assert.False(p.Configured("IMAGE")); p.ImageReservationUsd = 1.80m;

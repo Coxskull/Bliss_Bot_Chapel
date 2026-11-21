@@ -90,8 +90,16 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
             }
             else
             {
-                if (encoded.Length > 1_398_104) throw new AiProviderException("INVALID_IMAGE_OUTPUT");
-                bytes = Convert.FromBase64String(encoded); CandidatePng.Validate(bytes);
+                // A generated 16 MiB PNG has at most 22,369,624 base64
+                // characters. Generic/public image paths retain 1 MiB.
+                var isolatedOpenAiPilot = Options.ImagePilotEnabled
+                    && Options.Protocol == "OpenAI" && request.Kind == "IMAGE"
+                    && request.Model == "gpt-image-2.5-flare";
+                if (encoded.Length > (isolatedOpenAiPilot ? 22_369_624 : 1_398_104))
+                    throw new AiProviderException("INVALID_IMAGE_OUTPUT");
+                bytes = Convert.FromBase64String(encoded);
+                if (isolatedOpenAiPilot) CandidatePng.ValidateGenerated(bytes);
+                else CandidatePng.Validate(bytes);
             }
             return new AiProviderResult(text, bytes, id, inputTokens, outputTokens, cost);
         }

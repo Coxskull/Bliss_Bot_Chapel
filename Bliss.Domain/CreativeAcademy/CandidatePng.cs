@@ -6,11 +6,17 @@ namespace Bliss.Domain.CreativeAcademy;
 /// <summary>Bounded PNG structure and scanline validation, not visual quality assessment.</summary>
 public static class CandidatePng
 {
+    // Keep public/manual uploads limited to 1 MiB. An isolated, paid image
+    // response from OpenAI may be larger; authorize that only at the trusted
+    // provider boundary and retain the same CRC, dimensions and zlib checks.
     public const int MaxBytes = 1024 * 1024;
-    public static void Validate(byte[] bytes)
+    public const int MaxGeneratedBytes = 16 * 1024 * 1024;
+    public static void Validate(byte[] bytes) => ValidateBounded(bytes, MaxBytes);
+    public static void ValidateGenerated(byte[] bytes) => ValidateBounded(bytes, MaxGeneratedBytes);
+    private static void ValidateBounded(byte[] bytes, int maxBytes)
     {
-        if (bytes.Length > MaxBytes || bytes.Length < 45 || !bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }))
-            throw new InvalidOperationException("Upload a PNG image of at most 1 MiB.");
+        if (bytes.Length > maxBytes || bytes.Length < 45 || !bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }))
+            throw new InvalidOperationException("PNG image exceeds the permitted byte limit or has an invalid signature.");
         using var compressed = new MemoryStream();
         var offset = 8; var width = 0; var height = 0; var channels = 0; var ended = false;
         while (offset + 12 <= bytes.Length)

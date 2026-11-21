@@ -37,6 +37,14 @@ An authenticated browser inspection of the **Alpha Global Media LLC** OpenAI API
 
 **Remaining owner action:** organization owner confirms current billed spend / available balance / auto-recharge OFF / dedicated project model access and signed-in API key privilege, then verifies adequate headroom before single-master generation. If permissions remain unavailable, leave the pilot blocked; do not work around by increasing spend or routing through a shared key.
 
+## Image-size acceptance repair (2026-11-21, no paid requests)
+
+The original Controlled AI worker used the same **1 MiB** `CandidatePng.Validate` limit and roughly **2 MB JSON response ceiling** for both manually submitted pictures and provider-generated `1024x1024` art. A valid paid model image could exceed those limits and be discarded **after** billing, wasting the approved test budget.
+
+The hardened provider permits at most **16 MiB of PNG bytes** and **24 MB of response JSON** exclusively for the isolated `gpt-image-2.5-flare` image pilot, preserving PNG signature, dimensions, CRC, zlib scanline, and IEND verification. The existing manual/public upload PNG limit remains 1 MiB. The pilot's runtime must explicitly configure `Runtime__ControlledAi__MaxResponseBytes=24000000`; an undersized value fails before any provider call. This is only source-level compatibility/guarding evidence; no charged real model output has been received.
+
+At last authenticated owner-readonly project inspection the spending limit showed **$9**, current project usage **$0**, and project headroom **$9**; model was listed in its project model limits. **Billing overview still denies `api.billing.read`**, so prepaid credits and auto-recharge state are unknown. Project displayed headroom is not equivalent to available prepaid funding. No image API call or billing setting change is authorized until the organization billing owner verifies these remaining facts.
+
 ## Owner-only prerequisites (DO NOT post secrets)
 
 1. Use the existing OpenAI API Platform organization. In the official developer console, confirm the model is available to the selected project and organization verification if required. The owner's action may be required to add a **payment method** or buy up to $20 prepaid API credits, **with auto-recharge OFF**. This is not ChatGPT subscription billing.
@@ -58,7 +66,13 @@ When separately verified by the owner, set private process-only environment flag
 
 ~~~powershell
 $env:ALPHA_IMAGE_PILOT_OWNER_APPROVAL='ALPHA-CREATIVE-IMAGE-PILOT-20261120'
-$env:ALPHA_IMAGE_PILOT_PROVIDER_LIMIT_USD='20.00'
+# Populate these ONLY after the organization's billing owner verifies each
+# numeric value against the same project's latest billing page.
+# 9.00 is the last observed PROJECT LIMIT, not proof of prepaid funds.
+$env:ALPHA_IMAGE_PILOT_PROVIDER_LIMIT_USD='9.00'
+$env:ALPHA_IMAGE_PILOT_PROVIDER_SPENT_USD='REPLACE_WITH_CURRENT_PROJECT_SPEND'
+$env:ALPHA_IMAGE_PILOT_PREPAID_AVAILABLE_USD='REPLACE_WITH_VERIFIED_PREPAID_CREDIT'
+$env:ALPHA_IMAGE_PILOT_BILLING_ADMIN_VERIFIED='YES'
 $env:ALPHA_IMAGE_PILOT_AUTO_RECHARGE='OFF'
 $env:ALPHA_IMAGE_PILOT_SCOPE='ISOLATED_NO_DELIVERY'
 $env:ALPHA_GLOBAL_STOP='ENGAGED'
@@ -66,10 +80,12 @@ $env:ALPHA_GLOBAL_STOP='ENGAGED'
 node scripts/alpha-creative-image-pilot.mjs --execute --max-new=1
 ~~~
 
-**Run just the master first**. Review image and actual usage receipt; compare incurred usage to API project billing. If acceptable and budget remains, the owner can explicitly execute another ten with:
+**Run just the master first**. Review image and actual usage receipt; compare incurred usage to API project billing. For additional variations, the runner now requires a fresh owner billing attestation and accepts only ONE billable image per execution. Do not reuse stale spend/credit values; the owner can repeat the following command separately until ten variations or the remaining authorized funds are exhausted:
 
 ~~~powershell
-node scripts/alpha-creative-image-pilot.mjs --execute --max-new=10
+# Recheck the provider billing page, update both numeric values above,
+# then run ONE variation only, and repeat for each variation while funded.
+node scripts/alpha-creative-image-pilot.mjs --execute --max-new=1
 node scripts/alpha-creative-image-pilot-qa.mjs
 ~~~
 

@@ -204,7 +204,13 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
             {
                 result = await provider.ExecuteAsync(new AiProviderRequest(run.Id, run.Kind, run.Model, run.InputSnapshotJson, Options.MaxOutputTokens), timeout.Token).WaitAsync(timeout.Token);
                 if (run.Kind == "TEXT" && (string.IsNullOrWhiteSpace(result.Text) || result.Text.Length > 8000)) throw new AiProviderException("INVALID_TEXT_OUTPUT");
-                if (run.Kind == "IMAGE") CandidatePng.Validate(result.Image ?? []);
+                if (run.Kind == "IMAGE")
+                {
+                    if (Options.ImagePilotEnabled && Options.Protocol == "OpenAI"
+                        && run.Model == "gpt-image-2.5-flare")
+                        CandidatePng.ValidateGenerated(result.Image ?? []);
+                    else CandidatePng.Validate(result.Image ?? []);
+                }
                 if (result.RequestId.Length > 200 || result.InputTokens < 0 || result.OutputTokens < 0 || result.ActualUsd < 0) throw new AiProviderException("INVALID_USAGE_RECEIPT");
             }
             catch (OperationCanceledException) { status = stopping.IsCancellationRequested ? "UNKNOWN" : "TIMED_OUT"; failure = stopping.IsCancellationRequested ? "HOST_INTERRUPTED" : "CALL_INTERRUPTED"; result = null; }
