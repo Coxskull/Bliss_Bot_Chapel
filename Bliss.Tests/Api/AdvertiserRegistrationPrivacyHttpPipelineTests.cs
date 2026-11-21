@@ -115,7 +115,8 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         await using var isolated = Task3bHttpPostgresDatabase.TryCreate();
         await using var factory = new AdvertiserPrivacyHttpFactory(
             postgresConnectionString: isolated?.ConnectionString, operatorReviewEnabled: true,
-            membershipProfileEnabled: true, campaignDraftsEnabled: true);
+            membershipProfileEnabled: true, campaignDraftsEnabled: true,
+            creativeHandoffPreviewEnabled: true);
         const string route = "/api/advertisers/my-campaign-drafts";
         const string review = "/api/advertisers/operator-review";
         using var a = IdentityClient(factory, "fixture-b");
@@ -153,6 +154,30 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         Assert.Equal(HttpStatusCode.Conflict, (await a.PostAsJsonAsync(route,
             new { requestKey = key, name = "Changed name", brief = draft.brief })).StatusCode);
         Assert.Equal(HttpStatusCode.Conflict, (await b.PostAsJsonAsync(route, draft)).StatusCode);
+        const string handoff = route + "/creative-handoff-preview";
+        using var ownPreview = await a.PostAsJsonAsync(handoff, new { campaignId = key });
+        Assert.Equal(HttpStatusCode.OK, ownPreview.StatusCode);
+        using var contract = JsonDocument.Parse(await ownPreview.Content.ReadAsStringAsync());
+        Assert.Equal("alpha.advertiser.campaign-creative-handoff.v1",
+            contract.RootElement.GetProperty("schema").GetString());
+        Assert.Equal(key, contract.RootElement.GetProperty("campaignId").GetGuid());
+        Assert.Equal("DRAFT", contract.RootElement.GetProperty("status").GetString());
+        Assert.Equal("UNVERIFIED", contract.RootElement.GetProperty("authorityStatus").GetString());
+        Assert.Equal("NOT_REQUESTED", contract.RootElement.GetProperty("modelCall").GetString());
+        Assert.Equal("NOT_GRANTED", contract.RootElement.GetProperty("billingAuthorization").GetString());
+        Assert.Equal("NOT_COLLECTED", contract.RootElement.GetProperty("customerProviderConsent").GetString());
+        Assert.Equal("NOT_READ_NOT_CHANGED", contract.RootElement.GetProperty("globalStop").GetString());
+        Assert.Equal("HELD", contract.RootElement.GetProperty("release").GetString());
+        Assert.Equal("NOT_SENT", contract.RootElement.GetProperty("delivery").GetString());
+        Assert.False(contract.RootElement.GetProperty("signedAuthorization").GetBoolean());
+        var expectedSha = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(key.ToString("D") +
+                "\\nFictional campaign\\nA fictional planning brief."))).ToLowerInvariant();
+        Assert.Equal(expectedSha, contract.RootElement.GetProperty("briefSha256").GetString());
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await b.PostAsJsonAsync(handoff, new { campaignId = key })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await staff.PostAsJsonAsync(handoff, new { campaignId = key })).StatusCode);
         using var listA = await a.GetAsync(route + "?advertiserId=" + bId);
         Assert.Equal(HttpStatusCode.OK, listA.StatusCode);
         using var own = JsonDocument.Parse(await listA.Content.ReadAsStringAsync());
@@ -181,6 +206,8 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
         }
         Assert.Equal(HttpStatusCode.Forbidden, (await a.GetAsync(route)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await a.PostAsJsonAsync(route, draft)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await a.PostAsJsonAsync(route + "/creative-handoff-preview", new { campaignId = key })).StatusCode);
     }
 
     [Fact]
@@ -705,7 +732,8 @@ internal sealed class Task3bHttpPostgresDatabase : IAsyncDisposable
 internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
     string? postgresConnectionString = null, int? writePermitLimit = null,
     bool registrationEnabled = true, bool operatorReviewEnabled = false,
-    bool membershipProfileEnabled = false, bool campaignDraftsEnabled = false) : WebApplicationFactory<Program>
+    bool membershipProfileEnabled = false, bool campaignDraftsEnabled = false,
+    bool creativeHandoffPreviewEnabled = false) : WebApplicationFactory<Program>
 {
     private const string Issuer = "https://identity.example.test";
     private readonly string dbName = "task3b_http_" + Guid.NewGuid().ToString("N");
@@ -721,6 +749,7 @@ internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
         builder.UseSetting("Authentication:AdvertiserSelfServiceRequested", "true");
         builder.UseSetting("Authentication:AdvertiserMembershipSelfServiceRequested", membershipProfileEnabled ? "true" : "false");
         builder.UseSetting("Authentication:AdvertiserCampaignDraftsRequested", campaignDraftsEnabled ? "true" : "false");
+        builder.UseSetting("Authentication:AdvertiserCreativeHandoffPreviewRequested", creativeHandoffPreviewEnabled ? "true" : "false");
         builder.UseSetting("Authentication:AdvertiserPrivacyRequestsRequested", privacyEnabled ? "true" : "false");
         builder.UseSetting("Authentication:ApprovedAdvertiserSubjects:0", "fixture-a");
         builder.UseSetting("Authentication:ApprovedPrivacyOperatorSubjects:0", "fixture-operator");
