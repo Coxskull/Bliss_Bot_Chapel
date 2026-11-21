@@ -131,8 +131,10 @@ jobs:
       - name: Verify advertiser registration account-notice contract (draft only)
         shell: bash
         run: python3 -m unittest discover -s scripts -p 'test_advertiser_account_legal_contract.py' -v
-      - name: Verify immutable registration receipt and retry key in offline browser
-        run: node scripts/test_advertiser_registration_receipt_runtime.mjs
+      - name: Verify immutable registration receipt, retry key and recovery syntax in offline browser
+        run: |
+          node --check frontend/public/advertiser-registration.js
+          node scripts/test_advertiser_registration_receipt_runtime.mjs
       - name: Verify owner-only guarded Task3B PG18 installation contract
         run: node scripts/task3b-guarded-railway-install-contract.test.mjs
       - name: Verify private Bliss PG18 encrypted backup and isolated restore contract
