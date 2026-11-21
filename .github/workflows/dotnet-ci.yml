@@ -137,6 +137,8 @@ jobs:
         run: node scripts/task3b-guarded-railway-install-contract.test.mjs
       - name: Verify private Bliss PG18 encrypted backup and isolated restore contract
         run: node scripts/task3b-bliss-pg18-recovery-contract.test.mjs
+      - name: Verify direct Railway SSH shell command and synthetic PG18 backup framing offline
+        run: node scripts/task3b-railway-ssh-direct-command.test.mjs
       - name: Verify Task3B owner's one-command backup preflight is offline and fail-closed
         run: node scripts/task3b-owner-start-backup.test.mjs
       - name: Verify isolated DigitalOcean volume guard with synthetic local mounts only
