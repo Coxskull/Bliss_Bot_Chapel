@@ -494,3 +494,11 @@ bliss-frontend/node_modules/
 bliss-frontend/dist/
 
 frontend/operations/financial-review/
+
+# ALPHA image pilot: local private API artifacts, usage ledger, and receipts.
+# Repository is public; NEVER commit private generated PNGs or API usage logs.
+.private/
+**/.private/
+alpha-image-*.png
+pilot-ledger.json
+pilot.lock
