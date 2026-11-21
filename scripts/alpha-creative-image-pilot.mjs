@@ -67,7 +67,7 @@ function readState() {
   return s;
 }
 function verifiedMoney(value, label) {
-  if (typeof value !== 'string' || !/^(0|[1-9][0-9]{0,5})\\.[0-9]{2}$/.test(value))
+  if (typeof value !== 'string' || !/^(0|[1-9][0-9]{0,5})\.[0-9]{2}$/.test(value))
     abort('INVALID_BILLING_ATTESTATION_' + label);
   const micro = Number(value) * 1_000_000;
   if (!Number.isSafeInteger(micro)) abort('INVALID_BILLING_ATTESTATION_' + label);
