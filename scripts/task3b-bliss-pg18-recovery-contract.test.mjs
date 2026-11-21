@@ -20,6 +20,12 @@ matches(capture, /6aa78407-1632-48c9-8ea4-0289a7d36a5b/, "Postgres DB service pi
 matches(capture, /b67a9836-36bf-4083-93f7-00c867b13f39/, "environment pinned");
 matches(capture, /RAILWAY_SERVICE_ID/, "asserts the running container identity");
 matches(capture, /pg_dump --dbname="\$db" --format=custom --no-owner --no-acl \| base64 -w0/, "one read-only dump");
+matches(capture, /-- bash -c \$runner 2>&1/, "Railway must accept one direct command, not broken stdin pipe");
+matches(capture, /ToBase64String\(\[Text\.Encoding\]::UTF8\.GetBytes\(\$remote\)\)/, "encoded only reviewed remote script text");
+matches(capture, /set -o pipefail; printf %s /, "remote internal pipefail and command source");
+matches(capture, /Connection to ssh\.railway\.com closed\./, "scrub known Railway CLI transport banner");
+assert.doesNotMatch(capture, /\$remote\s*\|\s*&\s*\$railway\.Source ssh/, "do not use Railway stdin shell passthrough");
+
 matches(capture, /TASK3B_SOURCE=bliss\\\|18\\\|/, "source strict PG18 receipt");
 matches(capture, /Get-Command gpg/, "GPG is mandatory");
 matches(capture, /--encrypt --recipient/, "recipient encryption required");

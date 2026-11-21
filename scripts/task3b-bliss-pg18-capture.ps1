@@ -59,22 +59,36 @@ printf '\nTASK3B_DUMP_END\n'
 Write-Output 'TASK3B_BACKUP_SOURCE=EXISTING_RAILWAY_BLISS_PG18'
 Write-Output 'TASK3B_BACKUP_MODE=READ_ONLY_ENCRYPTED_IN_MEMORY'
 Write-Output 'TASK3B_DB_PUBLIC_PROXY=UNCHANGED_NONE'
-# Remote stdout is a full encoded confidential dump. Suppress stdout/stderr
-# including on errors; accept only fixed-vocabulary shape.
+# Railway CLI 2026-11-21 behavior on owner's Windows PowerShell 5.1:
+# direct "railway.cmd ssh -- /bin/sh -c 'echo ...'" succeeds, but piped
+# "script | railway.cmd ssh -- bash -se" is NOT forwarded correctly (127).
+# Encode ONLY the reviewed script source (no credentials or database records).
+# Passing one ASCII shell -c argument avoids PowerShell 5.1 re-quoting the
+# many embedded shell quotes/dollar signs of the script.
+# Unlike the broken CLIENT stdin pipe, this decodes locally INSIDE the remote
+# shell and pipes into a remote bash, with pipefail retained at both stages.
+$remoteBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($remote))
+$runner = 'set -o pipefail; printf %s ' + $remoteBase64 + ' | base64 -d | bash'
 $raw = @()
 $remoteExit = 1
 try {
-    $raw = @($remote | & $railway.Source ssh -p $project -s 'Postgres' -e $environment -- bash -se 2>&1)
+    $raw = @(& $railway.Source ssh -p $project -s 'Postgres' -e $environment -- bash -c $runner 2>&1)
     $remoteExit = $LASTEXITCODE
 } catch {
     $raw = @()
     $remoteExit = 1
 }
 if ($remoteExit -ne 0) {
-    throw 'BLISS_PG18_BACKUP=REMOTE_REFUSED_OR_UNAVAILABLE; check private Railway SSH.'
+    throw 'BLISS_PG18_BACKUP=REMOTE_COMMAND_FAILED; Railway SSH key may work but remote bash -c, database identity or pg_dump failed. No backup accepted.'
 }
+# The CLI can print exactly these human-facing SSH status messages around
+# remote stdout on Windows. Remove only these known fixed-format lines.
+# Never display raw output, raw errors, or the encoded plaintext archive.
 $lines = @($raw | ForEach-Object { [string]$_ })
-$joined = ($lines -join [Environment]::NewLine).Trim()
+$dataLines = @($lines | Where-Object {
+    -not (($_ -match '^Using SSH key from file ') -or ($_ -eq 'Connection to ssh.railway.com closed.'))
+})
+$joined = ($dataLines -join [Environment]::NewLine).Trim()
 $m = [regex]::Match($joined, '\ATASK3B_SOURCE=bliss\|18\|([0-9]+)\r?\nTASK3B_DUMP_BEGIN\r?\n([A-Za-z0-9+/=]+)\r?\nTASK3B_DUMP_END\z')
 if (-not $m.Success) {
     throw 'BLISS_PG18_BACKUP=INVALID_REMOTE_RECEIPT; no archive accepted.'
