@@ -61,15 +61,18 @@ Write-Output 'TASK3B_BACKUP_MODE=READ_ONLY_ENCRYPTED_IN_MEMORY'
 Write-Output 'TASK3B_DB_PUBLIC_PROXY=UNCHANGED_NONE'
 # Railway CLI 2026-11-21 behavior on owner's Windows PowerShell 5.1:
 # direct "railway.cmd ssh -- /bin/sh -c 'echo ...'" succeeds, but piped
-# "script | railway.cmd ssh -- bash -se" is NOT forwarded correctly and
-# yields remote "echo: command not found" (127). Pass the script itself as
-# a single non-interactive -c argument; never pipe its source to stdin.
-# Direct remote command contents are fixed/reviewed literals, NOT owner input.
-# Output is still full encoded confidential DB content; keep it in memory.
+# "script | railway.cmd ssh -- bash -se" is NOT forwarded correctly (127).
+# Encode ONLY the reviewed script source (no credentials or database records).
+# Passing one ASCII shell -c argument avoids PowerShell 5.1 re-quoting the
+# many embedded shell quotes/dollar signs of the script.
+# Unlike the broken CLIENT stdin pipe, this decodes locally INSIDE the remote
+# shell and pipes into a remote bash, with pipefail retained at both stages.
+$remoteBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($remote))
+$runner = 'set -o pipefail; printf %s ' + $remoteBase64 + ' | base64 -d | bash'
 $raw = @()
 $remoteExit = 1
 try {
-    $raw = @(& $railway.Source ssh -p $project -s 'Postgres' -e $environment -- bash -c $remote 2>&1)
+    $raw = @(& $railway.Source ssh -p $project -s 'Postgres' -e $environment -- bash -c $runner 2>&1)
     $remoteExit = $LASTEXITCODE
 } catch {
     $raw = @()
