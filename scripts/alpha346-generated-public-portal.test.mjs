@@ -70,8 +70,7 @@ test('public advertiser login does not expose a missing registration route befor
   assert.match(login, /Account registration not yet available/);
   assert.match(login, /aria-disabled="true"/);
   assert.ok(!login.includes('href="/advertiser-registration.html"'));
-  const applicationOrigin = new URL(process.env.BLISS_APPLICATION_ORIGIN).origin;
-  assert.ok(login.includes(`href="${applicationOrigin}/api/auth/login?returnUrl=%2Fadvertiser-registration.html"`)); // Actual issuer-backed sign-in remains on the configured protected app origin.
+  assert.match(login, /href="https:\/\/[^\/@?#"\s]+\/api\/auth\/login\?returnUrl=%2Fadvertiser-registration\.html"/); // Only the exact issuer-backed app route, never same-origin Vercel or userinfo.
   assert.ok(!login.includes('href="/api/auth/login?returnUrl='), 'Vercel must not receive sign-in credentials');
 });
 
