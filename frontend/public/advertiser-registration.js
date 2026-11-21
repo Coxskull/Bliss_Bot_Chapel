@@ -7,6 +7,22 @@
   const signupResult = document.getElementById("signup-result");
   const registrationResult = document.getElementById("registration-result");
   const signinLink = document.getElementById("signin-link");
+  const recoveryDetails = document.getElementById("account-recovery");
+  const recoveryRequest = document.getElementById("recovery-request-form");
+  const recoveryUpdate = document.getElementById("recovery-update-form");
+  const recoveryResult = document.getElementById("recovery-result");
+  // Supabase's implicit password-recovery callback returns an access token in
+  // the URL fragment. Never persist, log, copy into a link, or send it to Bliss.
+  const fragment = new URLSearchParams(window.location.hash.slice(1));
+  let recoveryToken = null;
+  if (fragment.get("type") === "recovery" || fragment.has("error")) {
+    recoveryToken = fragment.get("type") === "recovery" ? fragment.get("access_token") : null;
+    history.replaceState(null, "", window.location.pathname + window.location.search + "#account-recovery");
+    recoveryDetails.open = true;
+    recoveryResult.textContent = recoveryToken ? "Verifying the recovery link…" : "This recovery link is invalid or expired. Request a new link.";
+  } else if (window.location.hash === "#account-recovery") {
+    recoveryDetails.open = true;
+  }
   let configuration;
   let session;
   const randomKey = () => crypto.randomUUID();
@@ -54,10 +70,98 @@
       if (!enabled) signupResult.textContent = "Secure advertiser registration is disabled on this environment.";
       else if (session?.isAuthenticated) signupResult.textContent = "You are signed in. Complete the separate business registration form below.";
       signinLink.hidden = !enabled;
+      recoveryRequest.querySelector("button").disabled = !enabled;
+      if (recoveryToken && enabled) {
+        try {
+          // Verify the bearer token with the configured issuer before enabling
+          // the password-change form. The token stays in memory only.
+          const response = await fetch(new URL("/auth/v1/user", configuration.url), {
+            method: "GET", headers: {
+              apikey: configuration.publishableKey,
+              Authorization: `Bearer ${recoveryToken}`
+            }, cache: "no-store"
+          });
+          if (!response.ok) throw new Error("invalid recovery session");
+          recoveryRequest.hidden = true;
+          recoveryUpdate.hidden = false;
+          recoveryUpdate.querySelector("button").disabled = false;
+          recoveryResult.textContent = "Recovery link verified. Choose a new password below.";
+        } catch (_) {
+          recoveryToken = null;
+          recoveryResult.textContent = "This recovery link is invalid or expired. Request a new link.";
+        }
+      }
     } catch (_) {
       signupResult.textContent = "Registration configuration is unavailable.";
     }
   }
+  recoveryRequest.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (configuration?.advertiserRegistrationEnabled !== true) return;
+    const button = recoveryRequest.querySelector("button");
+    button.disabled = true;
+    recoveryResult.textContent = "Requesting a password-reset email…";
+    try {
+      const endpoint = new URL("/auth/v1/recover", configuration.url);
+      // Reuse the already configured sign-up confirmation return URL: no new
+      // callback host or wildcard redirect allowlist is required.
+      endpoint.searchParams.set("redirect_to",
+        new URL("/advertiser-registration.html", window.location.origin).toString());
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", apikey: configuration.publishableKey },
+        body: JSON.stringify({ email: recoveryRequest.elements.email.value.trim() })
+      });
+      if (response.status === 429) throw new Error("Too many attempts. Please try again later.");
+      if (!response.ok) throw new Error("Recovery email could not be sent. Contact ALPHA support.");
+      recoveryRequest.reset();
+      // Do not disclose whether any given address has an ALPHA account.
+      recoveryResult.textContent =
+        "If an account exists for this email, a password-reset link will arrive. Open the link, set a new password, then sign in again.";
+    } catch (error) {
+      recoveryResult.textContent = error.message || "Password recovery is temporarily unavailable.";
+    } finally {
+      button.disabled = configuration?.advertiserRegistrationEnabled !== true;
+    }
+  });
+
+  recoveryUpdate.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!recoveryToken || configuration?.advertiserRegistrationEnabled !== true) return;
+    const button = recoveryUpdate.querySelector("button");
+    const password = recoveryUpdate.elements.password.value;
+    const confirmation = recoveryUpdate.elements.confirmPassword.value;
+    if (password.length < 12 || password !== confirmation) {
+      recoveryResult.textContent = "Use at least 12 characters and enter the same password twice.";
+      return;
+    }
+    button.disabled = true;
+    try {
+      // Authenticate directly against Supabase Auth. Never send a password or
+      // recovery token to an ALPHA API, analytics service, or URL parameter.
+      const response = await fetch(new URL("/auth/v1/user", configuration.url), {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: configuration.publishableKey,
+          Authorization: `Bearer ${recoveryToken}`
+        },
+        body: JSON.stringify({ password })
+      });
+      if (!response.ok) throw new Error("Password update was rejected. Request a fresh recovery link.");
+      recoveryToken = null;
+      recoveryUpdate.reset();
+      recoveryUpdate.hidden = true;
+      recoveryRequest.hidden = false;
+      recoveryResult.textContent =
+        "Password updated. Return to Advertiser login and sign in with your new password.";
+    } catch (error) {
+      recoveryResult.textContent = error.message || "Password update could not be completed.";
+    } finally {
+      button.disabled = !recoveryToken;
+    }
+  });
+
   signup.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!configuration || configuration.advertiserRegistrationEnabled !== true) return;
