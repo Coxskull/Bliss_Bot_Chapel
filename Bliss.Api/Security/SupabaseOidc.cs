@@ -13,6 +13,16 @@ namespace Bliss.Api.Security;
 // token carries server-owned app_metadata. UserInfo/user_metadata never grant roles.
 public static class SupabaseOidc
 {
+    // The route choice is server-selected then integrity-protected by OIDC
+    // state. Never take it from editable user_metadata or a role claim.
+    public const string RegistrationLaneProperty = "bliss.pending.registration.lane";
+    public const string CreatorLane = "creator";
+    public const string AdvertiserLane = "advertiser";
+
+    public static string ResolvePublicRegistrationLane(string safeLocalReturnUrl) =>
+        string.Equals(safeLocalReturnUrl, "/creator-registration.html", StringComparison.Ordinal)
+            ? CreatorLane : AdvertiserLane;
+
     public static void Configure(OpenIdConnectOptions options, BlissAuthenticationOptions auth)
     {
         options.GetClaimsFromUserInfoEndpoint = false;
@@ -64,7 +74,10 @@ public static class SupabaseOidc
                         RequireExpirationTime = true, ClockSkew = TimeSpan.FromSeconds(30)
                         , ValidAlgorithms = [SecurityAlgorithms.EcdsaSha256, SecurityAlgorithms.RsaSha256]
                     }, out _);
-                ApplyVerifiedAccessToken((ClaimsIdentity)context.Principal!.Identity!, access, auth);
+                string? requestedLane = null;
+                if (context.Properties?.Items is { } protectedState)
+                    protectedState.TryGetValue(RegistrationLaneProperty, out requestedLane);
+                ApplyVerifiedAccessToken((ClaimsIdentity)context.Principal!.Identity!, access, auth, requestedLane);
                 await existing(context);
             }
             catch (Exception error) when (error is SecurityTokenException or JsonException or InvalidOperationException)
@@ -77,7 +90,8 @@ public static class SupabaseOidc
 
     // Caller must first cryptographically verify both tokens. Kept separate so
     // identity binding and role isolation can be tested without a hosted provider.
-    public static void ApplyVerifiedAccessToken(ClaimsIdentity identity, ClaimsPrincipal access, BlissAuthenticationOptions auth)
+    public static void ApplyVerifiedAccessToken(ClaimsIdentity identity, ClaimsPrincipal access, BlissAuthenticationOptions auth,
+        string? requestedLane = null)
     {
         var subject = identity.FindFirst("sub")?.Value;
         if (string.IsNullOrEmpty(subject) || subject != access.FindFirst("sub")?.Value
@@ -103,7 +117,18 @@ public static class SupabaseOidc
             && !auth.ApprovedTestSubjects.Contains(subject, StringComparer.Ordinal)
             && !auth.ApprovedCreatorSubjects.Contains(subject, StringComparer.Ordinal)
             && !auth.ApprovedAdvertiserSubjects.Contains(subject, StringComparer.Ordinal);
-        // A single role-free cookie must not be valid for two account-enrollment lanes.
+        // An OIDC correlation-state selector cannot grant a role or tenant ID,
+        // and a pending cookie can carry exactly ONE enrollment marker.
+        // Single-lane offline identity checks remain backward-compatible.
+        if (!approvedTest && !approvedCreator && !approvedAdvertiser && requestedLane is not null)
+        {
+            if (requestedLane == CreatorLane)
+                pendingAdvertiserRegistration = false;
+            else if (requestedLane == AdvertiserLane)
+                pendingCreatorRegistration = false;
+            else
+                throw new SecurityTokenValidationException("Unknown registration lane.");
+        }
         if (pendingAdvertiserRegistration && pendingCreatorRegistration)
             throw new SecurityTokenValidationException("Ambiguous applicant registration scope.");
         var pendingRegistration = pendingAdvertiserRegistration || pendingCreatorRegistration;
