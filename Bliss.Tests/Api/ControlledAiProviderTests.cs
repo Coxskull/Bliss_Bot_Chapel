@@ -85,8 +85,14 @@ public sealed class ControlledAiProviderTests
 
     [Theory]
     [InlineData("insufficient_quota", "rate_limit_exceeded", "PROVIDER_HTTP_429_CODE_insufficient_quota")]
+    [InlineData("credit_balance_exhausted", "", "PROVIDER_HTTP_429_CODE_credit_balance_exhausted")]
+    [InlineData("rate_limit_exceeded", "", "PROVIDER_HTTP_429_CODE_rate_limit_exceeded")]
     [InlineData("", "rate_limit_exceeded", "PROVIDER_HTTP_429_TYPE_rate_limit_exceeded")]
+    [InlineData("", "rate_limit_error", "PROVIDER_HTTP_429_TYPE_rate_limit_error")]
     [InlineData("sk-proj-FORGED-SENSITIVE", "", "PROVIDER_HTTP_429")]
+    [InlineData("sk-proj-lowercase-secret", "", "PROVIDER_HTTP_429")]
+    [InlineData("unrecognized_provider_code", "", "PROVIDER_HTTP_429")]
+    [InlineData("", "sk-proj-lowercase-secret", "PROVIDER_HTTP_429")]
     public async Task Image_429_retains_only_safe_machine_reason_and_valid_request_id(
         string code, string type, string expected)
     {
