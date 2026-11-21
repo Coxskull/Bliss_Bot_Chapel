@@ -58,7 +58,7 @@ public sealed class ControlledAiProviderTests
         {
             Assert.Contains("recipe", body);
             if (protocol == "OpenAI") Assert.Contains("\\\"quality\\\":\\\"low\\\"", body);
-            var json = protocol == "OpenAI" ? $$"""{"data":[{"b64_json":"{{AcademyProductionTests.Pixel}}"}],"usage":{"input_tokens":10,"input_tokens_details":{"text_tokens":10,"image_tokens":0},"output_tokens":100}}"""
+            var json = protocol == "OpenAI" ? System.Text.Json.JsonSerializer.Serialize(new { data = new[] { new { b64_json = AcademyProductionTests.Pixel } }, usage = new { input_tokens = 10, input_tokens_details = new { text_tokens = 10, image_tokens = 0 }, output_tokens = 100 } })
                 : $$"""{"imageBase64":"{{AcademyProductionTests.Pixel}}","providerRequestId":"fixture-image"}""";
             var reply = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) };
             if (protocol == "OpenAI") reply.Headers.TryAddWithoutValidation("x-request-id", "req-test-image");
