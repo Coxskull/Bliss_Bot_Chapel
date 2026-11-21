@@ -470,7 +470,8 @@ var frontendRoot = FrontendHost.ResolveRoot(app.Environment);
 if (runtime.RestrictedPreview)
 {
     if (runtime.PublicAdvertiserRegistrationOnly)
-        app.Use((context, next) => PublicAdvertiserRegistrationGate.InvokeAsync(context, next));
+        app.Use((context, next) => PublicAdvertiserRegistrationGate.InvokeAsync(context, next,
+            authentication.Enabled && authentication.SupabaseEnabled && authentication.CreatorRegistrationRequested));
     else
         app.Use((context, next) => RestrictedPreviewGate.InvokeAsync(context, next));
 }
