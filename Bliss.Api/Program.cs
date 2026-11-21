@@ -120,7 +120,15 @@ var posture = ProductionPostureEvaluator.Evaluate(
 if (!builder.Environment.IsDevelopment())
     foreach (var marker in RegistrationReleaseReadinessMarkers.Build(posture, authentication, runtime))
         Console.WriteLine(marker);
-if (!runtime.RestrictedPreview) ProductionPostureEvaluator.Ensure(posture);
+// Registration-only release keeps the rest of Bliss in locked preview.
+if (runtime.PublicAdvertiserRegistrationOnly
+    && (!runtime.RestrictedPreview || !authentication.Enabled
+        || !authentication.SupabaseEnabled
+        || !authentication.AdvertiserRegistrationRequested))
+    throw new InvalidOperationException(
+        "Public advertiser signup requires preview isolation, issuer authentication and an explicit registration flag.");
+if (!runtime.RestrictedPreview || runtime.PublicAdvertiserRegistrationOnly)
+    ProductionPostureEvaluator.Ensure(posture);
 // The only migration allowed with preview locked is the separately attested,
 // one-shot installation of the EMPTY hosted application database.
 if (runtime.RestrictedPreview && applyMigrations && !initialInstall)
@@ -458,7 +466,12 @@ app.Use(async (context, next) =>
 app.Use((context, next) => CreatorRegistrationPreviewIsolation.InvokeAsync(context, next));
 var frontendRoot = FrontendHost.ResolveRoot(app.Environment);
 if (runtime.RestrictedPreview)
-    app.Use((context, next) => RestrictedPreviewGate.InvokeAsync(context, next));
+{
+    if (runtime.PublicAdvertiserRegistrationOnly)
+        app.Use((context, next) => PublicAdvertiserRegistrationGate.InvokeAsync(context, next));
+    else
+        app.Use((context, next) => RestrictedPreviewGate.InvokeAsync(context, next));
+}
 var publicFrontend = Path.Combine(frontendRoot, "public");
 var operationsFrontend = Path.Combine(frontendRoot, "operations");
 var generatedCreativeRoot = string.IsNullOrWhiteSpace(runtime.CreativeGeneration.OutputPath)
