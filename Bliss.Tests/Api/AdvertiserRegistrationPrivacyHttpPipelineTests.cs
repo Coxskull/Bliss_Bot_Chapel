@@ -110,6 +110,52 @@ public sealed class AdvertiserRegistrationPrivacyHttpPipelineTests
     }
 
     [Fact]
+    public async Task Http_operator_review_requires_explicit_scope_csrf_and_exact_receipt()
+    {
+        await using var isolated = Task3bHttpPostgresDatabase.TryCreate();
+        await using var factory = new AdvertiserPrivacyHttpFactory(
+            postgresConnectionString: isolated?.ConnectionString, operatorReviewEnabled: true);
+        const string route = "/api/advertisers/operator-review";
+        using var a = IdentityClient(factory, "fixture-a");
+        using var b = IdentityClient(factory, "fixture-b");
+        var advertiserA = await Register(a, "Fictional Review A");
+        var advertiserB = await Register(b, "Fictional Review B");
+        using var anonymous = factory.CreateSecureClient();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync(route)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await a.GetAsync(route)).StatusCode);
+        using var otherStaff = IdentityClient(factory, "fixture-other-operator", "operator");
+        Assert.Equal(HttpStatusCode.Forbidden, (await otherStaff.GetAsync(route)).StatusCode);
+        using var staff = IdentityClient(factory, "fixture-operator", "operator");
+        using var rr = await staff.GetAsync(route);
+        Assert.Equal(HttpStatusCode.OK, rr.StatusCode);
+        using var doc = JsonDocument.Parse(await rr.Content.ReadAsStringAsync());
+        var row = doc.RootElement.EnumerateArray().Single(x => x.GetProperty("advertiserId").GetGuid() == advertiserA);
+        var receipt = row.GetProperty("receiptId").GetGuid();
+        var request = new { receiptId = receipt, advertiserId = advertiserA, subject = "fixture-a",
+            businessIdentityReviewed = true, consentReviewed = true };
+        Assert.Equal(HttpStatusCode.BadRequest, (await staff.PostAsJsonAsync(route, request)).StatusCode);
+        staff.DefaultRequestHeaders.Add("X-CSRF-TOKEN", await Csrf(staff));
+        var mismatch = new { receiptId = receipt, advertiserId = advertiserB, subject = "fixture-b",
+            businessIdentityReviewed = true, consentReviewed = true };
+        var missingAttestation = new { receiptId = receipt, advertiserId = advertiserA, subject = "fixture-a",
+            businessIdentityReviewed = false, consentReviewed = true };
+        Assert.Equal(HttpStatusCode.BadRequest, (await staff.PostAsJsonAsync(route, missingAttestation)).StatusCode);
+        if (isolated is null) return; // Atomic relational approval is exercised by PostgreSQL CI.
+        Assert.Equal(HttpStatusCode.Conflict, (await staff.PostAsJsonAsync(route, mismatch)).StatusCode);
+        using var accepted = await staff.PostAsJsonAsync(route, request);
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        using var result = JsonDocument.Parse(await accepted.Content.ReadAsStringAsync());
+        Assert.Equal("ACTIVE", result.RootElement.GetProperty("status").GetString());
+        Assert.Equal("REQUIRED_SEPARATELY", result.RootElement.GetProperty("identityProvisioning").GetString());
+        Assert.Equal(HttpStatusCode.Conflict, (await staff.PostAsJsonAsync(route, request)).StatusCode);
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<BlissDbContext>();
+        Assert.Equal("ACTIVE", await db.AdvertiserAccountMemberships.Where(x => x.AdvertiserId == advertiserA).Select(x => x.Status).SingleAsync());
+        Assert.Equal("PENDING_REVIEW", await db.AdvertiserAccountMemberships.Where(x => x.AdvertiserId == advertiserB).Select(x => x.Status).SingleAsync());
+        Assert.Equal(HttpStatusCode.Forbidden, (await a.GetAsync("/api/advertisers/me")).StatusCode);
+    }
+
+    [Fact]
     public async Task Http_registration_case_receipts_tenant_isolation_and_staff_ack_use_real_csrf_pipeline()
     {
         // The successful operator ACK uses EF ExecuteUpdate, which only a real
@@ -528,7 +574,7 @@ internal sealed class Task3bHttpPostgresDatabase : IAsyncDisposable
 
 internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
     string? postgresConnectionString = null, int? writePermitLimit = null,
-    bool registrationEnabled = true) : WebApplicationFactory<Program>
+    bool registrationEnabled = true, bool operatorReviewEnabled = false) : WebApplicationFactory<Program>
 {
     private const string Issuer = "https://identity.example.test";
     private readonly string dbName = "task3b_http_" + Guid.NewGuid().ToString("N");
@@ -545,6 +591,10 @@ internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
         builder.UseSetting("Authentication:AdvertiserPrivacyRequestsRequested", privacyEnabled ? "true" : "false");
         builder.UseSetting("Authentication:ApprovedAdvertiserSubjects:0", "fixture-a");
         builder.UseSetting("Authentication:ApprovedPrivacyOperatorSubjects:0", "fixture-operator");
+        builder.UseSetting("Authentication:AdvertiserOperatorReviewRequested", operatorReviewEnabled ? "true" : "false");
+        builder.UseSetting("Authentication:ApprovedRegistrationOperatorSubjects:0", "fixture-operator");
+        if (operatorReviewEnabled)
+            builder.UseSetting("Authentication:ApprovedTestSubjects:0", "fixture-operator");
         if (writePermitLimit.HasValue)
         {
             builder.UseSetting("Runtime:WriteRateLimitPermitLimit", writePermitLimit.Value.ToString(System.Globalization.CultureInfo.InvariantCulture));

@@ -21,6 +21,8 @@ public static class PublicAdvertiserRegistrationGate
         // Static dashboard shell; exact read-only endpoints enforce issuer/subject authorization.
         "/advertiser-dashboard.html", "/advertiser-dashboard.js", "/creator-dashboard.css",
         "/api/advertisers/registration-status", "/api/advertisers/me",
+        "/advertiser-operator-review.html", "/advertiser-operator-review.js",
+        "/api/advertisers/operator-review",
         // Supabase custom OAuth consent screen follows the verified 302 challenge.
         // These are only static sign-in assets, not additional business APIs.
         "/oauth-consent.html", "/oauth-consent.css", "/oauth-consent.bundle.js",
@@ -31,6 +33,7 @@ public static class PublicAdvertiserRegistrationGate
     private static readonly HashSet<string> PublicPostPaths = new(StringComparer.OrdinalIgnoreCase)
     {
         "/api/advertisers/register", "/api/auth/logout",
+        "/api/advertisers/operator-review",
         // OIDC uses the framework-protected code/nonce/state callback. Some
         // providers send the authorization response as a form POST.
         "/signin-oidc", "/signout-callback-oidc"

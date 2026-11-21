@@ -38,6 +38,9 @@ public sealed class BlissAuthenticationOptions
     // Verified Supabase identities with no trusted roles may enter only the
     // registration endpoint while this is explicitly enabled. It is OFF by default.
     public bool AdvertiserRegistrationRequested { get; set; }
+    // Explicit human review lane; never enables issuer provisioning.
+    public bool AdvertiserOperatorReviewRequested { get; set; }
+    public string[] ApprovedRegistrationOperatorSubjects { get; set; } = [];
     // Separate fail-closed account privacy case switch. Never inferred from registration
     // or self-service enrollment, and must stay OFF until hosted human handling is accepted.
     public bool AdvertiserPrivacyRequestsRequested { get; set; }
