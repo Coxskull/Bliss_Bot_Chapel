@@ -83,4 +83,99 @@ public sealed class ControlledAiProviderTests
             Content = new StringContent("{\"choices\":[{\"message\":{\"content\":\"Do something\",\"tool_calls\":[{}]}}]}") })), runtime);
         Assert.Equal("TOOLS_NOT_ALLOWED", (await Assert.ThrowsAsync<AiProviderException>(() => tools.ExecuteAsync(request, default))).Code);
     }
+
+    [Theory]
+    [InlineData("credit_balance_exhausted", "insufficient_quota", "PROVIDER_HTTP_429_QUOTA_OR_CREDITS_UNAVAILABLE")]
+    [InlineData("rate_limit_exceeded", "rate_limit_error", "PROVIDER_HTTP_429_RATE_LIMIT")]
+    [InlineData("unknown", "other", "PROVIDER_HTTP_429")]
+    public async Task Future_429_provider_reason_is_sanitized_and_request_id_is_preserved(
+        string code, string type, string expected)
+    {
+        var calls = 0;
+        const string sensitive = "sk-proj-SHOULD-NEVER-BE-SHOWN";
+        var handler = new Handler((_, _) =>
+        {
+            calls++;
+            var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests)
+            {
+                Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    error = new { code, type, message = sensitive }
+                }))
+            };
+            response.Headers.TryAddWithoutValidation("x-request-id", "req_synthetic_429");
+            return response;
+        });
+        var provider = new ConfiguredControlledAiProvider(new HttpClient(handler), Runtime());
+        var request = new AiProviderRequest(Guid.NewGuid(), "TEXT", "fixture-text", "{}", 100);
+        var ex = await Assert.ThrowsAsync<AiProviderException>(
+            () => provider.ExecuteAsync(request, CancellationToken.None));
+        Assert.Equal(expected, ex.Code);
+        Assert.Equal("req_synthetic_429", ex.ProviderRequestId);
+        Assert.Equal(1, calls); // No retry / fallback / second paid request.
+        Assert.DoesNotContain(sensitive, ex.Message);
+        Assert.DoesNotContain(code, ex.Message);
+        Assert.DoesNotContain(type, ex.Message);
+    }
+
+    [Fact]
+    public async Task Malicious_429_metadata_is_not_echoed_to_persisted_failure()
+    {
+        var calls = 0;
+        var handler = new Handler((_, _) =>
+        {
+            calls++;
+            var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests)
+            {
+                Content = new StringContent("""
+                    {"error":{"code":"sk-proj-EXFILTRATE","type":"../../sensitive","message":"SECRET CUSTOMER PROMPT"}}
+                    """)
+            };
+            response.Headers.TryAddWithoutValidation("x-request-id", "req_<secret>/../../");
+            return response;
+        });
+        var provider = new ConfiguredControlledAiProvider(new HttpClient(handler), Runtime());
+        var ex = await Assert.ThrowsAsync<AiProviderException>(
+            () => provider.ExecuteAsync(new AiProviderRequest(Guid.NewGuid(), "TEXT", "fixture-text", "{}", 100), default));
+        Assert.Equal("PROVIDER_HTTP_429", ex.Code);
+        Assert.Empty(ex.ProviderRequestId);
+        Assert.Equal(1, calls);
+        Assert.DoesNotContain("sk-proj", ex.Message);
+        Assert.DoesNotContain("CUSTOMER", ex.Message);
+    }
+
+    [Fact]
+    public async Task Oversized_or_malformed_429_body_remains_unknown_without_retry()
+    {
+        foreach (var body in new[] { new string('x', 10000), "{not-json" })
+        {
+            var calls = 0;
+            var handler = new Handler((_, _) =>
+            {
+                calls++;
+                return new HttpResponseMessage(HttpStatusCode.TooManyRequests)
+                {
+                    Content = new StringContent(body)
+                };
+            });
+            var ex = await Assert.ThrowsAsync<AiProviderException>(() =>
+                new ConfiguredControlledAiProvider(new HttpClient(handler), Runtime())
+                    .ExecuteAsync(new AiProviderRequest(Guid.NewGuid(), "TEXT", "fixture-text", "{}", 100), default));
+            Assert.Equal("PROVIDER_HTTP_429", ex.Code);
+            Assert.Empty(ex.ProviderRequestId);
+            Assert.Equal(1, calls);
+        }
+    }
+
+    [Fact]
+    public async Task Safe_provider_error_parser_does_not_reclassify_non_429_billing_errors()
+    {
+        using var response = new HttpResponseMessage(HttpStatusCode.Unauthorized)
+        {
+            Content = new StringContent("""{"error":{"code":"credit_balance_exhausted","type":"insufficient_quota"}}""")
+        };
+        var code = await ConfiguredControlledAiProvider.ClassifiedProviderRejectionAsync(
+            response, CancellationToken.None);
+        Assert.Equal("PROVIDER_HTTP_401", code);
+    }
 }
