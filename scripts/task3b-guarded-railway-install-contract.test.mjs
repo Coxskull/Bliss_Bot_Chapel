@@ -12,6 +12,11 @@ assert.match(script, /\$remote = \$remote\.Replace\('__EVIDENCE_DIGEST__', \$has
 assert.match(script, /BLISS_INITIAL_INSTALL_BACKUP_EVIDENCE_ID=__EVIDENCE_DIGEST__/);
 assert.match(script, /--migrate --initial-install-empty-hosted-db/);
 assert.match(script, /fb33c1b7-03fb-42c8-89b1-081951a738fd/);
+assert.ok(script.includes('RAILWAY_ENVIRONMENT_ID:-'), "exact hosted environment required");
+assert.ok(script.includes('b67a9836-36bf-4083-93f7-00c867b13f39'), "production environment pinned");
+assert.ok(script.includes('RAILWAY_SERVICE_ID:-'), "actual service identity required");
+assert.ok(script.includes('8b22ff53-ccf5-4341-a473-ff146ca497f1'), "Bliss API service pinned");
+assert.ok(script.includes('TASK3B_INSTALL=REFUSED_SERVICE_IDENTITY'), "unsafe target must refuse");
 assert.match(script, /Runtime__RestrictedPreview:-/);
 assert.match(script, /BLISS_INITIAL_INSTALL_EXPECTED_DB_HOST:-/);
 assert.match(script, /BLISS_INITIAL_INSTALL_EXPECTED_DB_NAME:-/);
