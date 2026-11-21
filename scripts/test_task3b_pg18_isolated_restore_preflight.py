@@ -121,7 +121,7 @@ class HeaderFilterTests(unittest.TestCase):
 
     def test_one_leading_utf8_bom(self):
         raw = b"PGDMP" + bytes(range(64))
-        result = self.run_filter(b"\\xef\\xbb\\xbf" + raw)
+        result = self.run_filter(b"\xef\xbb\xbf" + raw)
         self.assertEqual(0, result.returncode)
         self.assertEqual(raw, result.stdout)
 
@@ -130,7 +130,7 @@ class HeaderFilterTests(unittest.TestCase):
         self.assertEqual(42, result.returncode)
 
     def test_double_bom_refused(self):
-        result = self.run_filter(b"\\xef\\xbb\\xbf\\xef\\xbb\\xbfPGDMP")
+        result = self.run_filter(b"\xef\xbb\xbf\\xef\\xbb\\xbfPGDMP")
         self.assertEqual(42, result.returncode)
 
     def test_empty_input_refused(self):
