@@ -148,7 +148,9 @@ jobs:
       - name: Verify Alpha Flare pilot request budget and STOP refusal without API
         run: node scripts/alpha-creative-image-pilot.test.mjs
       - name: Verify 429 provider error classification without a paid API request
-        run: node --test scripts/alpha-creative-image-provider-error.test.mjs
+        run: |
+          node --test scripts/alpha-creative-image-provider-error.test.mjs
+          node scripts/alpha-creative-image-pilot-429-held.test.mjs
       - name: Verify read-only image-model project probe without key or API network
         run: node --test scripts/alpha-creative-image-model-permission.test.mjs
       - name: Verify private image receipts and fail-closed QA without paid API
