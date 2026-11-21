@@ -13,6 +13,15 @@ assert.ok(match,'fixed owner-reviewed shell source must exist');
 assert.match(ps,/ToBase64String\(\[Text\.Encoding\]::UTF8\.GetBytes\(\$remote\)\)/);
 assert.match(ps,/\$runner = 'set -o pipefail; printf %s ' \+ \$remoteBase64 \+ ' \| base64 -d \| bash'/);
 assert.match(ps,/-- bash -c \$runner 2>&1/);
+assert.match(ps,/\$priorErrorActionPreference = \$ErrorActionPreference/,
+  'save caller preference before Railway native process');
+assert.match(ps,/\$ErrorActionPreference = 'Continue'[\s\S]*& \$railway\.Source ssh[\s\S]*\$remoteExit = \$LASTEXITCODE/,
+  'avoid native stderr false-termination while recording real exit code');
+assert.match(ps,/finally \{\s*\$ErrorActionPreference = \$priorErrorActionPreference\s*\}/,
+  'restore fail-closed error policy after native process');
+assert.match(ps,/if \(\$remoteExit -ne 0\)/,
+  'nonzero Railway process exit must still fail closed');
+
 assert.doesNotMatch(ps,/\$remote \|\s*&\s*\$railway\.Source ssh/,
   'PowerShell cannot pipe command input over this Railway CLI version');
 assert.match(ps,/--format=custom --no-owner --no-acl \| base64 -w0/);
