@@ -60,14 +60,16 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
             self.assertIn(f"<code>{value}</code>", self.form)
             self.assertIn(f"<code>{value}</code>", page)
 
-    def test_effective_account_notices_are_published_but_signup_still_locked(self):
+    def test_effective_account_notices_are_published_with_runtime_gated_signup(self):
         for page in (self.privacy, self.terms):
             self.assertIn('name="robots" content="index,follow"', page)
             self.assertIn("Effective November 20, 2026", page)
             self.assertNotIn("LEGAL REVIEW DRAFT", page)
             self.assertNotIn("Not yet approved for live registration.", page)
-        self.assertIn("Registration is disabled until the hosted registration database", self.form)
-        self.assertIn("The privacy notice and terms alone do not enable account registration", self.form)
+        self.assertIn("The application checks its current registration setting before enabling this form.", self.form)
+        self.assertIn("New accounts remain PENDING_REVIEW", self.form)
+        self.assertIn("does not approve a workspace", self.form)
+        self.assertIn('configuration?.advertiserRegistrationEnabled === true', self.js)
         self.assertIn("no charge simply to submit", self.terms.lower())
         self.assertIn("PENDING_REVIEW", self.terms)
 
