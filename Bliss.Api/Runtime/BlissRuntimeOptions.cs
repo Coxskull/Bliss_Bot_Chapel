@@ -5,6 +5,8 @@ public sealed class BlissRuntimeOptions
     public const string SectionName = "Runtime";
     // Interface-only hosting. All API/data access and background work are locked.
     public bool RestrictedPreview { get; set; }
+    // Explicit, fail-closed public advertiser signup only. All other routes stay locked.
+    public bool PublicAdvertiserRegistrationOnly { get; set; }
     public bool IngressDiagnostics { get; set; }
     public LoopbackIngressOptions LoopbackIngress { get; set; } = new();
 
