@@ -199,6 +199,37 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertIn('signup.querySelector("button").disabled = !enabled', self.js)
         self.assertIn('registration.querySelector("button").disabled = !enabled || session?.isAuthenticated !== true', self.js)
 
+    def test_existing_account_password_recovery_is_fail_closed(self):
+        signin = (PUBLIC / "oauth-consent.html").read_text(encoding="utf-8")
+        login = (PUBLIC / "advertiser-login.html").read_text(encoding="utf-8")
+        self.assertIn('href="/advertiser-registration.html#account-recovery"', signin)
+        self.assertIn('href="/advertiser-registration.html#account-recovery"', login)
+        self.assertIn('id="account-recovery"', self.form)
+        self.assertIn('id="recovery-request-form"', self.form)
+        self.assertIn('id="recovery-update-form" hidden', self.form)
+        self.assertIn('<style>[hidden]{display:none!important}</style>', self.form)
+        self.assertIn('Send password-reset link</button>', self.form)
+        self.assertIn('Update my password</button>', self.form)
+        # Require existing-user recovery rather than a duplicate new signup.
+        self.assertIn('use password recovery instead of creating a duplicate sign-in', self.form)
+        self.assertIn('new URL("/auth/v1/recover", configuration.url)', self.js)
+        self.assertIn('new URL("/auth/v1/user", configuration.url)', self.js)
+        self.assertIn('method: "PUT"', self.js)
+        self.assertIn('method: "GET"', self.js)
+        self.assertIn('method: "POST"', self.js)
+        self.assertIn('recoveryToken = fragment.get("access_token")', self.js)
+        self.assertIn('history.replaceState(null, "", window.location.pathname', self.js)
+        self.assertIn('if (!recoveryToken || configuration?.advertiserRegistrationEnabled !== true) return;', self.js)
+        self.assertIn('recoveryRequest.querySelector("button").disabled = !enabled', self.js)
+        self.assertIn('recoveryUpdate.querySelector("button").disabled = false', self.js)
+        self.assertIn('password.length < 12 || password !== confirmation', self.js)
+        self.assertIn('Authorization: `Bearer ${recoveryToken}`', self.js)
+        self.assertIn('If an account exists for this email', self.js)
+        self.assertNotIn('service_role', self.js)
+        self.assertNotIn('localStorage.setItem("recovery', self.js)
+        self.assertNotIn('sessionStorage.setItem("recovery', self.js)
+        self.assertNotIn('console.log(recoveryToken', self.js)
+
     def test_marketing_is_optional_and_not_preselected(self):
         marketing = [x for x in self.parsed.inputs if x.get("id") == "marketing-consent"]
         self.assertEqual(1, len(marketing))
