@@ -5,7 +5,7 @@ public static class CreatorRegistrationBoundary
 {
     public static bool ShouldDeny(HttpContext context, BlissAuthenticationOptions options)
     {
-        if (!BlissAuthorization.IsPendingCreatorRegistration(context.User, options)
+        if (!BlissAuthorization.IsPendingCreatorIdentity(context.User, options)
             || !context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
             return false;
 
@@ -14,17 +14,13 @@ public static class CreatorRegistrationBoundary
             && (path.Equals("/api/auth/session", StringComparison.OrdinalIgnoreCase)
                 || path.Equals("/api/auth/login", StringComparison.OrdinalIgnoreCase)
                 || path.Equals("/api/auth/supabase-config", StringComparison.OrdinalIgnoreCase)
-                || path.Equals("/api/creators/registration", StringComparison.OrdinalIgnoreCase)))
+                || (options.CreatorRegistrationRequested
+                    && path.Equals("/api/creators/registration", StringComparison.OrdinalIgnoreCase))))
             return false;
         if (HttpMethods.IsPost(context.Request.Method)
             && (path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase)
-                || path.Equals("/api/creators/register", StringComparison.OrdinalIgnoreCase)))
-            return false;
-        if (BlissAuthorization.IsPendingAdvertiserRegistration(context.User, options)
-            && ((HttpMethods.IsPost(context.Request.Method)
-                    && path.Equals("/api/advertisers/register", StringComparison.OrdinalIgnoreCase))
-                || (HttpMethods.IsGet(context.Request.Method)
-                    && path.Equals("/api/advertisers/registration", StringComparison.OrdinalIgnoreCase))))
+                || (options.CreatorRegistrationRequested
+                    && path.Equals("/api/creators/register", StringComparison.OrdinalIgnoreCase))))
             return false;
         return true;
     }

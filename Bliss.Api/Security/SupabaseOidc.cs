@@ -103,6 +103,9 @@ public static class SupabaseOidc
             && !auth.ApprovedTestSubjects.Contains(subject, StringComparer.Ordinal)
             && !auth.ApprovedCreatorSubjects.Contains(subject, StringComparer.Ordinal)
             && !auth.ApprovedAdvertiserSubjects.Contains(subject, StringComparer.Ordinal);
+        // A single role-free cookie must not be valid for two account-enrollment lanes.
+        if (pendingAdvertiserRegistration && pendingCreatorRegistration)
+            throw new SecurityTokenValidationException("Ambiguous applicant registration scope.");
         var pendingRegistration = pendingAdvertiserRegistration || pendingCreatorRegistration;
 
         // The creator lane is deliberately disjoint from privileged test/staff

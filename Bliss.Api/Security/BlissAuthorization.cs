@@ -43,10 +43,9 @@ public static class BlissAuthorization
         options.Enabled && options.SupabaseEnabled && options.AdvertiserRegistrationRequested
         && IsPendingAdvertiserIdentity(user, options);
 
-    public static bool IsPendingCreatorRegistration(ClaimsPrincipal user, BlissAuthenticationOptions options)
+    public static bool IsPendingCreatorIdentity(ClaimsPrincipal user, BlissAuthenticationOptions options)
     {
-        if (!options.Enabled || !options.SupabaseEnabled || !options.CreatorRegistrationRequested
-            || user.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(options.Authority))
+        if (user.Identity?.IsAuthenticated != true || string.IsNullOrWhiteSpace(options.Authority))
             return false;
         var markers = user.Claims.Where(c => string.Equals(c.Type,
             BlissAuthenticationOptions.CreatorRegistrationPendingMarkerClaimType,
@@ -72,6 +71,11 @@ public static class BlissAuthorization
                 || string.Equals(c.Type, options.ReviewerWorkspaceClaimType, StringComparison.OrdinalIgnoreCase));
     }
 
+
+    // Closing creator signup does not de-scope an existing signed pending cookie.
+    public static bool IsPendingCreatorRegistration(ClaimsPrincipal user, BlissAuthenticationOptions options) =>
+        options.Enabled && options.SupabaseEnabled && options.CreatorRegistrationRequested
+        && IsPendingCreatorIdentity(user, options);
 
     public static bool CanWrite(ClaimsPrincipal user, BlissAuthenticationOptions options) =>
         !options.Enabled

@@ -71,35 +71,52 @@ public sealed class CreatorRegistrationSecurityTests
     }
 
     [Fact]
-    public void Shared_registration_identity_is_limited_to_the_two_explicit_registration_lanes()
+    public void Simultaneous_signup_flags_reject_an_ambiguous_pending_cookie()
     {
         var bothOptions = new BlissAuthenticationOptions
         {
             Enabled = true, SupabaseEnabled = true, CreatorRegistrationRequested = true,
             AdvertiserRegistrationRequested = true, Authority = Issuer, ClientId = Options.ClientId
         };
-        var identity = new ClaimsIdentity(new[] { new Claim("sub", "new-customer"), new Claim("email_verified", "true") }, "oidc");
+        var identity = new ClaimsIdentity(new[]
+        {
+            new Claim("sub", "synthetic-applicant"),
+            new Claim("email_verified", "true")
+        }, "oidc");
         var access = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
-            new Claim("sub", "new-customer"), new Claim("client_id", bothOptions.ClientId),
+            new Claim("sub", "synthetic-applicant"), new Claim("client_id", bothOptions.ClientId),
             new Claim("app_metadata", "{}")
         }, "access"));
-        SupabaseOidc.ApplyVerifiedAccessToken(identity, access, bothOptions);
-        var principal = new ClaimsPrincipal(identity);
-        Assert.True(BlissAuthorization.IsPendingCreatorRegistration(principal, bothOptions));
-        Assert.True(BlissAuthorization.IsPendingAdvertiserRegistration(principal, bothOptions));
+        Assert.Throws<Microsoft.IdentityModel.Tokens.SecurityTokenValidationException>(() =>
+            SupabaseOidc.ApplyVerifiedAccessToken(identity, access, bothOptions));
+    }
 
-        var context = new DefaultHttpContext { User = principal };
+    [Fact]
+    public void Pending_creator_cookie_stays_restricted_when_signup_is_disabled()
+    {
+        var disabled = new BlissAuthenticationOptions
+        {
+            Enabled = true, SupabaseEnabled = true, CreatorRegistrationRequested = false,
+            Authority = Issuer, ClientId = Options.ClientId
+        };
+        var context = new DefaultHttpContext { User = Pending("creator-subject") };
+        Assert.True(BlissAuthorization.IsPendingCreatorIdentity(context.User, disabled));
+        Assert.False(BlissAuthorization.IsPendingCreatorRegistration(context.User, disabled));
+
+        context.Request.Method = "GET";
+        context.Request.Path = "/api/creators/me";
+        Assert.True(CreatorRegistrationBoundary.ShouldDeny(context, disabled));
         context.Request.Method = "POST";
         context.Request.Path = "/api/creators/register";
-        Assert.False(CreatorRegistrationBoundary.ShouldDeny(context, bothOptions));
-        Assert.False(AdvertiserRegistrationBoundary.ShouldDeny(context, bothOptions));
-        context.Request.Path = "/api/advertisers/register";
-        Assert.False(CreatorRegistrationBoundary.ShouldDeny(context, bothOptions));
-        Assert.False(AdvertiserRegistrationBoundary.ShouldDeny(context, bothOptions));
-        context.Request.Path = "/api/campaigns";
-        Assert.True(CreatorRegistrationBoundary.ShouldDeny(context, bothOptions));
-        Assert.True(AdvertiserRegistrationBoundary.ShouldDeny(context, bothOptions));
+        Assert.True(CreatorRegistrationBoundary.ShouldDeny(context, disabled));
+        context.Request.Method = "GET";
+        context.Request.Path = "/api/auth/session";
+        Assert.False(CreatorRegistrationBoundary.ShouldDeny(context, disabled));
+
+        var forged = Pending("creator-subject", new Claim(ClaimTypes.Role, Options.AdminRole));
+        context.User = forged;
+        Assert.False(BlissAuthorization.IsPendingCreatorIdentity(context.User, disabled));
     }
 
     [Fact]
