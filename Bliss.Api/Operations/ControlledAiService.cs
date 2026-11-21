@@ -25,14 +25,24 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
     public static string Hash(string text) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))).ToLowerInvariant();
     private string ConfigHash(string kind) => Hash(Serialize(new { Options.Protocol, Options.Provider,
         model = kind == "TEXT" ? Options.TextModel : Options.ImageModel, endpoint = kind == "TEXT" ? Options.TextEndpoint : Options.ImageEndpoint,
-        Options.TimeoutSeconds, Options.MaxOutputTokens, Options.MaxResponseBytes }));
+        Options.TimeoutSeconds, Options.MaxOutputTokens, Options.MaxResponseBytes,
+        Options.ImagePilotEnabled, Options.ImageReservationUsd, Options.DailyBudgetUsd,
+        Options.TotalBudgetUsd, Options.MaxCallsPerDay }));
     public bool Ready(string kind) => Options.Configured(kind) && provider.Configured(kind);
+    private static bool PilotUnknownCharge(ControlledAiRun run) =>
+        run.Kind == "IMAGE" && run.Model == "gpt-image-2.5-flare"
+        && run.Status is not ("QUEUED" or "RUNNING")
+        && run.CostStatus != "PROVIDER_REPORTED";
+
     public async Task<object> Readiness(CancellationToken ct)
     {
         var day = DateTime.UtcNow.Date;
         var daily = await db.ControlledAiDailyUsage.AsNoTracking().SingleOrDefaultAsync(x => x.Day == day, ct);
         var total = await db.ControlledAiBudgetLedgers.AsNoTracking().SingleOrDefaultAsync(x => x.Id == 1, ct);
-        var anomaly = await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", ct);
+        var anomaly = await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", ct)
+            || (Options.ImagePilotEnabled && (await db.ControlledAiRuns.AsNoTracking()
+                .Where(x => x.Kind == "IMAGE" && x.Model == "gpt-image-2.5-flare")
+                .ToListAsync(ct)).Any(PilotUnknownCharge));
         bool Capacity(decimal reservation) => (daily?.Calls ?? 0) < Options.MaxCallsPerDay
             && (daily?.ReservedUsd ?? 0) + reservation <= Options.DailyBudgetUsd
             && (total?.ReservedUsd ?? 0) + reservation <= Options.TotalBudgetUsd;
@@ -95,7 +105,11 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         try
         {
             if (db.Database.IsRelational()) tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-            if (await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", ct)) throw new AiQuotaException("A reported charge exceeded its reservation. Billing reconciliation is required before more calls.");
+            if (await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", ct)
+                || (Options.ImagePilotEnabled && (await db.ControlledAiRuns.AsNoTracking()
+                    .Where(x => x.Kind == "IMAGE" && x.Model == "gpt-image-2.5-flare")
+                    .ToListAsync(ct)).Any(PilotUnknownCharge)))
+                throw new AiQuotaException("Pilot billed cost is unknown or over reservation. Reconcile before any additional paid requests.");
             var day = DateTime.UtcNow.Date;
             var daily = await db.ControlledAiDailyUsage.SingleOrDefaultAsync(x => x.Day == day, ct);
             var ledger = await db.ControlledAiBudgetLedgers.SingleOrDefaultAsync(x => x.Id == 1, ct);
@@ -167,7 +181,10 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         AddEvent(run, "RUNNING", "AI_RUNNER");
         try { await db.SaveChangesAsync(stopping); } catch (Exception ex) when (ReservationConflict(ex)) { db.ChangeTracker.Clear(); return true; }
         AiProviderResult? result = null; string status = "SUCCEEDED_PENDING_REVIEW", failure = "";
-        var billingAnomaly = await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", stopping);
+        var billingAnomaly = await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", stopping)
+            || (Options.ImagePilotEnabled && (await db.ControlledAiRuns.AsNoTracking()
+                .Where(x => x.Id != run.Id && x.Kind == "IMAGE" && x.Model == "gpt-image-2.5-flare")
+                .ToListAsync(stopping)).Any(PilotUnknownCharge));
         if (billingAnomaly) { status = "FAILED"; failure = "BILLING_RECONCILIATION_REQUIRED"; }
         else if (!Ready(run.Kind) || run.ExecutionConfigSha256 != ConfigHash(run.Kind)) { status = "FAILED"; failure = "EXECUTION_CONFIG_CHANGED"; }
         else
