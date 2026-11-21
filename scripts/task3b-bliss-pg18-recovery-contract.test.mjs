@@ -67,6 +67,23 @@ matches(restore, /sourcePublicTableCount/, "table inventory checks");
 matches(restore, /rm -f \$container/, "remove only its ephemeral container");
 matches(restore, /\$cleanupComplete/, "container teardown required");
 matches(restore, /\.recovery-evidence\.json/, "only write acceptance after restore");
+
+matches(restore, /\[switch\] \$LocalVerificationOnly/, "explicit opt-in local restore-only flag");
+matches(restore, /REQUIRES_ORIGINAL_PENDING_MANIFEST/, "local-only mode requires original pending manifest");
+matches(restore, /offhostProvider -cne 'NOT_VERIFIED'/, "local-only manifest must not pretend DigitalOcean verified");
+matches(restore, /offhostSha256Verified -ne \$false/, "local mode refuses fabricated off-host verification");
+matches(restore, /offhostProvider -cne 'DigitalOcean'/, "unchanged default mode requires DigitalOcean");
+matches(restore, /offhostRemoteChecksum -cne \$m\.archiveSha256/, "original DigitalOcean path also checks remote ciphertext");
+matches(restore, /\.pending\\\.json\$', '.local-restore-evidence\.json'/, "local-only receipt is distinct from production receipt");
+matches(restore, /LOCAL_ONLY_NOT_PRODUCTION/, "explicit nonproduction scope on local restore-only evidence");
+matches(restore, /TASK3B_DIGITALOCEAN_OFFHOST_SHA256=NOT_VERIFIED/, "local mode never reports DigitalOcean copy PASS");
+matches(restore, /TASK3B_PG18_LOCAL_ISOLATED_RESTORE=PASS/, "local acceptance has unique marker");
+matches(restore, /TASK3B_ADVERTISER_SCHEMA=NOT_ESTABLISHED_ZERO_PUBLIC_TABLES/, "zero-table source is not registration-ready");
+matches(restore, /TASK3B_HOSTED_CUSTOMER_REGISTRATION=NOT_TESTED/, "hosted acceptance remains held");
+matches(restore, /Get-FileHash -LiteralPath \$archive -Algorithm SHA256/, "local source archive still requires true ciphertext SHA256");
+assert.doesNotMatch(install,/LocalVerificationOnly|local-restore-evidence/,
+  "do not let a source-only restore receipt bypass the production installer gates");
+
 assert.doesNotMatch(restore, /pg_restore.*-h\s+\$?PGHOST|docker.*-p\s+5432|docker.*--network host/,
   "restore must never target source DB or expose test DB");
 
