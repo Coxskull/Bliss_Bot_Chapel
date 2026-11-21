@@ -2,16 +2,19 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
+import { createHash } from "node:crypto";
 
 const source = readFileSync("frontend/public/advertiser-registration.js", "utf8");
-const storageKey = "alpha.advertiser-registration.request-key.v1";
+const storageKey = "alpha.advertiser-registration.request-key.v2";
+let globalGenerated = 0;
+const storedKey = storage => { try { return JSON.parse(storage.get(storageKey) || "null")?.key; } catch { return null; } };
 function uuid(i) { return "00000000-0000-4000-8000-" + String(i).padStart(12, "0"); }
 
-async function scenario(mode, { enabled = true, authenticated = true } = {}) {
-  const saved = new Map();
+async function scenario(mode, { enabled = true, authenticated = true,
+  email = "applicant@example.invalid", saved = new Map() } = {}) {
   const outputs = { signup: { textContent: "" }, registration: { textContent: "" } };
   const signupButton = { disabled: true }, registrationButton = { disabled: true };
-  let submitRegistration, requestCount = 0, resetCount = 0, generated = 0;
+  let submitRegistration, requestCount = 0, resetCount = 0;
   const submitted = [];
   const registration = {
     elements: {
@@ -51,7 +54,8 @@ async function scenario(mode, { enabled = true, authenticated = true } = {}) {
       return { ok: true, async json() { return { advertiserRegistrationEnabled: enabled }; } };
     if (url === "/api/auth/session")
       return { ok: true, async json() {
-        return { isAuthenticated: authenticated, csrfToken: authenticated ? "fixture-csrf" : null };
+        return { isAuthenticated: authenticated, email: authenticated ? email : null,
+          csrfToken: authenticated ? "fixture-csrf" : null };
       } };
     assert.equal(url, "/api/advertisers/register", "unexpected external request");
     requestCount++;
@@ -96,10 +100,20 @@ async function scenario(mode, { enabled = true, authenticated = true } = {}) {
       return elements[id];
     } },
     fetch,
-    crypto: { randomUUID: () => uuid(++generated) },
+    TextEncoder,
+    Uint8Array,
+    crypto: {
+      randomUUID: () => uuid(++globalGenerated),
+      subtle: { async digest(algorithm, input) {
+        assert.equal(algorithm, "SHA-256");
+        const bytes = createHash("sha256").update(Buffer.from(input)).digest();
+        return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+      } }
+    },
     sessionStorage: {
       getItem(name) { return saved.get(name) ?? null; },
-      setItem(name, value) { saved.set(name, value); }
+      setItem(name, value) { saved.set(name, value); },
+      removeItem(name) { saved.delete(name); }
     }
   }, { filename: "advertiser-registration.js" });
   await new Promise(resolve => setImmediate(resolve));
@@ -107,12 +121,55 @@ async function scenario(mode, { enabled = true, authenticated = true } = {}) {
   assert.equal(typeof submitRegistration, "function");
   return {
     outputs, registrationButton, submitted,
-    initialKey: saved.get(storageKey),
-    get storedKey() { return saved.get(storageKey); },
+    initialKey: storedKey(saved),
+    get storedKey() { return storedKey(saved); },
+    get saved() { return saved; },
     get resetCount() { return resetCount; },
     get requestCount() { return requestCount; },
     async send() { await submitRegistration({ preventDefault() {} }); }
   };
+}
+
+// Cross-login retry-key containment is only a browser UX boundary;
+// authoritative user/tenant isolation remains server-side and is separately tested.
+{
+  const sameTab = new Map();
+  sameTab.set("alpha.advertiser-registration.request-key.v1", uuid(888));
+  const first = await scenario("network-error", {
+    saved:sameTab, email:"alpha@example.invalid"
+  });
+  assert.equal(sameTab.has("alpha.advertiser-registration.request-key.v1"), false);
+  assert.equal(first.storedKey,first.initialKey);
+  await first.send();
+  const replay = await scenario("replay", {
+    saved:sameTab, email:"ALPHA@example.invalid"
+  });
+  assert.equal(replay.initialKey,first.initialKey,
+    "same sign-in should retain the request key after interrupted transport");
+  await replay.send();
+  assert.notEqual(replay.storedKey,replay.initialKey,"only an authoritative receipt rotates key");
+  const other = await scenario("accepted", {
+    saved:sameTab, email:"beta@example.invalid"
+  });
+  assert.notEqual(other.initialKey,replay.storedKey,
+    "different signed-in applicant must not reuse old applicant's key");
+  const persisted = JSON.stringify([...sameTab.entries()]);
+  assert.doesNotMatch(persisted, /alpha@example\.invalid|beta@example\.invalid/i,
+    "browser stores an opaque digest, not the session email");
+  const savedNewUser = other.initialKey;
+  await other.send();
+  assert.notEqual(other.storedKey,savedNewUser);
+}
+{
+  const stale = new Map([[storageKey, '{"scope":"forged","key":"not-a-uuid"}']]);
+  const bad = await scenario("network-error",{saved:stale});
+  assert.match(bad.initialKey,/^00000000-0000-4000-8000/);
+  assert.equal(bad.storedKey,bad.initialKey);
+  await bad.send();
+  const loggedOut = await scenario("accepted",{saved:stale,authenticated:false});
+  assert.equal(loggedOut.registrationButton.disabled,true);
+  assert.equal(stale.has(storageKey),false,
+    "logging out must clear the previous applicant's stored retry key");
 }
 
 for (const mode of ["accepted", "replay"]) {
@@ -143,3 +200,4 @@ for (const mode of [{ enabled: false }, { authenticated: false }]) {
 }
 console.log("TASK3B_REGISTRATION_VALID_RECEIPT_AND_IDEMPOTENCY_PASS");
 console.log("TASK3B_REGISTRATION_REQUEST_BOUND_RECEIPT_AND_AUTH_DENIED_PASS");
+console.log("TASK3B_REGISTRATION_TAB_KEY_CROSS_IDENTITY_CONTAINMENT_PASS");
