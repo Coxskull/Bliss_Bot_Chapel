@@ -13,7 +13,18 @@ const dir=resolve(process.env.ALPHA_IMAGE_PILOT_DIR ||
 const path=join(dir,'pilot-ledger.json');
 const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
 const isMicro=x=>Number.isSafeInteger(x) && x>=0 && x<=20_000_000;
-const safeToken=x=>typeof x==='string' && /^[a-z][a-z0-9_.-]{0,63}$/.test(x)
+// Only documented/reviewed machine categories are safe to expose from
+// a caller-influenced ledger. A syntax-only regex also accepts lowercase
+// token-shaped secrets and tenant identifiers. Keep unknown metadata opaque.
+const KNOWN_ERROR_CODES=new Set([
+  'credit_balance_exhausted','insufficient_quota','rate_limit_exceeded'
+]);
+const KNOWN_ERROR_TYPES=new Set([
+  'insufficient_quota','rate_limit_error','rate_limit_exceeded'
+]);
+const safeCode=x=>typeof x==='string' && KNOWN_ERROR_CODES.has(x)
+  ? x : 'NOT_CAPTURED';
+const safeType=x=>typeof x==='string' && KNOWN_ERROR_TYPES.has(x)
   ? x : 'NOT_CAPTURED';
 const safeRequest=x=>typeof x==='string' && /^req_[a-zA-Z0-9_-]{1,128}$/.test(x)
   ? x : 'NOT_CAPTURED';
@@ -59,8 +70,8 @@ function analyze(bytes) {
       localReportedCostUsd:e.status==='COMPLETE'?money(e.costMicroUsd):'UNKNOWN',
       providerHttpStatus:Number.isInteger(e.providerHttpStatus) && e.providerHttpStatus>=100
         && e.providerHttpStatus<=599 ? e.providerHttpStatus:null,
-      providerErrorCode:safeToken(e.providerErrorCode),
-      providerErrorType:safeToken(e.providerErrorType),
+      providerErrorCode:safeCode(e.providerErrorCode),
+      providerErrorType:safeType(e.providerErrorType),
       providerRequestId:safeRequest(e.providerRequestId),
       startedAtUtc:safeDate(e.startedAt),
     });
