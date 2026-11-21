@@ -11,7 +11,13 @@ BEGIN
     OR to_regclass('alpha_support_private.manual_operator_claims') IS NULL
     OR to_regclass('alpha_support_private.manual_privacy_form_cases') IS NOT NULL
     OR (SELECT count(*) FROM public.alpha_public_intake_requests WHERE kind='privacy')<>0
-    OR (SELECT count(*) FROM alpha_support_private.manual_operator_grants WHERE enabled=true)<>1
+    -- A no-data Supabase preview branch has zero Auth users and therefore
+    -- cannot legitimately contain an enabled FK-backed human operator grant.
+    -- Installing the private queue with zero grants is safe: its service_role
+    -- RPC requires alpha_support_manual_operator_authorized() at request time,
+    -- which joins a real auth.users row and an enabled grant. Never seed one.
+    -- Reject multiple enabled operators without requiring one at schema install.
+    OR (SELECT count(*) FROM alpha_support_private.manual_operator_grants WHERE enabled=true)>1
  THEN RAISE EXCEPTION 'TASK21_PRIVACY_FORM_PRIVATE_QUEUE_GATE_FAILED'; END IF;
 END $task21_pre$;
 

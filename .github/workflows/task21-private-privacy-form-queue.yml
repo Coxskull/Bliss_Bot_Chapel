@@ -4,6 +4,10 @@ on:
     paths:
       - 'scripts/task21/production-privacy-form-private-queue-20261112.sql'
       - 'scripts/task21/production-mailcase-retention-cascade-fix-20261112.sql'
+      - 'scripts/task21/production-real-incident-alert-outbox-20261112.sql'
+      - 'scripts/task21-production-incident-outbox-contract.mjs'
+      - 'scripts/task21/fixtures/**'
+      - 'scripts/task3b/**'
       - 'scripts/task21-production-privacy-form-queue-contract.mjs'
       - '.github/workflows/task21-private-privacy-form-queue.yml'
 permissions:
@@ -11,7 +15,23 @@ permissions:
 jobs:
   private-consented-privacy-intake:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 7
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: [16, 18]
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres }}
+        env:
+          POSTGRES_DB: task21_empty_branch_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable-only
+        options: >-
+          --health-cmd "pg_isready -U postgres -d task21_empty_branch_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,5 +39,29 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify private metadata-only privacy intake and existing queue authorization
-        run: node scripts/task21-production-privacy-form-queue-contract.mjs
+      - name: Verify private metadata-only source and runtime operator authorization
+        run: |
+          node scripts/task21-production-privacy-form-queue-contract.mjs
+          node scripts/task21-production-incident-outbox-contract.mjs
+          node scripts/task3b/supabase-managed-migration-custody-check.mjs
+      - name: Rehearse five actual Task21 migrations (cron job stub is test-only) on empty Auth-backed PostgreSQL
+        env:
+          DISPOSABLE_PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          set -euo pipefail
+          # The only database target is an ephemeral GitHub Actions service.
+          # Never use a hosted URL, Supabase credentials or production secrets.
+          test -n "$DISPOSABLE_PG_CONTAINER"
+          for file in \
+            scripts/task21/fixtures/empty_branch_privacy_prerequisites.sql \
+            scripts/task21/fixtures/empty_branch_pgcron_stub.sql \
+            scripts/task21/production-manual-mailbox-metadata-20261112.sql \
+            scripts/task21/production-locked-single-operator-20261112.sql \
+            scripts/task21/production-privacy-form-private-queue-20261112.sql \
+            scripts/task21/production-real-incident-alert-outbox-20261112.sql \
+            scripts/task21/production-mailcase-retention-cascade-fix-20261112.sql \
+            scripts/task21/fixtures/empty_branch_privacy_assertions.sql
+          do
+            docker exec -i "$DISPOSABLE_PG_CONTAINER" \
+              psql -X -v ON_ERROR_STOP=1 -U postgres -d task21_empty_branch_ci < "$file"
+          done
