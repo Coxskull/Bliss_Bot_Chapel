@@ -71,6 +71,28 @@ The tool pins the existing DigitalOcean public IP, requires OpenSSH StrictHostKe
 
 Uses existing local Docker Desktop. Creates an ephemeral postgres:18 container with --network none and no published ports, a new isolated restore database, streams GPG decryption directly through an in-memory binary pipe into pg_restore, checks exit status, version and restored public-table count, removes the disposable container, then writes .recovery-evidence.json. No decrypted dump on disk. No live data reimported to DR362 or Railway.
 
+## Alternative Stage 3A: source-only isolated restore from verified private Google Drive copy (no DigitalOcean claim)
+
+**Evidence as of November 21, 2026:** The owner captured a read-only, locally encrypted Bliss Railway PostgreSQL 18 archive. The owner then uploaded the exact `bliss-pg18-20261121T023709Z-cda88608.gpg` (871 bytes) and original `.pending.json` (802 bytes) to a separate, owner-only folder under existing `ALPHA Encrypted Recovery Backups` in Google Drive. Connected Drive readback verified both objects, their sizes, owner-only access, and computed the uploaded **ciphertext SHA-256 matching the pending manifest**. The encrypted object has an OpenPGP public-key-encrypted data packet. These checks **do not prove decryption or database restore**. No DigitalOcean upload occurred; its protected LUKS recovery disk remains locked. Crucially, the source manifest reports **`sourcePublicTableCount: 0`** — a restored zero-table database does not establish a working advertiser-registration schema.
+
+The existing DigitalOcean-based restore contract stays unchanged and remains the only path producing its `.recovery-evidence.json` accepted by the guarded production installer. For this alternate backup custody, use **local-only isolated verification** of the original encrypted archive with a **separate `.local-restore-evidence.json` receipt**. It cannot authorize or be accepted by the production schema installer; actual source table count, archive hash and PG18 isolated restore still must pass.
+
+The owner's existing Windows workstation must have Docker running and a usable PostgreSQL 18 image, plus access to the corresponding **GPG private recovery key** (a public key is insufficient). Do **not** upload/import the private key to GitHub, ChatGPT, Google Drive or an unfamiliar computer. If that key is retained offline, arrange a secure approved restore workstation and stop until key custody is ready. Use process-local PowerShell policy, never alter remote service or security settings:
+
+~~~powershell
+cd "$HOME\Downloads"
+Get-Command docker, gpg -ErrorAction SilentlyContinue | Select-Object Name, Source
+docker info --format '{{.ServerVersion}}'
+gpg --batch --list-secret-keys --keyid-format LONG 25CAD4D027B8861B7D4565D2EFA626F40F74F134
+
+# After downloading the reviewed current script to this folder:
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File ".\task3b-bliss-pg18-isolated-restore.ps1" -OffhostManifestPath ".\bliss-pg18-20261121T023709Z-cda88608.pending.json" -LocalVerificationOnly
+~~~
+
+The local-only switch requires the unmodified, pinned Railway PG18 **original pending manifest** with `offhostProvider=NOT_VERIFIED` and `offhostSha256Verified=false`. It checks the archive's actual SHA-256, starts a disposable `postgres:18` Docker container with `--network none`, decrypts the archive into `pg_restore` through a binary pipe without a plaintext dump file, tests PostgreSQL major/version and table inventory, then removes the test container before creating a receipt. Output markers explicitly state `TASK3B_DIGITALOCEAN_OFFHOST_SHA256=NOT_VERIFIED` and `TASK3B_PG18_LOCAL_ISOLATED_RESTORE=PASS` only after success, with `TASK3B_ADVERTISER_SCHEMA=NOT_ESTABLISHED_ZERO_PUBLIC_TABLES` where applicable. A successful **local-only restore is not a production migration, original DigitalOcean offsite acceptance, or real advertiser registration approval**.
+
+If Docker is not installed or the private recovery key is unavailable on the approved workstation, do not run the restore script. These are owner-side prerequisites, not a reason to unlock DR361/DR362 or create another paid cloud service.
+
 ## Stage 4: guarded initial Bliss PG18 schema installer (later, after stages 1-3 verified)
 
 ~~~powershell

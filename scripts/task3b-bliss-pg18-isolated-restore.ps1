@@ -3,8 +3,16 @@
 # Reads existing GPG-encrypted archive, decrypts only into a binary pipe,
 # restores into an isolated --network none container, checks table count, and
 # destroys that ephemeral container BEFORE writing a success receipt.
+# Default: require independent DigitalOcean off-host SHA evidence.
+# -LocalVerificationOnly: allow verified original .pending.json for a strictly
+# local-only receipt; NEVER imply DigitalOcean verified or unlock production.
 [CmdletBinding()]
-param([Parameter(Mandatory = $true)][string] $OffhostManifestPath)
+param(
+    [Parameter(Mandatory = $true)][string] $OffhostManifestPath,
+    # Strict local-only isolated restore from the existing .pending.json.
+    # NOT a substitute for the DigitalOcean off-host verification receipt.
+    [switch] $LocalVerificationOnly
+)
 $ErrorActionPreference = 'Stop'
 if (-not (Test-Path -LiteralPath $OffhostManifestPath -PathType Leaf)) {
     throw 'TASK3B_RESTORE=OFFHOST_MANIFEST_MISSING'
@@ -16,13 +24,30 @@ if ($m.schema -cne 'alpha-bliss-pg18-recovery/v1' -or
     $m.sourceServiceId -cne '6aa78407-1632-48c9-8ea4-0289a7d36a5b' -or
     $m.sourceDatabase -cne 'bliss' -or $m.sourcePostgresMajor -ne 18 -or
     $m.encryption -cne 'GPG_RECIPIENT' -or
-    $m.offhostProvider -cne 'DigitalOcean' -or
-    $m.offhostSha256Verified -ne $true -or
-    $m.offhostDropletId -cne '571399692' -or
     $m.isolatedRestoreVerified -eq $true -or
     $m.archiveFileName -cnotmatch '^bliss-pg18-[a-zA-Z0-9-]+\.gpg$' -or
-    $m.archiveSha256 -cnotmatch '^[a-f0-9]{64}$') {
-    throw 'TASK3B_RESTORE=EVIDENCE_TARGET_OR_OFFHOST_NOT_VERIFIED'
+    $m.archiveSha256 -cnotmatch '^[a-f0-9]{64}$' -or
+    $null -eq $m.sourcePublicTableCount -or
+    ([string]$m.sourcePublicTableCount) -cnotmatch '^[0-9]{1,8}$') {
+    throw 'TASK3B_RESTORE=EVIDENCE_TARGET_OR_SOURCE_INVALID'
+}
+# Keep DigitalOcean proof strict in the original production-oriented path.
+# This alternate mode is an isolated local-only test, never production evidence.
+if ($LocalVerificationOnly) {
+    if ($OffhostManifestPath -cnotmatch '\.pending\.json$' -or
+        $m.offhostProvider -cne 'NOT_VERIFIED' -or
+        $m.offhostSha256Verified -ne $false -or
+        $null -ne $m.offhostDropletId) {
+        throw 'TASK3B_LOCAL_RESTORE=REQUIRES_ORIGINAL_PENDING_MANIFEST'
+    }
+} else {
+    if ($OffhostManifestPath -cnotmatch '\.offhost\.json$' -or
+        $m.offhostProvider -cne 'DigitalOcean' -or
+        $m.offhostSha256Verified -ne $true -or
+        $m.offhostDropletId -cne '571399692' -or
+        $m.offhostRemoteChecksum -cne $m.archiveSha256) {
+        throw 'TASK3B_RESTORE=EVIDENCE_TARGET_OR_OFFHOST_NOT_VERIFIED'
+    }
 }
 $archive = Join-Path (Split-Path -Parent $OffhostManifestPath) $m.archiveFileName
 if (-not (Test-Path -LiteralPath $archive -PathType Leaf) -or
@@ -113,7 +138,11 @@ if (-not $verified -or -not $cleanupComplete) {
     throw 'TASK3B_RESTORE=NOT_ACCEPTED_OR_LOCAL_TEST_CONTAINER_NOT_REMOVED'
 }
 
-$receiptPath = $OffhostManifestPath -replace '\.offhost\.json$', '.recovery-evidence.json'
+$receiptPath = if ($LocalVerificationOnly) {
+    $OffhostManifestPath -replace '\.pending\.json$', '.local-restore-evidence.json'
+} else {
+    $OffhostManifestPath -replace '\.offhost\.json$', '.recovery-evidence.json'
+}
 if ($receiptPath -ceq $OffhostManifestPath -or (Test-Path -LiteralPath $receiptPath)) {
     throw 'TASK3B_RESTORE=EVIDENCE_PATH_COLLISION'
 }
@@ -123,10 +152,22 @@ $m | Add-Member -NotePropertyName isolatedRestoreEngine -NotePropertyValue 'Dock
 $m | Add-Member -NotePropertyName isolatedRestoreDatabase -NotePropertyValue $testDatabase -Force
 $m | Add-Member -NotePropertyName isolatedRestorePublicTableCount -NotePropertyValue ([int]$m.sourcePublicTableCount) -Force
 $m | Add-Member -NotePropertyName isolatedRestoreContainerRemoved -NotePropertyValue $true -Force
+if ($LocalVerificationOnly) {
+    $m | Add-Member -NotePropertyName isolatedRestoreAcceptanceScope -NotePropertyValue 'LOCAL_ONLY_NOT_PRODUCTION' -Force
+}
 $m | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $receiptPath -Encoding UTF8 -NoNewline
 Write-Output 'TASK3B_BLISS_PG18_BACKUP_ENCRYPTED=PASS'
-Write-Output 'TASK3B_DIGITALOCEAN_OFFHOST_SHA256=PASS'
-Write-Output 'TASK3B_PG18_ISOLATED_RESTORE=PASS'
+if ($LocalVerificationOnly) {
+    Write-Output 'TASK3B_DIGITALOCEAN_OFFHOST_SHA256=NOT_VERIFIED'
+    Write-Output 'TASK3B_GOOGLE_DRIVE_CLOUD_COPY=NOT_EVALUATED_BY_RESTORE_SCRIPT'
+    Write-Output 'TASK3B_PG18_LOCAL_ISOLATED_RESTORE=PASS'
+} else {
+    Write-Output 'TASK3B_DIGITALOCEAN_OFFHOST_SHA256=PASS'
+    Write-Output 'TASK3B_PG18_ISOLATED_RESTORE=PASS'
+}
+if ([int]$m.sourcePublicTableCount -eq 0) {
+    Write-Output 'TASK3B_ADVERTISER_SCHEMA=NOT_ESTABLISHED_ZERO_PUBLIC_TABLES'
+}
 Write-Output 'TASK3B_HOSTED_CUSTOMER_REGISTRATION=NOT_TESTED'
 Write-Output 'TASK3B_PUBLIC_SIGNUP=HELD'
 Write-Output ("TASK3B_PRIVATE_RECOVERY_EVIDENCE=" + $receiptPath)
