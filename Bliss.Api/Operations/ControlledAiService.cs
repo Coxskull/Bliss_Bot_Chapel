@@ -181,6 +181,9 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         AddEvent(run, "RUNNING", "AI_RUNNER");
         try { await db.SaveChangesAsync(stopping); } catch (Exception ex) when (ReservationConflict(ex)) { db.ChangeTracker.Clear(); return true; }
         AiProviderResult? result = null; string status = "SUCCEEDED_PENDING_REVIEW", failure = "";
+        // A rejected provider HTTP response may contain a safe x-request-id;
+        // keep it for manual reconciliation without clearing the reservation.
+        string rejectedProviderRequestId = "";
         var billingAnomaly = await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", stopping)
             || (Options.ImagePilotEnabled && (await db.ControlledAiRuns.AsNoTracking()
                 .Where(x => x.Id != run.Id && x.Kind == "IMAGE" && x.Model == "gpt-image-2.5-flare")
@@ -214,7 +217,11 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
                 if (result.RequestId.Length > 200 || result.InputTokens < 0 || result.OutputTokens < 0 || result.ActualUsd < 0) throw new AiProviderException("INVALID_USAGE_RECEIPT");
             }
             catch (OperationCanceledException) { status = stopping.IsCancellationRequested ? "UNKNOWN" : "TIMED_OUT"; failure = stopping.IsCancellationRequested ? "HOST_INTERRUPTED" : "CALL_INTERRUPTED"; result = null; }
-            catch (AiProviderException ex) { status = "FAILED"; failure = ex.Code; result = null; }
+            catch (AiProviderException ex)
+            {
+                status = "FAILED"; failure = ex.Code; result = null;
+                rejectedProviderRequestId = ex.ProviderRequestId;
+            }
             catch (Exception) { status = "FAILED"; failure = "PROVIDER_FAILURE"; result = null; }
             finally
             {
@@ -229,6 +236,13 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
             if (run.Status is not ("RUNNING" or "CANCEL_REQUESTED")) return true;
             if (run.Status == "CANCEL_REQUESTED") { status = "CANCELLED"; failure = "CANCEL_REQUESTED"; result = null; }
             run.Status = status; run.FailureCode = failure; run.FinishedAt = DateTime.UtcNow;
+            if (status == "FAILED" && receipt is null && rejectedProviderRequestId.Length > 0)
+            {
+                // Error receipt is *not* metered usage. Do NOT set ActualUsd or
+                // CostStatus=PROVIDER_REPORTED. The uncertain charge stays held;
+                // PilotUnknownCharge continues to block any later paid retry.
+                run.ProviderRequestId = rejectedProviderRequestId;
+            }
             if (result is not null)
             {
                 run.OutputText = run.Kind == "TEXT" ? result.Text : ""; run.OutputImage = run.Kind == "IMAGE" ? result.Image : null;
