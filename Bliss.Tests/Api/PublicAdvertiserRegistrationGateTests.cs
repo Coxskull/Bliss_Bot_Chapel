@@ -72,6 +72,34 @@ public sealed class PublicAdvertiserRegistrationGateTests
     public void Other_business_and_wrong_method_routes_remain_denied(string method, string path) =>
         Assert.False(PublicAdvertiserRegistrationGate.IsAllowed(method, new PathString(path)));
 
+    [Theory]
+    [InlineData("GET", "/creator-registration.html")]
+    [InlineData("HEAD", "/creator-registration.js")]
+    [InlineData("GET", "/api/creators/registration")]
+    [InlineData("POST", "/api/creators/register")]
+    [InlineData("GET", "/alpha-privacy.html")]
+    [InlineData("GET", "/alpha-terms.html")]
+    public void Creator_registration_routes_require_a_separate_release_flag(string method, string path)
+    {
+        var request = new PathString(path);
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed(method, request));
+        Assert.True(PublicAdvertiserRegistrationGate.IsAllowed(method, request, creatorRegistrationEnabled: true));
+    }
+
+    [Theory]
+    [InlineData("GET", "/api/creators")]
+    [InlineData("GET", "/api/creators/me")]
+    [InlineData("POST", "/api/creators/registration")]
+    [InlineData("GET", "/api/creators/register")]
+    [InlineData("POST", "/api/creators/register/other")]
+    [InlineData("GET", "/creator-registration-preview.html")]
+    [InlineData("GET", "/operations")]
+    [InlineData("POST", "/api/campaigns")]
+    [InlineData("POST", "/api/payments")]
+    public void Creator_release_does_not_open_other_business_or_internal_routes(string method, string path) =>
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed(method,
+            new PathString(path), creatorRegistrationEnabled: true));
+
     [Fact]
     public async Task Denied_request_returns_503_without_dispatching_pipeline()
     {
