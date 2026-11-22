@@ -11,6 +11,10 @@ $project = 'fb33c1b7-03fb-42c8-89b1-081951a738fd'
 $envId = 'b67a9836-36bf-4083-93f7-00c867b13f39'
 $postgres = '6aa78407-1632-48c9-8ea4-0289a7d36a5b'
 $application = '8b22ff53-ccf5-4341-a473-ff146ca497f1'
+# Two independent, fail-closed restoration engines are accepted:
+# (1) original Docker --network none; or (2) owner's proven WSL2 Unix-socket
+# PG18 with a NEW disposable DB destroyed and verified after restore.
+# Neither accepts the historic backup that predates the real advertiser.
 if (-not (Test-Path -LiteralPath $ReceiptPath -PathType Leaf) -or
     (Split-Path -Leaf $ReceiptPath) -cnotmatch '^bliss-pg18-[a-zA-Z0-9-]+\.recovery-evidence\.json$') {
     throw 'TASK4_CREATOR_SCHEMA=REFUSED_REAL_RECOVERY_EVIDENCE_FILE_REQUIRED'
@@ -25,14 +29,21 @@ if ($m.schema -cne 'alpha-bliss-pg18-recovery/v1' -or
     $m.offhostProvider -cne 'DigitalOcean' -or $m.offhostDropletId -cne '571399692' -or
     $m.offhostSha256Verified -ne $true -or
     $m.isolatedRestoreVerified -ne $true -or
-    $m.isolatedRestoreContainerRemoved -ne $true -or
-    $m.isolatedRestoreEngine -cne 'Docker PostgreSQL 18 --network none' -or
     $m.isolatedRestoreDatabase -ceq 'bliss' -or
     [int]$m.isolatedRestorePublicTableCount -ne [int]$m.sourcePublicTableCount -or
     $m.archiveSha256 -cnotmatch '^[0-9a-f]{64}$' -or
     $m.offhostRemoteChecksum -cne $m.archiveSha256 -or
     $m.archiveFileName -cnotmatch '^bliss-pg18-[a-zA-Z0-9-]+\.gpg$') {
     throw 'TASK4_CREATOR_SCHEMA=REFUSED_OFFHOST_OR_ISOLATED_RESTORE_UNVERIFIED'
+}
+$dockerRecovery = $m.isolatedRestoreEngine -ceq 'Docker PostgreSQL 18 --network none' -and
+    $m.isolatedRestoreContainerRemoved -eq $true
+$wslRecovery = $m.isolatedRestoreEngine -ceq 'WSL2 Ubuntu PostgreSQL 18 Unix socket temporary database' -and
+    $m.isolatedRestoreTransport -ceq 'UNIX_SOCKET_ONLY' -and
+    $m.isolatedRestoreDatabaseRemoved -eq $true -and
+    ([string]$m.isolatedRestoreDatabase) -cmatch '^alpha_task4_wsl_restore_'
+if (-not ($dockerRecovery -or $wslRecovery)) {
+    throw 'TASK4_CREATOR_SCHEMA=REFUSED_DOCKER_OR_WSL18_RECOVERY_NOT_VERIFIED'
 }
 try {
     $captured = [DateTimeOffset]::Parse([string]$m.capturedAtUtc)
