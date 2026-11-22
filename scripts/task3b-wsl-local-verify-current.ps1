@@ -57,12 +57,12 @@ $helper64=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($source))
 $archive64=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($archive))
 $gpg64=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($gpg.Source))
 $count=[int]$m.sourcePublicTableCount
-# Decode the complete trusted helper into a Bash -c argument BEFORE execution.
-# bash -s consumed a live stdin stream containing its own source; a child
-# process in the GPG pipeline could inherit that stream and exhaust the
-# remaining shell program, leaving only UNEXPECTED_HELPER_EXIT.
-# The helper is reviewed local code; archive/GPG arguments remain Base64-encoded.
-$cmd='set -o pipefail; code=$(printf %s '+$helper64+' | base64 -d) || exit 97; exec bash -c "$code" -- '+$archive64+' '+$count+' '+$gpg64
+# PowerShell 5.1 -> wsl.exe -> bash -lc can strip embedded literal quotes
+# around "$code", preventing the Bash helper from starting at all.
+# Reuse the previously proven quote-free transport; the GPG executable now has
+# </dev/null, so cannot consume the remaining Bash source from stdin.
+# Preserve pipefail and fully checked archive/manifest guardrails.
+$cmd='set -o pipefail; printf %s '+$helper64+' | base64 -d | bash -s -- '+$archive64+' '+$count+' '+$gpg64
 $raw=@()
 $exitCode=1
 $prior=$ErrorActionPreference
