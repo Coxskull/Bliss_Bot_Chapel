@@ -99,7 +99,9 @@ checkpoint TEMP_DB_CREATED
 # Exit statuses are fixed numeric evidence; stderr is suppressed (no secrets).
 set +e
 checkpoint PIPELINE_STARTED
-"$gpg_binary" --batch --no-tty --decrypt --output - "$archive" 2>/dev/null |
+# This helper is loaded independently of stdin; GPG also has no reason to read it.
+# Close GPG stdin explicitly. Its only encrypted input is the named archive.
+"$gpg_binary" --batch --no-tty --decrypt --output - "$archive" </dev/null 2>/dev/null |
     runuser -u postgres -- /usr/lib/postgresql/18/bin/pg_restore --exit-on-error --single-transaction \
         --no-owner --no-acl -h /var/run/postgresql -d "$db" >/dev/null 2>&1
 pipe_status=( "${PIPESTATUS[@]}" )

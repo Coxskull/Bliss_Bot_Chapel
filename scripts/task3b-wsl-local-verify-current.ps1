@@ -57,7 +57,12 @@ $helper64=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($source))
 $archive64=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($archive))
 $gpg64=[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($gpg.Source))
 $count=[int]$m.sourcePublicTableCount
-$cmd='set -o pipefail; printf %s '+$helper64+' | base64 -d | bash -s -- '+$archive64+' '+$count+' '+$gpg64
+# Decode the complete trusted helper into a Bash -c argument BEFORE execution.
+# bash -s consumed a live stdin stream containing its own source; a child
+# process in the GPG pipeline could inherit that stream and exhaust the
+# remaining shell program, leaving only UNEXPECTED_HELPER_EXIT.
+# The helper is reviewed local code; archive/GPG arguments remain Base64-encoded.
+$cmd='set -o pipefail; code=$(printf %s '+$helper64+' | base64 -d) || exit 97; exec bash -c "$code" -- '+$archive64+' '+$count+' '+$gpg64
 $raw=@()
 $exitCode=1
 $prior=$ErrorActionPreference
