@@ -161,6 +161,8 @@ jobs:
         run: node scripts/task3b-railway-ssh-direct-command.test.mjs
       - name: Verify Railway PG18 backup exit-2 diagnostic branches with synthetic data only
         run: node scripts/task3b-remote-preflight-contract.test.mjs
+      - name: Verify Windows CRLF PowerShell heredoc is LF before Linux Bash (offline)
+        run: node scripts/task3b-railway-windows-crlf-contract.test.mjs
       - name: Parse owner-only Railway PG18 read-only preflight script (never run Railway)
         shell: pwsh
         run: |
