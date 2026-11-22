@@ -33,26 +33,31 @@ if ($LASTEXITCODE -ne 0) { throw 'BLISS_PG18_BACKUP=GPG_RECIPIENT_UNKNOWN; no ba
 
 $remote = @'
 set -euo pipefail
-if [ "$RAILWAY_PROJECT_ID" != "fb33c1b7-03fb-42c8-89b1-081951a738fd" ] ||
-   [ "$RAILWAY_ENVIRONMENT_ID" != "b67a9836-36bf-4083-93f7-00c867b13f39" ] ||
-   [ "$RAILWAY_SERVICE_ID" != "6aa78407-1632-48c9-8ea4-0289a7d36a5b" ]; then
-  exit 2
+# Fixed-stage refusal markers; no raw SQL, SSH, credential or dump output.
+refuse() { printf 'TASK3B_CAPTURE_ABORT=%s\n' "$1"; exit 2; }
+if [ "$(printenv RAILWAY_PROJECT_ID || true)" != "fb33c1b7-03fb-42c8-89b1-081951a738fd" ] ||
+   [ "$(printenv RAILWAY_ENVIRONMENT_ID || true)" != "b67a9836-36bf-4083-93f7-00c867b13f39" ] ||
+   [ "$(printenv RAILWAY_SERVICE_ID || true)" != "6aa78407-1632-48c9-8ea4-0289a7d36a5b" ]; then
+  refuse 'SCOPE_MISMATCH'
 fi
 for tool in pg_dump psql base64; do
-  command -v "$tool" >/dev/null || exit 2
+  command -v "$tool" >/dev/null 2>&1 || refuse 'DATABASE_TOOL_MISSING'
 done
-: "$PGUSER"
-: "$PGPASSWORD"
-: "$PGHOST"
-: "$PGPORT"
+for name in PGUSER PGPASSWORD PGHOST PGPORT; do
+  [ -n "$(printenv "$name" || true)" ] || refuse 'DATABASE_ENV_MISSING'
+done
 db='bliss'
-identity=$(psql -XAt -v ON_ERROR_STOP=1 --dbname="$db" -c "SELECT current_database() || '|' || split_part(current_setting('server_version'),'.',1) || '|' || (SELECT count(*) FROM pg_catalog.pg_tables WHERE schemaname='public')")
+identity=$(psql -XAt -v ON_ERROR_STOP=1 --dbname="$db" -c "SELECT current_database() || '|' || split_part(current_setting('server_version'),'.',1) || '|' || (SELECT count(*) FROM pg_catalog.pg_tables WHERE schemaname='public')" 2>/dev/null) ||
+  refuse 'DATABASE_CONNECTION_OR_QUERY_REFUSED'
 if ! printf '%s' "$identity" | grep -Eq '^bliss\|18\|[0-9]+$'; then
-  exit 2
+  refuse 'DATABASE_IDENTITY_MISMATCH'
 fi
 printf 'TASK3B_SOURCE=%s\n' "$identity"
 printf 'TASK3B_DUMP_BEGIN\n'
-pg_dump --dbname="$db" --format=custom --no-owner --no-acl | base64 -w0
+if ! pg_dump --dbname="$db" --format=custom --no-owner --no-acl 2>/dev/null | base64 -w0; then
+  printf '\n'
+  refuse 'PG_DUMP_EXPORT_REFUSED'
+fi
 printf '\nTASK3B_DUMP_END\n'
 '@
 
@@ -89,7 +94,21 @@ try {
     $ErrorActionPreference = $priorErrorActionPreference
 }
 if ($remoteExit -ne 0) {
-    throw 'BLISS_PG18_BACKUP=REMOTE_COMMAND_FAILED; remote execution, database identity, or pg_dump was refused. No backup accepted.'
+    # Parse ONLY the fixed allowlisted refusal; never print raw encoded data.
+    $allowed = @('SCOPE_MISMATCH','DATABASE_TOOL_MISSING',
+        'DATABASE_ENV_MISSING','DATABASE_CONNECTION_OR_QUERY_REFUSED',
+        'DATABASE_IDENTITY_MISMATCH','PG_DUMP_EXPORT_REFUSED')
+    $markers = @($raw | ForEach-Object { [string]$_ } |
+        ForEach-Object {
+            [regex]::Matches($_, 'TASK3B_CAPTURE_ABORT=([A-Z_]+)') |
+                ForEach-Object { $_.Groups[1].Value }
+        } | Where-Object { $allowed -ccontains $_ } | Select-Object -Unique)
+    if ($markers.Count -eq 1) {
+        Write-Output ('TASK3B_CAPTURE_REMOTE_STAGE=' + $markers[0])
+    } else {
+        Write-Output 'TASK3B_CAPTURE_REMOTE_STAGE=TRANSPORT_OR_UNCLASSIFIED'
+    }
+    throw 'BLISS_PG18_BACKUP=REMOTE_COMMAND_FAILED; no new backup accepted.'
 }
 # The CLI can print exactly these human-facing SSH status messages around
 # remote stdout on Windows. Remove only these known fixed-format lines.

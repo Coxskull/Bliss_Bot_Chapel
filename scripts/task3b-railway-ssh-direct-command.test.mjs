@@ -24,7 +24,7 @@ assert.match(ps,/if \(\$remoteExit -ne 0\)/,
 
 assert.doesNotMatch(ps,/\$remote \|\s*&\s*\$railway\.Source ssh/,
   'PowerShell cannot pipe command input over this Railway CLI version');
-assert.match(ps,/--format=custom --no-owner --no-acl \| base64 -w0/);
+assert.match(ps,/--format=custom --no-owner --no-acl (?:2>\/dev\/null )?\| base64 -w0/);
 assert.match(ps,/Get-FileHash -LiteralPath \$archivePath -Algorithm SHA256/);
 assert.doesNotMatch(ps, /Write-(Output|Host)\s+\$raw/,
   'never show confidential encoded backup in console');

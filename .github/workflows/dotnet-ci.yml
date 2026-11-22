@@ -159,6 +159,16 @@ jobs:
         run: node scripts/task3b-bliss-pg18-recovery-contract.test.mjs
       - name: Verify direct Railway SSH shell command and synthetic PG18 backup framing offline
         run: node scripts/task3b-railway-ssh-direct-command.test.mjs
+      - name: Verify Railway PG18 backup exit-2 diagnostic branches with synthetic data only
+        run: node scripts/task3b-remote-preflight-contract.test.mjs
+      - name: Parse owner-only Railway PG18 read-only preflight script (never run Railway)
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'scripts/task3b-bliss-pg18-remote-preflight.ps1', [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -gt 0) { throw 'Task3B backup diagnostic PowerShell parse failed' }
       - name: Verify Task3B owner's one-command backup preflight is offline and fail-closed
         run: node scripts/task3b-owner-start-backup.test.mjs
       - name: Verify isolated DigitalOcean volume guard with synthetic local mounts only
