@@ -81,16 +81,14 @@ $remoteBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($remote
 $runner = 'set -o pipefail; printf %s ' + $remoteBase64 + ' | base64 -d | bash'
 $raw = @()
 $remoteExit = 1
-# Windows PowerShell 5.1 treats native stderr redirected with 2>&1 as
-# NativeCommandError. Under the script-wide 'Stop' preference, Railway's
-# harmless "Using SSH key ..." notice can TERMINATE this block before the
-# remote command exits, even when SSH authentication and pg_dump work.
-# Capture both streams privately with Continue ONLY during native execution.
-# A nonzero exit code and any unrecognized output still fail closed below.
+# Windows PowerShell 5.1 converts native stderr notices to errors.
+# Keep railway CLI stderr OUT of plaintext dump/receipt stdout.
+# Reviewed remote failures produce fixed stdout stages plus nonzero exit status.
+# No raw provider stderr, SQL errors or customer data may be displayed.
 $priorErrorActionPreference = $ErrorActionPreference
 try {
     $ErrorActionPreference = 'Continue'
-    $raw = @(& $railway.Source ssh -p $project -s 'Postgres' -e $environment -- bash -c $runner 2>&1)
+    $raw = @(& $railway.Source ssh -p $project -s 'Postgres' -e $environment -- bash -c $runner 2>$null)
     $remoteExit = $LASTEXITCODE
 } catch {
     $raw = @()
@@ -115,16 +113,35 @@ if ($remoteExit -ne 0) {
     }
     throw 'BLISS_PG18_BACKUP=REMOTE_COMMAND_FAILED; no new backup accepted.'
 }
-# The CLI can print exactly these human-facing SSH status messages around
-# remote stdout on Windows. Remove only these known fixed-format lines.
-# Never display raw output, raw errors, or the encoded plaintext archive.
+# Railway CLI may emit fixed SSH/config migration notices alongside the
+# remote backup envelope even when the process exits successfully.
+# Scrub ONLY these allowlisted notices; reject any other unexpected output.
+# Never display raw stdout/stderr or a base64-encoded plaintext backup.
 $lines = @($raw | ForEach-Object { [string]$_ })
 $dataLines = @($lines | Where-Object {
-    -not (($_ -match '^Using SSH key from file ') -or ($_ -eq 'Connection to ssh.railway.com closed.'))
+    $line = ([string]$_).Trim()
+    -not (
+        ($line -match '^Using SSH key from file ') -or
+        ($line -ceq 'Connection to ssh.railway.com closed.') -or
+        ($line -match '^warning: Config as Code \(.*railway\.json.+railway\.toml.*\) is deprecated\. Prefer Infrastructure as Code \(.*railway\.ts.*\)\.?$') -or
+        ($line -match '^- Run .*railway config migrate.*https://docs\.railway\.com/infrastructure-as-code#migrating-from-config-as-code\s*$') -or
+        ($line -match '^Existing files keep working until [0-9]{4}-[0-9]{2}-[0-9]{2}\.$')
+    )
 })
 $joined = ($dataLines -join [Environment]::NewLine).Trim()
 $m = [regex]::Match($joined, '\ATASK3B_SOURCE=bliss\|18\|([0-9]+)\r?\nTASK3B_DUMP_BEGIN\r?\n([A-Za-z0-9+/=]+)\r?\nTASK3B_DUMP_END\z')
 if (-not $m.Success) {
+    # Print only marker-presence status, not any raw/malformed backup bytes.
+    $stage = if ($joined -notmatch '(?m)^TASK3B_SOURCE=bliss\|18\|[0-9]+\s*$') {
+        'SOURCE_MARKER_MISSING'
+    } elseif ($joined -notmatch '(?m)^TASK3B_DUMP_BEGIN\s*$') {
+        'BEGIN_MARKER_MISSING'
+    } elseif ($joined -notmatch '(?m)^TASK3B_DUMP_END\s*$') {
+        'END_MARKER_MISSING'
+    } else {
+        'EXTRA_OUTPUT_OR_DUMP_FRAMING'
+    }
+    Write-Output ('TASK3B_CAPTURE_RECEIPT_STAGE=' + $stage)
     throw 'BLISS_PG18_BACKUP=INVALID_REMOTE_RECEIPT; no archive accepted.'
 }
 $publicTables = [int]$m.Groups[1].Value
