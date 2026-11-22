@@ -78,11 +78,11 @@ for(const check of checkpoints) {
   assert.ok(helper.includes('checkpoint '+check),'helper checkpoint '+check);
   assert.ok(source.includes(check),'wrapper checkpoint '+check);
 }
-const checkpointRx=source.match(/\\$line -cmatch '(\\^TASK4_WSL_PG18_CHECKPOINT=[^']+)'/);
+const checkpointRx=source.match(/\$line -cmatch '(\^TASK4_WSL_PG18_CHECKPOINT=[^']+)'/);
 assert.ok(checkpointRx,'wrapper checkpoint regex present');
 const checkpointProbe=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
   [
-    '$rx='+JSON.stringify(checkpointRx[1]).replaceAll('\\\\','\\'),
+    '$rx='+"'"+checkpointRx[1]+"'",
     "if ('TASK4_WSL_PG18_CHECKPOINT=TEMP_DB_CREATED' -cnotmatch $rx) { exit 71 }",
     "if ('TASK4_WSL_PG18_CHECKPOINT=UNKNOWN' -cmatch $rx) { exit 72 }",
     "if ('PRIVATE_KEY' -cmatch $rx) { exit 73 }",
