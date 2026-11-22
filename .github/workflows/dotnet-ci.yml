@@ -159,6 +159,8 @@ jobs:
         run: node scripts/task3b-bliss-pg18-recovery-contract.test.mjs
       - name: Verify direct Railway SSH shell command and synthetic PG18 backup framing offline
         run: node scripts/task3b-railway-ssh-direct-command.test.mjs
+      - name: Verify Railway CLI notices never corrupt strict PG18 backup receipt (offline)
+        run: node scripts/task3b-railway-receipt-notices-contract.test.mjs
       - name: Verify Railway PG18 backup exit-2 diagnostic branches with synthetic data only
         run: node scripts/task3b-remote-preflight-contract.test.mjs
       - name: Verify Windows CRLF PowerShell heredoc is LF before Linux Bash (offline)
