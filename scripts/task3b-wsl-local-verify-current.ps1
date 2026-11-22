@@ -68,6 +68,26 @@ try {
 } catch { $exitCode=1 } finally { $ErrorActionPreference=$prior }
 $passCount=@($raw | Where-Object { ([string]$_).Trim() -ceq 'TASK4_WSL_PG18_RESTORE=PASS' }).Count
 if ($exitCode -ne 0 -or $passCount -ne 1) {
+  # Only a fixed allowlisted stage from the reviewed helper is permitted.
+  # NEVER print raw WSL, GPG, pg_restore errors, local paths or archive rows.
+  $allowedStages=@('ARGUMENTS','NOT_ROOT','COUNT_INVALID','TOOLS_MISSING',
+    'PG18_BINARY_MISSING','PG18_VERSION_MISMATCH','PG18_CLUSTER_NOT_READY',
+    'PG18_SOCKET_MISSING','PG18_QUERY_REFUSED','PG18_MAJOR_MISMATCH',
+    'ARCHIVE_PATH_INVALID','GPG_EXE_MISSING','TEMP_DB_NAME_INVALID',
+    'TEMP_DB_CHECK_REFUSED','TEMP_DB_EXISTS','TEMP_DB_CREATE_REFUSED',
+    'GPG_DECRYPT_REFUSED','PG_RESTORE_REFUSED','TABLE_COUNT_QUERY_REFUSED',
+    'TABLE_COUNT_MISMATCH','EF_HISTORY_QUERY_REFUSED','EF_HISTORY_MISSING',
+    'TEMP_DB_REMOVE_REFUSED','TEMP_DB_CLEANUP_UNVERIFIED','UNKNOWN')
+  $stages=@($raw | ForEach-Object {
+    $line=([string]$_).Trim()
+    if ($line -cmatch '^TASK4_WSL_PG18_STAGE=([A-Z_]+)$' -and
+        $allowedStages -ccontains $Matches[1]) { $Matches[1] }
+  } | Select-Object -Unique)
+  if ($stages.Count -eq 1) {
+    Write-Output ('TASK3B_WSL_LOCAL_STAGE=' + $stages[0])
+  } else {
+    Write-Output 'TASK3B_WSL_LOCAL_STAGE=TRANSPORT_OR_UNCLASSIFIED'
+  }
   throw 'TASK3B_WSL_LOCAL=ISOLATED_RESTORE_NOT_VERIFIED'
 }
 # Independently verified Drive storage is NOT attested by this local script.
