@@ -68,6 +68,22 @@ const allowed=[
 assert.ok(helper.includes('TASK4_WSL_PG18_STAGE=%s'));
 assert.ok(helper.includes('TASK4_WSL_PG18_RESTORE=REFUSED_OR_NOT_VERIFIED'));
 assert.ok(helper.includes('pipe_status=('),'check each command exit status');
+assert.ok(helper.includes('"$archive" </dev/null 2>/dev/null |'),
+  'Windows GPG must not read the Bash script source from stdin');
+assert.ok(source.includes('exec bash -c "$code" -- '),
+  'load complete reviewed shell source before GPG runs');
+assert.doesNotMatch(source,/base64 -d \| bash -s --/,
+  'do not stream executable shell source into its own child stdin');
+// Reproduce the shell-source consumption issue offline, with only a harmless
+// synthetic stdin consumer. The repaired bash -c transport must reach AFTER.
+const scriptDrain='printf "TASK3B_PIPE=START\\n"; cat >/dev/null; printf "TASK3B_PIPE=AFTER\\n"';
+const wrongTransport=spawnSync('bash',['-s'],{input:scriptDrain+'\\n',encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(wrongTransport.status,0);
+assert.doesNotMatch(wrongTransport.stdout,/TASK3B_PIPE=AFTER/);
+const safeTransport=spawnSync('bash',['-c',scriptDrain,'--'],{input:'',encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(safeTransport.status,0);
+assert.match(safeTransport.stdout,/TASK3B_PIPE=AFTER/);
+
 assert.ok(helper.includes('fail GPG_DECRYPT_REFUSED'));
 assert.ok(helper.includes('fail PG_RESTORE_REFUSED'));
 assert.ok(helper.includes('trap cleanup EXIT'));
