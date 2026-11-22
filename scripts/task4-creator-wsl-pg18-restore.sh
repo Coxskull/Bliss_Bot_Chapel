@@ -15,6 +15,13 @@ for cmd in base64 wslpath pg_restore psql createdb dropdb runuser date; do
 done
 [[ -x /usr/lib/postgresql/18/bin/pg_restore ]] || fail
 [[ "$(/usr/lib/postgresql/18/bin/pg_restore --version)" == *"PostgreSQL) 18."* ]] || fail
+# Ubuntu may have been stopped; start only its EXISTING local PG18 main
+# cluster if systemd did not start it. Never initialize or replace any DB.
+if [[ ! -S /var/run/postgresql/.s.PGSQL.5432 ]]; then
+    command -v pg_ctlcluster >/dev/null 2>&1 || fail
+    [[ -f /etc/postgresql/18/main/postgresql.conf ]] || fail
+    pg_ctlcluster 18 main start >/dev/null 2>&1 || fail
+fi
 [[ -S /var/run/postgresql/.s.PGSQL.5432 ]] || fail
 major="$(runuser -u postgres -- psql -XAt -v ON_ERROR_STOP=1 -h /var/run/postgresql -d postgres \
     -c "SELECT current_setting('server_version_num')::integer / 10000" 2>/dev/null)" || fail
