@@ -60,6 +60,7 @@ const allowed=[
   'GPG_EXE_MISSING','TEMP_DB_NAME_INVALID','TEMP_DB_CHECK_REFUSED',
   'TEMP_DB_EXISTS','TEMP_DB_CREATE_REFUSED',
   'PREVIOUS_TEMP_DB_PRESENT','UNEXPECTED_HELPER_EXIT','GPG_DECRYPT_REFUSED',
+  'PIPE_STATUS_UNAVAILABLE',
   'PG_RESTORE_REFUSED','TABLE_COUNT_QUERY_REFUSED','TABLE_COUNT_MISMATCH',
   'EF_HISTORY_QUERY_REFUSED','EF_HISTORY_MISSING','TEMP_DB_REMOVE_REFUSED',
   'TEMP_DB_CLEANUP_UNVERIFIED','UNKNOWN'
@@ -78,6 +79,16 @@ assert.ok(helper.includes('UNEXPECTED_HELPER_EXIT'));
 assert.ok(helper.includes('checkpoint PIPELINE_STARTED'));
 assert.ok(helper.includes('checkpoint PIPELINE_RETURNED'));
 assert.ok(helper.includes('stage_reported=1'));
+assert.ok(helper.includes('[[ "${#pipe_status[@]}" -eq 2 ]] || fail PIPE_STATUS_UNAVAILABLE'));
+const stageBlock=source.slice(source.indexOf('  if ($stages.Count -eq 1)'),
+  source.indexOf('  $cleanups=@('));
+assert.match(stageBlock,/}\s*else\s*\{\s*Write-Output 'TASK3B_WSL_LOCAL_STAGE=TRANSPORT_OR_UNCLASSIFIED'\s*}\s*# Independently show/);
+assert.match(stageBlock,/TASK3B_WSL_LOCAL_LAST_CHECKPOINT=/);
+const syntheticPipe=spawnSync('bash',['-c',
+  'set -euo pipefail; set +e; printf x | cat >/dev/null; a=( "${PIPESTATUS[@]}" ); set -e; [[ "${#a[@]}" -eq 2 ]]'],
+  {encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(syntheticPipe.status,0,'synthetic Bash PIPESTATUS length sanity');
+
 assert.ok(helper.includes("SELECT count(*) FROM pg_database WHERE datname ~"));
 assert.ok(source.includes('TASK3B_WSL_LOCAL_TEMP_DB=ABSENT_VERIFIED'));
 assert.ok(source.includes('TASK3B_WSL_LOCAL_TEMP_DB=NOT_VERIFIED'));
