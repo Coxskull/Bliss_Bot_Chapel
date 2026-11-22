@@ -123,8 +123,8 @@ $dataLines = @($lines | Where-Object {
     -not (
         ($line -match '^Using SSH key from file ') -or
         ($line -ceq 'Connection to ssh.railway.com closed.') -or
-        ($line -match '^warning: Config as Code \(.+railway\.json.+railway\.toml.+\) is deprecated\. Prefer Infrastructure as Code \(.+railway\.ts.+\)\.?$') -or
-        ($line -match '^- Run .+railway config migrate.+https://docs\.railway\.com/infrastructure-as-code#migrating-from-config-as-code\s*$') -or
+        ($line -match '^warning: Config as Code \(.*railway\.json.+railway\.toml.*\) is deprecated\. Prefer Infrastructure as Code \(.*railway\.ts.*\)\.?$') -or
+        ($line -match '^- Run .*railway config migrate.*https://docs\.railway\.com/infrastructure-as-code#migrating-from-config-as-code\s*$') -or
         ($line -match '^Existing files keep working until [0-9]{4}-[0-9]{2}-[0-9]{2}\.$')
     )
 })
