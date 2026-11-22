@@ -82,5 +82,30 @@ assert.match(early.stdout,/TASK4_WSL_PG18_STAGE=ARGUMENTS/);
 assert.doesNotMatch(early.stdout,/pg_restore:|gpg:|password|\/mnt\/|\.gpg/);
 console.log('TASK3B_WSL_RESTORE_STAGE_DIAGNOSTIC=PASS_SYNTHETIC_ONLY');
 
+// Regression: the real Windows wrapper used [A-Z_]+ and silently discarded
+// its PG18_* failure stages, replacing them with TRANSPORT_OR_UNCLASSIFIED.
+// Extract and execute the exact reviewed PowerShell regex (not a duplicate).
+const match=source.match(/\$line -cmatch '([^']+)' -and/);
+assert.ok(match,'safe WSL stage regex must be present');
+const stageRegex=match[1];
+const safeRegex=stageRegex.replaceAll("'","''");
+const pwshProbe=[
+  "$rx='"+safeRegex+"'",
+  "if ('TASK4_WSL_PG18_STAGE=PG18_CLUSTER_NOT_READY' -cnotmatch $rx) { exit 31 }",
+  "if ('TASK4_WSL_PG18_STAGE=PG18_MAJOR_MISMATCH' -cnotmatch $rx) { exit 32 }",
+  "if ('TASK4_WSL_PG18_STAGE=GPG_DECRYPT_REFUSED' -cnotmatch $rx) { exit 33 }",
+  "if ('TASK4_WSL_PG18_STAGE=TEMP_DB_CREATE_REFUSED' -cnotmatch $rx) { exit 34 }",
+  "if ('TASK4_WSL_PG18_STAGE=PG18_MAJOR_MISMATCH extra' -cmatch $rx) { exit 35 }",
+  "if ('private: error details' -cmatch $rx) { exit 36 }",
+  "Write-Output 'TASK3B_WSL_DIGIT_STAGE_FILTER=PASS_SYNTHETIC_ONLY'"
+].join("; ");
+const probe=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',pwshProbe],
+  {encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(probe.error,undefined);
+assert.equal(probe.status,0,'actual wrapper stage regex should recognize PG18_* safely: '+probe.stderr);
+assert.match(probe.stdout,/TASK3B_WSL_DIGIT_STAGE_FILTER=PASS_SYNTHETIC_ONLY/);
+assert.ok(source.includes("'PG18_CLUSTER_NOT_READY'"),'stage must remain allowlisted');
+assert.ok(source.includes("'PG18_MAJOR_MISMATCH'"),'stage must remain allowlisted');
+
 console.log('TASK3B_CURRENT_WSL_LOCAL_SAFETY=PASS_OFFLINE_ONLY');
 } finally {rmSync(tmp,{recursive:true,force:true});}
