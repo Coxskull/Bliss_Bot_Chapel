@@ -8,7 +8,7 @@ umask 077
 # Used only to locate an unexpected silent exit when the normal fail stage is lost.
 checkpoint() {
     case "${1:-}" in
-      PG18_READY|ARCHIVE_PATH_ACCEPTED|GPG_BINARY_READY|TEMP_DB_CREATED|PIPELINE_COMPLETE|TABLE_COUNT_VERIFIED|EF_HISTORY_VERIFIED|TEMP_DB_REMOVED)
+      PG18_READY|ARCHIVE_PATH_ACCEPTED|GPG_BINARY_READY|TEMP_DB_CREATED|PIPELINE_STARTED|PIPELINE_RETURNED|PIPELINE_COMPLETE|TABLE_COUNT_VERIFIED|EF_HISTORY_VERIFIED|TEMP_DB_REMOVED)
         printf 'TASK4_WSL_PG18_CHECKPOINT=%s\n' "$1" ;;
       *) return 2 ;;
     esac
@@ -16,9 +16,10 @@ checkpoint() {
 # Fixed, non-sensitive classifications, never emit paths, keys or SQL errors.
 fail() {
     case "${1:-UNKNOWN}" in
-      ARGUMENTS|NOT_ROOT|COUNT_INVALID|TOOLS_MISSING|PG18_BINARY_MISSING|PG18_VERSION_MISMATCH|PG18_CLUSTER_NOT_READY|PG18_SOCKET_MISSING|PG18_QUERY_REFUSED|PG18_MAJOR_MISMATCH|ARCHIVE_PATH_INVALID|GPG_EXE_MISSING|TEMP_DB_NAME_INVALID|TEMP_DB_CHECK_REFUSED|TEMP_DB_EXISTS|TEMP_DB_CREATE_REFUSED|GPG_DECRYPT_REFUSED|PG_RESTORE_REFUSED|TABLE_COUNT_QUERY_REFUSED|TABLE_COUNT_MISMATCH|EF_HISTORY_QUERY_REFUSED|EF_HISTORY_MISSING|TEMP_DB_REMOVE_REFUSED|TEMP_DB_CLEANUP_UNVERIFIED|UNKNOWN) ;;
+      ARGUMENTS|NOT_ROOT|COUNT_INVALID|TOOLS_MISSING|PG18_BINARY_MISSING|PG18_VERSION_MISMATCH|PG18_CLUSTER_NOT_READY|PG18_SOCKET_MISSING|PG18_QUERY_REFUSED|PG18_MAJOR_MISMATCH|ARCHIVE_PATH_INVALID|GPG_EXE_MISSING|TEMP_DB_NAME_INVALID|TEMP_DB_CHECK_REFUSED|TEMP_DB_EXISTS|TEMP_DB_CREATE_REFUSED|GPG_DECRYPT_REFUSED|PG_RESTORE_REFUSED|TABLE_COUNT_QUERY_REFUSED|TABLE_COUNT_MISMATCH|EF_HISTORY_QUERY_REFUSED|EF_HISTORY_MISSING|TEMP_DB_REMOVE_REFUSED|TEMP_DB_CLEANUP_UNVERIFIED|PREVIOUS_TEMP_DB_PRESENT|UNEXPECTED_HELPER_EXIT|UNKNOWN) ;;
       *) set -- UNKNOWN ;;
     esac
+    stage_reported=1
     printf 'TASK4_WSL_PG18_STAGE=%s\n' "${1:-UNKNOWN}"
     printf '%s\n' "TASK4_WSL_PG18_RESTORE=REFUSED_OR_NOT_VERIFIED"
     exit 2
@@ -61,10 +62,30 @@ db="$(printf 'alpha_task4_wsl_restore_%s_%s_%s' "$(date -u +%Y%m%d%H%M%S)" "$RAN
 exists="$(runuser -u postgres -- psql -XAt -v ON_ERROR_STOP=1 -h /var/run/postgresql -d postgres \
     -c "SELECT count(*) FROM pg_database WHERE datname='$db'" 2>/dev/null)" || fail TEMP_DB_CLEANUP_UNVERIFIED TEMP_DB_CHECK_REFUSED
 [[ "$exists" == "0" ]] || fail TEMP_DB_EXISTS
+# Read catalog only: an interrupted previous disposable restore must not be
+# silently left behind or accumulated. Never delete an old/local database.
+prior="$(runuser -u postgres -- psql -XAt -v ON_ERROR_STOP=1 -h /var/run/postgresql -d postgres \
+    -c "SELECT count(*) FROM pg_database WHERE datname ~ '^alpha_task4_wsl_restore_[0-9]{14}_[0-9]{1,5}_[0-9]{1,5}$'" 2>/dev/null)" || fail TEMP_DB_CHECK_REFUSED
+[[ "$prior" == "0" ]] || fail PREVIOUS_TEMP_DB_PRESENT
 created=0
+stage_reported=0
 cleanup() {
+    local result=$?
+    trap - EXIT
     if [[ "$created" == "1" ]]; then
         runuser -u postgres -- dropdb -h /var/run/postgresql "$db" >/dev/null 2>&1 || true
+        local remaining
+        remaining="$(runuser -u postgres -- psql -XAt -v ON_ERROR_STOP=1 -h /var/run/postgresql -d postgres \
+            -c "SELECT count(*) FROM pg_database WHERE datname='$db'" 2>/dev/null)" || remaining="UNVERIFIED"
+        if [[ "$remaining" == "0" ]]; then
+            printf '%s\n' 'TASK4_WSL_PG18_EXIT_CLEANUP=ABSENT_VERIFIED'
+        else
+            printf '%s\n' 'TASK4_WSL_PG18_EXIT_CLEANUP=NOT_VERIFIED'
+        fi
+    fi
+    if [[ "$result" -ne 0 && "$stage_reported" != "1" ]]; then
+        printf '%s\n' 'TASK4_WSL_PG18_STAGE=UNEXPECTED_HELPER_EXIT'
+        printf '%s\n' 'TASK4_WSL_PG18_RESTORE=REFUSED_OR_NOT_VERIFIED'
     fi
 }
 trap cleanup EXIT
@@ -77,10 +98,12 @@ checkpoint TEMP_DB_CREATED
 # Preserve both process exit statuses without touching the decrypted stream.
 # Exit statuses are fixed numeric evidence; stderr is suppressed (no secrets).
 set +e
+checkpoint PIPELINE_STARTED
 "$gpg_binary" --batch --no-tty --decrypt --output - "$archive" 2>/dev/null |
     runuser -u postgres -- /usr/lib/postgresql/18/bin/pg_restore --exit-on-error --single-transaction \
         --no-owner --no-acl -h /var/run/postgresql -d "$db" >/dev/null 2>&1
 pipe_status=( "${PIPESTATUS[@]}" )
+checkpoint PIPELINE_RETURNED
 set -e
 [[ "${pipe_status[0]}" == "0" ]] || fail GPG_DECRYPT_REFUSED
 [[ "${pipe_status[1]}" == "0" ]] || fail PG_RESTORE_REFUSED
