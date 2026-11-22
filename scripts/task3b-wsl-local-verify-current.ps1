@@ -77,7 +77,8 @@ if ($exitCode -ne 0 -or $passCount -ne 1) {
     'TEMP_DB_CHECK_REFUSED','TEMP_DB_EXISTS','TEMP_DB_CREATE_REFUSED',
     'GPG_DECRYPT_REFUSED','PG_RESTORE_REFUSED','TABLE_COUNT_QUERY_REFUSED',
     'TABLE_COUNT_MISMATCH','EF_HISTORY_QUERY_REFUSED','EF_HISTORY_MISSING',
-    'TEMP_DB_REMOVE_REFUSED','TEMP_DB_CLEANUP_UNVERIFIED','UNKNOWN')
+    'TEMP_DB_REMOVE_REFUSED','TEMP_DB_CLEANUP_UNVERIFIED',
+    'PREVIOUS_TEMP_DB_PRESENT','UNEXPECTED_HELPER_EXIT','UNKNOWN')
   $stages=@($raw | ForEach-Object {
     $line=([string]$_).Trim()
     if ($line -cmatch '^TASK4_WSL_PG18_STAGE=([A-Z0-9_]+)$' -and
@@ -91,7 +92,7 @@ if ($exitCode -ne 0 -or $passCount -ne 1) {
     # independently allowlisted helper checkpoint, never any raw process output.
     $checkpoints=@($raw | ForEach-Object {
       $line=([string]$_).Trim()
-      if ($line -cmatch '^TASK4_WSL_PG18_CHECKPOINT=(PG18_READY|ARCHIVE_PATH_ACCEPTED|GPG_BINARY_READY|TEMP_DB_CREATED|PIPELINE_COMPLETE|TABLE_COUNT_VERIFIED|EF_HISTORY_VERIFIED|TEMP_DB_REMOVED)$') {
+      if ($line -cmatch '^TASK4_WSL_PG18_CHECKPOINT=(PG18_READY|ARCHIVE_PATH_ACCEPTED|GPG_BINARY_READY|TEMP_DB_CREATED|PIPELINE_STARTED|PIPELINE_RETURNED|PIPELINE_COMPLETE|TABLE_COUNT_VERIFIED|EF_HISTORY_VERIFIED|TEMP_DB_REMOVED)$') {
         $Matches[1]
       }
     })
@@ -100,6 +101,15 @@ if ($exitCode -ne 0 -or $passCount -ne 1) {
     } else {
       Write-Output 'TASK3B_WSL_LOCAL_LAST_CHECKPOINT=NONE'
     }
+  }
+  $cleanups=@($raw | ForEach-Object {
+    $line=([string]$_).Trim()
+    if ($line -cmatch '^TASK4_WSL_PG18_EXIT_CLEANUP=(ABSENT_VERIFIED|NOT_VERIFIED)$') { $Matches[1] }
+  })
+  if ($cleanups.Count -eq 1 -and $cleanups[0] -ceq 'ABSENT_VERIFIED') {
+    Write-Output 'TASK3B_WSL_LOCAL_TEMP_DB=ABSENT_VERIFIED'
+  } else {
+    Write-Output 'TASK3B_WSL_LOCAL_TEMP_DB=NOT_VERIFIED'
   }
   throw 'TASK3B_WSL_LOCAL=ISOLATED_RESTORE_NOT_VERIFIED'
 }
