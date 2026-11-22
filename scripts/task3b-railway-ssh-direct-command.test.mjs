@@ -12,7 +12,7 @@ const match=ps.match(/\$remote = @'\r?\n([\s\S]*?)\r?\n'@/);
 assert.ok(match,'fixed owner-reviewed shell source must exist');
 assert.match(ps,/ToBase64String\(\[Text\.Encoding\]::UTF8\.GetBytes\(\$remote\)\)/);
 assert.match(ps,/\$runner = 'set -o pipefail; printf %s ' \+ \$remoteBase64 \+ ' \| base64 -d \| bash'/);
-assert.match(ps,/-- bash -c \$runner 2>&1/);
+assert.match(ps,/-- bash -c \$runner 2>\$null/);
 assert.match(ps,/\$priorErrorActionPreference = \$ErrorActionPreference/,
   'save caller preference before Railway native process');
 assert.match(ps,/\$ErrorActionPreference = 'Continue'[\s\S]*& \$railway\.Source ssh[\s\S]*\$remoteExit = \$LASTEXITCODE/,
