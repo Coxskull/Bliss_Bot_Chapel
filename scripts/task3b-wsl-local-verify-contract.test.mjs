@@ -50,5 +50,37 @@ try {
  assert.match(run({...base,capturedAtUtc:'2026-11-21T05:07:19Z'}),/REFUSED_HISTORIC_OR_FUTURE_ARCHIVE/);
  assert.match(run({...base,archiveFileName:'bliss-pg18-20261121T050719Z-f21cde9d.gpg'}),/REFUSED_ARCHIVE_MANIFEST_PAIR_MISMATCH/);
  assert.match(run(base),/REFUSED_CIPHERTEXT_SHA256/);
- console.log('TASK3B_CURRENT_WSL_LOCAL_SAFETY=PASS_OFFLINE_ONLY');
+ 
+// Stage diagnosis must remain non-secret, offline and fail-closed.
+const helper=readFileSync('scripts/task4-creator-wsl-pg18-restore.sh','utf8');
+const allowed=[
+  'ARGUMENTS','NOT_ROOT','COUNT_INVALID','TOOLS_MISSING','PG18_BINARY_MISSING',
+  'PG18_VERSION_MISMATCH','PG18_CLUSTER_NOT_READY','PG18_SOCKET_MISSING',
+  'PG18_QUERY_REFUSED','PG18_MAJOR_MISMATCH','ARCHIVE_PATH_INVALID',
+  'GPG_EXE_MISSING','TEMP_DB_NAME_INVALID','TEMP_DB_CHECK_REFUSED',
+  'TEMP_DB_EXISTS','TEMP_DB_CREATE_REFUSED','GPG_DECRYPT_REFUSED',
+  'PG_RESTORE_REFUSED','TABLE_COUNT_QUERY_REFUSED','TABLE_COUNT_MISMATCH',
+  'EF_HISTORY_QUERY_REFUSED','EF_HISTORY_MISSING','TEMP_DB_REMOVE_REFUSED',
+  'TEMP_DB_CLEANUP_UNVERIFIED','UNKNOWN'
+];
+assert.ok(helper.includes('TASK4_WSL_PG18_STAGE=%s'));
+assert.ok(helper.includes('TASK4_WSL_PG18_RESTORE=REFUSED_OR_NOT_VERIFIED'));
+assert.ok(helper.includes('pipe_status=('),'check each command exit status');
+assert.ok(helper.includes('fail GPG_DECRYPT_REFUSED'));
+assert.ok(helper.includes('fail PG_RESTORE_REFUSED'));
+assert.ok(helper.includes('trap cleanup EXIT'));
+assert.ok(helper.includes('[[ "$left" == "0" ]]'));
+assert.ok(source.includes("Write-Output ('TASK3B_WSL_LOCAL_STAGE=' + $stages[0])"));
+assert.ok(source.includes('TASK3B_WSL_LOCAL_STAGE=TRANSPORT_OR_UNCLASSIFIED'));
+assert.doesNotMatch(source,/Write-(?:Output|Host)\s+\$(?:raw|line|archive|gpg|source)/);
+for(const stage of allowed) assert.ok(source.includes("'"+stage+"'"),'missing stage '+stage);
+// With no arguments, the helper must refuse before any DB or GPG operation.
+const early=spawnSync('bash',['scripts/task4-creator-wsl-pg18-restore.sh'],
+  {encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(early.status,2);
+assert.match(early.stdout,/TASK4_WSL_PG18_STAGE=ARGUMENTS/);
+assert.doesNotMatch(early.stdout,/pg_restore:|gpg:|password|\/mnt\/|\.gpg/);
+console.log('TASK3B_WSL_RESTORE_STAGE_DIAGNOSTIC=PASS_SYNTHETIC_ONLY');
+
+console.log('TASK3B_CURRENT_WSL_LOCAL_SAFETY=PASS_OFFLINE_ONLY');
 } finally {rmSync(tmp,{recursive:true,force:true});}
