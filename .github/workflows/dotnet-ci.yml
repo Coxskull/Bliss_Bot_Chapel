@@ -139,11 +139,16 @@ jobs:
         run: node scripts/task3b-guarded-railway-install-contract.test.mjs
       - name: Verify Task4 creator-only incremental migration and recovery controls (offline)
         run: node scripts/task4-creator-guarded-migration-contract.test.mjs
+      - name: Verify WSL2 Ubuntu PG18 recovery without Docker (offline)
+        run: |
+          bash -n scripts/task4-creator-wsl-pg18-restore.sh
+          node scripts/task4-creator-wsl-recovery-contract.test.mjs
       - name: Parse Task4 owner-only PowerShell wrappers; never run backups, SSH or migration
         shell: pwsh
         run: |
           foreach ($path in @('scripts/task4-creator-guarded-incremental.ps1',
-                              'scripts/task4-creator-owner-complete.ps1')) {
+                              'scripts/task4-creator-owner-complete.ps1',
+                              'scripts/task4-creator-wsl-pg18-isolated-restore.ps1')) {
             $tokens = $null
             $parseErrors = $null
             [void][System.Management.Automation.Language.Parser]::ParseFile(
