@@ -137,6 +137,16 @@ jobs:
           node scripts/test_advertiser_registration_receipt_runtime.mjs
       - name: Verify owner-only guarded Task3B PG18 installation contract
         run: node scripts/task3b-guarded-railway-install-contract.test.mjs
+      - name: Verify Task4 creator-only incremental migration and recovery controls (offline)
+        run: node scripts/task4-creator-guarded-migration-contract.test.mjs
+      - name: Parse Task4 owner-only PowerShell; never execute SSH or migrate
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'scripts/task4-creator-guarded-incremental.ps1', [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -gt 0) { throw 'Task4 owner migration PowerShell parse failed' }
       - name: Verify private Bliss PG18 encrypted backup and isolated restore contract
         run: node scripts/task3b-bliss-pg18-recovery-contract.test.mjs
       - name: Verify direct Railway SSH shell command and synthetic PG18 backup framing offline
