@@ -44,7 +44,7 @@ function run(lines){
  writeFileSync(file,source);
  const result=spawnSync('pwsh',['-NoProfile','-NonInteractive','-File',file],{encoding:'utf8',maxBuffer:8192,timeout:10000});
  assert.ok(!result.error,'pwsh fixture must start');
- assert.doesNotMatch(result.stdout,b64);
+ assert.ok(!result.stdout.includes(b64),'fixture must never print encoded backup');
  return result;
 }
 try{
