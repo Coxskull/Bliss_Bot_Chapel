@@ -4,6 +4,15 @@
 # No Railway connection, exposed TCP port, plaintext dump, or persistent account.
 set -euo pipefail
 umask 077
+# Fixed, non-sensitive progress markers. No filenames, keys or SQL output.
+# Used only to locate an unexpected silent exit when the normal fail stage is lost.
+checkpoint() {
+    case "${1:-}" in
+      PG18_READY|ARCHIVE_PATH_ACCEPTED|GPG_BINARY_READY|TEMP_DB_CREATED|PIPELINE_COMPLETE|TABLE_COUNT_VERIFIED|EF_HISTORY_VERIFIED|TEMP_DB_REMOVED)
+        printf 'TASK4_WSL_PG18_CHECKPOINT=%s\n' "$1" ;;
+      *) return 2 ;;
+    esac
+}
 # Fixed, non-sensitive classifications, never emit paths, keys or SQL errors.
 fail() {
     case "${1:-UNKNOWN}" in
@@ -35,13 +44,16 @@ fi
 major="$(runuser -u postgres -- psql -XAt -v ON_ERROR_STOP=1 -h /var/run/postgresql -d postgres \
     -c "SELECT current_setting('server_version_num')::integer / 10000" 2>/dev/null)" || fail PG18_QUERY_REFUSED
 [[ "$major" == "18" ]] || fail PG18_MAJOR_MISMATCH
+checkpoint PG18_READY
 
 archive="$(printf '%s' "$1" | base64 -d)" || fail ARCHIVE_PATH_INVALID
 [[ "$archive" == [A-Za-z]:\\* ]] || fail ARCHIVE_PATH_INVALID
 [[ "$archive" == *.gpg ]] || fail ARCHIVE_PATH_INVALID
+checkpoint ARCHIVE_PATH_ACCEPTED
 gpg_windows="$(printf '%s' "$3" | base64 -d)" || fail GPG_EXE_MISSING
 gpg_binary="$(wslpath -u "$gpg_windows")" || fail GPG_EXE_MISSING
 [[ "$gpg_binary" == /mnt/* && "$gpg_binary" == *.exe && -x "$gpg_binary" ]] || fail GPG_EXE_MISSING
+checkpoint GPG_BINARY_READY
 # No pathname expansion, eval, command substitution of file data or content print.
 # Windows gpg.exe keeps decryption inside the existing owner-controlled keyring.
 db="$(printf 'alpha_task4_wsl_restore_%s_%s_%s' "$(date -u +%Y%m%d%H%M%S)" "$RANDOM" "$RANDOM")"
@@ -58,6 +70,7 @@ cleanup() {
 trap cleanup EXIT
 runuser -u postgres -- createdb -h /var/run/postgresql "$db" >/dev/null 2>&1 || fail TEMP_DB_CREATE_REFUSED
 created=1
+checkpoint TEMP_DB_CREATED
 # Binary pipe, exact exit checks via pipefail; no plaintext dump file.
 # Restore against a brand-new LOCAL socket-only database that is destroyed
 # before returning a success receipt. This is separate from historic WSL DBs.
@@ -71,18 +84,22 @@ pipe_status=( "${PIPESTATUS[@]}" )
 set -e
 [[ "${pipe_status[0]}" == "0" ]] || fail GPG_DECRYPT_REFUSED
 [[ "${pipe_status[1]}" == "0" ]] || fail PG_RESTORE_REFUSED
+checkpoint PIPELINE_COMPLETE
 actual="$(runuser -u postgres -- psql -XAt -v ON_ERROR_STOP=1 \
   -h /var/run/postgresql -d "$db" \
   -c "SELECT count(*) FROM pg_catalog.pg_tables WHERE schemaname='public'" 2>/dev/null)" || fail TABLE_COUNT_QUERY_REFUSED
 [[ "$actual" == "$expected" ]] || fail TABLE_COUNT_MISMATCH
+checkpoint TABLE_COUNT_VERIFIED
 history="$(runuser -u postgres -- psql -XAt -v ON_ERROR_STOP=1 \
   -h /var/run/postgresql -d "$db" \
   -c "SELECT CASE WHEN to_regclass('public.\"__EFMigrationsHistory\"') IS NOT NULL THEN 1 ELSE 0 END" 2>/dev/null)" || fail EF_HISTORY_QUERY_REFUSED
 [[ "$history" == "1" ]] || fail EF_HISTORY_MISSING
+checkpoint EF_HISTORY_VERIFIED
 # Verify actual cleanup, not simply successful restore. Never drop an old DB.
 runuser -u postgres -- dropdb -h /var/run/postgresql "$db" >/dev/null 2>&1 || fail TEMP_DB_REMOVE_REFUSED
 created=0
 left="$(runuser -u postgres -- psql -XAt -v ON_ERROR_STOP=1 -h /var/run/postgresql -d postgres \
     -c "SELECT count(*) FROM pg_database WHERE datname='$db'" 2>/dev/null)" || fail
 [[ "$left" == "0" ]] || fail TEMP_DB_CLEANUP_UNVERIFIED
+checkpoint TEMP_DB_REMOVED
 printf '%s\n' "TASK4_WSL_PG18_RESTORE=PASS"
