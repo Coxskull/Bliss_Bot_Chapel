@@ -72,6 +72,11 @@ Write-Output 'TASK3B_DB_PUBLIC_PROXY=UNCHANGED_NONE'
 # many embedded shell quotes/dollar signs of the script.
 # Unlike the broken CLIENT stdin pipe, this decodes locally INSIDE the remote
 # shell and pipes into a remote bash, with pipefail retained at both stages.
+# Windows Git checkouts may convert this PowerShell here-string to CRLF.
+# Linux Bash interprets the trailing carriage return as part of 'pipefail',
+# producing exit 2 before any controlled failure marker is emitted.
+# Normalize ONLY the reviewed remote source, not GPG or dump bytes.
+$remote = $remote.Replace("`r`n", "`n").Replace("`r", "")
 $remoteBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($remote))
 $runner = 'set -o pipefail; printf %s ' + $remoteBase64 + ' | base64 -d | bash'
 $raw = @()
