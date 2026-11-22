@@ -76,7 +76,7 @@ assert.doesNotMatch(source,/base64 -d \| bash -s --/,
   'do not stream executable shell source into its own child stdin');
 // Reproduce the shell-source consumption issue offline, with only a harmless
 // synthetic stdin consumer. The repaired bash -c transport must reach AFTER.
-const scriptDrain='printf "TASK3B_PIPE=START\\n"; cat >/dev/null; printf "TASK3B_PIPE=AFTER\\n"';
+const scriptDrain='printf "TASK3B_PIPE=START\\n";\ncat >/dev/null\nprintf "TASK3B_PIPE=AFTER\\n"';
 const wrongTransport=spawnSync('bash',['-s'],{input:scriptDrain+'\\n',encoding:'utf8',timeout:10000,maxBuffer:4096});
 assert.equal(wrongTransport.status,0);
 assert.doesNotMatch(wrongTransport.stdout,/TASK3B_PIPE=AFTER/);
