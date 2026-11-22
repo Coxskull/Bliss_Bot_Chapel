@@ -5,15 +5,16 @@
 set -euo pipefail
 umask 077
 fail() { printf '%s\n' "TASK4_WSL_PG18_RESTORE=REFUSED_OR_NOT_VERIFIED"; exit 2; }
-[[ $# -eq 2 ]] || fail
+[[ $# -eq 3 ]] || fail
 [[ "$(id -u)" = "0" ]] || fail
 [[ "$2" =~ ^[0-9]{1,8}$ ]] || fail
 expected="$2"
 (( expected >= 90 && expected <= 1000000 )) || fail
-for cmd in base64 gpg.exe pg_restore psql createdb dropdb runuser date; do
+for cmd in base64 wslpath pg_restore psql createdb dropdb runuser date; do
     command -v "$cmd" >/dev/null 2>&1 || fail
 done
-[[ "$(pg_restore --version)" == *"PostgreSQL) 18."* ]] || fail
+[[ -x /usr/lib/postgresql/18/bin/pg_restore ]] || fail
+[[ "$(/usr/lib/postgresql/18/bin/pg_restore --version)" == *"PostgreSQL) 18."* ]] || fail
 [[ -S /var/run/postgresql/.s.PGSQL.5432 ]] || fail
 major="$(runuser -u postgres -- psql -XAt -v ON_ERROR_STOP=1 -h /var/run/postgresql -d postgres \
     -c "SELECT current_setting('server_version_num')::integer / 10000" 2>/dev/null)" || fail
@@ -22,6 +23,9 @@ major="$(runuser -u postgres -- psql -XAt -v ON_ERROR_STOP=1 -h /var/run/postgre
 archive="$(printf '%s' "$1" | base64 -d)" || fail
 [[ "$archive" == [A-Za-z]:\\* ]] || fail
 [[ "$archive" == *.gpg ]] || fail
+gpg_windows="$(printf '%s' "$3" | base64 -d)" || fail
+gpg_binary="$(wslpath -u "$gpg_windows")" || fail
+[[ "$gpg_binary" == /mnt/* && "$gpg_binary" == *.exe && -x "$gpg_binary" ]] || fail
 # No pathname expansion, eval, command substitution of file data or content print.
 # Windows gpg.exe keeps decryption inside the existing owner-controlled keyring.
 db="$(printf 'alpha_task4_wsl_restore_%s_%s_%s' "$(date -u +%Y%m%d%H%M%S)" "$RANDOM" "$RANDOM")"
@@ -41,8 +45,8 @@ created=1
 # Binary pipe, exact exit checks via pipefail; no plaintext dump file.
 # Restore against a brand-new LOCAL socket-only database that is destroyed
 # before returning a success receipt. This is separate from historic WSL DBs.
-if ! (gpg.exe --batch --no-tty --decrypt --output - "$archive" 2>/dev/null |
-      runuser -u postgres -- pg_restore --exit-on-error --single-transaction \
+if ! ("$gpg_binary" --batch --no-tty --decrypt --output - "$archive" 2>/dev/null |
+      runuser -u postgres -- /usr/lib/postgresql/18/bin/pg_restore --exit-on-error --single-transaction \
           --no-owner --no-acl -h /var/run/postgresql -d "$db" >/dev/null 2>&1); then
     fail
 fi
