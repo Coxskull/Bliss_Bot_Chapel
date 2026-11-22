@@ -58,7 +58,8 @@ const allowed=[
   'PG18_VERSION_MISMATCH','PG18_CLUSTER_NOT_READY','PG18_SOCKET_MISSING',
   'PG18_QUERY_REFUSED','PG18_MAJOR_MISMATCH','ARCHIVE_PATH_INVALID',
   'GPG_EXE_MISSING','TEMP_DB_NAME_INVALID','TEMP_DB_CHECK_REFUSED',
-  'TEMP_DB_EXISTS','TEMP_DB_CREATE_REFUSED','GPG_DECRYPT_REFUSED',
+  'TEMP_DB_EXISTS','TEMP_DB_CREATE_REFUSED',
+  'PREVIOUS_TEMP_DB_PRESENT','UNEXPECTED_HELPER_EXIT','GPG_DECRYPT_REFUSED',
   'PG_RESTORE_REFUSED','TABLE_COUNT_QUERY_REFUSED','TABLE_COUNT_MISMATCH',
   'EF_HISTORY_QUERY_REFUSED','EF_HISTORY_MISSING','TEMP_DB_REMOVE_REFUSED',
   'TEMP_DB_CLEANUP_UNVERIFIED','UNKNOWN'
@@ -69,8 +70,21 @@ assert.ok(helper.includes('pipe_status=('),'check each command exit status');
 assert.ok(helper.includes('fail GPG_DECRYPT_REFUSED'));
 assert.ok(helper.includes('fail PG_RESTORE_REFUSED'));
 assert.ok(helper.includes('trap cleanup EXIT'));
+assert.ok(helper.includes('trap - EXIT'));
+assert.ok(helper.includes('TASK4_WSL_PG18_EXIT_CLEANUP=ABSENT_VERIFIED'));
+assert.ok(helper.includes('TASK4_WSL_PG18_EXIT_CLEANUP=NOT_VERIFIED'));
+assert.ok(helper.includes('PREVIOUS_TEMP_DB_PRESENT'));
+assert.ok(helper.includes('UNEXPECTED_HELPER_EXIT'));
+assert.ok(helper.includes('checkpoint PIPELINE_STARTED'));
+assert.ok(helper.includes('checkpoint PIPELINE_RETURNED'));
+assert.ok(helper.includes('stage_reported=1'));
+assert.ok(helper.includes("SELECT count(*) FROM pg_database WHERE datname ~"));
+assert.ok(source.includes('TASK3B_WSL_LOCAL_TEMP_DB=ABSENT_VERIFIED'));
+assert.ok(source.includes('TASK3B_WSL_LOCAL_TEMP_DB=NOT_VERIFIED'));
+assert.ok(source.includes('TASK4_WSL_PG18_EXIT_CLEANUP=(ABSENT_VERIFIED|NOT_VERIFIED)'));
+
 const checkpoints=['PG18_READY','ARCHIVE_PATH_ACCEPTED','GPG_BINARY_READY','TEMP_DB_CREATED',
-  'PIPELINE_COMPLETE','TABLE_COUNT_VERIFIED','EF_HISTORY_VERIFIED','TEMP_DB_REMOVED'];
+  'PIPELINE_STARTED','PIPELINE_RETURNED','PIPELINE_COMPLETE','TABLE_COUNT_VERIFIED','EF_HISTORY_VERIFIED','TEMP_DB_REMOVED'];
 assert.ok(helper.includes('TASK4_WSL_PG18_CHECKPOINT=%s'),'checkpoint emits fixed vocabulary only');
 assert.ok(source.includes('TASK3B_WSL_LOCAL_LAST_CHECKPOINT=NONE'));
 assert.ok(source.includes('TASK3B_WSL_LOCAL_LAST_CHECKPOINT='));
