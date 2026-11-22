@@ -14,8 +14,19 @@ const extract=s=>{
 };
 const script=extract(preflight),original=extract(capture);
 assert.ok(preflight.includes("Write-Output ('TASK3B_REMOTE_PREFLIGHT=' + $stage)"));
+for (const [code,stage] of [
+  [31,'SCOPE_MISMATCH'],[32,'DATABASE_TOOL_MISSING'],
+  [33,'DATABASE_ENV_MISSING'],[34,'DATABASE_CONNECTION_OR_QUERY_REFUSED'],
+  [35,'DATABASE_IDENTITY_MISMATCH'],[36,'PG_DUMP_SCHEMA_PREFLIGHT_REFUSED']
+]) {
+  assert.ok(script.includes(stage+') stage_exit='+code), 'reviewed remote exit code '+code);
+  assert.ok(preflight.includes(code+" = '"+stage+"'"), 'PowerShell maps fixed exit '+code);
+}
+assert.ok(preflight.includes('$exitStage.ContainsKey([int]$exitCode)'),
+  'fallback from missing stdout to trusted exit code');
+
 assert.ok(preflight.includes("-s 'Postgres' -e production -- bash -c $runner 2>&1"));
-assert.ok(preflight.includes('TRANSPORT_OR_OUTPUT_UNVERIFIED'));
+assert.ok(preflight.includes('REMOTE_SHELL_OR_OUTPUT_UNVERIFIED'));
 assert.doesNotMatch(preflight,/Write-(?:Output|Host)\s+\$raw|Start-Transcript|Get-ChildItem Env:/);
 assert.doesNotMatch(script,/--data-only|--format=custom/);
 assert.match(script,/pg_dump --dbname=bliss --schema-only --no-owner --no-acl --file=\/dev\/null/);
@@ -52,22 +63,22 @@ try{
   assert.equal(r.status,0,r.stderr);
   assert.equal(r.stdout.trim(),'TASK3B_REMOTE_PREFLIGHT=PASS_SCOPE_DATABASE_AND_DUMP_TOOLS');
   r=run({RAILWAY_SERVICE_ID:'not-the-approved-service'});
-  assert.equal(r.status,2);
+  assert.equal(r.status,31);
   assert.equal(r.stdout.trim(),'TASK3B_REMOTE_PREFLIGHT=SCOPE_MISMATCH');
   r=run({PGPASSWORD:''});
-  assert.equal(r.status,2);
+  assert.equal(r.status,33);
   assert.equal(r.stdout.trim(),'TASK3B_REMOTE_PREFLIGHT=DATABASE_ENV_MISSING');
   r=run({FAKE_DBIDENTITY:'bliss|17|99'});
-  assert.equal(r.status,2);
+  assert.equal(r.status,35);
   assert.equal(r.stdout.trim(),'TASK3B_REMOTE_PREFLIGHT=DATABASE_IDENTITY_MISMATCH');
   fake('psql','exit 9');
   r=run();
-  assert.equal(r.status,2);
+  assert.equal(r.status,34);
   assert.equal(r.stdout.trim(),'TASK3B_REMOTE_PREFLIGHT=DATABASE_CONNECTION_OR_QUERY_REFUSED');
   fake('psql',"printf '%s\\n' \"$FAKE_DBIDENTITY\"");
   fake('pg_dump','exit 13');
   r=run();
-  assert.equal(r.status,2);
+  assert.equal(r.status,36);
   assert.equal(r.stdout.trim(),'TASK3B_REMOTE_PREFLIGHT=PG_DUMP_SCHEMA_PREFLIGHT_REFUSED');
   console.log('TASK3B_REMOTE_EXIT2_CLASSIFICATION=PASS_SYNTHETIC_ONLY');
 }finally{rmSync(folder,{recursive:true,force:true});}
