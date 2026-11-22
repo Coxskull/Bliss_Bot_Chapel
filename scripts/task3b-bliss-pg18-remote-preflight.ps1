@@ -49,6 +49,11 @@ pg_dump --dbname=bliss --schema-only --no-owner --no-acl --file=/dev/null >/dev/
 printf '%s\n' 'TASK3B_REMOTE_PREFLIGHT=PASS_SCOPE_DATABASE_AND_DUMP_TOOLS'
 '@
 # Source code only; no credentials or database rows encoded.
+# Windows Git checkouts may convert this PowerShell here-string to CRLF.
+# Linux Bash interprets the trailing carriage return as part of 'pipefail',
+# producing exit 2 before any controlled failure marker is emitted.
+# Normalize ONLY the reviewed remote source, not GPG or dump bytes.
+$remote = $remote.Replace("`r`n", "`n").Replace("`r", "")
 $source64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($remote))
 $runner = 'set -o pipefail; printf %s ' + $source64 + ' | base64 -d | bash'
 $raw = @()
