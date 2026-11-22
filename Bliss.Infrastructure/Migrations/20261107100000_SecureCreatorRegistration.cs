@@ -58,6 +58,12 @@ public sealed class SecureCreatorRegistration : Migration
         migrationBuilder.CreateIndex("IX_CreatorRegistrationReceipts_RequestKey", "CreatorRegistrationReceipts", "RequestKey", unique: true);
         migrationBuilder.CreateIndex("IX_CreatorRegistrationReceipts_Subject_CreatorId", "CreatorRegistrationReceipts", new[] { "Subject", "CreatorId" }, unique: true);
 
+        // Defense in depth if these public-schema tables are ever exposed to
+        // a separate API role: deny all rows unless a future reviewed
+        // policy is granted. The application migration/owner role bypasses
+        // standard RLS; anon/authenticated have no table grants.
+        migrationBuilder.Sql("ALTER TABLE \"CreatorAccountMemberships\" ENABLE ROW LEVEL SECURITY;");
+        migrationBuilder.Sql("ALTER TABLE \"CreatorRegistrationReceipts\" ENABLE ROW LEVEL SECURITY;");
         migrationBuilder.Sql("REVOKE ALL ON TABLE \"CreatorAccountMemberships\", \"CreatorRegistrationReceipts\" FROM PUBLIC;");
         migrationBuilder.Sql("DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN EXECUTE 'REVOKE ALL ON TABLE \"CreatorAccountMemberships\", \"CreatorRegistrationReceipts\" FROM anon'; END IF; IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN EXECUTE 'REVOKE ALL ON TABLE \"CreatorAccountMemberships\", \"CreatorRegistrationReceipts\" FROM authenticated'; END IF; END $$;");
         migrationBuilder.Sql("CREATE FUNCTION prevent_creator_registration_receipt_mutation() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'creator registration receipts are append-only'; END; $$;");
