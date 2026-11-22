@@ -1,16 +1,20 @@
 # ALPHA GLOBAL MEDIA — Task #4 ONE-PC OWNER HANDOFF.
-# Reuses existing reviewed capture -> DigitalOcean ciphertext -> isolated PG18
-# restore -> guarded creator-only migration. It is NOT an unattended agent.
+# Reuses existing reviewed capture -> DigitalOcean ciphertext -> NEW disposable
+# WSL2 PG18 restore (default, NO Docker) -> guarded creator-only migration. It is NOT an unattended agent.
 # No new Railway/DO resources, public database port, plaintext backup file,
 # OAuth secret, Factory STOP or live-payment activation.
-# Existing fresh verified evidence can be reused with -ReceiptPath.
+# Existing NEW fresh verified evidence can be reused with -ReceiptPath.
+# Prior Nov21 99-table WSL restore remains accepted, never re-run here.
 [CmdletBinding()]
 param(
     [string] $ReceiptPath = '',
     [string] $DropletIPv4 = '',
     [string] $SshUser = '',
     [string] $RemoteDirectory = '',
-    [string] $OutputDirectory = (Join-Path $HOME 'Downloads')
+    [string] $OutputDirectory = (Join-Path $HOME 'Downloads'),
+    # WSL is the owner's already verified 99-table recovery environment.
+    # Docker remains supported for operators who actually have it installed.
+    [ValidateSet('WSL','Docker')][string] $RestoreEngine = 'WSL'
 )
 $ErrorActionPreference = 'Stop'
 $migration = Join-Path $PSScriptRoot 'task4-creator-guarded-incremental.ps1'
@@ -26,7 +30,11 @@ if (-not [string]::IsNullOrWhiteSpace($ReceiptPath)) {
 }
 $backup = Join-Path $PSScriptRoot 'task3b-owner-start-backup.ps1'
 $offhost = Join-Path $PSScriptRoot 'task3b-bliss-pg18-offhost.ps1'
-$restore = Join-Path $PSScriptRoot 'task3b-bliss-pg18-isolated-restore.ps1'
+$restore = if ($RestoreEngine -ceq 'WSL') {
+    Join-Path $PSScriptRoot 'task4-creator-wsl-pg18-isolated-restore.ps1'
+} else {
+    Join-Path $PSScriptRoot 'task3b-bliss-pg18-isolated-restore.ps1'
+}
 foreach ($path in @($backup, $offhost, $restore)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw 'TASK4_OWNER_COMPLETE=EXISTING_RECOVERY_HELPER_MISSING'
@@ -64,7 +72,7 @@ if (-not $?) { throw 'TASK4_OWNER_COMPLETE=OFFHOST_COPY_FAILED' }
 $offhostLine = @($copied | Where-Object { $_ -cmatch '^TASK3B_OFFHOST_MANIFEST=(.+)$' })
 if ($offhostLine.Count -ne 1) { throw 'TASK4_OWNER_COMPLETE=OFFHOST_RECEIPT_MISSING' }
 $offhostPath = ([string]$offhostLine[0]).Substring('TASK3B_OFFHOST_MANIFEST='.Length)
-Write-Output 'TASK4_OWNER_COMPLETE=VERIFY_DISPOSABLE_ISOLATED_PG18_RESTORE'
+Write-Output ('TASK4_OWNER_COMPLETE=VERIFY_DISPOSABLE_' + $RestoreEngine + '_PG18_RESTORE')
 & $restore -OffhostManifestPath $offhostPath | Tee-Object -Variable restored | Out-Host
 if (-not $?) { throw 'TASK4_OWNER_COMPLETE=ISOLATED_RESTORE_FAILED' }
 $restoredLine = @($restored | Where-Object { $_ -cmatch '^TASK3B_PRIVATE_RECOVERY_EVIDENCE=(.+)$' })
