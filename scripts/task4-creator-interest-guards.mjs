@@ -13,6 +13,9 @@ const privacy = read("frontend/public/alpha-privacy.html");
 const creatorAccount = read("frontend/public/creator-account.html");
 const creatorRegistration = read("frontend/public/creator-registration.html");
 const creatorRegistrationJs = read("frontend/public/creator-registration.js");
+const creatorAccountPrivacy = read("frontend/public/creator-account-privacy.html");
+const creatorAccountTerms = read("frontend/public/creator-account-terms.html");
+const creatorRegistrationApi = read("Bliss.Api/Controllers/CreatorRegistrationController.cs");
 const creatorDashboard = read("frontend/public/creator-dashboard.html");
 const creatorDashboardJs = read("frontend/public/creator-dashboard.js");
 const creatorDashboardCss = read("frontend/public/creator-dashboard.css");
@@ -69,8 +72,18 @@ has(creatorRegistration, 'id="signup-form"', "registration page has explicit Aut
 has(creatorRegistration, 'id="registration-form"', "profile registration remains separate from Auth signup");
 has(creatorRegistration, 'name="password" type="password"', "password enters only browser-to-Supabase Auth flow");
 has(creatorRegistration, "Optional: I agree to receive marketing communications", "optional marketing consent is separate");
-has(creatorRegistration, "creator-privacy-2026-11-07-v1", "versioned privacy consent captured");
-has(creatorRegistration, "creator-terms-2026-11-07-v1", "versioned terms consent captured");
+has(creatorRegistration, "creator-privacy-2026-11-22-v2", "versioned privacy consent captured");
+has(creatorRegistration, "creator-terms-2026-11-22-v2", "versioned terms consent captured");
+for (const [document, version] of [
+  [creatorAccountPrivacy, "creator-privacy-2026-11-22-v2"], [creatorAccountTerms, "creator-terms-2026-11-22-v2"],
+  [creatorRegistration, "creator-privacy-2026-11-22-v2"], [creatorRegistration, "creator-terms-2026-11-22-v2"],
+  [creatorRegistrationJs, "creator-privacy-2026-11-22-v2"], [creatorRegistrationJs, "creator-terms-2026-11-22-v2"],
+  [creatorRegistrationApi, "creator-privacy-2026-11-22-v2"], [creatorRegistrationApi, "creator-terms-2026-11-22-v2"]
+]) has(document, version, "effective creator account consent version matches server and browser");
+has(creatorRegistration, "/creator-account-privacy.html", "creator form links effective account privacy notice");
+has(creatorRegistration, "/creator-account-terms.html", "creator form links effective account registration terms");
+has(creatorAccountPrivacy, "no automatic deletion", "creator notice accurately limits deletion commitments");
+has(creatorAccountTerms, "PENDING_REVIEW", "creator terms prohibit automatic account approval");
 has(creatorRegistrationJs, 'fetch(endpoint,', "password/signup request goes directly to Supabase Auth");
 has(creatorRegistrationJs, 'fetch("/api/creators/register"', "profile registration uses same-origin authenticated API");
 has(creatorRegistrationJs, 'credentials: "same-origin"', "registration does not send app cookies cross-origin");

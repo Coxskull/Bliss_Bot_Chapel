@@ -19,8 +19,8 @@ namespace Bliss.Api.Controllers;
 [Route("api/creators")]
 public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthenticationOptions auth) : ControllerBase
 {
-    public const string PrivacyNoticeVersion = "creator-privacy-2026-11-07-v1";
-    public const string TermsVersion = "creator-terms-2026-11-07-v1";
+    public const string PrivacyNoticeVersion = "creator-privacy-2026-11-22-v2";
+    public const string TermsVersion = "creator-terms-2026-11-22-v2";
 
     [Authorize]
     [HttpPost("register")]

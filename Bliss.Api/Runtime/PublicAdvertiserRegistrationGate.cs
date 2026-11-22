@@ -49,6 +49,7 @@ public static class PublicAdvertiserRegistrationGate
         "/creator-registration.html", "/creator-registration.js",
         "/api/creators/registration",
         "/alpha-privacy.html", "/alpha-terms.html",
+        "/creator-account-privacy.html", "/creator-account-terms.html",
         "/join-creator.html", "/alpha-intake.js"
     };
     private static readonly HashSet<string> CreatorPostPaths = new(StringComparer.OrdinalIgnoreCase)

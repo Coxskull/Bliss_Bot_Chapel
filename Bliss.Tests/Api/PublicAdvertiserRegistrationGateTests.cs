@@ -79,6 +79,8 @@ public sealed class PublicAdvertiserRegistrationGateTests
     [InlineData("POST", "/api/creators/register")]
     [InlineData("GET", "/alpha-privacy.html")]
     [InlineData("GET", "/alpha-terms.html")]
+    [InlineData("GET", "/creator-account-privacy.html")]
+    [InlineData("GET", "/creator-account-terms.html")]
     public void Creator_registration_routes_require_a_separate_release_flag(string method, string path)
     {
         var request = new PathString(path);
