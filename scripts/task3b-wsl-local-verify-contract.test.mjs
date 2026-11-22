@@ -70,19 +70,29 @@ assert.ok(helper.includes('TASK4_WSL_PG18_RESTORE=REFUSED_OR_NOT_VERIFIED'));
 assert.ok(helper.includes('pipe_status=('),'check each command exit status');
 assert.ok(helper.includes('"$archive" </dev/null 2>/dev/null |'),
   'Windows GPG must not read the Bash script source from stdin');
-assert.ok(source.includes('exec bash -c "$code" -- '),
-  'load complete reviewed shell source before GPG runs');
-assert.doesNotMatch(source,/base64 -d \| bash -s --/,
-  'do not stream executable shell source into its own child stdin');
-// Reproduce the shell-source consumption issue offline, with only a harmless
-// synthetic stdin consumer. The repaired bash -c transport must reach AFTER.
-const scriptDrain='printf "TASK3B_PIPE=START\\n";\ncat >/dev/null\nprintf "TASK3B_PIPE=AFTER\\n"';
-const wrongTransport=spawnSync('bash',['-s'],{input:scriptDrain+'\\n',encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.ok(source.includes('base64 -d | bash -s -- '),
+  'use previously observed, quote-free Windows PowerShell to WSL transport');
+assert.doesNotMatch(source,/exec bash -c "\$code"/,
+  'do not require embedded shell quotes to survive Windows PowerShell 5.1');
+assert.ok(helper.includes('"$archive" </dev/null 2>/dev/null |'),
+  'Windows GPG must never inherit stdin carrying Bash source');
+// Offline repro: a stdin-reading child can eat the rest of a bash -s script;
+// with stdin explicitly closed, the script reaches its following instruction.
+const scriptUnsafe='printf "TASK3B_PIPE=START\\n";\ncat >/dev/null\nprintf "TASK3B_PIPE=AFTER\\n"';
+const scriptSafe='printf "TASK3B_PIPE=START\\n";\ncat </dev/null >/dev/null\nprintf "TASK3B_PIPE=AFTER\\n"';
+const wrongTransport=spawnSync('bash',['-s'],{input:scriptUnsafe+'\n',encoding:'utf8',timeout:10000,maxBuffer:4096});
 assert.equal(wrongTransport.status,0);
 assert.doesNotMatch(wrongTransport.stdout,/TASK3B_PIPE=AFTER/);
-const safeTransport=spawnSync('bash',['-c',scriptDrain,'--'],{input:'',encoding:'utf8',timeout:10000,maxBuffer:4096});
+const safeTransport=spawnSync('bash',['-s'],{input:scriptSafe+'\n',encoding:'utf8',timeout:10000,maxBuffer:4096});
 assert.equal(safeTransport.status,0);
 assert.match(safeTransport.stdout,/TASK3B_PIPE=AFTER/);
+// Quote-free base64 command uses only base64 alphabet and decimal count;
+// no local file paths, decrypted data or secrets participate in the test.
+const testB64=Buffer.from(scriptSafe,'utf8').toString('base64');
+const entry='set -o pipefail; printf %s '+testB64+' | base64 -d | bash -s -- QUJD 99 REVG';
+const transport=spawnSync('bash',['-lc',entry],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(transport.status,0);
+assert.match(transport.stdout,/TASK3B_PIPE=AFTER/);
 
 assert.ok(helper.includes('fail GPG_DECRYPT_REFUSED'));
 assert.ok(helper.includes('fail PG_RESTORE_REFUSED'));
