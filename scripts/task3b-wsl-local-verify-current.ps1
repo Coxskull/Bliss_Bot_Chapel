@@ -87,6 +87,19 @@ if ($exitCode -ne 0 -or $passCount -ne 1) {
     Write-Output ('TASK3B_WSL_LOCAL_STAGE=' + $stages[0])
   } else {
     Write-Output 'TASK3B_WSL_LOCAL_STAGE=TRANSPORT_OR_UNCLASSIFIED'
+    # If a normal failure stage never reached PowerShell, show only the last
+    # independently allowlisted helper checkpoint, never any raw process output.
+    $checkpoints=@($raw | ForEach-Object {
+      $line=([string]$_).Trim()
+      if ($line -cmatch '^TASK4_WSL_PG18_CHECKPOINT=(PG18_READY|ARCHIVE_PATH_ACCEPTED|GPG_BINARY_READY|TEMP_DB_CREATED|PIPELINE_COMPLETE|TABLE_COUNT_VERIFIED|EF_HISTORY_VERIFIED|TEMP_DB_REMOVED)$') {
+        $Matches[1]
+      }
+    })
+    if ($checkpoints.Count -gt 0) {
+      Write-Output ('TASK3B_WSL_LOCAL_LAST_CHECKPOINT=' + $checkpoints[-1])
+    } else {
+      Write-Output 'TASK3B_WSL_LOCAL_LAST_CHECKPOINT=NONE'
+    }
   }
   throw 'TASK3B_WSL_LOCAL=ISOLATED_RESTORE_NOT_VERIFIED'
 }
