@@ -127,6 +127,8 @@ if (runtime.PublicAdvertiserRegistrationOnly
         || !authentication.AdvertiserRegistrationRequested))
     throw new InvalidOperationException(
         "Public advertiser signup requires preview isolation, issuer authentication and an explicit registration flag.");
+// A pending applicant's enrollment lane is selected by the server during
+// challenge, bound into protected OIDC state, and reduced to exactly one marker.
 if (!runtime.RestrictedPreview || runtime.PublicAdvertiserRegistrationOnly)
     ProductionPostureEvaluator.Ensure(posture);
 // The only migration allowed with preview locked is the separately attested,
@@ -468,7 +470,8 @@ var frontendRoot = FrontendHost.ResolveRoot(app.Environment);
 if (runtime.RestrictedPreview)
 {
     if (runtime.PublicAdvertiserRegistrationOnly)
-        app.Use((context, next) => PublicAdvertiserRegistrationGate.InvokeAsync(context, next));
+        app.Use((context, next) => PublicAdvertiserRegistrationGate.InvokeAsync(context, next,
+            authentication.Enabled && authentication.SupabaseEnabled && authentication.CreatorRegistrationRequested));
     else
         app.Use((context, next) => RestrictedPreviewGate.InvokeAsync(context, next));
 }
@@ -605,6 +608,17 @@ app.Use(async (context, next) =>
     }
     await next();
 });
+app.Use(async (context, next) =>
+{
+    if (CreatorRegistrationBoundary.ShouldDeny(context, authentication))
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        await context.Response.WriteAsJsonAsync(new { error = "Creator registration is limited to its own registration endpoints." });
+        return;
+    }
+    await next();
+});
 app.UseRateLimiter();
 app.UseAuthorization();
 app.Use(async (context, next) =>
@@ -643,6 +657,7 @@ app.MapGet("/api/auth/supabase-config", () =>
         ? Results.Json(new { url = new Uri(authentication.Authority).GetLeftPart(UriPartial.Authority),
             publishableKey = authentication.SupabasePublishableKey, clientId = authentication.ClientId,
             advertiserRegistrationEnabled = authentication.Enabled && authentication.AdvertiserRegistrationRequested,
+            creatorRegistrationEnabled = authentication.Enabled && authentication.CreatorRegistrationRequested,
             advertiserPrivacyRequestsEnabled = authentication.Enabled && authentication.SupabaseEnabled
                 && authentication.AdvertiserPrivacyRequestsRequested })
         : Results.Problem("Supabase login is not configured.", statusCode: 503))
