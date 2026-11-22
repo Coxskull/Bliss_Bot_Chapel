@@ -80,35 +80,7 @@ if ($exitCode -ne 0 -or $passCount -ne 1) {
     'TEMP_DB_REMOVE_REFUSED','TEMP_DB_CLEANUP_UNVERIFIED','UNKNOWN')
   $stages=@($raw | ForEach-Object {
     $line=([string]$_).Trim()
-    if ($line -cmatch '^TASK4_WSL_PG18_STAGE=([A-Z0-9_]+)
-        $allowedStages -ccontains $Matches[1]) { $Matches[1] }
-  } | Select-Object -Unique)
-  if ($stages.Count -eq 1) {
-    Write-Output ('TASK3B_WSL_LOCAL_STAGE=' + $stages[0])
-  } else {
-    Write-Output 'TASK3B_WSL_LOCAL_STAGE=TRANSPORT_OR_UNCLASSIFIED'
-  }
-  throw 'TASK3B_WSL_LOCAL=ISOLATED_RESTORE_NOT_VERIFIED'
-}
-# Independently verified Drive storage is NOT attested by this local script.
-# Preserve the original .pending.json unchanged and mark this receipt local-only.
-$report=[ordered]@{
-  schema='alpha-bliss-pg18-local-wsl-verification/v1'
-  sourceProjectId=$project; sourceEnvironmentId=$envId
-  sourceServiceId=$postgres; sourceDatabase='bliss'; sourcePostgresMajor=18
-  sourcePublicTableCount=$count; archiveFileName=[string]$m.archiveFileName
-  archiveSha256=[string]$m.archiveSha256; capturedAtUtc=[string]$m.capturedAtUtc
-  localRestoreVerifiedAtUtc=[DateTimeOffset]::UtcNow.ToString('o')
-  isolatedRestoreEngine='WSL2 Ubuntu PostgreSQL 18 Unix socket temporary database'
-  isolatedRestoreVerified=$true; isolatedRestoreDatabaseRemoved=$true
-  localOnly=$true; offhostVerifiedByThisScript=$false; productionMigrationAuthorized=$false
-}
-$report | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $receipt -Encoding UTF8 -NoNewline
-Write-Output 'TASK3B_WSL_LOCAL=PASS_TEMPORARY_PG18_RESTORE_AND_CLEANUP'
-Write-Output 'TASK3B_WSL_LOCAL=PRODUCTION_DB_UNCHANGED'
-Write-Output 'TASK3B_WSL_LOCAL=OFFHOST_NOT_ATTESTED_BY_THIS_SCRIPT'
-Write-Output 'TASK4_CREATOR_SCHEMA=HELD'
- -and
+    if ($line -cmatch '^TASK4_WSL_PG18_STAGE=([A-Z0-9_]+)$' -and
         $allowedStages -ccontains $Matches[1]) { $Matches[1] }
   } | Select-Object -Unique)
   if ($stages.Count -eq 1) {
