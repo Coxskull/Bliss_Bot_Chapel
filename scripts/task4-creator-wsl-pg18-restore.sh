@@ -47,7 +47,7 @@ gpg_binary="$(wslpath -u "$gpg_windows")" || fail GPG_EXE_MISSING
 db="$(printf 'alpha_task4_wsl_restore_%s_%s_%s' "$(date -u +%Y%m%d%H%M%S)" "$RANDOM" "$RANDOM")"
 [[ "$db" =~ ^alpha_task4_wsl_restore_[0-9]{14}_[0-9]{1,5}_[0-9]{1,5}$ ]] || fail TEMP_DB_NAME_INVALID
 exists="$(runuser -u postgres -- psql -XAt -v ON_ERROR_STOP=1 -h /var/run/postgresql -d postgres \
-    -c "SELECT count(*) FROM pg_database WHERE datname='$db'" 2>/dev/null)" || fail TEMP_DB_CHECK_REFUSED
+    -c "SELECT count(*) FROM pg_database WHERE datname='$db'" 2>/dev/null)" || fail TEMP_DB_CLEANUP_UNVERIFIED TEMP_DB_CHECK_REFUSED
 [[ "$exists" == "0" ]] || fail TEMP_DB_EXISTS
 created=0
 cleanup() {
