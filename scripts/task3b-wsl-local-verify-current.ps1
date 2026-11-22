@@ -80,7 +80,7 @@ if ($exitCode -ne 0 -or $passCount -ne 1) {
     'TEMP_DB_REMOVE_REFUSED','TEMP_DB_CLEANUP_UNVERIFIED','UNKNOWN')
   $stages=@($raw | ForEach-Object {
     $line=([string]$_).Trim()
-    if ($line -cmatch '^TASK4_WSL_PG18_STAGE=([A-Z_]+)$' -and
+    if ($line -cmatch '^TASK4_WSL_PG18_STAGE=([A-Z0-9_]+)$' -and
         $allowedStages -ccontains $Matches[1]) { $Matches[1] }
   } | Select-Object -Unique)
   if ($stages.Count -eq 1) {
