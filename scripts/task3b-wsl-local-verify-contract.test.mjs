@@ -69,6 +69,29 @@ assert.ok(helper.includes('pipe_status=('),'check each command exit status');
 assert.ok(helper.includes('fail GPG_DECRYPT_REFUSED'));
 assert.ok(helper.includes('fail PG_RESTORE_REFUSED'));
 assert.ok(helper.includes('trap cleanup EXIT'));
+const checkpoints=['PG18_READY','ARCHIVE_PATH_ACCEPTED','GPG_BINARY_READY','TEMP_DB_CREATED',
+  'PIPELINE_COMPLETE','TABLE_COUNT_VERIFIED','EF_HISTORY_VERIFIED','TEMP_DB_REMOVED'];
+assert.ok(helper.includes('TASK4_WSL_PG18_CHECKPOINT=%s'),'checkpoint emits fixed vocabulary only');
+assert.ok(source.includes('TASK3B_WSL_LOCAL_LAST_CHECKPOINT=NONE'));
+assert.ok(source.includes('TASK3B_WSL_LOCAL_LAST_CHECKPOINT='));
+for(const check of checkpoints) {
+  assert.ok(helper.includes('checkpoint '+check),'helper checkpoint '+check);
+  assert.ok(source.includes(check),'wrapper checkpoint '+check);
+}
+const checkpointRx=source.match(/\\$line -cmatch '(\\^TASK4_WSL_PG18_CHECKPOINT=[^']+)'/);
+assert.ok(checkpointRx,'wrapper checkpoint regex present');
+const checkpointProbe=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
+  [
+    '$rx='+JSON.stringify(checkpointRx[1]).replaceAll('\\\\','\\'),
+    "if ('TASK4_WSL_PG18_CHECKPOINT=TEMP_DB_CREATED' -cnotmatch $rx) { exit 71 }",
+    "if ('TASK4_WSL_PG18_CHECKPOINT=UNKNOWN' -cmatch $rx) { exit 72 }",
+    "if ('PRIVATE_KEY' -cmatch $rx) { exit 73 }",
+    "Write-Output 'TASK3B_SAFE_CHECKPOINT_FILTER=PASS_SYNTHETIC_ONLY'"
+  ].join('; ')
+],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(checkpointProbe.error,undefined);
+assert.equal(checkpointProbe.status,0,'checkpoint parser must allow only fixed markers: '+checkpointProbe.stderr);
+assert.match(checkpointProbe.stdout,/TASK3B_SAFE_CHECKPOINT_FILTER=PASS_SYNTHETIC_ONLY/);
 assert.ok(helper.includes('[[ "$left" == "0" ]]'));
 assert.ok(source.includes("Write-Output ('TASK3B_WSL_LOCAL_STAGE=' + $stages[0])"));
 assert.ok(source.includes('TASK3B_WSL_LOCAL_STAGE=TRANSPORT_OR_UNCLASSIFIED'));
