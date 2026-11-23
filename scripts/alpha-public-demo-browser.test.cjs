@@ -9,9 +9,13 @@ const http=require("node:http");
 const {spawn}=require("node:child_process");
 const {createHash}=require("node:crypto");
 const root=path.resolve(__dirname,"..");
-const output=path.join(root,"BrowserEvidence");
+// One fixed public origin; no credentials or customer data are used.
+const liveTarget=process.env.ALPHA_DEMO_PUBLIC_ORIGIN||"";
+if(liveTarget && liveTarget!=="https://alphacreativecontent.com")
+ throw new Error("Only the approved ALPHA public origin may be browser-tested");
+const output=path.join(root,"BrowserEvidence",liveTarget?"LiveProduction":"LocalFixture");
 const port=Number(process.env.ALPHA_DEMO_TEST_PORT||8765);
-const host="http://127.0.0.1:"+port;
+const host=liveTarget||"http://127.0.0.1:"+port;
 async function ready(){
  for(let i=0;i<100;i++){
   try{
@@ -27,10 +31,10 @@ async function ready(){
 }
 async function go(){
  await fs.mkdir(output,{recursive:true});
- const server=spawn("python3",["-m","http.server",String(port),"--bind","127.0.0.1","--directory",".vercel-portal"],{cwd:root,stdio:"ignore"});
+ const server=liveTarget?null:spawn("python3",["-m","http.server",String(port),"--bind","127.0.0.1","--directory",".vercel-portal"],{cwd:root,stdio:"ignore"});
  let browser;
  try{
-  await ready();
+  if(!liveTarget)await ready();
   browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||"/usr/bin/google-chrome",headless:true,args:["--no-sandbox"]});
   const context=await browser.newContext({acceptDownloads:true});
   const page=await context.newPage();
@@ -81,7 +85,7 @@ async function go(){
   await context.close();
  }finally{
   if(browser)await browser.close();
-  server.kill("SIGTERM");
+  if(server)server.kill("SIGTERM");
  }
 }
 go().catch(err=>{console.error(err);process.exitCode=1});
