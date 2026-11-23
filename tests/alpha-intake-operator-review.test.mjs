@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { authorizedReview, buildReviewQueue, NOTICE } from "../supabase/functions/alpha-intake-operator-review/review-core.mjs";
+import { authorizedReview, buildReviewQueue, NOTICE, ACTIVE_NOTICE } from "../supabase/functions/alpha-intake-operator-review/review-core.mjs";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const receiptId = "22222222-2222-4222-8222-222222222222";
@@ -57,6 +57,44 @@ test("consent/age/notice mismatch always holds for reviewer", () => {
     { notice_version: "LEGACY-NOTICE" }
   ]) assert.equal(queue([req(change)]).items[0].review_state, "HOLD_CONSENT");
 });
+test("approved live notice versions permit human review only when receipt matches", () => {
+  for (const notice of [
+    "AGM-INTEREST-2026-11-05",
+    NOTICE,
+    "AGM-INTEREST-2026-11-08-GHL-01",
+    ACTIVE_NOTICE
+  ]) {
+    const result = queue([req({ notice_version: notice })], [rec({ notice_version: notice })]);
+    assert.equal(result.review_ready, 1);
+    assert.equal(result.items[0].review_state, "REVIEW_READY");
+    assert.equal(result.items[0].invitation_authorized, false);
+    assert.equal(result.items[0].campaign_authorized, false);
+    assert.equal(result.items[0].payment_authorized, false);
+  }
+});
+test("current public form notice and pure review contract remain synchronized", () => {
+  const formScript = readFileSync(new URL("../frontend/public/alpha-intake.js", import.meta.url), "utf8");
+  assert.ok(formScript.includes(`const noticeVersion = "${ACTIVE_NOTICE}";`));
+});
+test("new notice remains held without consent, age confirmation or exact matching receipt", () => {
+  const current = req({ notice_version: ACTIVE_NOTICE, contact_consent: false });
+  assert.equal(queue([current],[rec({ notice_version: ACTIVE_NOTICE })]).review_ready, 1);
+  // Review-readiness is separate from follow-up consent; no output can approve contact.
+  for (const invalid of [
+    req({ ...current, processing_acknowledged: false }),
+    req({ ...current, adult_confirmed: false }),
+    req({ ...current, notice_version: "UNSUPPORTED-VERSION" })
+  ]) {
+    const result=queue([invalid],[rec({ notice_version: invalid.notice_version })]);
+    assert.equal(result.review_ready, 0);
+    assert.equal(result.items[0].review_state,"HOLD_CONSENT");
+    assert.equal(result.items[0].invitation_authorized,false);
+  }
+  const mismatch=queue([current],[rec({ notice_version: NOTICE })]);
+  assert.equal(mismatch.items[0].review_state,"HOLD_RECEIPT");
+  assert.equal(mismatch.review_ready,0);
+});
+
 test("no receipt, duplicate receipt, wrong kind, wrong notice or old receipt is held", () => {
   const invalidCases = [
     [],
