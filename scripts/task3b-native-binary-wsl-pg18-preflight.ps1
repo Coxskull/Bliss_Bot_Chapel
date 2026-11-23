@@ -180,7 +180,10 @@ exit 2
     'PG_FORMAT_INPUT_IO','PG_FORMAT_COMPRESSION_UNSUPPORTED',
     'PG_FORMAT_STRUCTURE_REFUSED','PG_FORMAT_UNCLASSIFIED','PG_FORMAT_DRAIN_REFUSED')
   $safePg=@($lines | ForEach-Object {
-    if ($_ -cmatch '^TASK3B_NATIVE_WSL_MARKER=([A-Z_]+)
+    if ($_ -cmatch '^TASK3B_NATIVE_WSL_MARKER=([A-Z_]+)$' -and
+        $allowedPg -ccontains $Matches[1]) { $Matches[1] }
+  } | Select-Object -Unique)
+  if ($safePg.Count -eq 1) { Receipt $nativeMarker ([string]$safePg[0]); exit 1 }
   Receipt $nativeMarker 'PREFLIGHT_REFUSED'; exit 1
 } catch {
   Receipt 'NOT_VERIFIED' 'PREFLIGHT_REFUSED'; exit 1
