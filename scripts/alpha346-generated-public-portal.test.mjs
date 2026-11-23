@@ -70,7 +70,8 @@ test('public advertiser login does not expose a missing registration route befor
   assert.match(login, /Account registration not yet available/);
   assert.match(login, /aria-disabled="true"/);
   assert.ok(!login.includes('href="/advertiser-registration.html"'));
-  assert.ok(login.includes('href="https://')); // Private sign-in remains on Railway.
+  assert.match(login, /href="https:\/\/[^\/@?#"\s]+\/api\/auth\/login\?returnUrl=%2Fadvertiser-registration\.html"/); // Only the exact issuer-backed app route, never same-origin Vercel or userinfo.
+  assert.ok(!login.includes('href="/api/auth/login?returnUrl='), 'Vercel must not receive sign-in credentials');
 });
 
 test('generated portal does not publish internal proposal tools or restricted operator routes', async () => {

@@ -11,6 +11,8 @@ public class BlissDbContext : DbContext
     }
 
     public DbSet<Creator> Creators => Set<Creator>();
+    public DbSet<CreatorAccountMembership> CreatorAccountMemberships => Set<CreatorAccountMembership>();
+    public DbSet<CreatorRegistrationReceipt> CreatorRegistrationReceipts => Set<CreatorRegistrationReceipt>();
     public DbSet<CreatorPlatform> CreatorPlatforms => Set<CreatorPlatform>();
     public DbSet<ContentItem> ContentItems => Set<ContentItem>();
     public DbSet<AdInventorySlot> AdInventorySlots => Set<AdInventorySlot>();

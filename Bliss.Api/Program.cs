@@ -70,6 +70,10 @@ var initialInstall = MigrationCommand.InitialInstallRequested(args);
 if (args.Contains(MigrationCommand.InitialInstallArgument, StringComparer.Ordinal)
     && !initialInstall)
     throw new InvalidOperationException("Invalid guarded initial-install invocation.");
+var creatorIncrementalInstall = MigrationCommand.CreatorIncrementalRequested(args);
+if (args.Contains(MigrationCommand.CreatorIncrementalArgument, StringComparer.Ordinal)
+    && !creatorIncrementalInstall)
+    throw new InvalidOperationException("Invalid guarded creator-incremental invocation.");
 var applyMigrations = MigrationCommand.Requested(args);
 builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 var authentication = builder.Configuration
@@ -127,11 +131,14 @@ if (runtime.PublicAdvertiserRegistrationOnly
         || !authentication.AdvertiserRegistrationRequested))
     throw new InvalidOperationException(
         "Public advertiser signup requires preview isolation, issuer authentication and an explicit registration flag.");
+// A pending applicant's enrollment lane is selected by the server during
+// challenge, bound into protected OIDC state, and reduced to exactly one marker.
 if (!runtime.RestrictedPreview || runtime.PublicAdvertiserRegistrationOnly)
     ProductionPostureEvaluator.Ensure(posture);
-// The only migration allowed with preview locked is the separately attested,
-// one-shot installation of the EMPTY hosted application database.
-if (runtime.RestrictedPreview && applyMigrations && !initialInstall)
+// Restricted preview refuses ordinary migrations. Only the existing guarded
+// empty-catalog initial install or a ONE-MIGRATION creator-only path with a
+// current off-host/isolated recovery receipt can execute as one-shot processes.
+if (runtime.RestrictedPreview && applyMigrations && !initialInstall && !creatorIncrementalInstall)
     throw new InvalidOperationException("Migrations are unavailable in restricted preview.");
 
 builder.Services.AddControllers()
@@ -405,6 +412,35 @@ if (applyMigrations)
 
     using var migrateScope = app.Services.CreateScope();
     var migrateDb = migrateScope.ServiceProvider.GetRequiredService<BlissDbContext>();
+    if (creatorIncrementalInstall)
+    {
+        // No HTTP listener, customer signup or background worker is started.
+        // The backup identifier is a hash of an owner-held, fresh, independently
+        // restored encrypted archive evidence receipt; never the archive itself.
+        // Fixed output only; do not send SQL/connection exception details to logs.
+        try
+        {
+            var connectionString = app.Configuration.GetConnectionString("DefaultConnection");
+            var before = await HostedDatabaseDiagnostic.RunAsync(connectionString);
+            MigrationCommand.ValidateCreatorIncrementalHostedInstall(
+                runtime.RestrictedPreview, app.Environment.IsProduction(),
+                authentication.AdvertiserRegistrationRequested,
+                authentication.CreatorRegistrationRequested,
+                connectionString, before,
+                Environment.GetEnvironmentVariable("BLISS_INITIAL_INSTALL_EXPECTED_DB_HOST"),
+                Environment.GetEnvironmentVariable("BLISS_INITIAL_INSTALL_EXPECTED_DB_NAME"),
+                Environment.GetEnvironmentVariable("BLISS_TASK4_CREATOR_RECOVERY_MANIFEST_SHA256"));
+            var changed = await CreatorIncrementalMigration.ApplyOnceAsync(migrateDb, connectionString!, before);
+            Console.WriteLine(changed ? MigrationCommand.CreatorIncrementalCompletionLine
+                : MigrationCommand.CreatorIncrementalAlreadyPresentLine);
+        }
+        catch
+        {
+            Console.WriteLine("TASK4_CREATOR_INCREMENTAL_SCHEMA=REFUSED_OR_NOT_VERIFIED");
+            Environment.ExitCode = 2;
+        }
+        return;
+    }
     migrateDb.Database.Migrate();
     Console.WriteLine(initialInstall
         ? MigrationCommand.InitialInstallCompletionLine
@@ -468,7 +504,8 @@ var frontendRoot = FrontendHost.ResolveRoot(app.Environment);
 if (runtime.RestrictedPreview)
 {
     if (runtime.PublicAdvertiserRegistrationOnly)
-        app.Use((context, next) => PublicAdvertiserRegistrationGate.InvokeAsync(context, next));
+        app.Use((context, next) => PublicAdvertiserRegistrationGate.InvokeAsync(context, next,
+            authentication.Enabled && authentication.SupabaseEnabled && authentication.CreatorRegistrationRequested));
     else
         app.Use((context, next) => RestrictedPreviewGate.InvokeAsync(context, next));
 }
@@ -605,6 +642,17 @@ app.Use(async (context, next) =>
     }
     await next();
 });
+app.Use(async (context, next) =>
+{
+    if (CreatorRegistrationBoundary.ShouldDeny(context, authentication))
+    {
+        context.Response.Headers.CacheControl = "no-store";
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        await context.Response.WriteAsJsonAsync(new { error = "Creator registration is limited to its own registration endpoints." });
+        return;
+    }
+    await next();
+});
 app.UseRateLimiter();
 app.UseAuthorization();
 app.Use(async (context, next) =>
@@ -643,6 +691,7 @@ app.MapGet("/api/auth/supabase-config", () =>
         ? Results.Json(new { url = new Uri(authentication.Authority).GetLeftPart(UriPartial.Authority),
             publishableKey = authentication.SupabasePublishableKey, clientId = authentication.ClientId,
             advertiserRegistrationEnabled = authentication.Enabled && authentication.AdvertiserRegistrationRequested,
+            creatorRegistrationEnabled = authentication.Enabled && authentication.CreatorRegistrationRequested,
             advertiserPrivacyRequestsEnabled = authentication.Enabled && authentication.SupabaseEnabled
                 && authentication.AdvertiserPrivacyRequestsRequested })
         : Results.Problem("Supabase login is not configured.", statusCode: 503))

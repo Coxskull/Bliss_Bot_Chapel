@@ -59,9 +59,12 @@ public sealed class AuthenticationController(
         }
 
         var safeReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl! : "/";
-        return Challenge(
-            new AuthenticationProperties { RedirectUri = safeReturnUrl },
-            OpenIdConnectDefaults.AuthenticationScheme);
+        // Selected only by the server and signed inside the OIDC correlation
+        // state. A user can request an application, never a role or tenant.
+        var properties = new AuthenticationProperties { RedirectUri = safeReturnUrl };
+        properties.Items[SupabaseOidc.RegistrationLaneProperty] =
+            SupabaseOidc.ResolvePublicRegistrationLane(safeReturnUrl);
+        return Challenge(properties, OpenIdConnectDefaults.AuthenticationScheme);
     }
 
     [Authorize]

@@ -137,10 +137,52 @@ jobs:
           node scripts/test_advertiser_registration_receipt_runtime.mjs
       - name: Verify owner-only guarded Task3B PG18 installation contract
         run: node scripts/task3b-guarded-railway-install-contract.test.mjs
+      - name: Verify Task4 creator-only incremental migration and recovery controls (offline)
+        run: node scripts/task4-creator-guarded-migration-contract.test.mjs
+      - name: Verify WSL2 Ubuntu PG18 recovery without Docker (offline)
+        run: |
+          bash -n scripts/task4-creator-wsl-pg18-restore.sh
+          node scripts/task4-creator-wsl-recovery-contract.test.mjs
+      - name: Verify NEW current encrypted backup local WSL18 refusal guards (offline)
+        run: node scripts/task3b-wsl-local-verify-contract.test.mjs
+      - name: Parse local-only WSL18 encrypted recovery PowerShell (offline)
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'scripts/task3b-wsl-local-verify-current.ps1', [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -gt 0) { throw 'Task3B local WSL recovery PowerShell parse failed' }
+      - name: Parse Task4 owner-only PowerShell wrappers; never run backups, SSH or migration
+        shell: pwsh
+        run: |
+          foreach ($path in @('scripts/task4-creator-guarded-incremental.ps1',
+                              'scripts/task4-creator-owner-complete.ps1',
+                              'scripts/task4-creator-wsl-pg18-isolated-restore.ps1')) {
+            $tokens = $null
+            $parseErrors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              $path, [ref]$tokens, [ref]$parseErrors)
+            if ($parseErrors.Count -gt 0) { throw "Task4 PowerShell parse failed: $path" }
+          }
       - name: Verify private Bliss PG18 encrypted backup and isolated restore contract
         run: node scripts/task3b-bliss-pg18-recovery-contract.test.mjs
       - name: Verify direct Railway SSH shell command and synthetic PG18 backup framing offline
         run: node scripts/task3b-railway-ssh-direct-command.test.mjs
+      - name: Verify Railway CLI notices never corrupt strict PG18 backup receipt (offline)
+        run: node scripts/task3b-railway-receipt-notices-contract.test.mjs
+      - name: Verify Railway PG18 backup exit-2 diagnostic branches with synthetic data only
+        run: node scripts/task3b-remote-preflight-contract.test.mjs
+      - name: Verify Windows CRLF PowerShell heredoc is LF before Linux Bash (offline)
+        run: node scripts/task3b-railway-windows-crlf-contract.test.mjs
+      - name: Parse owner-only Railway PG18 read-only preflight script (never run Railway)
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            'scripts/task3b-bliss-pg18-remote-preflight.ps1', [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -gt 0) { throw 'Task3B backup diagnostic PowerShell parse failed' }
       - name: Verify Task3B owner's one-command backup preflight is offline and fail-closed
         run: node scripts/task3b-owner-start-backup.test.mjs
       - name: Verify isolated DigitalOcean volume guard with synthetic local mounts only
