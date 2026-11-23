@@ -30,6 +30,36 @@ assert.ok(interopSH.includes('--decrypt --output - "$archive" </dev/null >/dev/n
 assert.doesNotMatch(interopPS,/pg_restore|createdb|dropdb|railway\.cmd|Invoke-WebRequest|Start-Transcript|--import|--export-secret/i);
 assert.doesNotMatch(interopSH,/pg_restore|createdb|dropdb|psql|railway|--import|--export-secret/i);
 assert.doesNotMatch(interopPS,/Write-(?:Output|Host)\s+\$(?:raw|archive|gpg|source)/);
+// The current task uses one bounded GPG->PG18 archive TOC check, no DB writes.
+const formatPS=readFileSync('scripts/task3b-wsl-pg18-format-preflight.ps1','utf8');
+const formatSH=readFileSync('scripts/task3b-wsl-pg18-format-preflight.sh','utf8');
+for(const guard of [
+  'Get-FileHash -LiteralPath $archive','sourceProjectId',
+  'sourceEnvironmentId','sourceServiceId','gpgRecipientFingerprint',
+  'TASK3B_WSL_PG_ARCHIVE=PASS_AUTHENTICATED_FORMAT',
+  'TASK4_CREATOR_RESTORE=HELD','base64 -d | bash -s -- '
+]) assert.ok(formatPS.includes(guard),'missing no-DB PG archive format guard '+guard);
+for(const guard of [
+  '/usr/lib/postgresql/18/bin/pg_restore --list',
+  'cat >/dev/null 2>/dev/null','BOTH_PROCESSES_REFUSED',
+  'PG_FORMAT_ONLY_REFUSED','GPG_ONLY_REFUSED',
+  'pipeline=( "${PIPESTATUS[@]}" )','--decrypt --output - "$archive" </dev/null'
+]) assert.ok(formatSH.includes(guard),'missing archive pipeline guard '+guard);
+assert.doesNotMatch(formatPS,/createdb|dropdb|psql|railway\.cmd|Invoke-WebRequest|Start-Transcript|--import|--export-secret/i);
+assert.doesNotMatch(formatSH,/createdb|dropdb|psql|--dbname|--exit-on-error|--single-transaction|--import|--export-secret/i);
+assert.doesNotMatch(formatPS,/Write-(?:Host|Output)\s+\$(?:raw|archive|gpg|source)/);
+assert.match(formatPS,/\^TASK3B_WSL_PG_ARCHIVE=\(\[A-Z_\]\+\)\$/);
+const formatEarly=spawnSync('bash',['scripts/task3b-wsl-pg18-format-preflight.sh'],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(formatEarly.status,2);
+assert.match(formatEarly.stdout,/TASK3B_WSL_PG_ARCHIVE=PREFLIGHT_REFUSED/);
+const formatSyntax=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
+  "$tokens=$null;$errors=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-wsl-pg18-format-preflight.ps1',[ref]$tokens,[ref]$errors)>$null;if($errors.Count -gt 0){exit 71}"
+],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(formatSyntax.status,0,'PowerShell parse failure: '+formatSyntax.stderr);
+const drainSynthetic=spawnSync('bash',['-c',
+  'set -euo pipefail; set +e; head -c 131072 /dev/zero | ( head -c 4 >/dev/null; cat >/dev/null ); pipe=( "${PIPESTATUS[@]}" ); [[ ${pipe[0]} == 0 && ${pipe[1]} == 0 ]]'
+],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(drainSynthetic.status,0,'synthetic early reader must drain producer');
 const interopEarly=spawnSync('bash',['scripts/task3b-wsl-gpg-stream-preflight.sh'],{encoding:'utf8',timeout:10000,maxBuffer:4096});
 assert.equal(interopEarly.status,2);
 assert.match(interopEarly.stdout,/TASK3B_WSL_GPG_STREAM=REFUSED_OR_INTEROP_UNVERIFIED/);
