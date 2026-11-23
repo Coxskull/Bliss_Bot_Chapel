@@ -60,6 +60,33 @@ const drainSynthetic=spawnSync('bash',['-c',
   'set -euo pipefail; set +e; head -c 131072 /dev/zero | ( head -c 4 >/dev/null; cat >/dev/null ); pipe=( "${PIPESTATUS[@]}" ); [[ ${pipe[0]} == 0 && ${pipe[1]} == 0 ]]'
 ],{encoding:'utf8',timeout:10000,maxBuffer:4096});
 assert.equal(drainSynthetic.status,0,'synthetic early reader must drain producer');
+// Task4 no-database PGDMP binary stream signature safety contracts.
+const magicPS=readFileSync('scripts/task3b-wsl-pgdmp-header-preflight.ps1','utf8');
+const magicSH=readFileSync('scripts/task3b-wsl-pgdmp-header-preflight.sh','utf8');
+for(const guard of ['sourceProjectId','sourceEnvironmentId','sourceServiceId',
+  'Get-FileHash -LiteralPath $archive','gpgRecipientFingerprint',
+  'PASS_PGDMP_AND_AUTHENTICATION','NOT_PGDMP',
+  'TASK4_CREATOR_RESTORE=HELD','base64 -d | bash -s -- ']) {
+  assert.ok(magicPS.includes(guard),'missing PGDMP preflight guard '+guard);
+}
+for(const guard of ['head -c 5','cat >/dev/null 2>/dev/null',
+  '[[ "$header" == "PGDMP" ]]','pipe=( "${PIPESTATUS[@]}" )',
+  'PASS_PGDMP_AND_AUTHENTICATION','NOT_PGDMP','</dev/null']) {
+  assert.ok(magicSH.includes(guard),'missing binary signature guard '+guard);
+}
+assert.ok(!/pg_restore|createdb|dropdb|psql|railway\.cmd|Start-Transcript|--import|--export-secret/i.test(magicPS));
+assert.ok(!/pg_restore|createdb|dropdb|psql|--import|--export-secret/i.test(magicSH));
+const magicParse=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
+  "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-wsl-pgdmp-header-preflight.ps1',[ref]$t,[ref]$e)>$null;if($e.Count){exit 80}"
+],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(magicParse.status,0,'PowerShell PGDMP source syntax');
+const magicBash=spawnSync('bash',['-n','scripts/task3b-wsl-pgdmp-header-preflight.sh'],
+  {encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(magicBash.status,0,'Bash PGDMP source syntax');
+const magicEarly=spawnSync('bash',['scripts/task3b-wsl-pgdmp-header-preflight.sh'],
+  {encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(magicEarly.status,2);
+assert.match(magicEarly.stdout,/TASK3B_WSL_PGDMP=REFUSED_OR_INTEROP_UNVERIFIED/);
 const interopEarly=spawnSync('bash',['scripts/task3b-wsl-gpg-stream-preflight.sh'],{encoding:'utf8',timeout:10000,maxBuffer:4096});
 assert.equal(interopEarly.status,2);
 assert.match(interopEarly.stdout,/TASK3B_WSL_GPG_STREAM=REFUSED_OR_INTEROP_UNVERIFIED/);
