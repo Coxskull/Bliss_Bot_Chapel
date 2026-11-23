@@ -1,6 +1,15 @@
 // ALPHA #330 — Pure, read-only intake-to-review projection. No database or network I/O.
 // The public submission is NOT proof of identity, sponsorship rights or account eligibility.
 export const NOTICE = "AGM-INTEREST-2026-11-05-GHL";
+export const ACTIVE_NOTICE = "AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1";
+// Mirror only versions explicitly accepted by the live intake/DB contract.
+// These allow private human review; they NEVER grant contact, account or payment rights.
+const supportedNotices = new Set([
+  "AGM-INTEREST-2026-11-05",
+  NOTICE,
+  "AGM-INTEREST-2026-11-08-GHL-01",
+  ACTIVE_NOTICE
+]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const kinds = new Set(["creator", "advertiser"]);
 // Keep the read-only review projection aligned with the live alpha_ghl_delivery.state CHECK constraint.
@@ -46,7 +55,7 @@ export function buildReviewQueue({ requests, receipts, deliveries }) {
       Date.parse(matches[0].recorded_at) >= Date.parse(request.created_at);
     const consentValid = request.processing_acknowledged === true &&
       request.adult_confirmed === true &&
-      request.notice_version === NOTICE;
+      supportedNotices.has(request.notice_version);
     const receipt = verifiedReceipt ? matches[0] : null;
     const linked = deliveriesForRequest.length === 1 ? deliveriesForRequest[0] : null;
     const crm = linked && deliveryStates.has(linked.state) ? linked.state : "UNCONFIRMED";
