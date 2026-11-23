@@ -68,12 +68,16 @@ function fixture(options = {}) {
         const chain = {
           select: fields => { selected = fields; calls.selected.push({ table, fields }); return chain; },
           order: () => chain,
-          in: (_column, ids) => {
-            assert.ok(ids.every(x => x === REQUEST));
+          in: (column, ids) => {
+            if (column === "kind") assert.deepEqual(ids, ["creator", "advertiser"]);
+            else {
+              assert.equal(column, "request_id");
+              assert.ok(ids.every(x => x === REQUEST));
+            }
             return chain;
           },
           limit: n => {
-            assert.ok(n === 50 || n === 101);
+            assert.ok(n === 51 || n === 101);
             if (options.tableError === key)
               return Promise.resolve({ data: null, error: new Error("redacted DB error") });
             return Promise.resolve({ data: data[key], error: null });
@@ -208,6 +212,18 @@ test("errors, overlong linked receipts and post-query failures return no partial
     assert.equal(JSON.stringify(json).includes("must-never-be-returned"), false);
   }
 });
+test("a 51st public lead fails closed rather than hiding older customer inquiries", async () => {
+  const f = fixture({ data: { requests: Array.from({ length: 51 }, () => sample.requests[0]) } });
+  const { result, json } = await call(f);
+  assert.equal(result.status, 503);
+  assert.deepEqual(Object.keys(json), ["error"]);
+  assert.equal(f.calls.auth, 1);
+  assert.equal(f.calls.rpc, 1);
+  assert.deepEqual(f.calls.tables, ["alpha_public_intake_requests"]);
+  assert.equal(JSON.stringify(json).includes("must-never-be-returned"), false);
+  assert.equal(JSON.stringify(json).includes("PRIVATE-SERVER-KEY"), false);
+});
+
 test("OPTIONS preflight has no JSON body, returns only approved origin and needs no Auth", async () => {
   const f = fixture();
   const { result, json } = await call(f, { method: "OPTIONS", authorization: null });
