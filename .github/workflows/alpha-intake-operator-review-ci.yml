@@ -40,6 +40,18 @@ jobs:
           test -f docs/launch/candidates/NOT_FOR_APPLY-alpha-intake-operator-live-session.sql
           test -f supabase/functions/alpha-intake-operator-review/index.ts
           echo 'SOURCE_ONLY_TESTS_PASS — NO LIVE AUTH, DB WRITES, CRM SUBMISSIONS, OR INVITATIONS'
+      - name: Verify deployed production operator endpoint denies anonymous GET
+        # Only a GET to a fixed public function URL; no token, customer data, writes or logs of bodies.
+        if: github.event_name == 'pull_request'
+        run: |
+          node --input-type=module <<'JS'
+          const url = "https://bkutbglzivfdnoerigyb.supabase.co/functions/v1/alpha-intake-operator-review";
+          const response = await fetch(url, { method: "GET", redirect: "error",
+            signal: AbortSignal.timeout(12000), headers: { Origin: "https://alphacreativecontent.com" } });
+          if (response.status !== 401 && response.status !== 403)
+            throw new Error("INTAKE_REVIEW_PUBLIC_JWT_DENIAL_FAILED: HTTP "+response.status);
+          console.log("INTAKE_REVIEW_PRODUCTION_ANON_DENIED: HTTP "+response.status);
+          JS
   isolated-session-sql:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
