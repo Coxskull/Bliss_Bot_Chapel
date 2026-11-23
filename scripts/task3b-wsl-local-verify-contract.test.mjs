@@ -17,6 +17,24 @@ for(const guard of ['TASK3B_GPG_RECOVERY_PREFLIGHT=', 'gpgRecipientFingerprint',
 assert.doesNotMatch(keyCheck,/--decrypt|--import|--export-secret|Invoke-WebRequest|Invoke-RestMethod|pg_restore|railway\.cmd|CREATE\s+DATABASE|Start-Transcript/i);
 assert.doesNotMatch(keyCheck,/Write-(?:Output|Host)\s+\$lines|Write-(?:Output|Host)\s+\$fingerprint/);
 
+// Owner-only WSL/Gpg4win interop probe: no database, no plaintext file.
+const interopPS=readFileSync('scripts/task3b-wsl-gpg-stream-preflight.ps1','utf8');
+const interopSH=readFileSync('scripts/task3b-wsl-gpg-stream-preflight.sh','utf8');
+for(const guard of ['Get-FileHash -LiteralPath $archive','gpgRecipientFingerprint',
+  'sourceProjectId','sourceEnvironmentId','sourceServiceId',
+  'TASK3B_WSL_GPG_STREAM=PASS','TASK4_CREATOR_RESTORE=HELD',
+  'set -o pipefail; printf %s ','base64 -d | bash -s -- ']) {
+  assert.ok(interopPS.includes(guard),'missing WSL-GPG guard '+guard);
+}
+assert.ok(interopSH.includes('--decrypt --output - "$archive" </dev/null >/dev/null 2>/dev/null'));
+assert.doesNotMatch(interopPS,/pg_restore|createdb|dropdb|railway\.cmd|Invoke-WebRequest|Start-Transcript|--import|--export-secret/i);
+assert.doesNotMatch(interopSH,/pg_restore|createdb|dropdb|psql|railway|--import|--export-secret/i);
+assert.doesNotMatch(interopPS,/Write-(?:Output|Host)\s+\$(?:raw|archive|gpg|source)/);
+const interopEarly=spawnSync('bash',['scripts/task3b-wsl-gpg-stream-preflight.sh'],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(interopEarly.status,2);
+assert.match(interopEarly.stdout,/TASK3B_WSL_GPG_STREAM=REFUSED_OR_INTEROP_UNVERIFIED/);
+
+
 for(const guard of [
   'NOT_VERIFIED','offhostSha256Verified','isolatedRestoreVerified',
   'sourcePostgresMajor','sourceProjectId','sourceEnvironmentId',
@@ -70,7 +88,7 @@ const allowed=[
   'PG18_QUERY_REFUSED','PG18_MAJOR_MISMATCH','ARCHIVE_PATH_INVALID',
   'GPG_EXE_MISSING','TEMP_DB_NAME_INVALID','TEMP_DB_CHECK_REFUSED',
   'TEMP_DB_EXISTS','TEMP_DB_CREATE_REFUSED',
-  'PREVIOUS_TEMP_DB_PRESENT','UNEXPECTED_HELPER_EXIT','GPG_DECRYPT_REFUSED',
+  'PREVIOUS_TEMP_DB_PRESENT','UNEXPECTED_HELPER_EXIT','GPG_DECRYPT_REFUSED','BOTH_PIPE_COMMANDS_REFUSED',
   'PIPE_STATUS_UNAVAILABLE',
   'PG_RESTORE_REFUSED','TABLE_COUNT_QUERY_REFUSED','TABLE_COUNT_MISMATCH',
   'EF_HISTORY_QUERY_REFUSED','EF_HISTORY_MISSING','TEMP_DB_REMOVE_REFUSED',
@@ -106,6 +124,8 @@ assert.equal(transport.status,0);
 assert.match(transport.stdout,/TASK3B_PIPE=AFTER/);
 
 assert.ok(helper.includes('fail GPG_DECRYPT_REFUSED'));
+assert.ok(helper.includes('fail BOTH_PIPE_COMMANDS_REFUSED'));
+assert.ok(source.includes("'BOTH_PIPE_COMMANDS_REFUSED'"));
 assert.ok(helper.includes('fail PG_RESTORE_REFUSED'));
 assert.ok(helper.includes('trap cleanup EXIT'));
 assert.ok(helper.includes('trap - EXIT'));
@@ -179,6 +199,7 @@ const pwshProbe=[
   "if ('TASK4_WSL_PG18_STAGE=PG18_CLUSTER_NOT_READY' -cnotmatch $rx) { exit 31 }",
   "if ('TASK4_WSL_PG18_STAGE=PG18_MAJOR_MISMATCH' -cnotmatch $rx) { exit 32 }",
   "if ('TASK4_WSL_PG18_STAGE=GPG_DECRYPT_REFUSED' -cnotmatch $rx) { exit 33 }",
+  "if ('TASK4_WSL_PG18_STAGE=BOTH_PIPE_COMMANDS_REFUSED' -cnotmatch $rx) { exit 37 }",
   "if ('TASK4_WSL_PG18_STAGE=TEMP_DB_CREATE_REFUSED' -cnotmatch $rx) { exit 34 }",
   "if ('TASK4_WSL_PG18_STAGE=PG18_MAJOR_MISMATCH extra' -cmatch $rx) { exit 35 }",
   "if ('private: error details' -cmatch $rx) { exit 36 }",
