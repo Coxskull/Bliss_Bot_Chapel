@@ -79,6 +79,20 @@ test("missing, failed, unconfirmed, duplicate or pending CRM delivery cannot imp
     [del({ state: "UNKNOWN" })], [del(), del()]
   ]) assert.equal(queue([req()], [rec()], delivered).items[0].review_state, "WAIT_CRM");
 });
+test("actual CRM SENDING/BLOCKED states remain visible but cannot imply review readiness", () => {
+  for (const state of ["SENDING", "BLOCKED"]) {
+    const result = queue([req()], [rec()], [del({ state })]);
+    assert.equal(result.review_ready, 0);
+    assert.equal(result.items[0].crm_delivery_state, state);
+    assert.equal(result.items[0].review_state, "WAIT_CRM");
+    assert.equal(result.items[0].invitation_authorized, false);
+  }
+  // Deprecated/non-schema state is never mistaken for a confirmed CRM delivery.
+  const stale = queue([req()], [rec()], [del({ state: "CLAIMED" })]);
+  assert.equal(stale.items[0].crm_delivery_state, "UNCONFIRMED");
+  assert.equal(stale.review_ready, 0);
+});
+
 test("another intake status cannot be silently promoted to verified", () => {
   assert.equal(queue([req({ intake_status: "VERIFIED" })]).items[0].review_state, "HOLD_STATUS");
 });
