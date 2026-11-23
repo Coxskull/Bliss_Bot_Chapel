@@ -4,7 +4,7 @@
 param([string]$ManifestPath = (Join-Path (Join-Path $HOME 'Downloads') 'bliss-pg18-20261122T055153Z-b34126b0.pending.json'))
 $ErrorActionPreference='Stop'
 function Refuse {
-  Write-Output 'TASK3B_WSL_PG_ARCHIVE=REFUSED_OR_INTEROP_UNVERIFIED'
+  Write-Output 'TASK3B_WSL_PG_ARCHIVE=PREFLIGHT_REFUSED'
   Write-Output 'TASK4_CREATOR_RESTORE=HELD'
   exit 1
 }
@@ -46,8 +46,9 @@ $allowed=@('PASS_AUTHENTICATED_FORMAT','GPG_ONLY_REFUSED','PG_FORMAT_ONLY_REFUSE
   'BOTH_PROCESSES_REFUSED','PIPELINE_UNCLASSIFIED','PREFLIGHT_REFUSED')
 $statuses=@($raw | ForEach-Object {
   $line=([string]$_).Trim()
-  if ($line -cmatch '^TASK3B_WSL_PG_ARCHIVE=([A-Z_]+)
- -and $allowed -ccontains $Matches[1]) { $Matches[1] }
+  if ($line -cmatch '^TASK3B_WSL_PG_ARCHIVE=([A-Z_]+)$' -and $allowed -ccontains $Matches[1]) {
+    $Matches[1]
+  }
 } | Select-Object -Unique)
 if ($exitCode -ne 0 -or $statuses.Count -ne 1 -or $statuses[0] -cne 'PASS_AUTHENTICATED_FORMAT') {
   if ($statuses.Count -eq 1 -and $statuses[0] -cne 'PASS_AUTHENTICATED_FORMAT') {
