@@ -248,6 +248,22 @@ const invalidArmor=spawnSync('bash',['-lc',wslProbeCmd],
 assert.notEqual(invalidArmor.status,0);
 assert.match(invalidArmor.stdout,/TASK3B_ARMOR_WSL_HEADER=NOT_PGDMP/);
 
+// Owner-local synthetic Windows-to-WSL smoke: NO GPG, ciphertext or database.
+const wslSmoke=readFileSync('scripts/task3b-wsl-armor-synthetic-smoke.ps1','utf8');
+for(const guard of [
+  'TASK3B_WSL_STDIN=', 'TASK3B_WSL_FD3=',
+  'TASK3B_WSL_ARMOR_SYNTHETIC=', 'TASK4_CREATOR_RESTORE=HELD',
+  'ALPHA_STDIN_PROBE', 'exec 3<&0;', 'bash -s -- 3<&3',
+  'python3 - --probe-only 3<&3', 'Get-Command wsl.exe',
+  'StandardInput.BaseStream.Write', 'StandardOutput.ReadToEnd',
+  'TASK3B_ARMOR_WSL_SHA256=', 'ComputeHash($payload)'
+]) assert.ok(wslSmoke.includes(guard),'synthetic WSL smoke missing guard '+guard);
+assert.doesNotMatch(wslSmoke,/gpg\.exe|--decrypt|pg_restore|psql|createdb|dropdb|\.gpg|\.pending\.json|Invoke-WebRequest|Invoke-RestMethod|Start-Transcript|Set-Content|Out-File|WriteAllBytes/i);
+const smokeParse=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
+  "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-wsl-armor-synthetic-smoke.ps1',[ref]$t,[ref]$e)>$null;if($e.Count){exit 89}"
+],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(smokeParse.status,0,'synthetic WSL PowerShell parse failure: '+smokeParse.stderr);
+
 const nativeSyntax=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
   "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-native-binary-wsl-pg18-preflight.ps1',[ref]$t,[ref]$e)>$null;if($e.Count){exit 81}"
 ],{encoding:'utf8',timeout:10000,maxBuffer:4096});
