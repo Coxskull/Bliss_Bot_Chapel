@@ -72,6 +72,32 @@ for (const guard of [
 ]) assert.ok(envelope.includes(guard),'missing envelope guard '+guard);
 assert.doesNotMatch(envelope,/pg_restore|createdb|dropdb|psql|railway\.cmd|Invoke-WebRequest|Start-Transcript|--import|--export-secret|Set-Content|Out-File|WriteAllBytes/i);
 assert.doesNotMatch(envelope,/Write-(?:Host|Output)\s+\$(?:first|buf|archive|gpg|m|plain|total)/i);
+
+// Classify PGDMP prefix using only approved markers and a numeric byte offset.
+// Do not normalize/strip prefix until the owner provides the byte category.
+for (const marker of ['TASK3B_NATIVE_PREFIX_KIND=', 'TASK3B_NATIVE_PGDMP_OFFSET=',
+  'UTF8_BOM','CRLF','ZERO_PADDING','ASCII_TEXT_UNTRUSTED',
+  'OTHER_BINARY_UNTRUSTED', 'ClassifyPrefix $first $offset']) {
+  assert.ok(envelope.includes(marker),'missing prefix-classifier safety marker '+marker);
+}
+const classifierSource=envelope.match(/function ClassifyPrefix\([\s\S]*?\n\}/);
+assert.ok(classifierSource,'reviewed PowerShell prefix classifier body');
+const cases=[
+  ['UTF8_BOM',[239,187,191],3],
+  ['CRLF',[13,10],2],
+  ['ZERO_PADDING',[0,0,0],3],
+  ['ASCII_WHITESPACE',[32,9,32],3],
+  ['ASCII_TEXT_UNTRUSTED',[65,66],2],
+  ['OTHER_BINARY_UNTRUSTED',[0,255],2]
+];
+for (const [expected,bytes,length] of cases) {
+  const c=classifierSource[0]+'\n'+'$b=[byte[]]@('+bytes.join(',')+');'+
+    'if ((ClassifyPrefix $b '+length+') -cne "'+expected+'") { exit 84 }';
+  const test=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',c],
+    {encoding:'utf8',timeout:10000,maxBuffer:4096});
+  assert.equal(test.status,0,'PowerShell prefix category '+expected+': '+test.stderr);
+}
+
 const envParse=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
   "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-native-envelope-preflight.ps1',[ref]$t,[ref]$e)>$null;if($e.Count -gt 0){exit 83}"
 ],{encoding:'utf8',timeout:10000,maxBuffer:4096});
