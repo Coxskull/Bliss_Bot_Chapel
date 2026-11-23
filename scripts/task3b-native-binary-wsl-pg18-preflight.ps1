@@ -94,15 +94,41 @@ if [[ ! -x /usr/lib/postgresql/18/bin/pg_restore ]]; then
   exit 2
 fi
 set +e
-/usr/lib/postgresql/18/bin/pg_restore --list <&3 >/dev/null 2>/dev/null
+# Capture ONLY pg_restore's stderr into an in-process variable. NEVER print
+# diagnostics or archive TOC, which may contain customer object identifiers.
+# Redirection order preserves stderr capture, discards stdout TOC.
+pg_err="$(/usr/lib/postgresql/18/bin/pg_restore --list <&3 2>&1 1>/dev/null)"
 pg_status=$?
+# pg_restore may read just the TOC; always drain the rest so native GPG
+# finishes authenticated decryption rather than seeing an early broken pipe.
 cat <&3 >/dev/null 2>/dev/null
 drain_status=$?
-if [[ "$pg_status" == 0 && "$drain_status" == 0 ]]; then
+if [[ "$pg_status" == "0" && "$drain_status" == "0" ]]; then
   printf 'TASK3B_NATIVE_WSL_MARKER=PASS\n'
   exit 0
 fi
-printf 'TASK3B_NATIVE_WSL_MARKER=PG_FORMAT_REFUSED\n'
+# Only emit fixed allowlisted classifications; do not print raw pg_err.
+category=PG_FORMAT_UNCLASSIFIED
+if [[ "$pg_status" != "0" ]]; then
+  case "$pg_err" in
+    *"did not find magic string"*|*"not appear to be a valid archive"*|*"input file is too short"*)
+      category=PG_FORMAT_MAGIC_OR_SHORT ;;
+    *"unsupported version"*)
+      category=PG_FORMAT_VERSION_UNSUPPORTED ;;
+    *"input file appears to be a text format dump"*)
+      category=PG_FORMAT_NONCUSTOM ;;
+    *"could not read from input file"*|*"unexpected end of file"*|*"could not read archive"*|*"end of file"*)
+      category=PG_FORMAT_READ_OR_TRUNCATED ;;
+    *"out of memory"*|*"memory exhausted"*)
+      category=PG_FORMAT_RESOURCE_REFUSED ;;
+    *"permission denied"*|*"could not open input file"*)
+      category=PG_FORMAT_INPUT_IO ;;
+    *) category=PG_FORMAT_UNCLASSIFIED ;;
+  esac
+elif [[ "$drain_status" != "0" ]]; then
+  category=PG_FORMAT_DRAIN_REFUSED
+fi
+printf 'TASK3B_NATIVE_WSL_MARKER=%s\n' "$category"
 exit 2
 '@
   $helper=$helper.Replace(([string][char]13+[string][char]10),([string][char]10)).Replace(([string][char]13),'')
@@ -145,9 +171,28 @@ exit 2
   if ($wproc.ExitCode -eq 0 -and @($lines | Where-Object { $_ -ceq 'TASK3B_NATIVE_WSL_MARKER=PASS' }).Count -eq 1) {
     Receipt $nativeMarker 'PASS_ARCHIVE_FORMAT'; exit 0
   }
-  if (@($lines | Where-Object { $_ -ceq 'TASK3B_NATIVE_WSL_MARKER=PG_FORMAT_REFUSED' }).Count -eq 1) {
-    Receipt $nativeMarker 'PG_FORMAT_REFUSED'; exit 1
+  $allowedPg=@('PG_FORMAT_MAGIC_OR_SHORT','PG_FORMAT_VERSION_UNSUPPORTED',
+    'PG_FORMAT_NONCUSTOM','PG_FORMAT_READ_OR_TRUNCATED','PG_FORMAT_RESOURCE_REFUSED',
+    'PG_FORMAT_INPUT_IO','PG_FORMAT_UNCLASSIFIED','PG_FORMAT_DRAIN_REFUSED')
+  $safePg=@($lines | ForEach-Object {
+    if ($_ -cmatch '^TASK3B_NATIVE_WSL_MARKER=([A-Z_]+)
+  Receipt $nativeMarker 'PREFLIGHT_REFUSED'; exit 1
+} catch {
+  Receipt 'NOT_VERIFIED' 'PREFLIGHT_REFUSED'; exit 1
+} finally {
+  if ($null -ne $gproc) {
+    try { if (-not $gproc.HasExited) { $gproc.Kill() } } catch {}
+    $gproc.Dispose()
   }
+  if ($null -ne $wproc) {
+    try { if (-not $wproc.HasExited) { $wproc.Kill() } } catch {}
+    $wproc.Dispose()
+  }
+}
+ -and
+        $allowedPg -ccontains $Matches[1]) { $Matches[1] }
+  } | Select-Object -Unique)
+  if ($safePg.Count -eq 1) { Receipt $nativeMarker ([string]$safePg[0]); exit 1 }
   Receipt $nativeMarker 'PREFLIGHT_REFUSED'; exit 1
 } catch {
   Receipt 'NOT_VERIFIED' 'PREFLIGHT_REFUSED'; exit 1
