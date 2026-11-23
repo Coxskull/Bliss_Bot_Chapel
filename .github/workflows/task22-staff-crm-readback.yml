@@ -1,0 +1,33 @@
+name: Task22 staff CRM suppression readback
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/alpha-ghl-operator-review/**'
+      - 'frontend/public/support-operator.html'
+      - 'frontend/public/support-operator.js'
+      - 'scripts/task22-staff-ghl-readback-smoke.mjs'
+      - 'scripts/task22-ghl-operator-hosted-deny.mjs'
+      - '.github/workflows/task22-staff-crm-readback.yml'
+permissions:
+  contents: read
+jobs:
+  operator-auth-and-aggregate-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check staff portal syntax
+        run: node --check frontend/public/support-operator.js
+      - name: Test MFA and operator-grant verification, aggregate only
+        run: node scripts/task22-staff-ghl-readback-smoke.mjs
+      - name: Verify hosted staff review denies all unsigned calls
+        run: node scripts/task22-ghl-operator-hosted-deny.mjs
+      - name: Test existing safe portal build contract
+        env:
+          BLISS_APPLICATION_ORIGIN: https://example.com
+        run: node scripts/build-vercel-portal.mjs

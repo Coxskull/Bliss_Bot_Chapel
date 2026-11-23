@@ -44,18 +44,95 @@ public sealed class ControlledAiProviderTests
     public async Task Image_adapter_returns_png_bytes_for_private_review(string protocol)
     {
         var runtime = Runtime(); runtime.ControlledAi.Protocol = protocol;
+        if (protocol == "OpenAI")
+        {
+            runtime.ControlledAi.Provider = "OpenAI";
+            runtime.ControlledAi.ImagePilotEnabled = true;
+            runtime.ControlledAi.ImageModel = "gpt-image-2.5-flare";
+            runtime.ControlledAi.ImageEndpoint = "https://api.openai.com/v1/images/generations";
+            runtime.ControlledAi.TotalBudgetUsd = 20m;
+            runtime.ControlledAi.DailyBudgetUsd = 20m;
+            runtime.ControlledAi.ImageReservationUsd = 1.8m;
+            runtime.ControlledAi.MaxResponseBytes = 24_000_000;
+        }
         var handler = new Handler((_, body) =>
         {
             Assert.Contains("recipe", body);
-            var json = protocol == "OpenAI" ? $$"""{"data":[{"b64_json":"{{AcademyProductionTests.Pixel}}"}]}"""
+            if (protocol == "OpenAI") { using var payload = System.Text.Json.JsonDocument.Parse(body); Assert.Equal("low", payload.RootElement.GetProperty("quality").GetString()); }
+            var json = protocol == "OpenAI" ? System.Text.Json.JsonSerializer.Serialize(new { data = new[] { new { b64_json = AcademyProductionTests.Pixel } }, usage = new { input_tokens = 10, input_tokens_details = new { text_tokens = 10, image_tokens = 0 }, output_tokens = 100 } })
                 : $$"""{"imageBase64":"{{AcademyProductionTests.Pixel}}","providerRequestId":"fixture-image"}""";
-            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) };
+            var reply = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) };
+            if (protocol == "OpenAI") reply.Headers.TryAddWithoutValidation("x-request-id", "req-test-image");
+            return reply;
         });
         var result = await new ConfiguredControlledAiProvider(new HttpClient(handler), runtime).ExecuteAsync(
-            new AiProviderRequest(Guid.NewGuid(), "IMAGE", "fixture-image", "{\"recipe\":\"Original candidate\"}", 100), default);
+            new AiProviderRequest(Guid.NewGuid(), "IMAGE", protocol == "OpenAI" ? "gpt-image-2.5-flare" : "fixture-image", "{\"recipe\":\"Original candidate\"}", 100), default);
         Assert.Equal(Convert.FromBase64String(AcademyProductionTests.Pixel), result.Image);
-        Assert.Null(result.ActualUsd);
+        Assert.Equal(protocol == "OpenAI" ? .00305m : null, result.ActualUsd);
     }
+    private static BlissRuntimeOptions OpenAiPilot() => new()
+    {
+        ControlledAi = new ControlledAiOptions
+        {
+            Enabled = true, ImagePilotEnabled = true, Protocol = "OpenAI",
+            Provider = "OpenAI", ApiToken = "sk-fixture-not-real",
+            ImageEndpoint = "https://api.openai.com/v1/images/generations",
+            ImageModel = "gpt-image-2.5-flare",
+            MaxCallsPerDay = 11, DailyBudgetUsd = 20m, TotalBudgetUsd = 20m,
+            ImageReservationUsd = 1.80m, MaxResponseBytes = 24_000_000,
+        }
+    };
+
+    [Theory]
+    [InlineData("insufficient_quota", "rate_limit_exceeded", "PROVIDER_HTTP_429_CODE_insufficient_quota")]
+    [InlineData("", "rate_limit_exceeded", "PROVIDER_HTTP_429_TYPE_rate_limit_exceeded")]
+    [InlineData("sk-proj-FORGED-SENSITIVE", "", "PROVIDER_HTTP_429")]
+    public async Task Image_429_retains_only_safe_machine_reason_and_valid_request_id(
+        string code, string type, string expected)
+    {
+        var calls = 0;
+        var handler = new Handler((_, _) =>
+        {
+            calls++;
+            var json = System.Text.Json.JsonSerializer.Serialize(
+                new { error = new { code, type, message = "sk-proj-SECRET-NEVER-COPY" } });
+            var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+            response.Headers.TryAddWithoutValidation("x-request-id", "req_fixture429valid");
+            return response;
+        });
+        var adapter = new ConfiguredControlledAiProvider(new HttpClient(handler), OpenAiPilot());
+        var exception = await Assert.ThrowsAsync<AiProviderException>(() =>
+            adapter.ExecuteAsync(new AiProviderRequest(Guid.NewGuid(), "IMAGE", "gpt-image-2.5-flare", "{}", 100), default));
+        Assert.Equal(expected, exception.Code);
+        Assert.Equal("req_fixture429valid", exception.ProviderRequestId);
+        Assert.True(exception.Code.Length <= 128);
+        Assert.DoesNotContain("SECRET", exception.Message);
+        Assert.DoesNotContain("sk-proj-", exception.Message);
+        Assert.Equal(1, calls); // never automatic paid retries or fallbacks
+    }
+
+    [Fact]
+    public async Task Image_429_oversized_body_and_forged_request_id_fail_to_generic_status()
+    {
+        var handler = new Handler((_, _) =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests)
+            {
+                Content = new StringContent(new string('x', 8193))
+            };
+            response.Headers.TryAddWithoutValidation("x-request-id", "Bearer sk-proj-LEAK");
+            return response;
+        });
+        var provider = new ConfiguredControlledAiProvider(new HttpClient(handler), OpenAiPilot());
+        var exception = await Assert.ThrowsAsync<AiProviderException>(() =>
+            provider.ExecuteAsync(new AiProviderRequest(Guid.NewGuid(), "IMAGE", "gpt-image-2.5-flare", "{}", 100), default));
+        Assert.Equal("PROVIDER_HTTP_429", exception.Code);
+        Assert.Null(exception.ProviderRequestId);
+    }
+
     [Fact]
     public async Task Provider_errors_and_tool_requests_are_rejected_without_exposing_response_text()
     {

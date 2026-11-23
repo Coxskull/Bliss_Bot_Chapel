@@ -4,13 +4,13 @@ on:
     paths:
       - 'supabase/migrations/20261105_alpha_privacy_repeat_requests.sql'
       - 'scripts/agm-privacy-repeat-hosted.mjs'
+      - 'scripts/agm-privacy-repeat-safety.test.mjs'
       - 'docs/privacy/**'
       - '.github/workflows/agm-privacy-repeat-rights.yml'
 permissions:
   contents: read
 jobs:
-  hosted-synthetic-repeat:
-    if: github.head_ref == 'fix/alpha-privacy-repeat-requests-20261105'
+  offline-privacy-safety:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -30,4 +30,5 @@ jobs:
           assert.ok(!sql.includes('DELETE FROM public.alpha_public_intake_requests'));
           console.log('Privacy index preserves creator/advertiser uniqueness: PASS');
           NODE
-      - run: node scripts/agm-privacy-repeat-hosted.mjs
+      - name: Prove no production or non-isolated hosted POST is possible
+        run: node --test scripts/agm-privacy-repeat-safety.test.mjs

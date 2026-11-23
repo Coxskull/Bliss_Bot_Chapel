@@ -1,0 +1,22 @@
+name: Task21 production incident alert outbox (offline)
+on:
+  pull_request:
+    paths:
+      - 'scripts/task21/production-real-incident-alert-outbox-20261112.sql'
+      - 'scripts/task21-production-incident-outbox-contract.mjs'
+      - '.github/workflows/task21-production-incident-outbox.yml'
+permissions:
+  contents: read
+jobs:
+  private-provider-and-human-ack-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify production case-triggered metadata-only provider and human ACK states
+        run: node scripts/task21-production-incident-outbox-contract.mjs

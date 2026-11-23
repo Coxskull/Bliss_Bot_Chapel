@@ -1,0 +1,22 @@
+name: ALPHA Task21 production support mailbox privacy contract
+on:
+  pull_request:
+    paths:
+      - 'scripts/task21/production-manual-mailbox-metadata-20261112.sql'
+      - 'scripts/task21/production-manual-mailbox-schema-contract.test.mjs'
+      - '.github/workflows/agm-task21-manual-mailbox.yml'
+permissions:
+  contents: read
+jobs:
+  private-mailbox-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Assert no public case data, no CRM/AI impact and strict audit
+        run: node scripts/task21/production-manual-mailbox-schema-contract.test.mjs

@@ -5,7 +5,7 @@
 **Prepared:** 2026-11-06
 
 ## Already approved and verified engineering scope
-PR #326 merged to existing Vercel production; existing homepage, /services.html and /contact.html are public. Contact currently routes only to separate existing advertiser/creator interest forms and privacy requests; this is NOT a monitored paid-customer support address. Global STOP remains ENGAGED. Live payments, outreach, marketplace activation and new spending are prohibited.
+PR #326 merged to existing Vercel production; existing homepage, /services.html and /contact.html are public. Contact currently routes only to separate existing advertiser/creator interest forms and privacy requests; this is NOT a monitored paid-customer support address. Factory STOP remains engaged for autonomous research/dispatch only. It does not gate inbound intake, ordinary human service, or internal planning. Outreach and payment remain independently gated by consent, suppression, verified scope, merchant readiness and transaction controls.
 
 ## Source drafts in this same engineering branch (NOT PUBLIC)
 - `docs/stripe/refund-cancellation-policy-CAPTAIN-REVIEW.md` — proposed refund/cancel/complaint/chargeback policy, section-by-section options and open policy values.
@@ -34,7 +34,7 @@ PR #326 merged to existing Vercel production; existing homepage, /services.html 
 - Policy effective date / timezone: __________
 - Publication authorization and timestamp: __________
 - Explicit payment release: **NOT INCLUDED; remains separate, forbidden**
-- Global STOP: **PRESERVE ENGAGED**
+- Factory STOP: **PRESERVE for autonomous research/dispatch; it does not gate the human-assisted inbound/planning path**
 
 ## Engineering acceptance after real approval
 1. Create reviewed final HTML pages under `frontend/public/` with approved text only, no brackets, missing values or DRAFT.
@@ -42,6 +42,6 @@ PR #326 merged to existing Vercel production; existing homepage, /services.html 
 3. Run exact-head CI and source publication/privacy regression checks.
 4. Deploy **Vercel only** under existing project and recheck root + www, desktop/mobile, all policy links, contact and consent flow without real customer data.
 5. Publish final receipt with GitHub HEAD, Vercel production ID, full page URLs, browser evidence and policy approval record.
-6. Leave STOP/payments/outreach/login gates unchanged. Stripe approval is Stripe's decision, not a passing CI result.
+6. Preserve the factory STOP for factory research/dispatch. Keep payment and outreach gates independently enforced. Stripe approval is Stripe's decision, not a passing CI result.
 
 **Current publication status:** NO. The legal/financial owner approvals are absent. Engineering changes may be prepared but cannot turn these drafts into live policies.

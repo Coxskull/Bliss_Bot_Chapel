@@ -1,0 +1,34 @@
+name: Task22 consent withdrawal and local readiness (offline)
+on:
+  pull_request:
+    paths:
+      - 'scripts/task22/production-consent-readiness-optout-guard-20261112.sql'
+      - 'supabase/functions/alpha-ghl-consent-readiness/**'
+      - 'frontend/public/support-operator.html'
+      - 'frontend/public/support-operator.js'
+      - 'scripts/task22-consent-readiness-smoke.mjs'
+      - 'scripts/task22-consent-readiness-hosted-deny.mjs'
+      - '.github/workflows/task22-consent-readiness.yml'
+permissions:
+  contents: read
+jobs:
+  consent-safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate staff browser syntax
+        run: node --check frontend/public/support-operator.js
+      - name: Validate consent safety, optout immutable audit and MFA gateway
+        run: node scripts/task22-consent-readiness-smoke.mjs
+      - name: Validate existing production portal build
+        env:
+          BLISS_APPLICATION_ORIGIN: https://example.com
+        run: node scripts/build-vercel-portal.mjs
+      - name: Verify real hosted consent endpoint rejects anonymous callers
+        run: node scripts/task22-consent-readiness-hosted-deny.mjs

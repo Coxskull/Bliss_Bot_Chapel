@@ -26,3 +26,21 @@
 /* Keep expanded business-navigation links usable on phones and tablets. */
 @media(max-width:1000px){.topbar{flex-wrap:wrap}nav{flex-wrap:wrap;gap:12px 20px}}
 @media(max-width:600px){.topbar{flex-direction:column;align-items:flex-start}nav{justify-content:flex-start;width:100%}}
+
+
+/* Task 19: public inquiry hero CTAs use existing ALPHA colors and mobile-first controls. */
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 22px 0 12px; }
+.hero-actions a { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 18px; border-radius: 9px; text-decoration: none; font-weight: 700; line-height: 1.35; }
+.hero-actions .primary { margin-top: 0; background: #efd3ff; color: #251039; }
+.hero-actions .secondary { border: 2px solid #efd3ff; background: transparent; color: #fff; }
+.hero-actions .tertiary { padding-left: 4px; padding-right: 4px; color: #f4d7ff; text-decoration: underline; text-underline-offset: 4px; }
+.hero-actions a:focus-visible { outline: 3px solid #ffd873; outline-offset: 4px; }
+.hero-actions .primary:hover { background: #fff; }
+.hero-actions .secondary:hover { background: #34204f; }
+.hero-copy > .hero-note { color: #eee2fa; font-size: 13px; line-height: 1.6; max-width: 540px; margin: 8px 0 0; }
+.hero-note a { text-decoration: underline; text-underline-offset: 3px; }
+@media (max-width: 600px) {
+  .hero-actions { flex-direction: column; align-items: stretch; }
+  .hero-actions a { width: 100%; min-height: 48px; }
+  .hero-actions .tertiary { padding-left: 18px; padding-right: 18px; }
+}

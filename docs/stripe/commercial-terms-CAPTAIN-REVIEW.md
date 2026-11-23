@@ -31,7 +31,7 @@ All fee amounts, currency (for example USD or PHP **only if authorized for the a
 The separately approved <PROPOSED PUBLIC PATH: /refund-cancellation.html> (once effective) and order-specific terms would govern cancellations, work already undertaken, eligible refunds, creator unavailability, nonperformance and complaint resolution. No cancellation fee, universal nonrefundability, fixed deadline or unapproved payment obligation is created by this draft. Mandatory statutory rights remain unaffected. A mismatch between paid promises and delivered work should be reasonably corrected or reviewed for lawful refund/remedy.
 
 ### 9. Support, complaints and disputes
-The Order and public site must show the **approved monitored customer-support route [CAPTAIN APPROVED CONTACT PENDING]**, how to submit an order reference and complaint, escalation timing and applicable refund route. Payment disputes may also proceed through the relevant payment provider and legal rights. No clause requires customers to waive lawful dispute rights; avoid retaliatory account restrictions for good-faith complaints. Internal recordkeeping and disclosure are restricted to authorized personnel.
+ALPHA's currently verified **business inquiry-only** email is **dejesuserwin1@gmail.com** (prior two-way noncustomer test). It is **not yet approved as a monitored paid-order support desk**. Before accepting a paid Order, the Order and public site must identify the separately approved, demonstrably monitored customer-support route, named operator/escalation coverage, how to submit an order reference and complaint, and the applicable refund route. Payment disputes may also proceed through the relevant payment provider and legal rights. No clause requires customers to waive lawful dispute rights; avoid retaliatory account restrictions for good-faith complaints. Internal recordkeeping and disclosure are restricted to authorized personnel.
 
 ### 10. Privacy, data and security
 ALPHA's current published privacy page at `/alpha-privacy.html` applies **only to public interest forms**; it does not itself describe commercial identity checks, transaction records, payment processor sharing, creator fulfillment evidence or customer support operations. The commercial program requires a separately reviewed privacy notice specifying categories, purposes, processors, applicable cross-border transfers, retention, rights and the approved privacy contact. Payment credentials are collected only by an approved secure processor, never by public forms.
@@ -52,7 +52,7 @@ Only after written owner/legal/finance approval may Alpha publish dated commerci
 - Approved service/creator/market and merchant-of-record model: **NOT APPROVED**
 - Authorized prices, fees, currencies, taxes and collection terms: **NOT APPROVED**
 - Delivery windows, deliverables, revisions and IP/creator rights: **NOT APPROVED**
-- Official monitored customer contact and support escalation: **NOT APPROVED**
+- Existing inquiry mailbox: **dejesuserwin1@gmail.com** (two-way noncustomer test on record). Paid-order monitored contact and support escalation: **NOT APPROVED**
 - Commercial privacy, retention, processors and contact: **NOT APPROVED**
 - Refund/cancellation/dispute terms (link to policy version): **NOT APPROVED**
 - Governing law, legal notice address and counsel review: **NOT APPROVED**

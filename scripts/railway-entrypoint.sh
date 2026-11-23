@@ -6,6 +6,28 @@ if [ "$(id -u)" = 0 ]; then
     exec setpriv --reuid=app --regid=app --init-groups --inh-caps=-all --ambient-caps=-all --no-new-privs /usr/local/bin/bliss-railway-entrypoint "$@"
 fi
 test "$(id -u)" -ne 0
+# A strictly locked, credential-free interface preview may use ephemeral local
+# data-protection keys. This does NOT make OIDC or advertiser registration usable.
+# Production and any preview with an enabled auth/account feature must retain
+# the existing externally provided encrypted-at-rest certificate requirement.
+if [ -z "${BLISS_DP_CERTIFICATE_BASE64:-}" ] \
+    && [ "${Runtime__RestrictedPreview:-}" = "true" ] \
+    && [ "${Authentication__Enabled:-}" = "false" ] \
+    && [ "${Authentication__SupabaseEnabled:-}" = "false" ] \
+    && [ "${Authentication__AdvertiserRegistrationRequested:-}" = "false" ] \
+    && [ "${Authentication__AdvertiserPrivacyRequestsRequested:-}" = "false" ] \
+    && [ "${Authentication__AdvertiserSelfServiceRequested:-}" = "false" ]; then
+    if [ -n "${Runtime__DataProtectionCertificatePath:-}" ] \
+        || [ -n "${Runtime__DataProtectionCertificatePassword:-}" ]; then
+        echo "Restricted preview refuses incomplete certificate configuration." >&2
+        exit 2
+    fi
+    # Never reuse keys from a real session/volume. This directory disappears
+    # with the preview container; the middleware denies all auth/write routes.
+    export Runtime__DataProtectionKeysPath=/tmp/bliss-restricted-preview-keys
+    echo "Bliss restricted interface preview: login and writes disabled."
+    exec dotnet /app/Bliss.Api.dll "$@"
+fi
 : "${BLISS_DP_CERTIFICATE_BASE64:?Data protection certificate secret is required}"
 : "${Runtime__DataProtectionCertificatePassword:?Certificate password is required}"
 printf '%s' "$BLISS_DP_CERTIFICATE_BASE64" | base64 -d > /data/secrets/session.pfx.tmp

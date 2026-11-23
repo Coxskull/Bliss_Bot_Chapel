@@ -1,5 +1,11 @@
 """Reject false-clean evidence, stale databases, and cross-image audit reports."""
 import copy
+import base64
+import hashlib
+import io
+import json
+import tarfile
+import tempfile
 import datetime as dt
 from pathlib import Path
 import runpy
@@ -58,6 +64,92 @@ class VulnerabilityEvidenceTests(unittest.TestCase):
         self.assertEqual("NO_MATCHES_REPORTED", summary["findings_status"])
         self.assertFalse(summary["vulnerability_acceptance"])
         self.assertEqual([], rows)
+
+
+    def make_export_fixture(self, root):
+        revision = "f" * 40
+        labels = {"org.opencontainers.image.revision": revision}
+        runtime = {"Labels": labels, "User": "1654", "Env": ["PATH=/usr/bin"],
+                   "Entrypoint": ["dotnet", "Bliss.Api.dll"], "Cmd": None,
+                   "WorkingDir": "/app", "ExposedPorts": {"8080/tcp": {}}}
+        layers = ["sha256:" + "1" * 64]
+        config = {"architecture": "amd64", "os": "linux", "rootfs": {"diff_ids": layers},
+                  "config": runtime}
+        config_bytes = json.dumps(config, separators=(",", ":")).encode()
+        config_sha = hashlib.sha256(config_bytes).hexdigest()
+        target_id = "sha256:" + config_sha
+        manifest_bytes = json.dumps({"schemaVersion": 2,
+            "config": {"digest": target_id, "size": len(config_bytes)}}).encode()
+        archive = root / "image.tar"
+        archive_manifest = json.dumps([{"Config": config_sha + ".json",
+                                        "Layers": ["layer.tar"]}]).encode()
+        with tarfile.open(archive, mode="w") as tar:
+            for name, contents in [("manifest.json", archive_manifest),
+                                   (config_sha + ".json", config_bytes)]:
+                info = tarfile.TarInfo(name)
+                info.size = len(contents)
+                tar.addfile(info, io.BytesIO(contents))
+        report = {"source": {"type": "image", "target": {
+            "userInput": str(archive), "imageID": target_id,
+            "config": base64.b64encode(config_bytes).decode(),
+            "manifest": base64.b64encode(manifest_bytes).decode(),
+            "manifestDigest": "sha256:" + hashlib.sha256(manifest_bytes).hexdigest()}}}
+        inspected = {"Id": "sha256:" + "a" * 64, "RootFS": {"Layers": layers},
+                     "Config": runtime, "Architecture": "amd64", "Os": "linux"}
+        return archive, report, inspected
+
+    def test_equivalent_exported_config_id_must_verify_layers_and_runtime(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, report, inspected = self.make_export_fixture(Path(folder))
+            proof = gate["verify_exported_image_provenance"](report, inspected, archive)
+            self.assertEqual("EXPORT_BYTES_ROOTFS_AND_RUNTIME_MATCH", proof["image_id_comparison"])
+            self.assertTrue(proof["provenance_validated"])
+            self.assertFalse(proof["release_authorized"])
+            inspected["Id"] = report["source"]["target"]["imageID"]
+            proof = gate["verify_exported_image_provenance"](report, inspected, archive)
+            self.assertEqual("DIRECT_MATCH", proof["image_id_comparison"])
+
+    def test_oci_blob_config_path_is_supported_without_skipping_digest_verification(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, report, inspected = self.make_export_fixture(Path(folder))
+            with tarfile.open(archive, mode="r") as input_tar:
+                config_entry = json.loads(input_tar.extractfile("manifest.json").read())[0]
+                config_bytes = input_tar.extractfile(config_entry["Config"]).read()
+            config_name = "blobs/sha256/" + hashlib.sha256(config_bytes).hexdigest()
+            manifest_bytes = json.dumps([{"Config": config_name, "Layers": ["layer.tar"]}]).encode()
+            with tarfile.open(archive, mode="w") as output_tar:
+                for name, content in [("manifest.json", manifest_bytes), (config_name, config_bytes)]:
+                    entry = tarfile.TarInfo(name)
+                    entry.size = len(content)
+                    output_tar.addfile(entry, io.BytesIO(content))
+            proof = gate["verify_exported_image_provenance"](report, inspected, archive)
+            self.assertTrue(proof["provenance_validated"])
+            with tarfile.open(archive, mode="w") as output_tar:
+                for name, content in [("manifest.json", manifest_bytes),
+                                      (config_name, config_bytes + b"tamper")]:
+                    entry = tarfile.TarInfo(name)
+                    entry.size = len(content)
+                    output_tar.addfile(entry, io.BytesIO(content))
+            with self.assertRaises(ValueError):
+                gate["verify_exported_image_provenance"](report, inspected, archive)
+
+    def test_falsified_cross_image_and_tampered_scanner_provenance_denied(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, report, inspected = self.make_export_fixture(Path(folder))
+            failures = [
+                lambda r, i: i["RootFS"].update(Layers=["sha256:" + "2" * 64]),
+                lambda r, i: i["Config"]["Labels"].update({"org.opencontainers.image.revision": "other"}),
+                lambda r, i: i["Config"].update(User="root"),
+                lambda r, i: r["source"]["target"].update(imageID="sha256:" + "3" * 64),
+                lambda r, i: r["source"]["target"].update(config=base64.b64encode(b"forged").decode()),
+                lambda r, i: r["source"]["target"].update(manifestDigest="sha256:" + "4" * 64),
+                lambda r, i: r["source"]["target"].update(userInput="/tmp/unrelated.tar"),
+            ]
+            for mutation in failures:
+                altered_report, altered_inspected = copy.deepcopy(report), copy.deepcopy(inspected)
+                mutation(altered_report, altered_inspected)
+                with self.subTest(mutation=mutation), self.assertRaises(ValueError):
+                    gate["verify_exported_image_provenance"](altered_report, altered_inspected, archive)
 
 
 if __name__ == "__main__":

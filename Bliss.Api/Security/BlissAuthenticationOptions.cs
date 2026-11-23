@@ -34,7 +34,32 @@ public sealed class BlissAuthenticationOptions
     // Advertiser-only self-service stays off until identity-to-business
     // verification and hosted recovery/ingress checks are accepted.
     public bool AdvertiserSelfServiceRequested { get; set; }
+    // Narrow application-owned authorization of the read-only profile, based on
+    // a verified registration identity and an ACTIVE receipt-bound membership.
+    // Does not mint roles, change issuer metadata or open other business APIs.
+    public bool AdvertiserMembershipSelfServiceRequested { get; set; }
+    // Independent customer DRAFT intake gate; never enables campaign execution.
+    public bool AdvertiserCampaignDraftsRequested { get; set; }
+    // Read-only, no-cost creative/Factory QA preview; never permits provider calls.
+    public bool AdvertiserCreativeHandoffPreviewRequested { get; set; }
     public string[] ApprovedAdvertiserSubjects { get; set; } = [];
+    // Verified Supabase identities with no trusted roles may enter only the
+    // registration endpoint while this is explicitly enabled. It is OFF by default.
+    public bool AdvertiserRegistrationRequested { get; set; }
+    // Explicit human review lane; never enables issuer provisioning.
+    public bool AdvertiserOperatorReviewRequested { get; set; }
+    public string[] ApprovedRegistrationOperatorSubjects { get; set; } = [];
+    // Separate fail-closed account privacy case switch. Never inferred from registration
+    // or self-service enrollment, and must stay OFF until hosted human handling is accepted.
+    public bool AdvertiserPrivacyRequestsRequested { get; set; }
+    // Explicit single-operator or small staff allowlist for pending privacy cases.
+    // Empty by default: operator queues and ACK are inaccessible until verified.
+    public string[] ApprovedPrivacyOperatorSubjects { get; set; } = [];
+    public const string AdvertiserRegistrationPendingMarkerClaimType = "bliss_advertiser_registration_pending";
+    // Creator registration is a separate, no-role Supabase identity lane.
+    // Like advertiser registration, it creates no verified creator authority.
+    public bool CreatorRegistrationRequested { get; set; }
+    public const string CreatorRegistrationPendingMarkerClaimType = "bliss_creator_registration_pending";
 
     // Requires explicit issuer configuration; defaults cannot enable visitor
     // claims as trusted evidence of historic conversation ownership.

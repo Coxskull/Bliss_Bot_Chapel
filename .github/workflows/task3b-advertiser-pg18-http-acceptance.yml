@@ -1,0 +1,165 @@
+name: Task3B advertiser registration and privacy rights - disposable PostgreSQL 18 HTTP
+
+on:
+  pull_request:
+    branches:
+      - main
+      - codex/task3-secure-advertiser-registration-20261107
+    paths:
+      - 'Bliss.Api/Program.cs'
+      - 'Bliss.Api/Controllers/AdvertiserRegistrationController.cs'
+      - 'Bliss.Api/Controllers/AdvertiserPrivacyRequestsController.cs'
+      - 'Bliss.Api/Security/AdvertiserRegistrationBoundary.cs'
+      - 'Bliss.Api/Security/AdvertiserApiBoundary.cs'
+      - 'Bliss.Infrastructure/Migrations/**'
+      - 'Bliss.Tests/Api/AdvertiserRegistrationPrivacyHttpPipelineTests.cs'
+      - 'Bliss.Tests/Api/AdvertiserPrivacyRequestSecurityTests.cs'
+      - 'frontend/public/advertiser-account-rights.js'
+      - 'frontend/public/advertiser-registration.js'
+      - 'scripts/test_advertiser_account_legal_contract.py'
+      - 'scripts/test_advertiser_account_rights_runtime.mjs'
+      - 'scripts/test_advertiser_registration_receipt_runtime.mjs'
+      - 'scripts/railway-entrypoint.sh'
+      - 'railway.json'
+      - '.github/workflows/task3b-advertiser-pg18-http-acceptance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pg18-http-registration-privacy:
+    name: Full ASP.NET HTTP and EF privacy intake / PostgreSQL 18
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: task3b_disposable_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d task3b_disposable_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Exactly local CI; no hosted credentials, Railway target or live customer data.
+      BLISS_TEST_POSTGRES_CONNECTION: Host=127.0.0.1;Port=5432;Database=task3b_disposable_ci;Username=postgres;Password=disposable-only
+      TASK3B_REQUIRE_PG18: '1'
+    steps:
+      - name: Check out reviewed source without persisted token
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify staging preview health does not replace production DB readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          config = json.loads(Path("railway.json").read_text())
+          assert config["deploy"]["healthcheckPath"] == "/health/ready", "Production must require database-ready check"
+          assert config["environments"]["staging"]["deploy"]["healthcheckPath"] == "/health/live", "Staging preview must check liveness only"
+          gate = Path("Bliss.Api/Runtime/RestrictedPreviewGate.cs").read_text()
+          assert '"/health/live"' in gate and '"/health/ready"' not in gate, "Restricted preview route boundary drifted"
+          program = Path("Bliss.Api/Program.cs").read_text()
+          assert 'if (!runtime.RestrictedPreview)\n    Directory.CreateDirectory(generatedCreativeRoot);' in program, "Preview must not write generated media to the immutable image"
+          assert 'if (!runtime.RestrictedPreview && !Path.GetFullPath(generatedCreativeRoot).StartsWith(' in program, "Preview must not mount generated media outside the operations tree"
+          print("TASK3B_PREVIEW_READONLY_GENERATED_MEDIA_PASS")
+          print("TASK3B_STAGING_PREVIEW_HEALTH_OVERRIDE_PASS")
+          PY
+      - name: Verify locked preview can boot without credentials but unlocked modes fail closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          sh -n scripts/railway-entrypoint.sh
+          [[ "$(id -u)" != 0 ]] || { echo "::error::Test must run as unprivileged runner"; exit 1; }
+          bin_dir="$(mktemp -d)"
+          trap 'rm -rf "$bin_dir"' EXIT
+          cat > "$bin_dir/dotnet" <<'STUB'
+          #!/bin/sh
+          printf 'TASK3B_DOTNET_STUB_EXECUTED\n'
+          printf 'TASK3B_KEY_PATH=%s\n' "${Runtime__DataProtectionKeysPath:-}"
+          STUB
+          chmod 700 "$bin_dir/dotnet"
+          run_preview() {
+            env -u BLISS_DP_CERTIFICATE_BASE64 \
+              -u Runtime__DataProtectionCertificatePath \
+              -u Runtime__DataProtectionCertificatePassword \
+              PATH="$bin_dir:$PATH" \
+              Runtime__RestrictedPreview=true \
+              Authentication__Enabled=false \
+              Authentication__SupabaseEnabled=false \
+              Authentication__AdvertiserRegistrationRequested=false \
+              Authentication__AdvertiserPrivacyRequestsRequested=false \
+              Authentication__AdvertiserSelfServiceRequested=false \
+              "$@"
+          }
+          output="$(run_preview sh scripts/railway-entrypoint.sh)"
+          [[ "$output" == *"TASK3B_DOTNET_STUB_EXECUTED"* ]]
+          [[ "$output" == *"TASK3B_KEY_PATH=/tmp/bliss-restricted-preview-keys"* ]]
+          for blocked in Runtime__RestrictedPreview Authentication__Enabled Authentication__SupabaseEnabled \
+            Authentication__AdvertiserRegistrationRequested Authentication__AdvertiserPrivacyRequestsRequested \
+            Authentication__AdvertiserSelfServiceRequested; do
+            if [[ "$blocked" == "Runtime__RestrictedPreview" ]]; then
+              value=false
+            else
+              value=true
+            fi
+            if run_preview env "$blocked=$value" sh scripts/railway-entrypoint.sh >"$bin_dir/rejected" 2>&1; then
+              echo "::error::Unsafe preview mode was permitted: $blocked"
+              exit 1
+            fi
+            if grep -q 'TASK3B_DOTNET_STUB_EXECUTED' "$bin_dir/rejected"; then
+              echo "::error::Unsafe preview executed dotnet: $blocked"
+              exit 1
+            fi
+          done
+          if run_preview env Runtime__DataProtectionCertificatePassword=incomplete \
+            sh scripts/railway-entrypoint.sh >"$bin_dir/rejected" 2>&1; then
+            echo "::error::Partially configured certificate was accepted"
+            exit 1
+          fi
+          echo "TASK3B_LOCKED_CERTLESS_PREVIEW_ONLY_PASS"
+      - name: Verify registration and privacy-rights source contract
+        run: python3 -m unittest discover -s scripts -p 'test_advertiser_account_legal_contract.py' -v
+      - name: Verify browser privacy form behavior when case history is unavailable
+        run: node scripts/test_advertiser_account_rights_runtime.mjs
+      - name: Verify newest consent-bound advertiser registration receipt and safe retry
+        run: node scripts/test_advertiser_registration_receipt_runtime.mjs
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Verify exact disposable database target and major version
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TASK3B_REQUIRE_PG18" == 1 ]]
+          [[ "$BLISS_TEST_POSTGRES_CONNECTION" == Host=127.0.0.1\;* ]]
+          version="$(docker exec "${{ job.services.postgres.id }}"             psql -X -A -t -v ON_ERROR_STOP=1 -U postgres -d task3b_disposable_ci             -c 'SHOW server_version_num')"
+          [[ "$version" =~ ^18[0-9]{4}$ ]] || {
+            echo "::error::Only disposable PostgreSQL 18 is authorized for this acceptance"
+            exit 1
+          }
+          echo "TASK3B_DISPOSABLE_POSTGRES18_TARGET_PASS"
+      - name: Restore and run actual HTTP, EF migration, tenant and operator tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet restore Bliss.Tests/Bliss.Tests.csproj
+          dotnet test Bliss.Tests/Bliss.Tests.csproj --configuration Release --no-restore             --filter 'FullyQualifiedName~AdvertiserRegistrationPrivacyHttpPipelineTests|FullyQualifiedName~AdvertiserPrivacyRequestSecurityTests'             --logger 'trx;LogFileName=task3b-relational-pg18.trx'             --results-directory Task3bPg18Results
+          echo "TASK3B_PG18_RELATIONAL_HTTP_SOURCE_ACCEPTANCE_PASS"
+      - name: Preserve exact-head test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task3b-pg18-relational-http-${{ github.run_id }}
+          path: Task3bPg18Results/*.trx
+          if-no-files-found: warn
+          retention-days: 14

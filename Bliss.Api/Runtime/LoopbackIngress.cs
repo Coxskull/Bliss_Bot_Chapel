@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.AspNetCore.DataProtection;
 using Yarp.ReverseProxy.Configuration;
 using Yarp.ReverseProxy.Transforms;
 
@@ -49,6 +50,24 @@ public static class LoopbackIngress
         var origin = new Uri(policy.PublicOrigin);
         var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = [] });
         builder.WebHost.ConfigureKestrel(options => options.ListenAnyIP(policy.PublicPort));
+        // The public loopback proxy is a separate ASP.NET application within
+        // the same Railway process. It otherwise creates an ephemeral default
+        // DataProtection key ring despite the authenticated API having mounted,
+        // certificate-protected persistent keys. Reuse the EXISTING restricted
+        // volume and certificate, never create a second secret or key store.
+        // The same application discriminator is required for restarts/replicas.
+        var proxyDataProtection = builder.Services.AddDataProtection()
+            .SetApplicationName("BlissBotChapel");
+        if (!string.IsNullOrWhiteSpace(runtime.DataProtectionKeysPath))
+        {
+            var keyDirectory = Directory.CreateDirectory(runtime.DataProtectionKeysPath);
+            proxyDataProtection.PersistKeysToFileSystem(keyDirectory);
+        }
+        if (!string.IsNullOrWhiteSpace(runtime.DataProtectionCertificatePath))
+            proxyDataProtection.ProtectKeysWithCertificate(
+                DataProtectionCertificateLoader.Load(
+                    runtime.DataProtectionCertificatePath,
+                    runtime.DataProtectionCertificatePassword));
         // Never emit full callback URLs, query strings, session codes or headers.
         builder.Logging.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
         builder.Logging.AddFilter("Yarp.ReverseProxy", LogLevel.Warning);

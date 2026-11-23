@@ -1,0 +1,24 @@
+name: Task21 staging app-origin alert queue (offline)
+on:
+  pull_request:
+    paths:
+      - 'scripts/task21/staging-app-origin-alert-outbox-20261112.sql'
+      - 'scripts/task21/staging-app-alert-synthetic-claim-only-20261112.sql'
+      - 'scripts/task21/staging-single-app-outbox-fixture-20261112.sql'
+      - 'scripts/task21/staging-app-alert-outbox.contract.mjs'
+      - '.github/workflows/agm-task21-staging-app-alert-outbox.yml'
+permissions:
+  contents: read
+jobs:
+  queue-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify default-deny app-intent queue and synthetic transport lease
+        run: node scripts/task21/staging-app-alert-outbox.contract.mjs

@@ -9,19 +9,43 @@
   <link rel="stylesheet" href="/global-media.css">
 </head>
 <body>
-  <a class="skip" href="#workspaces">Skip to workspaces</a>
-  <header class="topbar"><a class="brand" href="/global-media.html">ALPHA <span>GLOBAL MEDIA™</span></a><nav aria-label="Main navigation"><a href="/services.html">Services</a><a href="/contact.html">Contact</a><a href="#join-alpha">Join Alpha</a><a href="#workspaces">Workspaces</a><a href="#journey">How it works</a><a href="/creator-login.html">Creator login</a><a href="/advertiser-login.html">Advertiser login</a><a href="/creator-account.html">Creator account</a></nav></header>
-  <main>
+  <a class="skip" href="#main-content">Skip to main content</a>
+  <header class="topbar"><a class="brand" href="/global-media.html">ALPHA <span>GLOBAL MEDIA™</span></a><nav aria-label="Main navigation"><a href="/services.html">Services</a><a href="/contact.html">Contact</a><a href="/support.html">Support</a><a href="#join-alpha">Join Alpha</a><a href="#workspaces">Workspaces</a><a href="#journey">How it works</a><a href="/creator-login.html">Creator login</a><a href="/advertiser-login.html">Advertiser login</a><a href="/creator-account.html">Creator account</a></nav></header>
+  <main id="main-content">
     <section class="hero" aria-labelledby="title">
-      <div class="hero-copy"><p class="eyebrow">PEOPLE · CREATIVITY · OPPORTUNITY</p><h1 id="title">Your next great<br>partnership starts here.</h1><p>Connect brand direction, creative ideas, and suitable creator opportunities in one advertising journey.</p><a class="primary" href="#ask-alpha">Ask Alpha a question <span aria-hidden="true">↗</span></a></div>
+      <div class="hero-copy">
+        <p class="eyebrow">PEOPLE · CREATIVITY · OPPORTUNITY</p>
+        <h1 id="title">Your next great<br>partnership starts here.</h1>
+        <p>ALPHA is accepting advertising and creator-collaboration inquiries, including requests for an individually quoted Campaign Planning &amp; Coordination service. Public account registration, creator bookings, instant campaign purchases and online payments are not available on this website.</p>
+        <div class="hero-actions" role="group" aria-label="Choose a public next step">
+          <a class="primary" href="/join-advertiser.html">Advertiser inquiry · Request a plan <span aria-hidden="true">↗</span></a>
+          <a class="secondary" href="/join-creator.html">Creator inquiry <span aria-hidden="true">↗</span></a>
+          <a class="tertiary" href="#ask-alpha">Ask Alpha guided help <span aria-hidden="true">↘</span></a>
+        </div>
+        <p class="hero-note">Submitting a form does not create an account or purchase a campaign. Please read our <a href="/alpha-privacy.html">Privacy Notice</a> and <a href="/alpha-terms.html">Interest Form Terms</a>.</p>
+      </div>
       <figure><img src="/assets/bliss-chapel-hero.jpg" alt="Illustrated Alpha Bliss Chapel bringing brands, creators, and an AI planner together" width="1400" height="1279"><figcaption>Bliss Chapel · Ideas. Partners. Possibilities.</figcaption></figure>
     </section>
-    <section id="ask-alpha" class="ask-alpha-panel" aria-labelledby="ask-alpha-title">
+    <section class="journey" id="planning-service" aria-labelledby="planning-service-title">
+      <div>
+        <p class="eyebrow">BUSINESS SERVICE · HUMAN-REVIEWED PROPOSALS</p>
+        <h2 id="planning-service-title">Plan your campaign before you spend on ads.</h2>
+        <p>Campaign Planning &amp; Coordination is a planning-only service for businesses considering creator and advertising partnerships.</p>
+        <p><a href="/services.html">Review the proposed service scope and limitations</a></p>
+      </div>
+      <div>
+        <p><strong>What your proposal can cover:</strong> a campaign discovery brief; creator/channel suitability criteria; creative direction; a coordination schedule; and a final planning summary.</p>
+        <p><strong>How to begin:</strong> submit a free advertiser inquiry describing your market, budget, goals and preferred media. A human operator must confirm availability, deliverables, revisions, timeframe, price, taxes and terms in writing before any order or payment.</p>
+        <p><a href="/join-advertiser.html?service=planning">Request a Campaign Planning &amp; Coordination proposal</a></p>
+        <p>No account, checkout, creator booking, ad placement, or guaranteed campaign outcome is provided by the inquiry form.</p>
+      </div>
+    </section>
+    <section id="ask-alpha" data-ask-alpha-ai="false" class="ask-alpha-panel" aria-labelledby="ask-alpha-title">
       <div class="ask-alpha-intro">
         <p class="eyebrow">ASK ALPHA™ · GUIDED HELP AVAILABLE</p>
         <h2 id="ask-alpha-title">Questions about advertising or creators?</h2>
         <p>Ask Alpha can explain our marketplace, how partnerships are reviewed, how quotes are requested, and next steps.</p>
-        <p class="ask-alpha-limit">This is a scripted informational guide, not a live AI model or human support. The chat itself does not collect account data or submit forms. Separate public interest forms are available below; campaign approvals, quote issuance and outreach are not available in this chat.</p>
+        <p class="ask-alpha-limit">This is a scripted informational guide, not a live AI model or human support. The chat itself does not collect account data or submit forms. Separate public interest forms are available below; campaign approvals, quote issuance and outreach are not available in this chat. Learn about our <a href="/alpha-privacy.html#ask-alpha-ai">optional AI-processing notice</a> before using a separately consented AI service if it becomes available.</p>
       </div>
       <div class="ask-alpha-chat">
         <div class="ask-alpha-thread" id="ask-alpha-thread" role="log" aria-label="Ask Alpha conversation" aria-live="polite" aria-relevant="additions">
@@ -31,6 +55,12 @@
           <input id="ask-alpha-input" maxlength="400" autocomplete="off" aria-label="Ask Alpha a question" placeholder="Type a general question..." />
           <button id="ask-alpha-send" type="button" aria-label="Send question to guided Ask Alpha">Ask</button>
         </div>
+        <div id="ask-alpha-ai-consent-panel" hidden>
+          <p class="ask-alpha-disclosure"><strong>Optional AI response.</strong> If enabled and you explicitly agree, your message and up to four recent chat turns are sent through ALPHA's hosted Supabase service to OpenAI. ALPHA records a pseudonymous technical receipt and usage; AI responses may be inaccurate. Chat cannot create an account, payment, campaign, or support ticket. Please do not enter personal or confidential details. Read the <a href="/alpha-privacy.html#ask-alpha-ai">Ask Alpha AI processing notice</a>.</p>
+          <label class="ask-alpha-disclosure"><input id="ask-alpha-ai-consent" type="checkbox"> I consent to optional AI processing of my chat messages for an informational reply.</label>
+          <label class="ask-alpha-disclosure"><input id="ask-alpha-marketing-consent" type="checkbox"> Optional marketing permission (not required for AI and not a contact-submission form).</label>
+        </div>
+        <p id="ask-alpha-ai-status" class="ask-alpha-disclosure" role="status" aria-live="polite"></p>
         <p class="ask-alpha-disclosure">12 questions per session. Messages are only shown in this tab and are never submitted or stored.</p>
         <div class="ask-alpha-suggestions" aria-label="Suggested questions">
           <button type="button" data-ask-alpha-prompt="How does advertising with Alpha work?">For advertisers</button>
@@ -57,7 +87,7 @@
     <section id="journey" class="journey" aria-labelledby="journey-title"><div><p class="eyebrow">A THOUGHTFUL WORKFLOW</p><h2 id="journey-title">Plan. Create.<br>Review. Connect.</h2></div><ol><li><strong>Define your direction</strong><span>Start with your brand, audience, and goals.</span></li><li><strong>Develop the creative</strong><span>Prepare concepts and revisions in Creative Academy.</span></li><li><strong>Review before proceeding</strong><span>Confirm suitability, rights, scope, and the required approvals.</span></li></ol></section>
     <section class="journey" aria-labelledby="services-and-support-title"><div><p class="eyebrow">BUSINESS INFORMATION</p><h2 id="services-and-support-title">Clear scope before any commitment.</h2></div><div><p>ALPHA GLOBAL MEDIA LLC currently accepts advertising and creator-collaboration inquiries. We do not accept public website payments or offer immediate campaign checkout. Proposed work is subject to a separate written quote describing the currency, price, deliverables, timeline and terms before a customer can approve any paid service.</p><p><a href="/services.html">Review our advertising services and quotation process</a></p><p><a href="/contact.html">Contact ALPHA using the public inquiry forms</a></p><p>Our current <a href="/alpha-terms.html">Terms</a> cover public inquiry forms, not a paid advertising order. Commercial cancellation and refund terms must be provided before accepting a paid engagement.</p></div></section><aside class="notice" aria-label="Service availability">Workspace access depends on your account permissions and deployment configuration. AI generation requires an approved provider and usage capacity. Opening a workspace does not purchase, approve, or activate a campaign. No campaign performance or creator earnings are guaranteed. Public interest forms do not create registered creator or advertiser accounts.</aside>
   </main>
-  <footer><span>© 2026 ALPHA GLOBAL MEDIA LLC.</span><span>Alpha Creative Content · ALPHA GLOBAL MEDIA™ · <a href="/services.html">Services</a> · <a href="/contact.html">Contact</a> · <a href="/alpha-privacy.html">Privacy</a> · <a href="/alpha-terms.html">Inquiry Terms</a></span></footer>
+  <footer><span>© 2026 ALPHA GLOBAL MEDIA LLC.</span><span>Alpha Creative Content · ALPHA GLOBAL MEDIA™ · <a href="/services.html">Services</a> · <a href="/contact.html">Contact</a> · <a href="/support.html">Support</a> · <a href="/alpha-privacy.html">Privacy</a> · <a href="/alpha-terms.html">Inquiry Terms</a></span></footer>
   <script src="/wedding-planner.js" defer></script>
 </body>
 </html>

@@ -5,13 +5,26 @@
   const submit = document.querySelector("#submit-button");
   if (!form || !status || !submit) return;
 
-  const noticeVersion = "AGM-INTEREST-2026-11-05-GHL";
+  const noticeVersion = "AGM-FULL-SPECTRUM-BUDGET-2026-11-08-V1";
   let pendingKey = null;
   let pendingDraft = null;
   let saved = false;
+  let submitting = false;
   const field = name => form.elements.namedItem(name);
+  // A public, same-origin planning link may prefill ONLY this fixed topic.
+  // It must never submit a form, grant consent, or infer an account/order.
+  if (form.dataset.kind === "advertiser" &&
+      new URLSearchParams(window.location.search).get("service") === "planning") {
+    const description = form.elements.namedItem("description");
+    if (description && !description.value) {
+      description.value = "Please send me a Campaign Planning & Coordination planning-only proposal. I understand that this inquiry is free and creates no order or payment obligation.";
+    }
+  }
+
   const value = name => String(field(name)?.value ?? "").trim();
   const checked = name => Boolean(field(name)?.checked);
+  const checkedValues = name => [...form.querySelectorAll('input[name="' + name + '"]:checked')].map(el => el.value);
+  const csvValues = name => value(name).split(",").map(v => v.trim()).filter(Boolean);
   const show = (message, type) => {
     status.hidden = false;
     status.textContent = message;
@@ -19,7 +32,7 @@
     status.focus();
   };
   form.addEventListener("input", () => {
-    if (saved) return;
+    if (saved || submitting) return;
     // Edited drafts are new intents, rather than replay of old parameters.
     pendingKey = null;
     pendingDraft = null;
@@ -27,7 +40,7 @@
 
   form.addEventListener("submit", async e => {
     e.preventDefault();
-    if (saved) return;
+    if (saved || submitting) return;
     if (!form.reportValidity()) return;
     if (!window.crypto?.randomUUID || !window.fetch) {
       show("Your browser cannot securely submit this form. Please use an updated browser.", "error");
@@ -47,11 +60,26 @@
       processing_acknowledged: checked("processing_acknowledged"),
       adult_confirmed: checked("adult_confirmed"),
       marketing_opt_in: checked("marketing_opt_in"),
+      contact_consent: checked("contact_consent"),
       notice_version: noticeVersion
     };
-    if (!draft.processing_acknowledged || !draft.adult_confirmed) {
-      show("Please confirm your age and read the Privacy Notice before submitting.", "error");
+    if (!draft.processing_acknowledged || !draft.adult_confirmed ||
+        (kind !== "privacy" && !draft.contact_consent)) {
+      show("Please confirm your age, review the Privacy Notice, and choose whether ALPHA may follow up about this inquiry.", "error");
       return;
+    }
+    if (kind === "advertiser") {
+      draft.market_code = value("market_code");
+      draft.budget_amount = value("budget_amount");
+      draft.budget_currency = value("budget_currency");
+      draft.campaign_objective = value("campaign_objective");
+      draft.preferred_media_formats = checkedValues("preferred_media_formats");
+      draft.audience_requirements = value("audience_requirements");
+      draft.preferred_languages = csvValues("preferred_languages");
+      if (draft.preferred_media_formats.length === 0) {
+        show("Choose at least one media format you would consider.", "error");
+        return;
+      }
     }
     if (JSON.stringify(draft) !== pendingDraft || !pendingKey) {
       pendingKey = crypto.randomUUID();
@@ -62,7 +90,13 @@
       show("The verified submission service is unavailable.", "error");
       return;
     }
-    submit.disabled = true;
+    // Freeze the intent until the server confirms or rejects it. Otherwise an
+    // edit during an uncertain network response can rotate the request key
+    // and accidentally create a second, non-idempotent inquiry on retry.
+    const controls = [...form.querySelectorAll("input,textarea,select,button")];
+    const previousDisabled = controls.map(el => el.disabled);
+    submitting = true;
+    controls.forEach(el => { el.disabled = true; });
     submit.textContent = "Submitting…";
     status.hidden = true;
     try {
@@ -90,9 +124,10 @@
       show("We could not verify a saved submission. Please retry from this page; the same request key will be reused.", "error");
     } finally {
       if (!saved) {
-        submit.disabled = false;
+        controls.forEach((el, index) => { el.disabled = previousDisabled[index]; });
         submit.textContent = kind === "privacy" ? "Submit privacy request →" : "Submit interest →";
       }
+      submitting = false;
     }
   });
 })();

@@ -2,12 +2,12 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
 <meta name="theme-color" content="#170839"><title>Advertiser dashboard | ALPHA GLOBAL MEDIA™</title>
-<link rel="stylesheet" href="/creator-dashboard.css"><script defer src="/advertiser-dashboard.js"></script></head>
+<link rel="stylesheet" href="/creator-dashboard.css"><script defer src="/advertiser-dashboard.js"></script><script defer src="/advertiser-campaign-drafts.js"></script></head>
 <body><a class="skip" href="#dashboard">Skip to advertiser dashboard</a>
 <header class="topbar"><a class="brand" href="/">ALPHA <span>GLOBAL MEDIA™</span></a>
-<nav aria-label="Advertiser navigation"><a href="/advertiser-login.html">Advertiser login</a><a href="/join-advertiser.html">Business interest</a></nav></header>
+<nav aria-label="Advertiser navigation"><a href="/advertiser-login.html">Advertiser login</a><a href="/advertiser-registration.html">Registration</a></nav></header>
 <main id="dashboard"><section class="welcome"><p class="eyebrow">ALPHA GLOBAL MEDIA™ · ADVERTISER WORKSPACE</p>
-<h1>Your advertiser dashboard.</h1><p>Only a verified, explicitly approved business account can view its own profile here.</p></section>
+<h1>Your advertiser dashboard.</h1><p>Track your own registration after signing in. Only a verified, explicitly approved business account can view its own business profile.</p></section>
 <section class="panel" aria-labelledby="access-title"><div class="panel-head">
 <div><p class="kicker">ACCOUNT ACCESS</p><h2 id="access-title">Your business</h2></div>
 <span id="access-badge" class="badge">CHECKING</span></div>
@@ -17,17 +17,29 @@
 <a class="secondary" href="/advertiser-login.html">Account instructions</a></div>
 <div id="pending-panel" hidden><h3>Advertiser access is not yet approved</h3>
 <p>Submitting an interest form does not create a dashboard. ALPHA must verify your account and associate it with a specific business record.</p></div>
+<section id="application-panel" class="profile" aria-labelledby="application-title" hidden>
+<h3 id="application-title">Your registration receipt</h3>
+<dl><div><dt>Application status</dt><dd id="application-status">—</dd></div>
+<div><dt>Receipt</dt><dd id="application-receipt">—</dd></div>
+<div><dt>Privacy notice</dt><dd id="application-privacy">—</dd></div>
+<div><dt>Registration terms</dt><dd id="application-terms">—</dd></div>
+<div><dt>Required consent</dt><dd id="application-consent">—</dd></div>
+<div><dt>Marketing at registration</dt><dd id="application-marketing">—</dd></div></dl>
+<p class="muted">This receipt records your application, not workspace approval. You do not need to submit it again.</p></section>
 <section id="profile-panel" class="profile" aria-labelledby="profile-title" hidden>
 <div class="profile-heading"><div><p class="kicker">APPROVED BUSINESS PROFILE</p><h3 id="profile-title">Your profile</h3></div><span class="verified">APPROVED</span></div>
 <dl><div><dt>Business name</dt><dd id="business-name">—</dd></div>
 <div><dt>Advertiser ID</dt><dd id="business-id">—</dd></div>
 <div><dt>Country</dt><dd id="business-country">—</dd></div>
 <div><dt>Website</dt><dd id="business-website">—</dd></div></dl>
-<p class="muted">Pre-launch, read-only profile. Campaigns, private leads, payments, quotes, billing and account edits are not enabled.</p></section>
+<p class="muted">Your approved business profile. Private leads, payments, quotes, billing and account edits remain disabled.</p></section>
 <div class="panel-actions"><button id="refresh" type="button">Refresh account status</button>
 <button id="logout" type="button" hidden>Sign out</button></div></section>
+<section class="panel" id="draft-panel" aria-labelledby="draft-title" hidden><h2 id="draft-title">Your campaign drafts</h2>
+<p>Prepare an advertising brief for review. Saving a draft does not launch advertisements, order services, generate AI content, or incur charges.</p>
+<form id="draft-form"><label for="draft-name">Campaign name</label><input id="draft-name" maxlength="256" required><label for="draft-brief">Advertising brief</label><textarea id="draft-brief" maxlength="4000" rows="5" required placeholder="Product or service, target audience, market, goal and creative requirements"></textarea><button type="submit" id="draft-save">Save campaign draft</button></form><p id="draft-status" role="status" aria-live="polite"></p><div id="draft-list"></div></section>
 <section class="locked-grid" aria-label="Feature availability">
-<article><span>01</span><h3>Campaigns</h3><p>Not yet enabled</p></article>
+<article><span>01</span><h3>Campaign execution</h3><p>Not yet enabled</p></article>
 <article><span>02</span><h3>Messages</h3><p>Not yet enabled</p></article>
 <article><span>03</span><h3>Payments</h3><p>Not yet enabled</p></article>
 </section><p class="footnote">Account access is permission-scoped. Your public form receipt alone cannot activate a private workspace.</p></main>

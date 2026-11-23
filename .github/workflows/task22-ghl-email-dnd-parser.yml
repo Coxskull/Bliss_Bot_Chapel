@@ -1,0 +1,22 @@
+name: Task22 HighLevel contact DND parser repair
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/alpha-ghl-readback/logic.mjs'
+      - 'scripts/task22-ghl-get-contact-dnd-contract.mjs'
+      - '.github/workflows/task22-ghl-email-dnd-parser.yml'
+permissions:
+  contents: read
+jobs:
+  offline-email-dnd-status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify current HighLevel GET Contact email-DND variants
+        run: node scripts/task22-ghl-get-contact-dnd-contract.mjs
