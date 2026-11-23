@@ -82,7 +82,7 @@ fi
   $fd3='PASS'
 
   # Run the actual reviewed decoder in PROBE_ONLY mode with public fake data.
-  # It never starts pg_restore in this mode, or accesses a DB or ciphertext.
+  # It never starts an archive reader in this mode or accesses real data.
   $receiver=Join-Path $PSScriptRoot 'task3b-wsl-ascii-armor-receiver.py'
   if (-not (Test-Path -LiteralPath $receiver -PathType Leaf)) {
     $armor='REFUSED'; Emit $raw $fd3 $armor; exit 1
