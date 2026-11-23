@@ -1,0 +1,23 @@
+name: ALPHA Task3B Live Advertiser Registration Link — Read Only
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/task3b-public-registration-readback.mjs'
+      - '.github/workflows/task3b-public-registration-readback.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-get-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify live production Railway register gate and public Vercel CTA without creating a user
+        run: node scripts/task3b-public-registration-readback.mjs
