@@ -1,3 +1,4 @@
+import './task4-creator-pgdmp-bom-restore.test.mjs';
 import './task3b-native-ascii-preflight-contract.test.mjs';
 // Offline safety regression. Never run Railway, GPG decryption or real WSL.
 import assert from 'node:assert/strict';
