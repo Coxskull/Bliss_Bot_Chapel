@@ -60,6 +60,36 @@ const drainSynthetic=spawnSync('bash',['-c',
   'set -euo pipefail; set +e; head -c 131072 /dev/zero | ( head -c 4 >/dev/null; cat >/dev/null ); pipe=( "${PIPESTATUS[@]}" ); [[ ${pipe[0]} == 0 && ${pipe[1]} == 0 ]]'
 ],{encoding:'utf8',timeout:10000,maxBuffer:4096});
 assert.equal(drainSynthetic.status,0,'synthetic early reader must drain producer');
+
+// Native byte-stream bridge: bypass Windows PowerShell 5.1 text conversion.
+// Keep plaintext in process pipes only; WSL pg_restore may list TOC, never DB.
+const nativeBridge=readFileSync('scripts/task3b-native-binary-wsl-pg18-preflight.ps1','utf8');
+for(const guard of [
+  'Get-FileHash -LiteralPath $archive','sourceProjectId','sourceEnvironmentId',
+  'sourceServiceId','gpgRecipientFingerprint',
+  'StandardOutput.BaseStream.Read','StandardInput.BaseStream.Write',
+  'exec 3<&0;', 'bash -s -- 3<&3', 'pg_restore --list <&3',
+  'cat <&3 >/dev/null', 'TASK3B_NATIVE_PGDMP=',
+  'TASK3B_NATIVE_WSL_PG18=', 'TASK4_CREATOR_RESTORE=HELD',
+  "PGDMP", 'PASS_ARCHIVE_FORMAT'
+]) assert.ok(nativeBridge.includes(guard),'missing native binary guard '+guard);
+assert.doesNotMatch(nativeBridge,/pg_restore --dbname|createdb|dropdb|psql|railway\.cmd|Start-Transcript|--export-secret|--import|Set-Content|Out-File|WriteAllBytes/i);
+assert.doesNotMatch(nativeBridge,/Write-(?:Output|Host)\s+\$(?:magic|buffer|output|archive|gpg|wsl)/i);
+const nativeSyntax=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
+  "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-native-binary-wsl-pg18-preflight.ps1',[ref]$t,[ref]$e)>$null;if($e.Count){exit 81}"
+],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(nativeSyntax.status,0,'native binary source PowerShell parse: '+nativeSyntax.stderr);
+// Ensure Bash script bytes and GPG-like binary data have separate file descriptors.
+// The 0x8f test bytes deliberately cannot survive text-based transcode safely.
+const fd3Helper='set -euo pipefail\nfirst="$(head -c 5 <&3)"\ncat <&3 >/dev/null\n[[ "$first" == "PGDMP" ]] && printf "BINARY_FD3=PASS\\n"\n';
+const fd3B64=Buffer.from(fd3Helper,'utf8').toString('base64');
+const fd3Raw=Buffer.concat([Buffer.from('PGDMP','ascii'),Buffer.alloc(196608,0x8f)]);
+const fd3=spawnSync('bash',['-lc',
+  'exec 3<&0; set -o pipefail; printf %s '+fd3B64+' | base64 -d | bash -s -- 3<&3'
+],{input:fd3Raw,encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(fd3.status,0,'FD3 binary safety repro: '+fd3.stderr);
+assert.match(fd3.stdout,/BINARY_FD3=PASS/);
+
 // Task4 no-database PGDMP binary stream signature safety contracts.
 const magicPS=readFileSync('scripts/task3b-wsl-pgdmp-header-preflight.ps1','utf8');
 const magicSH=readFileSync('scripts/task3b-wsl-pgdmp-header-preflight.sh','utf8');
