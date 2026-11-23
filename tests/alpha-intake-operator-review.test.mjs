@@ -166,7 +166,7 @@ test("Edge implementation is explicitly read-only and requires fresh GoTrue, ses
     'ALPHA_INTAKE_REVIEW_ENABLED', 'ALPHA_INTAKE_REVIEW_USER_IDS',
     'ALPHA_INTAKE_REVIEW_ORIGINS', '.auth.getUser(token)',
     'alpha_intake_operator_session_active', 'app_metadata?.alpha_intake_operator',
-    '.limit(50)', 'buildReviewQueue(', 'get("Authorization")'
+    '.limit(51)', 'buildReviewQueue(', 'get("Authorization")'
   ]) assert.ok(code.includes(phrase), phrase);
   for (const prohibited of [".insert(", ".upsert(", ".update(", ".delete(", ".remove(", ".auth.admin.createUser("])
     assert.equal(code.includes(prohibited), false, "no write capability: " + prohibited);
