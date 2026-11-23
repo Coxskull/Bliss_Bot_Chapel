@@ -37,7 +37,7 @@ function ExecSynthetic([string]$arguments,[byte[]]$payload) {
       return ''
     }
     if ($p.ExitCode -ne 0) { return '' }
-    $output=$p.StandardOutput.ReadToEnd()
+    $output=$p.StandardOutput.ReadToEnd().Replace(([string][char]13),'')
     if ($output.Length -gt 2048) { return '' }
     return $output
   } catch {
