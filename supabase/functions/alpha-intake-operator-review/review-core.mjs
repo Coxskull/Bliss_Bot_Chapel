@@ -3,7 +3,8 @@
 export const NOTICE = "AGM-INTEREST-2026-11-05-GHL";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const kinds = new Set(["creator", "advertiser"]);
-const deliveryStates = new Set(["PENDING", "CLAIMED", "RETRY", "DELIVERED", "FAILED"]);
+// Keep the read-only review projection aligned with the live alpha_ghl_delivery.state CHECK constraint.
+const deliveryStates = new Set(["PENDING", "SENDING", "RETRY", "DELIVERED", "BLOCKED"]);
 const validId = value => typeof value === "string" && UUID.test(value);
 
 export function authorizedReview({ userId, verifiedUserId, allowlistedUserIds, operatorFlag, aal, sessionId, liveSession }) {
