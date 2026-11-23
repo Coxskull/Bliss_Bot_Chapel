@@ -32,6 +32,9 @@ try {
   $helper=@'
 set -euo pipefail
 IFS= read -r token <&3
+# Windows PowerShell 5.1 native pipelines may terminate this probe with CRLF.
+# Strip exactly one terminal CR from the public synthetic marker only.
+token="${token%$'\r'}"
 if [[ "$token" == "ALPHA_STDIN_PROBE" ]]; then
   printf 'TASK3B_SYNTHETIC_FD3=PASS\n'
 else
