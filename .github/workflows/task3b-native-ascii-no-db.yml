@@ -5,12 +5,17 @@ on:
       - 'scripts/task3b-wsl-ascii-armor-native-preflight.ps1'
       - 'scripts/task3b-native-ascii-preflight-contract.test.mjs'
       - 'scripts/task3b-wsl-local-verify-contract.test.mjs'
+      - 'scripts/task4-creator-wsl-pg18-restore.sh'
+      - 'scripts/task3b-wsl-local-verify-current.ps1'
+      - 'scripts/task4-creator-pgdmp-bom-restore.test.mjs'
       - '.github/workflows/task3b-native-ascii-no-db.yml'
   push:
     branches: [main]
     paths:
       - 'scripts/task3b-wsl-ascii-armor-native-preflight.ps1'
       - 'scripts/task3b-native-ascii-preflight-contract.test.mjs'
+      - 'scripts/task4-creator-wsl-pg18-restore.sh'
+      - 'scripts/task4-creator-pgdmp-bom-restore.test.mjs'
       - '.github/workflows/task3b-native-ascii-no-db.yml'
 permissions:
   contents: read
@@ -29,3 +34,6 @@ jobs:
       - name: Offline synthetic framing and safety contracts
         shell: bash
         run: node scripts/task3b-native-ascii-preflight-contract.test.mjs
+      - name: Offline synthetic PGDMP prefix and disposable cleanup guards
+        shell: bash
+        run: node scripts/task4-creator-pgdmp-bom-restore.test.mjs
