@@ -96,8 +96,11 @@ export function createReviewHandler({ getEnv, createClient }) {
       const { data: requests, error: requestError } = await db
         .from("alpha_public_intake_requests")
         .select("id,kind,created_at,processing_acknowledged,adult_confirmed,notice_version,intake_status")
-        .order("created_at", { ascending: false }).limit(50);
-      if (requestError || !Array.isArray(requests)) throw Error("request-read");
+        // Filter privacy requests at the database boundary and detect truncation.
+        .in("kind", ["creator", "advertiser"])
+        .order("created_at", { ascending: false }).limit(51);
+      if (requestError || !Array.isArray(requests) || requests.length > 50)
+        throw Error("request-page-overflow-or-read");
       if (!requests.length) return respond(200, buildReviewQueue({
         requests: [], receipts: [], deliveries: []
       }), approvedOrigin);
