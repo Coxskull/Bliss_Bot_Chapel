@@ -9,6 +9,17 @@ function Receipt([string]$native,[string]$wsl) {
   Write-Output ('TASK3B_NATIVE_WSL_PG18='+$wsl)
   Write-Output 'TASK4_CREATOR_RESTORE=HELD'
 }
+function GetPgDumpHeaderKind([byte[]]$head,[int]$count) {
+  if ($count -ne 8) { return 'UNRECOGNIZED' }
+  $zero=($head[0] -eq 80 -and $head[1] -eq 71 -and $head[2] -eq 68 -and
+         $head[3] -eq 77 -and $head[4] -eq 80)
+  if ($zero) { return 'PGDMP_AT_ZERO' }
+  $bom=($head[0] -eq 239 -and $head[1] -eq 187 -and $head[2] -eq 191)
+  $offset3=($head[3] -eq 80 -and $head[4] -eq 71 -and $head[5] -eq 68 -and
+            $head[6] -eq 77 -and $head[7] -eq 80)
+  if ($bom -and $offset3) { return 'EXACT_UTF8_BOM_PGDMP' }
+  return 'UNRECOGNIZED'
+}
 function Refuse { Receipt 'NOT_VERIFIED' 'PREFLIGHT_REFUSED'; exit 1 }
 try {
   if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf) -or
@@ -46,21 +57,31 @@ try {
   $gproc.BeginErrorReadLine()
   $gproc.StandardInput.Close()
 
-  [byte[]]$magic=New-Object byte[] 5
+  # Read exactly eight bytes. Accept ONLY verified PGDMP at byte 0, or
+  # the independently observed exact UTF-8 BOM EF BB BF followed by PGDMP.
+  # Strip the BOM from the TEMPORARY decrypted stream ONLY, never from the
+  # encrypted source file or its verified custody/checksum.
+  [byte[]]$header=New-Object byte[] 8
   $got=0
-  while ($got -lt 5) {
-    $n=$gproc.StandardOutput.BaseStream.Read($magic,$got,5-$got)
+  while ($got -lt 8) {
+    $n=$gproc.StandardOutput.BaseStream.Read($header,$got,8-$got)
     if ($n -le 0) { break }
     $got += $n
   }
-  $pgdmp=($got -eq 5 -and [Text.Encoding]::ASCII.GetString($magic) -ceq 'PGDMP')
-  if (-not $pgdmp) {
+  $kind=GetPgDumpHeaderKind $header $got
+  if ($kind -ceq 'UNRECOGNIZED') {
     [byte[]]$discard=New-Object byte[] 65536
     while ($gproc.StandardOutput.BaseStream.Read($discard,0,$discard.Length) -gt 0) {}
     $gproc.WaitForExit()
     if ($gproc.ExitCode -eq 0) { Receipt 'NOT_PGDMP' 'NOT_RUN' }
     else { Receipt 'DECRYPT_REFUSED' 'NOT_RUN' }
     exit 1
+  }
+  $headerStart=0
+  $nativeMarker='PASS'
+  if ($kind -ceq 'EXACT_UTF8_BOM_PGDMP') {
+    $headerStart=3
+    $nativeMarker='PASS_UTF8_BOM_STRIPPED_IN_STREAM'
   }
 
   # FD3 is copied from original WSL stdin BEFORE the Bash script source pipe.
@@ -98,10 +119,13 @@ exit 2
   $wproc.BeginErrorReadLine()
 
   [byte[]]$buffer=New-Object byte[] 65536
-  [int64]$total=5
+  [int64]$total=8
   [int64]$limit=64*1024*1024
   $transferBad=$false
-  try { $wproc.StandardInput.BaseStream.Write($magic,0,5) } catch { $transferBad=$true }
+  # Forward the complete PGDMP header in the stream. For the known BOM case,
+  # skip EXACTLY the three BOM bytes; preserve the remaining bytes bit-for-bit.
+  try { $wproc.StandardInput.BaseStream.Write($header,$headerStart,8-$headerStart) }
+  catch { $transferBad=$true }
   while (($length=$gproc.StandardOutput.BaseStream.Read($buffer,0,$buffer.Length)) -gt 0) {
     $total += $length
     if ($total -gt $limit) { $transferBad=$true }
@@ -116,15 +140,15 @@ exit 2
   $wproc.WaitForExit()
 
   if ($gproc.ExitCode -ne 0) { Receipt 'DECRYPT_REFUSED' 'NOT_VERIFIED'; exit 1 }
-  if ($transferBad) { Receipt 'PASS' 'TRANSFER_REFUSED'; exit 1 }
+  if ($transferBad) { Receipt $nativeMarker 'TRANSFER_REFUSED'; exit 1 }
   $lines=@($output -split "\r?\n")
   if ($wproc.ExitCode -eq 0 -and @($lines | Where-Object { $_ -ceq 'TASK3B_NATIVE_WSL_MARKER=PASS' }).Count -eq 1) {
-    Receipt 'PASS' 'PASS_ARCHIVE_FORMAT'; exit 0
+    Receipt $nativeMarker 'PASS_ARCHIVE_FORMAT'; exit 0
   }
   if (@($lines | Where-Object { $_ -ceq 'TASK3B_NATIVE_WSL_MARKER=PG_FORMAT_REFUSED' }).Count -eq 1) {
-    Receipt 'PASS' 'PG_FORMAT_REFUSED'; exit 1
+    Receipt $nativeMarker 'PG_FORMAT_REFUSED'; exit 1
   }
-  Receipt 'PASS' 'PREFLIGHT_REFUSED'; exit 1
+  Receipt $nativeMarker 'PREFLIGHT_REFUSED'; exit 1
 } catch {
   Receipt 'NOT_VERIFIED' 'PREFLIGHT_REFUSED'; exit 1
 } finally {
