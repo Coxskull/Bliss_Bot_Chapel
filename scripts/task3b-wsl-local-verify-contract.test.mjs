@@ -264,6 +264,26 @@ const smokeParse=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
 ],{encoding:'utf8',timeout:10000,maxBuffer:4096});
 assert.equal(smokeParse.status,0,'synthetic WSL PowerShell parse failure: '+smokeParse.stderr);
 
+
+// Native PowerShell 5.1 pipeline WSL synthetic smoke, no protected archive.
+// The owner's interactive WSL /bin/cat succeeds once both encodings are UTF8 without BOM;
+// the separate ProcessStartInfo redirected stdin failed in the prior diagnostic.
+const nativePipe=readFileSync('scripts/task3b-wsl-native-pipeline-synthetic.ps1','utf8');
+for(const guard of [
+  'TASK3B_PIPE_STDIN=', 'TASK3B_PIPE_FD3=', 'TASK3B_PIPE_ARMOR_SYNTHETIC=',
+  'TASK4_CREATOR_RESTORE=HELD', '[Console]::InputEncoding=$utf8',
+  '$OutputEncoding=$utf8', 'UTF8Encoding($false)',
+  'Write-Output $public | & $wsl', 'Write-Output $base64 | & $wsl',
+  'python3 - --probe-only 3<&3', 'exec 3<&0;',
+  'Get-Content -LiteralPath $receiver -Raw',
+  'ComputeHash($bytes)', 'ALPHA_STDIN_PROBE',
+]) assert.ok(nativePipe.includes(guard),'native PS pipeline probe missing guard '+guard);
+assert.doesNotMatch(nativePipe,/--decrypt|gpg\.exe|pg_restore|createdb|dropdb|railway\.cmd|Invoke-WebRequest|Invoke-RestMethod|Start-Transcript|Set-Content|Out-File|WriteAllBytes/i);
+const nativePipeSyntax=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
+  "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-wsl-native-pipeline-synthetic.ps1',[ref]$t,[ref]$e)>$null;if($e.Count){exit 90}"
+],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(nativePipeSyntax.status,0,'native PS pipeline parser error: '+nativePipeSyntax.stderr);
+
 const nativeSyntax=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
   "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-native-binary-wsl-pg18-preflight.ps1',[ref]$t,[ref]$e)>$null;if($e.Count){exit 81}"
 ],{encoding:'utf8',timeout:10000,maxBuffer:4096});
