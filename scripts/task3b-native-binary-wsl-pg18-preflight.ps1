@@ -123,6 +123,10 @@ if [[ "$pg_status" != "0" ]]; then
       category=PG_FORMAT_RESOURCE_REFUSED ;;
     *"permission denied"*|*"could not open input file"*)
       category=PG_FORMAT_INPUT_IO ;;
+    *"unsupported compression"*|*"compression method"*)
+      category=PG_FORMAT_COMPRESSION_UNSUPPORTED ;;
+    *"invalid archive"*|*"corrupt"*|*"invalid toc"*|*"invalid TOC"*|*"could not find block ID"*)
+      category=PG_FORMAT_STRUCTURE_REFUSED ;;
     *) category=PG_FORMAT_UNCLASSIFIED ;;
   esac
 elif [[ "$drain_status" != "0" ]]; then
@@ -173,7 +177,8 @@ exit 2
   }
   $allowedPg=@('PG_FORMAT_MAGIC_OR_SHORT','PG_FORMAT_VERSION_UNSUPPORTED',
     'PG_FORMAT_NONCUSTOM','PG_FORMAT_READ_OR_TRUNCATED','PG_FORMAT_RESOURCE_REFUSED',
-    'PG_FORMAT_INPUT_IO','PG_FORMAT_UNCLASSIFIED','PG_FORMAT_DRAIN_REFUSED')
+    'PG_FORMAT_INPUT_IO','PG_FORMAT_COMPRESSION_UNSUPPORTED',
+    'PG_FORMAT_STRUCTURE_REFUSED','PG_FORMAT_UNCLASSIFIED','PG_FORMAT_DRAIN_REFUSED')
   $safePg=@($lines | ForEach-Object {
     if ($_ -cmatch '^TASK3B_NATIVE_WSL_MARKER=([A-Z_]+)
   Receipt $nativeMarker 'PREFLIGHT_REFUSED'; exit 1
