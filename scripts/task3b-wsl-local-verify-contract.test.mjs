@@ -109,7 +109,7 @@ for(const guard of [
   'Get-FileHash -LiteralPath $archive','sourceProjectId','sourceEnvironmentId',
   'sourceServiceId','gpgRecipientFingerprint',
   'StandardOutput.BaseStream.Read','StandardInput.BaseStream.Write',
-  'exec 3<&0;', 'bash -s -- 3<&3', 'pg_restore --list <&3',
+  'exec 3<&0;', 'bash -s -- 3<&3', 'pg_restore --list 2>&1 1>/dev/null',
   'cat <&3 >/dev/null', 'TASK3B_NATIVE_PGDMP=',
   'TASK3B_NATIVE_WSL_PG18=', 'TASK4_CREATOR_RESTORE=HELD',
   "PGDMP", 'PASS_ARCHIVE_FORMAT',
