@@ -197,20 +197,3 @@ exit 2
     $wproc.Dispose()
   }
 }
- -and
-        $allowedPg -ccontains $Matches[1]) { $Matches[1] }
-  } | Select-Object -Unique)
-  if ($safePg.Count -eq 1) { Receipt $nativeMarker ([string]$safePg[0]); exit 1 }
-  Receipt $nativeMarker 'PREFLIGHT_REFUSED'; exit 1
-} catch {
-  Receipt 'NOT_VERIFIED' 'PREFLIGHT_REFUSED'; exit 1
-} finally {
-  if ($null -ne $gproc) {
-    try { if (-not $gproc.HasExited) { $gproc.Kill() } } catch {}
-    $gproc.Dispose()
-  }
-  if ($null -ne $wproc) {
-    try { if (-not $wproc.HasExited) { $wproc.Kill() } } catch {}
-    $wproc.Dispose()
-  }
-}
