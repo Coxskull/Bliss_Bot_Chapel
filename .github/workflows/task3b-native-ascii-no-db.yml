@@ -1,0 +1,31 @@
+name: Task4 native ASCII no-DB preflight CI
+on:
+  pull_request:
+    paths:
+      - 'scripts/task3b-wsl-ascii-armor-native-preflight.ps1'
+      - 'scripts/task3b-native-ascii-preflight-contract.test.mjs'
+      - 'scripts/task3b-wsl-local-verify-contract.test.mjs'
+      - '.github/workflows/task3b-native-ascii-no-db.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/task3b-wsl-ascii-armor-native-preflight.ps1'
+      - 'scripts/task3b-native-ascii-preflight-contract.test.mjs'
+      - '.github/workflows/task3b-native-ascii-no-db.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-no-db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: PowerShell syntax only (never execute preflight)
+        shell: pwsh
+        run: |
+          $tokens=$null; $errors=$null
+          [System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-wsl-ascii-armor-native-preflight.ps1',[ref]$tokens,[ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { throw 'PowerShell parser refused native preflight' }
+      - name: Offline synthetic framing and safety contracts
+        shell: bash
+        run: node scripts/task3b-native-ascii-preflight-contract.test.mjs
