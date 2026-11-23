@@ -4,9 +4,33 @@
 param([string]$ManifestPath = (Join-Path (Join-Path $HOME 'Downloads') 'bliss-pg18-20261122T055153Z-b34126b0.pending.json'))
 $ErrorActionPreference='Stop'
 $p=$null
-function Report([string]$code) {
+function Report([string]$code, [string]$prefix='NOT_CLASSIFIED', [string]$offset='NOT_CLASSIFIED') {
   Write-Output ('TASK3B_NATIVE_ENVELOPE='+$code)
+  Write-Output ('TASK3B_NATIVE_PREFIX_KIND='+$prefix)
+  Write-Output ('TASK3B_NATIVE_PGDMP_OFFSET='+$offset)
   Write-Output 'TASK4_CREATOR_RESTORE=HELD'
+}
+function ClassifyPrefix([byte[]]$bytes, [int]$length) {
+  # No untrusted decoded bytes or text are ever returned, logged, or printed.
+  if ($length -eq 3 -and $bytes[0] -eq 239 -and $bytes[1] -eq 187 -and $bytes[2] -eq 191) { return 'UTF8_BOM' }
+  if ($length -eq 2 -and $bytes[0] -eq 255 -and $bytes[1] -eq 254) { return 'UTF16LE_BOM' }
+  if ($length -eq 2 -and $bytes[0] -eq 254 -and $bytes[1] -eq 255) { return 'UTF16BE_BOM' }
+  if ($length -eq 2 -and $bytes[0] -eq 13 -and $bytes[1] -eq 10) { return 'CRLF' }
+  if ($length -eq 1 -and $bytes[0] -eq 10) { return 'LF' }
+  if ($length -eq 1 -and $bytes[0] -eq 13) { return 'CR' }
+  $zeros=$true
+  $spaces=$true
+  $printable=$true
+  for ($j=0; $j -lt $length; $j++) {
+    $b=$bytes[$j]
+    if ($b -ne 0) { $zeros=$false }
+    if (@(9,10,13,32) -cnotcontains [int]$b) { $spaces=$false }
+    if (($b -lt 32 -and @(9,10,13) -cnotcontains [int]$b) -or $b -gt 126) { $printable=$false }
+  }
+  if ($zeros) { return 'ZERO_PADDING' }
+  if ($spaces) { return 'ASCII_WHITESPACE' }
+  if ($printable) { return 'ASCII_TEXT_UNTRUSTED' }
+  return 'OTHER_BINARY_UNTRUSTED'
 }
 try {
   if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf) -or
@@ -64,9 +88,13 @@ try {
     if ($first[$i] -eq 80 -and $first[$i+1] -eq 71 -and $first[$i+2] -eq 68 -and
         $first[$i+3] -eq 77 -and $first[$i+4] -eq 80) { $offset=$i; break }
   }
-  if ($offset -eq 0) { Report 'PGDMP_AT_START'; exit 0 }
-  if ($offset -gt 0 -and $offset -le 64) { Report 'PGDMP_AFTER_SHORT_PREFIX'; exit 1 }
-  if ($offset -gt 64) { Report 'PGDMP_AFTER_LONG_PREFIX'; exit 1 }
+  if ($offset -eq 0) { Report 'PGDMP_AT_START' 'NONE' '0'; exit 0 }
+  if ($offset -gt 0) {
+    $prefixKind=ClassifyPrefix $first $offset
+    if ($offset -le 64) { Report 'PGDMP_AFTER_SHORT_PREFIX' $prefixKind ([string]$offset); exit 1 }
+    Report 'PGDMP_AFTER_LONG_PREFIX' $prefixKind ([string]$offset)
+    exit 1
+  }
   if ($have -ge 3 -and $first[0] -eq 239 -and $first[1] -eq 187 -and $first[2] -eq 191) { Report 'UTF8_BOM_NO_PGDMP'; exit 1 }
   if ($have -ge 2 -and $first[0] -eq 255 -and $first[1] -eq 254) { Report 'UTF16_BOM_NO_PGDMP'; exit 1 }
   if ($have -ge 2 -and $first[0] -eq 31 -and $first[1] -eq 139) { Report 'GZIP_NOT_PGDMP'; exit 1 }
