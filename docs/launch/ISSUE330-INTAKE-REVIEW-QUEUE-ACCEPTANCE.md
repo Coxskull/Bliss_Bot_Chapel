@@ -1,6 +1,6 @@
 # ALPHA Launch-Value Slice #330 — Private intake operator review queue
 
-**Status:** Source-only candidate; NOT DEPLOYED; NOT PUBLICLY AUTHORIZED; NO ACCOUNTS OR INVITATIONS CREATED.
+**Status:** Reviewed production deployment can only be DORMANT: compile-time release approval is `false` and overrides any environment-based ENABLED flag; no operator access or customer-data read permitted. A deployment readback alone does not activate this private review queue; no accounts or invitations are created.
 
 ## What was actually observed
 
