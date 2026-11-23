@@ -20,4 +20,6 @@ jobs:
         with:
           node-version: '24'
       - name: Verify live production Railway register gate and public Vercel CTA without creating a user
+        env:
+          ALPHA_REQUIRE_PUBLIC_ADVERTISER: "true"
         run: node scripts/task3b-public-registration-readback.mjs
