@@ -156,65 +156,10 @@ try {
   [Array]::Clear($script:carry,0,$script:carry.Length)
   if ($gproc.ExitCode -ne 0) { Receipt 'DECRYPT_REFUSED' 'NOT_VERIFIED'; exit 1 }
   if ($script:tooLarge) { Receipt $nativeMarker 'SIZE_LIMIT_REFUSED'; exit 1 }
+  if ($script:transferBad) { Receipt $nativeMarker 'TRANSFER_REFUSED'; exit 1 }
   $lines=@($output -split "\r?\n" | Where-Object { $_ -ne '' })
-  $hashes=@($lines | Where-Object { $_ -cmatch '^TASK3B_ARMOR_WSL_SHA256=[a-f0-9]{64}
-  if ($bridge.Count -eq 1) { Receipt $nativeMarker 'BRIDGE_REFUSED'; exit 1 }
-  if ($hashes.Count -ne 1) { Receipt $nativeMarker 'BRIDGE_REFUSED'; exit 1 }
-  $receivedDigest=$hashes[0].Substring('TASK3B_ARMOR_WSL_SHA256='.Length)
-  if ($receivedDigest -cne $expectedDigest) { Receipt $nativeMarker 'BRIDGE_REFUSED' 'SHA256_MISMATCH'; exit 1 }
-  $pg=@($lines | Where-Object { $_ -cmatch '^TASK3B_ARMOR_WSL_PG18=(PASS_ARCHIVE_FORMAT|PG_FORMAT_REFUSED|PG18_UNAVAILABLE)$' })
-  if ($pg.Count -ne 1) { Receipt $nativeMarker 'PREFLIGHT_REFUSED' 'PASS_BYTE_IDENTICAL'; exit 1 }
-  $pgStatus=$pg[0].Substring('TASK3B_ARMOR_WSL_PG18='.Length)
-  if ($wproc.ExitCode -eq 0 -and $pgStatus -ceq 'PASS_ARCHIVE_FORMAT') {
-    Receipt $nativeMarker 'PASS_ARCHIVE_FORMAT' 'PASS_BYTE_IDENTICAL'; exit 0
-  }
-  Receipt $nativeMarker $pgStatus 'PASS_BYTE_IDENTICAL'; exit 1
-} catch {
-  Receipt 'NOT_VERIFIED' 'PREFLIGHT_REFUSED'; exit 1
-} finally {
-  if ($null -ne $gproc) {
-    try { if (-not $gproc.HasExited) { $gproc.Kill() } } catch {}
-    $gproc.Dispose()
-  }
-  if ($null -ne $wproc) {
-    try { if (-not $wproc.HasExited) { $wproc.Kill() } } catch {}
-    $wproc.Dispose()
-  }
-}
- })
-  $bridge=@($lines | Where-Object { $_ -cmatch '^TASK3B_ARMOR_WSL_HEADER=(NOT_PGDMP|BRIDGE_REFUSED)
-  if ($bridge.Count -eq 1) { Receipt $nativeMarker 'BRIDGE_REFUSED'; exit 1 }
-  if ($hashes.Count -ne 1) { Receipt $nativeMarker 'BRIDGE_REFUSED'; exit 1 }
-  $receivedDigest=$hashes[0].Substring('TASK3B_ARMOR_WSL_SHA256='.Length)
-  if ($receivedDigest -cne $expectedDigest) { Receipt $nativeMarker 'BRIDGE_REFUSED' 'SHA256_MISMATCH'; exit 1 }
-  $pg=@($lines | Where-Object { $_ -cmatch '^TASK3B_ARMOR_WSL_PG18=(PASS_ARCHIVE_FORMAT|PG_FORMAT_REFUSED|PG18_UNAVAILABLE)$' })
-  if ($pg.Count -ne 1) { Receipt $nativeMarker 'PREFLIGHT_REFUSED' 'PASS_BYTE_IDENTICAL'; exit 1 }
-  $pgStatus=$pg[0].Substring('TASK3B_ARMOR_WSL_PG18='.Length)
-  if ($wproc.ExitCode -eq 0 -and $pgStatus -ceq 'PASS_ARCHIVE_FORMAT') {
-    Receipt $nativeMarker 'PASS_ARCHIVE_FORMAT' 'PASS_BYTE_IDENTICAL'; exit 0
-  }
-  Receipt $nativeMarker $pgStatus 'PASS_BYTE_IDENTICAL'; exit 1
-} catch {
-  Receipt 'NOT_VERIFIED' 'PREFLIGHT_REFUSED'; exit 1
-} finally {
-  if ($null -ne $gproc) {
-    try { if (-not $gproc.HasExited) { $gproc.Kill() } } catch {}
-    $gproc.Dispose()
-  }
-  if ($null -ne $wproc) {
-    try { if (-not $wproc.HasExited) { $wproc.Kill() } } catch {}
-    $wproc.Dispose()
-  }
-}
- })
-  # Preserve the receiver's safe reason even when it closes its input early.
-  # The previous blanket TRANSFER_REFUSED concealed these useful categories.
-  if ($script:transferBad) {
-    if ($bridge.Count -eq 1) { Receipt $nativeMarker 'RECEIVER_REFUSED'; exit 1 }
-    if ($wproc.ExitCode -ne 0) { Receipt $nativeMarker 'WSL_EARLY_EXIT'; exit 1 }
-    Receipt $nativeMarker 'HOST_PIPE_REFUSED'
-    exit 1
-  }
+  $hashes=@($lines | Where-Object { $_ -cmatch '^TASK3B_ARMOR_WSL_SHA256=[a-f0-9]{64}$' })
+  $bridge=@($lines | Where-Object { $_ -cmatch '^TASK3B_ARMOR_WSL_HEADER=(NOT_PGDMP|BRIDGE_REFUSED)$' })
   if ($bridge.Count -eq 1) { Receipt $nativeMarker 'BRIDGE_REFUSED'; exit 1 }
   if ($hashes.Count -ne 1) { Receipt $nativeMarker 'BRIDGE_REFUSED'; exit 1 }
   $receivedDigest=$hashes[0].Substring('TASK3B_ARMOR_WSL_SHA256='.Length)
