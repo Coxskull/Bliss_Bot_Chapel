@@ -6,6 +6,17 @@ import {tmpdir} from 'node:os';
 import {spawnSync} from 'node:child_process';
 const path='scripts/task3b-wsl-local-verify-current.ps1';
 const source=readFileSync(path,'utf8');
+const keyCheck=readFileSync('scripts/task3b-gpg-key-presence-preflight.ps1','utf8');
+for(const guard of ['TASK3B_GPG_RECOVERY_PREFLIGHT=', 'gpgRecipientFingerprint',
+  '--list-secret-keys', 'Get-FileHash -LiteralPath $archive',
+  'MATCHING_PRIVATE_KEY_NOT_VISIBLE_TO_GPG',
+  'MATCHING_PRIVATE_KEY_LISTED_DECRYPTION_UNVERIFIED',
+  'TASK4_CREATOR_RESTORE=HELD']) {
+  assert.ok(keyCheck.includes(guard),'missing local-only GPG preflight guard '+guard);
+}
+assert.doesNotMatch(keyCheck,/--decrypt|--import|--export-secret|Invoke-WebRequest|Invoke-RestMethod|pg_restore|railway\.cmd|CREATE\s+DATABASE|Start-Transcript/i);
+assert.doesNotMatch(keyCheck,/Write-(?:Output|Host)\s+\$lines|Write-(?:Output|Host)\s+\$fingerprint/);
+
 for(const guard of [
   'NOT_VERIFIED','offhostSha256Verified','isolatedRestoreVerified',
   'sourcePostgresMajor','sourceProjectId','sourceEnvironmentId',
