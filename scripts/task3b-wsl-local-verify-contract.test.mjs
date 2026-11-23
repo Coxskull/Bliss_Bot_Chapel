@@ -116,6 +116,39 @@ for(const guard of [
 ]) assert.ok(nativeBridge.includes(guard),'missing native binary guard '+guard);
 assert.doesNotMatch(nativeBridge,/pg_restore --dbname|createdb|dropdb|psql|railway\.cmd|Start-Transcript|--export-secret|--import|Set-Content|Out-File|WriteAllBytes/i);
 assert.doesNotMatch(nativeBridge,/Write-(?:Output|Host)\s+\$(?:magic|buffer|output|archive|gpg|wsl)/i);
+
+// Task #4: accepted owner evidence has exactly EF BB BF + PGDMP.
+// Keep ciphertext unmodified; only remove those 3 bytes in volatile stream.
+for (const guard of [
+  'GetPgDumpHeaderKind', 'EXACT_UTF8_BOM_PGDMP', 'PGDMP_AT_ZERO',
+  'PASS_UTF8_BOM_STRIPPED_IN_STREAM',
+  'StandardInput.BaseStream.Write($header,$headerStart,8-$headerStart)',
+  "if ($kind -ceq 'UNRECOGNIZED')", '$headerStart=3',
+]) assert.ok(nativeBridge.includes(guard),'BOM stream guard missing: '+guard);
+assert.doesNotMatch(nativeBridge,/Remove-Item|WriteAllBytes|Set-Content|Out-File|--ignore-mdc-error|--skip-signature/i);
+const exactHeaderBody=nativeBridge.match(/function GetPgDumpHeaderKind\([\s\S]*?\n\}/)?.[0];
+assert.ok(exactHeaderBody, 'exact BOM verification function required');
+const casesBOM=[
+  ['PGDMP_AT_ZERO',[80,71,68,77,80,4,1,0],8],
+  ['EXACT_UTF8_BOM_PGDMP',[239,187,191,80,71,68,77,80],8],
+  ['UNRECOGNIZED',[239,187,191,80,71,68,88,80],8],
+  ['UNRECOGNIZED',[239,187,191,80,71,68,77],7],
+  ['UNRECOGNIZED',[32,32,32,80,71,68,77,80],8],
+  ['UNRECOGNIZED',[239,187,191,80,71,68,77,80],4],
+];
+for(const [expected, bytes, count] of casesBOM){
+  const textBlock=exactHeaderBody+'\n$b=[byte[]]@('+bytes.join(',')+
+    ');if ((GetPgDumpHeaderKind $b '+count+') -cne "'+expected+'"){exit 84}';
+  const test=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',textBlock],
+    {encoding:'utf8',timeout:10000,maxBuffer:4096});
+  assert.equal(test.status,0,'BOM header contract '+expected+': '+test.stderr);
+}
+// Synthetic byte preservation: only 3-byte BOM is omitted, no text recoding.
+const rawBOM=Buffer.concat([Buffer.from([239,187,191]),Buffer.from('PGDMP','ascii'),Buffer.alloc(65536,0x8f)]);
+const afterBOM=Buffer.concat([rawBOM.subarray(3,8),rawBOM.subarray(8)]);
+assert.equal(afterBOM.subarray(0,5).toString('ascii'),'PGDMP');
+assert.deepEqual(afterBOM,rawBOM.subarray(3));
+
 const nativeSyntax=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
   "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-native-binary-wsl-pg18-preflight.ps1',[ref]$t,[ref]$e)>$null;if($e.Count){exit 81}"
 ],{encoding:'utf8',timeout:10000,maxBuffer:4096});
