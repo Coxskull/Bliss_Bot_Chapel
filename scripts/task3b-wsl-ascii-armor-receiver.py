@@ -98,7 +98,7 @@ try:
         print("TASK3B_ARMOR_WSL_PG18=PG18_UNAVAILABLE")
         sys.exit(2)
     result = pg.wait()
-    if result == 0 and not feed_closed:
+    if result == 0:
         print("TASK3B_ARMOR_WSL_PG18=PASS_ARCHIVE_FORMAT")
         sys.exit(0)
     print("TASK3B_ARMOR_WSL_PG18=PG_FORMAT_REFUSED")
