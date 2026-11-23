@@ -149,6 +149,50 @@ const afterBOM=Buffer.concat([rawBOM.subarray(3,8),rawBOM.subarray(8)]);
 assert.equal(afterBOM.subarray(0,5).toString('ascii'),'PGDMP');
 assert.deepEqual(afterBOM,rawBOM.subarray(3));
 
+
+// Actual pg_restore --list error category is kept private in the Bash process.
+// The PowerShell owner readback receives ONLY allowlisted status marker names.
+const pgHelper=nativeBridge.match(/\$helper=@'\n([\s\S]*?)\n'@/)?.[1];
+assert.ok(pgHelper,'embedded no-DB WSL helper is present');
+assert.ok(pgHelper.includes('2>&1 1>/dev/null'),'stderr captured in process only, TOC discarded');
+assert.ok(pgHelper.includes('cat <&3 >/dev/null 2>/dev/null'),'unconsumed authenticated source must drain');
+assert.ok(pgHelper.includes('TASK3B_NATIVE_WSL_MARKER=%s'),'only fixed classification printed');
+assert.doesNotMatch(pgHelper,/printf[^\n]*\$pg_err|echo[^\n]*\$pg_err|mktemp|pg_restore\s+(?:--dbname|--create)|createdb|dropdb|psql/i);
+const pgHelperSyntax=spawnSync('bash',['-n'],{input:pgHelper,encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(pgHelperSyntax.status,0,'embedded WSL Bash parse failed: '+pgHelperSyntax.stderr);
+const startClass=pgHelper.indexOf('category=PG_FORMAT_UNCLASSIFIED');
+const endClass=pgHelper.indexOf("printf 'TASK3B_NATIVE_WSL_MARKER=%s");
+assert.ok(startClass>=0&&endClass>startClass,'safe pg_restore classifier block');
+const classBody=pgHelper.slice(startClass,endClass);
+const classes=[
+  ['did not find magic string','PG_FORMAT_MAGIC_OR_SHORT'],
+  ['input file is too short','PG_FORMAT_MAGIC_OR_SHORT'],
+  ['unsupported version (1.99) in file header','PG_FORMAT_VERSION_UNSUPPORTED'],
+  ['input file appears to be a text format dump','PG_FORMAT_NONCUSTOM'],
+  ['could not read from input file: end of file','PG_FORMAT_READ_OR_TRUNCATED'],
+  ['out of memory','PG_FORMAT_RESOURCE_REFUSED'],
+  ['permission denied','PG_FORMAT_INPUT_IO'],
+  ['unsupported compression algorithm','PG_FORMAT_COMPRESSION_UNSUPPORTED'],
+  ['invalid archive','PG_FORMAT_STRUCTURE_REFUSED'],
+  ['unexpected-unknown-code','PG_FORMAT_UNCLASSIFIED']
+];
+for(const [msg,expected] of classes) {
+  const body='set -eu\npg_status=1\ndrain_status=0\npg_err='+
+    JSON.stringify(msg)+'\n'+classBody+
+    '\n[[ "$category" == '+JSON.stringify(expected)+' ]]';
+  const run=spawnSync('bash',['-c',body],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+  assert.equal(run.status,0,'no-DB pg_restore failure category '+expected+': '+run.stderr);
+}
+const drainClass=spawnSync('bash',['-c','set -eu\npg_status=0\ndrain_status=2\npg_err=""\n'+classBody+
+  '\n[[ "$category" == "PG_FORMAT_DRAIN_REFUSED" ]]'],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(drainClass.status,0,'no-DB source-stream drain classification');
+for(const name of ['PG_FORMAT_MAGIC_OR_SHORT','PG_FORMAT_VERSION_UNSUPPORTED',
+'PG_FORMAT_NONCUSTOM','PG_FORMAT_READ_OR_TRUNCATED','PG_FORMAT_RESOURCE_REFUSED',
+'PG_FORMAT_INPUT_IO','PG_FORMAT_COMPRESSION_UNSUPPORTED','PG_FORMAT_STRUCTURE_REFUSED',
+'PG_FORMAT_UNCLASSIFIED','PG_FORMAT_DRAIN_REFUSED']) {
+  assert.ok(nativeBridge.includes("'"+name+"'"),'client does not recognize allowed PG status '+name);
+}
+
 const nativeSyntax=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
   "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-native-binary-wsl-pg18-preflight.ps1',[ref]$t,[ref]$e)>$null;if($e.Count){exit 81}"
 ],{encoding:'utf8',timeout:10000,maxBuffer:4096});
