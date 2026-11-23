@@ -4,6 +4,7 @@ import {readFileSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 const path='scripts/task3b-wsl-local-verify-current.ps1';
 const source=readFileSync(path,'utf8');
 const keyCheck=readFileSync('scripts/task3b-gpg-key-presence-preflight.ps1','utf8');
@@ -109,10 +110,11 @@ for(const guard of [
   'Get-FileHash -LiteralPath $archive','sourceProjectId','sourceEnvironmentId',
   'sourceServiceId','gpgRecipientFingerprint',
   'StandardOutput.BaseStream.Read','StandardInput.BaseStream.Write',
-  'exec 3<&0;', 'bash -s -- 3<&3', 'pg_restore --list <&3',
+  'exec 3<&0;', 'bash -s -- 3<&3', 'pg_restore --list 2>&1 1>/dev/null',
   'cat <&3 >/dev/null', 'TASK3B_NATIVE_PGDMP=',
   'TASK3B_NATIVE_WSL_PG18=', 'TASK4_CREATOR_RESTORE=HELD',
-  "PGDMP", 'PASS_ARCHIVE_FORMAT'
+  "PGDMP", 'PASS_ARCHIVE_FORMAT',
+  'WSL_HEADER_NOT_PGDMP', 'dd bs=5 count=1 iflag=fullblock <&3'
 ]) assert.ok(nativeBridge.includes(guard),'missing native binary guard '+guard);
 assert.doesNotMatch(nativeBridge,/pg_restore --dbname|createdb|dropdb|psql|railway\.cmd|Start-Transcript|--export-secret|--import|Set-Content|Out-File|WriteAllBytes/i);
 assert.doesNotMatch(nativeBridge,/Write-(?:Output|Host)\s+\$(?:magic|buffer|output|archive|gpg|wsl)/i);
@@ -192,6 +194,75 @@ for(const name of ['PG_FORMAT_MAGIC_OR_SHORT','PG_FORMAT_VERSION_UNSUPPORTED',
 'PG_FORMAT_UNCLASSIFIED','PG_FORMAT_DRAIN_REFUSED']) {
   assert.ok(nativeBridge.includes("'"+name+"'"),'client does not recognize allowed PG status '+name);
 }
+
+
+// New ASCII armor bridge replaces unsafe raw WSL stdin with bounded Base64.
+// Offline test uses synthetic bytes only; --probe-only never starts PostgreSQL.
+const armorPS=readFileSync('scripts/task3b-wsl-ascii-armor-preflight.ps1','utf8');
+const armorPY=readFileSync('scripts/task3b-wsl-ascii-armor-receiver.py','utf8');
+for(const guard of [
+  'Get-FileHash -LiteralPath $archive','sourceProjectId','sourceEnvironmentId',
+  'sourceServiceId','gpgRecipientFingerprint', 'StandardOutput.BaseStream.Read',
+  'StandardInput.BaseStream.Write', 'SendAsciiArmored', 'ToBase64String',
+  'exec 3<&0;', 'base64 -d | python3 - 3<&3',
+  'TASK3B_ARMOR_BYTE_FIDELITY=','SHA256_MISMATCH',
+  'PASS_BYTE_IDENTICAL', 'TASK4_CREATOR_RESTORE=HELD',
+  'PASS_UTF8_BOM_STRIPPED_IN_STREAM'
+]) assert.ok(armorPS.includes(guard),'missing ASCII transport guard '+guard);
+for(const guard of [
+  'os.read(3, 65536)','base64.b64decode','validate=True',
+  'digest.update(decoded)', 'b"PGDMP"',
+  'subprocess.DEVNULL','" --list"',
+  'TASK3B_ARMOR_WSL_SHA256=', 'PASS_ARCHIVE_FORMAT',
+  '--probe-only'
+]) {
+  if(guard==='\" --list\"') continue;
+  assert.ok(armorPY.includes(guard),'missing decoder guard '+guard);
+}
+assert.ok(armorPY.includes('[PG18, "--list"]'));
+assert.doesNotMatch(armorPS,/createdb|dropdb|psql|railway\.cmd|Start-Transcript|--export-secret|--import|Set-Content|Out-File|WriteAllBytes/i);
+assert.doesNotMatch(armorPY,/createdb|dropdb|psql|connect\(|print\(decoded|print\(block|open\([^)]*["']w/i);
+const armorParse=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
+  "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-wsl-ascii-armor-preflight.ps1',[ref]$t,[ref]$e)>$null;if($e.Count){exit 87}"
+],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(armorParse.status,0,'ASCII bridge PowerShell parse: '+armorParse.stderr);
+const pyParse=spawnSync('python3',['-c',
+  "import ast,pathlib; ast.parse(pathlib.Path('scripts/task3b-wsl-ascii-armor-receiver.py').read_text())"
+],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(pyParse.status,0,'ASCII decoder Python parse: '+pyParse.stderr);
+const synthetic=Buffer.concat([Buffer.from('PGDMP','ascii'),Buffer.alloc(131072,0x8f)]);
+const script64=Buffer.from(armorPY,'utf8').toString('base64');
+const wslProbeCmd='exec 3<&0; set -o pipefail; printf %s '+script64+
+  ' | base64 -d | python3 - --probe-only 3<&3 2>/dev/null';
+const armorCheck=spawnSync('bash',['-lc',wslProbeCmd],
+  {input:Buffer.from(synthetic.toString('base64'),'ascii'),
+   encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(armorCheck.status,0,'synthetic WSL ASCII bridge: '+armorCheck.stderr);
+assert.match(armorCheck.stdout,/TASK3B_ARMOR_WSL_PG18=PROBE_ONLY/);
+const hash=armorCheck.stdout.match(/TASK3B_ARMOR_WSL_SHA256=([a-f0-9]{64})/);
+assert.ok(hash,'raw digest verification marker required internally');
+assert.equal(hash[1],createHash('sha256').update(synthetic).digest('hex'));
+const invalidArmor=spawnSync('bash',['-lc',wslProbeCmd],
+  {input:Buffer.from('NOTPGDMPxyz','ascii').toString('base64'),
+   encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.notEqual(invalidArmor.status,0);
+assert.match(invalidArmor.stdout,/TASK3B_ARMOR_WSL_HEADER=NOT_PGDMP/);
+
+// Owner-local synthetic Windows-to-WSL smoke: NO GPG, ciphertext or database.
+const wslSmoke=readFileSync('scripts/task3b-wsl-armor-synthetic-smoke.ps1','utf8');
+for(const guard of [
+  'TASK3B_WSL_STDIN=', 'TASK3B_WSL_FD3=',
+  'TASK3B_WSL_ARMOR_SYNTHETIC=', 'TASK4_CREATOR_RESTORE=HELD',
+  'ALPHA_STDIN_PROBE', 'exec 3<&0;', 'bash -s -- 3<&3',
+  'python3 - --probe-only 3<&3', 'Get-Command wsl.exe',
+  'StandardInput.BaseStream.Write', 'StandardOutput.ReadToEnd',
+  'TASK3B_ARMOR_WSL_SHA256=', 'ComputeHash($payload)'
+]) assert.ok(wslSmoke.includes(guard),'synthetic WSL smoke missing guard '+guard);
+assert.doesNotMatch(wslSmoke,/gpg\.exe|--decrypt|pg_restore|psql|createdb|dropdb|\.gpg|\.pending\.json|Invoke-WebRequest|Invoke-RestMethod|Start-Transcript|Set-Content|Out-File|WriteAllBytes/i);
+const smokeParse=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
+  "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-wsl-armor-synthetic-smoke.ps1',[ref]$t,[ref]$e)>$null;if($e.Count){exit 89}"
+],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(smokeParse.status,0,'synthetic WSL PowerShell parse failure: '+smokeParse.stderr);
 
 const nativeSyntax=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
   "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-native-binary-wsl-pg18-preflight.ps1',[ref]$t,[ref]$e)>$null;if($e.Count){exit 81}"

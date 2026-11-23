@@ -93,11 +93,26 @@ if [[ ! -x /usr/lib/postgresql/18/bin/pg_restore ]]; then
   printf 'TASK3B_NATIVE_WSL_MARKER=PG18_UNAVAILABLE\n'
   exit 2
 fi
+# Verify that exactly PGDMP arrived through WSL's FD3 byte stream.
+# Consume only the five magic bytes, never print them or decoded data.
+magic="$(dd bs=5 count=1 iflag=fullblock <&3 2>/dev/null)"
+if [[ "$magic" != "PGDMP" ]]; then
+  cat <&3 >/dev/null 2>/dev/null || true
+  printf 'TASK3B_NATIVE_WSL_MARKER=WSL_HEADER_NOT_PGDMP\n'
+  exit 2
+fi
 set +e
-# Capture ONLY pg_restore's stderr into an in-process variable. NEVER print
-# diagnostics or archive TOC, which may contain customer object identifiers.
-# Redirection order preserves stderr capture, discards stdout TOC.
-pg_err="$(/usr/lib/postgresql/18/bin/pg_restore --list <&3 2>&1 1>/dev/null)"
+# Reconstruct exactly PGDMP plus untouched remaining bytes in memory-only
+# pipes. Keep raw pg_restore stderr inside Bash; discard the archive TOC.
+# If pg_restore stops after TOC, the feeder can SIGPIPE; capture only
+# the reader status and drain the rest of fd3 below.
+pg_err="$(
+  set +e
+  { printf '%s' "$magic"; cat <&3; } |
+    /usr/lib/postgresql/18/bin/pg_restore --list 2>&1 1>/dev/null
+  statuses=( "${PIPESTATUS[@]}" )
+  exit "${statuses[1]}"
+)"
 pg_status=$?
 # pg_restore may read just the TOC; always drain the rest so native GPG
 # finishes authenticated decryption rather than seeing an early broken pipe.
@@ -178,7 +193,8 @@ exit 2
   $allowedPg=@('PG_FORMAT_MAGIC_OR_SHORT','PG_FORMAT_VERSION_UNSUPPORTED',
     'PG_FORMAT_NONCUSTOM','PG_FORMAT_READ_OR_TRUNCATED','PG_FORMAT_RESOURCE_REFUSED',
     'PG_FORMAT_INPUT_IO','PG_FORMAT_COMPRESSION_UNSUPPORTED',
-    'PG_FORMAT_STRUCTURE_REFUSED','PG_FORMAT_UNCLASSIFIED','PG_FORMAT_DRAIN_REFUSED')
+    'PG_FORMAT_STRUCTURE_REFUSED','PG_FORMAT_UNCLASSIFIED','PG_FORMAT_DRAIN_REFUSED',
+    'WSL_HEADER_NOT_PGDMP')
   $safePg=@($lines | ForEach-Object {
     if ($_ -cmatch '^TASK3B_NATIVE_WSL_MARKER=([A-Z_]+)$' -and
         $allowedPg -ccontains $Matches[1]) { $Matches[1] }
