@@ -112,7 +112,8 @@ for(const guard of [
   'exec 3<&0;', 'bash -s -- 3<&3', 'pg_restore --list <&3',
   'cat <&3 >/dev/null', 'TASK3B_NATIVE_PGDMP=',
   'TASK3B_NATIVE_WSL_PG18=', 'TASK4_CREATOR_RESTORE=HELD',
-  "PGDMP", 'PASS_ARCHIVE_FORMAT'
+  "PGDMP", 'PASS_ARCHIVE_FORMAT',
+  'WSL_HEADER_NOT_PGDMP', 'dd bs=5 count=1 iflag=fullblock <&3'
 ]) assert.ok(nativeBridge.includes(guard),'missing native binary guard '+guard);
 assert.doesNotMatch(nativeBridge,/pg_restore --dbname|createdb|dropdb|psql|railway\.cmd|Start-Transcript|--export-secret|--import|Set-Content|Out-File|WriteAllBytes/i);
 assert.doesNotMatch(nativeBridge,/Write-(?:Output|Host)\s+\$(?:magic|buffer|output|archive|gpg|wsl)/i);
