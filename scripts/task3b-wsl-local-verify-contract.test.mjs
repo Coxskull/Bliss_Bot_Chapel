@@ -1,3 +1,4 @@
+import './task3b-native-ascii-preflight-contract.test.mjs';
 // Offline safety regression. Never run Railway, GPG decryption or real WSL.
 import assert from 'node:assert/strict';
 import {readFileSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs';
