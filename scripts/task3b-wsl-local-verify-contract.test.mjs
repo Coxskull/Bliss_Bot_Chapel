@@ -61,6 +61,21 @@ const drainSynthetic=spawnSync('bash',['-c',
 ],{encoding:'utf8',timeout:10000,maxBuffer:4096});
 assert.equal(drainSynthetic.status,0,'synthetic early reader must drain producer');
 
+// Nov22 GPG output accepted but missing PGDMP; only fixed in-memory envelope classifications.
+const envelope=readFileSync('scripts/task3b-native-envelope-preflight.ps1','utf8');
+for (const guard of [
+  'Get-FileHash -LiteralPath $archive','sourceProjectId','sourceEnvironmentId',
+  'sourceServiceId','gpgRecipientFingerprint','StandardOutput.BaseStream.Read',
+  'PGDMP_AT_START','PGDMP_AFTER_SHORT_PREFIX','PGDMP_AFTER_LONG_PREFIX',
+  'GZIP_NOT_PGDMP','ZIP_NOT_PGDMP','UTF8_BOM_NO_PGDMP',
+  'UNKNOWN_NOT_PGDMP','TASK4_CREATOR_RESTORE=HELD','SIZE_LIMIT_REFUSED'
+]) assert.ok(envelope.includes(guard),'missing envelope guard '+guard);
+assert.doesNotMatch(envelope,/pg_restore|createdb|dropdb|psql|railway\.cmd|Invoke-WebRequest|Start-Transcript|--import|--export-secret|Set-Content|Out-File|WriteAllBytes/i);
+assert.doesNotMatch(envelope,/Write-(?:Host|Output)\s+\$(?:first|buf|archive|gpg|m|plain|total)/i);
+const envParse=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
+  "$t=$null;$e=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-native-envelope-preflight.ps1',[ref]$t,[ref]$e)>$null;if($e.Count -gt 0){exit 83}"
+],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+assert.equal(envParse.status,0,'envelope PowerShell parse failure: '+envParse.stderr);
 // Native byte-stream bridge: bypass Windows PowerShell 5.1 text conversion.
 // Keep plaintext in process pipes only; WSL pg_restore may list TOC, never DB.
 const nativeBridge=readFileSync('scripts/task3b-native-binary-wsl-pg18-preflight.ps1','utf8');
