@@ -25,6 +25,9 @@ AS $body$
     -- operator. A support revocation must immediately deny this review RPC.
     JOIN auth.users AS u
       ON u.id = s.user_id AND u.email_confirmed_at IS NOT NULL
+      -- Recheck the separate reviewer grant in the database, not only in the
+      -- earlier Auth API response. Missing, false and string-valued flags deny.
+      AND u.raw_app_meta_data->'alpha_intake_operator' = 'true'::jsonb
     JOIN alpha_support_private.manual_operator_grants AS g
       ON g.user_id = s.user_id
       AND g.role = 'GENERAL_SUPPORT'
@@ -47,7 +50,7 @@ COMMIT;
 --    no access to anonymous users through CORS).
 -- 2. Test valid signed-in, revoked, expired, unverified MFA, AAL1 and cross-user
 --    ID combinations, plus disabled/missing GENERAL_SUPPORT grant, wrong
---    trusted Origin, removed Auth confirmation and concurrent revocation.
+--    trusted Origin, removed Auth confirmation, withdrawn reviewer metadata and concurrent revocation.
 --    Auth API getUser must also
 --    verify a fresh session before trusting claims.
 -- 3. Ensure Edge secret SERVICE_ROLE_KEY never leaves its server runtime.
