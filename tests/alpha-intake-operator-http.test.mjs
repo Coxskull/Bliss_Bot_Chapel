@@ -54,7 +54,7 @@ function fixture(options = {}) {
         assert.equal(args.p_user_id, USER);
         return {
           data: args.p_session_id === SESSION
-            ? (options.live === undefined ? true : options.live) : false,
+            ? (options.revokeAfterRead && calls.rpc > 1 ? false : (options.live === undefined ? true : options.live)) : false,
           error: options.rpcError ? new Error("rpc denied") : null
         };
       },
@@ -114,7 +114,7 @@ test("valid role, matched signed claims, AAL2 and live session yields PII-free r
   assert.equal(json.items[0].campaign_authorized, false);
   assert.equal(json.items[0].payment_authorized, false);
   assert.equal(f.calls.auth, 1);
-  assert.equal(f.calls.rpc, 1);
+  assert.equal(f.calls.rpc, 2);
   assert.deepEqual(f.calls.tables, [
     "alpha_public_intake_requests", "alpha_public_intake_receipts", "alpha_ghl_delivery"
   ]);
@@ -231,4 +231,15 @@ test("OPTIONS preflight has no JSON body, returns only approved origin and needs
   assert.equal(json, null);
   assert.equal(result.headers.get("Access-Control-Allow-Origin"), ORIGIN);
   assert.equal(f.calls.client, 0);
+});
+
+test("revocation during queue assembly denies response without disclosing records", async () => {
+  for (const data of [sample, { requests: [], receipts: [], deliveries: [] }]) {
+    const f = fixture({ revokeAfterRead: true, data });
+    const { result, json } = await call(f);
+    assert.equal(result.status, 403);
+    assert.equal(f.calls.rpc, 2);
+    assert.deepEqual(Object.keys(json), ["error"]);
+    assert.equal(JSON.stringify(json).includes(REQUEST), false);
+  }
 });
