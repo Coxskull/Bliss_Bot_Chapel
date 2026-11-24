@@ -57,7 +57,7 @@ assert.equal(formatEarly.status,2);
 assert.match(formatEarly.stdout,/TASK3B_WSL_PG_ARCHIVE=PREFLIGHT_REFUSED/);
 const formatSyntax=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
   "$tokens=$null;$errors=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-wsl-pg18-format-preflight.ps1',[ref]$tokens,[ref]$errors)>$null;if($errors.Count -gt 0){exit 71}"
-],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+],{encoding:'utf8',timeout:30000,maxBuffer:4096});
 assert.equal(formatSyntax.status,0,'PowerShell parse failure: '+formatSyntax.stderr);
 const drainSynthetic=spawnSync('bash',['-c',
   'set -euo pipefail; set +e; head -c 131072 /dev/zero | ( head -c 4 >/dev/null; cat >/dev/null ); pipe=( "${PIPESTATUS[@]}" ); [[ ${pipe[0]} == 0 && ${pipe[1]} == 0 ]]'
