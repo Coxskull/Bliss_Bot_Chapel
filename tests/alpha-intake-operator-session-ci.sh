@@ -14,6 +14,14 @@ CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;
 CREATE ROLE service_role NOLOGIN;
 CREATE SCHEMA auth;
+CREATE SCHEMA alpha_support_private;
+CREATE TABLE auth.users(
+  id uuid PRIMARY KEY, email_confirmed_at timestamptz
+);
+CREATE TABLE alpha_support_private.manual_operator_grants(
+  user_id uuid NOT NULL, role text NOT NULL, enabled boolean NOT NULL,
+  allowed_origin text NOT NULL
+);
 CREATE TABLE auth.sessions(
   id uuid PRIMARY KEY, user_id uuid NOT NULL, aal text NOT NULL,
   factor_id uuid, not_after timestamptz
@@ -26,6 +34,14 @@ SQL
 # Only the candidate function (no real Supabase migration) is executed here.
 psql -X -v ON_ERROR_STOP=1 -f docs/launch/candidates/NOT_FOR_APPLY-alpha-intake-operator-live-session.sql >/dev/null
 psql -X -v ON_ERROR_STOP=1 <<'SQL'
+INSERT INTO auth.users(id,email_confirmed_at)
+VALUES ('11111111-1111-4111-8111-111111111111',now());
+INSERT INTO alpha_support_private.manual_operator_grants(
+  user_id,role,enabled,allowed_origin
+) VALUES (
+  '11111111-1111-4111-8111-111111111111',
+  'GENERAL_SUPPORT',true,'https://alphacreativecontent.com'
+);
 INSERT INTO auth.mfa_factors(id,user_id,status)
 VALUES ('22222222-2222-4222-8222-222222222222','11111111-1111-4111-8111-111111111111','verified');
 INSERT INTO auth.sessions(id,user_id,aal,factor_id,not_after)
@@ -72,6 +88,39 @@ BEGIN
   THEN RAISE EXCEPTION 'missing MFA factor accepted'; END IF;
   UPDATE auth.sessions SET factor_id='22222222-2222-4222-8222-222222222222' WHERE id=s;
 
+  UPDATE alpha_support_private.manual_operator_grants
+    SET enabled=false WHERE user_id=u;
+  IF public.alpha_intake_operator_session_active(u,s)
+  THEN RAISE EXCEPTION 'revoked support grant accepted'; END IF;
+  UPDATE alpha_support_private.manual_operator_grants
+    SET enabled=true WHERE user_id=u;
+
+  UPDATE alpha_support_private.manual_operator_grants
+    SET role='OTHER_SCOPE' WHERE user_id=u;
+  IF public.alpha_intake_operator_session_active(u,s)
+  THEN RAISE EXCEPTION 'other support role accepted'; END IF;
+  UPDATE alpha_support_private.manual_operator_grants
+    SET role='GENERAL_SUPPORT' WHERE user_id=u;
+
+  UPDATE alpha_support_private.manual_operator_grants
+    SET allowed_origin='https://untrusted.example.test' WHERE user_id=u;
+  IF public.alpha_intake_operator_session_active(u,s)
+  THEN RAISE EXCEPTION 'wrong trusted Origin accepted'; END IF;
+  UPDATE alpha_support_private.manual_operator_grants
+    SET allowed_origin='https://alphacreativecontent.com' WHERE user_id=u;
+
+  UPDATE auth.users SET email_confirmed_at=NULL WHERE id=u;
+  IF public.alpha_intake_operator_session_active(u,s)
+  THEN RAISE EXCEPTION 'unconfirmed Auth account accepted'; END IF;
+  UPDATE auth.users SET email_confirmed_at=now() WHERE id=u;
+
+  DELETE FROM alpha_support_private.manual_operator_grants WHERE user_id=u;
+  IF public.alpha_intake_operator_session_active(u,s)
+  THEN RAISE EXCEPTION 'missing support grant accepted'; END IF;
+  INSERT INTO alpha_support_private.manual_operator_grants(
+    user_id,role,enabled,allowed_origin
+  ) VALUES (u,'GENERAL_SUPPORT',true,'https://alphacreativecontent.com');
+
   DELETE FROM auth.sessions WHERE id=s;
   IF public.alpha_intake_operator_session_active(u,s)
   THEN RAISE EXCEPTION 'revoked/removed session accepted'; END IF;
@@ -90,4 +139,4 @@ fi
 grep -q "permission denied" "$error_file" || {
   echo "FAIL: wrong reason for public role denial" >&2; exit 1
 }
-echo "PASS alpha-intake-operator-session: disposable PG17 verified AAL2, current/revoked/expired session, cross-user and SQL privileges"
+echo "PASS alpha-intake-operator-session: disposable PG17 confirmed operator grant + verified AAL2, revoked/expired session, wrong scope/origin/cross-user and SQL privileges"
