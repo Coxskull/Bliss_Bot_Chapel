@@ -42,6 +42,10 @@ assert.doesNotMatch(receipt, /Write-(?:Output|Host)\s+\$raw|Start-Transcript|doc
 assert.match(owner, /\[ValidateSet\('WSL','Docker'\)\]\[string\] \$RestoreEngine = 'WSL'/);
 assert.match(owner, /task4-creator-wsl-pg18-isolated-restore\.ps1/);
 assert.match(owner, /if \(\$RestoreEngine -ceq 'WSL'\)/);
+assert.match(owner,/\[switch\] \$RecoveryOnly/);
+assert.ok(owner.includes('TASK4_OWNER_COMPLETE=RECOVERY_ONLY_RECEIPT_PATH_REFUSED'));
+assert.ok(owner.includes('TASK4_OWNER_COMPLETE=PRODUCTION_CREATOR_MIGRATION_HELD'));
+assert.ok(owner.indexOf("if ($RecoveryOnly) {") < owner.indexOf("TASK4_OWNER_COMPLETE=GUARDED_CREATOR_INCREMENTAL_MIGRATION"));
 assert.match(guarded, /\$wslRecovery = [\s\S]*isolatedRestoreDatabaseRemoved -eq \$true/);
 assert.match(guarded, /-not \(\$dockerRecovery -or \$wslRecovery\)/);
 assert.match(guarded, /2026-11-21T07:07:25Z/);
