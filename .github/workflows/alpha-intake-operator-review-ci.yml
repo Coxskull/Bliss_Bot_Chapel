@@ -5,6 +5,7 @@ on:
       - '.github/workflows/alpha-intake-operator-review-ci.yml'
       - 'supabase/functions/alpha-intake-operator-review/**'
       - 'docs/launch/candidates/NOT_FOR_APPLY-alpha-intake-operator-live-session.sql'
+      - 'scripts/task330-owner-approved-reviewer-readiness.sql'
       - 'tests/alpha-intake-operator-review.test.mjs'
       - 'tests/alpha-intake-operator-http.test.mjs'
       - 'tests/alpha-intake-operator-session-ci.sh'

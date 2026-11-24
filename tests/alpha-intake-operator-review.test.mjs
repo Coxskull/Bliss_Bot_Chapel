@@ -179,3 +179,21 @@ test("Edge implementation is explicitly read-only and requires fresh GoTrue, ses
     "REVOKE ALL", "FROM PUBLIC, anon, authenticated", "TO service_role"
   ]) assert.ok(sql.includes(required), required);
 });
+
+
+test("owner's exact operator readiness requires scoped email and never writes or embeds PII", () => {
+  const candidate = readFileSync(new URL("../scripts/task330-owner-approved-reviewer-readiness.sql", import.meta.url), "utf8");
+  for (const required of [
+    "current_setting('alpha.task330_operator_email', true)",
+    "target.approved_email IS NOT NULL",
+    "lower(btrim(u.email)) = target.approved_email",
+    "confirmed_mfa_candidates = 1",
+    "currently_authorized_reviewers = 0",
+    "OWNER_APPROVED_EXACT_OPERATOR_PENDING_RECOVERY",
+    "BACKUP_AND_ISOLATED_RESTORE_MUST_BE_VERIFIED_SEPARATELY"
+  ]) assert.ok(candidate.includes(required), required);
+  assert.equal(/dejesuserwin1@/i.test(candidate), false, "do not commit operator identity");
+  const body = candidate.split("WITH selected_identity AS (")[1];
+  for (const write of [/\bUPDATE\b/i,/\bINSERT\b/i,/\bDELETE\b/i,/\bCREATE\b/i,/\bALTER\b/i,/\bGRANT\b/i,/\bREVOKE\b/i])
+    assert.equal(write.test(body), false, "read-only operator eligibility SQL");
+});
