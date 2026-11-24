@@ -2,16 +2,21 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import { createReviewHandler } from "./http-handler.mjs";
 
-// ALPHA #330: NEVER deploy/enable this operator endpoint without the separate
-// signed-session RPC/security review and live Auth/backup acceptance.
-// All access, origin, AAL2, live-session and source-query gates are exercised
-// by the same HTTP handler used in offline negative security CI tests.
-// Production deploy phase 1: permanently HELD at the source layer until a
-// separately reviewed, verified Auth backup/restore and operator MFA release.
-// An environment variable alone cannot enable access to private inquiries.
-const PRODUCTION_INTAKE_REVIEW_RELEASE_APPROVED = false;
+// #330 owner-authorized single-operator release candidate. Backup/restore,
+// live RPC and exact identity enrollment are documented on the issue.
+// Runtime switch remains mandatory; no public or multi-operator release.
+const PRODUCTION_INTAKE_REVIEW_RELEASE_APPROVED = true;
+const TRUSTED_ORIGIN = "https://alphacreativecontent.com";
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 Deno.serve(createReviewHandler({
-  getEnv: (name: string) => name === "ALPHA_INTAKE_REVIEW_ENABLED" &&
-    !PRODUCTION_INTAKE_REVIEW_RELEASE_APPROVED ? "false" : Deno.env.get(name),
+  getEnv: (name: string) => {
+    if (name === "ALPHA_INTAKE_REVIEW_ENABLED") {
+      const id = Deno.env.get("ALPHA_INTAKE_REVIEW_USER_IDS") || "";
+      return PRODUCTION_INTAKE_REVIEW_RELEASE_APPROVED &&
+        UUID.test(id) && Deno.env.get("ALPHA_INTAKE_REVIEW_ORIGINS") === TRUSTED_ORIGIN &&
+        Deno.env.get(name) === "true" ? "true" : "false";
+    }
+    return Deno.env.get(name);
+  },
   createClient
 }));
