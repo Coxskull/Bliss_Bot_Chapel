@@ -161,9 +161,35 @@ test("authorized operator requires server-verified identity, explicit allowlist,
 test("Edge implementation is explicitly read-only and requires fresh GoTrue, session RPC and env gates", () => {
   const entry = readFileSync(new URL("../supabase/functions/alpha-intake-operator-review/index.ts", import.meta.url), "utf8");
   assert.ok(entry.includes("Deno.serve(createReviewHandler("));
-  assert.ok(entry.includes("const PRODUCTION_INTAKE_REVIEW_RELEASE_APPROVED = false;"));
-  assert.ok(entry.includes('name === "ALPHA_INTAKE_REVIEW_ENABLED" &&'));
-  assert.ok(entry.includes('!PRODUCTION_INTAKE_REVIEW_RELEASE_APPROVED ? "false" : Deno.env.get(name)'));
+  // Owner-authorized release candidate must retain all runtime fail-closed controls.
+  assert.ok(entry.includes("const PRODUCTION_INTAKE_REVIEW_RELEASE_APPROVED = true;"));
+  assert.ok(entry.includes('const TRUSTED_ORIGIN = "https://alphacreativecontent.com";'));
+  assert.ok(entry.includes('if (name === "ALPHA_INTAKE_REVIEW_ENABLED")'));
+  assert.ok(entry.includes('Deno.env.get("ALPHA_INTAKE_REVIEW_USER_IDS") || ""'));
+  assert.ok(entry.includes('PRODUCTION_INTAKE_REVIEW_RELEASE_APPROVED &&'));
+  assert.ok(entry.includes('UUID.test(id) && Deno.env.get("ALPHA_INTAKE_REVIEW_ORIGINS") === TRUSTED_ORIGIN &&'));
+  assert.ok(entry.includes('Deno.env.get(name) === "true" ? "true" : "false"'));
+  // Execute the actual configuration wrapper with only fictional environment values.
+  const source = entry.slice(entry.indexOf("const PRODUCTION_INTAKE_REVIEW_RELEASE_APPROVED"));
+  const uid = "11111111-1111-4111-8111-111111111111";
+  const valid = { ALPHA_INTAKE_REVIEW_ENABLED: "true", ALPHA_INTAKE_REVIEW_USER_IDS: uid, ALPHA_INTAKE_REVIEW_ORIGINS: "https://alphacreativecontent.com" };
+  const configured = (env, input = source) => {
+    let result;
+    new Function("Deno", "createReviewHandler", "createClient", input)(
+      { env: { get: name => env[name] }, serve: handler => { result = handler; } },
+      opts => opts.getEnv("ALPHA_INTAKE_REVIEW_ENABLED"), () => {}
+    );
+    return result;
+  };
+  assert.equal(configured(valid), "true");
+  for (const override of [
+    { ALPHA_INTAKE_REVIEW_ENABLED: "false" }, { ALPHA_INTAKE_REVIEW_ENABLED: undefined },
+    { ALPHA_INTAKE_REVIEW_USER_IDS: "" }, { ALPHA_INTAKE_REVIEW_USER_IDS: uid + "," + uid },
+    { ALPHA_INTAKE_REVIEW_USER_IDS: "not-a-uuid" },
+    { ALPHA_INTAKE_REVIEW_ORIGINS: "https://untrusted.example.test" },
+    { ALPHA_INTAKE_REVIEW_ORIGINS: valid.ALPHA_INTAKE_REVIEW_ORIGINS + ",https://untrusted.example.test" }
+  ]) assert.equal(configured({ ...valid, ...override }), "false");
+  assert.equal(configured(valid, source.replace("APPROVED = true", "APPROVED = false")), "false");
   const code = readFileSync(new URL("../supabase/functions/alpha-intake-operator-review/http-handler.mjs", import.meta.url), "utf8");
   for (const phrase of [
     'ALPHA_INTAKE_REVIEW_ENABLED', 'ALPHA_INTAKE_REVIEW_USER_IDS',
