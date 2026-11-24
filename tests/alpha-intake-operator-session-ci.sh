@@ -16,7 +16,7 @@ CREATE ROLE service_role NOLOGIN;
 CREATE SCHEMA auth;
 CREATE SCHEMA alpha_support_private;
 CREATE TABLE auth.users(
-  id uuid PRIMARY KEY, email_confirmed_at timestamptz
+  id uuid PRIMARY KEY, email_confirmed_at timestamptz, raw_app_meta_data jsonb NOT NULL DEFAULT '{}'::jsonb
 );
 CREATE TABLE alpha_support_private.manual_operator_grants(
   user_id uuid NOT NULL, role text NOT NULL, enabled boolean NOT NULL,
@@ -34,8 +34,8 @@ SQL
 # Only the candidate function (no real Supabase migration) is executed here.
 psql -X -v ON_ERROR_STOP=1 -f docs/launch/candidates/NOT_FOR_APPLY-alpha-intake-operator-live-session.sql >/dev/null
 psql -X -v ON_ERROR_STOP=1 <<'SQL'
-INSERT INTO auth.users(id,email_confirmed_at)
-VALUES ('11111111-1111-4111-8111-111111111111',now());
+INSERT INTO auth.users(id,email_confirmed_at,raw_app_meta_data)
+VALUES ('11111111-1111-4111-8111-111111111111',now(),'{"alpha_intake_operator":true}'::jsonb);
 INSERT INTO alpha_support_private.manual_operator_grants(
   user_id,role,enabled,allowed_origin
 ) VALUES (
@@ -120,6 +120,19 @@ BEGIN
   INSERT INTO alpha_support_private.manual_operator_grants(
     user_id,role,enabled,allowed_origin
   ) VALUES (u,'GENERAL_SUPPORT',true,'https://alphacreativecontent.com');
+
+  UPDATE auth.users SET raw_app_meta_data='{}'::jsonb WHERE id=u;
+  IF public.alpha_intake_operator_session_active(u,s)
+  THEN RAISE EXCEPTION 'missing reviewer grant accepted'; END IF;
+  UPDATE auth.users SET raw_app_meta_data='{"alpha_intake_operator":false}'::jsonb WHERE id=u;
+  IF public.alpha_intake_operator_session_active(u,s)
+  THEN RAISE EXCEPTION 'withdrawn reviewer grant accepted'; END IF;
+  UPDATE auth.users SET raw_app_meta_data='{"alpha_intake_operator":"true"}'::jsonb WHERE id=u;
+  IF public.alpha_intake_operator_session_active(u,s)
+  THEN RAISE EXCEPTION 'string-valued reviewer grant accepted'; END IF;
+  UPDATE auth.users SET raw_app_meta_data='{"alpha_intake_operator":true}'::jsonb WHERE id=u;
+  IF NOT public.alpha_intake_operator_session_active(u,s)
+  THEN RAISE EXCEPTION 'restored reviewer grant must pass'; END IF;
 
   DELETE FROM auth.sessions WHERE id=s;
   IF public.alpha_intake_operator_session_active(u,s)
