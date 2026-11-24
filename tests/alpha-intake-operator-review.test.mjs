@@ -170,7 +170,10 @@ test("Edge implementation is explicitly read-only and requires fresh GoTrue, ses
   assert.ok(entry.includes('UUID.test(id) && Deno.env.get("ALPHA_INTAKE_REVIEW_ORIGINS") === TRUSTED_ORIGIN &&'));
   assert.ok(entry.includes('Deno.env.get(name) === "true" ? "true" : "false"'));
   // Execute the actual configuration wrapper with only fictional environment values.
-  const source = entry.slice(entry.indexOf("const PRODUCTION_INTAKE_REVIEW_RELEASE_APPROVED"));
+  // Node 20 cannot parse the TypeScript parameter annotation; strip only that
+  // exact annotation from the fixture, leaving runtime security logic untouched.
+  const source = entry.slice(entry.indexOf("const PRODUCTION_INTAKE_REVIEW_RELEASE_APPROVED"))
+    .replace("getEnv: (name: string) =>", "getEnv: (name) =>");
   const uid = "11111111-1111-4111-8111-111111111111";
   const valid = { ALPHA_INTAKE_REVIEW_ENABLED: "true", ALPHA_INTAKE_REVIEW_USER_IDS: uid, ALPHA_INTAKE_REVIEW_ORIGINS: "https://alphacreativecontent.com" };
   const configured = (env, input = source) => {
