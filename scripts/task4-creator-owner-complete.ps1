@@ -4,6 +4,7 @@
 # No new Railway/DO resources, public database port, plaintext backup file,
 # OAuth secret, Factory STOP or live-payment activation.
 # Existing NEW fresh verified evidence can be reused with -ReceiptPath.
+# -RecoveryOnly stops safely after new DigitalOcean SHA + disposable PG18 restore; it never runs production migration.
 # Prior Nov21 99-table WSL restore remains accepted, never re-run here.
 [CmdletBinding()]
 param(
@@ -14,9 +15,14 @@ param(
     [string] $OutputDirectory = (Join-Path $HOME 'Downloads'),
     # WSL is the owner's already verified 99-table recovery environment.
     # Docker remains supported for operators who actually have it installed.
-    [ValidateSet('WSL','Docker')][string] $RestoreEngine = 'WSL'
+    [ValidateSet('WSL','Docker')][string] $RestoreEngine = 'WSL',
+    [switch] $RecoveryOnly
 )
 $ErrorActionPreference = 'Stop'
+# A recovery-only invocation must never use the receipt shortcut to reach DDL.
+if ($RecoveryOnly -and -not [string]::IsNullOrWhiteSpace($ReceiptPath)) {
+    throw 'TASK4_OWNER_COMPLETE=RECOVERY_ONLY_RECEIPT_PATH_REFUSED'
+}
 $migration = Join-Path $PSScriptRoot 'task4-creator-guarded-incremental.ps1'
 if (-not (Test-Path -LiteralPath $migration -PathType Leaf)) {
     throw 'TASK4_OWNER_COMPLETE=GUARDED_SCRIPT_MISSING'
@@ -80,6 +86,15 @@ if ($restoredLine.Count -ne 1) { throw 'TASK4_OWNER_COMPLETE=ISOLATED_RECEIPT_MI
 $recoveryPath = ([string]$restoredLine[0]).Substring('TASK3B_PRIVATE_RECOVERY_EVIDENCE='.Length)
 if (-not (Test-Path -LiteralPath $recoveryPath -PathType Leaf)) {
     throw 'TASK4_OWNER_COMPLETE=RECOVERY_FILE_MISSING'
+}
+if ($RecoveryOnly) {
+    # Stop after the complete fresh off-host + disposable restore chain.
+    # The evidence is stored privately in Downloads by the existing helper.
+    # No production DDL, creator activation, Factory STOP, or billing change.
+    Write-Output 'TASK4_OWNER_COMPLETE=OFFHOST_AND_ISOLATED_RECOVERY_VERIFIED'
+    Write-Output 'TASK4_OWNER_COMPLETE=PRODUCTION_CREATOR_MIGRATION_HELD'
+    Write-Output 'TASK4_OWNER_COMPLETE=CREATOR_PUBLIC_FLAG_STILL_OFF'
+    return
 }
 Write-Output 'TASK4_OWNER_COMPLETE=GUARDED_CREATOR_INCREMENTAL_MIGRATION'
 & $migration -ReceiptPath $recoveryPath
