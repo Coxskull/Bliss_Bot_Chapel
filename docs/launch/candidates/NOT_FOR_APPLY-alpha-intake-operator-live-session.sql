@@ -21,6 +21,15 @@ AS $body$
       ON f.id = s.factor_id
       AND f.user_id = s.user_id
       AND f.status::text = 'verified'
+    -- Owner authorized a reviewer scope only for the EXISTING support
+    -- operator. A support revocation must immediately deny this review RPC.
+    JOIN auth.users AS u
+      ON u.id = s.user_id AND u.email_confirmed_at IS NOT NULL
+    JOIN alpha_support_private.manual_operator_grants AS g
+      ON g.user_id = s.user_id
+      AND g.role = 'GENERAL_SUPPORT'
+      AND g.enabled IS TRUE
+      AND g.allowed_origin = 'https://alphacreativecontent.com'
     WHERE s.id = p_session_id
       AND s.user_id = p_user_id
       AND s.aal::text = 'aal2'
@@ -37,7 +46,9 @@ COMMIT;
 -- 1. Verify function OWNER and that only service_role can execute (not merely
 --    no access to anonymous users through CORS).
 -- 2. Test valid signed-in, revoked, expired, unverified MFA, AAL1 and cross-user
---    ID combinations, plus concurrent revocation. Auth API getUser must also
+--    ID combinations, plus disabled/missing GENERAL_SUPPORT grant, wrong
+--    trusted Origin, removed Auth confirmation and concurrent revocation.
+--    Auth API getUser must also
 --    verify a fresh session before trusting claims.
 -- 3. Ensure Edge secret SERVICE_ROLE_KEY never leaves its server runtime.
 -- 4. No public user profile reads or auth-session export.
