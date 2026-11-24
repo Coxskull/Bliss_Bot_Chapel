@@ -86,9 +86,17 @@ export function createReviewHandler({ getEnv, createClient }) {
         aal: claims?.aal, sessionId, liveSession: true
       })) return respond(403, { error: "Operator authorization required" }, approvedOrigin);
 
-      const { data: live, error: liveError } = await db.rpc("alpha_intake_operator_session_active", {
+      const checkLiveSession = () => db.rpc("alpha_intake_operator_session_active", {
         p_user_id: auth.user.id, p_session_id: sessionId
       });
+      const { data: live, error: liveError } = await checkLiveSession();
+      // Recheck immediately before returning any queue (including an empty queue).
+      const releaseQueue = async queue => {
+        const { data: current, error } = await checkLiveSession();
+        if (error || current !== true)
+          return respond(403, { error: "Current MFA session required" }, approvedOrigin);
+        return respond(200, queue, approvedOrigin);
+      };
       // RPC missing, malformed or revoked/expired session => fail closed.
       if (liveError || live !== true)
         return respond(403, { error: "Current MFA session required" }, approvedOrigin);
@@ -101,9 +109,9 @@ export function createReviewHandler({ getEnv, createClient }) {
         .order("created_at", { ascending: false }).limit(51);
       if (requestError || !Array.isArray(requests) || requests.length > 50)
         throw Error("request-page-overflow-or-read");
-      if (!requests.length) return respond(200, buildReviewQueue({
+      if (!requests.length) return await releaseQueue(buildReviewQueue({
         requests: [], receipts: [], deliveries: []
-      }), approvedOrigin);
+      }));
       const ids = requests.map(r => r.id);
       const [received, delivered] = await Promise.all([
         db.from("alpha_public_intake_receipts")
@@ -115,9 +123,9 @@ export function createReviewHandler({ getEnv, createClient }) {
           !Array.isArray(delivered.data) ||
           received.data.length > MAX_LINKED_ROWS || delivered.data.length > MAX_LINKED_ROWS)
         throw Error("linked-record-read");
-      return respond(200, buildReviewQueue({
+      return await releaseQueue(buildReviewQueue({
         requests, receipts: received.data, deliveries: delivered.data
-      }), approvedOrigin);
+      }));
     } catch {
       // No SQL errors, JWT, private field contents, or provider credentials escape.
       return respond(503, { error: "Review unavailable; no changes were made" }, approvedOrigin);
