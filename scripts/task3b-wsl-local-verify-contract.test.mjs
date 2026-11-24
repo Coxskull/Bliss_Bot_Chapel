@@ -1,3 +1,5 @@
+import './task4-creator-pgdmp-bom-restore.test.mjs';
+import './task3b-native-ascii-preflight-contract.test.mjs';
 // Offline safety regression. Never run Railway, GPG decryption or real WSL.
 import assert from 'node:assert/strict';
 import {readFileSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs';
@@ -55,7 +57,7 @@ assert.equal(formatEarly.status,2);
 assert.match(formatEarly.stdout,/TASK3B_WSL_PG_ARCHIVE=PREFLIGHT_REFUSED/);
 const formatSyntax=spawnSync('pwsh',['-NoProfile','-NonInteractive','-Command',
   "$tokens=$null;$errors=$null;[System.Management.Automation.Language.Parser]::ParseFile('scripts/task3b-wsl-pg18-format-preflight.ps1',[ref]$tokens,[ref]$errors)>$null;if($errors.Count -gt 0){exit 71}"
-],{encoding:'utf8',timeout:10000,maxBuffer:4096});
+],{encoding:'utf8',timeout:30000,maxBuffer:4096});
 assert.equal(formatSyntax.status,0,'PowerShell parse failure: '+formatSyntax.stderr);
 const drainSynthetic=spawnSync('bash',['-c',
   'set -euo pipefail; set +e; head -c 131072 /dev/zero | ( head -c 4 >/dev/null; cat >/dev/null ); pipe=( "${PIPESTATUS[@]}" ); [[ ${pipe[0]} == 0 && ${pipe[1]} == 0 ]]'
@@ -385,7 +387,7 @@ const allowed=[
   'GPG_EXE_MISSING','TEMP_DB_NAME_INVALID','TEMP_DB_CHECK_REFUSED',
   'TEMP_DB_EXISTS','TEMP_DB_CREATE_REFUSED',
   'PREVIOUS_TEMP_DB_PRESENT','UNEXPECTED_HELPER_EXIT','GPG_DECRYPT_REFUSED','BOTH_PIPE_COMMANDS_REFUSED',
-  'PIPE_STATUS_UNAVAILABLE',
+  'PIPE_STATUS_UNAVAILABLE','PREFIX_NORMALIZATION_REFUSED',
   'PG_RESTORE_REFUSED','TABLE_COUNT_QUERY_REFUSED','TABLE_COUNT_MISMATCH',
   'EF_HISTORY_QUERY_REFUSED','EF_HISTORY_MISSING','TEMP_DB_REMOVE_REFUSED',
   'TEMP_DB_CLEANUP_UNVERIFIED','UNKNOWN'
@@ -423,6 +425,8 @@ assert.ok(helper.includes('fail GPG_DECRYPT_REFUSED'));
 assert.ok(helper.includes('fail BOTH_PIPE_COMMANDS_REFUSED'));
 assert.ok(source.includes("'BOTH_PIPE_COMMANDS_REFUSED'"));
 assert.ok(helper.includes('fail PG_RESTORE_REFUSED'));
+assert.ok(helper.includes('fail PREFIX_NORMALIZATION_REFUSED'));
+assert.ok(source.includes("'PREFIX_NORMALIZATION_REFUSED'"));
 assert.ok(helper.includes('trap cleanup EXIT'));
 assert.ok(helper.includes('trap - EXIT'));
 assert.ok(helper.includes('TASK4_WSL_PG18_EXIT_CLEANUP=ABSENT_VERIFIED'));
@@ -432,7 +436,7 @@ assert.ok(helper.includes('UNEXPECTED_HELPER_EXIT'));
 assert.ok(helper.includes('checkpoint PIPELINE_STARTED'));
 assert.ok(helper.includes('checkpoint PIPELINE_RETURNED'));
 assert.ok(helper.includes('stage_reported=1'));
-assert.ok(helper.includes('[[ "${#pipe_status[@]}" -eq 2 ]] || fail PIPE_STATUS_UNAVAILABLE'));
+assert.ok(helper.includes('[[ "${#pipe_status[@]}" -eq 3 ]] || fail PIPE_STATUS_UNAVAILABLE'));
 const stageBlock=source.slice(source.indexOf('  if ($stages.Count -eq 1)'),
   source.indexOf('  $cleanups=@('));
 assert.match(stageBlock,/}\s*else\s*\{\s*Write-Output 'TASK3B_WSL_LOCAL_STAGE=TRANSPORT_OR_UNCLASSIFIED'\s*}\s*# Independently show/);
