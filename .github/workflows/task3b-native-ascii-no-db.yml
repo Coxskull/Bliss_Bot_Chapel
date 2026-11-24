@@ -8,6 +8,8 @@ on:
       - 'scripts/task4-creator-wsl-pg18-restore.sh'
       - 'scripts/task3b-wsl-local-verify-current.ps1'
       - 'scripts/task4-creator-pgdmp-bom-restore.test.mjs'
+      - 'scripts/task4-creator-owner-complete.ps1'
+      - 'scripts/task4-owner-recovery-only.test.ps1'
       - '.github/workflows/task3b-native-ascii-no-db.yml'
   push:
     branches: [main]
@@ -16,6 +18,8 @@ on:
       - 'scripts/task3b-native-ascii-preflight-contract.test.mjs'
       - 'scripts/task4-creator-wsl-pg18-restore.sh'
       - 'scripts/task4-creator-pgdmp-bom-restore.test.mjs'
+      - 'scripts/task4-creator-owner-complete.ps1'
+      - 'scripts/task4-owner-recovery-only.test.ps1'
       - '.github/workflows/task3b-native-ascii-no-db.yml'
 permissions:
   contents: read
@@ -37,3 +41,6 @@ jobs:
       - name: Offline synthetic PGDMP prefix and disposable cleanup guards
         shell: bash
         run: node scripts/task4-creator-pgdmp-bom-restore.test.mjs
+      - name: Offline recovery-only owner launcher with mocked helpers
+        shell: pwsh
+        run: ./scripts/task4-owner-recovery-only.test.ps1
