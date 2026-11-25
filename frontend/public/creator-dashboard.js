@@ -19,7 +19,7 @@
     // or sign-out in a hidden DOM node.
     for (const id of [
       "creator-name", "creator-id", "creator-market",
-      "creator-language", "creator-status", "application-receipt", "application-state"
+      "creator-language", "creator-status", "application-receipt", "application-state", "channel-proof-code", "channel-proof-url", "channel-proof-expiry"
     ]) {
       byId(id).textContent = "—";
     }
@@ -44,6 +44,7 @@
     show("signin-panel", false);
     show("pending-panel", false);
     show("application-panel", false);
+    show("channel-proof-panel", false);
     show("profile-panel", false);
     clearProfile();
     logoutButton.hidden = true;
@@ -92,6 +93,25 @@
             : item.status === "REVOKED" ? "Your registration access has been revoked. Contact ALPHA support."
             : "Your creator application has been received and is awaiting human review.");
           show("application-panel", true);
+          if (item.status === "ACTIVE" && item.verifiedProfile?.authorityStatus === "VERIFIED"
+              && item.verifiedProfile.creatorId === item.creatorId && typeof item.creatorId === "string"
+              && typeof item.verifiedProfile.name === "string") {
+            const p = item.verifiedProfile;
+            byId("creator-name").textContent = p.name;
+            byId("creator-id").textContent = p.creatorId;
+            byId("creator-market").textContent = p.countryCode || "Not recorded";
+            byId("creator-language").textContent = p.primaryLanguage || "Not recorded";
+            byId("creator-status").textContent = p.authorityStatus;
+            badgeText("VERIFIED"); message("Channel control verified. Your private creator profile is ready.", "success");
+            show("profile-panel", true);
+          } else if (item.status === "ACTIVE" && typeof item.channelProofCode === "string"
+              && /^ALPHA-[0-9A-F]{32}$/.test(item.channelProofCode)
+              && typeof item.submittedChannelUrl === "string" && typeof item.proofExpiresAt === "string") {
+            byId("channel-proof-code").textContent = item.channelProofCode;
+            byId("channel-proof-url").textContent = item.submittedChannelUrl;
+            byId("channel-proof-expiry").textContent = item.proofExpiresAt;
+            show("channel-proof-panel", true);
+          }
           return;
         }
         if (application.response.status === 401) {
@@ -164,6 +184,7 @@
     busy = true;
     show("profile-panel", false);
     show("application-panel", false);
+    show("channel-proof-panel", false);
     clearProfile();
     logoutButton.disabled = true;
     message("Signing out securely…");
