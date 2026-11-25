@@ -125,15 +125,26 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
         if (!BlissAuthorization.IsPendingCreatorRegistration(User, auth))
             return StatusCode(StatusCodes.Status403Forbidden);
         var subject = User.FindFirst("sub")!.Value;
-        var membership = await db.CreatorAccountMemberships.AsNoTracking()
+        var membership = await db.CreatorAccountMemberships.AsNoTracking().Include(m => m.Creator)
             .SingleOrDefaultAsync(x => x.Subject == subject, cancellationToken);
         if (membership is null) return NotFound();
         var receipt = await db.CreatorRegistrationReceipts.AsNoTracking()
             .Where(x => x.Subject == subject && x.CreatorId == membership.CreatorId)
-            .Select(x => new { x.Id, x.CreatedAt })
+            .Select(x => new { x.Id, x.CreatedAt, x.RequestKey, x.ProcessingConsent, x.TermsAccepted, x.PrivacyNoticeVersion, x.TermsVersion })
             .SingleOrDefaultAsync(cancellationToken);
-        return receipt is null ? NotFound() : Ok(new CreatorRegistrationStatusDto(
-            membership.CreatorId, receipt.Id, membership.Status, receipt.CreatedAt));
+        if (receipt is null) return NotFound();
+        var approved = auth.CreatorAuthorityVerificationRequested && membership.Status == "ACTIVE"
+            && receipt.ProcessingConsent && receipt.TermsAccepted
+            && receipt.PrivacyNoticeVersion == PrivacyNoticeVersion && receipt.TermsVersion == TermsVersion;
+        var now = DateTime.UtcNow;
+        var code = approved && membership.Creator.AuthorityStatus == "UNVERIFIED"
+            ? CreatorChannelProof.Code(receipt.Id, receipt.RequestKey, membership.CreatorId, membership.SubmittedChannelUrl, now) : null;
+        var profile = approved && membership.Creator.AuthorityStatus == "VERIFIED"
+            ? new CreatorSelfSummaryDto(membership.CreatorId, membership.Creator.Name, membership.Creator.CountryCode,
+                membership.Creator.PrimaryLanguage, "VERIFIED") : null;
+        return Ok(new CreatorRegistrationStatusDto(membership.CreatorId, receipt.Id, membership.Status, receipt.CreatedAt,
+            code, code is null ? null : membership.SubmittedChannelUrl,
+            code is null ? null : now.Date.AddDays(1), profile));
     }
 
     private IActionResult ReplayOrConflict(CreatorRegistrationReceipt prior, string subject, string digest) =>
@@ -158,4 +169,6 @@ public sealed record CreatorRegistrationReceiptDto(
     Guid ReceiptId, Guid CreatorId, string Status, DateTime CreatedAt, bool MarketingOptIn);
 
 public sealed record CreatorRegistrationStatusDto(
-    Guid CreatorId, Guid ReceiptId, string Status, DateTime CreatedAt);
+    Guid CreatorId, Guid ReceiptId, string Status, DateTime CreatedAt,
+    string? ChannelProofCode = null, string? SubmittedChannelUrl = null, DateTime? ProofExpiresAt = null,
+    CreatorSelfSummaryDto? VerifiedProfile = null);
