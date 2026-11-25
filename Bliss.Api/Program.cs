@@ -506,7 +506,8 @@ if (runtime.RestrictedPreview)
     if (runtime.PublicAdvertiserRegistrationOnly)
         app.Use((context, next) => PublicAdvertiserRegistrationGate.InvokeAsync(context, next,
             authentication.Enabled && authentication.SupabaseEnabled && authentication.CreatorRegistrationRequested,
-            authentication.Enabled && authentication.SupabaseEnabled && authentication.StaffCreativeReadinessRequested));
+            authentication.Enabled && authentication.SupabaseEnabled && authentication.StaffCreativeReadinessRequested,
+            authentication.Enabled && authentication.SupabaseEnabled && authentication.StaffCreativeReadinessRequested && authentication.StaffCreativePreparationRequested));
     else
         app.Use((context, next) => RestrictedPreviewGate.InvokeAsync(context, next));
 }
