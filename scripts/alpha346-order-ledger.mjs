@@ -61,6 +61,9 @@ function selfTest(){
  const s=replayOrder(quote,seq,deliverables);
  assert.equal(s.status,"CLOSED_REPORTED");assert.equal(s.contributionCents,7900);assert.equal(s.revenueRecognized,false);
  for(const events of [[seq[1]],[seq[0],{...seq[1],livemode:false}],[seq[0],{...seq[1],amountCents:14800}],seq.slice(0,3).concat(seq.at(-2)),[seq[0],seq[0]],[{...seq[0],quoteId:"OTHER"}],[seq[0],{...seq[1],checkoutReference:"OTHER"}],[seq[0],{...seq[1],checkoutSessionId:"cs_test_FICTIONAL123"}]])assert.throws(()=>replayOrder(quote,events,deliverables));
+ const starter={...quote,packageKind:"starter"};
+ const receipt={...seq[1],paymentLinkId:"plink_1UfWXNH6XjUXn6bha65jeI1t",priceId:"price_1UfWONH6XjUXn6bhPYLJNax5",productId:"prod_VguCvW3SA1yQUM"};
+ const creative=replayOrder(starter,[seq[0],receipt],deliverables);assert.equal(creative.status,"PAID_REPORTED");assert.equal(creative.paymentReceipt.productId,receipt.productId);assert.ok(Object.hasOwn(creative.assignments,"custom_advertising_artwork"));assert.ok(!Object.hasOwn(creative.assignments,"campaign_discovery_brief"));assert.throws(()=>replayOrder(starter,[seq[0],{...receipt,productId:"wrong"}],deliverables));assert.throws(()=>replayOrder(quote,[seq[0],receipt],deliverables));assert.throws(()=>replayOrder(starter,[seq[0],seq[1]],deliverables));
  console.log("PASS: fictional lifecycle, contribution, and rejection of invalid transitions");
 }
 async function main(){
