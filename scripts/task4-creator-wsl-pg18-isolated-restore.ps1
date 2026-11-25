@@ -61,7 +61,8 @@ if (-not (Test-Path -LiteralPath $helper -PathType Leaf)) {
 # Windows PowerShell 5.1 cannot reliably transport arbitrary binary pipeline
 # bytes. Decode the REVIEWED Bash code inside Ubuntu and use the pre-existing
 # Windows GPG keyring from WSL; no dump ever passes through PowerShell text.
-$helperSource = Get-Content -LiteralPath $helper -Raw
+# Normalize reviewed shell source only; never change encrypted archive bytes.
+$helperSource = (Get-Content -LiteralPath $helper -Raw).Replace("`r`n", "`n").Replace("`r", "")
 $helper64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($helperSource))
 $archive64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($archive))
 $gpg64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($gpg.Source))
@@ -85,6 +86,50 @@ try {
 $passed = @($raw | Where-Object { ([string]$_).Trim() -ceq 'TASK4_WSL_PG18_RESTORE=PASS' }).Count
 # Do not print raw WSL, pg_restore or GPG logs; those can reveal local paths.
 if ($exitCode -ne 0 -or $passed -ne 1) {
+  # Only a fixed allowlisted stage from the reviewed helper is permitted.
+  # NEVER print raw WSL, GPG, pg_restore errors, local paths or archive rows.
+  $allowedStages=@('ARGUMENTS','NOT_ROOT','COUNT_INVALID','TOOLS_MISSING',
+    'PG18_BINARY_MISSING','PG18_VERSION_MISMATCH','PG18_CLUSTER_NOT_READY',
+    'PG18_SOCKET_MISSING','PG18_QUERY_REFUSED','PG18_MAJOR_MISMATCH',
+    'ARCHIVE_PATH_INVALID','GPG_EXE_MISSING','TEMP_DB_NAME_INVALID',
+    'TEMP_DB_CHECK_REFUSED','TEMP_DB_EXISTS','TEMP_DB_CREATE_REFUSED',
+    'GPG_DECRYPT_REFUSED','PG_RESTORE_REFUSED','BOTH_PIPE_COMMANDS_REFUSED','PIPE_STATUS_UNAVAILABLE','PREFIX_NORMALIZATION_REFUSED','TABLE_COUNT_QUERY_REFUSED',
+    'TABLE_COUNT_MISMATCH','EF_HISTORY_QUERY_REFUSED','EF_HISTORY_MISSING',
+    'TEMP_DB_REMOVE_REFUSED','TEMP_DB_CLEANUP_UNVERIFIED',
+    'PREVIOUS_TEMP_DB_PRESENT','UNEXPECTED_HELPER_EXIT','UNKNOWN')
+  $stages=@($raw | ForEach-Object {
+    $line=([string]$_).Trim()
+    if ($line -cmatch '^TASK4_WSL_PG18_STAGE=([A-Z0-9_]+)$' -and
+        $allowedStages -ccontains $Matches[1]) { $Matches[1] }
+  } | Select-Object -Unique)
+  if ($stages.Count -eq 1) {
+    Write-Output ('TASK4_WSL18_STAGE=' + $stages[0])
+  } else {
+    Write-Output 'TASK4_WSL18_STAGE=TRANSPORT_OR_UNCLASSIFIED'
+  }
+  # Independently show the last safe helper checkpoint for EVERY failed run,
+  # including an explicit UNEXPECTED_HELPER_EXIT, not only unclassified output.
+  # Never show raw WSL, GPG, SQL, filesystem or customer details.
+  $checkpoints=@($raw | ForEach-Object {
+    $line=([string]$_).Trim()
+    if ($line -cmatch '^TASK4_WSL_PG18_CHECKPOINT=(PG18_READY|ARCHIVE_PATH_ACCEPTED|GPG_BINARY_READY|TEMP_DB_CREATED|PIPELINE_STARTED|PIPELINE_RETURNED|PIPELINE_COMPLETE|TABLE_COUNT_VERIFIED|EF_HISTORY_VERIFIED|TEMP_DB_REMOVED)$') {
+      $Matches[1]
+    }
+  })
+  if ($checkpoints.Count -gt 0) {
+    Write-Output ('TASK4_WSL18_LAST_CHECKPOINT=' + $checkpoints[-1])
+  } else {
+    Write-Output 'TASK4_WSL18_LAST_CHECKPOINT=NONE'
+  }
+  $cleanups=@($raw | ForEach-Object {
+    $line=([string]$_).Trim()
+    if ($line -cmatch '^TASK4_WSL_PG18_EXIT_CLEANUP=(ABSENT_VERIFIED|NOT_VERIFIED)$') { $Matches[1] }
+  })
+  if ($cleanups.Count -eq 1 -and $cleanups[0] -ceq 'ABSENT_VERIFIED') {
+    Write-Output 'TASK4_WSL18_TEMP_DB=ABSENT_VERIFIED'
+  } else {
+    Write-Output 'TASK4_WSL18_TEMP_DB=NOT_VERIFIED'
+  }
     throw 'TASK4_WSL18=RESTORE_NOT_VERIFIED_OR_TEMPORARY_DATABASE_NOT_REMOVED'
 }
 $receiptPath = $OffhostManifestPath -replace '\.offhost\.json$', '.recovery-evidence.json'
