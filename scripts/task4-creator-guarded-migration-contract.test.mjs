@@ -52,3 +52,16 @@ assert.match(migration, /ENABLE ROW LEVEL SECURITY/);
 assert.match(migration, /REVOKE ALL ON TABLE/);
 
 console.log('TASK4_CREATOR_GUARDED_INCREMENTAL_CONTRACT=PASS (source-only, no Railway or database calls)');
+
+
+const custody = read('scripts/task4-offhost-custody.ps1');
+const drive = read('scripts/task4-drive-offhost-receipt.ps1');
+const restore = read('scripts/task4-creator-wsl-pg18-isolated-restore.ps1');
+for (const source of [owner,restore]) {
+  assert.ok(source.includes("Test-Task4OffhostCustody $m"));
+  assert.ok(source.includes("task4-offhost-custody.ps1"));
+}
+for (const token of ['DigitalOcean','571399692','GoogleDrive','1i3IQ1hFB8H6FazZXtgstZQq9OX-TgMyM','offhostDriveOwnerOnlyAttested','offhostDriveIndependentReadbackAttested','offhostDriveDownloadedCiphertextVerified','offhostRemoteChecksum']) assert.ok(custody.includes(token),token);
+for (const token of ['BLISS-DRIVE-CUSTODY-VERIFIED','REFUSED_SHA256_MISMATCH','REFUSED_SAME_LOCAL_FILE','REFUSED_STALE_CAPTURE','REFUSED_RECEIPT_COLLISION','VerifiedRemoteSha256','TASK4_CREATOR_RESTORE=HELD']) assert.ok(drive.includes(token),token);
+assert.doesNotMatch(drive,/railway\.cmd|--decrypt|pg_restore|Invoke-WebRequest|Invoke-RestMethod/i);
+assert.ok(owner.includes('REFUSED_DRIVE_REQUIRES_WSL_RECOVERY'));
