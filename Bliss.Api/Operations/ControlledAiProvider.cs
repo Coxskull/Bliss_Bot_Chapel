@@ -53,12 +53,14 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
             }
             throw new AiProviderException(status);
         }
+        var pilotRequestId = Options.Protocol == "OpenAI" && request.Kind == "IMAGE" && Options.ImagePilotEnabled
+            ? ValidatedRequestId(response) : null;
         await using var stream = await response.Content.ReadAsStreamAsync(ct);
         using var bounded = new MemoryStream(); var buffer = new byte[8192];
         int count;
         while ((count = await stream.ReadAsync(buffer, ct)) > 0)
         {
-            if (bounded.Length + count > Options.MaxResponseBytes) throw new AiProviderException("PROVIDER_RESPONSE_TOO_LARGE");
+            if (bounded.Length + count > Options.MaxResponseBytes) throw new AiProviderException("PROVIDER_RESPONSE_TOO_LARGE", pilotRequestId);
             bounded.Write(buffer, 0, count);
         }
         try
@@ -74,7 +76,9 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
                     text = reply.GetProperty("content").GetString() ?? "";
                 }
                 else encoded = root.GetProperty("data")[0].GetProperty("b64_json").GetString() ?? "";
-                id = root.TryGetProperty("id", out var node) ? node.GetString() ?? "" : response.Headers.TryGetValues("x-request-id", out var ids) ? ids.First() : "";
+                id = request.Kind == "IMAGE" && Options.ImagePilotEnabled
+                    ? pilotRequestId ?? ""
+                    : root.TryGetProperty("id", out var node) ? node.GetString() ?? "" : response.Headers.TryGetValues("x-request-id", out var ids) ? ids.First() : "";
                 if (root.TryGetProperty("usage", out var usage))
                 {
                     inputTokens = Integer(usage, "prompt_tokens") ?? Integer(usage, "input_tokens");
@@ -116,9 +120,19 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
             }
             return new AiProviderResult(text, bytes, id, inputTokens, outputTokens, cost);
         }
-        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or FormatException or IndexOutOfRangeException)
-        { throw new AiProviderException("INVALID_PROVIDER_RESPONSE"); }
+        catch (AiProviderException ex) when (pilotRequestId is not null && ex.ProviderRequestId is null)
+        { throw new AiProviderException(ex.Code, pilotRequestId); }
+        catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or FormatException or IndexOutOfRangeException or OverflowException)
+        { throw new AiProviderException("INVALID_PROVIDER_RESPONSE", pilotRequestId); }
     }
+    private static string? ValidatedRequestId(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues("x-request-id", out var values)) return null;
+        var all = values.ToArray();
+        return all.Length == 1 && Regex.IsMatch(all[0], @"\Areq_[A-Za-z0-9_-]{1,128}\z", RegexOptions.CultureInvariant)
+            ? all[0] : null;
+    }
+
     // A 429 is ambiguous without a provider machine-readable reason.
     // Read at most 8192 BYTES of error JSON, never the free-form message.
     // Only syntax-constrained machine tokens enter the 128-char FailureCode
@@ -126,13 +140,7 @@ public sealed class ConfiguredControlledAiProvider(HttpClient client, BlissRunti
     private static async Task<(string CodeSuffix, string? RequestId)> SafeRejectedImageEvidenceAsync(
         HttpResponseMessage response, CancellationToken cancellationToken)
     {
-        string? requestId = null;
-        if (response.Headers.TryGetValues("x-request-id", out var values))
-        {
-            var raw = values.FirstOrDefault();
-            if (raw is not null && Regex.IsMatch(raw, @"\Areq_[A-Za-z0-9_-]{1,128}\z", RegexOptions.CultureInvariant))
-                requestId = raw;
-        }
+        var requestId = ValidatedRequestId(response);
         if (response.Content is null || response.Content.Headers.ContentLength > 8192)
             return ("", requestId);
         try
