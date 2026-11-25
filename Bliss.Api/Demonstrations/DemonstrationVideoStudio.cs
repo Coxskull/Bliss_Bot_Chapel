@@ -8,6 +8,10 @@ namespace Bliss.Api.Demonstrations;
 public sealed class DemonstrationVideoStudio
 {
     private const string Font = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf";
+    // Decoder inputs are untrusted. Hard caps reduce resource exhaustion risk.
+    private static readonly TimeSpan MediaProcessDeadline = TimeSpan.FromSeconds(180);
+    private const int MaxOutputBytes = 64 * 1024;
+    private const int MaxErrorBytes = 32 * 1024;
 
     public static string Sha256(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
 
@@ -17,6 +21,7 @@ public sealed class DemonstrationVideoStudio
             "ffprobe",
             [
                 "-v", "error",
+                "-protocol_whitelist", "file,pipe",
                 "-show_entries", "format=duration",
                 "-of", "default=nw=1:nk=1",
                 path
@@ -33,7 +38,8 @@ public sealed class DemonstrationVideoStudio
         var captured = await RunCaptureAsync(
             "ffmpeg",
             [
-                "-y", "-ss", "0.4", "-i", path,
+                "-nostdin", "-loglevel", "error", "-y", "-ss", "0.4",
+                "-protocol_whitelist", "file,pipe", "-i", path,
                 "-frames:v", "1",
                 "-vf", "scale=8:8,format=gray",
                 "-f", "rawvideo",
@@ -63,7 +69,7 @@ public sealed class DemonstrationVideoStudio
         await RunAsync(
             "ffmpeg",
             [
-                "-y",
+                "-nostdin", "-loglevel", "error", "-y",
                 "-f", "lavfi", "-i", $"color=c=0x10233F:s=1280x720:d={seconds}",
                 "-filter_complex", filter,
                 "-map", "[v]",
@@ -120,7 +126,9 @@ public sealed class DemonstrationVideoStudio
         await RunAsync(
             "ffmpeg",
             [
-                "-y", "-i", sourcePath, "-i", qrPath,
+                "-nostdin", "-loglevel", "error", "-y",
+                "-protocol_whitelist", "file,pipe", "-i", sourcePath,
+                "-protocol_whitelist", "file,pipe", "-i", qrPath,
                 "-filter_complex", filter,
                 "-map", "[out]",
                 "-an",
@@ -149,38 +157,65 @@ public sealed class DemonstrationVideoStudio
         CancellationToken cancellationToken)
     {
         using var process = new Process();
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(MediaProcessDeadline);
         process.StartInfo.FileName = fileName;
         process.StartInfo.UseShellExecute = false;
         process.StartInfo.RedirectStandardError = true;
         process.StartInfo.RedirectStandardOutput = true;
+        var started = false;
         foreach (var arg in args)
         {
             process.StartInfo.ArgumentList.Add(arg);
         }
 
-        process.Start();
-        var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
-        byte[] bytes = [];
-        string text = string.Empty;
-        if (captureBinary)
+        try
         {
-            using var memory = new MemoryStream();
-            await process.StandardOutput.BaseStream.CopyToAsync(memory, cancellationToken);
-            bytes = memory.ToArray();
-        }
-        else
-        {
-            text = await process.StandardOutput.ReadToEndAsync(cancellationToken);
-        }
+            process.Start();
+            started = true;
+            // Concurrent limited pipe draining prevents a decoder from growing
+            // application memory without bounds or blocking on a full stderr.
+            var stderrTask = ReadBoundedAsync(process.StandardError.BaseStream, MaxErrorBytes, deadline.Token);
+            var stdoutTask = ReadBoundedAsync(process.StandardOutput.BaseStream, MaxOutputBytes, deadline.Token);
+            await Task.WhenAll(stderrTask, stdoutTask, process.WaitForExitAsync(deadline.Token));
+            var stderr = System.Text.Encoding.UTF8.GetString(await stderrTask);
+            if (process.ExitCode != 0)
+                throw new InvalidOperationException(fileName + " failed: " + Trim(stderr));
 
-        await process.WaitForExitAsync(cancellationToken);
-        var stderr = await stderrTask;
-        if (process.ExitCode != 0)
-        {
-            throw new InvalidOperationException(fileName + " failed: " + Trim(stderr));
+            var output = await stdoutTask;
+            var text = captureBinary ? string.Empty : System.Text.Encoding.UTF8.GetString(output);
+            return new CapturedProcess(process.ExitCode, string.IsNullOrWhiteSpace(text) ? stderr : text,
+                captureBinary ? output : []);
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new InvalidOperationException("Media processing exceeded its execution deadline.");
+        }
+        finally
+        {
+            if (started && !process.HasExited)
+            {
+                // WaitForExitAsync cancellation does not stop the child process.
+                try { process.Kill(entireProcessTree: true); }
+                catch (InvalidOperationException) { /* exited concurrently */ }
+                await process.WaitForExitAsync(CancellationToken.None);
+            }
+        }
+    }
 
-        return new CapturedProcess(process.ExitCode, string.IsNullOrWhiteSpace(text) ? stderr : text, bytes);
+    private static async Task<byte[]> ReadBoundedAsync(Stream stream, int limit, CancellationToken token)
+    {
+        using var output = new MemoryStream();
+        var buffer = new byte[8192];
+        while (true)
+        {
+            var read = await stream.ReadAsync(buffer.AsMemory(), token);
+            if (read == 0) break;
+            if (output.Length + read > limit)
+                throw new InvalidOperationException("Media processing output exceeded its safety limit.");
+            output.Write(buffer, 0, read);
+        }
+        return output.ToArray();
     }
 
     private static string Trim(string value) =>
