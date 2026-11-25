@@ -85,6 +85,7 @@
   registration.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (!creatorReady || !configuration || configuration.creatorRegistrationEnabled !== true || !session?.isAuthenticated || !session.csrfToken) return;
+    profileButton.disabled = true;
     registrationResult.textContent = "Submitting creator registration…";
     const payload = {
       requestKey, displayName: registration.elements.displayName.value.trim(),
@@ -97,13 +98,36 @@
       privacyNoticeVersion: privacyVersion, termsVersion
     };
     try {
+      // Refresh the same-origin antiforgery session immediately before a write.
+      const latest = await fetch("/api/auth/session", { credentials: "same-origin", cache: "no-store" });
+      session = latest.ok ? await latest.json() : null;
+      if (!session?.isAuthenticated || !session.csrfToken) {
+        creatorReady = false;
+        accessSignin.hidden = false;
+        throw new Error("Your sign-in session has expired. Sign in again before submitting.");
+      }
       const response = await fetch("/api/creators/register", {
         method: "POST", credentials: "same-origin", headers: {
           "Content-Type": "application/json", "RequestVerificationToken": session.csrfToken
         }, body: JSON.stringify(payload)
       });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(response.status === 409 ? "This sign-in or request already has a creator registration." : "Registration was rejected. Check required consent and details.");
+      if (!response.ok) {
+        const safeErrors = new Map([
+          ["CSRF validation failed. Refresh the session and retry.", "Your security session changed. Refresh this page, sign in if needed, and submit again."],
+          ["Privacy notice, terms, and processing consent must be accepted explicitly.", "Accept the current privacy notice and registration terms before submitting."],
+          ["Creator name, country code, or primary language is invalid.", "Check your display name, two-letter country code, primary language, and full HTTPS channel URL."]
+        ]);
+        if (response.status === 400) throw new Error(safeErrors.get(body.error) || "The registration details were rejected. Check the full HTTPS channel URL, required fields and consent.");
+        if (response.status === 401 || response.status === 403) {
+          creatorReady = false;
+          accessSignin.hidden = false;
+          throw new Error("Your current sign-in is not authorized for creator registration. Use creator sign-in.");
+        }
+        if (response.status === 409) throw new Error("This sign-in or request already has a creator registration. Reload to view its status.");
+        if (response.status === 429) throw new Error("Too many requests. Please try again later.");
+        throw new Error("Registration is temporarily unavailable. Your submission has not been confirmed.");
+      }
       registration.reset();
       creatorReady = false;
       profileButton.disabled = true;
@@ -112,6 +136,7 @@
       requestKey = randomKey();
       sessionStorage.setItem(requestKeyStorage, requestKey);
     } catch (error) { registrationResult.textContent = error.message || "Registration could not be completed."; }
+    finally { profileButton.disabled = !creatorReady; }
   });
   initialize();
 })();
