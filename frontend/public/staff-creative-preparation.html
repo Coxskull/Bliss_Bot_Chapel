@@ -31,5 +31,12 @@
 <label for="headline">Headline</label><input id="headline" maxlength="256">
 <label for="cta">Call to action</label><input id="cta" maxlength="128">
 <button type="button" id="save" disabled>Save recipe</button></section>
+<section id="image-reservation" hidden><h2>One image pilot reservation</h2>
+<p>Review the advertiser's current AI provider consent and available budget. Reservation does not authorize dispatch, payment collection or customer delivery.</p>
+<button type="button" id="image-review">Check consent and budget</button>
+<p id="image-readiness" role="status"></p>
+<label><input type="checkbox" id="image-budget-approved"> I authorize the displayed pilot budget reservation for this exact recipe.</label>
+<button type="button" id="image-reserve" disabled>Reserve one image run</button>
+<pre id="image-receipt"></pre></section>
 <section aria-live="polite"><h2>Preparation result</h2><p id="result">No preparation requested.</p></section>
 </section><script src="/staff-creative-preparation.js" defer></script></main></body></html>

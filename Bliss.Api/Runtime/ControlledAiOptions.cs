@@ -50,6 +50,10 @@ public sealed class ControlledAiOptions
 
 public sealed class RestrictedImageRunOptions
 {
+    // Separate explicit owner-authorized dispatch and external billing reconciliation.
+    // Setting a pin or reserving a run alone never starts an image worker.
+    public bool DispatchRequested { get; set; }
+    public bool ExternalBillingReconciled { get; set; }
     public Guid RunId { get; set; }
     public Guid WorkspaceId { get; set; }
     public Guid BriefId { get; set; }

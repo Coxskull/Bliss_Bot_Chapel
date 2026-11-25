@@ -65,7 +65,7 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         .Where(x => x.RunId == run).OrderBy(x => x.CreatedAt).ToListAsync(ct);
 
     public async Task<(ControlledAiRun Run, bool Replay)> Submit(WeddingPlannerWorkspaceResult workspace, SubmitAiRun request,
-        string actorType, string actorLabel, string? requestId, CancellationToken ct)
+        string actorType, string actorLabel, string? requestId, CancellationToken ct, Guid? campaignConsentReceiptId = null)
     {
         var kind = (request.Kind ?? "").Trim().ToUpperInvariant(); var prompt = (request.Prompt ?? "").Trim();
         var key = (request.IdempotencyKey ?? "").Trim();
@@ -86,7 +86,14 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         if (request.PreviousRunId.HasValue && previous is null) throw new WeddingPlannerNotFoundException("Previous suggestion was not found in this session.");
         var brief = kind == "IMAGE" ? await db.AcademyProductionBriefs.AsNoTracking().SingleOrDefaultAsync(x => x.Id == request.BriefId && x.WorkspaceId == workspace.WorkspaceId, ct) : null;
         if (kind == "IMAGE" && brief is null) throw new WeddingPlannerNotFoundException("Production brief was not found.");
-        var fingerprint = Hash(Serialize(new { kind, request.SessionId, request.BriefId, request.PreviousRunId, prompt, consent = true }));
+        var campaignImage = key.StartsWith(CampaignImageAuthorization.KeyPrefix, StringComparison.Ordinal);
+        if (campaignImage != campaignConsentReceiptId.HasValue || (campaignImage && (kind != "IMAGE" || brief is null
+            || key != CampaignImageAuthorization.RunKey(brief.Id) || actorType != "OPERATOR"
+            || campaignConsentReceiptId == Guid.Empty || !RestrictedCampaignPilotConfigured)))
+            throw new InvalidOperationException("Exact staff campaign image reservation required.");
+        var fingerprint = campaignImage
+            ? Hash(Serialize(new { kind, request.BriefId, consentReceiptId = campaignConsentReceiptId }))
+            : Hash(Serialize(new { kind, request.SessionId, request.BriefId, request.PreviousRunId, prompt, consent = true }));
         async Task<ControlledAiRun?> Replay() => await db.ControlledAiRuns.AsNoTracking().SingleOrDefaultAsync(x => x.WorkspaceId == workspace.WorkspaceId && x.IdempotencyKey == key, ct);
         var existing = await Replay();
         if (existing is not null) { Same(existing.RequestSha256, fingerprint); return (existing, true); }
@@ -98,6 +105,10 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
             brand.BrandName, brand.Niche, brand.Market, brand.Language, brand.Colors, brand.Font, brand.Goals, brand.Restrictions,
             previousReply = previous?.OutputText }) : Serialize(new { briefId = brief!.Id, recipeSha256 = brief.RecipeSha256,
                 productionRecipe = savedBrief!.RootElement.GetProperty("generationRecipe").GetString() });
+        if (campaignImage)
+            snapshot = Serialize(new { briefId = brief!.Id, recipeSha256 = brief.RecipeSha256,
+                productionRecipe = savedBrief!.RootElement.GetProperty("generationRecipe").GetString(),
+                consentReceiptId = campaignConsentReceiptId });
         if (snapshot.Length > 24000) throw new InvalidOperationException("Selected context exceeds the worker input limit.");
         var reserve = kind == "TEXT" ? Options.TextReservationUsd : Options.ImageReservationUsd;
         if (decimal.Round(reserve, 6) != reserve) throw new InvalidOperationException("Configure reservation amounts to at most six decimal places.");
@@ -105,6 +116,13 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         try
         {
             if (db.Database.IsRelational()) tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            if (campaignImage)
+            {
+                var currentGrant = await CampaignImageAuthorization.Current(db, workspace.WorkspaceId, brief!.Id, ct);
+                if (currentGrant is null || currentGrant.ReceiptId != campaignConsentReceiptId
+                    || CampaignImageAuthorization.ProviderInput(snapshot, currentGrant) is null)
+                    throw new WeddingPlannerConflictException("Current advertiser provider consent is required.");
+            }
             if (await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", ct)
                 || (Options.ImagePilotEnabled && (await db.ControlledAiRuns.AsNoTracking()
                     .Where(x => x.Kind == "IMAGE" && x.Model == "gpt-image-2.5-flare")
@@ -163,6 +181,11 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         catch (Exception ex) when (ReservationConflict(ex)) { throw new WeddingPlannerConflictException("Run state changed. Refresh before cancelling."); }
         return run;
     }
+    public bool RestrictedCampaignPilotConfigured => runtime.RestrictedPreview && runtime.PublicAdvertiserRegistrationOnly
+        && Options.ImagePilotEnabled && Options.Protocol == "OpenAI" && Options.Configured("IMAGE")
+        && Options.Provider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase)
+        && Options.ImageModel == Bliss.Api.Controllers.AdvertiserCampaignDraftsController.ProviderConsentModel
+        && Options.MaxCallsPerDay == 1 && Options.TotalBudgetUsd <= 18m && Options.DailyBudgetUsd <= 1.80m;
     // In restricted mode never select from the global queue, even if RunOne is called manually.
     public IQueryable<ControlledAiRun> WorkerCandidates()
     {
@@ -182,6 +205,9 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
 
     public async Task<bool> RunOne(CancellationToken stopping)
     {
+        if (runtime.RestrictedPreview && (!RestrictedCampaignPilotConfigured
+            || !Options.RestrictedImageRun.DispatchRequested || !Options.RestrictedImageRun.ExternalBillingReconciled))
+            return false;
         var now = DateTime.UtcNow;
         var expired = await WorkerCandidates().FirstOrDefaultAsync(x => (x.Status == "RUNNING" || x.Status == "CANCEL_REQUESTED") && x.DeadlineAt < now, stopping);
         if (expired is not null)
@@ -203,7 +229,16 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
             || (Options.ImagePilotEnabled && (await db.ControlledAiRuns.AsNoTracking()
                 .Where(x => x.Id != run.Id && x.Kind == "IMAGE" && x.Model == "gpt-image-2.5-flare")
                 .ToListAsync(stopping)).Any(PilotUnknownCharge));
-        if (billingAnomaly) { status = "FAILED"; failure = "BILLING_RECONCILIATION_REQUIRED"; }
+        string? providerInput = run.InputSnapshotJson;
+        if (runtime.RestrictedPreview || run.IdempotencyKey.StartsWith(CampaignImageAuthorization.KeyPrefix, StringComparison.Ordinal))
+        {
+            var grant = run.Kind == "IMAGE" && run.BriefId.HasValue
+                && run.IdempotencyKey == CampaignImageAuthorization.RunKey(run.BriefId.Value)
+                ? await CampaignImageAuthorization.Current(db, run.WorkspaceId, run.BriefId.Value, stopping) : null;
+            providerInput = grant is null ? null : CampaignImageAuthorization.ProviderInput(run.InputSnapshotJson, grant);
+        }
+        if (providerInput is null) { status = "FAILED"; failure = "CAMPAIGN_PROVIDER_CONSENT_REQUIRED"; }
+        else if (billingAnomaly) { status = "FAILED"; failure = "BILLING_RECONCILIATION_REQUIRED"; }
         else if (!Ready(run.Kind) || run.ExecutionConfigSha256 != ConfigHash(run.Kind)
             || (runtime.RestrictedPreview && Hash(run.InputSnapshotJson) != run.InputSha256)) { status = "FAILED"; failure = "EXECUTION_CONFIG_CHANGED"; }
         else
@@ -221,7 +256,7 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
             var monitor = Monitor();
             try
             {
-                result = await provider.ExecuteAsync(new AiProviderRequest(run.Id, run.Kind, run.Model, run.InputSnapshotJson, Options.MaxOutputTokens), timeout.Token).WaitAsync(timeout.Token);
+                result = await provider.ExecuteAsync(new AiProviderRequest(run.Id, run.Kind, run.Model, providerInput, Options.MaxOutputTokens), timeout.Token).WaitAsync(timeout.Token);
                 if (run.Kind == "TEXT" && (string.IsNullOrWhiteSpace(result.Text) || result.Text.Length > 8000)) throw new AiProviderException("INVALID_TEXT_OUTPUT");
                 if (run.Kind == "IMAGE")
                 {

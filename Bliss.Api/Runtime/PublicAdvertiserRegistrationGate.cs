@@ -67,7 +67,8 @@ public static class PublicAdvertiserRegistrationGate
         if (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
             && string.Equals(value, "/api/advertisers/operator-review/starter-receipts", StringComparison.OrdinalIgnoreCase)) return true;
         if (staffCreativePreparationEnabled && string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase)
-            && string.Equals(value, "/api/internal/creative-preparation", StringComparison.OrdinalIgnoreCase)) return true;
+            && (string.Equals(value, "/api/internal/creative-preparation", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "/api/internal/creative-image-reservation", StringComparison.OrdinalIgnoreCase))) return true;
         if (staffCreativeReadinessEnabled && string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
             && string.Equals(value, "/api/internal/creative-readiness", StringComparison.OrdinalIgnoreCase)) return true;
         // Static staff console contains no customer data; APIs still enforce issuer-bound staff.

@@ -10,6 +10,9 @@
   const brandKeys = ["brandName","niche","market","language","colors","font","goals","restrictions"];
   const brandInputs = ["name","niche","market","language","colors","font","goals","restrictions"].map(k=>el("brand-"+k));
   const readBrand = () => Object.fromEntries(brandKeys.map((k,i)=>[k,brandInputs[i].value.trim()]));
+  const imagePanel = el("image-reservation"), imageReview = el("image-review"), imageReserve = el("image-reserve"),
+    budgetApproval = el("image-budget-approved");
+  let imageTarget = null, imageGrant = null;
   let manifest = null, brand = null, brandState = null, pendingBrand = null, busy = false, epoch = 0;
   const unchanged = () => brandState && JSON.stringify(readBrand()) === JSON.stringify(brandState.fields);
   const get = path => fetch(path,{credentials:"same-origin",cache:"no-store",headers:{"Accept":"application/json"}});
@@ -35,9 +38,13 @@
       || (brandState.version > 0 && unchanged());
     confirmButton.disabled = busy || !manifest || !review.checked || approval.disabled || !approval.checked;
     if (!unchanged()) save.disabled = true;
+    imageReview.disabled = busy || !imageTarget || !unchanged() || !review.checked;
+    budgetApproval.disabled = busy || !imageGrant;
+    imageReserve.disabled = busy || !imageTarget || !imageGrant || !budgetApproval.checked || !unchanged() || !review.checked;
   }
   function reset() {
     manifest = brand = brandState = pendingBrand = null; review.checked = approval.checked = false;
+    clearImage(null);
     brandPanel.hidden = true; brandInputs.forEach(f=>f.value=""); el("brand-status").textContent="";
     summary.hidden = recipe.hidden = true; fields.forEach(f => f.value = "");
     ["campaign-name","campaign-id","brief"].forEach(id => el(id).textContent = "");
@@ -107,6 +114,8 @@
       el("brand-status").textContent = "Brand status: " + result.brandStatus + " | Revision " + result.brandVersion;
       brand = result.brandStatus === "CONFIRMED" && uuid.test(result.brandDnaId) ? result.brandDnaId : null;
       recipe.hidden = !brand;
+      clearImage(brand && uuid.test(result.productionBriefId) && hex.test(result.recipeSha256)
+        ? {workspaceId:result.workspaceId,briefId:result.productionBriefId} : null);
       el("result").textContent = "Workspace: " + result.workspaceId + " | Brand: " + result.brandStatus
         + (withRecipe ? " | Recipe: " + result.productionBriefId + " | SHA-256: " + result.recipeSha256 : "")
         + " | Release HELD; no provider call or delivery.";
@@ -114,6 +123,43 @@
     } catch(e) { status.textContent = e.message; }
     finally { busy = false; sync(); }
   }
+  function clearImage(target) {
+    imageTarget = target; imageGrant = null; imagePanel.hidden = !target;
+    budgetApproval.checked = false; el("image-readiness").textContent = ""; el("image-receipt").textContent = "";
+  }
+  async function imageAction(action) {
+    if (!imageTarget || !manifest || !review.checked || busy || (action==="RESERVE" && imageReserve.disabled)) return;
+    const current = epoch; busy = true; sync();
+    try {
+      const csrf = await session();
+      const payload = {...manifest,...imageTarget,action};
+      if (action==="RESERVE") Object.assign(payload,{consentReceiptId:imageGrant,operatorBudgetApproved:true});
+      const response = await fetch("/api/internal/creative-image-reservation",{method:"POST",credentials:"same-origin",cache:"no-store",
+        headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify(payload)});
+      if (current !== epoch) return;
+      if (!response.ok) throw Error("Reservation unavailable (HTTP "+response.status+"). Check advertiser consent, pilot budget and billing status.");
+      const result = await response.json();
+      if (result.dispatchAuthorized !== false || result.release !== "HELD" || result.delivery !== "NOT_SENT")
+        throw Error("Unexpected reservation response.");
+      imageGrant = null; budgetApproval.checked = false;
+      if (uuid.test(result.runId)) {
+        if (result.workspaceId !== imageTarget.workspaceId || result.briefId !== imageTarget.briefId || !hex.test(result.inputSha256))
+          throw Error("Run receipt does not match this recipe.");
+        el("image-receipt").textContent = JSON.stringify(result,null,2);
+        el("image-readiness").textContent = "Existing image run: "+result.status+". No additional dispatch authorized.";
+      } else {
+        if (result.campaignId !== manifest.campaignId || !uuid.test(result.consentReceiptId)) throw Error("Consent receipt could not be verified.");
+        const ready = result.imagePilotConfigured === true && result.readiness?.imageReady === true;
+        if (ready) imageGrant = result.consentReceiptId;
+        el("image-readiness").textContent = ready ? "Consent current. Reserve USD "+result.readiness.imageReservationUsd+" for one image."
+          : "Consent recorded, but budget or provider configuration is not ready.";
+      }
+    } catch(e) { imageGrant=null;budgetApproval.checked=false;el("image-readiness").textContent=e.message; }
+    finally {busy=false;sync();}
+  }
+  imageReview.addEventListener("click",()=>imageAction("REVIEW"));
+  imageReserve.addEventListener("click",()=>imageAction("RESERVE"));
+  budgetApproval.addEventListener("change",sync);
   review.addEventListener("change",sync); fields.forEach(f=>f.addEventListener("input",sync));
   prepare.addEventListener("click",()=>submit("workspace")); save.addEventListener("click",()=>submit("recipe"));
   brandInputs.forEach(f=>f.addEventListener("input",()=>{approval.checked=false;sync();}));

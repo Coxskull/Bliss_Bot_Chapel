@@ -115,6 +115,15 @@ public sealed class StaffCreativePreparationController(
                 productionBriefId = result.Row.Id;
                 recipeSha256 = result.Row.RecipeSha256;
             }
+            if (!saveRecipe && brand?.Status == "CONFIRMED")
+            {
+                var existingKey = "campaign:" + draft.Id.ToString("N") + ":" + request.BriefSha256;
+                var existingRecipe = await db.AcademyProductionBriefs.AsNoTracking()
+                    .Where(x => x.WorkspaceId == workspace.WorkspaceId && x.IdempotencyKey == existingKey && x.BrandDnaId == brand.Id)
+                    .Select(x => new { x.Id, x.RecipeSha256 }).SingleOrDefaultAsync(ct);
+                productionBriefId = existingRecipe?.Id;
+                recipeSha256 = existingRecipe?.RecipeSha256;
+            }
             return Ok(new { campaignId = draft.Id, briefSha256 = request.BriefSha256,
                 workspaceId = workspace.WorkspaceId, brandDnaId = brand?.Id,
                 brandStatus = brand?.Status ?? "NOT_PREPARED", productionBriefId, recipeSha256,
