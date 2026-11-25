@@ -34,6 +34,20 @@ public sealed class StaffCreativeReadinessTests
     }
 
     [Fact]
+    public void Preparation_is_separate_exact_post_only()
+    {
+        var path = new PathString("/api/internal/creative-preparation");
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("POST", path, staffCreativeReadinessEnabled: true));
+        Assert.True(PublicAdvertiserRegistrationGate.IsAllowed("POST", path, staffCreativeReadinessEnabled: true, staffCreativePreparationEnabled: true));
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("GET", path, staffCreativePreparationEnabled: true));
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("POST", new PathString("/api/internal/creative-preparation/other"), staffCreativePreparationEnabled: true));
+        var id = Guid.Parse("f63c329c-d45d-421b-a3f5-a02b0f842ccb");
+        var digest = StaffCreativePreparationController.CampaignDigest(id, "Campaign", "Brief");
+        Assert.Equal(Bliss.Api.Operations.ControlledAiService.Hash(id.ToString("D") + "\nCampaign\nBrief"), digest);
+        Assert.NotEqual(digest, StaffCreativePreparationController.CampaignDigest(id, "Campaign", "Changed"));
+    }
+
+    [Fact]
     public void Only_approved_issuer_staff_can_read()
     {
         var auth = Options();
