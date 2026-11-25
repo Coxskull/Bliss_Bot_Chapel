@@ -51,6 +51,8 @@ async function go(){
    assert.equal(inv[String(count)].slots.length,count);
    assert.equal(inv[String(count)].campaignReady,false);
    assert.equal(inv[String(count)].delivery,"NOT_SENT");
+   const layout=inv[String(count)],p=layout.protectedCreatorArea;
+   assert.equal(layout.slots.reduce((sum,s)=>sum+s.width*s.height,0)+p.width*p.height,1920*1080);
    await page.locator("#layout").selectOption(String(count));
    await page.waitForFunction(expected=>document.querySelector("#stage").dataset.configuration===expected,String(count));
    const downloadPromise=page.waitForEvent("download");
@@ -65,9 +67,15 @@ async function go(){
    assert(png.length>10000);
    console.log("ALPHA_FICTIONAL_PNG_PASS",JSON.stringify({slots:count,width:1920,height:1080,bytes:png.length,sha256:createHash("sha256").update(png).digest("hex"),delivery:"NOT_SENT"}));
   }
+  await page.locator("#play").click();
+  assert.equal(await page.locator("#webm").isDisabled(),true);
+  await page.locator("#play").click();
+  assert.equal(await page.locator("#webm").isDisabled(),false);
   await page.locator("#layout").selectOption("cycle");
   const videoPromise=page.waitForEvent("download",{timeout:25000});
   await page.locator("#webm").click();
+  assert.equal(await page.locator("#play").isDisabled(),true);
+  assert.equal(await page.locator("#layout").isDisabled(),true);
   const videoDownload=await videoPromise;
   const videoFile=path.join(output,"ALPHA-FICTIONAL-2-4-6.webm");
   await videoDownload.saveAs(videoFile);

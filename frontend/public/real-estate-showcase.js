@@ -43,6 +43,8 @@
       if (slot[1] < 0 || slot[2] < 0 || slot[3] < 1 || slot[4] < 1 || slot[1] + slot[3] > W || slot[2] + slot[4] > H) throw Error("Invalid slot geometry");
       if (overlaps(slot, p) || layout.slots.some((next, j) => j !== i && overlaps(slot, next))) throw Error("Slots overlap protected content or each other");
     });
+    const area=p[3]*p[4]+layout.slots.reduce((sum,s)=>sum+s[3]*s[4],0);
+    if(area!==W*H)throw Error("Advertising and protected content must partition the full canvas");
     return true;
   }
   Object.values(fixtures).forEach(check);
@@ -66,6 +68,13 @@
       }
     }
     return images;
+  }
+  function fitText(ctx,value,x,y,maxWidth,weight,initial,minimum) {
+    for(let size=initial;size>=minimum;size--){
+      ctx.font=weight+" "+size+"px system-ui,sans-serif";
+      if(ctx.measureText(value).width<=maxWidth){ctx.fillText(value,x,y);return;}
+    }
+    throw Error("Fictional panel text does not fit");
   }
   function draw(ctx, id, images, seconds) {
     const layout = fixtures[id];
@@ -106,26 +115,36 @@
       if (img) { // Contain original artwork: never stretch or crop a landscape banner into a narrow vertical slot.
         const ratio=Math.min(w/img.width,h/img.height);
         const iw=img.width*ratio,ih=img.height*ratio;
-        ctx.globalAlpha=.35;ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);ctx.globalAlpha=1;
+        ctx.globalAlpha=.22;ctx.filter="blur(12px)";ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);ctx.filter="none";ctx.globalAlpha=1;
       }
       const panel=ctx.createLinearGradient(x,y,x+w,y);panel.addColorStop(0,"rgba(0,0,0,.55)");panel.addColorStop(1,"rgba(0,0,0,.04)");ctx.fillStyle=panel;ctx.fillRect(x,y,w,h);
       const side=w<350;
       ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillStyle="#FFFFFF";ctx.shadowColor="#06142A";ctx.shadowBlur=9;
-      ctx.font=`800 ${side?34:55}px system-ui,sans-serif`;ctx.fillText(brand,x+24,y+(side?95:h*.37),w-48);
-      ctx.font=`600 ${side?19:30}px system-ui,sans-serif`;ctx.fillText(category,x+24,y+(side?142:h*.63),w-48);
-      ctx.shadowBlur=0;ctx.strokeStyle="rgba(255,255,255,.86)";ctx.lineWidth=4;ctx.strokeRect(x+2,y+2,w-4,h-4);
+      fitText(ctx,brand,x+24,y+(side?95:h*.30),w-48,800,side?34:46,16);
+      fitText(ctx,category,x+24,y+(side?142:h*.58),w-48,600,side?19:26,13);
+      ctx.shadowBlur=0;ctx.fillStyle="#FFFFFF";
+      fitText(ctx,"FICTIONAL DEMO · NOT SENT",x+24,y+h-28,w-48,700,side?13:16,10);
       ctx.restore();
     });
-    // The label stays inside the protected presentation area, never on a paid slot.
-    ctx.fillStyle="rgba(0,9,18,.85)";ctx.fillRect(px,py+ph-42,pw,42);
-    ctx.fillStyle="#FFE4A7";ctx.font="700 19px system-ui,sans-serif";ctx.textAlign="center";
-    ctx.fillText(`${id} RECTANGLES • FICTIONAL DEMO • CREATOR PERMISSION UNVERIFIED • NOT SENT`, px+pw/2,py+ph-15,pw-20);
+    // A single divider is painted on each shared advertiser boundary, never in the protected program.
+    ctx.fillStyle="rgba(255,255,255,.86)";
+    for(let i=0;i<layout.slots.length;i++)for(let j=i+1;j<layout.slots.length;j++){
+      const a=layout.slots[i],b=layout.slots[j];
+      const top=Math.max(a[2],b[2]),bottom=Math.min(a[2]+a[4],b[2]+b[4]);
+      const left=Math.max(a[1],b[1]),right=Math.min(a[1]+a[3],b[1]+b[3]);
+      if(bottom>top&&(a[1]+a[3]===b[1]||b[1]+b[3]===a[1])){
+        const edge=Math.max(a[1],b[1]);ctx.fillRect(edge-2,top,4,bottom-top);
+      }
+      if(right>left&&(a[2]+a[4]===b[2]||b[2]+b[4]===a[2])){
+        const edge=Math.max(a[2],b[2]);ctx.fillRect(left,edge-2,right-left,4);
+      }
+    }
   }
   function start(canvas, images, selected) {
     if (!canvas || canvas.tagName !== "CANVAS") throw Error("Canvas required");
     canvas.width=W;canvas.height=H;
     const ctx=canvas.getContext("2d",{alpha:false});if(!ctx)throw Error("Canvas unavailable");
-    let enabled=true, fixed=selected==="cycle"?null:String(selected), startTime=performance.now(), timer=0;
+    let enabled=true, recording=false, fixed=selected==="cycle"?null:String(selected), startTime=performance.now(), timer=0;
     const keys=["2","4","6"];
     function frame() {
       if(!enabled)return;
@@ -141,17 +160,25 @@
       stop(){enabled=false;cancelAnimationFrame(timer);},
       capture(){return new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error("Capture failed")),"image/png"));},
       async record(milliseconds=9400){
+        if(!enabled||recording)throw Error("Resume playback before recording; only one recording at a time");
         if(typeof MediaRecorder!=="function"||typeof canvas.captureStream!=="function")throw Error("WebM capture unsupported by this browser");
-        const prior=fixed;fixed=null;startTime=performance.now();
-        const stream=canvas.captureStream(15);
-        const type=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")?"video/webm;codecs=vp9":"video/webm";
-        const recorder=new MediaRecorder(stream,{mimeType:type});const parts=[];
-        return new Promise((resolve,reject)=>{
-          recorder.ondataavailable=e=>{if(e.data.size)parts.push(e.data);};
-          recorder.onerror=e=>reject(e.error||Error("Recording failed"));
-          recorder.onstop=()=>{stream.getTracks().forEach(t=>t.stop());fixed=prior;resolve(new Blob(parts,{type}));};
-          recorder.start();setTimeout(()=>{if(recorder.state!=="inactive")recorder.stop();},Math.min(Math.max(milliseconds,500),15000));
-        });
+        const prior=fixed;let stream,recorder,timeout;
+        recording=true;fixed=null;startTime=performance.now();
+        try {
+          stream=canvas.captureStream(15);
+          const type=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")?"video/webm;codecs=vp9":"video/webm";
+          recorder=new MediaRecorder(stream,{mimeType:type});const parts=[];
+          return await new Promise((resolve,reject)=>{
+            recorder.ondataavailable=e=>{if(e.data.size)parts.push(e.data);};
+            recorder.onerror=e=>reject(e.error||Error("Recording failed"));
+            recorder.onstop=()=>{const blob=new Blob(parts,{type});blob.size?resolve(blob):reject(Error("Empty recording"));};
+            recorder.start();timeout=setTimeout(()=>{if(recorder.state!=="inactive")recorder.stop();},Math.min(Math.max(milliseconds,500),15000));
+          });
+        } finally {
+          clearTimeout(timeout);
+          if(recorder&&recorder.state!=="inactive")try{recorder.stop();}catch{}
+          stream?.getTracks().forEach(t=>t.stop());fixed=prior;startTime=performance.now();recording=false;
+        }
       }
     };
   }
