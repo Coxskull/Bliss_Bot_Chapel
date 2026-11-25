@@ -2,6 +2,7 @@
 // Node 20+: node scripts/alpha-build-creative-desk.mjs alpha-creative-desk.html
 import { writeFile } from "node:fs/promises";
 import { renderPack } from "./alpha-manual-creative-export.mjs";
+import { buildDeskManifest, buildDeskReview } from "./alpha-creative-desk-manifest.mjs";
 
 function desk() {
   const byId=id=>document.getElementById(id);
@@ -57,6 +58,7 @@ function desk() {
   function clear(){
     ++generation;
     byId("results").replaceChildren();
+    byId("pack-controls").replaceChildren();
     for(const url of previews)URL.revokeObjectURL(url);
     previews=[];
     byId("status").textContent="Generate drafts after editing.";
@@ -74,6 +76,9 @@ function desk() {
       const [photo,logo]=await Promise.all([localRaster(form.get("productPhoto")),localRaster(form.get("brandLogo"))]);
       if(token!==generation)return;
       const pack=base.map(asset=>withAssets(asset,photo,logo));
+      const manifest=await buildDeskManifest(pack);
+      if(token!==generation)return;
+      const manifestText=JSON.stringify(manifest,null,2)+"\n";
       for(const asset of pack){
         const card=document.createElement("article");
         const heading=document.createElement("h2");heading.textContent=asset.name.replace(".svg","")+" · "+asset.width+" × "+asset.height;
@@ -91,7 +96,29 @@ function desk() {
         });
         card.append(heading,image,svgButton,pngButton);byId("results").append(card);
       }
-      byId("status").textContent="3 drafts ready. Review the wording and layout before use.";
+      const controls=byId("pack-controls");
+      const hint=document.createElement("p");
+      hint.textContent="Save all three SVG files and manifest.json in one private folder for Factory campaign binding. PNG downloads are optional previews, not part of this manifest.";
+      const download=document.createElement("button");download.type="button";download.textContent="Download Factory manifest";
+      download.addEventListener("click",()=>save(new Blob([manifestText],{type:"application/json"}),"manifest.json"));
+      const reviewLabel=document.createElement("label");reviewLabel.textContent="Local review (not approval)";
+      const decision=document.createElement("select");
+      for(const [value,label] of [["","Choose after reviewing drafts"],["REVISIONS_REQUESTED","Revisions requested"],["REVIEWED_LOCALLY","Reviewed locally — still held"]]){
+        const option=document.createElement("option");option.value=value;option.textContent=label;decision.append(option);
+      }
+      reviewLabel.append(decision);
+      const review=document.createElement("button");review.type="button";review.textContent="Download held review record";review.disabled=true;
+      decision.addEventListener("change",()=>{review.disabled=!decision.value;});
+      review.addEventListener("click",async()=>{
+        const selected=decision.value;review.disabled=true;
+        try{
+          const record=await buildDeskReview(manifestText,selected);
+          if(token===generation&&selected===decision.value)save(new Blob([JSON.stringify(record,null,2)+"\n"],{type:"application/json"}),"local-review.json");
+        }catch(error){if(token===generation)byId("status").textContent=error.message;}
+        finally{if(token===generation)review.disabled=!decision.value;}
+      });
+      controls.append(hint,download,reviewLabel,review);
+      byId("status").textContent="3 drafts ready. All remain held; review wording and layout before use.";
     }catch(error){if(token===generation){clear();byId("status").textContent=error.message;}}
   });
 }
@@ -99,8 +126,8 @@ const html= `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta na
 *{box-sizing:border-box}body{font:16px system-ui,sans-serif;background:#f4f3f8;color:#1d1932;margin:0}main{max-width:1180px;margin:auto;padding:28px}h1{font-size:30px;margin:0}p{line-height:1.5}form,article{background:white;border:1px solid #dad7e5;border-radius:12px;padding:20px}form{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}label{display:grid;gap:6px;font-weight:600}input,select,textarea,button{font:inherit;border:1px solid #aaa5ba;border-radius:7px;padding:10px;max-width:100%}textarea{resize:vertical}button{background:#292553;color:white;cursor:pointer}button:disabled{opacity:.5}button:focus-visible,input:focus-visible{outline:3px solid #008e87}#results{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:14px}article{min-width:0}article h2{font-size:16px}article img{width:100%;height:280px;object-fit:contain;display:block;margin-bottom:12px}article button{margin:4px}small{font-weight:400}.wide{grid-column:1/-1}.check{display:flex;align-items:start;gap:8px}#status{min-height:28px}
 </style></head><body><main><p>ALPHA GLOBAL MEDIA · PRIVATE OPERATOR TOOL</p><h1>Creative Desk</h1><p>Generate editable, review-marked advertising drafts for three channels. No paid AI calls, uploads, customer delivery or publishing. No text is saved by this tool. Use approved brand copy and images only. Imported images stay in this browser and are embedded in downloaded files.</p>
 <form id="brief"><label>Brand<input name="brand" required maxlength="28" value="ALPHA GLOBAL MEDIA"></label><label>Headline<input name="headline" required maxlength="76" value="Your story. More impact."></label><label>Call to action<input name="cta" required maxlength="24" value="Request a proposal"></label><label>Palette<select name="palette"><option value="midnight">Midnight</option><option value="ocean">Ocean</option><option value="ember">Ember</option></select></label><label class="wide">Ad description<textarea name="description" required maxlength="104" rows="2">Plan creative campaigns around your audience.</textarea><small>English printable text; shorter copy fits all formats best.</small></label><label>Product photo (optional)<input type="file" name="productPhoto" accept="image/png,image/jpeg,image/webp"><small>PNG, JPEG, WebP; up to 10 MB.</small></label><label>Brand logo (optional)<input type="file" name="brandLogo" accept="image/png,image/jpeg,image/webp"><small>Transparent PNG recommended.</small></label><label class="wide check"><input type="checkbox" name="rightsConfirmed" required> I confirm permission to use this brand, copy and imported images.</label><button class="wide" type="submit">Generate three drafts</button></form>
-<p id="status" role="status" aria-live="polite">Complete the brief to generate drafts.</p><section id="results" aria-label="Generated draft creatives"></section></main>
-<script>${renderPack.toString()}\n(${desk.toString()})();</script></body></html>`;
+<p id="status" role="status" aria-live="polite">Complete the brief to generate drafts.</p><section id="results" aria-label="Generated draft creatives"></section><section id="pack-controls" aria-label="Private Factory pack and local review"></section></main>
+<script>${renderPack.toString()}\n${buildDeskManifest.toString()}\n${buildDeskReview.toString()}\n(${desk.toString()})();</script></body></html>`;
 if(process.argv.length!==3)throw Error("Usage: node scripts/alpha-build-creative-desk.mjs NEW_HTML_FILE");
 await writeFile(process.argv[2],html,{flag:"wx"});
 console.log("Offline creative desk exported.");
