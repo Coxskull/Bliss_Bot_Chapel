@@ -16,7 +16,8 @@ COPY --from=financial-ui /src/frontend/operations/financial-review/ ./frontend/o
 RUN --mount=type=secret,id=proxy_ca \
     if [ -f /run/secrets/proxy_ca ]; then export SSL_CERT_FILE=/run/secrets/proxy_ca; fi; \
     dotnet publish Bliss.Api/Bliss.Api.csproj -c Release -o /app/publish /p:UseAppHost=false \
-    && test -s /app/publish/frontend/operations/financial-review/index.html
+    && test -s /app/publish/frontend/operations/financial-review/index.html \
+    && sh scripts/package-academy-references.sh /src/assets/alpha-prototypes/creative-academy /app/publish/assets/alpha-prototypes/creative-academy
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
