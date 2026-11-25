@@ -19,6 +19,13 @@
 <article id="summary" hidden><h2 id="campaign-name"></h2><p id="campaign-id"></p><p id="brief"></p>
 <label><input type="checkbox" id="review"> I reviewed the actual campaign brief and confirm this exact draft.</label>
 <button type="button" id="prepare" disabled>Prepare workspace</button></article>
+<section id="starter-offer" hidden><h2>Standalone $149 service offer</h2>
+<p>Enter the actual approved deliverables, exclusions, delivery limits, cancellation/refund terms and tax treatment. This sends no payment request and cannot be overwritten.</p>
+<label for="offer-scope">Service scope</label><textarea id="offer-scope" maxlength="1000"></textarea>
+<label for="offer-terms">Paid-service terms</label><textarea id="offer-terms" maxlength="700"></textarea>
+<label><input id="offer-approved" type="checkbox"> Approved scope and paid-service terms reviewed.</label>
+<label><input id="offer-tax" type="checkbox"> Applicable tax treatment verified; USD 149 is the final agreed total.</label>
+<button type="button" id="offer-save" disabled>Issue private offer for customer acceptance</button><p id="offer-status" role="status"></p></section>
 <section id="brand-panel" hidden><h2>Advertiser brand direction</h2>
 <p>Record the advertiser's supplied brand information. Confirm only after the advertiser has explicitly approved the saved direction. This is not consent to send data to an AI provider.</p>
 <p id="brand-status"></p>

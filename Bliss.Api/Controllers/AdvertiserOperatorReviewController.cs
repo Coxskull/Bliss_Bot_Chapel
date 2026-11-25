@@ -1,3 +1,4 @@
+using Bliss.Api.Operations;
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
@@ -135,7 +136,10 @@ public sealed class AdvertiserOperatorReviewController(
                     && q.AdvertiserOpportunity != null
                 select new { QuoteId = q.Id, VersionId = v.Id,
                     AdvertiserId = q.AdvertiserOpportunity!.AdvertiserProgram.AdvertiserId }).SingleOrDefaultAsync(ct);
-            if (quote is null) return Conflict(new { error = "Current accepted USD 149 quote is not bound to the campaign." });
+            var direct=quote is null && auth.StarterServiceOfferRequested
+                ? await StarterServiceOffer.CurrentAccepted(db,request.CampaignId,request.QuoteVersionId,ct) : null;
+            if(quote is null && direct is null)return Conflict(new{error="Current accepted USD 149 quote or service offer is not bound to the campaign."});
+            if(quote is not null){
             var approval = await db.QuoteApprovalDecisions.AsNoTracking().Where(x => x.QuoteId == quote.QuoteId)
                 .OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).FirstOrDefaultAsync(ct);
             var outcome = await db.QuoteOutcomes.AsNoTracking().Where(x => x.QuoteId == quote.QuoteId)
@@ -144,13 +148,16 @@ public sealed class AdvertiserOperatorReviewController(
                 || outcome?.QuoteVersionId != quote.VersionId || outcome.Response != "ACCEPTED"
                 || outcome.Amount != 149m || !string.Equals(outcome.CurrencyCode, "USD", StringComparison.OrdinalIgnoreCase))
                 return Conflict(new { error = "Latest approval and customer acceptance of the exact quote are required." });
-            var workspace = await db.WeddingPlannerWorkspaces.AsNoTracking().Where(x => x.AdvertiserId == quote.AdvertiserId
+            }
+            var advertiserId=quote?.AdvertiserId ?? direct!.AdvertiserId;
+            var versionId=quote?.VersionId ?? direct!.VersionId;
+            var workspace = await db.WeddingPlannerWorkspaces.AsNoTracking().Where(x => x.AdvertiserId == advertiserId
                 && x.IsPrimary && x.Status == "ACTIVE").Select(x => (Guid?)x.Id).SingleOrDefaultAsync(ct);
             if (workspace is null) return Conflict(new { error = "An active primary advertiser workspace is required." });
             var active = await (from m in db.AdvertiserAccountMemberships.AsNoTracking()
                 join receipt in db.AdvertiserRegistrationReceipts.AsNoTracking()
                     on new { m.Subject, m.AdvertiserId } equals new { receipt.Subject, receipt.AdvertiserId }
-                where m.AdvertiserId == quote.AdvertiserId && m.Status == "ACTIVE"
+                where m.AdvertiserId == advertiserId && m.Status == "ACTIVE"
                     && receipt.ProcessingConsent && receipt.TermsAccepted
                     && receipt.PrivacyNoticeVersion == AdvertiserRegistrationController.PrivacyNoticeVersion
                     && receipt.TermsVersion == AdvertiserRegistrationController.TermsVersion
@@ -158,10 +165,10 @@ public sealed class AdvertiserOperatorReviewController(
             if (!active) return StatusCode(403);
             var receiptDigest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(request.CheckoutSessionId + "\n" + intentId))).ToLowerInvariant();
             var receiptKey = new Guid(Convert.FromHexString(receiptDigest[..32]));
-            var prefix = "quote:" + quote.VersionId.ToString("N") + ":";
+            var prefix = "quote:" + versionId.ToString("N") + ":";
             var detail = prefix + request.CampaignId.ToString("N") + ":" + receiptDigest;
             var prior = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x => x.Id == receiptKey, ct);
-            if (prior is not null && (prior.AdvertiserId != quote.AdvertiserId || prior.WorkspaceId != workspace
+            if (prior is not null && (prior.AdvertiserId != advertiserId || prior.WorkspaceId != workspace
                 || prior.Action != StarterReconciliationAction || prior.Detail != detail || prior.Outcome != "RECONCILED"))
                 return Conflict(new { error = "Payment receipt already belongs to another reconciliation." });
             if (prior is null)
@@ -169,14 +176,14 @@ public sealed class AdvertiserOperatorReviewController(
                 if (await db.WeddingPlannerAuditEvents.AnyAsync(x => x.Action == StarterReconciliationAction
                     && x.Detail != null && x.Detail.StartsWith(prefix), ct))
                     return Conflict(new { error = "Quote already has a reconciled payment. Investigate duplicate payment separately." });
-                prior = new WeddingPlannerAuditEvent { Id = receiptKey, AdvertiserId = quote.AdvertiserId, WorkspaceId = workspace,
+                prior = new WeddingPlannerAuditEvent { Id = receiptKey, AdvertiserId = advertiserId, WorkspaceId = workspace,
                     Action = StarterReconciliationAction, ActorType = "OPERATOR", ActorLabel = subject,
                     Outcome = "RECONCILED", Detail = detail, RequestId = eventId, OccurredAt = DateTime.UtcNow };
                 db.WeddingPlannerAuditEvents.Add(prior);
                 await db.SaveChangesAsync(ct);
             }
             await tx.CommitAsync(ct);
-            return Ok(new { reconciliationId = prior.Id, campaignId = request.CampaignId, quoteVersionId = quote.VersionId,
+            return Ok(new { reconciliationId = prior.Id, campaignId = request.CampaignId, quoteVersionId = versionId,
                 status = "RECONCILED_BY_OPERATOR", amountCents = 14900, currency = "usd", recordedAt = prior.OccurredAt,
                 fulfillmentAuthorized = false, delivery = "NOT_SENT", release = "HELD" });
         }

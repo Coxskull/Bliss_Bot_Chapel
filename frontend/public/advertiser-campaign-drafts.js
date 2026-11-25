@@ -165,6 +165,35 @@
         finally{if(current===generation)artButton.disabled=false;}
       }
       artButton.addEventListener("click",()=>artwork("STATUS"));
+      const offerButton=document.createElement("button");offerButton.type="button";offerButton.textContent="Review $149 service offer";card.appendChild(offerButton);
+      const offerPanel=document.createElement("section");card.appendChild(offerPanel);
+      async function serviceOffer(action,prior){
+        if(!csrf || offerButton.disabled || panel.hidden)return;
+        const current=generation;offerButton.disabled=true;
+        for(const button of offerPanel.querySelectorAll("button"))button.disabled=true;
+        try{
+          const payload={campaignId:row.campaignId,action};
+          if(action==="ACCEPT")Object.assign(payload,{offerId:prior.offerId,offerSha256:prior.offerSha256,acceptedExactTerms:true});
+          const response=await fetch(endpoint+"/starter-offer",{method:"POST",credentials:"same-origin",cache:"no-store",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify(payload)});
+          if(!response.ok)throw Error("Service offer unavailable or no longer current.");
+          const result=await response.json();if(current!==generation||!card.isConnected)return;
+          if(result.campaignId!==row.campaignId||result.amountCents!==14900||result.currency!=="usd"||!result.offerId
+            ||!/^[0-9a-f]{64}$/.test(result.offerSha256)||!["OFFERED","ACCEPTED"].includes(result.status)||result.paymentAuthorized!==false||result.release!=="HELD")throw Error("Unexpected offer receipt.");
+          offerPanel.replaceChildren();
+          for(const [tag,value] of [["h4","Service offer — USD 149 — "+result.status],["p",result.scope],["p",result.terms]]){
+            const node=document.createElement(tag);node.textContent=value;offerPanel.appendChild(node);
+          }
+          if(result.status==="OFFERED"){
+            const accept=document.createElement("button");accept.type="button";accept.textContent="Accept exact service scope and terms ($149)";
+            accept.addEventListener("click",()=>{if(window.confirm("Accept the displayed service scope and terms for USD 149? No payment will be taken by this action."))serviceOffer("ACCEPT",result);});offerPanel.appendChild(accept);
+          }else{
+            const info=document.createElement("p");info.textContent="Accepted order reference: "+result.offerId+". ALPHA will provide the corresponding authorized payment instructions. No payment has been taken.";offerPanel.appendChild(info);
+          }
+        }catch(e){if(current===generation&&card.isConnected){offerPanel.replaceChildren();status.textContent=e.message;}}
+        finally{if(current===generation)offerButton.disabled=false;}
+      }
+      offerButton.addEventListener("click",()=>serviceOffer("STATUS"));
       list.appendChild(card);
     }
   }

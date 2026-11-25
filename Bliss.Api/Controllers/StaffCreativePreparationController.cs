@@ -1,3 +1,6 @@
+using System.Data;
+using Bliss.Domain.Entities;
+using Npgsql;
 using Bliss.Api.Operations;
 using Bliss.Api.Runtime;
 using Bliss.Api.Security;
@@ -68,6 +71,45 @@ public sealed class StaffCreativePreparationController(
         return Ok(new { campaigns = rows.Select(x => new { campaignId = x.Id, campaignName = x.Name,
             creativeBrief = x.Brief, briefSha256 = CampaignDigest(x.Id, x.Name, x.Brief) }),
             families, dispatchAuthorized = false, release = "HELD", delivery = "NOT_SENT" });
+    }
+
+    [HttpPost("starter-offer")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(8192)]
+    public async Task<IActionResult> Offer([FromBody] StaffStarterOfferRequest request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="private, no-store";
+        if(!auth.StarterServiceOfferRequested || !auth.StaffCreativePreparationRequested || !StaffCreativeReadinessController.IsStaff(User,auth))return StatusCode(403);
+        if(request.CampaignId==Guid.Empty || request.WorkspaceId==Guid.Empty || request.BriefSha256 is not {Length:64}
+            || request.Scope is not {Length:>0 and <=1000} || request.Terms is not {Length:>0 and <=700}
+            || !request.ScopeAndTermsApproved || !request.TaxTreatmentApproved)return BadRequest();
+        var terms=new StarterServiceOffer.Terms(request.CampaignId,request.BriefSha256,request.Scope.Trim(),request.Terms.Trim(),14900,"usd");
+        var detail=StarterServiceOffer.Serialize(terms);
+        if(StarterServiceOffer.Parse(detail) is null)return BadRequest(new{error="Complete scope and terms required (max 2000 serialized characters)."});
+        var subject=User.FindFirst("sub")!.Value;
+        try{
+            await using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable,ct);
+            var campaign=await db.Campaigns.AsNoTracking().Where(x=>x.Id==request.CampaignId && x.Status=="DRAFT" && x.AuthorityStatus=="UNVERIFIED"
+                && x.AdvertiserOpportunity!=null && x.AdvertiserOpportunity.Status=="DRAFT" && x.AdvertiserOpportunity.AuthorityStatus=="UNVERIFIED"
+                && x.AdvertiserOpportunity.AdvertiserProgram.Status=="DRAFT"
+                && x.AdvertiserOpportunity.AdvertiserProgram.ExternalProgramId=="alpha:customer-campaign-draft:v1")
+                .Select(x=>new{x.Name,Brief=x.AdvertiserOpportunity!.Description,AdvertiserId=x.AdvertiserOpportunity.AdvertiserProgram.AdvertiserId}).SingleOrDefaultAsync(ct);
+            if(campaign?.Brief is null || CampaignDigest(request.CampaignId,campaign.Name,campaign.Brief)!=request.BriefSha256
+                || !await StarterServiceOffer.ActiveMember(db,campaign.AdvertiserId,null,ct)
+                || !await db.WeddingPlannerWorkspaces.AnyAsync(x=>x.Id==request.WorkspaceId && x.AdvertiserId==campaign.AdvertiserId && x.IsPrimary && x.Status=="ACTIVE",ct))return Conflict();
+            var id=StarterServiceOffer.OfferId(request.CampaignId,request.BriefSha256);
+            var existing=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x=>x.Id==id,ct);
+            if(existing is not null && (existing.Action!=StarterServiceOffer.OfferAction || existing.Detail!=detail
+                || existing.AdvertiserId!=campaign.AdvertiserId || existing.WorkspaceId!=request.WorkspaceId))return Conflict(new{error="Existing immutable offer differs; do not overwrite."});
+            if(existing is null){
+                db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent{Id=id,AdvertiserId=campaign.AdvertiserId,WorkspaceId=request.WorkspaceId,
+                    Action=StarterServiceOffer.OfferAction,ActorType="OPERATOR",ActorLabel=subject,Outcome="OFFERED",Detail=detail,OccurredAt=DateTime.UtcNow});
+                await db.SaveChangesAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new{campaignId=request.CampaignId,offerId=id,offerSha256=ControlledAiService.Hash(detail),amountCents=14900,currency="usd",status="OFFERED",paymentAuthorized=false,release="HELD"});
+        }catch(PostgresException pg) when(pg.SqlState==PostgresErrorCodes.SerializationFailure){return Conflict();}
+        catch(DbUpdateException){return Conflict();}
     }
 
     [HttpPost]
@@ -179,3 +221,5 @@ public sealed record StaffCampaignPreparationRequest(Guid CampaignId, string Bri
     bool OperatorReviewedCampaign, Guid? BrandDnaId, string? Family, string? Headline, string? Cta,
     string? BrandAction = null, BrandDnaFields? BrandFields = null, int? BrandExpectedVersion = null,
     string? BrandIdempotencyKey = null, bool CustomerBrandApproved = false);
+
+public sealed record StaffStarterOfferRequest(Guid CampaignId,string BriefSha256,Guid WorkspaceId,string Scope,string Terms,bool ScopeAndTermsApproved,bool TaxTreatmentApproved);

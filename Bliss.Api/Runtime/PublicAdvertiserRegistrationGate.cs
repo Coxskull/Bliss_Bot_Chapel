@@ -38,6 +38,7 @@ public static class PublicAdvertiserRegistrationGate
         "/api/advertisers/my-campaign-drafts/creative-handoff-preview",
         "/api/advertisers/my-campaign-drafts/creative-provider-consent",
         "/api/advertisers/my-campaign-drafts/creative-artwork",
+        "/api/advertisers/my-campaign-drafts/starter-offer",
         "/api/advertisers/operator-review",
         "/api/advertisers/operator-review/starter-reconcile",
         // OIDC uses the framework-protected code/nonce/state callback. Some
@@ -71,7 +72,8 @@ public static class PublicAdvertiserRegistrationGate
         if (staffCreativePreparationEnabled && string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase)
             && (string.Equals(value, "/api/internal/creative-preparation", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(value, "/api/internal/creative-image-reservation", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(value, "/api/internal/creative-image-review", StringComparison.OrdinalIgnoreCase))) return true;
+                || string.Equals(value, "/api/internal/creative-image-review", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "/api/internal/creative-preparation/starter-offer", StringComparison.OrdinalIgnoreCase))) return true;
         if (staffCreativePreparationEnabled && string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
             && string.Equals(value, "/api/internal/creative-preparation/queue", StringComparison.OrdinalIgnoreCase)) return true;
         if (staffCreativeReadinessEnabled && string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)

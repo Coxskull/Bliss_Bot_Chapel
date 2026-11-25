@@ -32,7 +32,10 @@ public static class StarterArtworkDelivery
                 && q.AdvertiserOpportunity != null
                 && q.AdvertiserOpportunity.AdvertiserProgram.AdvertiserId == advertiserId
             select q.Id).SingleOrDefaultAsync(ct);
-        if (quote == Guid.Empty) return null;
+        if (quote == Guid.Empty){
+            var direct=await StarterServiceOffer.CurrentAccepted(db,campaignId,versionId,ct);
+            return direct is not null && direct.AdvertiserId==advertiserId && direct.WorkspaceId==workspaceId ? row : null;
+        }
         var approval = await db.QuoteApprovalDecisions.AsNoTracking().Where(x => x.QuoteId == quote)
             .OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).FirstOrDefaultAsync(ct);
         var outcome = await db.QuoteOutcomes.AsNoTracking().Where(x => x.QuoteId == quote)

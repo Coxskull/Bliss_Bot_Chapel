@@ -79,6 +79,51 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
     // Source-only export of a customer-owned DRAFT to the existing offline
     // image/Factory QA workflow. This is data, not an executable AI instruction.
     // No customer-provided ID can select another advertiser's campaign.
+    [HttpPost("starter-offer")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> StarterOffer([FromBody] CustomerStarterOfferRequest request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="private, no-store";
+        if(!auth.StarterServiceOfferRequested || request.CampaignId==Guid.Empty || request.Action is not ("STATUS" or "ACCEPT"))return StatusCode(403);
+        var subject=User.FindFirst("sub")?.Value;
+        if(string.IsNullOrWhiteSpace(subject))return StatusCode(403);
+        try{
+            await using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable,ct);
+            var advertiserId=await ActiveBusiness().SingleOrDefaultAsync(ct);
+            if(advertiserId==Guid.Empty || !await StarterServiceOffer.ActiveMember(db,advertiserId,subject,ct))return StatusCode(403);
+            var draft=await Summaries(OwnDrafts(advertiserId).Where(x=>x.Id==request.CampaignId)).SingleOrDefaultAsync(ct);
+            if(draft is null)return NotFound();
+            var digest=StaffCreativePreparationController.CampaignDigest(draft.CampaignId,draft.Name,draft.Brief);
+            var offerId=StarterServiceOffer.OfferId(draft.CampaignId,digest);
+            var offer=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x=>x.Id==offerId && x.AdvertiserId==advertiserId
+                && x.Action==StarterServiceOffer.OfferAction && x.ActorType=="OPERATOR" && x.Outcome=="OFFERED",ct);
+            var terms=StarterServiceOffer.Parse(offer?.Detail);
+            if(offer is null || terms is null || terms.CampaignId!=draft.CampaignId || terms.CampaignDigest!=digest
+                || offer.ActorLabel==subject || offer.WorkspaceId is null
+                || !await db.WeddingPlannerWorkspaces.AnyAsync(x=>x.Id==offer.WorkspaceId && x.AdvertiserId==advertiserId && x.IsPrimary && x.Status=="ACTIVE",ct))return NotFound();
+            var sha=ControlledAiService.Hash(offer.Detail!);
+            if(request.Action=="ACCEPT"){
+                if(request.OfferId!=offerId || request.OfferSha256!=sha || !request.AcceptedExactTerms)return Conflict();
+                var id=StarterServiceOffer.AcceptanceId(offerId);
+                var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x=>x.Id==id,ct);
+                if(prior is not null && (prior.ActorLabel!=subject || prior.Detail!=sha || prior.Action!=StarterServiceOffer.AcceptAction
+                    || prior.AdvertiserId!=advertiserId || prior.WorkspaceId!=offer.WorkspaceId || prior.Outcome!="ACCEPTED"))return Conflict();
+                if(prior is null){
+                    db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent{Id=id,AdvertiserId=advertiserId,WorkspaceId=offer.WorkspaceId,
+                        Action=StarterServiceOffer.AcceptAction,ActorType="ADVERTISER",ActorLabel=subject,Outcome="ACCEPTED",Detail=sha,OccurredAt=DateTime.UtcNow});
+                    await db.SaveChangesAsync(ct);
+                }
+            }
+            var accepted=await StarterServiceOffer.CurrentAccepted(db,draft.CampaignId,offerId,ct);
+            await tx.CommitAsync(ct);
+            return Ok(new{campaignId=draft.CampaignId,offerId,offerSha256=sha,scope=terms.Scope,terms=terms.TermsText,
+                amountCents=14900,currency="usd",status=accepted is null?"OFFERED":"ACCEPTED",
+                paymentAuthorized=false,release="HELD"});
+        }catch(PostgresException pg) when(pg.SqlState==PostgresErrorCodes.SerializationFailure){return Conflict();}
+        catch(DbUpdateException){return Conflict();}
+    }
+
     [HttpPost("creative-handoff-preview")]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [RequestSizeLimit(1024)]
@@ -408,3 +453,5 @@ public sealed record CampaignProviderConsentRequest(Guid CampaignId, string Acti
 
 public sealed record CampaignArtworkRequest(Guid CampaignId, string Action, Guid? CandidateId, Guid? ReviewId,
     string? ImageSha256, int? ExpectedVersion, Guid? RequestKey, string? Rationale);
+
+public sealed record CustomerStarterOfferRequest(Guid CampaignId,string Action,Guid? OfferId,string? OfferSha256,bool AcceptedExactTerms);
