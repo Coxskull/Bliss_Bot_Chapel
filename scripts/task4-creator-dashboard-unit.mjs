@@ -10,11 +10,11 @@ const dashboard = readFileSync(
 const ids = [
   "status", "access-badge", "refresh", "logout", "signin-panel",
   "pending-panel", "profile-panel", "creator-name", "creator-id",
-  "creator-market", "creator-language", "creator-status"
+  "creator-market", "creator-language", "creator-status", "application-panel", "application-state", "application-receipt"
 ];
 const privateIds = [
   "creator-name", "creator-id", "creator-market",
-  "creator-language", "creator-status"
+  "creator-language", "creator-status", "application-state", "application-receipt"
 ];
 const verifiedProfile = Object.freeze({
   creatorId: "14d778d7-1a4e-4419-b23d-7aed5e32998b",
@@ -30,7 +30,7 @@ const response = (status, data = null) => ({
   redirected: false,
   json: async () => data
 });
-const fixture = (sessionResponse, profileResponse = null) => {
+const fixture = (sessionResponse, profileResponse = null, applicationResponse = null) => {
   const nodes = Object.fromEntries(ids.map(id => [
     id, {
       hidden: ["logout", "signin-panel", "pending-panel", "profile-panel"].includes(id),
@@ -69,6 +69,10 @@ const fixture = (sessionResponse, profileResponse = null) => {
     if (url === "/api/auth/session") {
       assert.equal(options.method, "GET");
       return currentSession;
+    }
+    if (url === "/api/creators/registration") {
+      assert.equal(options.method, "GET");
+      return applicationResponse;
     }
     if (url === "/api/creators/me") {
       assert.equal(options.method, "GET");
@@ -203,6 +207,24 @@ const noPrivateData = h => {
   check(form.children[0].value === "fake-csrf-fixture", "logout carries current CSRF token");
   check(form.submitted === true && h.bodyChildren[0] === form, "browser submits logout navigation");
   check(!h.calls.some(x => x.url === "/api/auth/logout"), "logout avoids fetch following cross-origin OIDC redirect");
+}
+// Pending applicant sees only the receipt from the subject-scoped endpoint.
+{
+  const receipt = "14d778d7-1a4e-4419-b23d-7aed5e32998b";
+  for (const state of ["PENDING_REVIEW","ACTIVE","REVOKED"]) {
+    const h = fixture(response(200, {...session(true), roles: []}), null, response(200,{receiptId:receipt,status:state}));
+    await h.settle();
+    check(!h.nodes["application-panel"].hidden, "own application visible");
+    check(h.nodes["application-receipt"].textContent === receipt, "receipt from server");
+    check(h.calls.map(x=>x.url).join(",") === "/api/auth/session,/api/creators/registration", "no verified-profile call");
+    noPrivateData(h);
+    h.nodes.logout.handlers.click();
+    check(h.nodes["application-panel"].hidden && h.nodes["application-receipt"].textContent === "—", "logout clears receipt");
+  }
+  const denied = fixture(response(200,{...session(true),roles:[]}),null,response(403));
+  await denied.settle();
+  check(denied.nodes["application-panel"].hidden,"cross-lane denied");
+  check(denied.nodes["application-receipt"].textContent === "—","no denied receipt");
 }
 console.log("TASK4_CREATOR_DASHBOARD_UNIT_PASS assertions=" + assertions);
 console.log("All scenarios use synthetic data; no browser, Supabase or marketplace writes.");
