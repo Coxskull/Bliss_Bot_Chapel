@@ -19,7 +19,7 @@
     // or sign-out in a hidden DOM node.
     for (const id of [
       "creator-name", "creator-id", "creator-market",
-      "creator-language", "creator-status"
+      "creator-language", "creator-status", "application-receipt", "application-state"
     ]) {
       byId(id).textContent = "—";
     }
@@ -43,6 +43,7 @@
     refreshButton.disabled = true;
     show("signin-panel", false);
     show("pending-panel", false);
+    show("application-panel", false);
     show("profile-panel", false);
     clearProfile();
     logoutButton.hidden = true;
@@ -68,8 +69,40 @@
       }
       if (!session.isAuthenticated) {
         badgeText("SIGN IN");
-        message("Sign in with the secure invitation issued to your approved creator account.");
+        message("Sign in with your existing ALPHA creator account to view your application or verified profile.");
         show("signin-panel", true);
+        return;
+      }
+
+      // Pending registration sessions have no roles. The existing server
+      // registration endpoint verifies the issuer-bound creator lane and
+      // derives ownership from the signed session, never from a URL ID.
+      if (Array.isArray(session.roles) && session.roles.length === 0) {
+        const application = await readJson("/api/creators/registration");
+        const item = application.data;
+        if (application.response.ok && item &&
+            ["PENDING_REVIEW", "ACTIVE", "REVOKED"].includes(item.status) &&
+            typeof item.receiptId === "string" &&
+            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.receiptId)) {
+          byId("application-receipt").textContent = item.receiptId;
+          byId("application-state").textContent = item.status === "ACTIVE" ? "Registration approved" : item.status === "REVOKED" ? "Revoked" : "Pending review";
+          badgeText(item.status === "ACTIVE" ? "APPROVED" : item.status === "REVOKED" ? "REVOKED" : "PENDING REVIEW");
+          message(item.status === "ACTIVE"
+            ? "Your registration is approved. Channel verification and workspace access remain separate."
+            : item.status === "REVOKED" ? "Your registration access has been revoked. Contact ALPHA support."
+            : "Your creator application has been received and is awaiting human review.");
+          show("application-panel", true);
+          return;
+        }
+        if (application.response.status === 401) {
+          badgeText("SESSION EXPIRED"); show("signin-panel", true); logoutButton.hidden = true;
+          message("Sign in again to view your application.", "error");
+        } else if (application.response.status === 404 || application.response.status === 403) {
+          badgeText("ACCESS PENDING"); show("pending-panel", true);
+          message("No accessible creator application. Use creator sign-in or complete registration.");
+        } else {
+          badgeText("UNAVAILABLE"); message("Could not verify your application status.", "error");
+        }
         return;
       }
 
@@ -130,6 +163,7 @@
     if (busy || !csrfToken) return;
     busy = true;
     show("profile-panel", false);
+    show("application-panel", false);
     clearProfile();
     logoutButton.disabled = true;
     message("Signing out securely…");
