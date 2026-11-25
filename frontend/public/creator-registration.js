@@ -108,7 +108,7 @@
       }
       const response = await fetch("/api/creators/register", {
         method: "POST", credentials: "same-origin", headers: {
-          "Content-Type": "application/json", "RequestVerificationToken": session.csrfToken
+          "Content-Type": "application/json", "X-CSRF-TOKEN": session.csrfToken
         }, body: JSON.stringify(payload)
       });
       const body = await response.json().catch(() => ({}));
