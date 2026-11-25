@@ -88,6 +88,12 @@ has(creatorRegistrationJs, 'fetch(endpoint,', "password/signup request goes dire
 has(creatorRegistrationJs, 'fetch("/api/creators/register"', "profile registration uses same-origin authenticated API");
 has(creatorRegistrationJs, 'credentials: "same-origin"', "registration does not send app cookies cross-origin");
 has(creatorRegistrationJs, "creatorRegistrationEnabled", "feature-off server config disables signup");
+const serverProgram = read("Bliss.Api/Program.cs");
+const csrfHeader = serverProgram.match(/options\.HeaderName\s*=\s*"([^"]+)"/)?.[1];
+ok(csrfHeader === "X-CSRF-TOKEN", "server antiforgery header contract is explicit");
+has(creatorRegistrationJs, '"' + csrfHeader + '": session.csrfToken', "creator POST uses configured server antiforgery header");
+absent(creatorRegistrationJs, '"RequestVerificationToken":', "creator POST cannot regress to incompatible default header");
+has(read("frontend/public/advertiser-registration.js"), '"' + csrfHeader + '": session.csrfToken', "advertiser and creator POST share server antiforgery header");
 for (const leak of ["SUPABASE_SERVICE_ROLE_KEY","ALPHA_GHL_PRIVATE_INTEGRATION_TOKEN","localStorage"]) {
   absent(creatorRegistrationJs, leak, "no service secret or persistent credential storage: " + leak);
 }
