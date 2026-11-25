@@ -59,6 +59,7 @@ public sealed class BlissAuthenticationOptions
     // Creator registration is a separate, no-role Supabase identity lane.
     // Like advertiser registration, it creates no verified creator authority.
     public bool CreatorRegistrationRequested { get; set; }
+    public bool CreatorOperatorReviewRequested { get; set; }
     public const string CreatorRegistrationPendingMarkerClaimType = "bliss_creator_registration_pending";
 
     // Requires explicit issuer configuration; defaults cannot enable visitor
