@@ -34,6 +34,7 @@ jobs:
           set -euo pipefail
           node scripts/alpha346-quote-costing.mjs --self-test
           node scripts/alpha346-order-ledger.mjs --self-test
+          node --test scripts/alpha346-stripe-reconcile.test.mjs
           node scripts/alpha-manual-creative-export.mjs --self-test
           work="$(mktemp -d)"
           node scripts/alpha-build-creative-desk.mjs "$work/creative.html"
