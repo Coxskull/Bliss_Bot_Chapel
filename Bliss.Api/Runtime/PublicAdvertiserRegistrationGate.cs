@@ -73,7 +73,8 @@ public static class PublicAdvertiserRegistrationGate
             && (string.Equals(value, "/api/internal/creative-preparation", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(value, "/api/internal/creative-image-reservation", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(value, "/api/internal/creative-image-review", StringComparison.OrdinalIgnoreCase)
-                || string.Equals(value, "/api/internal/creative-preparation/starter-offer", StringComparison.OrdinalIgnoreCase))) return true;
+                || string.Equals(value, "/api/internal/creative-preparation/starter-offer", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "/api/internal/creative-preparation/starter-checkout", StringComparison.OrdinalIgnoreCase))) return true;
         if (staffCreativePreparationEnabled && string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
             && string.Equals(value, "/api/internal/creative-preparation/queue", StringComparison.OrdinalIgnoreCase)) return true;
         if (staffCreativeReadinessEnabled && string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)

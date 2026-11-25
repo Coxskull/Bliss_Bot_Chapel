@@ -33,6 +33,8 @@
   }
   function sync() {
     file.disabled = busy; review.disabled = busy;
+    el("checkout-issue").disabled=busy || !manifest || !offerWorkspace || !review.checked
+        || !uuid.test(el("checkout-offer-id").value.trim()) || !el("checkout-merchant").checked || !el("checkout-clear").checked;
     el("offer-save").disabled=busy || !manifest || !offerWorkspace || !review.checked || !el("offer-approved").checked
         || !el("offer-tax").checked || !el("offer-scope").value.trim() || !el("offer-terms").value.trim();
     queueRefresh.disabled=busy || queueLoading;queueSelect.disabled=busy || queueLoading;
@@ -61,6 +63,8 @@
     manifest = brand = brandState = pendingBrand = null; review.checked = approval.checked = false;
     offerWorkspace=null;el("starter-offer").hidden=true;el("offer-scope").value=el("offer-terms").value="";
     el("offer-approved").checked=el("offer-tax").checked=false;el("offer-status").textContent="";
+    el("checkout-offer-id").value=el("checkout-url").value=el("checkout-status").textContent="";
+    el("checkout-merchant").checked=el("checkout-clear").checked=false;
     clearImage(null);
     brandPanel.hidden = true; brandInputs.forEach(f=>f.value=""); el("brand-status").textContent="";
     summary.hidden = recipe.hidden = true; fields.forEach(f => f.value = "");
@@ -294,7 +298,29 @@
       if(!uuid.test(result.offerId)||!hex.test(result.offerSha256)||result.campaignId!==manifest.campaignId||result.amountCents!==14900
           ||result.status!=="OFFERED"||result.paymentAuthorized!==false||result.release!=="HELD")throw Error("Invalid offer receipt.");
       el("offer-status").textContent="Private offer issued. Customer must accept. Reference: "+result.offerId;
+      el("checkout-offer-id").value=result.offerId;
     }catch(e){if(current===epoch)el("offer-status").textContent=e.message;}finally{busy=false;sync();}
+  });
+  ["checkout-offer-id","checkout-merchant","checkout-clear"].forEach(id=>el(id).addEventListener("input",()=>{el("checkout-url").value="";sync();}));
+  el("checkout-issue").addEventListener("click",async()=>{
+    if(el("checkout-issue").disabled)return;
+    const current=epoch,id=el("checkout-offer-id").value.trim(),campaign=manifest.campaignId;
+    busy=true;sync();el("checkout-url").value="";
+    try{
+      const csrf=await session();
+      const response=await fetch("/api/internal/creative-preparation/starter-checkout",{method:"POST",credentials:"same-origin",cache:"no-store",
+        headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify({campaignId:campaign,offerId:id,
+          merchantPriceAndTaxVerified:true,noPriorOrOpenPaymentVerified:true})});
+      if(!response.ok)throw Error("Payment instructions unavailable (HTTP "+response.status+"). Check acceptance and original Stripe checkout before retrying.");
+      const result=await response.json();if(current!==epoch)return;
+      const url=new URL(result.paymentUrl);
+      if(result.offerId!==id||result.campaignId!==campaign||result.amountCents!==14900||result.currency!=="usd"
+          ||result.paymentInitiated!==false||result.fulfillmentAuthorized!==false||result.status!=="INSTRUCTIONS_ISSUED"
+          ||url.protocol!=="https:"||url.hostname!=="buy.stripe.com"||url.pathname!=="/14A00j8fN6El79Q8Df0Jq00"
+          ||url.searchParams.get("client_reference_id")!==id)throw Error("Invalid payment instructions receipt.");
+      el("checkout-url").value=url.href;el("checkout-status").textContent="Instructions recorded. Send privately only to the accepted customer. No payment initiated.";
+      el("checkout-merchant").checked=el("checkout-clear").checked=false;
+    }catch(e){if(current===epoch)el("checkout-status").textContent=e.message;}finally{busy=false;sync();}
   });
   review.addEventListener("change",sync); fields.forEach(f=>f.addEventListener("input",sync));
   prepare.addEventListener("click",()=>submit("workspace")); save.addEventListener("click",()=>submit("recipe"));
