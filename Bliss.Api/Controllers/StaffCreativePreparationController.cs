@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Data;
 using Bliss.Domain.Entities;
 using Npgsql;
@@ -71,6 +72,55 @@ public sealed class StaffCreativePreparationController(
         return Ok(new { campaigns = rows.Select(x => new { campaignId = x.Id, campaignName = x.Name,
             creativeBrief = x.Brief, briefSha256 = CampaignDigest(x.Id, x.Name, x.Brief) }),
             families, dispatchAuthorized = false, release = "HELD", delivery = "NOT_SENT" });
+    }
+
+    public const string StarterCheckoutIssued = "STARTER_CHECKOUT_INSTRUCTIONS_ISSUED";
+    // Exact existing live Stripe link, verified against merchant and line items.
+    // A reusable link is not a single-use payment authorization or payer identity.
+    public static string CheckoutInstructions(Guid offerId) =>
+        "https://buy.stripe.com/14A00j8fN6El79Q8Df0Jq00?client_reference_id=" + offerId.ToString("D");
+
+    [HttpPost("starter-checkout")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> StarterCheckout([FromBody] StaffStarterCheckoutRequest request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="private, no-store";
+        if(!auth.StarterServiceOfferRequested || !auth.StarterCheckoutInstructionsRequested
+            || !auth.StarterPaymentReconciliationRequested || !auth.StaffCreativePreparationRequested
+            || !StaffCreativeReadinessController.IsStaff(User,auth))return StatusCode(403);
+        if(request.CampaignId==Guid.Empty || request.OfferId==Guid.Empty
+            || !request.MerchantPriceAndTaxVerified || !request.NoPriorOrOpenPaymentVerified)
+            return BadRequest(new{error="Review current merchant, price, tax and prior/open checkouts before issuing payment instructions."});
+        var subject=User.FindFirst("sub")!.Value;
+        try{
+            await using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable,ct);
+            var accepted=await StarterServiceOffer.CurrentAccepted(db,request.CampaignId,request.OfferId,ct);
+            if(accepted is null)return Conflict(new{error="Current customer-accepted service offer required."});
+            await using(var cmd=db.Database.GetDbConnection().CreateCommand()){
+                cmd.Transaction=tx.GetDbTransaction();cmd.CommandTimeout=10;
+                cmd.CommandText="SELECT EXISTS(SELECT 1 FROM public.alpha_starter_stripe_receipts WHERE lower(quote_reference) IN (@d,@n))";
+                foreach(var (name,value) in new[]{("d",request.OfferId.ToString("D")),("n",request.OfferId.ToString("N"))}){
+                    var param=cmd.CreateParameter();param.ParameterName=name;param.DbType=DbType.String;param.Value=value;cmd.Parameters.Add(param);
+                }
+                if(await cmd.ExecuteScalarAsync(ct) is not false)return Conflict(new{error="A signed payment notification already exists. Reconcile instead of issuing checkout."});
+            }
+            var prefix="quote:"+request.OfferId.ToString("N")+":";
+            if(await db.WeddingPlannerAuditEvents.AnyAsync(x=>x.Action==AdvertiserOperatorReviewController.StarterReconciliationAction
+                && x.Detail!=null && x.Detail.StartsWith(prefix),ct))return Conflict(new{error="Order already reconciled."});
+            var id=StarterArtworkDelivery.StableId(StarterCheckoutIssued,request.OfferId.ToString("N"));
+            var detail=request.OfferId.ToString("N")+":"+request.CampaignId.ToString("N")+":"+StarterStripeReceipt.PaymentLinkId;
+            if(await db.WeddingPlannerAuditEvents.AnyAsync(x=>x.Id==id,ct))
+                return Conflict(new{error="Payment instructions already issued. Do not issue another; investigate original checkout in Stripe."});
+            db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent{Id=id,AdvertiserId=accepted.AdvertiserId,WorkspaceId=accepted.WorkspaceId,
+                Action=StarterCheckoutIssued,ActorType="OPERATOR",ActorLabel=subject,Outcome="ISSUED",Detail=detail,OccurredAt=DateTime.UtcNow});
+            await db.SaveChangesAsync(ct);await tx.CommitAsync(ct);
+            return Ok(new{campaignId=request.CampaignId,offerId=request.OfferId,instructionsId=id,
+                paymentUrl=CheckoutInstructions(request.OfferId),amountCents=14900,currency="usd",
+                status="INSTRUCTIONS_ISSUED",paymentInitiated=false,fulfillmentAuthorized=false,release="HELD"});
+        }catch(PostgresException pg) when(pg.SqlState==PostgresErrorCodes.SerializationFailure || pg.SqlState==PostgresErrorCodes.UniqueViolation){return Conflict();}
+        catch(DbUpdateException){return Conflict();}
+        catch(System.Data.Common.DbException){return StatusCode(503);}
     }
 
     [HttpPost("starter-offer")]
@@ -223,3 +273,5 @@ public sealed record StaffCampaignPreparationRequest(Guid CampaignId, string Bri
     string? BrandIdempotencyKey = null, bool CustomerBrandApproved = false);
 
 public sealed record StaffStarterOfferRequest(Guid CampaignId,string BriefSha256,Guid WorkspaceId,string Scope,string Terms,bool ScopeAndTermsApproved,bool TaxTreatmentApproved);
+
+public sealed record StaffStarterCheckoutRequest(Guid CampaignId,Guid OfferId,bool MerchantPriceAndTaxVerified,bool NoPriorOrOpenPaymentVerified);

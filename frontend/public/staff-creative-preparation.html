@@ -25,7 +25,13 @@
 <label for="offer-terms">Paid-service terms</label><textarea id="offer-terms" maxlength="700"></textarea>
 <label><input id="offer-approved" type="checkbox"> Approved scope and paid-service terms reviewed.</label>
 <label><input id="offer-tax" type="checkbox"> Applicable tax treatment verified; USD 149 is the final agreed total.</label>
-<button type="button" id="offer-save" disabled>Issue private offer for customer acceptance</button><p id="offer-status" role="status"></p></section>
+<button type="button" id="offer-save" disabled>Issue private offer for customer acceptance</button><p id="offer-status" role="status"></p>
+<h3>Private payment instructions</h3><p>Issue only after the customer accepted this offer and you reviewed current live Stripe checkout/payment state. This link is reusable outside ALPHA; do not send it again or allow a second payment. No charge is made here.</p>
+<label for="checkout-offer-id">Accepted offer reference</label><input id="checkout-offer-id" maxlength="36">
+<label><input id="checkout-merchant" type="checkbox"> Live merchant, exact $149 one-time price and applicable tax verified.</label>
+<label><input id="checkout-clear" type="checkbox"> No prior paid or open checkout for this exact customer/order verified in Stripe.</label>
+<button id="checkout-issue" type="button" disabled>Prepare one set of payment instructions</button>
+<p id="checkout-status" role="status"></p><label for="checkout-url">Private link for the accepted customer only</label><input id="checkout-url" readonly></section>
 <section id="brand-panel" hidden><h2>Advertiser brand direction</h2>
 <p>Record the advertiser's supplied brand information. Confirm only after the advertiser has explicitly approved the saved direction. This is not consent to send data to an AI provider.</p>
 <p id="brand-status"></p>
