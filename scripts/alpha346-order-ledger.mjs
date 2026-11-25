@@ -11,7 +11,10 @@ export function replayOrder(quote, events, deliverables) {
   const cents=(x)=>{if(!Number.isSafeInteger(x)||x<0||x>100000000)throw Error("Invalid cost or payment cents");return x};
   if(!quote||quote.currency!=="USD"||quote.status!=="DRAFT_NOT_SENT"||!Number.isSafeInteger(quote.subtotal)||quote.subtotal<=0||quote.total!==quote.subtotal+quote.tax)throw Error("Invalid source estimate");
   if(!Array.isArray(events)||events.length>1000)throw Error("Invalid event list");
-  const state={quoteId:quote.quoteId,currency:"USD",status:"AWAITING_ACCEPTANCE",expectedTotalCents:quote.total,serviceSubtotalCents:quote.subtotal,paymentCents:0,actualCostCents:0,costs:[],assignments:Object.fromEntries(deliverables.map(d=>[d,{status:"UNASSIGNED"}])),events:0,evidenceStatus:"OPERATOR_REPORTED_NOT_INDEPENDENTLY_VERIFIED",revenueRecognized:false,contributionCents:null};
+  const packageKind=quote.packageKind??"planning";
+  if(!["planning","starter"].includes(packageKind))throw Error("Unknown service package");
+  const outputs=packageKind==="starter"?["brand_and_campaign_brief","custom_advertising_artwork","promotional_content_design","digital_marketing_materials","customer_review_and_delivery"]:deliverables;
+  const state={quoteId:quote.quoteId,packageKind,currency:"USD",status:"AWAITING_ACCEPTANCE",expectedTotalCents:quote.total,serviceSubtotalCents:quote.subtotal,paymentCents:0,actualCostCents:0,costs:[],assignments:Object.fromEntries(outputs.map(d=>[d,{status:"UNASSIGNED"}])),events:0,evidenceStatus:"OPERATOR_REPORTED_NOT_INDEPENDENTLY_VERIFIED",revenueRecognized:false,contributionCents:null};
   const seen=new Set(),evidenceSeen=new Set();let last="";
   for(const e of events){
     if(!e||typeof e!=="object")throw Error("Invalid event");
@@ -28,6 +31,7 @@ export function replayOrder(quote, events, deliverables) {
       case "PAYMENT_RECORDED":
         if(state.status!=="AWAITING_PAYMENT"||e.livemode!==true||e.currency!=="USD"||e.amountCents!==quote.total||e.providerStatus!=="succeeded")throw Error("Full successful live payment record required");
         if(e.checkoutReference!==quote.quoteId||!/^cs_live_[A-Za-z0-9]{8,200}$/.test(e.checkoutSessionId??"")||!/^pi_[A-Za-z0-9]{8,200}$/.test(e.paymentIntentId??""))throw Error("Matching Stripe live checkout and payment intent references required");
+        if(packageKind==="starter"&&(e.paymentLinkId!=="plink_1UfWXNH6XjUXn6bha65jeI1t"||e.priceId!=="price_1UfWONH6XjUXn6bhPYLJNax5"||e.productId!=="prod_VguCvW3SA1yQUM"))throw Error("Verified Starter Package payment-link, price and product references required");
         state.paymentCents=cents(e.amountCents);state.paymentReceipt={provider:"Stripe",checkoutSessionId:e.checkoutSessionId,paymentIntentId:e.paymentIntentId,checkoutReference:e.checkoutReference,evidenceRef:ev,verification:"OPERATOR_REPORTED_NOT_INDEPENDENTLY_VERIFIED"};state.status="PAID_REPORTED";break;
       case "ASSIGN":
         if(!["PAID_REPORTED","IN_PRODUCTION"].includes(state.status)||!Object.hasOwn(state.assignments,e.deliverable)||state.assignments[e.deliverable].status!=="UNASSIGNED")throw Error("Assignment unavailable");
