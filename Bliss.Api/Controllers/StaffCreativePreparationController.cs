@@ -17,14 +17,30 @@ namespace Bliss.Api.Controllers;
 [Route("api/internal/creative-preparation")]
 public sealed class StaffCreativePreparationController(
     BlissDbContext db, BlissAuthenticationOptions auth,
-    WeddingPlannerService planner, AcademyProductionService production) : ControllerBase
+    WeddingPlannerService planner, AcademyProductionService production, WeddingPlannerBrandDnaService brands) : ControllerBase
 {
     public static string CampaignDigest(Guid id, string name, string brief) =>
         ControlledAiService.Hash(id.ToString("D") + "\n" + name + "\n" + brief);
 
+    public static bool ValidBrandAction(StaffCampaignPreparationRequest request)
+    {
+        if (request.BrandAction is null)
+            return request.BrandFields is null && request.BrandExpectedVersion is null
+                && request.BrandIdempotencyKey is null && !request.CustomerBrandApproved;
+        if (request.BrandDnaId is not null || request.Family is not null || request.Headline is not null || request.Cta is not null
+            || request.BrandExpectedVersion is null or < 0 || !Guid.TryParseExact(request.BrandIdempotencyKey, "D", out var key)
+            || key == Guid.Empty) return false;
+        return request.BrandAction switch
+        {
+            "SAVE_DRAFT" => request.BrandFields is not null && !request.CustomerBrandApproved,
+            "CONFIRM_DRAFT" => request.BrandFields is null && request.BrandExpectedVersion > 0 && request.CustomerBrandApproved,
+            _ => false
+        };
+    }
+
     [HttpPost]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
-    [RequestSizeLimit(4096)]
+    [RequestSizeLimit(16 * 1024)]
     public async Task<IActionResult> Prepare([FromBody] StaffCampaignPreparationRequest request, CancellationToken ct)
     {
         Response.Headers.CacheControl = "no-store";
@@ -34,6 +50,8 @@ public sealed class StaffCreativePreparationController(
             || request.BriefSha256.Any(c => c is not (>= '0' and <= '9' or >= 'a' and <= 'f'))
             || !request.OperatorReviewedCampaign)
             return BadRequest(new { error = "Exact campaign digest and explicit staff review required." });
+        if (!ValidBrandAction(request))
+            return BadRequest(new { error = "Invalid brand action. Confirmation requires explicit customer brand approval." });
         // A saved recipe is optional; if requested, all inputs must be provided.
         var saveRecipe = request.BrandDnaId.HasValue;
         if (saveRecipe ? request.BrandDnaId == Guid.Empty || string.IsNullOrWhiteSpace(request.Family)
@@ -71,7 +89,17 @@ public sealed class StaffCreativePreparationController(
                 return Conflict(new { error = "Active primary workspace required." });
             var brand = await db.WeddingPlannerBrandDna.AsNoTracking()
                 .Where(b => b.WorkspaceId == workspace.WorkspaceId)
-                .OrderByDescending(b => b.Version).Select(b => new { b.Id, b.Status }).FirstOrDefaultAsync(ct);
+                .OrderByDescending(b => b.Version).FirstOrDefaultAsync(ct);
+            if (request.BrandAction is not null)
+            {
+                var confirm = request.BrandAction == "CONFIRM_DRAFT";
+                var revision = await brands.AppendAsync(workspace, request.BrandFields, request.BrandExpectedVersion!.Value,
+                    request.BrandIdempotencyKey, confirm, "OPERATOR", subject, RequestCorrelation.Resolve(HttpContext), ct);
+                brand = await db.WeddingPlannerBrandDna.AsNoTracking().Where(b => b.WorkspaceId == workspace.WorkspaceId)
+                    .OrderByDescending(b => b.Version).FirstOrDefaultAsync(ct);
+                if (brand is null || brand.Id != revision.Revision.Id)
+                    return Conflict(new { error = "Brand changed after the requested revision. Refresh before continuing." });
+            }
             Guid? productionBriefId = null;
             string? recipeSha256 = null;
             if (saveRecipe)
@@ -90,7 +118,11 @@ public sealed class StaffCreativePreparationController(
             return Ok(new { campaignId = draft.Id, briefSha256 = request.BriefSha256,
                 workspaceId = workspace.WorkspaceId, brandDnaId = brand?.Id,
                 brandStatus = brand?.Status ?? "NOT_PREPARED", productionBriefId, recipeSha256,
-                preparation = saveRecipe ? "RECIPE_SAVED" : "WORKSPACE_READY",
+                brandVersion = brand?.Version ?? 0,
+                brandFields = brand is null ? null : new BrandDnaFields(brand.BrandName, brand.Niche, brand.Market,
+                    brand.Language, brand.Colors, brand.Font, brand.Goals, brand.Restrictions),
+                preparation = saveRecipe ? "RECIPE_SAVED" : request.BrandAction == "SAVE_DRAFT" ? "BRAND_DRAFT_SAVED"
+                    : request.BrandAction == "CONFIRM_DRAFT" ? "BRAND_CONFIRMED" : "WORKSPACE_READY",
                 customerProviderConsent = "NOT_COLLECTED", billingAuthorization = "NOT_GRANTED",
                 providerCall = "NOT_REQUESTED", dispatchAuthorized = false, release = "HELD", delivery = "NOT_SENT" });
         }
@@ -103,4 +135,6 @@ public sealed class StaffCreativePreparationController(
 }
 
 public sealed record StaffCampaignPreparationRequest(Guid CampaignId, string BriefSha256,
-    bool OperatorReviewedCampaign, Guid? BrandDnaId, string? Family, string? Headline, string? Cta);
+    bool OperatorReviewedCampaign, Guid? BrandDnaId, string? Family, string? Headline, string? Cta,
+    string? BrandAction = null, BrandDnaFields? BrandFields = null, int? BrandExpectedVersion = null,
+    string? BrandIdempotencyKey = null, bool CustomerBrandApproved = false);

@@ -69,6 +69,11 @@ public static class PublicAdvertiserRegistrationGate
             && string.Equals(value, "/api/internal/creative-preparation", StringComparison.OrdinalIgnoreCase)) return true;
         if (staffCreativeReadinessEnabled && string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
             && string.Equals(value, "/api/internal/creative-readiness", StringComparison.OrdinalIgnoreCase)) return true;
+        // Static staff console contains no customer data; APIs still enforce issuer-bound staff.
+        if (staffCreativePreparationEnabled && (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(method, "HEAD", StringComparison.OrdinalIgnoreCase))
+            && (string.Equals(value, "/staff-creative-preparation.html", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "/staff-creative-preparation.js", StringComparison.OrdinalIgnoreCase))) return true;
         if (creatorRegistrationEnabled)
         {
             if ((string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)

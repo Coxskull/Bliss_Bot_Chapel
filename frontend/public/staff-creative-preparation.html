@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+<title>Campaign preparation | ALPHA GLOBAL MEDIA</title><link rel="stylesheet" href="/creator-dashboard.css"></head>
+<body><main><h1>Campaign production preparation</h1>
+<p>Authorized staff only. Import an advertiser's private QA manifest to prepare the existing campaign workspace. This does not generate images, spend money, dispatch jobs, or release creative.</p>
+<p><a href="/api/auth/login?returnUrl=%2Fstaff-creative-preparation.html">Operator sign-in</a> · <a href="/advertiser-operator-review.html">Advertiser review</a></p>
+<p id="status" role="status" aria-live="polite">Checking staff access…</p>
+<section id="panel" hidden>
+<label for="manifest">Private campaign QA manifest (JSON)</label>
+<input type="file" id="manifest" accept=".json,application/json">
+<article id="summary" hidden><h2 id="campaign-name"></h2><p id="campaign-id"></p><p id="brief"></p>
+<label><input type="checkbox" id="review"> I reviewed the actual campaign brief and confirm this exact draft.</label>
+<button type="button" id="prepare" disabled>Prepare workspace</button></article>
+<section id="brand-panel" hidden><h2>Advertiser brand direction</h2>
+<p>Record the advertiser's supplied brand information. Confirm only after the advertiser has explicitly approved the saved direction. This is not consent to send data to an AI provider.</p>
+<p id="brand-status"></p>
+<label for="brand-name">Brand name</label><input id="brand-name" maxlength="200">
+<label for="brand-niche">Business niche</label><input id="brand-niche" maxlength="200">
+<label for="brand-market">Market</label><input id="brand-market" maxlength="200">
+<label for="brand-language">Language</label><input id="brand-language" maxlength="100">
+<label for="brand-colors">Colors</label><input id="brand-colors" maxlength="500">
+<label for="brand-font">Font</label><input id="brand-font" maxlength="200">
+<label for="brand-goals">Campaign goals</label><textarea id="brand-goals" maxlength="2000"></textarea>
+<label for="brand-restrictions">Restrictions</label><textarea id="brand-restrictions" maxlength="2000"></textarea>
+<button type="button" id="brand-draft" disabled>Save brand draft</button>
+<label><input type="checkbox" id="brand-approved"> The advertiser explicitly approved this exact saved brand direction.</label>
+<button type="button" id="brand-confirm" disabled>Confirm saved brand</button></section>
+<section id="recipe" hidden><h2>Save production recipe</h2><p>Use the latest confirmed brand returned by the workspace. Only supply reviewed production copy.</p>
+<label for="family">Approved template family</label><input id="family" maxlength="128">
+<label for="headline">Headline</label><input id="headline" maxlength="256">
+<label for="cta">Call to action</label><input id="cta" maxlength="128">
+<button type="button" id="save" disabled>Save recipe</button></section>
+<section aria-live="polite"><h2>Preparation result</h2><p id="result">No preparation requested.</p></section>
+</section><script src="/staff-creative-preparation.js" defer></script></main></body></html>

@@ -47,6 +47,29 @@ public sealed class StaffCreativeReadinessTests
         Assert.NotEqual(digest, StaffCreativePreparationController.CampaignDigest(id, "Campaign", "Changed"));
     }
 
+    [Theory]
+    [InlineData("/staff-creative-preparation.html")]
+    [InlineData("/staff-creative-preparation.js")]
+    public void Staff_preparation_console_has_exact_default_off_static_routes(string path)
+    {
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("GET", new PathString(path), staffCreativeReadinessEnabled: true));
+        Assert.True(PublicAdvertiserRegistrationGate.IsAllowed("GET", new PathString(path), staffCreativePreparationEnabled: true));
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("POST", new PathString(path), staffCreativePreparationEnabled: true));
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("GET", new PathString(path + "/other"), staffCreativePreparationEnabled: true));
+    }
+
+    [Fact]
+    public void Brand_confirmation_requires_explicit_approval_and_exact_revision()
+    {
+        var request = new StaffCampaignPreparationRequest(Guid.NewGuid(), new string('a', 64), true, null, null, null, null,
+            "CONFIRM_DRAFT", null, 1, Guid.NewGuid().ToString("D"));
+        Assert.False(StaffCreativePreparationController.ValidBrandAction(request));
+        Assert.True(StaffCreativePreparationController.ValidBrandAction(request with { CustomerBrandApproved = true }));
+        Assert.False(StaffCreativePreparationController.ValidBrandAction(request with { CustomerBrandApproved = true, BrandExpectedVersion = 0 }));
+        Assert.False(StaffCreativePreparationController.ValidBrandAction(request with { CustomerBrandApproved = true, Family = "other" }));
+        Assert.False(StaffCreativePreparationController.ValidBrandAction(request with { CustomerBrandApproved = true, BrandIdempotencyKey = "invalid" }));
+    }
+
     [Fact]
     public void Only_approved_issuer_staff_can_read()
     {
