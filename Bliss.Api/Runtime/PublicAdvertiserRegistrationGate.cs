@@ -80,7 +80,7 @@ public static class PublicAdvertiserRegistrationGate
     }
 
     public static async Task InvokeAsync(HttpContext context, Func<Task> next,
-        bool creatorRegistrationEnabled = false)
+        bool creatorRegistrationEnabled = false, bool staffCreativeReadinessEnabled = false)
     {
         var releaseMode = creatorRegistrationEnabled
             ? "advertiser-and-creator-registration" : "advertiser-registration-only";
