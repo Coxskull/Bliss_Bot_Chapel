@@ -44,6 +44,8 @@ public sealed class BlissAuthenticationOptions
     public bool AdvertiserCreativeHandoffPreviewRequested { get; set; }
     // Separate staff-only no-call readiness lane. Never enables a worker or submission.
     public bool StaffCreativeReadinessRequested { get; set; }
+    // Explicit staff preparation writes only; no AI calls or queue submission.
+    public bool StaffCreativePreparationRequested { get; set; }
     public string[] ApprovedAdvertiserSubjects { get; set; } = [];
     // Verified Supabase identities with no trusted roles may enter only the
     // registration endpoint while this is explicitly enabled. It is OFF by default.
