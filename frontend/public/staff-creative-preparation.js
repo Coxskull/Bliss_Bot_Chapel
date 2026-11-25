@@ -48,6 +48,8 @@
     el("artwork-attach").disabled = busy || !artworkRun || !artworkUrl || !!artworkCandidate || !review.checked;
     el("artwork-record").disabled = busy || !artworkCandidate || !artworkUrl || !review.checked || !el("artwork-rationale").value.trim();
     artworkFields.forEach(f=>f.disabled=busy);
+    el("release-artwork").disabled=busy || !artworkCandidate || !artworkUrl || !review.checked
+        || !uuid.test(el("reconciliation-id").value.trim()) || !el("release-payment").checked || !el("release-scope").checked;
   }
   function reset() {
     manifest = brand = brandState = pendingBrand = null; review.checked = approval.checked = false;
@@ -170,7 +172,8 @@
   function clearArtwork() {
     if (artworkUrl) URL.revokeObjectURL(artworkUrl);
     artworkUrl=artworkRun=artworkCandidate=artworkRetry=null; artworkVersion=0;
-    artwork.hidden=artworkPanel.hidden=artworkReview.hidden=true; artwork.removeAttribute("src");
+    artwork.hidden=artworkPanel.hidden=artworkReview.hidden=el("artwork-release").hidden=true; artwork.removeAttribute("src");
+    el("reconciliation-id").value="";el("release-payment").checked=el("release-scope").checked=false;
     artworkFields.forEach(f=>{if(f.type==="checkbox") f.checked=false;else if(f.tagName==="SELECT") f.selectedIndex=0;else f.value="";});
     el("artwork-status").textContent="";
   }
@@ -191,6 +194,10 @@
         if(!artworkRetry || artworkRetry.fingerprint!==fingerprint) artworkRetry={fingerprint,key:crypto.randomUUID()};
         Object.assign(payload,{candidateId:artworkCandidate,review:{...data,idempotencyKey:artworkRetry.key}});
       }
+      if(action==="RELEASE"){
+        if(!artworkCandidate || !artworkUrl || !uuid.test(el("reconciliation-id").value.trim()) || !el("release-payment").checked || !el("release-scope").checked)throw Error("Complete release checks.");
+        Object.assign(payload,{candidateId:artworkCandidate,reconciliationId:el("reconciliation-id").value.trim(),currentPaymentVerified:true,scopeVerified:true});
+      }
       const request=async body=>fetch("/api/internal/creative-image-review",{method:"POST",credentials:"same-origin",cache:"no-store",
         headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify(body)});
       let response=await request(payload);
@@ -207,10 +214,12 @@
       }
       const result=await response.json();if(current!==epoch)return;
       if(result.runId!==artworkRun || !hex.test(result.imageSha256) || result.dispatchAuthorized!==false
-        || result.release!=="HELD" || result.delivery!=="NOT_SENT" || !Number.isInteger(result.reviewVersion))
+        || (action==="RELEASE" ? result.release!=="ARTWORK_DOWNLOAD_AVAILABLE" || result.delivery!=="DOWNLOAD_NOT_CONFIRMED" || !uuid.test(result.releaseId)
+          : result.release!=="HELD" || result.delivery!=="NOT_SENT") || !Number.isInteger(result.reviewVersion))
         throw Error("Unexpected artwork review receipt.");
       artworkCandidate=uuid.test(result.candidateId)?result.candidateId:null;artworkVersion=result.reviewVersion;
-      artworkReview.hidden=!artworkCandidate;
+      artworkReview.hidden=el("artwork-release").hidden=!artworkCandidate;
+      if(action==="RELEASE"){el("artwork-status").textContent="Private artwork download authorized. Receipt "+result.releaseId+". Customer download not confirmed.";return;}
       if(action==="REVIEW")artworkRetry=null;
       el("artwork-status").textContent=action==="REVIEW"?"Saved review: "+result.decision+" — release remains HELD."
         : artworkCandidate?"Candidate attached. Complete human quality review.":"Artwork loaded. Attach to candidate history.";
@@ -221,6 +230,8 @@
   el("artwork-attach").addEventListener("click",()=>artworkAction("ATTACH"));
   el("artwork-record").addEventListener("click",()=>artworkAction("REVIEW"));
   artworkFields.forEach(f=>f.addEventListener("input",sync));
+  ["reconciliation-id","release-payment","release-scope"].forEach(id=>el(id).addEventListener("input",sync));
+  el("release-artwork").addEventListener("click",()=>{if(!el("release-artwork").disabled)artworkAction("RELEASE");});
   imageReview.addEventListener("click",()=>imageAction("REVIEW"));
   imageReserve.addEventListener("click",()=>imageAction("RESERVE"));
   budgetApproval.addEventListener("change",sync);

@@ -1,3 +1,9 @@
+using System.Data;
+using System.Security.Cryptography;
+using System.Text;
+using Microsoft.EntityFrameworkCore.Storage;
+using Bliss.Domain.Entities;
+using Npgsql;
 using System.Security.Claims;
 using Bliss.Api.Runtime;
 using Bliss.Api.Security;
@@ -73,6 +79,116 @@ public sealed class AdvertiserOperatorReviewController(
         return Ok(new { receipts = rows, fulfillmentAuthorized = false });
     }
 
+    public const string StarterReconciliationAction = "STARTER_PAYMENT_RECONCILED";
+    public static bool ExactQuoteReference(string? reference, Guid versionId) =>
+        versionId != Guid.Empty && reference is not null
+        && (Guid.TryParseExact(reference, "D", out var value) || Guid.TryParseExact(reference, "N", out value))
+        && value == versionId;
+
+    // One signed receipt can be reconciled to one current accepted quote.
+    // The public client_reference_id is not payer authentication. The operator
+    // must independently check the live Stripe merchant, payer/order and refunds.
+    [HttpPost("starter-reconcile")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(4096)]
+    public async Task<IActionResult> Reconcile([FromBody] StarterOrderReconciliation request, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.StarterPaymentReconciliationRequested || !TryOperator(out var subject)) return StatusCode(403);
+        if (request.QuoteVersionId == Guid.Empty || request.CampaignId == Guid.Empty
+            || request.CheckoutSessionId is null || request.CheckoutSessionId.Length > 128
+            || !request.CheckoutSessionId.StartsWith("cs_live_", StringComparison.Ordinal)
+            || !request.CurrentMerchantPaymentVerified || !request.PayerAndOrderVerified
+            || !request.NoRefundOrDisputeVerified || !request.PaidServiceScopeVerified)
+            return BadRequest(new { error = "Exact accepted quote, campaign and current Stripe/order checks are required." });
+        try
+        {
+            await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+            // Serialize reconciliation on the actual signed notification row.
+            // Reuse the existing receipt schema and append-only workspace audit.
+            string? reference;
+            string eventId, intentId;
+            await using (var cmd = db.Database.GetDbConnection().CreateCommand())
+            {
+                cmd.Transaction = tx.GetDbTransaction(); cmd.CommandTimeout = 10;
+                cmd.CommandText = """
+                    SELECT event_id, payment_intent_id, quote_reference
+                    FROM public.alpha_starter_stripe_receipts
+                    WHERE session_id = @session AND amount_cents = 14900 AND currency = 'usd'
+                    FOR UPDATE
+                    """;
+                var param = cmd.CreateParameter(); param.ParameterName = "session"; param.DbType = DbType.String;
+                param.Value = request.CheckoutSessionId; cmd.Parameters.Add(param);
+                await using var reader = await cmd.ExecuteReaderAsync(ct);
+                if (!await reader.ReadAsync(ct)) return NotFound(new { error = "Signed paid notification not found." });
+                eventId = reader.GetString(0); intentId = reader.GetString(1);
+                reference = reader.IsDBNull(2) ? null : reader.GetString(2);
+            }
+            if (!ExactQuoteReference(reference, request.QuoteVersionId))
+                return Conflict(new { error = "Signed receipt does not identify this exact immutable quote version." });
+            var quote = await (from v in db.QuoteVersions.AsNoTracking()
+                join q in db.Quotes.AsNoTracking() on v.QuoteId equals q.Id
+                join campaign in db.Campaigns.AsNoTracking() on q.AdvertiserOpportunityId equals (Guid?)campaign.AdvertiserOpportunityId
+                where v.Id == request.QuoteVersionId && campaign.Id == request.CampaignId
+                    && q.Status == "ACCEPTED" && q.CurrentVersionNumber == v.VersionNumber
+                    && v.TotalAmount == 149m && v.CurrencyCode.ToUpper() == "USD"
+                    && q.AdvertiserOpportunity != null
+                select new { QuoteId = q.Id, VersionId = v.Id,
+                    AdvertiserId = q.AdvertiserOpportunity!.AdvertiserProgram.AdvertiserId }).SingleOrDefaultAsync(ct);
+            if (quote is null) return Conflict(new { error = "Current accepted USD 149 quote is not bound to the campaign." });
+            var approval = await db.QuoteApprovalDecisions.AsNoTracking().Where(x => x.QuoteId == quote.QuoteId)
+                .OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).FirstOrDefaultAsync(ct);
+            var outcome = await db.QuoteOutcomes.AsNoTracking().Where(x => x.QuoteId == quote.QuoteId)
+                .OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).FirstOrDefaultAsync(ct);
+            if (approval?.QuoteVersionId != quote.VersionId || approval.Decision != "APPROVED"
+                || outcome?.QuoteVersionId != quote.VersionId || outcome.Response != "ACCEPTED"
+                || outcome.Amount != 149m || !string.Equals(outcome.CurrencyCode, "USD", StringComparison.OrdinalIgnoreCase))
+                return Conflict(new { error = "Latest approval and customer acceptance of the exact quote are required." });
+            var workspace = await db.WeddingPlannerWorkspaces.AsNoTracking().Where(x => x.AdvertiserId == quote.AdvertiserId
+                && x.IsPrimary && x.Status == "ACTIVE").Select(x => (Guid?)x.Id).SingleOrDefaultAsync(ct);
+            if (workspace is null) return Conflict(new { error = "An active primary advertiser workspace is required." });
+            var active = await (from m in db.AdvertiserAccountMemberships.AsNoTracking()
+                join receipt in db.AdvertiserRegistrationReceipts.AsNoTracking()
+                    on new { m.Subject, m.AdvertiserId } equals new { receipt.Subject, receipt.AdvertiserId }
+                where m.AdvertiserId == quote.AdvertiserId && m.Status == "ACTIVE"
+                    && receipt.ProcessingConsent && receipt.TermsAccepted
+                    && receipt.PrivacyNoticeVersion == AdvertiserRegistrationController.PrivacyNoticeVersion
+                    && receipt.TermsVersion == AdvertiserRegistrationController.TermsVersion
+                select m.Id).AnyAsync(ct);
+            if (!active) return StatusCode(403);
+            var receiptDigest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(request.CheckoutSessionId + "\n" + intentId))).ToLowerInvariant();
+            var receiptKey = new Guid(Convert.FromHexString(receiptDigest[..32]));
+            var prefix = "quote:" + quote.VersionId.ToString("N") + ":";
+            var detail = prefix + request.CampaignId.ToString("N") + ":" + receiptDigest;
+            var prior = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x => x.Id == receiptKey, ct);
+            if (prior is not null && (prior.AdvertiserId != quote.AdvertiserId || prior.WorkspaceId != workspace
+                || prior.Action != StarterReconciliationAction || prior.Detail != detail || prior.Outcome != "RECONCILED"))
+                return Conflict(new { error = "Payment receipt already belongs to another reconciliation." });
+            if (prior is null)
+            {
+                if (await db.WeddingPlannerAuditEvents.AnyAsync(x => x.Action == StarterReconciliationAction
+                    && x.Detail != null && x.Detail.StartsWith(prefix), ct))
+                    return Conflict(new { error = "Quote already has a reconciled payment. Investigate duplicate payment separately." });
+                prior = new WeddingPlannerAuditEvent { Id = receiptKey, AdvertiserId = quote.AdvertiserId, WorkspaceId = workspace,
+                    Action = StarterReconciliationAction, ActorType = "OPERATOR", ActorLabel = subject,
+                    Outcome = "RECONCILED", Detail = detail, RequestId = eventId, OccurredAt = DateTime.UtcNow };
+                db.WeddingPlannerAuditEvents.Add(prior);
+                await db.SaveChangesAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new { reconciliationId = prior.Id, campaignId = request.CampaignId, quoteVersionId = quote.VersionId,
+                status = "RECONCILED_BY_OPERATOR", amountCents = 14900, currency = "usd", recordedAt = prior.OccurredAt,
+                fulfillmentAuthorized = false, delivery = "NOT_SENT", release = "HELD" });
+        }
+        catch (PostgresException pg) when (pg.SqlState is PostgresErrorCodes.SerializationFailure or PostgresErrorCodes.UniqueViolation)
+        { return Conflict(new { error = "Reconciliation raced another operation. Refresh before retrying." }); }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg
+            && pg.SqlState is PostgresErrorCodes.SerializationFailure or PostgresErrorCodes.UniqueViolation)
+        { return Conflict(new { error = "Reconciliation raced another operation. Refresh before retrying." }); }
+        catch (Exception ex) when (ex is System.Data.Common.DbException or TimeoutException)
+        { return StatusCode(503, new { error = "Payment reconciliation storage unavailable." }); }
+    }
+
     [HttpPost]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [RequestSizeLimit(2048)]
@@ -142,3 +258,6 @@ public sealed class AdvertiserOperatorReviewController(
 
 public sealed record AdvertiserOperatorApproval(Guid ReceiptId, Guid AdvertiserId, string Subject,
     bool BusinessIdentityReviewed, bool ConsentReviewed);
+
+public sealed record StarterOrderReconciliation(Guid CampaignId, Guid QuoteVersionId, string CheckoutSessionId,
+    bool CurrentMerchantPaymentVerified, bool PayerAndOrderVerified, bool NoRefundOrDisputeVerified, bool PaidServiceScopeVerified);

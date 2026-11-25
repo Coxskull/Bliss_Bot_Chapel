@@ -138,7 +138,7 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
         Response.Headers.CacheControl = "private, no-store";
         if (!auth.AdvertiserCreativeArtworkRequested || !auth.AdvertiserCreativeProviderConsentRequested
             || request.CampaignId == Guid.Empty) return StatusCode(403);
-        if (request.Action is not ("STATUS" or "PREVIEW" or "APPROVE" or "WITHHOLD")
+        if (request.Action is not ("STATUS" or "PREVIEW" or "APPROVE" or "WITHHOLD" or "DOWNLOAD")
             || ((request.Action is "APPROVE" or "WITHHOLD") &&
                 (request.CandidateId is null || request.ReviewId is null || request.ImageSha256 is not { Length: 64 }
                     || request.ExpectedVersion is null or < 0 || request.RequestKey is null || request.RequestKey == Guid.Empty
@@ -215,11 +215,39 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
                 latest = await db.CandidateApprovalDecisions.AsNoTracking().Where(x => x.CandidateId == candidate.Id && x.ScopeKey == "ADVERTISER")
                     .OrderByDescending(x => x.Version).FirstOrDefaultAsync(ct);
             }
+            Guid? releaseId = null;
+            if (auth.StarterArtworkDeliveryRequested && auth.StarterPaymentReconciliationRequested
+                && latest?.Decision == "APPROVE" && latest.ReviewId == review.Id)
+            {
+                var suffix = StarterArtworkDelivery.Suffix(draft.CampaignId,candidate.Id,review.Id,latest.Id,candidate.ImageSha256);
+                var release = await db.WeddingPlannerAuditEvents.AsNoTracking().Where(x => x.AdvertiserId == advertiserId
+                    && x.WorkspaceId == prepared.WorkspaceId && x.Action == StarterArtworkDelivery.ReleaseAction
+                    && x.ActorType == "OPERATOR" && x.Outcome == "RELEASED" && x.Detail != null && x.Detail.EndsWith(suffix))
+                    .OrderByDescending(x => x.OccurredAt).FirstOrDefaultAsync(ct);
+                if (release?.Detail is not null && Guid.TryParseExact(release.Detail.Split(':')[0],"N",out var paymentId)
+                    && await StarterArtworkDelivery.Reconciliation(db,advertiserId,prepared.WorkspaceId,draft.CampaignId,paymentId,ct) is not null)
+                    releaseId = release.Id;
+            }
+            if (request.Action == "DOWNLOAD")
+            {
+                if (releaseId is null || request.CandidateId != candidate.Id || request.ReviewId != review.Id
+                    || request.ImageSha256 != candidate.ImageSha256) return Conflict();
+                var id = StarterArtworkDelivery.StableId(StarterArtworkDelivery.DownloadAction,releaseId.Value.ToString("N")+":"+subject);
+                if (!await db.WeddingPlannerAuditEvents.AnyAsync(x => x.Id == id,ct))
+                {
+                    db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent {Id=id,AdvertiserId=advertiserId,WorkspaceId=prepared.WorkspaceId,
+                        Action=StarterArtworkDelivery.DownloadAction,ActorType="ADVERTISER",ActorLabel=subject,
+                        Outcome="REQUESTED",Detail=releaseId.Value.ToString("N"),OccurredAt=DateTime.UtcNow});
+                    await db.SaveChangesAsync(ct);
+                }
+                await tx.CommitAsync(ct);
+                return File(candidate.ImageBytes,"image/png","alpha-artwork-"+draft.CampaignId.ToString("N")+".png");
+            }
             await tx.CommitAsync(ct);
             return Ok(new { campaignId = draft.CampaignId, candidateId = candidate.Id, reviewId = review.Id,
                 imageSha256 = candidate.ImageSha256, approvalVersion = latest?.Version ?? 0,
-                approval = latest?.ReviewId == review.Id ? latest.Decision : "PENDING", release = "HELD",
-                delivery = "NOT_SENT", dispatchAuthorized = false, paymentAuthorized = false });
+                approval = latest?.ReviewId == review.Id ? latest.Decision : "PENDING", releaseId, release = releaseId.HasValue ? "ARTWORK_DOWNLOAD_AVAILABLE" : "HELD",
+                delivery = releaseId.HasValue ? "DOWNLOAD_NOT_CONFIRMED" : "NOT_SENT", dispatchAuthorized = false, paymentAuthorized = false });
         }
         catch (WeddingPlannerNotFoundException) { return NotFound(); }
         catch (WeddingPlannerForbiddenException) { return StatusCode(403); }

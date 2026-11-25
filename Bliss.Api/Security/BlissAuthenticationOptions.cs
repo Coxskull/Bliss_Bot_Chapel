@@ -56,6 +56,9 @@ public sealed class BlissAuthenticationOptions
     public bool AdvertiserRegistrationRequested { get; set; }
     // Explicit human review lane; never enables issuer provisioning.
     public bool AdvertiserOperatorReviewRequested { get; set; }
+    // Separate manual payment-to-order reconciliation; never authorizes release.
+    public bool StarterPaymentReconciliationRequested { get; set; }
+    public bool StarterArtworkDeliveryRequested { get; set; }
     public string[] ApprovedRegistrationOperatorSubjects { get; set; } = [];
     // Separate fail-closed account privacy case switch. Never inferred from registration
     // or self-service enrollment, and must stay OFF until hosted human handling is accepted.

@@ -119,7 +119,9 @@
           if(current!==generation || !card.isConnected)return;
           if(result.campaignId!==row.campaignId || !/^[0-9a-f]{64}$/.test(result.imageSha256)
               || !result.candidateId || !result.reviewId || !Number.isInteger(result.approvalVersion)
-              || result.release!=="HELD" || result.delivery!=="NOT_SENT" || result.dispatchAuthorized!==false
+              || !["HELD","ARTWORK_DOWNLOAD_AVAILABLE"].includes(result.release)
+              || (result.release==="HELD" ? result.delivery!=="NOT_SENT" : result.delivery!=="DOWNLOAD_NOT_CONFIRMED" || !result.releaseId)
+              || result.dispatchAuthorized!==false
               || result.paymentAuthorized!==false || !["PENDING","APPROVE","WITHHOLD"].includes(result.approval))
             throw Error("Unexpected artwork receipt.");
           const imageResponse=await send({campaignId:row.campaignId,action:"PREVIEW",candidateId:result.candidateId,
@@ -140,6 +142,23 @@
           for(const [choice,label] of [["APPROVE","Approve this artwork"],["WITHHOLD","Request changes / withhold approval"]]){
             const button=document.createElement("button");button.type="button";button.textContent=label;
             button.addEventListener("click",()=>{const reason=rationaleInput.value.trim();if(!reason){status.textContent="Enter your decision notes first.";return;}artwork(choice,result,reason);});artPanel.appendChild(button);
+          }
+          if(result.release==="ARTWORK_DOWNLOAD_AVAILABLE"){
+            const download=document.createElement("button");download.type="button";download.textContent="Download final approved artwork";artPanel.appendChild(download);
+            download.addEventListener("click",async()=>{
+              if(download.disabled || !csrf)return;download.disabled=true;
+              try{
+                const response=await send({campaignId:row.campaignId,action:"DOWNLOAD",candidateId:result.candidateId,reviewId:result.reviewId,imageSha256:result.imageSha256});
+                if(!response.ok || !response.headers.get("content-type")?.startsWith("image/png"))throw Error("Final download not available.");
+                const blob=await response.blob();
+                if(blob.size===0 || blob.size>16*1024*1024)throw Error("Unexpected final artwork size.");
+                const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await blob.arrayBuffer())),x=>x.toString(16).padStart(2,"0")).join("");
+                if(digest!==result.imageSha256 || current!==generation || !card.isConnected)throw Error("Final artwork verification failed.");
+                const url=URL.createObjectURL(blob);previewUrls.push(url);
+                const link=document.createElement("a");link.href=url;link.download="alpha-artwork-"+row.campaignId+".png";link.textContent="Save verified final PNG";artPanel.appendChild(link);
+                status.textContent="Final artwork received by browser. Save the verified PNG.";
+              }catch(e){status.textContent=e.message;}finally{download.disabled=false;}
+            });
           }
           status.textContent="Artwork decision: "+result.approval+". Campaign remains held.";
         }catch(e){if(current===generation && card.isConnected){artPanel.replaceChildren();if(artUrl){URL.revokeObjectURL(artUrl);artUrl=null;}status.textContent=e.message;}}
