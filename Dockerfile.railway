@@ -11,7 +11,8 @@ WORKDIR /src
 COPY . .
 COPY --from=financial-ui /src/frontend/operations/financial-review/ ./frontend/operations/financial-review/
 RUN dotnet publish Bliss.Api/Bliss.Api.csproj -c Release -o /app/publish /p:UseAppHost=false \
-    && test -s /app/publish/frontend/operations/financial-review/index.html
+    && test -s /app/publish/frontend/operations/financial-review/index.html \
+    && sh scripts/package-academy-references.sh /src/assets/alpha-prototypes/creative-academy /app/publish/assets/alpha-prototypes/creative-academy
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
