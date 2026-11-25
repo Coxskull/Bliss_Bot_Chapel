@@ -4,10 +4,11 @@
 # explicit separate storage directory (not the DR362 database directory).
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)][string] $ManifestPath,
+    [string] $ManifestPath = '',
     [Parameter(Mandatory = $true)][ValidatePattern('^([0-9]{1,3}\.){3}[0-9]{1,3}$')][string] $DropletIPv4,
     [Parameter(Mandatory = $true)][ValidatePattern('^[a-z_][a-z0-9_-]*$')][string] $SshUser,
-    [Parameter(Mandatory = $true)][string] $RemoteDirectory
+    [Parameter(Mandatory = $true)][string] $RemoteDirectory,
+    [switch] $PreflightOnly
 )
 $ErrorActionPreference = 'Stop'
 # Pin the actual existing DigitalOcean Droplet 571399692, verified through
@@ -35,7 +36,45 @@ foreach ($name in @('ssh.exe','scp.exe')) {
         throw 'TASK3B_OFFHOST=OPENSSH_CLIENT_MISSING'
     }
 }
-if (-not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)) {
+if ($PreflightOnly) {
+    if (-not [string]::IsNullOrWhiteSpace($ManifestPath)) {
+        throw 'TASK3B_OFFHOST=PREFLIGHT_ONLY_MANIFEST_REFUSED'
+    }
+    # Read-only: require an already existing private Bliss destination;
+    # never create directories, change mounts or transfer data in this mode.
+    $target = $SshUser + '@' + $DropletIPv4
+    $probe = @'
+set -eu
+dir="__REMOTE_DIRECTORY__"
+[ -d "$dir" ] && [ ! -L "$dir" ] || exit 2
+[ "$(readlink -f "$dir")" = "$dir" ] || exit 2
+[ -w "$dir" ] && [ "$(stat -c %a "$dir")" = 700 ] || exit 2
+mount_target=$(findmnt -T "$dir" -n -o TARGET) || exit 2
+mount_source=$(findmnt -T "$dir" -n -o SOURCE) || exit 2
+mount_type=$(findmnt -T "$dir" -n -o FSTYPE) || exit 2
+mount_device=$(findmnt -T "$dir" -n -o MAJ:MIN) || exit 2
+root_device=$(findmnt -T / -n -o MAJ:MIN) || exit 2
+[ -n "$mount_device" ] && [ "$mount_device" != "$root_device" ] || exit 2
+[ -n "$mount_target" ] && [ "$mount_target" != / ] || exit 2
+case "$mount_target $mount_source" in *[Dd][Rr]362*|*[Ss][Uu][Pp][Aa][Bb][Aa][Ss][Ee]*|*[Ff][Aa][Cc][Tt][Oo][Rr][Yy]*) exit 2 ;; esac
+case "$mount_source" in /dev/*) ;; *) exit 2 ;; esac
+case "$mount_type" in ext4|xfs|btrfs) ;; *) exit 2 ;; esac
+printf 'TASK3B_OFFHOST_READONLY_PREFLIGHT_READY\n'
+'@
+    $probe = $probe.Replace('__REMOTE_DIRECTORY__', $RemoteDirectory)
+    $reply = @()
+    $code = 1
+    try {
+        $reply = @(& ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=10 $target $probe 2>&1)
+        $code = $LASTEXITCODE
+    } catch { $code = 1 }
+    if ($code -ne 0 -or @($reply | Where-Object { ([string]$_).Trim() -ceq 'TASK3B_OFFHOST_READONLY_PREFLIGHT_READY' }).Count -ne 1) {
+        throw 'TASK3B_OFFHOST=READONLY_DESTINATION_PREFLIGHT_REFUSED'
+    }
+    Write-Output 'TASK3B_OFFHOST_READONLY_PREFLIGHT_READY'
+    return
+}
+if ([string]::IsNullOrWhiteSpace($ManifestPath) -or -not (Test-Path -LiteralPath $ManifestPath -PathType Leaf)) {
     throw 'TASK3B_OFFHOST=MANIFEST_NOT_FOUND'
 }
 $m = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json

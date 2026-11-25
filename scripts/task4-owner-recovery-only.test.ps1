@@ -12,8 +12,13 @@ $pending = Join-Path $OutputDirectory 'bliss-pg18-20261124T000000Z-00000000.pend
 Write-Output ('TASK3B_MANIFEST=' + $pending)
 '@ | Set-Content -LiteralPath (Join-Path $directory 'task3b-owner-start-backup.ps1')
     @'
-param([string]$ManifestPath,[string]$DropletIPv4,[string]$SshUser,[string]$RemoteDirectory)
+param([string]$ManifestPath,[string]$DropletIPv4,[string]$SshUser,[string]$RemoteDirectory,[switch]$PreflightOnly)
 if ($DropletIPv4 -cne '159.89.238.136' -or $SshUser -cne 'fixture' -or $RemoteDirectory -cne '/mnt/bliss-only') { throw 'MISMATCH' }
+if ($PreflightOnly) {
+    if ($env:TASK4_REFUSE_PREFLIGHT -eq 'YES') { throw 'MOCK_OFFHOST_UNAVAILABLE' }
+    Write-Output 'TASK3B_OFFHOST_READONLY_PREFLIGHT_READY'
+    return
+}
 $receipt = $ManifestPath -replace '\.pending\.json$', '.offhost.json'
 '{}' | Set-Content -LiteralPath $receipt
 Write-Output ('TASK3B_OFFHOST_MANIFEST=' + $receipt)
@@ -29,6 +34,12 @@ param([string]$ReceiptPath)
 Set-Content -LiteralPath (Join-Path $env:TASK4_RECOVERY_TEST_DIR 'UNSAFE_MIGRATION_INVOKED') -Value $ReceiptPath
 '@ | Set-Content -LiteralPath (Join-Path $directory 'task4-creator-guarded-incremental.ps1')
     $launcher = Join-Path $directory 'task4-creator-owner-complete.ps1'
+    $env:TASK4_REFUSE_PREFLIGHT = 'YES'
+    $blocked = $false
+    try { & $launcher -RecoveryOnly -DropletIPv4 '159.89.238.136' -SshUser fixture -RemoteDirectory '/mnt/bliss-only' -OutputDirectory $directory | Out-Null }
+    catch { if ([string]$_ -match 'MOCK_OFFHOST_UNAVAILABLE') { $blocked = $true } }
+    finally { Remove-Item Env:TASK4_REFUSE_PREFLIGHT -ErrorAction SilentlyContinue }
+    if (-not $blocked -or (Test-Path (Join-Path $directory 'bliss-pg18-20261124T000000Z-00000000.pending.json'))) { throw 'CAPTURE_OCCURRED_BEFORE_VALIDATED_DESTINATION' }
     $result = @(& $launcher -RecoveryOnly -DropletIPv4 '159.89.238.136' -SshUser fixture -RemoteDirectory '/mnt/bliss-only' -OutputDirectory $directory)
     if ($result -cnotcontains 'TASK4_OWNER_COMPLETE=OFFHOST_AND_ISOLATED_RECOVERY_VERIFIED' -or
         $result -cnotcontains 'TASK4_OWNER_COMPLETE=PRODUCTION_CREATOR_MIGRATION_HELD' -or
