@@ -31,12 +31,19 @@ public sealed class StaffCreativeImageReservationController(BlissDbContext db, B
         var grant = await CampaignImageAuthorization.Current(db, request.WorkspaceId, request.BriefId, ct);
         if (grant is null || grant.CampaignId != request.CampaignId || grant.CampaignDigest != request.BriefSha256)
             return Conflict(new { error = "Current campaign recipe and active advertiser provider consent required." });
+        if (request.Action == "RESERVE" && request.ConsentReceiptId != grant.ReceiptId)
+            return Conflict(new { error = "Consent changed. Review the current grant before reserving." });
         var subject = User.FindFirst("sub")!.Value;
         var key = CampaignImageAuthorization.RunKey(request.BriefId);
         var existing = await db.ControlledAiRuns.AsNoTracking().SingleOrDefaultAsync(x => x.WorkspaceId == request.WorkspaceId
             && x.IdempotencyKey == key, ct);
         if (existing is not null)
+        {
+            if (existing.Kind != "IMAGE" || existing.BriefId != request.BriefId
+                || CampaignImageAuthorization.ProviderInput(existing.InputSnapshotJson, grant) is null)
+                return Conflict(new { error = "A prior image reservation is bound to a different receipt; no additional run can be reserved." });
             return Ok(Receipt(existing.Id, existing.WorkspaceId, request.BriefId, existing.InputSha256, existing.ReservedUsd, existing.Status, grant.ReceiptId));
+        }
         if (request.Action == "REVIEW")
             return Ok(new { campaignId = request.CampaignId, consentReceiptId = grant.ReceiptId,
                 imagePilotConfigured = ai.RestrictedCampaignPilotConfigured, readiness = await ai.Readiness(ct),
