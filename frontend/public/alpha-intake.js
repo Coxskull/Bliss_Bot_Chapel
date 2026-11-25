@@ -13,7 +13,8 @@
   const field = name => form.elements.namedItem(name);
   // A public, same-origin planning link may prefill ONLY this fixed topic.
   // It must never submit a form, grant consent, or infer an account/order.
-  const requestedService = new URLSearchParams(window.location.search).get("service");
+  const requestedService = form.dataset.kind === "advertiser"
+    ? new URLSearchParams(window.location.search).get("service") : null;
   if (form.dataset.kind === "advertiser" &&
       (requestedService === "planning" || requestedService === "starter")) {
     const description = form.elements.namedItem("description");
