@@ -10,11 +10,11 @@ const dashboard = readFileSync(
 const ids = [
   "status", "access-badge", "refresh", "logout", "signin-panel",
   "pending-panel", "profile-panel", "creator-name", "creator-id",
-  "creator-market", "creator-language", "creator-status", "application-panel", "application-state", "application-receipt"
+  "creator-market", "creator-language", "creator-status", "application-panel", "application-state", "application-receipt", "channel-proof-panel", "channel-proof-code", "channel-proof-url", "channel-proof-expiry"
 ];
 const privateIds = [
   "creator-name", "creator-id", "creator-market",
-  "creator-language", "creator-status", "application-state", "application-receipt"
+  "creator-language", "creator-status", "application-state", "application-receipt", "channel-proof-code", "channel-proof-url", "channel-proof-expiry"
 ];
 const verifiedProfile = Object.freeze({
   creatorId: "14d778d7-1a4e-4419-b23d-7aed5e32998b",
@@ -225,6 +225,22 @@ const noPrivateData = h => {
   await denied.settle();
   check(denied.nodes["application-panel"].hidden,"cross-lane denied");
   check(denied.nodes["application-receipt"].textContent === "—","no denied receipt");
+}
+{
+  const receipt = "14d778d7-1a4e-4419-b23d-7aed5e32998b";
+  const code = "ALPHA-0123456789ABCDEF0123456789ABCDEF";
+  const h = fixture(response(200,{...session(true),roles:[]}),null,response(200,{receiptId:receipt,status:"ACTIVE",channelProofCode:code,submittedChannelUrl:"https://example.test/channel",proofExpiresAt:"2026-11-26T00:00:00Z"}));
+  await h.settle();
+  check(!h.nodes["channel-proof-panel"].hidden && h.nodes["channel-proof-code"].textContent===code,"approved applicant gets challenge");
+  noPrivateData(h);
+  h.nodes.logout.handlers.click();
+  check(h.nodes["channel-proof-panel"].hidden && h.nodes["channel-proof-code"].textContent==="—","logout erases proof");
+  const verified = fixture(response(200,{...session(true),roles:[]}),null,response(200,{receiptId:receipt,status:"ACTIVE",creatorId:verifiedProfile.creatorId,verifiedProfile}));
+  await verified.settle();
+  check(!verified.nodes["profile-panel"].hidden && verified.nodes["access-badge"].textContent==="VERIFIED","verified own profile");
+  check(verified.nodes["channel-proof-panel"].hidden,"verified profile has no challenge");
+  const revoked = fixture(response(200,{...session(true),roles:[]}),null,response(200,{receiptId:receipt,status:"REVOKED",creatorId:verifiedProfile.creatorId,verifiedProfile}));
+  await revoked.settle(); noPrivateData(revoked);
 }
 console.log("TASK4_CREATOR_DASHBOARD_UNIT_PASS assertions=" + assertions);
 console.log("All scenarios use synthetic data; no browser, Supabase or marketplace writes.");
