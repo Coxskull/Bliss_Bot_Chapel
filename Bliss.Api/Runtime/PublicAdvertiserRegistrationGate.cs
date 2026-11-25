@@ -62,6 +62,9 @@ public static class PublicAdvertiserRegistrationGate
     public static bool IsAllowed(string? method, PathString path, bool creatorRegistrationEnabled = false, bool staffCreativeReadinessEnabled = false, bool staffCreativePreparationEnabled = false)
     {
         var value = path.Value ?? "";
+        // Exact read-only receipt route; controller enforces issuer-bound operator authorization.
+        if (string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(value, "/api/advertisers/operator-review/starter-receipts", StringComparison.OrdinalIgnoreCase)) return true;
         if (staffCreativePreparationEnabled && string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase)
             && string.Equals(value, "/api/internal/creative-preparation", StringComparison.OrdinalIgnoreCase)) return true;
         if (staffCreativeReadinessEnabled && string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)

@@ -72,5 +72,34 @@
     } catch (error) { csrf = null; queue.replaceChildren(); status.textContent = error.message; }
     finally { busy = false; refresh.disabled = false; }
   }
+  const receiptRefresh = document.getElementById("starter-refresh");
+  const receiptStatus = document.getElementById("starter-status");
+  const receiptList = document.getElementById("starter-receipts");
+  if (receiptRefresh && receiptStatus && receiptList) {
+    receiptRefresh.addEventListener("click", async () => {
+      if (receiptRefresh.disabled) return;
+      receiptRefresh.disabled = true; receiptList.replaceChildren();
+      receiptStatus.textContent = "Loading payment notifications…";
+      try {
+        const response = await fetch(endpoint + "/starter-receipts", {credentials:"same-origin",cache:"no-store"});
+        if (!response.ok) throw new Error("Payment notifications unavailable or operator access not authorized.");
+        const data = await response.json();
+        if (!Array.isArray(data.receipts) || data.fulfillmentAuthorized !== false || data.receipts.length > 50)
+          throw new Error("Receipt response could not be verified.");
+        for (const row of data.receipts) {
+          if (row.status !== "SIGNED_NOTIFICATION_PENDING_ORDER_RECONCILIATION") throw new Error("Unexpected receipt status.");
+          const card = document.createElement("article"); receiptList.appendChild(card);
+          add(card, "h3", row.quoteReference || "Unlinked payment — review required");
+          add(card, "p", "Checkout: " + row.checkoutSessionId);
+          add(card, "p", "Payment Intent: " + row.paymentIntentId);
+          add(card, "p", "Amount: " + (row.amountCents / 100).toFixed(2) + " " + row.currency.toUpperCase());
+          add(card, "p", "Received: " + row.receivedAt);
+          add(card, "p", "Signed notification only. Pending merchant and order reconciliation.");
+        }
+        receiptStatus.textContent = data.receipts.length ? "Showing up to 50 recent notifications." : "No matching payment notifications recorded.";
+      } catch (error) { receiptList.replaceChildren(); receiptStatus.textContent = error.message; }
+      finally { receiptRefresh.disabled = false; }
+    });
+  }
   refresh.addEventListener("click", load); load();
 })();

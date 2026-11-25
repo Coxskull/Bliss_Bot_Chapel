@@ -38,6 +38,41 @@ public sealed class AdvertiserOperatorReviewController(
         return Ok(rows);
     }
 
+    // Receipt evidence is staff-only, even when generic authentication is disabled.
+    // No browser-supplied data can mark a payment verified or authorize fulfillment.
+    [HttpGet("starter-receipts")]
+    public async Task<IActionResult> StarterReceipts(CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!TryOperator(out _)) return StatusCode(403);
+        var rows = new List<object>();
+        try
+        {
+            await db.Database.OpenConnectionAsync(ct);
+            try
+            {
+                await using var cmd = db.Database.GetDbConnection().CreateCommand();
+                cmd.CommandTimeout = 10;
+                cmd.CommandText = """
+                    SELECT session_id, payment_intent_id, quote_reference, amount_cents, currency, received_at
+                    FROM public.alpha_starter_stripe_receipts
+                    ORDER BY received_at DESC, event_id DESC LIMIT 50
+                    """;
+                await using var reader = await cmd.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct))
+                    rows.Add(new { checkoutSessionId = reader.GetString(0), paymentIntentId = reader.GetString(1),
+                        quoteReference = reader.IsDBNull(2) ? null : reader.GetString(2),
+                        amountCents = reader.GetInt64(3), currency = reader.GetString(4),
+                        receivedAt = reader.GetFieldValue<DateTime>(5),
+                        status = "SIGNED_NOTIFICATION_PENDING_ORDER_RECONCILIATION" });
+            }
+            finally { await db.Database.CloseConnectionAsync(); }
+        }
+        catch (Exception e) when (e is System.Data.Common.DbException or InvalidOperationException or TimeoutException)
+        { return StatusCode(503, new { error = "Payment receipt storage unavailable." }); }
+        return Ok(new { receipts = rows, fulfillmentAuthorized = false });
+    }
+
     [HttpPost]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [RequestSizeLimit(2048)]
