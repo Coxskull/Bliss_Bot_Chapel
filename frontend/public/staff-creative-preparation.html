@@ -54,6 +54,11 @@
 <label for="artwork-rationale">Review rationale</label><textarea id="artwork-rationale" maxlength="2000"></textarea>
 <label for="artwork-preserve">Preserve</label><textarea id="artwork-preserve" maxlength="2000"></textarea>
 <label for="artwork-repair">Repair instructions</label><textarea id="artwork-repair" maxlength="2000"></textarea>
-<button type="button" id="artwork-record" disabled>Save human review</button></section></section>
+<button type="button" id="artwork-record" disabled>Save human review</button></section>
+<section id="artwork-release" hidden><h3>Final private artwork handoff</h3>
+<label for="reconciliation-id">Payment reconciliation ID</label><input id="reconciliation-id">
+<label><input type="checkbox" id="release-payment"> Current live payment verified; no refund or dispute.</label>
+<label><input type="checkbox" id="release-scope"> Approved paid service scope and artwork complete.</label>
+<button type="button" id="release-artwork" disabled>Authorize private artwork download</button></section></section>
 <section aria-live="polite"><h2>Preparation result</h2><p id="result">No preparation requested.</p></section>
 </section><script src="/staff-creative-preparation.js" defer></script></main></body></html>
