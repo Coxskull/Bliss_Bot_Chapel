@@ -34,7 +34,7 @@ function desk(){
  $("report").addEventListener("click",async()=>{
   const current=quote;clearPaymentDraft();if(!current)return;
   try{const file=$("events").files[0];if(!file||file.size>1000000)throw Error("Select a private events JSON array under 1 MB");
-   const events=JSON.parse(await file.text());if(current!==quote)return;
+   const events=JSON.parse(await file.text());if(current!==quote||$("events").files[0]!==file)return;
    const report=replayOrder(current,events,deliverables);
    $("orderStatus").textContent=report.status+" | "+report.events+" events | Operator-reported, not independently verified.";
    save(JSON.stringify(report,null,2),"PRIVATE-"+current.quoteId+"-order.json");
