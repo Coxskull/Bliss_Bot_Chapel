@@ -44,6 +44,8 @@ public sealed class BlissAuthenticationOptions
     public bool AdvertiserCreativeHandoffPreviewRequested { get; set; }
     // Customer consent for exact prepared recipe; never authorizes payment or dispatch.
     public bool AdvertiserCreativeProviderConsentRequested { get; set; }
+    // Separate private customer artwork review, never releases paid delivery or campaigns.
+    public bool AdvertiserCreativeArtworkRequested { get; set; }
     // Separate staff-only no-call readiness lane. Never enables a worker or submission.
     public bool StaffCreativeReadinessRequested { get; set; }
     // Explicit staff preparation writes only; no AI calls or queue submission.
