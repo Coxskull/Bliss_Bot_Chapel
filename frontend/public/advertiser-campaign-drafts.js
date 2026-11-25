@@ -62,6 +62,40 @@
           if (current === generation) status.textContent = "Creative QA handoff unavailable; no external action was taken.";
         } finally {if (current === generation && preview.isConnected) preview.disabled = false;}
       });
+      const consentButton = document.createElement("button"); consentButton.type = "button";
+      consentButton.textContent = "Review prepared recipe and AI consent"; card.appendChild(consentButton);
+      const consentPanel = document.createElement("section"); card.appendChild(consentPanel);
+      async function consent(action, prior) {
+        if (!csrf || panel.hidden || consentButton.disabled) return;
+        const current = generation; consentButton.disabled = true;
+        for (const button of consentPanel.querySelectorAll("button")) button.disabled = true;
+        try {
+          const payload = {campaignId:row.campaignId,action};
+          if (action !== "REVIEW") Object.assign(payload,{scopeSha256:prior.scopeSha256,noticeVersion:prior.noticeVersion,
+            expectedReceiptId:prior.receiptId,requestKey:crypto.randomUUID()});
+          const response = await fetch(endpoint+"/creative-provider-consent",{method:"POST",credentials:"same-origin",cache:"no-store",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify(payload)});
+          if (current !== generation) return;
+          if (!response.ok) throw Error("Prepared recipe unavailable or changed. No provider call was requested.");
+          const result = await response.json();
+          if (result.campaignId !== row.campaignId || result.provider !== "OpenAI" || result.model !== "gpt-image-2.5-flare"
+              || result.noticeVersion !== "alpha-creative-provider-consent-v1" || !/^[0-9a-f]{64}$/.test(result.scopeSha256)
+              || typeof result.generationRecipe !== "string" || result.dispatchAuthorized !== false
+              || result.billingAuthorization !== "NOT_GRANTED" || result.providerCall !== "NOT_REQUESTED" || result.release !== "HELD"
+              || !["NOT_COLLECTED","GRANTED","REVOKED"].includes(result.consentStatus)) throw Error("Unexpected consent response.");
+          consentPanel.replaceChildren();
+          const title = document.createElement("h4"); title.textContent = "AI image recipe — " + result.consentStatus; consentPanel.appendChild(title);
+          const recipe = document.createElement("p"); recipe.textContent = result.generationRecipe; consentPanel.appendChild(recipe);
+          const notice = document.createElement("p"); notice.textContent = "Optional: permit ALPHA to send the displayed recipe to OpenAI for one image-generation request using "+result.model+". Do not approve if it includes information you do not want shared. Approval does not authorize a payment or start generation. You can withdraw before future processing; withdrawal cannot undo processing already performed."; consentPanel.appendChild(notice);
+          const approve = document.createElement("button"); approve.type="button"; approve.textContent="Allow this recipe to be sent to OpenAI";
+          const revoke = document.createElement("button"); revoke.type="button"; revoke.textContent="Withdraw AI provider consent";
+          if (result.consentStatus === "GRANTED") consentPanel.appendChild(revoke); else consentPanel.appendChild(approve);
+          approve.addEventListener("click",()=>consent("GRANT",result)); revoke.addEventListener("click",()=>consent("REVOKE",result));
+          status.textContent = "Recipe consent: " + result.consentStatus + ". No image generated and no charge authorized.";
+        } catch(e) { if (current === generation) {consentPanel.replaceChildren();status.textContent=e.message;} }
+        finally { if(current===generation) consentButton.disabled=false; }
+      }
+      consentButton.addEventListener("click",()=>consent("REVIEW"));
       list.appendChild(card);
     }
   }
