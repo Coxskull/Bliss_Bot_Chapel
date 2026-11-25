@@ -1,8 +1,11 @@
 // ALPHA manual commercial creative export; no network, API key, customer delivery or Factory dispatch.
-// Node 20+. Usage: node scripts/alpha-manual-creative-export.mjs brief.json NEW_OUTPUT_DIRECTORY
+// Node 20+. Usage: node scripts/alpha-manual-creative-export.mjs brief.json NEW_OUTPUT_DIRECTORY [--png]
+// Optional PNG: FFmpeg on PATH with librsvg support. No manifest on incomplete export.
 // Self-test: node scripts/alpha-manual-creative-export.mjs --self-test
 import { readFile, mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
 import { pathToFileURL } from "node:url";
@@ -66,10 +69,25 @@ function selfTest() {
   for(const change of [{rightsConfirmed:false},{palette:"constructor"},{headline:"x".repeat(100)},{brand:"bad\ninput"}])assert.throws(()=>renderPack({...example,...change}));
   console.log("PASS: three draft formats, XML escaping and invalid brief rejection");
 }
+// Use the existing FFmpeg toolchain when it includes the librsvg decoder.
+const runFile = promisify(execFile);
+export async function rasterizePng(svgPath,width,height) {
+  const {stdout}=await runFile("ffmpeg",[
+    "-v","error","-nostdin","-protocol_whitelist","file,pipe",
+    "-c:v","librsvg","-i",resolve(svgPath),"-frames:v","1",
+    "-c:v","png","-f","image2pipe","pipe:1"
+  ],{encoding:"buffer",maxBuffer:32*1024*1024,timeout:30000,windowsHide:true});
+  if(stdout.length<33 || !stdout.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])) ||
+     stdout.toString("ascii",12,16)!=="IHDR" || stdout.readUInt32BE(16)!==width || stdout.readUInt32BE(20)!==height)
+    throw Error("FFmpeg did not return a PNG of the expected dimensions");
+  return stdout;
+}
+
 async function main() {
   const args=process.argv.slice(2);
   if(args.length===1&&args[0]==="--self-test"){selfTest();return;}
-  if(args.length!==2)throw Error("Usage: node scripts/alpha-manual-creative-export.mjs brief.json NEW_OUTPUT_DIRECTORY");
+  const png=args.length===3&&args[2]==="--png";
+  if(args.length!==2&&!png)throw Error("Usage: node scripts/alpha-manual-creative-export.mjs brief.json NEW_OUTPUT_DIRECTORY [--png]");
   const [input,output]=args;
   const pack=renderPack(JSON.parse(await readFile(input,"utf8")));
   await mkdir(output);
@@ -77,6 +95,12 @@ async function main() {
   for(const {name,width,height,svg} of pack){
     await writeFile(join(output,name),svg,{flag:"wx"});
     files.push({name,width,height,sha256:createHash("sha256").update(svg).digest("hex")});
+    if(png){
+      const pngName=name.replace(/\.svg$/,".png");
+      const data=await rasterizePng(join(output,name),width,height);
+      await writeFile(join(output,pngName),data,{flag:"wx"});
+      files.push({name:pngName,width,height,sha256:createHash("sha256").update(data).digest("hex")});
+    }
   }
   const manifest={schema:"alpha-manual-creative-export/v1",status:"DRAFT_PENDING_HUMAN_REVIEW",delivery:"NOT_SENT",providerCalls:0,providerCostMinor:0,otherCosts:"NOT_MEASURED",files};
   await writeFile(join(output,"manifest.json"),JSON.stringify(manifest,null,2)+"\n",{flag:"wx"});
