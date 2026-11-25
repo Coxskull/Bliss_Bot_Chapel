@@ -60,6 +60,14 @@ if ([string]::IsNullOrWhiteSpace($SshUser)) {
 if ([string]::IsNullOrWhiteSpace($RemoteDirectory)) {
     $RemoteDirectory = (Read-Host 'Existing Bliss-only encrypted archive directory on attached volume').Trim()
 }
+# Fail before capture when SSH access or the established separate storage is
+# unavailable. The remote check is not proof of physical DR362 isolation;
+# the operator must independently verify that destination before using it.
+Write-Output 'TASK4_OWNER_COMPLETE=CHECK_EXISTING_OFFHOST_DESTINATION'
+$preflight = @(& $offhost -PreflightOnly -DropletIPv4 $DropletIPv4 -SshUser $SshUser -RemoteDirectory $RemoteDirectory)
+if ($preflight -cnotcontains 'TASK3B_OFFHOST_READONLY_PREFLIGHT_READY') {
+    throw 'TASK4_OWNER_COMPLETE=OFFHOST_PREFLIGHT_FAILED_NO_CAPTURE'
+}
 Write-Output 'TASK4_OWNER_COMPLETE=CAPTURE_FRESH_CURRENT_BLISS_PG18'
 # Tee to the local interactive console is needed: the existing reviewed
 # backup helper displays the public GPG fingerprints before Read-Host.
