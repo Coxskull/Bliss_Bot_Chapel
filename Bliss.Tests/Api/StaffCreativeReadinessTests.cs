@@ -47,6 +47,17 @@ public sealed class StaffCreativeReadinessTests
         Assert.NotEqual(digest, StaffCreativePreparationController.CampaignDigest(id, "Campaign", "Changed"));
     }
 
+    [Theory]
+    [InlineData("/staff-creative-preparation.html")]
+    [InlineData("/staff-creative-preparation.js")]
+    public void Staff_preparation_console_has_exact_default_off_static_routes(string path)
+    {
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("GET", new PathString(path), staffCreativeReadinessEnabled: true));
+        Assert.True(PublicAdvertiserRegistrationGate.IsAllowed("GET", new PathString(path), staffCreativePreparationEnabled: true));
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("POST", new PathString(path), staffCreativePreparationEnabled: true));
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("GET", new PathString(path + "/other"), staffCreativePreparationEnabled: true));
+    }
+
     [Fact]
     public void Only_approved_issuer_staff_can_read()
     {
