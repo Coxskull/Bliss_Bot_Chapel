@@ -13,6 +13,9 @@
   const imagePanel = el("image-reservation"), imageReview = el("image-review"), imageReserve = el("image-reserve"),
     budgetApproval = el("image-budget-approved");
   let imageTarget = null, imageGrant = null;
+  let artworkRun = null, artworkCandidate = null, artworkVersion = 0, artworkUrl = null, artworkRetry = null;
+  const artworkPanel = el("artwork-panel"), artwork = el("artwork"), artworkReview = el("artwork-review");
+  const artworkFields = ["decision","custom","quality","original","geo","defect","rationale","preserve","repair"].map(k=>el("artwork-"+k));
   let manifest = null, brand = null, brandState = null, pendingBrand = null, busy = false, epoch = 0;
   const unchanged = () => brandState && JSON.stringify(readBrand()) === JSON.stringify(brandState.fields);
   const get = path => fetch(path,{credentials:"same-origin",cache:"no-store",headers:{"Accept":"application/json"}});
@@ -41,6 +44,10 @@
     imageReview.disabled = busy || !imageTarget || !unchanged() || !review.checked;
     budgetApproval.disabled = busy || !imageGrant;
     imageReserve.disabled = busy || !imageTarget || !imageGrant || !budgetApproval.checked || !unchanged() || !review.checked;
+    el("artwork-preview").disabled = busy || !artworkRun || !review.checked;
+    el("artwork-attach").disabled = busy || !artworkRun || !artworkUrl || !!artworkCandidate || !review.checked;
+    el("artwork-record").disabled = busy || !artworkCandidate || !artworkUrl || !review.checked || !el("artwork-rationale").value.trim();
+    artworkFields.forEach(f=>f.disabled=busy);
   }
   function reset() {
     manifest = brand = brandState = pendingBrand = null; review.checked = approval.checked = false;
@@ -125,6 +132,7 @@
   }
   function clearImage(target) {
     imageTarget = target; imageGrant = null; imagePanel.hidden = !target;
+    clearArtwork();
     budgetApproval.checked = false; el("image-readiness").textContent = ""; el("image-receipt").textContent = "";
   }
   async function imageAction(action) {
@@ -147,6 +155,8 @@
           throw Error("Run receipt does not match this recipe.");
         el("image-receipt").textContent = JSON.stringify(result,null,2);
         el("image-readiness").textContent = "Existing image run: "+result.status+". No additional dispatch authorized.";
+        clearArtwork();
+        if (result.status==="SUCCEEDED_PENDING_REVIEW") {artworkRun=result.runId;artworkPanel.hidden=false;}
       } else {
         if (result.campaignId !== manifest.campaignId || !uuid.test(result.consentReceiptId)) throw Error("Consent receipt could not be verified.");
         const ready = result.imagePilotConfigured === true && result.readiness?.imageReady === true;
@@ -157,6 +167,60 @@
     } catch(e) { imageGrant=null;budgetApproval.checked=false;el("image-readiness").textContent=e.message; }
     finally {busy=false;sync();}
   }
+  function clearArtwork() {
+    if (artworkUrl) URL.revokeObjectURL(artworkUrl);
+    artworkUrl=artworkRun=artworkCandidate=artworkRetry=null; artworkVersion=0;
+    artwork.hidden=artworkPanel.hidden=artworkReview.hidden=true; artwork.removeAttribute("src");
+    artworkFields.forEach(f=>{if(f.type==="checkbox") f.checked=false;else if(f.tagName==="SELECT") f.selectedIndex=0;else f.value="";});
+    el("artwork-status").textContent="";
+  }
+  async function artworkAction(action) {
+    if (busy || !artworkRun || !imageTarget || !manifest || !review.checked) return;
+    const current=epoch;busy=true;sync();
+    try {
+      const csrf=await session();
+      const payload={...manifest,...imageTarget,runId:artworkRun,action};
+      if(action==="REVIEW"){
+        if(!artworkCandidate || !artworkUrl) throw Error("Preview and attach the image first.");
+        const gate=k=>el("artwork-"+k).checked?"PASS":"FAIL";
+        const data={expectedVersion:artworkVersion,decision:el("artwork-decision").value,
+          customization:gate("custom"),qualityParity:gate("quality"),originality:gate("original"),geographicAuthenticity:gate("geo"),
+          criticalDefect:el("artwork-defect").checked,rationale:el("artwork-rationale").value.trim(),
+          preserve:el("artwork-preserve").value.trim(),repair:el("artwork-repair").value.trim()};
+        const fingerprint=JSON.stringify(data);
+        if(!artworkRetry || artworkRetry.fingerprint!==fingerprint) artworkRetry={fingerprint,key:crypto.randomUUID()};
+        Object.assign(payload,{candidateId:artworkCandidate,review:{...data,idempotencyKey:artworkRetry.key}});
+      }
+      const request=async body=>fetch("/api/internal/creative-image-review",{method:"POST",credentials:"same-origin",cache:"no-store",
+        headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify(body)});
+      let response=await request(payload);
+      if(!response.ok) throw Error("Artwork review unavailable (HTTP "+response.status+").");
+      if(action==="PREVIEW"){
+        if(!response.headers.get("content-type")?.startsWith("image/png")) throw Error("Expected private PNG.");
+        const blob=await response.blob();
+        if(blob.size>16*1024*1024 || blob.size===0) throw Error("Invalid artwork size.");
+        if(current!==epoch)return;
+        if(artworkUrl) URL.revokeObjectURL(artworkUrl);
+        artworkUrl=URL.createObjectURL(blob);artwork.src=artworkUrl;artwork.hidden=false;
+        response=await request({...payload,action:"STATUS"});
+        if(!response.ok) throw Error("Candidate history unavailable.");
+      }
+      const result=await response.json();if(current!==epoch)return;
+      if(result.runId!==artworkRun || !hex.test(result.imageSha256) || result.dispatchAuthorized!==false
+        || result.release!=="HELD" || result.delivery!=="NOT_SENT" || !Number.isInteger(result.reviewVersion))
+        throw Error("Unexpected artwork review receipt.");
+      artworkCandidate=uuid.test(result.candidateId)?result.candidateId:null;artworkVersion=result.reviewVersion;
+      artworkReview.hidden=!artworkCandidate;
+      if(action==="REVIEW")artworkRetry=null;
+      el("artwork-status").textContent=action==="REVIEW"?"Saved review: "+result.decision+" — release remains HELD."
+        : artworkCandidate?"Candidate attached. Complete human quality review.":"Artwork loaded. Attach to candidate history.";
+    }catch(e){if(current===epoch)el("artwork-status").textContent=e.message;}
+    finally{busy=false;sync();}
+  }
+  el("artwork-preview").addEventListener("click",()=>artworkAction("PREVIEW"));
+  el("artwork-attach").addEventListener("click",()=>artworkAction("ATTACH"));
+  el("artwork-record").addEventListener("click",()=>artworkAction("REVIEW"));
+  artworkFields.forEach(f=>f.addEventListener("input",sync));
   imageReview.addEventListener("click",()=>imageAction("REVIEW"));
   imageReserve.addEventListener("click",()=>imageAction("RESERVE"));
   budgetApproval.addEventListener("change",sync);

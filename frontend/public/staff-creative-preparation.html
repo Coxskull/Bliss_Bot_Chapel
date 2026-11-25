@@ -38,5 +38,22 @@
 <label><input type="checkbox" id="image-budget-approved"> I authorize the displayed pilot budget reservation for this exact recipe.</label>
 <button type="button" id="image-reserve" disabled>Reserve one image run</button>
 <pre id="image-receipt"></pre></section>
+<section id="artwork-panel" hidden><h2>Private generated artwork review</h2>
+<p>Inspect the actual provider output before saving a quality review. A PASS does not publish or deliver the artwork.</p>
+<button type="button" id="artwork-preview">Load artwork</button>
+<button type="button" id="artwork-attach" disabled>Attach artwork to candidate history</button>
+<img id="artwork" alt="Private AI advertising draft" hidden style="max-width:100%;height:auto">
+<p id="artwork-status" role="status"></p>
+<section id="artwork-review" hidden>
+<label for="artwork-decision">Review decision</label><select id="artwork-decision"><option>PASS</option><option>REVISE</option><option>FAIL</option></select>
+<label><input type="checkbox" id="artwork-custom"> Customized for advertiser</label>
+<label><input type="checkbox" id="artwork-quality"> Professional quality</label>
+<label><input type="checkbox" id="artwork-original"> Original artwork</label>
+<label><input type="checkbox" id="artwork-geo"> Geographic authenticity</label>
+<label><input type="checkbox" id="artwork-defect"> Critical defect</label>
+<label for="artwork-rationale">Review rationale</label><textarea id="artwork-rationale" maxlength="2000"></textarea>
+<label for="artwork-preserve">Preserve</label><textarea id="artwork-preserve" maxlength="2000"></textarea>
+<label for="artwork-repair">Repair instructions</label><textarea id="artwork-repair" maxlength="2000"></textarea>
+<button type="button" id="artwork-record" disabled>Save human review</button></section></section>
 <section aria-live="polite"><h2>Preparation result</h2><p id="result">No preparation requested.</p></section>
 </section><script src="/staff-creative-preparation.js" defer></script></main></body></html>
