@@ -95,6 +95,45 @@
           add(card, "p", "Amount: " + (row.amountCents / 100).toFixed(2) + " " + row.currency.toUpperCase());
           add(card, "p", "Received: " + row.receivedAt);
           add(card, "p", "Signed notification only. Pending merchant and order reconciliation.");
+          const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          const quote = row.quoteReference || "";
+          const version = /^[0-9a-f]{32}$/i.test(quote)
+            ? quote.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/,"$1-$2-$3-$4-$5") : quote;
+          if (!uuid.test(version)) {
+            add(card,"p","No exact quote-version reference. Investigate manually; do not fulfill.");
+            continue;
+          }
+          const campaign = document.createElement("input"); campaign.placeholder="Exact campaign UUID"; campaign.setAttribute("aria-label","Campaign UUID");card.appendChild(campaign);
+          const checks = [
+            "I checked the current live Stripe merchant and payment status.",
+            "I independently matched the payer to this accepted customer order.",
+            "I verified no refund or dispute is present.",
+            "I verified the approved paid service scope and applicable terms."
+          ].map(label => {const wrap=document.createElement("label");const input=document.createElement("input");
+            input.type="checkbox";wrap.appendChild(input);wrap.appendChild(document.createTextNode(" "+label));card.appendChild(wrap);card.appendChild(document.createElement("br"));return input;});
+          const reconcile=add(card,"button","Record order reconciliation");reconcile.type="button";reconcile.disabled=true;
+          let reconciling=false;
+          const sync=()=>{reconcile.disabled=reconciling || !csrf || !uuid.test(campaign.value.trim()) || checks.some(x=>!x.checked);};
+          campaign.addEventListener("input",sync);checks.forEach(x=>x.addEventListener("change",sync));
+          reconcile.addEventListener("click",async()=>{
+            if(reconcile.disabled)return;
+            reconciling=true;sync();
+            try {
+              const response=await fetch(endpoint+"/starter-reconcile",{method:"POST",credentials:"same-origin",cache:"no-store",
+                headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify({campaignId:campaign.value.trim(),
+                  quoteVersionId:version,checkoutSessionId:row.checkoutSessionId,currentMerchantPaymentVerified:checks[0].checked,
+                  payerAndOrderVerified:checks[1].checked,noRefundOrDisputeVerified:checks[2].checked,paidServiceScopeVerified:checks[3].checked})});
+              if(!response.ok)throw Error("Reconciliation not accepted (HTTP "+response.status+"). Check the current accepted quote, order and permissions.");
+              const result=await response.json();
+              if(result.status!=="RECONCILED_BY_OPERATOR" || result.quoteVersionId.toLowerCase()!==version.toLowerCase()
+                  || result.campaignId.toLowerCase()!==campaign.value.trim().toLowerCase()
+                  || result.fulfillmentAuthorized!==false || result.delivery!=="NOT_SENT" || result.release!=="HELD")
+                throw Error("Reconciliation receipt could not be verified.");
+              add(card,"p","Order reconciled: "+result.reconciliationId+". Fulfillment remains held.");
+              reconcile.remove();campaign.disabled=true;checks.forEach(x=>x.disabled=true);
+            }catch(e){receiptStatus.textContent=e.message;}
+            finally{reconciling=false;sync();}
+          });
         }
         receiptStatus.textContent = data.receipts.length ? "Showing up to 50 recent notifications." : "No matching payment notifications recorded.";
       } catch (error) { receiptList.replaceChildren(); receiptStatus.textContent = error.message; }
