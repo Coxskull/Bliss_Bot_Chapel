@@ -38,6 +38,38 @@ public sealed class StaffCreativePreparationController(
         };
     }
 
+    // Existing staff authorization only. No workspace creation, customer consent,
+    // or provider dispatch on this read. Limit to eligible current drafts.
+    [HttpGet("queue")]
+    public async Task<IActionResult> Queue([FromQuery] Guid? campaignId, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "private, no-store";
+        if (!auth.StaffCreativePreparationRequested || !StaffCreativeReadinessController.IsStaff(User, auth))
+            return StatusCode(403);
+        if (campaignId == Guid.Empty) return BadRequest();
+        var eligible = from m in db.AdvertiserAccountMemberships.AsNoTracking()
+            join receipt in db.AdvertiserRegistrationReceipts.AsNoTracking()
+                on new { m.Subject, m.AdvertiserId } equals new { receipt.Subject, receipt.AdvertiserId }
+            where m.Status == "ACTIVE" && receipt.ProcessingConsent && receipt.TermsAccepted
+                && receipt.PrivacyNoticeVersion == AdvertiserRegistrationController.PrivacyNoticeVersion
+                && receipt.TermsVersion == AdvertiserRegistrationController.TermsVersion
+            select m.AdvertiserId;
+        var rows = await db.Campaigns.AsNoTracking().Where(c => c.Status == "DRAFT" && c.AuthorityStatus == "UNVERIFIED"
+            && (!campaignId.HasValue || c.Id == campaignId.Value)
+            && c.AdvertiserOpportunity != null && c.AdvertiserOpportunity.Description != null
+            && c.AdvertiserOpportunity.Status == "DRAFT" && c.AdvertiserOpportunity.AuthorityStatus == "UNVERIFIED"
+            && c.AdvertiserOpportunity.AdvertiserProgram.Status == "DRAFT"
+            && c.AdvertiserOpportunity.AdvertiserProgram.ExternalProgramId == "alpha:customer-campaign-draft:v1"
+            && eligible.Contains(c.AdvertiserOpportunity.AdvertiserProgram.AdvertiserId))
+            .OrderByDescending(c => c.CreatedAt).ThenBy(c => c.Id).Take(50)
+            .Select(c => new { c.Id, c.Name, Brief = c.AdvertiserOpportunity!.Description! }).ToListAsync(ct);
+        var families = production.References().Select(x => x.NicheKey).Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToArray();
+        return Ok(new { campaigns = rows.Select(x => new { campaignId = x.Id, campaignName = x.Name,
+            creativeBrief = x.Brief, briefSha256 = CampaignDigest(x.Id, x.Name, x.Brief) }),
+            families, dispatchAuthorized = false, release = "HELD", delivery = "NOT_SENT" });
+    }
+
     [HttpPost]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [RequestSizeLimit(16 * 1024)]

@@ -7,7 +7,14 @@
 <p><a href="/api/auth/login?returnUrl=%2Fstaff-creative-preparation.html">Operator sign-in</a> · <a href="/advertiser-operator-review.html">Advertiser review</a></p>
 <p id="status" role="status" aria-live="polite">Checking staff access…</p>
 <section id="panel" hidden>
-<label for="manifest">Private campaign QA manifest (JSON)</label>
+<h2>Eligible advertiser campaigns</h2>
+<p>Select an existing draft from the authorized production queue or import its private QA manifest below.</p>
+<label for="campaign-search">Exact campaign UUID (optional)</label><input id="campaign-search" maxlength="36">
+<button type="button" id="campaign-refresh">Load campaigns</button>
+<label for="campaign-select">Campaign</label><select id="campaign-select"><option value="">Load campaigns first</option></select>
+<button type="button" id="campaign-open" disabled>Review selected campaign</button>
+<p id="queue-status" role="status"></p>
+<label for="manifest">Private campaign QA manifest (JSON, optional)</label>
 <input type="file" id="manifest" accept=".json,application/json">
 <article id="summary" hidden><h2 id="campaign-name"></h2><p id="campaign-id"></p><p id="brief"></p>
 <label><input type="checkbox" id="review"> I reviewed the actual campaign brief and confirm this exact draft.</label>
@@ -27,7 +34,7 @@
 <label><input type="checkbox" id="brand-approved"> The advertiser explicitly approved this exact saved brand direction.</label>
 <button type="button" id="brand-confirm" disabled>Confirm saved brand</button></section>
 <section id="recipe" hidden><h2>Save production recipe</h2><p>Use the latest confirmed brand returned by the workspace. Only supply reviewed production copy.</p>
-<label for="family">Approved template family</label><input id="family" maxlength="128">
+<label for="family">Approved template family</label><select id="family"><option value="">Load eligible templates</option></select>
 <label for="headline">Headline</label><input id="headline" maxlength="256">
 <label for="cta">Call to action</label><input id="cta" maxlength="128">
 <button type="button" id="save" disabled>Save recipe</button></section>
