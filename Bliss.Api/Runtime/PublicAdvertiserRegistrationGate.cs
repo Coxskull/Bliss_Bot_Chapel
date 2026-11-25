@@ -59,9 +59,11 @@ public static class PublicAdvertiserRegistrationGate
         "/api/creators/register", "/api/creators/operator-review", "/api/creators/operator-review/verify-channel"
     };
 
-    public static bool IsAllowed(string? method, PathString path, bool creatorRegistrationEnabled = false, bool staffCreativeReadinessEnabled = false)
+    public static bool IsAllowed(string? method, PathString path, bool creatorRegistrationEnabled = false, bool staffCreativeReadinessEnabled = false, bool staffCreativePreparationEnabled = false)
     {
         var value = path.Value ?? "";
+        if (staffCreativePreparationEnabled && string.Equals(method, "POST", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(value, "/api/internal/creative-preparation", StringComparison.OrdinalIgnoreCase)) return true;
         if (staffCreativeReadinessEnabled && string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
             && string.Equals(value, "/api/internal/creative-readiness", StringComparison.OrdinalIgnoreCase)) return true;
         if (creatorRegistrationEnabled)
@@ -80,7 +82,7 @@ public static class PublicAdvertiserRegistrationGate
     }
 
     public static async Task InvokeAsync(HttpContext context, Func<Task> next,
-        bool creatorRegistrationEnabled = false, bool staffCreativeReadinessEnabled = false)
+        bool creatorRegistrationEnabled = false, bool staffCreativeReadinessEnabled = false, bool staffCreativePreparationEnabled = false)
     {
         var releaseMode = creatorRegistrationEnabled
             ? "advertiser-and-creator-registration" : "advertiser-registration-only";
@@ -99,7 +101,7 @@ public static class PublicAdvertiserRegistrationGate
             return;
         }
 
-        if (IsAllowed(context.Request.Method, context.Request.Path, creatorRegistrationEnabled, staffCreativeReadinessEnabled))
+        if (IsAllowed(context.Request.Method, context.Request.Path, creatorRegistrationEnabled, staffCreativeReadinessEnabled, staffCreativePreparationEnabled))
         {
             await next();
             return;
