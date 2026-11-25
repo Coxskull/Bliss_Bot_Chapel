@@ -7,6 +7,7 @@
 [CmdletBinding()]
 param([Parameter(Mandatory=$true)][string] $ReceiptPath)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'task4-offhost-custody.ps1')
 $project = 'fb33c1b7-03fb-42c8-89b1-081951a738fd'
 $envId = 'b67a9836-36bf-4083-93f7-00c867b13f39'
 $postgres = '6aa78407-1632-48c9-8ea4-0289a7d36a5b'
@@ -26,7 +27,7 @@ if ($m.schema -cne 'alpha-bliss-pg18-recovery/v1' -or
     $m.sourceServiceId -cne $postgres -or $m.sourceDatabase -cne 'bliss' -or
     [int]$m.sourcePostgresMajor -ne 18 -or [int]$m.sourcePublicTableCount -lt 90 -or
     $m.encryption -cne 'GPG_RECIPIENT' -or
-    $m.offhostProvider -cne 'DigitalOcean' -or $m.offhostDropletId -cne '571399692' -or
+    ( -not (Test-Task4OffhostCustody $m) ) -or
     $m.offhostSha256Verified -ne $true -or
     $m.isolatedRestoreVerified -ne $true -or
     $m.isolatedRestoreDatabase -ceq 'bliss' -or
@@ -42,6 +43,9 @@ $wslRecovery = $m.isolatedRestoreEngine -ceq 'WSL2 Ubuntu PostgreSQL 18 Unix soc
     $m.isolatedRestoreTransport -ceq 'UNIX_SOCKET_ONLY' -and
     $m.isolatedRestoreDatabaseRemoved -eq $true -and
     ([string]$m.isolatedRestoreDatabase) -cmatch '^alpha_task4_wsl_restore_'
+if ($m.offhostProvider -ceq 'GoogleDrive' -and -not $wslRecovery) {
+    throw 'TASK4_CREATOR_SCHEMA=REFUSED_DRIVE_REQUIRES_WSL_RECOVERY'
+}
 if (-not ($dockerRecovery -or $wslRecovery)) {
     throw 'TASK4_CREATOR_SCHEMA=REFUSED_DOCKER_OR_WSL18_RECOVERY_NOT_VERIFIED'
 }
@@ -70,7 +74,7 @@ if ($null -eq $railway) { throw 'TASK4_CREATOR_SCHEMA=REFUSED_RAILWAY_CLI_REQUIR
 if ($LASTEXITCODE -ne 0) { throw 'TASK4_CREATOR_SCHEMA=REFUSED_RAILWAY_OWNER_LOGIN_REQUIRED' }
 # Before any database DDL, require the authorized owner to attest that the
 # backup is current and recoverable; the private document never leaves the PC.
-Write-Output 'TASK4_CREATOR_BACKUP=RECENT_DIGITALOCEAN_AND_ISOLATED_RESTORE_METADATA_VERIFIED'
+Write-Output 'TASK4_CREATOR_BACKUP=RECENT_APPROVED_OFFHOST_AND_ISOLATED_RESTORE_METADATA_VERIFIED'
 Write-Output 'TASK4_CREATOR_TARGET=EXISTING_BLISS_PRODUCTION_PG18'
 Write-Output 'TASK4_CREATOR_ADVERTISER_AND_GLOBAL_STOP=UNCHANGED'
 $ack = (Read-Host 'Type BLISS-CREATOR-CURRENT-RECOVERY-VERIFIED if the backup still covers current customer data and your decryption key is recoverable').Trim()
