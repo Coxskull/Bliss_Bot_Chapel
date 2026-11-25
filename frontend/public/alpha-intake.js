@@ -13,11 +13,14 @@
   const field = name => form.elements.namedItem(name);
   // A public, same-origin planning link may prefill ONLY this fixed topic.
   // It must never submit a form, grant consent, or infer an account/order.
+  const requestedService = new URLSearchParams(window.location.search).get("service");
   if (form.dataset.kind === "advertiser" &&
-      new URLSearchParams(window.location.search).get("service") === "planning") {
+      (requestedService === "planning" || requestedService === "starter")) {
     const description = form.elements.namedItem("description");
     if (description && !description.value) {
-      description.value = "Please send me a Campaign Planning & Coordination planning-only proposal. I understand that this inquiry is free and creates no order or payment obligation.";
+      description.value = requestedService === "starter"
+        ? "Please send me a Digital Advertising Starter Package planning-only proposal (proposed service price $149 USD). I understand this inquiry is free and creates no order or payment obligation."
+        : "Please send me a Campaign Planning & Coordination planning-only proposal. I understand that this inquiry is free and creates no order or payment obligation.";
     }
   }
 
