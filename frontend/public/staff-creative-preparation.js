@@ -17,6 +17,8 @@
   const artworkPanel = el("artwork-panel"), artwork = el("artwork"), artworkReview = el("artwork-review");
   const artworkFields = ["decision","custom","quality","original","geo","defect","rationale","preserve","repair"].map(k=>el("artwork-"+k));
   let manifest = null, brand = null, brandState = null, pendingBrand = null, busy = false, epoch = 0;
+  let queuedCampaigns = [], queueLoading = false;
+  const queueSelect=el("campaign-select"),queueRefresh=el("campaign-refresh"),queueOpen=el("campaign-open"),queueStatus=el("queue-status");
   const unchanged = () => brandState && JSON.stringify(readBrand()) === JSON.stringify(brandState.fields);
   const get = path => fetch(path,{credentials:"same-origin",cache:"no-store",headers:{"Accept":"application/json"}});
   async function session() {
@@ -31,6 +33,8 @@
   }
   function sync() {
     file.disabled = busy; review.disabled = busy;
+    queueRefresh.disabled=busy || queueLoading;queueSelect.disabled=busy || queueLoading;
+    queueOpen.disabled=busy || queueLoading || !queuedCampaigns.some(x=>x.campaignId===queueSelect.value);
     prepare.disabled = busy || !manifest || !review.checked;
     save.disabled = busy || !manifest || !review.checked || !brand || fields.some(f => !f.value.trim());
     fields.forEach(f => f.disabled = busy);
@@ -59,6 +63,42 @@
     ["campaign-name","campaign-id","brief"].forEach(id => el(id).textContent = "");
     el("result").textContent = "No preparation requested."; sync();
   }
+  async function readQueue() {
+    if(busy || queueLoading)return;
+    const search=el("campaign-search").value.trim().toLowerCase();
+    if(search && !uuid.test(search)){queueStatus.textContent="Enter a valid campaign UUID.";return;}
+    queueLoading=true;sync();
+    try{
+      await session();
+      const response=await get("/api/internal/creative-preparation/queue"+(search?"?campaignId="+encodeURIComponent(search):""));
+      if(!response.ok)throw Error("Campaign queue unavailable (HTTP "+response.status+").");
+      const result=await response.json();
+      if(!Array.isArray(result.campaigns)||result.campaigns.length>50||!Array.isArray(result.families)
+          ||result.dispatchAuthorized!==false||result.release!=="HELD"||result.delivery!=="NOT_SENT")throw Error("Invalid campaign queue response.");
+      queuedCampaigns=result.campaigns.filter(x=>uuid.test(x.campaignId)&&hex.test(x.briefSha256)
+          &&typeof x.campaignName==="string"&&typeof x.creativeBrief==="string");
+      queueSelect.replaceChildren(new Option("Select campaign",""));
+      for(const row of queuedCampaigns)queueSelect.add(new Option(row.campaignName+" — "+row.campaignId,row.campaignId));
+      const old=fields[0].value;fields[0].replaceChildren(new Option("Select eligible template",""));
+      for(const family of result.families.filter(x=>typeof x==="string"&&x.length>0&&x.length<=128))fields[0].add(new Option(family,family));
+      fields[0].value=old;
+      queueStatus.textContent=queuedCampaigns.length+" eligible campaign(s); "+(fields[0].options.length-1)+" eligible template families.";
+    }catch(e){queuedCampaigns=[];queueSelect.replaceChildren(new Option("Queue unavailable",""));queueStatus.textContent=e.message;}
+    finally{queueLoading=false;sync();}
+  }
+  queueRefresh.addEventListener("click",readQueue);queueSelect.addEventListener("change",sync);
+  queueOpen.addEventListener("click",async()=>{
+    if(queueOpen.disabled)return;
+    const row=queuedCampaigns.find(x=>x.campaignId===queueSelect.value);if(!row)return;
+    const current=++epoch;reset();file.value="";
+    const bytes=new TextEncoder().encode(row.campaignId+"\n"+row.campaignName+"\n"+row.creativeBrief);
+    const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),x=>x.toString(16).padStart(2,"0")).join("");
+    if(current!==epoch)return;
+    if(digest!==row.briefSha256){status.textContent="Campaign checksum mismatch.";return;}
+    manifest={campaignId:row.campaignId,briefSha256:digest};
+    el("campaign-name").textContent=row.campaignName;el("campaign-id").textContent=row.campaignId;el("brief").textContent=row.creativeBrief;
+    summary.hidden=false;status.textContent="Review the current campaign before preparing.";sync();
+  });
   file.addEventListener("change", async () => {
     const current = ++epoch; reset();
     const f = file.files[0]; if (!f) return;
@@ -240,7 +280,7 @@
   brandInputs.forEach(f=>f.addEventListener("input",()=>{approval.checked=false;sync();}));
   approval.addEventListener("change",sync);
   draftButton.addEventListener("click",()=>submit("SAVE_DRAFT")); confirmButton.addEventListener("click",()=>submit("CONFIRM_DRAFT"));
-  window.addEventListener("pagehide",()=>{epoch++; reset(); file.value=""; panel.hidden=true;});
+  window.addEventListener("pagehide",()=>{epoch++; reset(); file.value=""; queuedCampaigns=[];queueSelect.replaceChildren();panel.hidden=true;});
   reset();
-  session().then(()=>{panel.hidden=false;status.textContent="Authorized staff access confirmed.";}).catch(e=>{status.textContent=e.message;});
+  session().then(()=>{panel.hidden=false;status.textContent="Authorized staff access confirmed.";return readQueue();}).catch(e=>{status.textContent=e.message;});
 })();
