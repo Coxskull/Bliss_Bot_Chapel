@@ -15,7 +15,7 @@
   <header class="topbar">
     <a class="brand" href="/">ALPHA <span>GLOBAL MEDIA™</span></a>
     <nav aria-label="Creator navigation">
-      <a href="/creator-account.html">Account setup</a>
+      <a href="/creator-registration.html">Account setup</a>
       <a href="/join-creator.html">Creator interest</a>
     </nav>
   </header>
@@ -23,7 +23,7 @@
     <section class="welcome">
       <p class="eyebrow">ALPHA GLOBAL MEDIA™ · CREATOR WORKSPACE</p>
       <h1>Your creator dashboard.</h1>
-      <p>Your private profile is available only after your account and creator record have been verified by ALPHA.</p>
+      <p>View your own application status. Verified profile and marketplace access require separate approval.</p>
     </section>
     <section class="panel" aria-labelledby="access-title">
       <div class="panel-head">
@@ -33,13 +33,19 @@
       <p id="status" class="status" role="status" aria-live="polite">Checking your secure account session…</p>
       <div id="signin-panel" class="actions" hidden>
         <a class="primary" href="/api/auth/login?returnUrl=%2Fcreator-dashboard.html">Sign in securely</a>
-        <a class="secondary" href="/creator-account.html">Creator account setup</a>
+        <a class="secondary" href="/creator-registration.html">Creator account setup</a>
       </div>
       <div id="pending-panel" hidden>
         <h3>Creator access is not yet available</h3>
         <p>Your public interest submission does not create a workspace account. Access is enabled only after manual identity verification and an approved creator-to-account link.</p>
-        <a class="secondary" href="/creator-account.html">Review account setup steps</a>
+        <a class="secondary" href="/creator-registration.html">Review account setup steps</a>
       </div>
+      <section id="application-panel" class="profile" hidden>
+        <h3>Your registration application</h3><dl>
+          <div><dt>Application status</dt><dd id="application-state">—</dd></div>
+          <div><dt>Receipt</dt><dd id="application-receipt">—</dd></div>
+        </dl><p class="muted">Registration approval does not verify channel ownership, unlock campaigns or authorize payments.</p>
+      </section>
       <section id="profile-panel" class="profile" aria-labelledby="profile-title" hidden>
         <div class="profile-heading"><div><p class="kicker">VERIFIED CREATOR PROFILE</p><h3 id="profile-title">Your profile</h3></div><span class="verified">VERIFIED</span></div>
         <dl>
@@ -61,7 +67,7 @@
       <article><span>02</span><h3>Messages</h3><p>Not yet enabled</p></article>
       <article><span>03</span><h3>Earnings and payouts</h3><p>Not yet enabled</p></article>
     </section>
-    <p class="footnote">Pre-launch creator workspace. Only verified profile information is shown. ALPHA will separately announce when additional creator features are approved and available.</p>
+    <p class="footnote">Pre-launch creator workspace. Application receipts are private; verified profiles require independent authorization. ALPHA will separately announce when additional creator features are approved and available.</p>
   </main>
   <footer>© 2026 ALPHA GLOBAL MEDIA LLC.</footer>
 </body>

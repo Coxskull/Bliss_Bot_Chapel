@@ -75,6 +75,8 @@ public sealed class CreatorRegistrationSecurityTests
     {
         Assert.Equal(SupabaseOidc.CreatorLane,
             SupabaseOidc.ResolvePublicRegistrationLane("/creator-registration.html"));
+        Assert.Equal(SupabaseOidc.CreatorLane, SupabaseOidc.ResolvePublicRegistrationLane("/creator-dashboard.html"));
+        Assert.Equal(SupabaseOidc.AdvertiserLane, SupabaseOidc.ResolvePublicRegistrationLane("/creator-dashboard.html?role=creator"));
         Assert.Equal(SupabaseOidc.AdvertiserLane,
             SupabaseOidc.ResolvePublicRegistrationLane("/advertiser-registration.html"));
         Assert.Equal(SupabaseOidc.AdvertiserLane,
