@@ -47,6 +47,7 @@ public static class PublicAdvertiserRegistrationGate
     private static readonly HashSet<string> CreatorGetPaths = new(StringComparer.OrdinalIgnoreCase)
     {
         "/creator-registration.html", "/creator-registration.js",
+        "/creator-dashboard.html", "/creator-dashboard.js",
         "/api/creators/registration", "/api/creators/operator-review",
         "/creator-operator-review.html", "/creator-operator-review.js",
         "/alpha-privacy.html", "/alpha-terms.html",
