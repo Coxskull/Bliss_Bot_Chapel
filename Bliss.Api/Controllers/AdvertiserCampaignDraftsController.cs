@@ -118,6 +118,102 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
         });
     }
 
+    public const string ProviderConsentNotice = "alpha-creative-provider-consent-v1";
+    public const string ProviderConsentModel = "gpt-image-2.5-flare";
+    public const string ProviderConsentAction = "CREATIVE_PROVIDER_CONSENT";
+
+    public static string ProviderConsentScope(Guid campaignId, string campaignDigest, Guid recipeId, string recipeDigest) =>
+        Bliss.Api.Operations.ControlledAiService.Hash($"{ProviderConsentNotice}\nOpenAI\n{ProviderConsentModel}\n{campaignId:D}\n{campaignDigest}\n{recipeId:D}\n{recipeDigest}");
+
+    [HttpPost("creative-provider-consent")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> ProviderConsent([FromBody] CampaignProviderConsentRequest request, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.AdvertiserCreativeProviderConsentRequested || request.CampaignId == Guid.Empty)
+            return StatusCode(403);
+        if (request.Action is not ("REVIEW" or "GRANT" or "REVOKE")
+            || (request.Action != "REVIEW" && (request.RequestKey is null || request.RequestKey == Guid.Empty
+                || request.ScopeSha256 is not { Length: 64 } || request.NoticeVersion != ProviderConsentNotice)))
+            return BadRequest(new { error = "Exact recipe consent action and notice version required." });
+        var subject = User.FindFirst("sub")?.Value;
+        if (string.IsNullOrWhiteSpace(subject)) return StatusCode(403);
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        try
+        {
+            var allowed = ActiveBusiness();
+            var id = await allowed.SingleOrDefaultAsync(ct);
+            if (id == Guid.Empty) return StatusCode(403);
+            var currentConsent = await (from m in db.AdvertiserAccountMemberships.AsNoTracking()
+                join receipt in db.AdvertiserRegistrationReceipts.AsNoTracking()
+                    on new { m.Subject, m.AdvertiserId } equals new { receipt.Subject, receipt.AdvertiserId }
+                where m.Subject == subject && m.AdvertiserId == id && m.Status == "ACTIVE"
+                    && receipt.ProcessingConsent && receipt.TermsAccepted
+                    && receipt.PrivacyNoticeVersion == AdvertiserRegistrationController.PrivacyNoticeVersion
+                    && receipt.TermsVersion == AdvertiserRegistrationController.TermsVersion
+                select m.Id).AnyAsync(ct);
+            if (!currentConsent) return StatusCode(403);
+            var draft = await Summaries(OwnDrafts(id).Where(c => c.Id == request.CampaignId && allowed.Contains(id))).SingleOrDefaultAsync(ct);
+            if (draft is null) return NotFound();
+            var digest = StaffCreativePreparationController.CampaignDigest(draft.CampaignId, draft.Name, draft.Brief);
+            var key = "campaign:" + draft.CampaignId.ToString("N") + ":" + digest;
+            var prepared = await (from p in db.AcademyProductionBriefs.AsNoTracking()
+                join w in db.WeddingPlannerWorkspaces.AsNoTracking() on p.WorkspaceId equals w.Id
+                where w.AdvertiserId == id && w.IsPrimary && w.Status == "ACTIVE" && p.IdempotencyKey == key
+                select p).SingleOrDefaultAsync(ct);
+            if (prepared is null) return NotFound(new { error = "No current production recipe has been prepared." });
+            var latestBrand = await db.WeddingPlannerBrandDna.AsNoTracking().Where(x => x.WorkspaceId == prepared.WorkspaceId)
+                .OrderByDescending(x => x.Version).Select(x => new { x.Id, x.Status }).FirstOrDefaultAsync(ct);
+            if (latestBrand is null || latestBrand.Status != "CONFIRMED" || latestBrand.Id != prepared.BrandDnaId)
+                return Conflict(new { error = "Current confirmed brand and recipe do not match." });
+            using var json = System.Text.Json.JsonDocument.Parse(prepared.ProductionBriefJson);
+            var recipe = json.RootElement.GetProperty("generationRecipe").GetString();
+            if (string.IsNullOrWhiteSpace(recipe) || Bliss.Api.Operations.ControlledAiService.Hash(recipe) != prepared.RecipeSha256)
+                return Conflict(new { error = "Production recipe integrity check failed." });
+            var scope = ProviderConsentScope(draft.CampaignId, digest, prepared.Id, prepared.RecipeSha256);
+            var history = db.WeddingPlannerAuditEvents.AsNoTracking().Where(e => e.AdvertiserId == id
+                && e.WorkspaceId == prepared.WorkspaceId && e.Action == ProviderConsentAction && e.Detail == scope
+                && e.ActorType == "ADVERTISER");
+            var latest = await history.OrderByDescending(e => e.OccurredAt).ThenByDescending(e => e.Id).FirstOrDefaultAsync(ct);
+            if (request.Action != "REVIEW")
+            {
+                if (request.ScopeSha256 != scope) return Conflict(new { error = "Recipe changed. Review the current recipe before responding." });
+                var outcome = request.Action == "GRANT" ? "GRANTED" : "REVOKED";
+                var prior = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(e => e.Id == request.RequestKey!.Value, ct);
+                if (prior is not null)
+                {
+                    if (prior.AdvertiserId != id || prior.WorkspaceId != prepared.WorkspaceId || prior.ActorType != "ADVERTISER"
+                        || prior.ActorLabel != subject || prior.Action != ProviderConsentAction || prior.Detail != scope || prior.Outcome != outcome)
+                        return Conflict(new { error = "Consent request key conflicts." });
+                }
+                else
+                {
+                    if (request.ExpectedReceiptId != latest?.Id)
+                        return Conflict(new { error = "Consent changed. Review the latest status before responding." });
+                    var now = DateTime.UtcNow;
+                    if (latest is not null && now <= latest.OccurredAt) now = latest.OccurredAt.AddTicks(10);
+                    latest = new WeddingPlannerAuditEvent { Id = request.RequestKey!.Value, AdvertiserId = id, WorkspaceId = prepared.WorkspaceId,
+                        Action = ProviderConsentAction, ActorType = "ADVERTISER", ActorLabel = subject, Outcome = outcome,
+                        Detail = scope, OccurredAt = now };
+                    db.WeddingPlannerAuditEvents.Add(latest);
+                    await db.SaveChangesAsync(ct);
+                }
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new { campaignId = draft.CampaignId, recipeId = prepared.Id, recipeSha256 = prepared.RecipeSha256,
+                scopeSha256 = scope, noticeVersion = ProviderConsentNotice, provider = "OpenAI", model = ProviderConsentModel,
+                generationRecipe = recipe, consentStatus = latest?.Outcome ?? "NOT_COLLECTED", receiptId = latest?.Id,
+                consentRecordedAt = latest?.OccurredAt, billingAuthorization = "NOT_GRANTED",
+                providerCall = "NOT_REQUESTED", dispatchAuthorized = false, release = "HELD" });
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg &&
+            (pg.SqlState == PostgresErrorCodes.UniqueViolation || pg.SqlState == PostgresErrorCodes.SerializationFailure))
+        { return Conflict(new { error = "Consent changed concurrently. Review before retrying." }); }
+        catch (PostgresException pg) when (pg.SqlState == PostgresErrorCodes.SerializationFailure)
+        { return Conflict(new { error = "Consent changed concurrently. Review before retrying." }); }
+    }
+
     [HttpPost]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [RequestSizeLimit(16 * 1024)]
@@ -171,3 +267,6 @@ public sealed record CampaignDraftRequest(Guid RequestKey, string Name, string B
 public sealed record CampaignDraftSummary(Guid CampaignId, string Name, string Brief, string Status, DateTime CreatedAt);
 
 public sealed record CreativeHandoffPreviewRequest(Guid CampaignId);
+
+public sealed record CampaignProviderConsentRequest(Guid CampaignId, string Action, string? ScopeSha256,
+    string? NoticeVersion, Guid? RequestKey, Guid? ExpectedReceiptId);

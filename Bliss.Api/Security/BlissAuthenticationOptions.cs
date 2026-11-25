@@ -42,6 +42,8 @@ public sealed class BlissAuthenticationOptions
     public bool AdvertiserCampaignDraftsRequested { get; set; }
     // Read-only, no-cost creative/Factory QA preview; never permits provider calls.
     public bool AdvertiserCreativeHandoffPreviewRequested { get; set; }
+    // Customer consent for exact prepared recipe; never authorizes payment or dispatch.
+    public bool AdvertiserCreativeProviderConsentRequested { get; set; }
     // Separate staff-only no-call readiness lane. Never enables a worker or submission.
     public bool StaffCreativeReadinessRequested { get; set; }
     // Explicit staff preparation writes only; no AI calls or queue submission.
