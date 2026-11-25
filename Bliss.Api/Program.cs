@@ -187,7 +187,14 @@ builder.Services.AddScoped<CreativeHandoffService>();
 builder.Services.AddScoped<AskAlphaLineagePreflightService>();
 builder.Services.AddScoped<CampaignMeasurementService>();
 builder.Services.AddScoped<ControlledAiService>();
-if (!runtime.RestrictedPreview) builder.Services.AddHostedService<ControlledAiWorker>();
+if (!runtime.RestrictedPreview || (runtime.PublicAdvertiserRegistrationOnly
+    && authentication.Enabled && authentication.SupabaseEnabled
+    && authentication.StaffCreativeReadinessRequested && authentication.StaffCreativePreparationRequested
+    && authentication.AdvertiserCreativeProviderConsentRequested
+    && runtime.ControlledAi.RestrictedImageRun.Configured
+    && runtime.ControlledAi.RestrictedImageRun.DispatchRequested
+    && runtime.ControlledAi.RestrictedImageRun.ExternalBillingReconciled))
+    builder.Services.AddHostedService<ControlledAiWorker>();
 builder.Services.AddHttpClient<IControlledAiProvider, ConfiguredControlledAiProvider>(client =>
 {
     client.Timeout = Timeout.InfiniteTimeSpan;

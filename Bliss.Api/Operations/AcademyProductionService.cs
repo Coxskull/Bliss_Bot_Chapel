@@ -76,16 +76,29 @@ public sealed class AcademyProductionService(BlissDbContext db, BlueprintPhaseSe
         return await Commit(row, fingerprint, Replay, x => x.RequestSha256, workspace, "PRODUCTION_BRIEF_SAVED", actorType, actorLabel, requestId, ct);
     }
     public async Task<(AcademyProductionCandidate Row, bool Replay)> SubmitAsync(WeddingPlannerWorkspaceResult workspace,
-        Guid briefId, SubmitProductionCandidate request, string actorType, string actorLabel, string? requestId, CancellationToken ct)
+        Guid briefId, SubmitProductionCandidate request, string actorType, string actorLabel, string? requestId, CancellationToken ct,
+        byte[]? trustedGeneratedPng = null)
     {
         await BriefAsync(workspace.WorkspaceId, briefId, ct);
         var key = Text(request.IdempotencyKey, 128); var label = Text(request.Label, 200); var notes = Text(request.Notes, 2000, false);
-        if (request.ExpectedVersion < 0 || request.ImageBase64 is null || request.ImageBase64.Length > 1_398_104)
-            throw new InvalidOperationException("A nonnegative version and PNG image of at most 1 MiB are required.");
+        if (request.ExpectedVersion < 0) throw new InvalidOperationException("A nonnegative version is required.");
         byte[] bytes;
-        try { bytes = Convert.FromBase64String(request.ImageBase64); }
-        catch (FormatException) { throw new InvalidOperationException("Image data must be base64-encoded PNG."); }
-        CandidatePng.Validate(bytes);
+        if (trustedGeneratedPng is not null)
+        {
+            // Internal caller must resolve the provider output from the exact stored run.
+            // No request-body field can enable this separate, bounded path.
+            if (!string.IsNullOrEmpty(request.ImageBase64)) throw new InvalidOperationException("Unexpected uploaded image.");
+            bytes = trustedGeneratedPng;
+            CandidatePng.ValidateGenerated(bytes);
+        }
+        else
+        {
+            if (request.ImageBase64 is null || request.ImageBase64.Length > 1_398_104)
+                throw new InvalidOperationException("PNG image of at most 1 MiB is required.");
+            try { bytes = Convert.FromBase64String(request.ImageBase64); }
+            catch (FormatException) { throw new InvalidOperationException("Image data must be base64-encoded PNG."); }
+            CandidatePng.Validate(bytes);
+        }
         var imageHash = Hash(bytes);
         var fingerprint = Hash(Serialize(new { request.ExpectedVersion, label, notes, imageHash }));
         async Task<AcademyProductionCandidate?> Replay() => await db.AcademyProductionCandidates.AsNoTracking().SingleOrDefaultAsync(x => x.BriefId == briefId && x.IdempotencyKey == key, ct);
