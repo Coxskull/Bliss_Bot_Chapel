@@ -4,9 +4,11 @@
 # before returning any production-eligible recovery receipt.
 # Not a production database migration. Existing Nov21 99-table restore is
 # already accepted and is NOT re-run by this script.
+# Supports approved DigitalOcean or private Google Drive custody evidence.
 [CmdletBinding()]
 param([Parameter(Mandatory=$true)][string] $OffhostManifestPath)
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'task4-offhost-custody.ps1')
 $project = 'fb33c1b7-03fb-42c8-89b1-081951a738fd'
 $environment = 'b67a9836-36bf-4083-93f7-00c867b13f39'
 $service = '6aa78407-1632-48c9-8ea4-0289a7d36a5b'
@@ -24,14 +26,13 @@ if ($m.schema -cne 'alpha-bliss-pg18-recovery/v1' -or
     [int]$m.sourcePostgresMajor -ne 18 -or
     [int]$m.sourcePublicTableCount -lt 90 -or
     $m.encryption -cne 'GPG_RECIPIENT' -or
-    $m.offhostProvider -cne 'DigitalOcean' -or
-    $m.offhostDropletId -cne '571399692' -or
+    ( -not (Test-Task4OffhostCustody $m) ) -or
     $m.offhostSha256Verified -ne $true -or
     $m.isolatedRestoreVerified -eq $true -or
     $m.archiveSha256 -cnotmatch '^[a-f0-9]{64}$' -or
     $m.offhostRemoteChecksum -cne $m.archiveSha256 -or
     $m.archiveFileName -cnotmatch '^bliss-pg18-[a-zA-Z0-9-]+\.gpg$') {
-    throw 'TASK4_WSL18=REFUSED_SOURCE_OR_DIGITALOCEAN_EVIDENCE'
+    throw 'TASK4_WSL18=REFUSED_SOURCE_OR_APPROVED_OFFHOST_EVIDENCE'
 }
 try {
     $captured = [DateTimeOffset]::Parse([string]$m.capturedAtUtc)
