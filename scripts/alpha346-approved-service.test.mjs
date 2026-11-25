@@ -81,7 +81,9 @@ test('Starter Package inquiry prefills only the selected fixed topic',async()=>{
  const form={dataset:{kind},elements:{namedItem(n){return ({description,contact_consent:consent,marketing_opt_in:marketing})[n]??null;}},addEventListener(n){events.push(n);}};
  const document={querySelector(s){return s==='#alpha-intake-form'?form:s==='#form-status'?{}:s==='#submit-button'?{}:null;}};
  runInNewContext(script,{document,window:{location:{search}},URLSearchParams});
- if(expected.startsWith('Please')){assert.ok(description.value.startsWith(expected));assert.ok(description.value.includes('creates no order or payment obligation'));}else assert.equal(description.value,expected);
+ if(expected.startsWith('Please')){assert.ok(description.value.startsWith(expected));assert.ok(description.value.includes('creates no order or payment obligation'));assert.ok(description.value.includes('customized advertising artwork'));}else assert.equal(description.value,expected);
  assert.equal(consent.checked,false);assert.equal(marketing.checked,false);assert.deepEqual(events,['input','submit']);
  }
 });
+
+test('Starter creative scope matches verified merchant description',()=>{const section=services.slice(services.indexOf('Digital Advertising Starter Package —'));for(const x of ['customized advertising artwork','promotional content design','digital marketing materials'])assert.ok(section.includes(x));assert.doesNotMatch(section,/Start with the five planning deliverables/);});
