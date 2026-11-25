@@ -59,6 +59,7 @@ public sealed class BlissAuthenticationOptions
     // Separate manual payment-to-order reconciliation; never authorizes release.
     public bool StarterPaymentReconciliationRequested { get; set; }
     public bool StarterArtworkDeliveryRequested { get; set; }
+    public bool StarterServiceOfferRequested { get; set; }
     public string[] ApprovedRegistrationOperatorSubjects { get; set; } = [];
     // Separate fail-closed account privacy case switch. Never inferred from registration
     // or self-service enrollment, and must stay OFF until hosted human handling is accepted.

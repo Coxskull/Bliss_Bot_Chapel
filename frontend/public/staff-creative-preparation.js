@@ -12,7 +12,7 @@
   const readBrand = () => Object.fromEntries(brandKeys.map((k,i)=>[k,brandInputs[i].value.trim()]));
   const imagePanel = el("image-reservation"), imageReview = el("image-review"), imageReserve = el("image-reserve"),
     budgetApproval = el("image-budget-approved");
-  let imageTarget = null, imageGrant = null;
+  let imageTarget = null, imageGrant = null, offerWorkspace = null;
   let artworkRun = null, artworkCandidate = null, artworkVersion = 0, artworkUrl = null, artworkRetry = null;
   const artworkPanel = el("artwork-panel"), artwork = el("artwork"), artworkReview = el("artwork-review");
   const artworkFields = ["decision","custom","quality","original","geo","defect","rationale","preserve","repair"].map(k=>el("artwork-"+k));
@@ -33,6 +33,8 @@
   }
   function sync() {
     file.disabled = busy; review.disabled = busy;
+    el("offer-save").disabled=busy || !manifest || !offerWorkspace || !review.checked || !el("offer-approved").checked
+        || !el("offer-tax").checked || !el("offer-scope").value.trim() || !el("offer-terms").value.trim();
     queueRefresh.disabled=busy || queueLoading;queueSelect.disabled=busy || queueLoading;
     queueOpen.disabled=busy || queueLoading || !queuedCampaigns.some(x=>x.campaignId===queueSelect.value);
     prepare.disabled = busy || !manifest || !review.checked;
@@ -57,6 +59,8 @@
   }
   function reset() {
     manifest = brand = brandState = pendingBrand = null; review.checked = approval.checked = false;
+    offerWorkspace=null;el("starter-offer").hidden=true;el("offer-scope").value=el("offer-terms").value="";
+    el("offer-approved").checked=el("offer-tax").checked=false;el("offer-status").textContent="";
     clearImage(null);
     brandPanel.hidden = true; brandInputs.forEach(f=>f.value=""); el("brand-status").textContent="";
     summary.hidden = recipe.hidden = true; fields.forEach(f => f.value = "");
@@ -156,6 +160,7 @@
           || !["NOT_PREPARED","DRAFT","CONFIRMED"].includes(result.brandStatus)
           || (result.brandVersion > 0 && (!result.brandFields || brandKeys.some(k=>typeof result.brandFields[k]!=="string"))))
         throw Error("Brand response could not be verified.");
+      offerWorkspace=result.workspaceId;el("starter-offer").hidden=false;
       const values = Object.fromEntries(brandKeys.map(k=>[k,result.brandFields?.[k]??""]));
       brandState = {version:result.brandVersion,status:result.brandStatus,fields:values};
       brandInputs.forEach((f,i)=>f.value=values[brandKeys[i]]);
@@ -275,6 +280,22 @@
   imageReview.addEventListener("click",()=>imageAction("REVIEW"));
   imageReserve.addEventListener("click",()=>imageAction("RESERVE"));
   budgetApproval.addEventListener("change",sync);
+  ["offer-scope","offer-terms","offer-approved","offer-tax"].forEach(id=>el(id).addEventListener("input",sync));
+  el("offer-save").addEventListener("click",async()=>{
+    if(el("offer-save").disabled)return;
+    busy=true;sync();const current=epoch;
+    try{
+      const csrf=await session();
+      const response=await fetch("/api/internal/creative-preparation/starter-offer",{method:"POST",credentials:"same-origin",cache:"no-store",
+        headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify({...manifest,workspaceId:offerWorkspace,
+          scope:el("offer-scope").value.trim(),terms:el("offer-terms").value.trim(),scopeAndTermsApproved:true,taxTreatmentApproved:true})});
+      if(!response.ok)throw Error("Offer not accepted (HTTP "+response.status+"). Check terms and permissions.");
+      const result=await response.json();if(current!==epoch)return;
+      if(!uuid.test(result.offerId)||!hex.test(result.offerSha256)||result.campaignId!==manifest.campaignId||result.amountCents!==14900
+          ||result.status!=="OFFERED"||result.paymentAuthorized!==false||result.release!=="HELD")throw Error("Invalid offer receipt.");
+      el("offer-status").textContent="Private offer issued. Customer must accept. Reference: "+result.offerId;
+    }catch(e){if(current===epoch)el("offer-status").textContent=e.message;}finally{busy=false;sync();}
+  });
   review.addEventListener("change",sync); fields.forEach(f=>f.addEventListener("input",sync));
   prepare.addEventListener("click",()=>submit("workspace")); save.addEventListener("click",()=>submit("recipe"));
   brandInputs.forEach(f=>f.addEventListener("input",()=>{approval.checked=false;sync();}));
