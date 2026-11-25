@@ -56,6 +56,35 @@ public sealed class CreatorOperatorReviewTests
     }
 
     [Fact]
+    public async Task Channel_verification_requires_separate_gate_and_observation()
+    {
+        var options = Options(true);
+        var c = Controller(options, User(options, "operator", Issuer));
+        var receipt = Guid.NewGuid(); var creator = Guid.NewGuid();
+        var proof = CreatorChannelProof.Code(receipt, Guid.NewGuid(), creator, "https://example.test/channel", DateTime.UtcNow);
+        Assert.Equal(403, Assert.IsType<StatusCodeResult>(await c.VerifyChannel(
+            new CreatorChannelVerification(receipt, creator, proof, true, true), CancellationToken.None)).StatusCode);
+        options.CreatorAuthorityVerificationRequested = true;
+        Assert.IsType<BadRequestObjectResult>(await c.VerifyChannel(
+            new CreatorChannelVerification(receipt, creator, proof, false, true), CancellationToken.None));
+    }
+
+    [Fact]
+    public void Channel_proof_is_bound_to_receipt_request_creator_channel_and_utc_day()
+    {
+        var receipt = Guid.NewGuid(); var request = Guid.NewGuid(); var creator = Guid.NewGuid();
+        var day = new DateTime(2026,11,25,12,0,0,DateTimeKind.Utc);
+        const string url = "https://example.test/channel";
+        var code = CreatorChannelProof.Code(receipt, request, creator, url, day);
+        Assert.True(CreatorChannelProof.Matches(code, receipt, request, creator, url, day));
+        Assert.False(CreatorChannelProof.Matches(code, Guid.NewGuid(), request, creator, url, day));
+        Assert.False(CreatorChannelProof.Matches(code, receipt, Guid.NewGuid(), creator, url, day));
+        Assert.False(CreatorChannelProof.Matches(code, receipt, request, Guid.NewGuid(), url, day));
+        Assert.False(CreatorChannelProof.Matches(code, receipt, request, creator, url + "/other", day));
+        Assert.False(CreatorChannelProof.Matches(code, receipt, request, creator, url, day.AddDays(1)));
+    }
+
+    [Fact]
     public void Exact_review_routes_do_not_open_creator_directory_or_dashboard()
     {
         Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("GET", "/api/creators/operator-review", false));
