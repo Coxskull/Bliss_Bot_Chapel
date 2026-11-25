@@ -96,6 +96,56 @@
         finally { if(current===generation) consentButton.disabled=false; }
       }
       consentButton.addEventListener("click",()=>consent("REVIEW"));
+      const artButton = document.createElement("button"); artButton.type="button"; artButton.textContent="Review prepared artwork"; card.appendChild(artButton);
+      const artPanel = document.createElement("section"); card.appendChild(artPanel);
+      let artUrl = null, artRetry = null;
+      async function artwork(action, prior, rationale) {
+        if(!csrf || panel.hidden || artButton.disabled) return;
+        const current=generation; artButton.disabled=true;
+        for(const button of artPanel.querySelectorAll("button"))button.disabled=true;
+        try {
+          const send = body=>fetch(endpoint+"/creative-artwork",{method:"POST",credentials:"same-origin",cache:"no-store",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify(body)});
+          const payload={campaignId:row.campaignId,action};
+          if(action!=="STATUS"){
+            const change={candidateId:prior.candidateId,reviewId:prior.reviewId,imageSha256:prior.imageSha256,expectedVersion:prior.approvalVersion,rationale};
+            const fingerprint=JSON.stringify({action,...change});
+            if(!artRetry || artRetry.fingerprint!==fingerprint) artRetry={fingerprint,key:crypto.randomUUID()};
+            Object.assign(payload,change,{requestKey:artRetry.key});
+          }
+          const response=await send(payload);
+          if(!response.ok)throw Error("Artwork is not ready for private review, or its approval state changed.");
+          const result=await response.json();
+          if(current!==generation || !card.isConnected)return;
+          if(result.campaignId!==row.campaignId || !/^[0-9a-f]{64}$/.test(result.imageSha256)
+              || !result.candidateId || !result.reviewId || !Number.isInteger(result.approvalVersion)
+              || result.release!=="HELD" || result.delivery!=="NOT_SENT" || result.dispatchAuthorized!==false
+              || result.paymentAuthorized!==false || !["PENDING","APPROVE","WITHHOLD"].includes(result.approval))
+            throw Error("Unexpected artwork receipt.");
+          const imageResponse=await send({campaignId:row.campaignId,action:"PREVIEW",candidateId:result.candidateId,
+            reviewId:result.reviewId,imageSha256:result.imageSha256});
+          if(!imageResponse.ok || !imageResponse.headers.get("content-type")?.startsWith("image/png"))throw Error("Artwork preview unavailable.");
+          const blob=await imageResponse.blob();
+          if(blob.size===0 || blob.size>16*1024*1024)throw Error("Unexpected artwork size.");
+          const hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await blob.arrayBuffer())),x=>x.toString(16).padStart(2,"0")).join("");
+          if(hash!==result.imageSha256)throw Error("Artwork integrity verification failed.");
+          if(current!==generation || !card.isConnected)return;
+          if(artUrl)URL.revokeObjectURL(artUrl);
+          artUrl=URL.createObjectURL(blob);previewUrls.push(artUrl);
+          artPanel.replaceChildren();artRetry=null;
+          const title=document.createElement("h4");title.textContent="Private artwork — "+result.approval;artPanel.appendChild(title);
+          const image=document.createElement("img");image.src=artUrl;image.alt="Private campaign artwork for review";image.style.maxWidth="100%";artPanel.appendChild(image);
+          const note=document.createElement("p");note.textContent="Review only. Approval is not payment, final commercial delivery, publication or permission to launch advertising.";artPanel.appendChild(note);
+          const rationaleInput=document.createElement("textarea");rationaleInput.maxLength=2000;rationaleInput.placeholder="Approval notes or requested changes";rationaleInput.setAttribute("aria-label","Artwork decision notes");artPanel.appendChild(rationaleInput);
+          for(const [choice,label] of [["APPROVE","Approve this artwork"],["WITHHOLD","Request changes / withhold approval"]]){
+            const button=document.createElement("button");button.type="button";button.textContent=label;
+            button.addEventListener("click",()=>{const reason=rationaleInput.value.trim();if(!reason){status.textContent="Enter your decision notes first.";return;}artwork(choice,result,reason);});artPanel.appendChild(button);
+          }
+          status.textContent="Artwork decision: "+result.approval+". Campaign remains held.";
+        }catch(e){if(current===generation && card.isConnected){artPanel.replaceChildren();if(artUrl){URL.revokeObjectURL(artUrl);artUrl=null;}status.textContent=e.message;}}
+        finally{if(current===generation)artButton.disabled=false;}
+      }
+      artButton.addEventListener("click",()=>artwork("STATUS"));
       list.appendChild(card);
     }
   }
