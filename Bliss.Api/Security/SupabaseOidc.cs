@@ -20,7 +20,8 @@ public static class SupabaseOidc
     public const string AdvertiserLane = "advertiser";
 
     public static string ResolvePublicRegistrationLane(string safeLocalReturnUrl) =>
-        string.Equals(safeLocalReturnUrl, "/creator-registration.html", StringComparison.Ordinal)
+        (string.Equals(safeLocalReturnUrl, "/creator-registration.html", StringComparison.Ordinal)
+         || string.Equals(safeLocalReturnUrl, "/creator-dashboard.html", StringComparison.Ordinal))
             ? CreatorLane : AdvertiserLane;
 
     public static void Configure(OpenIdConnectOptions options, BlissAuthenticationOptions auth)
