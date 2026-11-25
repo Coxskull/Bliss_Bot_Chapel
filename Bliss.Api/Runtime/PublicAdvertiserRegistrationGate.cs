@@ -47,14 +47,15 @@ public static class PublicAdvertiserRegistrationGate
     private static readonly HashSet<string> CreatorGetPaths = new(StringComparer.OrdinalIgnoreCase)
     {
         "/creator-registration.html", "/creator-registration.js",
-        "/api/creators/registration",
+        "/api/creators/registration", "/api/creators/operator-review",
+        "/creator-operator-review.html", "/creator-operator-review.js",
         "/alpha-privacy.html", "/alpha-terms.html",
         "/creator-account-privacy.html", "/creator-account-terms.html",
         "/join-creator.html", "/alpha-intake.js"
     };
     private static readonly HashSet<string> CreatorPostPaths = new(StringComparer.OrdinalIgnoreCase)
     {
-        "/api/creators/register"
+        "/api/creators/register", "/api/creators/operator-review"
     };
 
     public static bool IsAllowed(string? method, PathString path, bool creatorRegistrationEnabled = false)
