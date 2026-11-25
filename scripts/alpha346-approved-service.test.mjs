@@ -65,3 +65,23 @@ test('launch planning URL prefills only fixed customer-visible service text',asy
   assert.equal(marketing.checked,false);
  }
 });
+
+
+test('Starter Package inquiry prefills only the selected fixed topic',async()=>{
+ const script=await get('../frontend/public/alpha-intake.js');
+ assert.match(services,/Digital Advertising Starter Package — \$149 USD/);
+ assert.ok(services.includes('href="/join-advertiser.html?service=starter"'));
+ assert.doesNotMatch(services,/buy\.stripe\.com/);
+ for(const [kind,search,before,expected] of [
+ ['advertiser','?service=starter','','Please send me a Digital Advertising Starter Package'],
+ ['advertiser','?service=starter','Customer description','Customer description'],
+ ['creator','?service=starter','',''],
+ ['advertiser','?service=starter%3Cscript%3E','','']]){
+ const description={value:before}, consent={checked:false},marketing={checked:false},events=[];
+ const form={dataset:{kind},elements:{namedItem(n){return ({description,contact_consent:consent,marketing_opt_in:marketing})[n]??null;}},addEventListener(n){events.push(n);}};
+ const document={querySelector(s){return s==='#alpha-intake-form'?form:s==='#form-status'?{}:s==='#submit-button'?{}:null;}};
+ runInNewContext(script,{document,window:{location:{search}},URLSearchParams});
+ if(expected.startsWith('Please')){assert.ok(description.value.startsWith(expected));assert.ok(description.value.includes('creates no order or payment obligation'));}else assert.equal(description.value,expected);
+ assert.equal(consent.checked,false);assert.equal(marketing.checked,false);assert.deepEqual(events,['input','submit']);
+ }
+});
