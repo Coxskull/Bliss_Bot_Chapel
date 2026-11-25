@@ -11,7 +11,10 @@ export function replayOrder(quote, events, deliverables) {
   const cents=(x)=>{if(!Number.isSafeInteger(x)||x<0||x>100000000)throw Error("Invalid cost or payment cents");return x};
   if(!quote||quote.currency!=="USD"||quote.status!=="DRAFT_NOT_SENT"||!Number.isSafeInteger(quote.subtotal)||quote.subtotal<=0||quote.total!==quote.subtotal+quote.tax)throw Error("Invalid source estimate");
   if(!Array.isArray(events)||events.length>1000)throw Error("Invalid event list");
-  const state={quoteId:quote.quoteId,currency:"USD",status:"AWAITING_ACCEPTANCE",expectedTotalCents:quote.total,serviceSubtotalCents:quote.subtotal,paymentCents:0,actualCostCents:0,costs:[],assignments:Object.fromEntries(deliverables.map(d=>[d,{status:"UNASSIGNED"}])),events:0,evidenceStatus:"OPERATOR_REPORTED_NOT_INDEPENDENTLY_VERIFIED",revenueRecognized:false,contributionCents:null};
+  const packageKind=quote.packageKind??"planning";
+  if(!["planning","starter"].includes(packageKind))throw Error("Unknown service package");
+  const outputs=packageKind==="starter"?["brand_and_campaign_brief","custom_advertising_artwork","promotional_content_design","digital_marketing_materials","customer_review_and_delivery"]:deliverables;
+  const state={quoteId:quote.quoteId,packageKind,currency:"USD",status:"AWAITING_ACCEPTANCE",expectedTotalCents:quote.total,serviceSubtotalCents:quote.subtotal,paymentCents:0,actualCostCents:0,costs:[],assignments:Object.fromEntries(outputs.map(d=>[d,{status:"UNASSIGNED"}])),events:0,evidenceStatus:"OPERATOR_REPORTED_NOT_INDEPENDENTLY_VERIFIED",revenueRecognized:false,contributionCents:null};
   const seen=new Set(),evidenceSeen=new Set();let last="";
   for(const e of events){
     if(!e||typeof e!=="object")throw Error("Invalid event");
@@ -28,7 +31,9 @@ export function replayOrder(quote, events, deliverables) {
       case "PAYMENT_RECORDED":
         if(state.status!=="AWAITING_PAYMENT"||e.livemode!==true||e.currency!=="USD"||e.amountCents!==quote.total||e.providerStatus!=="succeeded")throw Error("Full successful live payment record required");
         if(e.checkoutReference!==quote.quoteId||!/^cs_live_[A-Za-z0-9]{8,200}$/.test(e.checkoutSessionId??"")||!/^pi_[A-Za-z0-9]{8,200}$/.test(e.paymentIntentId??""))throw Error("Matching Stripe live checkout and payment intent references required");
-        state.paymentCents=cents(e.amountCents);state.paymentReceipt={provider:"Stripe",checkoutSessionId:e.checkoutSessionId,paymentIntentId:e.paymentIntentId,checkoutReference:e.checkoutReference,evidenceRef:ev,verification:"OPERATOR_REPORTED_NOT_INDEPENDENTLY_VERIFIED"};state.status="PAID_REPORTED";break;
+        if(packageKind==="planning"&&(e.paymentLinkId==="plink_1UfWXNH6XjUXn6bha65jeI1t"||e.productId==="prod_VguCvW3SA1yQUM"||e.priceId==="price_1UfWONH6XjUXn6bhPYLJNax5"))throw Error("Starter Package payment cannot settle a planning-only order");
+        if(packageKind==="starter"&&(e.paymentLinkId!=="plink_1UfWXNH6XjUXn6bha65jeI1t"||e.priceId!=="price_1UfWONH6XjUXn6bhPYLJNax5"||e.productId!=="prod_VguCvW3SA1yQUM"))throw Error("Verified Starter Package payment-link, price and product references required");
+        state.paymentCents=cents(e.amountCents);state.paymentReceipt={provider:"Stripe",checkoutSessionId:e.checkoutSessionId,paymentIntentId:e.paymentIntentId,checkoutReference:e.checkoutReference,...(packageKind==="starter"?{paymentLinkId:e.paymentLinkId,priceId:e.priceId,productId:e.productId}:{}),evidenceRef:ev,verification:"OPERATOR_REPORTED_NOT_INDEPENDENTLY_VERIFIED"};state.status="PAID_REPORTED";break;
       case "ASSIGN":
         if(!["PAID_REPORTED","IN_PRODUCTION"].includes(state.status)||!Object.hasOwn(state.assignments,e.deliverable)||state.assignments[e.deliverable].status!=="UNASSIGNED")throw Error("Assignment unavailable");
         state.assignments[e.deliverable]={status:"ASSIGNED",assignee:ref(e.assignee,"assignee")};state.status="IN_PRODUCTION";break;
@@ -56,6 +61,9 @@ function selfTest(){
  const s=replayOrder(quote,seq,deliverables);
  assert.equal(s.status,"CLOSED_REPORTED");assert.equal(s.contributionCents,7900);assert.equal(s.revenueRecognized,false);
  for(const events of [[seq[1]],[seq[0],{...seq[1],livemode:false}],[seq[0],{...seq[1],amountCents:14800}],seq.slice(0,3).concat(seq.at(-2)),[seq[0],seq[0]],[{...seq[0],quoteId:"OTHER"}],[seq[0],{...seq[1],checkoutReference:"OTHER"}],[seq[0],{...seq[1],checkoutSessionId:"cs_test_FICTIONAL123"}]])assert.throws(()=>replayOrder(quote,events,deliverables));
+ const starter={...quote,packageKind:"starter"};
+ const receipt={...seq[1],paymentLinkId:"plink_1UfWXNH6XjUXn6bha65jeI1t",priceId:"price_1UfWONH6XjUXn6bhPYLJNax5",productId:"prod_VguCvW3SA1yQUM"};
+ const creative=replayOrder(starter,[seq[0],receipt],deliverables);assert.equal(creative.status,"PAID_REPORTED");assert.equal(creative.paymentReceipt.productId,receipt.productId);assert.ok(Object.hasOwn(creative.assignments,"custom_advertising_artwork"));assert.ok(!Object.hasOwn(creative.assignments,"campaign_discovery_brief"));assert.throws(()=>replayOrder(starter,[seq[0],{...receipt,productId:"wrong"}],deliverables));assert.throws(()=>replayOrder(quote,[seq[0],receipt],deliverables));assert.throws(()=>replayOrder(starter,[seq[0],seq[1]],deliverables));
  console.log("PASS: fictional lifecycle, contribution, and rejection of invalid transitions");
 }
 async function main(){

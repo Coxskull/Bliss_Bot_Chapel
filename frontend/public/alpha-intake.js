@@ -20,7 +20,7 @@
     const description = form.elements.namedItem("description");
     if (description && !description.value) {
       description.value = requestedService === "starter"
-        ? "Please send me a Digital Advertising Starter Package planning-only proposal (proposed service price $149 USD). I understand this inquiry is free and creates no order or payment obligation."
+        ? "Please send me a Digital Advertising Starter Package creative-service proposal (proposed service price $149 USD) for customized advertising artwork, promotional content design and digital marketing materials. I understand this inquiry is free and creates no order or payment obligation."
         : "Please send me a Campaign Planning & Coordination planning-only proposal. I understand that this inquiry is free and creates no order or payment obligation.";
     }
   }
