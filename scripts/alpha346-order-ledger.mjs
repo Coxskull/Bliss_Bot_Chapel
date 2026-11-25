@@ -31,8 +31,9 @@ export function replayOrder(quote, events, deliverables) {
       case "PAYMENT_RECORDED":
         if(state.status!=="AWAITING_PAYMENT"||e.livemode!==true||e.currency!=="USD"||e.amountCents!==quote.total||e.providerStatus!=="succeeded")throw Error("Full successful live payment record required");
         if(e.checkoutReference!==quote.quoteId||!/^cs_live_[A-Za-z0-9]{8,200}$/.test(e.checkoutSessionId??"")||!/^pi_[A-Za-z0-9]{8,200}$/.test(e.paymentIntentId??""))throw Error("Matching Stripe live checkout and payment intent references required");
+        if(packageKind==="planning"&&(e.paymentLinkId==="plink_1UfWXNH6XjUXn6bha65jeI1t"||e.productId==="prod_VguCvW3SA1yQUM"||e.priceId==="price_1UfWONH6XjUXn6bhPYLJNax5"))throw Error("Starter Package payment cannot settle a planning-only order");
         if(packageKind==="starter"&&(e.paymentLinkId!=="plink_1UfWXNH6XjUXn6bha65jeI1t"||e.priceId!=="price_1UfWONH6XjUXn6bhPYLJNax5"||e.productId!=="prod_VguCvW3SA1yQUM"))throw Error("Verified Starter Package payment-link, price and product references required");
-        state.paymentCents=cents(e.amountCents);state.paymentReceipt={provider:"Stripe",checkoutSessionId:e.checkoutSessionId,paymentIntentId:e.paymentIntentId,checkoutReference:e.checkoutReference,evidenceRef:ev,verification:"OPERATOR_REPORTED_NOT_INDEPENDENTLY_VERIFIED"};state.status="PAID_REPORTED";break;
+        state.paymentCents=cents(e.amountCents);state.paymentReceipt={provider:"Stripe",checkoutSessionId:e.checkoutSessionId,paymentIntentId:e.paymentIntentId,checkoutReference:e.checkoutReference,...(packageKind==="starter"?{paymentLinkId:e.paymentLinkId,priceId:e.priceId,productId:e.productId}:{}),evidenceRef:ev,verification:"OPERATOR_REPORTED_NOT_INDEPENDENTLY_VERIFIED"};state.status="PAID_REPORTED";break;
       case "ASSIGN":
         if(!["PAID_REPORTED","IN_PRODUCTION"].includes(state.status)||!Object.hasOwn(state.assignments,e.deliverable)||state.assignments[e.deliverable].status!=="UNASSIGNED")throw Error("Assignment unavailable");
         state.assignments[e.deliverable]={status:"ASSIGNED",assignee:ref(e.assignee,"assignee")};state.status="IN_PRODUCTION";break;
