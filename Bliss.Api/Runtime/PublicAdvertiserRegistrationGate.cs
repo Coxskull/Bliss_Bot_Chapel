@@ -59,9 +59,11 @@ public static class PublicAdvertiserRegistrationGate
         "/api/creators/register", "/api/creators/operator-review", "/api/creators/operator-review/verify-channel"
     };
 
-    public static bool IsAllowed(string? method, PathString path, bool creatorRegistrationEnabled = false)
+    public static bool IsAllowed(string? method, PathString path, bool creatorRegistrationEnabled = false, bool staffCreativeReadinessEnabled = false)
     {
         var value = path.Value ?? "";
+        if (staffCreativeReadinessEnabled && string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(value, "/api/internal/creative-readiness", StringComparison.OrdinalIgnoreCase)) return true;
         if (creatorRegistrationEnabled)
         {
             if ((string.Equals(method, "GET", StringComparison.OrdinalIgnoreCase)
@@ -97,7 +99,7 @@ public static class PublicAdvertiserRegistrationGate
             return;
         }
 
-        if (IsAllowed(context.Request.Method, context.Request.Path, creatorRegistrationEnabled))
+        if (IsAllowed(context.Request.Method, context.Request.Path, creatorRegistrationEnabled, staffCreativeReadinessEnabled))
         {
             await next();
             return;
