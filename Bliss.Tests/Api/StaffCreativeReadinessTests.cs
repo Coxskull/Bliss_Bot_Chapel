@@ -1,0 +1,51 @@
+using System.Security.Claims;
+using Bliss.Api.Controllers;
+using Bliss.Api.Runtime;
+using Bliss.Api.Security;
+using Microsoft.AspNetCore.Http;
+
+namespace Bliss.Tests.Api;
+
+public sealed class StaffCreativeReadinessTests
+{
+    private const string Authority = "https://issuer.example";
+    private static BlissAuthenticationOptions Options() => new()
+    {
+        Enabled = true, SupabaseEnabled = true, Authority = Authority,
+        StaffCreativeReadinessRequested = true,
+        ApprovedTestSubjects = ["staff"], ApprovedRegistrationOperatorSubjects = ["staff"]
+    };
+
+    private static ClaimsPrincipal Principal(string subject = "staff", string role = "bliss.operator",
+        string issuer = Authority, params Claim[] extra) =>
+        new(new ClaimsIdentity(new[] { new Claim("sub", subject),
+            new Claim("roles", role, ClaimValueTypes.String, issuer, issuer) }.Concat(extra),
+            "test", "name", "roles"));
+
+    [Fact]
+    public void Exact_get_only_and_default_off()
+    {
+        var path = new PathString("/api/internal/creative-readiness");
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("GET", path));
+        Assert.True(PublicAdvertiserRegistrationGate.IsAllowed("GET", path, staffCreativeReadinessEnabled: true));
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("POST", path, staffCreativeReadinessEnabled: true));
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("GET", new PathString("/ai-workspace.html"), staffCreativeReadinessEnabled: true));
+        Assert.False(PublicAdvertiserRegistrationGate.IsAllowed("GET", new PathString("/api/internal/creative-readiness/other"), staffCreativeReadinessEnabled: true));
+    }
+
+    [Fact]
+    public void Only_approved_issuer_staff_can_read()
+    {
+        var auth = Options();
+        Assert.True(StaffCreativeReadinessController.IsStaff(Principal(), auth));
+        Assert.True(StaffCreativeReadinessController.IsStaff(Principal(role: "bliss.admin"), auth));
+        Assert.False(StaffCreativeReadinessController.IsStaff(Principal(subject: "customer"), auth));
+        Assert.False(StaffCreativeReadinessController.IsStaff(Principal(role: "bliss.advertiser"), auth));
+        Assert.False(StaffCreativeReadinessController.IsStaff(Principal(issuer: "untrusted"), auth));
+        Assert.False(StaffCreativeReadinessController.IsStaff(Principal(extra: [new Claim("bliss_advertiser_self_service", "true")]), auth));
+        Assert.False(StaffCreativeReadinessController.IsStaff(Principal(extra: [new Claim("roles", "bliss.operator")]), auth));
+        Assert.False(StaffCreativeReadinessController.IsStaff(new ClaimsPrincipal(), auth));
+        auth.StaffCreativeReadinessRequested = false;
+        Assert.False(StaffCreativeReadinessController.IsStaff(Principal(), auth));
+    }
+}
