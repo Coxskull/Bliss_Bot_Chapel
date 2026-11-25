@@ -16,7 +16,7 @@ checkpoint() {
 # Fixed, non-sensitive classifications, never emit paths, keys or SQL errors.
 fail() {
     case "${1:-UNKNOWN}" in
-      ARGUMENTS|NOT_ROOT|COUNT_INVALID|TOOLS_MISSING|PG18_BINARY_MISSING|PG18_VERSION_MISMATCH|PG18_CLUSTER_NOT_READY|PG18_SOCKET_MISSING|PG18_QUERY_REFUSED|PG18_MAJOR_MISMATCH|ARCHIVE_PATH_INVALID|GPG_EXE_MISSING|TEMP_DB_NAME_INVALID|TEMP_DB_CHECK_REFUSED|TEMP_DB_EXISTS|TEMP_DB_CREATE_REFUSED|GPG_DECRYPT_REFUSED|PG_RESTORE_REFUSED|BOTH_PIPE_COMMANDS_REFUSED|PIPE_STATUS_UNAVAILABLE|TABLE_COUNT_QUERY_REFUSED|TABLE_COUNT_MISMATCH|EF_HISTORY_QUERY_REFUSED|EF_HISTORY_MISSING|TEMP_DB_REMOVE_REFUSED|TEMP_DB_CLEANUP_UNVERIFIED|PREVIOUS_TEMP_DB_PRESENT|UNEXPECTED_HELPER_EXIT|UNKNOWN) ;;
+      ARGUMENTS|NOT_ROOT|COUNT_INVALID|TOOLS_MISSING|PG18_BINARY_MISSING|PG18_VERSION_MISMATCH|PG18_CLUSTER_NOT_READY|PG18_SOCKET_MISSING|PG18_QUERY_REFUSED|PG18_MAJOR_MISMATCH|ARCHIVE_PATH_INVALID|GPG_EXE_MISSING|TEMP_DB_NAME_INVALID|TEMP_DB_CHECK_REFUSED|TEMP_DB_EXISTS|TEMP_DB_CREATE_REFUSED|GPG_DECRYPT_REFUSED|PG_RESTORE_REFUSED|BOTH_PIPE_COMMANDS_REFUSED|PIPE_STATUS_UNAVAILABLE|PREFIX_NORMALIZATION_REFUSED|TABLE_COUNT_QUERY_REFUSED|TABLE_COUNT_MISMATCH|EF_HISTORY_QUERY_REFUSED|EF_HISTORY_MISSING|TEMP_DB_REMOVE_REFUSED|TEMP_DB_CLEANUP_UNVERIFIED|PREVIOUS_TEMP_DB_PRESENT|UNEXPECTED_HELPER_EXIT|UNKNOWN) ;;
       *) set -- UNKNOWN ;;
     esac
     stage_reported=1
@@ -29,7 +29,7 @@ fail() {
 [[ "$2" =~ ^[0-9]{1,8}$ ]] || fail COUNT_INVALID
 expected="$2"
 (( expected >= 90 && expected <= 1000000 )) || fail COUNT_INVALID
-for cmd in base64 wslpath pg_restore psql createdb dropdb runuser date; do
+for cmd in base64 wslpath python3 pg_restore psql createdb dropdb runuser date; do
     command -v "$cmd" >/dev/null 2>&1 || fail TOOLS_MISSING
 done
 [[ -x /usr/lib/postgresql/18/bin/pg_restore ]] || fail PG18_BINARY_MISSING
@@ -102,6 +102,38 @@ checkpoint PIPELINE_STARTED
 # This helper is loaded independently of stdin; GPG also has no reason to read it.
 # Close GPG stdin explicitly. Its only encrypted input is the named archive.
 "$gpg_binary" --batch --no-tty --decrypt --output - "$archive" </dev/null 2>/dev/null |
+    # Normalize precisely the confirmed 3-byte BOM, if present. Keep the
+    # authenticated archive in process pipes only; never write plaintext files.
+    # An unrecognized prefix or truncated header must fail closed.
+    python3 -c '
+import sys
+inp = sys.stdin.buffer
+out = sys.stdout.buffer
+prefix = bytearray()
+while len(prefix) < 8:
+    chunk = inp.read(8 - len(prefix))
+    if not chunk:
+        break
+    prefix.extend(chunk)
+if len(prefix) != 8:
+    sys.exit(21)
+if prefix[:5] == b"PGDMP":
+    header = prefix
+elif prefix == b"\xef\xbb\xbfPGDMP":
+    header = prefix[3:]
+else:
+    sys.exit(22)
+try:
+    out.write(header)
+    while True:
+        block = inp.read(65536)
+        if not block:
+            break
+        out.write(block)
+    out.flush()
+except BrokenPipeError:
+    sys.exit(23)
+' 2>/dev/null |
     runuser -u postgres -- /usr/lib/postgresql/18/bin/pg_restore --exit-on-error --single-transaction \
         --no-owner --no-acl -h /var/run/postgresql -d "$db" >/dev/null 2>&1
 pipe_status=( "${PIPESTATUS[@]}" )
@@ -109,14 +141,15 @@ checkpoint PIPELINE_RETURNED
 set -e
 # Bash nounset would otherwise terminate silently if one PIPESTATUS element
 # disappeared. Report only a safe refusal before indexing either status.
-[[ "${#pipe_status[@]}" -eq 2 ]] || fail PIPE_STATUS_UNAVAILABLE
+[[ "${#pipe_status[@]}" -eq 3 ]] || fail PIPE_STATUS_UNAVAILABLE
 # Do not label the upstream failure as GPG-only if pg_restore also exited.
 # The consumer may have closed early, triggering an upstream broken pipe.
-if [[ "${pipe_status[0]}" != "0" && "${pipe_status[1]}" != "0" ]]; then
+if [[ "${pipe_status[0]}" != "0" && "${pipe_status[2]}" != "0" ]]; then
     fail BOTH_PIPE_COMMANDS_REFUSED
 fi
 [[ "${pipe_status[0]}" == "0" ]] || fail GPG_DECRYPT_REFUSED
-[[ "${pipe_status[1]}" == "0" ]] || fail PG_RESTORE_REFUSED
+[[ "${pipe_status[1]}" == "0" ]] || fail PREFIX_NORMALIZATION_REFUSED
+[[ "${pipe_status[2]}" == "0" ]] || fail PG_RESTORE_REFUSED
 checkpoint PIPELINE_COMPLETE
 actual="$(runuser -u postgres -- psql -XAt -v ON_ERROR_STOP=1 \
   -h /var/run/postgresql -d "$db" \
