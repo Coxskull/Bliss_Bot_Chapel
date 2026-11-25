@@ -76,6 +76,8 @@ function selfTest(){
  assert.ok(estimateQuote({...example,costs:{...example.costs,laborCents:20000}}).contribution<0);
  for(const change of [{taxCents:-1},{currency:"PHP"},{serviceCents:0},{costs:{...example.costs,processorCents:undefined}},{scope:"line\nbreak"}])assert.throws(()=>estimateQuote({...example,...change}));
  const draft=customerDraft(q);assert.ok(draft.includes("$149.00 USD"));assert.ok(draft.includes("DRAFT"));assert.ok(!draft.includes("$70.00"));assert.ok(!draft.includes("marginBps"));
+ const starter=estimateQuote({...example,packageKind:"starter",scope:"Custom artwork and agreed promotional materials"});
+ assert.equal(starter.packageKind,"starter");assert.match(customerDraft(starter),/custom advertising artwork/);assert.match(customerDraft(starter),/promotional content design/);assert.doesNotMatch(customerDraft(starter),/No finished advertising media/);assert.throws(()=>estimateQuote({...example,packageKind:"starter",serviceCents:14800}));assert.throws(()=>estimateQuote({...example,packageKind:"unknown"}));
  console.log("PASS: cent-based costing, loss detection, input validation, customer draft separation");
 }
 async function main(){
