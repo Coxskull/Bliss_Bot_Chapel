@@ -59,6 +59,18 @@ public sealed class StaffCreativeReadinessTests
     }
 
     [Fact]
+    public void Brand_confirmation_requires_explicit_approval_and_exact_revision()
+    {
+        var request = new StaffCampaignPreparationRequest(Guid.NewGuid(), new string('a', 64), true, null, null, null, null,
+            "CONFIRM_DRAFT", null, 1, Guid.NewGuid().ToString("D"));
+        Assert.False(StaffCreativePreparationController.ValidBrandAction(request));
+        Assert.True(StaffCreativePreparationController.ValidBrandAction(request with { CustomerBrandApproved = true }));
+        Assert.False(StaffCreativePreparationController.ValidBrandAction(request with { CustomerBrandApproved = true, BrandExpectedVersion = 0 }));
+        Assert.False(StaffCreativePreparationController.ValidBrandAction(request with { CustomerBrandApproved = true, Family = "other" }));
+        Assert.False(StaffCreativePreparationController.ValidBrandAction(request with { CustomerBrandApproved = true, BrandIdempotencyKey = "invalid" }));
+    }
+
+    [Fact]
     public void Only_approved_issuer_staff_can_read()
     {
         var auth = Options();

@@ -6,7 +6,12 @@
   const fields = ["family","headline","cta"].map(el);
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
   const hex = /^[0-9a-f]{64}$/;
-  let manifest = null, brand = null, busy = false, epoch = 0;
+  const brandPanel = el("brand-panel"), draftButton = el("brand-draft"), confirmButton = el("brand-confirm"), approval = el("brand-approved");
+  const brandKeys = ["brandName","niche","market","language","colors","font","goals","restrictions"];
+  const brandInputs = ["name","niche","market","language","colors","font","goals","restrictions"].map(k=>el("brand-"+k));
+  const readBrand = () => Object.fromEntries(brandKeys.map((k,i)=>[k,brandInputs[i].value.trim()]));
+  let manifest = null, brand = null, brandState = null, pendingBrand = null, busy = false, epoch = 0;
+  const unchanged = () => brandState && JSON.stringify(readBrand()) === JSON.stringify(brandState.fields);
   const get = path => fetch(path,{credentials:"same-origin",cache:"no-store",headers:{"Accept":"application/json"}});
   async function session() {
     const s = await get("/api/auth/session");
@@ -23,9 +28,17 @@
     prepare.disabled = busy || !manifest || !review.checked;
     save.disabled = busy || !manifest || !review.checked || !brand || fields.some(f => !f.value.trim());
     fields.forEach(f => f.disabled = busy);
+    brandInputs.forEach(f=>f.disabled=busy);
+    approval.disabled = busy || !brandState || brandState.status !== "DRAFT" || !unchanged();
+    draftButton.disabled = busy || !manifest || !review.checked || !brandState
+      || ["brandName","niche","market","language","goals"].some(k=>!readBrand()[k])
+      || (brandState.version > 0 && unchanged());
+    confirmButton.disabled = busy || !manifest || !review.checked || approval.disabled || !approval.checked;
+    if (!unchanged()) save.disabled = true;
   }
   function reset() {
-    manifest = brand = null; review.checked = false;
+    manifest = brand = brandState = pendingBrand = null; review.checked = approval.checked = false;
+    brandPanel.hidden = true; brandInputs.forEach(f=>f.value=""); el("brand-status").textContent="";
     summary.hidden = recipe.hidden = true; fields.forEach(f => f.value = "");
     ["campaign-name","campaign-id","brief"].forEach(id => el(id).textContent = "");
     el("result").textContent = "No preparation requested."; sync();
@@ -55,13 +68,23 @@
     } catch(e) { if (current === epoch) status.textContent = e instanceof SyntaxError ? "Invalid JSON manifest." : e.message; }
     finally { if (current === epoch) sync(); }
   });
-  async function submit(withRecipe) {
-    if (busy || !manifest || !review.checked || (withRecipe && (!brand || fields.some(f=>!f.value.trim())))) return;
+  async function submit(action) {
+    const withRecipe = action === "recipe", brandAction = action === "SAVE_DRAFT" || action === "CONFIRM_DRAFT";
+    if (busy || !manifest || !review.checked || (withRecipe && save.disabled)
+        || (action === "SAVE_DRAFT" && draftButton.disabled) || (action === "CONFIRM_DRAFT" && confirmButton.disabled)) return;
     const current = epoch; busy = true; sync(); status.textContent = "Preparing the selected campaign…";
     try {
       const csrf = await session();
       if (current !== epoch) return;
       const payload = {...manifest,operatorReviewedCampaign:true};
+      if (brandAction) {
+        const details = {brandAction:action,brandExpectedVersion:brandState.version,
+          ...(action==="SAVE_DRAFT" ? {brandFields:readBrand()} : {customerBrandApproved:true})};
+        const fingerprint = JSON.stringify(details);
+        if (!pendingBrand || pendingBrand.fingerprint !== fingerprint)
+          pendingBrand = {fingerprint,key:crypto.randomUUID()};
+        Object.assign(payload,details,{brandIdempotencyKey:pendingBrand.key});
+      }
       if (withRecipe) Object.assign(payload,{brandDnaId:brand,family:fields[0].value.trim(),headline:fields[1].value.trim(),cta:fields[2].value.trim()});
       const response = await fetch("/api/internal/creative-preparation",{method:"POST",credentials:"same-origin",cache:"no-store",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify(payload)});
       if (current !== epoch) return;
@@ -70,20 +93,32 @@
       if (result.campaignId !== manifest.campaignId || result.briefSha256 !== manifest.briefSha256
           || !uuid.test(result.workspaceId) || result.providerCall !== "NOT_REQUESTED"
           || result.release !== "HELD" || result.delivery !== "NOT_SENT" || result.dispatchAuthorized !== false
-          || result.preparation !== (withRecipe ? "RECIPE_SAVED" : "WORKSPACE_READY")
+          || result.preparation !== (withRecipe ? "RECIPE_SAVED" : action === "SAVE_DRAFT" ? "BRAND_DRAFT_SAVED" : action === "CONFIRM_DRAFT" ? "BRAND_CONFIRMED" : "WORKSPACE_READY")
           || (withRecipe && (!uuid.test(result.productionBriefId) || !hex.test(result.recipeSha256))))
         throw Error("Unexpected response; preparation not confirmed.");
+      if (!Number.isInteger(result.brandVersion) || result.brandVersion < 0
+          || !["NOT_PREPARED","DRAFT","CONFIRMED"].includes(result.brandStatus)
+          || (result.brandVersion > 0 && (!result.brandFields || brandKeys.some(k=>typeof result.brandFields[k]!=="string"))))
+        throw Error("Brand response could not be verified.");
+      const values = Object.fromEntries(brandKeys.map(k=>[k,result.brandFields?.[k]??""]));
+      brandState = {version:result.brandVersion,status:result.brandStatus,fields:values};
+      brandInputs.forEach((f,i)=>f.value=values[brandKeys[i]]);
+      pendingBrand = null; approval.checked = false; brandPanel.hidden = false;
+      el("brand-status").textContent = "Brand status: " + result.brandStatus + " | Revision " + result.brandVersion;
       brand = result.brandStatus === "CONFIRMED" && uuid.test(result.brandDnaId) ? result.brandDnaId : null;
       recipe.hidden = !brand;
       el("result").textContent = "Workspace: " + result.workspaceId + " | Brand: " + result.brandStatus
         + (withRecipe ? " | Recipe: " + result.productionBriefId + " | SHA-256: " + result.recipeSha256 : "")
         + " | Release HELD; no provider call or delivery.";
-      status.textContent = withRecipe ? "Recipe saved." : brand ? "Workspace ready; confirmed brand available." : "Workspace ready; confirmed brand required before saving a recipe.";
+      status.textContent = withRecipe ? "Recipe saved." : brandAction ? result.preparation === "BRAND_CONFIRMED" ? "Brand confirmed. Prepare the recipe." : "Brand draft saved. Confirm only after advertiser approval." : brand ? "Workspace ready; confirmed brand available." : "Workspace ready; enter the advertiser's brand information.";
     } catch(e) { status.textContent = e.message; }
     finally { busy = false; sync(); }
   }
   review.addEventListener("change",sync); fields.forEach(f=>f.addEventListener("input",sync));
-  prepare.addEventListener("click",()=>submit(false)); save.addEventListener("click",()=>submit(true));
+  prepare.addEventListener("click",()=>submit("workspace")); save.addEventListener("click",()=>submit("recipe"));
+  brandInputs.forEach(f=>f.addEventListener("input",()=>{approval.checked=false;sync();}));
+  approval.addEventListener("change",sync);
+  draftButton.addEventListener("click",()=>submit("SAVE_DRAFT")); confirmButton.addEventListener("click",()=>submit("CONFIRM_DRAFT"));
   window.addEventListener("pagehide",()=>{epoch++; reset(); file.value=""; panel.hidden=true;});
   reset();
   session().then(()=>{panel.hidden=false;status.textContent="Authorized staff access confirmed.";}).catch(e=>{status.textContent=e.message;});

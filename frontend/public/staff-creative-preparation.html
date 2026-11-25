@@ -12,6 +12,20 @@
 <article id="summary" hidden><h2 id="campaign-name"></h2><p id="campaign-id"></p><p id="brief"></p>
 <label><input type="checkbox" id="review"> I reviewed the actual campaign brief and confirm this exact draft.</label>
 <button type="button" id="prepare" disabled>Prepare workspace</button></article>
+<section id="brand-panel" hidden><h2>Advertiser brand direction</h2>
+<p>Record the advertiser's supplied brand information. Confirm only after the advertiser has explicitly approved the saved direction. This is not consent to send data to an AI provider.</p>
+<p id="brand-status"></p>
+<label for="brand-name">Brand name</label><input id="brand-name" maxlength="200">
+<label for="brand-niche">Business niche</label><input id="brand-niche" maxlength="200">
+<label for="brand-market">Market</label><input id="brand-market" maxlength="200">
+<label for="brand-language">Language</label><input id="brand-language" maxlength="100">
+<label for="brand-colors">Colors</label><input id="brand-colors" maxlength="500">
+<label for="brand-font">Font</label><input id="brand-font" maxlength="200">
+<label for="brand-goals">Campaign goals</label><textarea id="brand-goals" maxlength="2000"></textarea>
+<label for="brand-restrictions">Restrictions</label><textarea id="brand-restrictions" maxlength="2000"></textarea>
+<button type="button" id="brand-draft" disabled>Save brand draft</button>
+<label><input type="checkbox" id="brand-approved"> The advertiser explicitly approved this exact saved brand direction.</label>
+<button type="button" id="brand-confirm" disabled>Confirm saved brand</button></section>
 <section id="recipe" hidden><h2>Save production recipe</h2><p>Use the latest confirmed brand returned by the workspace. Only supply reviewed production copy.</p>
 <label for="family">Approved template family</label><input id="family" maxlength="128">
 <label for="headline">Headline</label><input id="headline" maxlength="256">
