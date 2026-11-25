@@ -77,6 +77,50 @@ try {
     assert.equal(out.receipts[0].startedAtUtc,'NOT_CAPTURED');
     assert.doesNotMatch(r.stdout,/SENSITIVE|Bearer/);
   });
+  test('lowercase secret-like and arbitrary unknown provider codes cannot leak via evidence packet',()=>{
+    const fixtureValues=[
+      ['sk-proj-lowercase-secret','sk-proj-lowercase-type'],
+      ['tenant_12345','unrecognized_provider_type'],
+      ['custom.error-code','custom.error-type']
+    ];
+    for(const [code,type] of fixtureValues){
+      const x=fixture();
+      x.entries[0].providerErrorCode=code;
+      x.entries[0].providerErrorType=type;
+      put(x);
+      const raw=readFileSync(ledgerPath);
+      const r=execute();
+      assert.equal(r.status,0,r.stderr);
+      const out=JSON.parse(r.stdout);
+      assert.equal(out.receipts[0].providerErrorCode,'NOT_CAPTURED');
+      assert.equal(out.receipts[0].providerErrorType,'NOT_CAPTURED');
+      assert.doesNotMatch(r.stdout,/sk-proj-|tenant_12345|custom.error/);
+      assert.equal(out.actualProviderChargeUsd,'UNKNOWN_NOT_ACCOUNT_VERIFIED');
+      assert.equal(out.reservedUnreconciledUsd,'2.000000');
+      assert.equal(out.unlockAuthorized,false);
+      assert.deepEqual(readFileSync(ledgerPath),raw);
+    }
+  });
+  test('recognized machine reasons remain usable for provider billing reconciliation',()=>{
+    for(const [code,type] of [
+      ['credit_balance_exhausted','insufficient_quota'],
+      ['insufficient_quota','rate_limit_error'],
+      ['rate_limit_exceeded','rate_limit_exceeded']
+    ]){
+      const x=fixture();
+      x.entries[0].providerErrorCode=code;
+      x.entries[0].providerErrorType=type;
+      put(x);
+      const r=execute();
+      assert.equal(r.status,0,r.stderr);
+      const out=JSON.parse(r.stdout);
+      assert.equal(out.receipts[0].providerErrorCode,code);
+      assert.equal(out.receipts[0].providerErrorType,type);
+      assert.equal(out.receipts[0].providerRequestId,'req_fixture123');
+      assert.equal(out.status,'HELD_MANUAL_BILLING_RECONCILIATION_REQUIRED');
+      assert.equal(out.providerCalls,0);
+    }
+  });
   test('tampered totals, unapproved delivery and impossible sequence fail closed',()=>{
     const cases=[
       x=>{x.spentMicroUsd=100;},

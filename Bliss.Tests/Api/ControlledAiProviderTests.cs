@@ -62,7 +62,7 @@ public sealed class ControlledAiProviderTests
             var json = protocol == "OpenAI" ? System.Text.Json.JsonSerializer.Serialize(new { data = new[] { new { b64_json = AcademyProductionTests.Pixel } }, usage = new { input_tokens = 10, input_tokens_details = new { text_tokens = 10, image_tokens = 0 }, output_tokens = 100 } })
                 : $$"""{"imageBase64":"{{AcademyProductionTests.Pixel}}","providerRequestId":"fixture-image"}""";
             var reply = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) };
-            if (protocol == "OpenAI") reply.Headers.TryAddWithoutValidation("x-request-id", "req-test-image");
+            if (protocol == "OpenAI") reply.Headers.TryAddWithoutValidation("x-request-id", "req_test_image");
             return reply;
         });
         var result = await new ConfiguredControlledAiProvider(new HttpClient(handler), runtime).ExecuteAsync(
@@ -85,8 +85,14 @@ public sealed class ControlledAiProviderTests
 
     [Theory]
     [InlineData("insufficient_quota", "rate_limit_exceeded", "PROVIDER_HTTP_429_CODE_insufficient_quota")]
+    [InlineData("credit_balance_exhausted", "", "PROVIDER_HTTP_429_CODE_credit_balance_exhausted")]
+    [InlineData("rate_limit_exceeded", "", "PROVIDER_HTTP_429_CODE_rate_limit_exceeded")]
     [InlineData("", "rate_limit_exceeded", "PROVIDER_HTTP_429_TYPE_rate_limit_exceeded")]
+    [InlineData("", "rate_limit_error", "PROVIDER_HTTP_429_TYPE_rate_limit_error")]
     [InlineData("sk-proj-FORGED-SENSITIVE", "", "PROVIDER_HTTP_429")]
+    [InlineData("sk-proj-lowercase-secret", "", "PROVIDER_HTTP_429")]
+    [InlineData("unrecognized_provider_code", "", "PROVIDER_HTTP_429")]
+    [InlineData("", "sk-proj-lowercase-secret", "PROVIDER_HTTP_429")]
     public async Task Image_429_retains_only_safe_machine_reason_and_valid_request_id(
         string code, string type, string expected)
     {
@@ -131,6 +137,54 @@ public sealed class ControlledAiProviderTests
             provider.ExecuteAsync(new AiProviderRequest(Guid.NewGuid(), "IMAGE", "gpt-image-2.5-flare", "{}", 100), default));
         Assert.Equal("PROVIDER_HTTP_429", exception.Code);
         Assert.Null(exception.ProviderRequestId);
+    }
+
+
+    [Fact]
+    public async Task Paid_image_malformed_success_retains_validated_request_id_for_billing_reconciliation()
+    {
+        var handler = new Handler((_, _) =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"data\":[]}")
+            };
+            response.Headers.TryAddWithoutValidation("x-request-id", "req_fixture_success");
+            return response;
+        });
+        var provider = new ConfiguredControlledAiProvider(new HttpClient(handler), OpenAiPilot());
+        var failure = await Assert.ThrowsAsync<AiProviderException>(() =>
+            provider.ExecuteAsync(new AiProviderRequest(Guid.NewGuid(), "IMAGE", "gpt-image-2.5-flare", "{}", 100), default));
+        Assert.Equal("INVALID_PROVIDER_RESPONSE", failure.Code);
+        Assert.Equal("req_fixture_success", failure.ProviderRequestId);
+    }
+
+    [Theory]
+    [InlineData("req_fixture_success", true)]
+    [InlineData("Bearer sk-fixture", false)]
+    public async Task Paid_image_success_uses_header_not_untrusted_body_id(string header, bool valid)
+    {
+        var handler = new Handler((_, _) =>
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(new {
+                id = "untrusted-body-id",
+                data = new[] { new { b64_json = AcademyProductionTests.Pixel } },
+                usage = new { input_tokens = 10, input_tokens_details = new { text_tokens = 10, image_tokens = 0 }, output_tokens = 100 }
+            });
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json) };
+            response.Headers.TryAddWithoutValidation("x-request-id", header);
+            return response;
+        });
+        var provider = new ConfiguredControlledAiProvider(new HttpClient(handler), OpenAiPilot());
+        var request = new AiProviderRequest(Guid.NewGuid(), "IMAGE", "gpt-image-2.5-flare", "{}", 100);
+        if (valid)
+            Assert.Equal(header, (await provider.ExecuteAsync(request, default)).RequestId);
+        else
+        {
+            var failure = await Assert.ThrowsAsync<AiProviderException>(() => provider.ExecuteAsync(request, default));
+            Assert.Equal("IMAGE_REQUEST_ID_MISSING", failure.Code);
+            Assert.Null(failure.ProviderRequestId);
+        }
     }
 
     [Fact]
