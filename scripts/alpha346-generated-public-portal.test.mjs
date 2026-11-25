@@ -105,3 +105,12 @@ test('consolidated homepage directly exposes consented public forms with accessi
   assert.match(css, /min-height:\s*48px/);
   assert.doesNotMatch(homepage, /payment checkout is now available|book your creator now/i);
 });
+
+
+test('generated Starter Package inquiry remains non-transactional',async()=>{
+ const services=await load('services.html');
+ assert.match(services,/Digital Advertising Starter Package — \$149 USD/);
+ assert.ok(services.includes('href="/join-advertiser.html?service=starter"'));
+ assert.match(services,/free inquiry, not a purchase or a request for payment/);
+ assert.doesNotMatch(services,/buy\.stripe\.com/);
+});
