@@ -41,6 +41,25 @@ public sealed class AlphaCreativeImagePilotTests
     }
 
     [Fact]
+    public void Restricted_worker_pin_requires_all_identifiers_and_canonical_hash()
+    {
+        var pin = new RestrictedImageRunOptions();
+        Assert.False(pin.Configured);
+        pin.RunId = Guid.NewGuid();
+        pin.WorkspaceId = Guid.NewGuid();
+        pin.BriefId = Guid.NewGuid();
+        pin.InputSha256 = new string('a', 64);
+        Assert.True(pin.Configured);
+        pin.InputSha256 = new string('A', 64);
+        Assert.False(pin.Configured);
+        pin.InputSha256 = new string('a', 63);
+        Assert.False(pin.Configured);
+        pin.InputSha256 = new string('a', 64);
+        pin.BriefId = Guid.Empty;
+        Assert.False(pin.Configured);
+    }
+
+    [Fact]
     public void Direct_images_api_usage_breakdown_has_exact_metered_usd()
     {
         using var doc = JsonDocument.Parse("""{"input_tokens":100,"input_tokens_details":{"text_tokens":80,"image_tokens":20},"output_tokens":1000}""");

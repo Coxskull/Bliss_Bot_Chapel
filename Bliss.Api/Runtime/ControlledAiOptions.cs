@@ -5,6 +5,9 @@ public sealed class ControlledAiOptions
     public bool Enabled { get; set; }
     // Explicit isolated commercial-creative pilot; off by default in every environment.
     public bool ImagePilotEnabled { get; set; }
+    // A future isolated worker may consume only this exact pre-authorized run.
+    // This configuration alone does not register or start a worker.
+    public RestrictedImageRunOptions RestrictedImageRun { get; set; } = new();
     public string Protocol { get; set; } = "Gateway";
     public string Provider { get; set; } = "";
     public string TextEndpoint { get; set; } = "";
@@ -43,4 +46,16 @@ public sealed class ControlledAiOptions
         && !string.IsNullOrWhiteSpace(kind == "TEXT" ? TextModel : ImageModel)
         && Uri.TryCreate(kind == "TEXT" ? TextEndpoint : ImageEndpoint, UriKind.Absolute, out var uri)
         && uri.Scheme == "https" && string.IsNullOrEmpty(uri.UserInfo);
+}
+
+public sealed class RestrictedImageRunOptions
+{
+    public Guid RunId { get; set; }
+    public Guid WorkspaceId { get; set; }
+    public Guid BriefId { get; set; }
+    public string InputSha256 { get; set; } = "";
+
+    public bool Configured => RunId != Guid.Empty && WorkspaceId != Guid.Empty
+        && BriefId != Guid.Empty && InputSha256 is { Length: 64 }
+        && InputSha256.All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f');
 }

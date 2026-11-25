@@ -163,10 +163,27 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         catch (Exception ex) when (ReservationConflict(ex)) { throw new WeddingPlannerConflictException("Run state changed. Refresh before cancelling."); }
         return run;
     }
+    // In restricted mode never select from the global queue, even if RunOne is called manually.
+    public IQueryable<ControlledAiRun> WorkerCandidates()
+    {
+        var runs = db.ControlledAiRuns.AsQueryable();
+        if (!runtime.RestrictedPreview) return runs;
+        var pin = Options.RestrictedImageRun;
+        if (pin is null || !pin.Configured || !Options.ImagePilotEnabled
+            || Options.Protocol != "OpenAI" || !Options.Configured("IMAGE")
+            || Options.MaxCallsPerDay != 1 || Options.TotalBudgetUsd > 18m
+            || Options.DailyBudgetUsd > 1.80m)
+            return runs.Where(x => false);
+        return runs.Where(x => x.Id == pin.RunId && x.WorkspaceId == pin.WorkspaceId
+            && x.BriefId == pin.BriefId && x.Kind == "IMAGE"
+            && x.Model == Options.ImageModel && x.Provider == Options.Provider
+            && x.InputSha256 == pin.InputSha256 && x.ReservedUsd == Options.ImageReservationUsd);
+    }
+
     public async Task<bool> RunOne(CancellationToken stopping)
     {
         var now = DateTime.UtcNow;
-        var expired = await db.ControlledAiRuns.FirstOrDefaultAsync(x => (x.Status == "RUNNING" || x.Status == "CANCEL_REQUESTED") && x.DeadlineAt < now, stopping);
+        var expired = await WorkerCandidates().FirstOrDefaultAsync(x => (x.Status == "RUNNING" || x.Status == "CANCEL_REQUESTED") && x.DeadlineAt < now, stopping);
         if (expired is not null)
         {
             expired.Status = "UNKNOWN"; expired.FailureCode = "EXECUTION_DEADLINE_EXPIRED"; expired.FinishedAt = now;
@@ -175,7 +192,7 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
             return true;
         }
         if (!Options.Enabled) return false;
-        var run = await db.ControlledAiRuns.Where(x => x.Status == "QUEUED").OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(stopping);
+        var run = await WorkerCandidates().Where(x => x.Status == "QUEUED").OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(stopping);
         if (run is null) return false;
         run.Status = "RUNNING"; run.StartedAt = now; run.DeadlineAt = now.AddSeconds(Options.TimeoutSeconds + 5);
         AddEvent(run, "RUNNING", "AI_RUNNER");
@@ -187,7 +204,8 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
                 .Where(x => x.Id != run.Id && x.Kind == "IMAGE" && x.Model == "gpt-image-2.5-flare")
                 .ToListAsync(stopping)).Any(PilotUnknownCharge));
         if (billingAnomaly) { status = "FAILED"; failure = "BILLING_RECONCILIATION_REQUIRED"; }
-        else if (!Ready(run.Kind) || run.ExecutionConfigSha256 != ConfigHash(run.Kind)) { status = "FAILED"; failure = "EXECUTION_CONFIG_CHANGED"; }
+        else if (!Ready(run.Kind) || run.ExecutionConfigSha256 != ConfigHash(run.Kind)
+            || (runtime.RestrictedPreview && Hash(run.InputSnapshotJson) != run.InputSha256)) { status = "FAILED"; failure = "EXECUTION_CONFIG_CHANGED"; }
         else
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stopping); timeout.CancelAfter(TimeSpan.FromSeconds(Options.TimeoutSeconds));
