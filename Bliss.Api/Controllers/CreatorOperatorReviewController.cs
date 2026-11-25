@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Bliss.Api.Controllers;
 
-// Review a registration only. ACTIVE membership does not verify channel ownership,
-// alter issuer metadata, open a marketplace workspace, or grant commercial rights.
+// Registration approval is distinct from operator-observed channel control.
+// Neither operation grants issuer roles, campaign or financial permissions.
 [ApiController]
 [Authorize]
 [Route("api/creators/operator-review")]
@@ -27,7 +27,8 @@ public sealed class CreatorOperatorReviewController(
                           join r in db.CreatorRegistrationReceipts.AsNoTracking()
                               on new { m.Subject, m.CreatorId } equals new { r.Subject, r.CreatorId }
                           join c in db.Creators.AsNoTracking() on m.CreatorId equals c.Id
-                          where m.Status == "PENDING_REVIEW"
+                          where m.Status == "PENDING_REVIEW" || (auth.CreatorAuthorityVerificationRequested
+                              && m.Status == "ACTIVE" && c.AuthorityStatus == "UNVERIFIED")
                           orderby r.CreatedAt, r.Id
                           select new { receiptId = r.Id, creatorId = c.Id,
                               displayName = c.Name, countryCode = c.CountryCode,
@@ -65,6 +66,55 @@ public sealed class CreatorOperatorReviewController(
             status = "ACTIVE", authorityStatus = "UNVERIFIED", workspaceAuthorized = false });
     }
 
+    [HttpPost("verify-channel")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> VerifyChannel([FromBody] CreatorChannelVerification request, CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.CreatorAuthorityVerificationRequested || !TryOperator(out var operatorSubject)) return StatusCode(403);
+        if (request.ReceiptId == Guid.Empty || request.CreatorId == Guid.Empty
+            || !request.ChannelControlReviewed || !request.ConsentReviewed
+            || string.IsNullOrWhiteSpace(request.ObservedCode) || request.ObservedCode.Length != 38)
+            return BadRequest(new { error = "Independent channel control observation, exact proof and consent review required." });
+
+        // Never fetch or follow an applicant-supplied URL from the server.
+        // The approved human operator independently observes the proof on the
+        // real submitted channel, not a screenshot or a supplied third-party link.
+        var candidate = await (from m in db.CreatorAccountMemberships.AsNoTracking()
+                              join r in db.CreatorRegistrationReceipts.AsNoTracking()
+                                  on new { m.Subject, m.CreatorId } equals new { r.Subject, r.CreatorId }
+                              where m.CreatorId == request.CreatorId && r.Id == request.ReceiptId
+                                  && m.Subject != operatorSubject && m.Status == "ACTIVE"
+                                  && m.Creator.AuthorityStatus == "UNVERIFIED"
+                                  && r.ProcessingConsent && r.TermsAccepted
+                                  && r.PrivacyNoticeVersion == CreatorRegistrationController.PrivacyNoticeVersion
+                                  && r.TermsVersion == CreatorRegistrationController.TermsVersion
+                              select new { m.Subject, m.SubmittedChannelUrl, r.RequestKey })
+            .SingleOrDefaultAsync(cancellationToken);
+        var now = DateTime.UtcNow;
+        if (candidate is null || !CreatorChannelProof.Matches(request.ObservedCode, request.ReceiptId,
+                candidate.RequestKey, request.CreatorId, candidate.SubmittedChannelUrl, now))
+            return Conflict(new { error = "Matching approved application and current channel proof not found." });
+
+        // Keep the existing receipt immutable. Recheck membership, exact channel
+        // and receipt at the write boundary; no issuer claims are created.
+        var count = await db.Creators.Where(c => c.Id == request.CreatorId && c.AuthorityStatus == "UNVERIFIED"
+            && db.CreatorAccountMemberships.Any(m => m.CreatorId == c.Id && m.Subject == candidate.Subject
+                && m.Subject != operatorSubject && m.Status == "ACTIVE" && m.SubmittedChannelUrl == candidate.SubmittedChannelUrl
+                && db.CreatorRegistrationReceipts.Any(r => r.Id == request.ReceiptId && r.Subject == m.Subject
+                    && r.CreatorId == c.Id && r.RequestKey == candidate.RequestKey && r.ProcessingConsent && r.TermsAccepted
+                    && r.PrivacyNoticeVersion == CreatorRegistrationController.PrivacyNoticeVersion
+                    && r.TermsVersion == CreatorRegistrationController.TermsVersion)))
+            .ExecuteUpdateAsync(change => change.SetProperty(c => c.AuthorityStatus, "VERIFIED")
+                .SetProperty(c => c.UpdatedAt, now), cancellationToken);
+        if (count != 1) return Conflict(new { error = "Application state changed; refresh and review again." });
+        logger.LogInformation("Creator channel control verified: ReceiptId={ReceiptId} CreatorId={CreatorId} OperatorSubject={OperatorSubject}",
+            request.ReceiptId, request.CreatorId, operatorSubject);
+        return Ok(new { receiptId = request.ReceiptId, creatorId = request.CreatorId, status = "ACTIVE",
+            authorityStatus = "VERIFIED", workspaceAuthorized = true, commercialAuthorized = false });
+    }
+
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
@@ -96,3 +146,5 @@ public sealed class CreatorOperatorReviewController(
 }
 
 public sealed record CreatorOperatorApproval(Guid ReceiptId, Guid CreatorId, bool ProfileReviewed, bool ConsentReviewed);
+
+public sealed record CreatorChannelVerification(Guid ReceiptId, Guid CreatorId, string ObservedCode, bool ChannelControlReviewed, bool ConsentReviewed);
