@@ -1,3 +1,7 @@
+using Bliss.Api.Operations;
+using Bliss.Domain.CreativeAcademy;
+using Bliss.Domain.WeddingPlanner;
+using System.Security.Cryptography;
 using System.Data;
 using Bliss.Api.Runtime;
 using Bliss.Api.Security;
@@ -124,6 +128,109 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
 
     public static string ProviderConsentScope(Guid campaignId, string campaignDigest, Guid recipeId, string recipeDigest) =>
         Bliss.Api.Operations.ControlledAiService.Hash($"{ProviderConsentNotice}\nOpenAI\n{ProviderConsentModel}\n{campaignId:D}\n{campaignDigest}\n{recipeId:D}\n{recipeDigest}");
+
+    [HttpPost("creative-artwork")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(4096)]
+    public async Task<IActionResult> Artwork([FromBody] CampaignArtworkRequest request,
+        [FromServices] CreativeHandoffService handoff, [FromServices] WeddingPlannerService planner, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "private, no-store";
+        if (!auth.AdvertiserCreativeArtworkRequested || !auth.AdvertiserCreativeProviderConsentRequested
+            || request.CampaignId == Guid.Empty) return StatusCode(403);
+        if (request.Action is not ("STATUS" or "PREVIEW" or "APPROVE" or "WITHHOLD")
+            || ((request.Action is "APPROVE" or "WITHHOLD") &&
+                (request.CandidateId is null || request.ReviewId is null || request.ImageSha256 is not { Length: 64 }
+                    || request.ExpectedVersion is null or < 0 || request.RequestKey is null || request.RequestKey == Guid.Empty
+                    || string.IsNullOrWhiteSpace(request.Rationale) || request.Rationale.Length > 2000))) return BadRequest();
+        var subject = User.FindFirst("sub")?.Value;
+        if (string.IsNullOrWhiteSpace(subject)) return StatusCode(403);
+        await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        try
+        {
+            var allowed = ActiveBusiness();
+            var advertiserId = await allowed.SingleOrDefaultAsync(ct);
+            if (advertiserId == Guid.Empty) return StatusCode(403);
+            var currentConsent = await (from m in db.AdvertiserAccountMemberships.AsNoTracking()
+                join receipt in db.AdvertiserRegistrationReceipts.AsNoTracking()
+                    on new { m.Subject, m.AdvertiserId } equals new { receipt.Subject, receipt.AdvertiserId }
+                where m.Subject == subject && m.AdvertiserId == advertiserId && m.Status == "ACTIVE"
+                    && receipt.ProcessingConsent && receipt.TermsAccepted
+                    && receipt.PrivacyNoticeVersion == AdvertiserRegistrationController.PrivacyNoticeVersion
+                    && receipt.TermsVersion == AdvertiserRegistrationController.TermsVersion
+                select m.Id).AnyAsync(ct);
+            if (!currentConsent) return StatusCode(403);
+            var draft = await Summaries(OwnDrafts(advertiserId).Where(x => x.Id == request.CampaignId && allowed.Contains(advertiserId))).SingleOrDefaultAsync(ct);
+            if (draft is null) return NotFound();
+            var digest = StaffCreativePreparationController.CampaignDigest(draft.CampaignId, draft.Name, draft.Brief);
+            var recipeKey = "campaign:" + draft.CampaignId.ToString("N") + ":" + digest;
+            var prepared = await (from p in db.AcademyProductionBriefs.AsNoTracking()
+                join w in db.WeddingPlannerWorkspaces.AsNoTracking() on p.WorkspaceId equals w.Id
+                where w.AdvertiserId == advertiserId && w.IsPrimary && w.Status == "ACTIVE" && p.IdempotencyKey == recipeKey
+                select p).SingleOrDefaultAsync(ct);
+            if (prepared is null) return NotFound();
+            var grant = await CampaignImageAuthorization.Current(db, prepared.WorkspaceId, prepared.Id, ct);
+            if (grant is null || grant.CampaignId != draft.CampaignId || grant.CampaignDigest != digest) return NotFound();
+            var run = await db.ControlledAiRuns.AsNoTracking().SingleOrDefaultAsync(x => x.WorkspaceId == prepared.WorkspaceId
+                && x.BriefId == prepared.Id && x.IdempotencyKey == CampaignImageAuthorization.RunKey(prepared.Id)
+                && x.Kind == "IMAGE" && x.Status == "SUCCEEDED_PENDING_REVIEW", ct);
+            if (run is null || run.OutputImage is null || run.CostStatus != "PROVIDER_REPORTED"
+                || !run.ActualUsd.HasValue || run.ActualUsd.Value < 0 || run.ActualUsd.Value > run.ReservedUsd
+                || string.IsNullOrWhiteSpace(run.ProviderRequestId)
+                || run.Model != ProviderConsentModel || !string.Equals(run.Provider,"OpenAI",StringComparison.OrdinalIgnoreCase)
+                || ControlledAiService.Hash(run.InputSnapshotJson) != run.InputSha256
+                || CampaignImageAuthorization.ProviderInput(run.InputSnapshotJson, grant) is null) return NotFound();
+            var key = "ai-run-" + run.Id;
+            var candidate = await db.AcademyProductionCandidates.AsNoTracking().Where(x => x.BriefId == prepared.Id)
+                .OrderByDescending(x => x.Version).FirstOrDefaultAsync(ct);
+            if (candidate is null || candidate.IdempotencyKey != key || candidate.ImageSha256 != run.OutputSha256
+                || candidate.ImageBytes.Length > CandidatePng.MaxGeneratedBytes
+                || Convert.ToHexString(SHA256.HashData(candidate.ImageBytes)).ToLowerInvariant() != candidate.ImageSha256) return NotFound();
+            var review = await db.AcademyProductionReviews.AsNoTracking().Where(x => x.CandidateId == candidate.Id)
+                .OrderByDescending(x => x.Version).FirstOrDefaultAsync(ct);
+            if (review is null || review.Decision != "PASS" || review.CriticalDefect
+                || new[] { review.Customization, review.QualityParity, review.Originality, review.GeographicAuthenticity }.Any(x => x != "PASS"))
+                return NotFound();
+            // Only an explicit staff PASS of this exact candidate makes it visible for private customer review.
+            if (review.ActorLabel == subject) return StatusCode(403);
+            CandidatePng.ValidateGenerated(candidate.ImageBytes);
+            if (request.Action == "PREVIEW")
+            {
+                if (request.CandidateId != candidate.Id || request.ReviewId != review.Id || request.ImageSha256 != candidate.ImageSha256)
+                    return Conflict(new { error = "Artwork changed. Refresh the review." });
+                await tx.CommitAsync(ct);
+                return File(candidate.ImageBytes, "image/png");
+            }
+            var latest = await db.CandidateApprovalDecisions.AsNoTracking().Where(x => x.CandidateId == candidate.Id && x.ScopeKey == "ADVERTISER")
+                .OrderByDescending(x => x.Version).FirstOrDefaultAsync(ct);
+            if (request.Action is "APPROVE" or "WITHHOLD")
+            {
+                if (request.CandidateId != candidate.Id || request.ReviewId != review.Id || request.ImageSha256 != candidate.ImageSha256)
+                    return Conflict(new { error = "Artwork changed. Refresh the review." });
+                var workspace = await planner.GetWorkspaceAsync(prepared.WorkspaceId, false, advertiserId,
+                    "ADVERTISER", subject, RequestCorrelation.Resolve(HttpContext), ct);
+                await handoff.Decide(workspace, candidate.Id, new DecideCandidateApproval("ADVERTISER", request.Action,
+                    review.Id, null, request.ExpectedVersion!.Value, request.Rationale!, false, false, false, request.RequestKey!.Value.ToString("D")),
+                    subject, subject, true, ct);
+                latest = await db.CandidateApprovalDecisions.AsNoTracking().Where(x => x.CandidateId == candidate.Id && x.ScopeKey == "ADVERTISER")
+                    .OrderByDescending(x => x.Version).FirstOrDefaultAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new { campaignId = draft.CampaignId, candidateId = candidate.Id, reviewId = review.Id,
+                imageSha256 = candidate.ImageSha256, approvalVersion = latest?.Version ?? 0,
+                approval = latest?.ReviewId == review.Id ? latest.Decision : "PENDING", release = "HELD",
+                delivery = "NOT_SENT", dispatchAuthorized = false, paymentAuthorized = false });
+        }
+        catch (WeddingPlannerNotFoundException) { return NotFound(); }
+        catch (WeddingPlannerForbiddenException) { return StatusCode(403); }
+        catch (WeddingPlannerConflictException) { return Conflict(new { error = "Artwork review changed. Refresh." }); }
+        catch (InvalidOperationException) { return Conflict(new { error = "Artwork requirements not met." }); }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg &&
+            (pg.SqlState == PostgresErrorCodes.UniqueViolation || pg.SqlState == PostgresErrorCodes.SerializationFailure))
+        { return Conflict(new { error = "Artwork decision changed concurrently." }); }
+        catch (PostgresException pg) when (pg.SqlState == PostgresErrorCodes.SerializationFailure)
+        { return Conflict(new { error = "Artwork decision changed concurrently." }); }
+    }
 
     [HttpPost("creative-provider-consent")]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
@@ -270,3 +377,6 @@ public sealed record CreativeHandoffPreviewRequest(Guid CampaignId);
 
 public sealed record CampaignProviderConsentRequest(Guid CampaignId, string Action, string? ScopeSha256,
     string? NoticeVersion, Guid? RequestKey, Guid? ExpectedReceiptId);
+
+public sealed record CampaignArtworkRequest(Guid CampaignId, string Action, Guid? CandidateId, Guid? ReviewId,
+    string? ImageSha256, int? ExpectedVersion, Guid? RequestKey, string? Rationale);
