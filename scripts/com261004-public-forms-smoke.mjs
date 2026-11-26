@@ -45,7 +45,7 @@ for(const file of ["join-creator.html","join-advertiser.html"]){
 }
 assert.ok(existsSync(base+"creator-account.html"),"creator account explainer published");
 const account=read("creator-account.html");
-assert.ok(account.includes("Registration remains disabled until this capability is enabled"),"creator registration stays off pending hosted gates");
+assert.ok(account.includes("Secure registration is handled by the application server and remains subject to its access controls."),"creator registration access controls remain disclosed");
 assert.ok(account.includes('href="https://bliss-bot-production-5eb8.up.railway.app/creator-registration.html"'),"registration and API stay on Railway origin");
 assert.ok(account.includes('href="https://bliss-bot-production-5eb8.up.railway.app/creator-dashboard.html"'),"dashboard link stays on Railway origin");
 assert.ok(account.includes('href="https://bliss-bot-production-5eb8.up.railway.app/api/auth/login?returnUrl=%2Fcreator-dashboard.html"'),"login and OIDC callback stay on Railway origin");
@@ -65,7 +65,7 @@ assert.ok(!existsSync(base+"advertiser-registration.html"),"advertiser signup/pa
 assert.ok(!existsSync(base+"advertiser-registration.js"),"advertiser registration API client stays on Railway origin");
 
 for (const [file, route] of [
-  ["creator-login.html", "/creator-signin-preview.html"],
+  ["creator-login.html", "/api/auth/login?returnUrl=%2Fcreator-dashboard.html"],
   ["advertiser-login.html", "/api/auth/login?returnUrl=%2Fadvertiser-registration.html"]
 ]) {
   assert.ok(existsSync(base + file), file + " is publicly discoverable");

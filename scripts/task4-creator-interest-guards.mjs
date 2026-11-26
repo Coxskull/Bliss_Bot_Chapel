@@ -67,7 +67,7 @@ has(privacy, ghlNotice, "published notice matches CRM consent version");
 has(creatorAccount, "/creator-registration.html", "creator account links to separate registration flow");
 has(creatorAccount, "/join-creator.html", "account setup points to existing interest form");
 has(creatorAccount, "/api/auth/login?returnUrl=%2Fcreator-dashboard.html", "sign-in returns to creator dashboard");
-has(creatorAccount, "Registration remains disabled until this capability is enabled", "creator registration feature gate disclosed");
+has(creatorAccount, "Secure registration is handled by the application server and remains subject to its access controls.", "creator registration feature gate disclosed");
 has(creatorRegistration, 'id="signup-form"', "registration page has explicit Auth signup form");
 has(creatorRegistration, 'id="registration-form"', "profile registration remains separate from Auth signup");
 has(creatorRegistration, 'name="password" type="password"', "password enters only browser-to-Supabase Auth flow");
