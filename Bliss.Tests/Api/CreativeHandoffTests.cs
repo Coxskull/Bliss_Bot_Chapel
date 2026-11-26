@@ -37,7 +37,7 @@ public sealed class CreativeHandoffTests : IClassFixture<WeddingPlannerOidcFacto
         var name = Guid.NewGuid().ToString();
         var app = factory.WithWebHostBuilder(builder => builder.ConfigureServices(services =>
         {
-            services.RemoveAll<BlissDbContext>(); services.RemoveAll<DbContextOptions<BlissDbContext>>();
+            services.RemoveAll<BlissDbContext>(); services.RemoveAll<DbContextOptions<BlissDbContext>>(); services.RemoveAll<Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptionsConfiguration<BlissDbContext>>();
             services.AddDbContext<BlissDbContext>(options => options.UseInMemoryDatabase(name));
         }));
         using var scope = app.Services.CreateScope();
