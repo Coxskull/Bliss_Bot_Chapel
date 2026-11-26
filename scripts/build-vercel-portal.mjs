@@ -81,7 +81,7 @@ await writeFile(resolve(output, 'creator-account.html'), creatorAccount);
 // Only account login redirects leave Vercel: passwords and sessions remain
 // on Railway. Never publish protected dashboards or their API requests here.
 for (const [filename, routes] of [
-  ['creator-login.html', ['/creator-signin-preview.html']],
+  ['creator-login.html', ['/api/auth/login?returnUrl=%2Fcreator-dashboard.html', '/creator-registration.html']],
   ['advertiser-login.html', [
     '/api/auth/login?returnUrl=%2Fadvertiser-registration.html',
     '/advertiser-registration.html#account-recovery'
