@@ -136,7 +136,10 @@
           artUrl=URL.createObjectURL(blob);previewUrls.push(artUrl);
           artPanel.replaceChildren();artRetry=null;
           const title=document.createElement("h4");title.textContent="Private artwork — "+result.approval;artPanel.appendChild(title);
-          const image=document.createElement("img");image.src=artUrl;image.alt="Private campaign artwork for review";image.style.maxWidth="100%";artPanel.appendChild(image);
+          const image=document.createElement("img");image.src=artUrl;image.alt="Private campaign artwork for review";image.style.maxWidth="100%";
+          try{await image.decode();}catch{URL.revokeObjectURL(artUrl);artUrl=null;throw Error("Artwork could not be displayed; approval unavailable.");}
+          if(current!==generation || !card.isConnected)return;
+          artPanel.appendChild(image);
           const note=document.createElement("p");note.textContent="Review only. Approval is not payment, final commercial delivery, publication or permission to launch advertising.";artPanel.appendChild(note);
           const rationaleInput=document.createElement("textarea");rationaleInput.maxLength=2000;rationaleInput.placeholder="Approval notes or requested changes";rationaleInput.setAttribute("aria-label","Artwork decision notes");artPanel.appendChild(rationaleInput);
           for(const [choice,label] of [["APPROVE","Approve this artwork"],["WITHHOLD","Request changes / withhold approval"]]){

@@ -495,7 +495,10 @@ app.Use(async (context, next) =>
         context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
         context.Response.Headers["Content-Security-Policy"] =
             "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-            + "img-src 'self' data:; connect-src 'self' "
+            + (context.Request.Path.Equals(new PathString("/staff-creative-preparation.html"), StringComparison.OrdinalIgnoreCase)
+                || context.Request.Path.Equals(new PathString("/advertiser-dashboard.html"), StringComparison.OrdinalIgnoreCase)
+                ? "img-src 'self' data: blob:; connect-src 'self' "
+                : "img-src 'self' data:; connect-src 'self' ")
             + (authentication.SupabaseEnabled ? new Uri(authentication.Authority).GetLeftPart(UriPartial.Authority) : "")
             + "; frame-ancestors 'none'; "
             + "base-uri 'self'; form-action 'self'";
