@@ -767,6 +767,7 @@ internal sealed class AdvertiserPrivacyHttpFactory(bool privacyEnabled = true,
         {
             var toRemove = services.Where(d =>
                 d.ServiceType == typeof(DbContextOptions<BlissDbContext>)
+                || d.ServiceType == typeof(Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptionsConfiguration<BlissDbContext>)
                 || d.ServiceType == typeof(BlissDbContext)).ToArray();
             foreach (var item in toRemove) services.Remove(item);
             if (!string.IsNullOrWhiteSpace(postgresConnectionString))

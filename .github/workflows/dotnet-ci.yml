@@ -1,4 +1,4 @@
-name: .NET 8 CI
+name: .NET 10 CI
 
 on:
   pull_request:
@@ -94,10 +94,10 @@ jobs:
             bash "$script"
           grep -q "BLISS_HOSTED_DB_PASSWORD is missing" "$output"
 
-      - name: Set up .NET 8 SDK
+      - name: Set up .NET 10 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Show SDK version
         run: dotnet --info
@@ -233,6 +233,15 @@ jobs:
 
       - name: Build Release
         run: dotnet build BlissBotChapel.sln --configuration Release --no-restore
+
+      - name: Verify EF10 model matches migration snapshot (no database connection)
+        shell: bash
+        run: |
+          set -euo pipefail
+          tool_dir="$(mktemp -d)"
+          trap 'rm -rf "$tool_dir"' EXIT
+          dotnet tool install dotnet-ef --version 10.0.15 --tool-path "$tool_dir"
+          env -u ConnectionStrings__DefaultConnection "$tool_dir/dotnet-ef" migrations has-pending-model-changes --project Bliss.Infrastructure --startup-project Bliss.Api --configuration Release --no-build
 
       - name: Run regression tests
         run: dotnet test Bliss.Tests/Bliss.Tests.csproj --configuration Release --no-build --no-restore --logger "trx;LogFileName=bliss-tests.trx" --results-directory TestResults
