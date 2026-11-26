@@ -16,6 +16,14 @@ public sealed class ControlledAiOptions
     public string TextModel { get; set; } = "";
     public string ImageModel { get; set; } = "";
     public int TimeoutSeconds { get; set; } = 120;
+    // An explicitly approved additional reservation is limited to one exact reviewed revision.
+    public Guid RestrictedRevisionBriefId { get; set; }
+    public bool RestrictedImageCapacityConfigured => TotalBudgetUsd is > 0 and <= 18m
+        && ImageReservationUsd == 1.80m
+        && (MaxCallsPerDay == 1 && DailyBudgetUsd == 1.80m && RestrictedRevisionBriefId == Guid.Empty
+            || MaxCallsPerDay == 2 && DailyBudgetUsd == 3.60m && RestrictedRevisionBriefId != Guid.Empty);
+    public bool RestrictedBriefAllowed(Guid briefId) => RestrictedImageCapacityConfigured
+        && briefId != Guid.Empty && (MaxCallsPerDay == 1 || briefId == RestrictedRevisionBriefId);
     public int MaxCallsPerDay { get; set; }
     public decimal DailyBudgetUsd { get; set; }
     public decimal TotalBudgetUsd { get; set; }

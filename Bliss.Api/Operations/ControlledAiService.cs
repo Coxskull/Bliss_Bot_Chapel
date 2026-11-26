@@ -27,7 +27,7 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         model = kind == "TEXT" ? Options.TextModel : Options.ImageModel, endpoint = kind == "TEXT" ? Options.TextEndpoint : Options.ImageEndpoint,
         Options.TimeoutSeconds, Options.MaxOutputTokens, Options.MaxResponseBytes,
         Options.ImagePilotEnabled, Options.ImageReservationUsd, Options.DailyBudgetUsd,
-        Options.TotalBudgetUsd, Options.MaxCallsPerDay }));
+        Options.TotalBudgetUsd, Options.MaxCallsPerDay, Options.RestrictedRevisionBriefId }));
     public bool Ready(string kind) => Options.Configured(kind) && provider.Configured(kind);
     private static bool PilotUnknownCharge(ControlledAiRun run) =>
         run.Kind == "IMAGE" && run.Model == "gpt-image-2.5-flare"
@@ -89,7 +89,9 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         var campaignImage = key.StartsWith(CampaignImageAuthorization.KeyPrefix, StringComparison.Ordinal);
         if (campaignImage != campaignConsentReceiptId.HasValue || (campaignImage && (kind != "IMAGE" || brief is null
             || key != CampaignImageAuthorization.RunKey(brief.Id) || actorType != "OPERATOR"
-            || campaignConsentReceiptId == Guid.Empty || !RestrictedCampaignPilotConfigured)))
+            || campaignConsentReceiptId == Guid.Empty || !RestrictedCampaignPilotConfigured
+            || !Options.RestrictedBriefAllowed(brief.Id)
+            || (Options.MaxCallsPerDay == 2 && !brief.IdempotencyKey.StartsWith("rev:",StringComparison.Ordinal)))))
             throw new InvalidOperationException("Exact staff campaign image reservation required.");
         var fingerprint = campaignImage
             ? Hash(Serialize(new { kind, request.BriefId, consentReceiptId = campaignConsentReceiptId }))
@@ -185,7 +187,8 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         && Options.ImagePilotEnabled && Options.Protocol == "OpenAI" && Options.Configured("IMAGE")
         && Options.Provider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase)
         && Options.ImageModel == Bliss.Api.Controllers.AdvertiserCampaignDraftsController.ProviderConsentModel
-        && Options.MaxCallsPerDay == 1 && Options.TotalBudgetUsd <= 18m && Options.DailyBudgetUsd <= 1.80m;
+        && Options.RestrictedImageCapacityConfigured;
+    public bool RestrictedCampaignBriefAllowed(Guid briefId) => RestrictedCampaignPilotConfigured && Options.RestrictedBriefAllowed(briefId);
     // In restricted mode never select from the global queue, even if RunOne is called manually.
     public IQueryable<ControlledAiRun> WorkerCandidates()
     {
@@ -194,8 +197,7 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         var pin = Options.RestrictedImageRun;
         if (pin is null || !pin.Configured || !Options.ImagePilotEnabled
             || Options.Protocol != "OpenAI" || !Options.Configured("IMAGE")
-            || Options.MaxCallsPerDay != 1 || Options.TotalBudgetUsd > 18m
-            || Options.DailyBudgetUsd > 1.80m)
+            || !Options.RestrictedBriefAllowed(pin.BriefId))
             return runs.Where(x => false);
         return runs.Where(x => x.Id == pin.RunId && x.WorkspaceId == pin.WorkspaceId
             && x.BriefId == pin.BriefId && x.Kind == "IMAGE"

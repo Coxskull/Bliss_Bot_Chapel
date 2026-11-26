@@ -56,7 +56,18 @@ public sealed class RestrictedImageWorkerScopeTests
         pin.InputSha256 = hash;
         runtime.ControlledAi.MaxCallsPerDay = 2;
         Assert.Empty(await service.WorkerCandidates().ToListAsync());
+        runtime.ControlledAi.DailyBudgetUsd = 3.60m;
+        Assert.Empty(await service.WorkerCandidates().ToListAsync());
+        runtime.ControlledAi.RestrictedRevisionBriefId = Guid.NewGuid();
+        Assert.Empty(await service.WorkerCandidates().ToListAsync());
+        runtime.ControlledAi.RestrictedRevisionBriefId = briefId;
+        Assert.Equal(runId,(await service.WorkerCandidates().SingleAsync()).Id);
+        Assert.False(runtime.ControlledAi.RestrictedBriefAllowed(Guid.NewGuid()));
+        runtime.ControlledAi.DailyBudgetUsd = 3.61m;
+        Assert.Empty(await service.WorkerCandidates().ToListAsync());
         runtime.ControlledAi.MaxCallsPerDay = 1;
+        runtime.ControlledAi.DailyBudgetUsd = 1.80m;
+        runtime.ControlledAi.RestrictedRevisionBriefId = Guid.Empty;
         runtime.ControlledAi.TotalBudgetUsd = 18.01m;
         Assert.Empty(await service.WorkerCandidates().ToListAsync());
         runtime.RestrictedPreview = false;

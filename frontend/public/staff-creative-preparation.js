@@ -216,7 +216,12 @@
         const ready = result.imagePilotConfigured === true && result.readiness?.imageReady === true;
         if (ready) imageGrant = result.consentReceiptId;
         el("image-readiness").textContent = ready ? "Consent current. Reserve USD "+result.readiness.imageReservationUsd+" for one image."
-          : "Consent recorded, but budget or provider configuration is not ready.";
+          : result.readiness?.billingAnomaly===true ? "Consent recorded; a prior provider billing anomaly requires reconciliation."
+          : result.imagePilotConfigured!==true ? "Consent recorded; this exact recipe is not authorized by the current pilot configuration."
+          : "Consent recorded; reservation unavailable. Daily requests: "+result.readiness?.callsReservedToday+"/"+result.readiness?.maxCallsPerDay
+            +"; daily reserved USD "+result.readiness?.reservedTodayUsd+"/"+result.readiness?.dailyBudgetUsd
+            +"; total reserved USD "+result.readiness?.reservedTotalUsd+"/"+result.readiness?.totalBudgetUsd
+            +". Daily allowance resets at 00:00 UTC.";
       }
     } catch(e) { imageGrant=null;budgetApproval.checked=false;el("image-readiness").textContent=e.message; }
     finally {busy=false;sync();}

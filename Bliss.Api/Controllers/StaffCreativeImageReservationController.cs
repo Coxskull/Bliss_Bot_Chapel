@@ -46,9 +46,9 @@ public sealed class StaffCreativeImageReservationController(BlissDbContext db, B
         }
         if (request.Action == "REVIEW")
             return Ok(new { campaignId = request.CampaignId, consentReceiptId = grant.ReceiptId,
-                imagePilotConfigured = ai.RestrictedCampaignPilotConfigured, readiness = await ai.Readiness(ct),
+                imagePilotConfigured = ai.RestrictedCampaignBriefAllowed(request.BriefId), readiness = await ai.Readiness(ct),
                 dispatchAuthorized = false, release = "HELD", delivery = "NOT_SENT" });
-        if (request.ConsentReceiptId != grant.ReceiptId || !ai.RestrictedCampaignPilotConfigured)
+        if (request.ConsentReceiptId != grant.ReceiptId || !ai.RestrictedCampaignBriefAllowed(request.BriefId))
             return Conflict(new { error = "Consent changed or exact pilot configuration unavailable." });
         try
         {
