@@ -178,6 +178,9 @@ public sealed class StaffCreativePreparationController(
             return BadRequest(new { error = "Invalid brand action. Confirmation requires explicit customer brand approval." });
         // A saved recipe is optional; if requested, all inputs must be provided.
         var saveRecipe = request.BrandDnaId.HasValue;
+        if(request.RevisionReviewId.HasValue && (!saveRecipe || request.RevisionReviewId==Guid.Empty || request.PreviousBriefId is null || request.PreviousBriefId==Guid.Empty)
+            || !request.RevisionReviewId.HasValue && request.PreviousBriefId.HasValue)
+            return BadRequest(new {error="Exact previous brief and saved revision review required."});
         if (saveRecipe ? request.BrandDnaId == Guid.Empty || string.IsNullOrWhiteSpace(request.Family)
             || string.IsNullOrWhiteSpace(request.Headline) || string.IsNullOrWhiteSpace(request.Cta)
             : request.Family is not null || request.Headline is not null || request.Cta is not null)
@@ -230,21 +233,47 @@ public sealed class StaffCreativePreparationController(
             {
                 if (brand is null || brand.Status != "CONFIRMED" || brand.Id != request.BrandDnaId)
                     return Conflict(new { error = "Latest confirmed brand DNA required; no recipe created." });
-                // A distinct campaign digest identifies one immutable preparation.
-                // Existing service rejects same-key changed-input requests.
-                var key = "campaign:" + draft.Id.ToString("N") + ":" + request.BriefSha256;
+                await using var tx=await db.Database.BeginTransactionAsync(IsolationLevel.Serializable,ct);
+                var current=await CampaignRecipeRevision.ForCampaign(db.AcademyProductionBriefs.AsNoTracking()
+                    .Where(x=>x.WorkspaceId==workspace.WorkspaceId),draft.Id,request.BriefSha256).FirstOrDefaultAsync(ct);
+                var key=CampaignRecipeRevision.OriginalKey(draft.Id,request.BriefSha256);
+                AcademyProductionReview? revision=null;
+                if(request.RevisionReviewId is Guid reviewId){
+                    key=CampaignRecipeRevision.Key(draft.Id,request.BriefSha256,reviewId);
+                    // Permit exact replays only; never let a stale review fork a newer recipe.
+                    var source=await db.AcademyProductionBriefs.AsNoTracking().SingleOrDefaultAsync(x=>x.Id==request.PreviousBriefId
+                        && x.WorkspaceId==workspace.WorkspaceId && x.BrandDnaId==brand.Id,ct);
+                    if(source is null || !CampaignRecipeRevision.Matches(source.IdempotencyKey,draft.Id,request.BriefSha256)
+                        || current is null || (current.Id!=source.Id && current.IdempotencyKey!=key))
+                        return Conflict(new{error="The selected review is no longer the current recipe."});
+                    var candidate=await db.AcademyProductionCandidates.AsNoTracking().Where(x=>x.BriefId==source.Id)
+                        .OrderByDescending(x=>x.Version).FirstOrDefaultAsync(ct);
+                    if(candidate is null)return Conflict();
+                    revision=await db.AcademyProductionReviews.AsNoTracking().Where(x=>x.CandidateId==candidate.Id)
+                        .OrderByDescending(x=>x.Version).FirstOrDefaultAsync(ct);
+                    if(revision?.Id!=reviewId || revision.Decision!="REVISE" || string.IsNullOrWhiteSpace(revision.Repair))
+                        return Conflict(new{error="Latest saved REVISE decision required."});
+                    var generated=await db.ControlledAiRuns.AsNoTracking().AnyAsync(x=>x.WorkspaceId==workspace.WorkspaceId && x.BriefId==source.Id
+                        && x.Kind=="IMAGE" && x.Status=="SUCCEEDED_PENDING_REVIEW" && x.CostStatus=="PROVIDER_REPORTED"
+                        && x.OutputSha256==candidate.ImageSha256 && x.IdempotencyKey==CampaignImageAuthorization.RunKey(source.Id),ct);
+                    if(!generated)return Conflict(new{error="Verified generated candidate required."});
+                    if(await db.WeddingPlannerAuditEvents.AnyAsync(x=>x.WorkspaceId==workspace.WorkspaceId
+                        && x.Action==StarterArtworkDelivery.ReleaseAction && x.Detail!=null && x.Detail.Contains(":"+candidate.Id.ToString("N")+":"),ct))
+                        return Conflict(new{error="Artwork already released; use a separate order."});
+                }else if(current is not null && current.IdempotencyKey!=key)
+                    return Conflict(new{error="Use the latest reviewed revision instead of overwriting the original recipe."});
                 var result = await production.CreateAsync(workspace,
                     new CreateProductionBrief(brand.Id, request.Family!, request.Headline!, request.Cta!, key),
-                    "OPERATOR", subject, RequestCorrelation.Resolve(HttpContext), ct);
+                    "OPERATOR", subject, RequestCorrelation.Resolve(HttpContext), ct,revision);
                 productionBriefId = result.Row.Id;
                 recipeSha256 = result.Row.RecipeSha256;
+                await tx.CommitAsync(ct);
             }
             if (!saveRecipe && brand?.Status == "CONFIRMED")
             {
-                var existingKey = "campaign:" + draft.Id.ToString("N") + ":" + request.BriefSha256;
-                var existingRecipe = await db.AcademyProductionBriefs.AsNoTracking()
-                    .Where(x => x.WorkspaceId == workspace.WorkspaceId && x.IdempotencyKey == existingKey && x.BrandDnaId == brand.Id)
-                    .Select(x => new { x.Id, x.RecipeSha256 }).SingleOrDefaultAsync(ct);
+                var existingRecipe = await CampaignRecipeRevision.ForCampaign(db.AcademyProductionBriefs.AsNoTracking()
+                    .Where(x=>x.WorkspaceId==workspace.WorkspaceId),draft.Id,request.BriefSha256)
+                    .Where(x=>x.BrandDnaId==brand.Id).Select(x => new { x.Id, x.RecipeSha256 }).FirstOrDefaultAsync(ct);
                 productionBriefId = existingRecipe?.Id;
                 recipeSha256 = existingRecipe?.RecipeSha256;
             }
@@ -262,6 +291,8 @@ public sealed class StaffCreativePreparationController(
         catch (WeddingPlannerNotFoundException) { return NotFound(); }
         catch (WeddingPlannerForbiddenException) { return StatusCode(403); }
         catch (WeddingPlannerConflictException) { return Conflict(new { error = "Preparation conflicts with existing state. Refresh before retrying." }); }
+        catch (PostgresException pg) when(pg.SqlState==PostgresErrorCodes.SerializationFailure || pg.SqlState==PostgresErrorCodes.UniqueViolation)
+        { return Conflict(new { error = "Preparation changed concurrently. Refresh before retrying." }); }
         catch (DbUpdateException) { return Conflict(new { error = "Preparation changed concurrently. Refresh before retrying." }); }
         catch (InvalidOperationException) { return BadRequest(new { error = "Production preparation requirements not met." }); }
     }
@@ -270,7 +301,8 @@ public sealed class StaffCreativePreparationController(
 public sealed record StaffCampaignPreparationRequest(Guid CampaignId, string BriefSha256,
     bool OperatorReviewedCampaign, Guid? BrandDnaId, string? Family, string? Headline, string? Cta,
     string? BrandAction = null, BrandDnaFields? BrandFields = null, int? BrandExpectedVersion = null,
-    string? BrandIdempotencyKey = null, bool CustomerBrandApproved = false);
+    string? BrandIdempotencyKey = null, bool CustomerBrandApproved = false,
+    Guid? PreviousBriefId = null,Guid? RevisionReviewId = null);
 
 public sealed record StaffStarterOfferRequest(Guid CampaignId,string BriefSha256,Guid WorkspaceId,string Scope,string Terms,bool ScopeAndTermsApproved,bool TaxTreatmentApproved);
 

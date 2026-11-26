@@ -208,11 +208,11 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
             var draft = await Summaries(OwnDrafts(advertiserId).Where(x => x.Id == request.CampaignId && allowed.Contains(advertiserId))).SingleOrDefaultAsync(ct);
             if (draft is null) return NotFound();
             var digest = StaffCreativePreparationController.CampaignDigest(draft.CampaignId, draft.Name, draft.Brief);
-            var recipeKey = "campaign:" + draft.CampaignId.ToString("N") + ":" + digest;
-            var prepared = await (from p in db.AcademyProductionBriefs.AsNoTracking()
+            var prepared = await CampaignRecipeRevision.ForCampaign(
+                from p in db.AcademyProductionBriefs.AsNoTracking()
                 join w in db.WeddingPlannerWorkspaces.AsNoTracking() on p.WorkspaceId equals w.Id
-                where w.AdvertiserId == advertiserId && w.IsPrimary && w.Status == "ACTIVE" && p.IdempotencyKey == recipeKey
-                select p).SingleOrDefaultAsync(ct);
+                where w.AdvertiserId == advertiserId && w.IsPrimary && w.Status == "ACTIVE"
+                select p,draft.CampaignId,digest).FirstOrDefaultAsync(ct);
             if (prepared is null) return NotFound();
             var grant = await CampaignImageAuthorization.Current(db, prepared.WorkspaceId, prepared.Id, ct);
             if (grant is null || grant.CampaignId != draft.CampaignId || grant.CampaignDigest != digest) return NotFound();
@@ -337,11 +337,11 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
             var draft = await Summaries(OwnDrafts(id).Where(c => c.Id == request.CampaignId && allowed.Contains(id))).SingleOrDefaultAsync(ct);
             if (draft is null) return NotFound();
             var digest = StaffCreativePreparationController.CampaignDigest(draft.CampaignId, draft.Name, draft.Brief);
-            var key = "campaign:" + draft.CampaignId.ToString("N") + ":" + digest;
-            var prepared = await (from p in db.AcademyProductionBriefs.AsNoTracking()
+            var prepared = await CampaignRecipeRevision.ForCampaign(
+                from p in db.AcademyProductionBriefs.AsNoTracking()
                 join w in db.WeddingPlannerWorkspaces.AsNoTracking() on p.WorkspaceId equals w.Id
-                where w.AdvertiserId == id && w.IsPrimary && w.Status == "ACTIVE" && p.IdempotencyKey == key
-                select p).SingleOrDefaultAsync(ct);
+                where w.AdvertiserId == id && w.IsPrimary && w.Status == "ACTIVE"
+                select p,draft.CampaignId,digest).FirstOrDefaultAsync(ct);
             if (prepared is null) return NotFound(new { error = "No current production recipe has been prepared." });
             var latestBrand = await db.WeddingPlannerBrandDna.AsNoTracking().Where(x => x.WorkspaceId == prepared.WorkspaceId)
                 .OrderByDescending(x => x.Version).Select(x => new { x.Id, x.Status }).FirstOrDefaultAsync(ct);
