@@ -87,13 +87,21 @@
         if (!Array.isArray(data.receipts) || data.fulfillmentAuthorized !== false || data.receipts.length > 50)
           throw new Error("Receipt response could not be verified.");
         for (const row of data.receipts) {
-          if (row.status !== "SIGNED_NOTIFICATION_PENDING_ORDER_RECONCILIATION") throw new Error("Unexpected receipt status.");
+          if (!["SIGNED_NOTIFICATION_PENDING_ORDER_RECONCILIATION", "RECONCILED_BY_OPERATOR", "RECONCILIATION_REVIEW_REQUIRED"].includes(row.status)) throw new Error("Unexpected receipt status.");
           const card = document.createElement("article"); receiptList.appendChild(card);
           add(card, "h3", row.quoteReference || "Unlinked payment — review required");
           add(card, "p", "Checkout: " + row.checkoutSessionId);
           add(card, "p", "Payment Intent: " + row.paymentIntentId);
           add(card, "p", "Amount: " + (row.amountCents / 100).toFixed(2) + " " + row.currency.toUpperCase());
           add(card, "p", "Received: " + row.receivedAt);
+          if (row.status === "RECONCILED_BY_OPERATOR") {
+            add(card, "p", "Order reconciliation recorded. Fulfillment remains held; verify current payment and refund status before any separate release.");
+            continue;
+          }
+          if (row.status === "RECONCILIATION_REVIEW_REQUIRED") {
+            add(card, "p", "Reconciliation evidence mismatch. Manual investigation required; do not fulfill.");
+            continue;
+          }
           add(card, "p", "Signed notification only. Pending merchant and order reconciliation.");
           const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           const quote = row.quoteReference || "";
@@ -117,7 +125,7 @@
           campaign.addEventListener("input",sync);checks.forEach(x=>x.addEventListener("change",sync));
           reconcile.addEventListener("click",async()=>{
             if(reconcile.disabled)return;
-            reconciling=true;sync();
+            reconciling=true;campaign.disabled=true;checks.forEach(x=>x.disabled=true);sync();
             try {
               const response=await fetch(endpoint+"/starter-reconcile",{method:"POST",credentials:"same-origin",cache:"no-store",
                 headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify({campaignId:campaign.value.trim(),
@@ -131,7 +139,7 @@
                 throw Error("Reconciliation receipt could not be verified.");
               add(card,"p","Order reconciled: "+result.reconciliationId+". Fulfillment remains held.");
               reconcile.remove();campaign.disabled=true;checks.forEach(x=>x.disabled=true);
-            }catch(e){receiptStatus.textContent=e.message;}
+            }catch(e){campaign.disabled=false;checks.forEach(x=>x.disabled=false);receiptStatus.textContent=e.message;}
             finally{reconciling=false;sync();}
           });
         }
