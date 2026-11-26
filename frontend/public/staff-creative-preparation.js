@@ -13,7 +13,7 @@
   const imagePanel = el("image-reservation"), imageReview = el("image-review"), imageReserve = el("image-reserve"),
     budgetApproval = el("image-budget-approved");
   let imageTarget = null, imageGrant = null, offerWorkspace = null;
-  let artworkRun = null, artworkCandidate = null, artworkVersion = 0, artworkUrl = null, artworkRetry = null;
+  let artworkRun = null, artworkCandidate = null, artworkVersion = 0, artworkUrl = null, artworkRetry = null, revisionReviewId=null;
   const artworkPanel = el("artwork-panel"), artwork = el("artwork"), artworkReview = el("artwork-review");
   const artworkFields = ["decision","custom","quality","original","geo","defect","rationale","preserve","repair"].map(k=>el("artwork-"+k));
   let manifest = null, brand = null, brandState = null, pendingBrand = null, busy = false, epoch = 0;
@@ -48,7 +48,9 @@
       || ["brandName","niche","market","language","goals"].some(k=>!readBrand()[k])
       || (brandState.version > 0 && unchanged());
     confirmButton.disabled = busy || !manifest || !review.checked || approval.disabled || !approval.checked;
-    if (!unchanged()) save.disabled = true;
+    if (!unchanged() || imageTarget) save.disabled = true;
+    el("revision-save").disabled=busy || !manifest || !review.checked || !brand || !unchanged() || !imageTarget
+        || !artworkUrl || !revisionReviewId || fields.some(f=>!f.value.trim());
     imageReview.disabled = busy || !imageTarget || !unchanged() || !review.checked;
     budgetApproval.disabled = busy || !imageGrant;
     imageReserve.disabled = busy || !imageTarget || !imageGrant || !budgetApproval.checked || !unchanged() || !review.checked;
@@ -133,8 +135,8 @@
     finally { if (current === epoch) sync(); }
   });
   async function submit(action) {
-    const withRecipe = action === "recipe", brandAction = action === "SAVE_DRAFT" || action === "CONFIRM_DRAFT";
-    if (busy || !manifest || !review.checked || (withRecipe && save.disabled)
+    const revising=action==="revision",withRecipe = action === "recipe" || revising, brandAction = action === "SAVE_DRAFT" || action === "CONFIRM_DRAFT";
+    if (busy || !manifest || !review.checked || (revising ? el("revision-save").disabled : withRecipe && save.disabled)
         || (action === "SAVE_DRAFT" && draftButton.disabled) || (action === "CONFIRM_DRAFT" && confirmButton.disabled)) return;
     const current = epoch; busy = true; sync(); status.textContent = "Preparing the selected campaign…";
     try {
@@ -150,6 +152,7 @@
         Object.assign(payload,details,{brandIdempotencyKey:pendingBrand.key});
       }
       if (withRecipe) Object.assign(payload,{brandDnaId:brand,family:fields[0].value.trim(),headline:fields[1].value.trim(),cta:fields[2].value.trim()});
+      if(revising)Object.assign(payload,{previousBriefId:imageTarget.briefId,revisionReviewId});
       const response = await fetch("/api/internal/creative-preparation",{method:"POST",credentials:"same-origin",cache:"no-store",headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify(payload)});
       if (current !== epoch) return;
       if (!response.ok) throw Error("Preparation not accepted (HTTP " + response.status + "). Check current campaign, permissions and consent.");
@@ -177,8 +180,8 @@
       el("result").textContent = "Workspace: " + result.workspaceId + " | Brand: " + result.brandStatus
         + (withRecipe ? " | Recipe: " + result.productionBriefId + " | SHA-256: " + result.recipeSha256 : "")
         + " | Release HELD; no provider call or delivery.";
-      status.textContent = withRecipe ? "Recipe saved." : brandAction ? result.preparation === "BRAND_CONFIRMED" ? "Brand confirmed. Prepare the recipe." : "Brand draft saved. Confirm only after advertiser approval." : brand ? "Workspace ready; confirmed brand available." : "Workspace ready; enter the advertiser's brand information.";
-    } catch(e) { status.textContent = e.message; }
+      status.textContent = withRecipe ? (revising?"Revised recipe saved. Customer must grant fresh provider consent.":"Recipe saved.") : brandAction ? result.preparation === "BRAND_CONFIRMED" ? "Brand confirmed. Prepare the recipe." : "Brand draft saved. Confirm only after advertiser approval." : brand ? "Workspace ready; confirmed brand available." : "Workspace ready; enter the advertiser's brand information.";
+    } catch(e) { status.textContent = e.message;if(revising)el("revision-status").textContent=e.message; }
     finally { busy = false; sync(); }
   }
   function clearImage(target) {
@@ -220,7 +223,8 @@
   }
   function clearArtwork() {
     if (artworkUrl) URL.revokeObjectURL(artworkUrl);
-    artworkUrl=artworkRun=artworkCandidate=artworkRetry=null; artworkVersion=0;
+    artworkUrl=artworkRun=artworkCandidate=artworkRetry=revisionReviewId=null; artworkVersion=0;
+    el("revision-panel").hidden=true;el("revision-status").textContent="";
     artwork.hidden=artworkPanel.hidden=artworkReview.hidden=el("artwork-release").hidden=true; artwork.removeAttribute("src");
     el("reconciliation-id").value="";el("release-payment").checked=el("release-scope").checked=false;
     artworkFields.forEach(f=>{if(f.type==="checkbox") f.checked=false;else if(f.tagName==="SELECT") f.selectedIndex=0;else f.value="";});
@@ -280,6 +284,8 @@
         }catch{URL.revokeObjectURL(url);artwork.removeAttribute("src");artwork.hidden=true;throw Error("Artwork could not be displayed; review remains unavailable.");}
       }
       artworkCandidate=uuid.test(result.candidateId)?result.candidateId:null;artworkVersion=result.reviewVersion;
+      revisionReviewId=result.decision==="REVISE" && uuid.test(result.reviewId)?result.reviewId:null;
+      el("revision-panel").hidden=!revisionReviewId;
       artworkReview.hidden=el("artwork-release").hidden=!artworkCandidate;
       if(action==="RELEASE"){el("artwork-status").textContent="Private artwork download authorized. Receipt "+result.releaseId+". Customer download not confirmed.";return;}
       if(action==="REVIEW")artworkRetry=null;
@@ -337,6 +343,7 @@
   });
   review.addEventListener("change",sync); fields.forEach(f=>f.addEventListener("input",sync));
   prepare.addEventListener("click",()=>submit("workspace")); save.addEventListener("click",()=>submit("recipe"));
+  el("revision-save").addEventListener("click",()=>submit("revision"));
   brandInputs.forEach(f=>f.addEventListener("input",()=>{approval.checked=false;sync();}));
   approval.addEventListener("change",sync);
   draftButton.addEventListener("click",()=>submit("SAVE_DRAFT")); confirmButton.addEventListener("click",()=>submit("CONFIRM_DRAFT"));

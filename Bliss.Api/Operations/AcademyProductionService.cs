@@ -48,11 +48,16 @@ public sealed class AcademyProductionService(BlissDbContext db, BlueprintPhaseSe
         return new { brief, candidates, reviews, campaignReady = false, delivery = "NOT_SENT" };
     }
     public async Task<(AcademyProductionBrief Row, bool Replay)> CreateAsync(WeddingPlannerWorkspaceResult workspace,
-        CreateProductionBrief request, string actorType, string actorLabel, string? requestId, CancellationToken ct)
+        CreateProductionBrief request, string actorType, string actorLabel, string? requestId, CancellationToken ct,
+        AcademyProductionReview? reviewedRevision = null)
     {
         var key = Text(request.IdempotencyKey, 128); var family = Text(request.Family, 128).ToLowerInvariant();
         var headline = Text(request.Headline, 500); var cta = Text(request.Cta, 500);
-        var fingerprint = Hash(Serialize(new { request.BrandDnaId, family, headline, cta }));
+        if (reviewedRevision is not null && (reviewedRevision.Decision != "REVISE" || string.IsNullOrWhiteSpace(reviewedRevision.Repair)))
+            throw new InvalidOperationException("An exact saved revision review is required.");
+        var fingerprint = reviewedRevision is null ? Hash(Serialize(new { request.BrandDnaId, family, headline, cta }))
+            : Hash(Serialize(new { request.BrandDnaId, family, headline, cta, reviewId=reviewedRevision.Id, reviewedRevision.Preserve, reviewedRevision.Repair }));
+        var requirements = "Goal: ";
         async Task<AcademyProductionBrief?> Replay() => await db.AcademyProductionBriefs.AsNoTracking().SingleOrDefaultAsync(x => x.WorkspaceId == workspace.WorkspaceId && x.IdempotencyKey == key, ct);
         var prior = await Replay();
         if (prior is not null) { Same(prior.RequestSha256, fingerprint); return (prior, true); }
@@ -64,8 +69,13 @@ public sealed class AcademyProductionService(BlissDbContext db, BlueprintPhaseSe
             ?? throw new InvalidOperationException("No eligible ACTIVE reference exists for this family. No substitute was selected.");
         var file = references.OpenReference(reference.ReferenceId) ?? throw new InvalidOperationException("Reference image is unavailable.");
         var referenceHash = Hash(await File.ReadAllBytesAsync(file.FullPath, ct));
+        requirements = $"Goal: {brand.Goals}\nRestrictions: {brand.Restrictions}";
+        if (reviewedRevision is not null)
+            requirements += "\nPrior staff quality review — preserve: "+reviewedRevision.Preserve
+                +"\nRequired corrections: "+reviewedRevision.Repair
+                +"\nUse the newly approved headline and CTA. No invented QR code, URL, logo, contact details or unsupported claims. Omit QR codes unless a separately verified destination is provided.";
         var brief = CreativeAcademy.PrepareProductionBrief(family, brand.BrandName, brand.Colors, brand.Font, headline, cta,
-            brand.Market, brand.Language, $"Goal: {brand.Goals}\nRestrictions: {brand.Restrictions}", false, false, false, [reference], []);
+            brand.Market, brand.Language, requirements, false, false, false, [reference], []);
         var row = new AcademyProductionBrief
         {
             Id = Guid.NewGuid(), WorkspaceId = workspace.WorkspaceId, BrandDnaId = brand.Id, Family = family, Headline = headline, Cta = cta,

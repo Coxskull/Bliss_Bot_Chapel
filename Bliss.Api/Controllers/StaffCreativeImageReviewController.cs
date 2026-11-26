@@ -126,10 +126,10 @@ public sealed class StaffCreativeImageReviewController(BlissDbContext db, BlissA
                     reviewId = saved.Row.Id, reviewVersion = saved.Row.Version, decision = saved.Row.Decision,
                     release = "HELD", delivery = "NOT_SENT", dispatchAuthorized = false });
             }
-            var reviewVersion = candidate is null ? 0 : await db.AcademyProductionReviews.Where(x => x.CandidateId == candidate.Id)
-                .Select(x => (int?)x.Version).MaxAsync(ct) ?? 0;
+            var latestReview=candidate is null?null:await db.AcademyProductionReviews.AsNoTracking().Where(x=>x.CandidateId==candidate.Id)
+                .OrderByDescending(x=>x.Version).Select(x=>new{x.Id,x.Version,x.Decision}).FirstOrDefaultAsync(ct);
             return Ok(new { runId = run.Id, candidateId = candidate?.Id, imageSha256 = run.OutputSha256,
-                candidateVersion = candidate?.Version, reviewVersion, actualUsd = run.ActualUsd,
+                candidateVersion = candidate?.Version, reviewVersion=latestReview?.Version??0,reviewId=latestReview?.Id,decision=latestReview?.Decision,actualUsd = run.ActualUsd,
                 release = "HELD", delivery = "NOT_SENT", dispatchAuthorized = false });
         }
         catch (WeddingPlannerNotFoundException) { return NotFound(); }

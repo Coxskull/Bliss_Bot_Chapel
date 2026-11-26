@@ -19,9 +19,7 @@ public static class CampaignImageAuthorization
             where b.Id == briefId && w.Id == workspaceId && w.IsPrimary && w.Status == "ACTIVE"
             select new { Brief = b, w.AdvertiserId }).SingleOrDefaultAsync(ct);
         if (prepared is null) return null;
-        var parts = prepared.Brief.IdempotencyKey.Split(':');
-        if (parts.Length != 3 || parts[0] != "campaign" || !Guid.TryParseExact(parts[1], "N", out var campaignId)
-            || campaignId == Guid.Empty) return null;
+        if (!CampaignRecipeRevision.TryCampaign(prepared.Brief.IdempotencyKey,out var campaignId)) return null;
         var draft = await db.Campaigns.AsNoTracking().Where(x => x.Id == campaignId && x.Status == "DRAFT"
             && x.AuthorityStatus == "UNVERIFIED" && x.AdvertiserOpportunity != null
             && x.AdvertiserOpportunity.Status == "DRAFT" && x.AdvertiserOpportunity.AuthorityStatus == "UNVERIFIED"
@@ -31,7 +29,10 @@ public static class CampaignImageAuthorization
             .Select(x => new { x.Id, x.Name, Brief = x.AdvertiserOpportunity!.Description }).SingleOrDefaultAsync(ct);
         if (draft is null || draft.Brief is null) return null;
         var digest = StaffCreativePreparationController.CampaignDigest(draft.Id, draft.Name, draft.Brief);
-        if (digest != parts[2]) return null;
+        if (!CampaignRecipeRevision.Matches(prepared.Brief.IdempotencyKey,campaignId,digest)) return null;
+        var current = await CampaignRecipeRevision.ForCampaign(db.AcademyProductionBriefs.AsNoTracking()
+            .Where(x=>x.WorkspaceId==workspaceId),campaignId,digest).Select(x=>x.Id).FirstOrDefaultAsync(ct);
+        if(current!=briefId)return null;
         var brand = await db.WeddingPlannerBrandDna.AsNoTracking().Where(x => x.WorkspaceId == workspaceId)
             .OrderByDescending(x => x.Version).Select(x => new { x.Id, x.Status }).FirstOrDefaultAsync(ct);
         if (brand is null || brand.Status != "CONFIRMED" || brand.Id != prepared.Brief.BrandDnaId) return null;
