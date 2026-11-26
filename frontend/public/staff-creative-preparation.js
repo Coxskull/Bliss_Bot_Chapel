@@ -250,6 +250,7 @@
       const request=async body=>fetch("/api/internal/creative-image-review",{method:"POST",credentials:"same-origin",cache:"no-store",
         headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify(body)});
       let response=await request(payload);
+      let previewBlob=null;
       if(!response.ok) throw Error("Artwork review unavailable (HTTP "+response.status+").");
       if(action==="PREVIEW"){
         if(!response.headers.get("content-type")?.startsWith("image/png")) throw Error("Expected private PNG.");
@@ -257,7 +258,8 @@
         if(blob.size>16*1024*1024 || blob.size===0) throw Error("Invalid artwork size.");
         if(current!==epoch)return;
         if(artworkUrl) URL.revokeObjectURL(artworkUrl);
-        artworkUrl=URL.createObjectURL(blob);artwork.src=artworkUrl;artwork.hidden=false;
+        artworkUrl=null;artwork.hidden=true;artwork.removeAttribute("src");
+        previewBlob=blob;
         response=await request({...payload,action:"STATUS"});
         if(!response.ok) throw Error("Candidate history unavailable.");
       }
@@ -266,12 +268,23 @@
         || (action==="RELEASE" ? result.release!=="ARTWORK_DOWNLOAD_AVAILABLE" || result.delivery!=="DOWNLOAD_NOT_CONFIRMED" || !uuid.test(result.releaseId)
           : result.release!=="HELD" || result.delivery!=="NOT_SENT") || !Number.isInteger(result.reviewVersion))
         throw Error("Unexpected artwork review receipt.");
+      if(action==="PREVIEW"){
+        const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await previewBlob.arrayBuffer())),x=>x.toString(16).padStart(2,"0")).join("");
+        if(digest!==result.imageSha256)throw Error("Artwork integrity verification failed.");
+        if(current!==epoch)return;
+        const url=URL.createObjectURL(previewBlob);
+        try{
+          artwork.src=url;await artwork.decode();
+          if(current!==epoch){URL.revokeObjectURL(url);return;}
+          artworkUrl=url;artwork.hidden=false;
+        }catch{URL.revokeObjectURL(url);artwork.removeAttribute("src");artwork.hidden=true;throw Error("Artwork could not be displayed; review remains unavailable.");}
+      }
       artworkCandidate=uuid.test(result.candidateId)?result.candidateId:null;artworkVersion=result.reviewVersion;
       artworkReview.hidden=el("artwork-release").hidden=!artworkCandidate;
       if(action==="RELEASE"){el("artwork-status").textContent="Private artwork download authorized. Receipt "+result.releaseId+". Customer download not confirmed.";return;}
       if(action==="REVIEW")artworkRetry=null;
       el("artwork-status").textContent=action==="REVIEW"?"Saved review: "+result.decision+" — release remains HELD."
-        : artworkCandidate?"Candidate attached. Complete human quality review.":"Artwork loaded. Attach to candidate history.";
+        : (action==="PREVIEW" && typeof result.actualUsd==="number" ? "Verified provider cost: USD "+result.actualUsd+". " : "")+(artworkCandidate?"Candidate attached. Complete human quality review.":"Artwork loaded. Attach to candidate history.");
     }catch(e){if(current===epoch)el("artwork-status").textContent=e.message;}
     finally{busy=false;sync();}
   }
