@@ -328,7 +328,6 @@ namespace Bliss.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
                     b.Property<string>("Status").IsRequired().ValueGeneratedOnAdd().HasMaxLength(32)
                         .HasColumnType("character varying(32)").HasDefaultValue("PENDING_REVIEW");
-                    b.Property<string>("SubmittedChannelUrl").IsRequired().HasMaxLength(1024).HasColumnType("character varying(1024)");
                     b.Property<string>("Subject").IsRequired().HasMaxLength(255).HasColumnType("character varying(255)");
                     b.HasKey("Id");
                     b.HasIndex("AdvertiserId").IsUnique();
@@ -396,6 +395,7 @@ namespace Bliss.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
                     b.Property<string>("Status").IsRequired().ValueGeneratedOnAdd().HasMaxLength(32)
                         .HasColumnType("character varying(32)").HasDefaultValue("PENDING_REVIEW");
+                    b.Property<string>("SubmittedChannelUrl").IsRequired().HasMaxLength(1024).HasColumnType("character varying(1024)");
                     b.Property<string>("Subject").IsRequired().HasMaxLength(255).HasColumnType("character varying(255)");
                     b.HasKey("Id");
                     b.HasIndex("CreatorId").IsUnique();
