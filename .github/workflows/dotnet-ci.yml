@@ -234,21 +234,14 @@ jobs:
       - name: Build Release
         run: dotnet build BlissBotChapel.sln --configuration Release --no-restore
 
-      - name: Inspect EF10 pending model changes (isolated source only)
-        if: github.event_name == 'pull_request' && github.head_ref == 'security/dotnet10-noble-p0-335-20261126'
+      - name: Verify EF10 model matches migration snapshot (no database connection)
         shell: bash
         run: |
           set -euo pipefail
           tool_dir="$(mktemp -d)"
-          probe_dir=Bliss.Infrastructure/Migrations/Ef10CompatibilityProbe
-          test ! -e "$probe_dir"
-          trap 'git restore -- Bliss.Infrastructure/Migrations/BlissDbContextModelSnapshot.cs; rm -rf "$probe_dir" "$tool_dir"' EXIT
+          trap 'rm -rf "$tool_dir"' EXIT
           dotnet tool install dotnet-ef --version 10.0.15 --tool-path "$tool_dir"
-          # Design-time model only: no database connection, no migration application.
-          env -u ConnectionStrings__DefaultConnection "$tool_dir/dotnet-ef" migrations add Ef10CompatibilityProbe --project Bliss.Infrastructure --startup-project Bliss.Api --configuration Release --no-build --output-dir Migrations/Ef10CompatibilityProbe
-          find "$probe_dir" -maxdepth 1 -name '*_Ef10CompatibilityProbe.cs' -exec cat {} \;
-          git diff --stat -- Bliss.Infrastructure/Migrations/BlissDbContextModelSnapshot.cs
-          git diff -- Bliss.Infrastructure/Migrations/BlissDbContextModelSnapshot.cs | sed -n '1,300p'
+          env -u ConnectionStrings__DefaultConnection "$tool_dir/dotnet-ef" migrations has-pending-model-changes --project Bliss.Infrastructure --startup-project Bliss.Api --configuration Release --no-build
 
       - name: Run regression tests
         run: dotnet test Bliss.Tests/Bliss.Tests.csproj --configuration Release --no-build --no-restore --logger "trx;LogFileName=bliss-tests.trx" --results-directory TestResults
