@@ -22,7 +22,9 @@ public static class CreatorRegistrationBoundary
                 || (options.CreatorRegistrationRequested
                     && (path.Equals("/api/creators/register", StringComparison.OrdinalIgnoreCase)
                         || (options.CreatorInventoryReadbackRequested && options.CreatorInventoryPauseRequested
-                            && path.Equals("/api/creators/inventory/pause", StringComparison.OrdinalIgnoreCase))))))
+                            && path.Equals("/api/creators/inventory/pause", StringComparison.OrdinalIgnoreCase))
+                        || (options.CreatorInventoryReadbackRequested && options.CreatorInventoryDraftRequested
+                            && path.Equals("/api/creators/inventory/draft", StringComparison.OrdinalIgnoreCase))))))
             return false;
         return true;
     }
