@@ -10,7 +10,7 @@ const dashboard = readFileSync(
 const ids = [
   "status", "access-badge", "refresh", "logout", "signin-panel",
   "pending-panel", "profile-panel", "creator-name", "creator-id",
-  "creator-market", "creator-language", "creator-status", "application-panel", "application-state", "application-receipt", "channel-proof-panel", "channel-proof-code", "channel-proof-url", "channel-proof-expiry"
+  "creator-market", "creator-language", "creator-status", "application-panel", "application-state", "application-receipt", "channel-proof-panel", "channel-proof-code", "channel-proof-url", "channel-proof-expiry", "inventory-panel", "inventory-count", "inventory-rows"
 ];
 const privateIds = [
   "creator-name", "creator-id", "creator-market",
@@ -35,7 +35,8 @@ const fixture = (sessionResponse, profileResponse = null, applicationResponse = 
     id, {
       hidden: ["logout", "signin-panel", "pending-panel", "profile-panel"].includes(id),
       disabled: false,
-      textContent: "", className: "", handlers: {},
+      textContent: "", className: "", handlers: {}, children: [],
+      replaceChildren() { this.children = []; }, appendChild(child) { this.children.push(child); },
       addEventListener(name, callback) { this.handlers[name] = callback; }
     }
   ]));
@@ -241,6 +242,16 @@ const noPrivateData = h => {
   check(verified.nodes["channel-proof-panel"].hidden,"verified profile has no challenge");
   const revoked = fixture(response(200,{...session(true),roles:[]}),null,response(200,{receiptId:receipt,status:"REVOKED",creatorId:verifiedProfile.creatorId,verifiedProfile}));
   await revoked.settle(); noPrivateData(revoked);
+}
+{
+  const inventory = [{slotId:"fixture-slot",contentItemId:"fixture-content",contentTitle:"<script>fixture</script>",contentType:"Podcast",slotType:"MID_ROLL",startSecond:30,durationSeconds:15,isAvailable:true}];
+  const h = fixture(response(200,session(true)),response(200,{...verifiedProfile,inventory}));
+  await h.settle();
+  check(!h.nodes["inventory-panel"].hidden,"own recorded inventory visible");
+  check(h.nodes["inventory-rows"].children.length===1,"one slot rendered");
+  check(h.nodes["inventory-rows"].children[0].children[0].textContent===inventory[0].contentTitle,"title treated as text");
+  h.nodes.logout.handlers.click();
+  check(h.nodes["inventory-panel"].hidden && h.nodes["inventory-rows"].children.length===0,"logout clears slots");
 }
 console.log("TASK4_CREATOR_DASHBOARD_UNIT_PASS assertions=" + assertions);
 console.log("All scenarios use synthetic data; no browser, Supabase or marketplace writes.");
