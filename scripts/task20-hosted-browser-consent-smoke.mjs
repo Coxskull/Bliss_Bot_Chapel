@@ -52,3 +52,14 @@ assert.ok(!script.includes("when the commercial intake opens"));
 assert.ok(!script.includes("once intake is available"));
 assert.ok(script.includes("If you explicitly opt in to live AI"));
 assert.ok(read("frontend/public/global-media.css").includes(".ask-alpha-action:focus-visible"));
+
+// Consent withdrawal resets only future AI context; no claim that an in-flight provider request is canceled.
+for (const clause of [
+  'askAlphaAiConsent?.addEventListener("change"',
+  'askAlphaConsentEpoch++',
+  'askAlphaHistory.length = 0',
+  'const consentEpoch = askAlphaConsentEpoch',
+  'consentEpoch !== askAlphaConsentEpoch || !askAlphaAiConsent?.checked',
+  'The original request may have been processed; no automatic retry was made.'
+]) assert.ok(script.includes(clause),"AI consent withdrawal contract missing: "+clause);
+assert.ok(script.indexOf('consentEpoch !== askAlphaConsentEpoch') < script.indexOf('appendAskAlphaMessage("ai",result.answer)'),"Late response must be checked before displaying AI output");
