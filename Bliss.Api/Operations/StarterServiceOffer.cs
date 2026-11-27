@@ -38,6 +38,49 @@ public static class StarterServiceOffer
                 && receipt.PrivacyNoticeVersion==AdvertiserRegistrationController.PrivacyNoticeVersion
                 && receipt.TermsVersion==AdvertiserRegistrationController.TermsVersion
             select m.Id).AnyAsync(ct);
+    // Historical milestones only: no live Stripe status, payment authorization,
+    // or commercial delivery authority is inferred from these audit records.
+    public static string RecordedProgress(Accepted accepted, Guid campaignId,
+        WeddingPlannerAuditEvent? instructions, IReadOnlyList<WeddingPlannerAuditEvent> reconciliations)
+    {
+        bool Owned(WeddingPlannerAuditEvent row) => row.AdvertiserId == accepted.AdvertiserId
+            && row.WorkspaceId == accepted.WorkspaceId && row.ActorType == "OPERATOR";
+        if (reconciliations.Count > 1) return "REVIEW_REQUIRED";
+        if (reconciliations.Count == 1)
+        {
+            var row = reconciliations[0];
+            var parts = row.Detail?.Split(':');
+            if (!Owned(row) || row.Action != AdvertiserOperatorReviewController.StarterReconciliationAction
+                || row.Outcome != "RECONCILED" || row.RequestId?.StartsWith("evt_", StringComparison.Ordinal) != true
+                || parts is not { Length: 4 } || parts[0] != "quote"
+                || parts[1] != accepted.VersionId.ToString("N") || parts[2] != campaignId.ToString("N")
+                || parts[3].Length != 64 || !parts[3].All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f')
+                || row.Id != new Guid(Convert.FromHexString(parts[3][..32]))) return "REVIEW_REQUIRED";
+            return "RECONCILIATION_RECORDED";
+        }
+        if (instructions is null) return "AWAITING_PAYMENT_INSTRUCTIONS";
+        return Owned(instructions) && instructions.Id == StarterArtworkDelivery.StableId(
+                StaffCreativePreparationController.StarterCheckoutIssued, accepted.VersionId.ToString("N"))
+            && instructions.Action == StaffCreativePreparationController.StarterCheckoutIssued
+            && instructions.Outcome == "ISSUED"
+            && instructions.Detail == $"{accepted.VersionId:N}:{campaignId:N}:{StarterStripeReceipt.PaymentLinkId}"
+            ? "PAYMENT_INSTRUCTIONS_RECORDED" : "REVIEW_REQUIRED";
+    }
+
+    public static async Task<string> OrderProgress(BlissDbContext db, Accepted accepted, Guid campaignId, CancellationToken ct)
+    {
+        var instructionsId = StarterArtworkDelivery.StableId(
+            StaffCreativePreparationController.StarterCheckoutIssued, accepted.VersionId.ToString("N"));
+        var instructions = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x =>
+            x.Id == instructionsId && x.AdvertiserId == accepted.AdvertiserId && x.WorkspaceId == accepted.WorkspaceId, ct);
+        var prefix = "quote:" + accepted.VersionId.ToString("N") + ":";
+        var reconciliations = await db.WeddingPlannerAuditEvents.AsNoTracking().Where(x =>
+            x.AdvertiserId == accepted.AdvertiserId && x.WorkspaceId == accepted.WorkspaceId
+            && x.Action == AdvertiserOperatorReviewController.StarterReconciliationAction
+            && x.Detail != null && x.Detail.StartsWith(prefix)).Take(2).ToArrayAsync(ct);
+        return RecordedProgress(accepted, campaignId, instructions, reconciliations);
+    }
+
     public static async Task<Accepted?> CurrentAccepted(BlissDbContext db,Guid campaignId,Guid offerId,CancellationToken ct)
     {
         var offer=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x=>x.Id==offerId
