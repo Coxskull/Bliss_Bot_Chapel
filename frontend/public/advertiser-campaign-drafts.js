@@ -183,6 +183,17 @@
           const result=await response.json();if(current!==generation||!card.isConnected)return;
           if(result.campaignId!==row.campaignId||result.amountCents!==14900||result.currency!=="usd"||!result.offerId
             ||!/^[0-9a-f]{64}$/.test(result.offerSha256)||!["OFFERED","ACCEPTED"].includes(result.status)||result.paymentAuthorized!==false||result.release!=="HELD")throw Error("Unexpected offer receipt.");
+          const progressLabels = {
+            AWAITING_ACCEPTANCE: "Waiting for your acceptance.",
+            AWAITING_PAYMENT_INSTRUCTIONS: "Order accepted. Waiting for ALPHA to issue payment instructions.",
+            PAYMENT_INSTRUCTIONS_RECORDED: "Payment instructions recorded by ALPHA. Contact your operator if you have not received them. Do not pay twice.",
+            RECONCILIATION_RECORDED: "Payment reconciliation recorded by ALPHA. This is historical evidence, not confirmation of current Stripe payment or refund status.",
+            REVIEW_REQUIRED: "Order needs manual review. Contact ALPHA before making any payment."
+          };
+          if (result.orderProgress !== undefined &&
+              (!Object.hasOwn(progressLabels,result.orderProgress)
+                || (result.status === "OFFERED") !== (result.orderProgress === "AWAITING_ACCEPTANCE")))
+            throw Error("Unexpected order progress.");
           offerPanel.replaceChildren();
           for(const [tag,value] of [["h4","Service offer — USD 149 — "+result.status],["p",result.scope],["p",result.terms]]){
             const node=document.createElement(tag);node.textContent=value;offerPanel.appendChild(node);
@@ -191,7 +202,12 @@
             const accept=document.createElement("button");accept.type="button";accept.textContent="Accept exact service scope and terms ($149)";
             accept.addEventListener("click",()=>{if(window.confirm("Accept the displayed service scope and terms for USD 149? No payment will be taken by this action."))serviceOffer("ACCEPT",result);});offerPanel.appendChild(accept);
           }else{
-            const info=document.createElement("p");info.textContent="Accepted order reference: "+result.offerId+". ALPHA will provide the corresponding authorized payment instructions. No payment has been taken.";offerPanel.appendChild(info);
+            const info=document.createElement("p");info.textContent="Accepted order reference: "+result.offerId;offerPanel.appendChild(info);
+            const progress=document.createElement("p");progress.setAttribute("role","status");
+            progress.textContent=progressLabels[result.orderProgress] || "Order progress unavailable. Contact ALPHA before making any payment.";
+            offerPanel.appendChild(progress);
+            const refresh=document.createElement("button");refresh.type="button";refresh.textContent="Refresh order progress";
+            refresh.addEventListener("click",()=>serviceOffer("STATUS"));offerPanel.appendChild(refresh);
           }
         }catch(e){if(current===generation&&card.isConnected){offerPanel.replaceChildren();status.textContent=e.message;}}
         finally{if(current===generation)offerButton.disabled=false;}
