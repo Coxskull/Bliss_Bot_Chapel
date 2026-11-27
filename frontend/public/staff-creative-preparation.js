@@ -31,6 +31,53 @@
     if (!ready.ok) throw Error("Staff creative preparation is unavailable or access is not authorized.");
     return data.csrfToken;
   }
+  const placementPanel=el("placement-preview-panel"),placementCanvas=el("placement-canvas"),
+    placementLayout=el("placement-layout"),placementSlot=el("placement-slot"),placementButton=el("placement-preview");
+  function clearPlacement(){
+    placementCanvas.hidden=true;placementCanvas.width=1920;placementCanvas.height=1080;
+    el("placement-status").textContent="";
+  }
+  function selectedLayout(){
+    const engine=window.AlphaAdvertisingRealEstate;
+    if(!engine?.validate()||!["2","4","6"].includes(placementLayout.value))return null;
+    const layout=engine.inventory[placementLayout.value];
+    return layout?.canvasWidth===1920&&layout.canvasHeight===1080&&layout.slots.length===Number(placementLayout.value)?layout:null;
+  }
+  function placementOptions(){
+    clearPlacement();const layout=selectedLayout();
+    placementSlot.replaceChildren(...(layout?.slots||[]).map(slot=>new Option(slot.id+" — "+slot.width+" × "+slot.height,slot.id)));
+  }
+  function previewPlacement(){
+    clearPlacement();
+    if(busy||!artworkUrl||artwork.hidden||!review.checked)return;
+    try{
+      const layout=selectedLayout(),slot=layout?.slots.find(s=>s.id===placementSlot.value);
+      if(!slot||!artwork.naturalWidth||!artwork.naturalHeight)throw Error("Verified artwork and layout required.");
+      const ctx=placementCanvas.getContext("2d",{alpha:false});if(!ctx)throw Error("Canvas unavailable.");
+      ctx.fillStyle="#0F172A";ctx.fillRect(0,0,1920,1080);
+      const p=layout.protectedCreatorArea;
+      ctx.fillStyle="#334155";ctx.fillRect(p.x,p.y,p.width,p.height);
+      ctx.fillStyle="#FFFFFF";ctx.font="bold 34px sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText("CREATOR CONTENT PLACEHOLDER",p.x+p.width/2,p.y+p.height/2,p.width-24);
+      for(const s of layout.slots){
+        ctx.fillStyle="#1E293B";ctx.fillRect(s.x,s.y,s.width,s.height);
+        ctx.fillStyle="#CBD5E1";ctx.font="22px sans-serif";ctx.fillText(s.id,s.x+s.width/2,s.y+s.height/2,s.width-12);
+      }
+      const scale=Math.min(1,slot.width/artwork.naturalWidth,slot.height/artwork.naturalHeight);
+      const w=artwork.naturalWidth*scale,h=artwork.naturalHeight*scale;
+      ctx.save();ctx.beginPath();ctx.rect(slot.x,slot.y,slot.width,slot.height);ctx.clip();
+      ctx.fillStyle="#0F172A";ctx.fillRect(slot.x,slot.y,slot.width,slot.height);
+      ctx.drawImage(artwork,slot.x+(slot.width-w)/2,slot.y+(slot.height-h)/2,w,h);
+      ctx.restore();
+      ctx.fillStyle="#7F1D1D";ctx.fillRect(p.x,p.y,p.width,48);
+      ctx.fillStyle="#FFFFFF";ctx.font="bold 28px sans-serif";ctx.fillText("PRIVATE MOCKUP • NOT APPROVED • NOT SENT",p.x+p.width/2,p.y+24,p.width-12);
+      placementCanvas.hidden=false;
+      el("placement-status").textContent="Source "+artwork.naturalWidth+" × "+artwork.naturalHeight+"; slot "+slot.width+" × "+slot.height+". "+(artwork.naturalWidth===slot.width&&artwork.naturalHeight===slot.height?"Native dimensions match.":"Scaled down or letterboxed for preview only. Native placement artwork still required.")+" No placement or release authorized.";
+    }catch(e){clearPlacement();el("placement-status").textContent=e.message;}
+  }
+  placementLayout.addEventListener("change",placementOptions);
+  placementSlot.addEventListener("change",clearPlacement);
+  placementButton.addEventListener("click",previewPlacement);
   function sync() {
     file.disabled = busy; review.disabled = busy;
     el("checkout-issue").disabled=busy || !manifest || !offerWorkspace || !review.checked
@@ -54,6 +101,9 @@
     imageReview.disabled = busy || !imageTarget || !unchanged() || !review.checked;
     budgetApproval.disabled = busy || !imageGrant;
     imageReserve.disabled = busy || !imageTarget || !imageGrant || !budgetApproval.checked || !unchanged() || !review.checked;
+    placementPanel.hidden=!artworkUrl||!review.checked;
+    placementButton.disabled=busy||placementPanel.hidden;
+    if(placementPanel.hidden)clearPlacement();
     el("artwork-preview").disabled = busy || !artworkRun || !review.checked;
     el("artwork-attach").disabled = busy || !artworkRun || !artworkUrl || !!artworkCandidate || !review.checked;
     el("artwork-record").disabled = busy || !artworkCandidate || !artworkUrl || !review.checked || !el("artwork-rationale").value.trim();
@@ -228,6 +278,7 @@
     finally {busy=false;sync();}
   }
   function clearArtwork() {
+    clearPlacement();placementPanel.hidden=true;
     if (artworkUrl) URL.revokeObjectURL(artworkUrl);
     artworkUrl=artworkRun=artworkCandidate=artworkRetry=revisionReviewId=null; artworkVersion=0;
     el("revision-panel").hidden=true;el("revision-status").textContent="";
@@ -271,6 +322,7 @@
         if(blob.size>16*1024*1024 || blob.size===0) throw Error("Invalid artwork size.");
         if(current!==epoch)return;
         if(artworkUrl) URL.revokeObjectURL(artworkUrl);
+        clearPlacement();placementPanel.hidden=true;
         artworkUrl=null;artwork.hidden=true;artwork.removeAttribute("src");
         previewBlob=blob;
         response=await request({...payload,action:"STATUS"});
@@ -299,7 +351,7 @@
         try{
           artwork.src=url;await artwork.decode();
           if(current!==epoch){URL.revokeObjectURL(url);return;}
-          artworkUrl=url;artwork.hidden=false;
+          artworkUrl=url;artwork.hidden=false;placementOptions();
         }catch{URL.revokeObjectURL(url);artwork.removeAttribute("src");artwork.hidden=true;throw Error("Artwork could not be displayed; review remains unavailable.");}
       }
       artworkCandidate=uuid.test(result.candidateId)?result.candidateId:null;artworkVersion=result.reviewVersion;
