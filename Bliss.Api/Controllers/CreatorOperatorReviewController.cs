@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using Bliss.Api.Operations;
+using Bliss.Domain.Entities;
 using Bliss.Api.Runtime;
 using Bliss.Api.Security;
 using Bliss.Infrastructure.Persistence;
@@ -183,6 +185,55 @@ public sealed class CreatorOperatorReviewController(
         catch (DbUpdateException) { return Conflict(); }
     }
 
+    [HttpGet("campaign-invitation")]
+    public async Task<IActionResult> PreviewInvitation([FromQuery] Guid placementId, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.CreatorCampaignInvitationRequested || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out _))
+            return StatusCode(403);
+        if (placementId == Guid.Empty) return BadRequest();
+        var row = await CreatorCampaignInvitation.Current(db, placementId, ct);
+        if (row is null) return NotFound();
+        return Ok(new { placement = row, digest = CreatorCampaignInvitation.Digest(row), bookingAuthorized = false,
+            paymentAuthorized = false, deliveryAuthorized = false });
+    }
+
+    [HttpPost("campaign-invitation")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> IssueInvitation([FromBody] IssueCreatorInvitation request, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.CreatorCampaignInvitationRequested || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out var subject))
+            return StatusCode(403);
+        if (request.PlacementId == Guid.Empty || request.Digest is not { Length: 64 }
+            || !request.AdvertiserPermissionReviewed || !request.CreatorContactPermissionReviewed || !request.PlacementReviewed)
+            return BadRequest();
+        try
+        {
+            await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+            var row = await CreatorCampaignInvitation.Current(db, request.PlacementId, ct);
+            if (row is null || CreatorCampaignInvitation.Digest(row) != request.Digest) return Conflict();
+            if (await db.CreatorAccountMemberships.AnyAsync(m => m.CreatorId == row.CreatorId && m.Subject == subject, ct)) return StatusCode(403);
+            var id = CreatorCampaignInvitation.InvitationId(row.PlacementId);
+            var prior = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a => a.Id == id, ct);
+            if (prior is not null && !CreatorCampaignInvitation.Matches(prior,row)) return Conflict();
+            if (prior is null)
+            {
+                db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent { Id = id, AdvertiserId = row.AdvertiserId,
+                    WorkspaceId = row.WorkspaceId, Action = CreatorCampaignInvitation.Action, ActorType = "OPERATOR",
+                    ActorLabel = subject, Outcome = "INVITED", RequestId = row.CreatorId.ToString("N"),
+                    Detail = CreatorCampaignInvitation.Detail(row), OccurredAt = DateTime.UtcNow });
+                await db.SaveChangesAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return StatusCode(prior is null ? 201 : 200, new { invitationId = id, placementId = row.PlacementId,
+                invitationRecorded = true, bookingAuthorized = false, paymentAuthorized = false, deliveryAuthorized = false });
+        }
+        catch (Npgsql.PostgresException pg) when (pg.SqlState == Npgsql.PostgresErrorCodes.SerializationFailure) { return Conflict(); }
+        catch (DbUpdateException) { return Conflict(); }
+    }
+
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
@@ -220,3 +271,5 @@ public sealed record CreatorChannelVerification(Guid ReceiptId, Guid CreatorId, 
 public sealed record CreatorInventoryReviewRequest(Guid SlotId, Guid CreatorId, Guid ContentItemId, Guid ReceiptId,
     string ContentTitle, string ChannelUrl, string SlotType, int? StartSecond, int? DurationSeconds,
     bool CreatorPermissionReviewed, bool RightsReviewed, bool InventoryFitReviewed, bool CurrentConsentReviewed);
+
+public sealed record IssueCreatorInvitation(Guid PlacementId, string Digest, bool AdvertiserPermissionReviewed, bool CreatorContactPermissionReviewed, bool PlacementReviewed);
