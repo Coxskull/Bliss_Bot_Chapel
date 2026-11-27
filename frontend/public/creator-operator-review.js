@@ -537,6 +537,32 @@
         });
         card.append(transfer);
       }
+      if(packet.factorySubmissionEnabled){
+        const refresh=node("button","Refresh private render status");refresh.type="button";
+        const results=node("div","");
+        refresh.addEventListener("click",async()=>{
+          if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+          busy=true;refresh.disabled=true;results.replaceChildren();
+          try{
+            const s=await session();
+            const response=await fetch("/api/creators/operator-review/factory-render-status",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,confirmHeldMetadataOnly:true})});
+            if(!response.ok)throw Error("Status unavailable.");
+            const r=await response.json();
+            if(!card.isConnected)return;
+            if(r.schema!=="alpha.henry-ford.held-render-status.v1"||r.placementId!==m.placementId||r.handoffId!==handoffId||
+              r.manifestSha256!==packet.manifestSha256||r.release!=="HELD"||r.delivery!=="NOT_SENT"||r.dispatchAuthorized!==false||
+              r.visualQa!=="HUMAN_REVIEW_PENDING"||!Array.isArray(r.results)||r.results.length>20)throw Error("Status invalid.");
+            for(const row of r.results){
+              if(!["SCHEDULE_RECORDED","CLAIMED_OUTCOME_UNCONFIRMED","PRIVATE_PREVIEW_READY","REVIEW_REQUIRED","FAILED_OR_INCOMPLETE"].includes(row.status)||!/^[a-f0-9]{64}$/.test(row.specSha256))throw Error("Status invalid.");
+            }
+            results.append(node("p",r.results.length? "Stored private Factory status — human visual review pending.":"No private render schedule recorded."));
+            for(const row of r.results)results.append(node("p",row.status+" · "+row.specSha256.slice(0,16)+"… · HELD / NOT_SENT"));
+          }catch{if(card.isConnected){results.replaceChildren(node("p","Private render status unavailable."));}}
+          finally{busy=false;refresh.disabled=false;}
+        });
+        card.append(refresh,results);
+      }
       fulfillReview.append(card);fulfillStatus.textContent="Current preparation manifest generated.";
     }catch(e){clearFulfill();fulfillStatus.textContent=e.message;}
     finally{busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
