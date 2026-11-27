@@ -153,6 +153,8 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
                     : null };
         if (profile is not null && auth.CreatorCampaignInvitationRequested)
             profile = profile with { CanViewCampaignInvitations = true };
+        if (profile is not null && auth.CreatorAllocationHistoryRequested)
+            profile = profile with { CanViewAllocationHistory = true };
         return Ok(new CreatorRegistrationStatusDto(membership.CreatorId, receipt.Id, membership.Status, receipt.CreatedAt,
             code, code is null ? null : membership.SubmittedChannelUrl,
             code is null ? null : now.Date.AddDays(1), profile));
@@ -401,6 +403,31 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
             return Ok(new {proposalId=audit.Id,response=request.Decision,payable=false,bookingAuthorized=false,paymentAuthorized=false,deliveryAuthorized=false});
         }catch(PostgresException pg) when(pg.SqlState==PostgresErrorCodes.SerializationFailure){return Conflict();}
         catch(DbUpdateException){return Conflict();}
+    }
+
+    [Authorize]
+    [HttpGet("allocation-history")]
+    public async Task<IActionResult> MyAllocationHistory(CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorAllocationHistoryRequested || !auth.CreatorAuthorityVerificationRequested
+            || !BlissAuthorization.IsPendingCreatorRegistration(User,auth))return StatusCode(403);
+        var subject=User.FindFirst("sub")!.Value;
+        var creator=await CurrentInvitationCreator(subject,ct);
+        if(creator is null)return StatusCode(403);
+        var key=creator.Value.ToString("N");
+        var publications=await db.WeddingPlannerAuditEvents.AsNoTracking()
+            .Where(a=>a.Action==CreatorAllocationHistory.Action && a.ActorType=="OPERATOR" && a.Outcome=="SHARED" && a.RequestId==key)
+            .OrderByDescending(a=>a.OccurredAt).ThenBy(a=>a.Id).Take(25).ToArrayAsync(ct);
+        var items=new List<object>();
+        foreach(var publication in publications){
+            if(publication.Detail is null || !Guid.TryParseExact(publication.Detail.Split(':')[0],"N",out var historyId))continue;
+            var row=await CreatorAllocationHistory.Current(db,historyId,ct);
+            if(row is null || row.CreatorId!=creator.Value || !CreatorAllocationHistory.Matches(publication,row))continue;
+            items.Add(new {row.HistoryId,row.PlacementId,row.CampaignName,row.CurrencyCode,
+                amount=row.CreatorAllocation,row.MeasurementAsOf,row.RecordedAt,status="HISTORICAL_ALLOCATION",payable=false,settlementVerified=false});
+        }
+        return Ok(new {items,payable=false,settlementVerified=false,balanceAvailable=false});
     }
 
     private IActionResult ReplayOrConflict(CreatorRegistrationReceipt prior, string subject, string digest) =>
