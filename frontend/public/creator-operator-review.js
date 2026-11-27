@@ -178,6 +178,52 @@
     }catch(e){invitationReview.replaceChildren();invitationStatus.textContent=e.message;}
     finally{busy=false;previewButton.disabled=false;placementInput.disabled=false;}
   });
+  const compInvitation=document.getElementById("compensation-invitation"),compIllustration=document.getElementById("compensation-illustration");
+  const compPreview=document.getElementById("compensation-preview"),compReview=document.getElementById("compensation-review"),compStatus=document.getElementById("compensation-status");
+  const clearComp=()=>compReview?.replaceChildren();
+  for(const input of [compInvitation,compIllustration])input?.addEventListener("input",clearComp);
+  compPreview?.addEventListener("click",async()=>{
+    if(busy||!guid.test(compInvitation.value.trim())||!guid.test(compIllustration.value.trim()))return;
+    const invitationId=compInvitation.value.trim().toLowerCase(),illustrationId=compIllustration.value.trim().toLowerCase();
+    const lock=locked=>{compPreview.disabled=locked;compInvitation.disabled=locked;compIllustration.disabled=locked;};
+    busy=true;lock(true);clearComp();
+    try{
+      await session();
+      const url="/api/creators/operator-review/compensation-proposal?invitationId="+encodeURIComponent(invitationId)+"&illustrationId="+encodeURIComponent(illustrationId);
+      const r=await fetch(url,{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!r.ok)throw Error("No current eligible compensation proposal.");
+      const v=await r.json(),row=v.proposal;
+      if(!row||row.invitationId!==invitationId||row.illustrationId!==illustrationId||!guid.test(row.creatorId)||
+        !guid.test(row.placementId)||!guid.test(row.quoteVersionId)||!Number.isFinite(row.creatorAmount)||row.creatorAmount<=0||
+        !/^[A-Z]{3}$/.test(row.currencyCode)||!/^[a-f0-9]{64}$/.test(v.digest)||v.paymentAuthorized!==false||v.deliveryAuthorized!==false)
+        throw Error("Unexpected compensation response.");
+      const card=document.createElement("section");
+      for(const [label,value] of [["Creator",row.creatorId],["Placement",row.placementId],["Accepted quote version",row.quoteVersionId],["Proposed creator allocation",row.currencyCode+" "+String(row.creatorAmount)]])card.append(node("p",label+": "+value));
+      const checks=["I reviewed the exact current Economics allocation and its currency.","I independently confirmed permission to share this proposal with the creator."].map(label=>{
+        const wrap=node("label",label),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
+      const publish=node("button","Publish private compensation proposal");publish.type="button";publish.disabled=true;
+      for(const input of checks)input.addEventListener("change",()=>{publish.disabled=!checks.every(x=>x.checked);});
+      publish.addEventListener("click",async()=>{
+        if(busy||publish.disabled||!card.isConnected||compInvitation.value.trim().toLowerCase()!==invitationId||compIllustration.value.trim().toLowerCase()!==illustrationId)return;
+        if(!window.confirm("Publish this non-binding allocation? No payment, contract or delivery will be authorized."))return;
+        busy=true;lock(true);publish.disabled=true;
+        try{
+          const s=await session();
+          const response=await fetch("/api/creators/operator-review/compensation-proposal",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},
+            body:JSON.stringify({invitationId,illustrationId,digest:v.digest,allocationReviewed:checks[0].checked,permissionToShareReviewed:checks[1].checked})});
+          if(!response.ok)throw Error("Publication refused");
+          const receipt=await response.json();
+          if(receipt.invitationId!==invitationId||!guid.test(receipt.proposalId)||receipt.proposalRecorded!==true||receipt.paymentAuthorized!==false||receipt.deliveryAuthorized!==false)throw Error("Invalid receipt");
+          compStatus.textContent="Compensation proposal recorded: "+receipt.proposalId;
+        }catch{compStatus.textContent="Publication not confirmed. Reload the exact proposal before acting.";}
+        finally{clearComp();busy=false;lock(false);}
+      });
+      card.append(publish);compReview.append(card);compStatus.textContent="Review the proposed allocation.";
+    }catch(e){clearComp();compStatus.textContent=e.message;}
+    finally{busy=false;lock(false);}
+  });
+  window.addEventListener("pagehide",clearComp);
   inventoryLoad.addEventListener("click",loadInventory);
   window.addEventListener("pagehide",clearInventory);
   load.addEventListener("click", refresh);
