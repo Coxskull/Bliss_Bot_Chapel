@@ -66,7 +66,9 @@ const png = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAYAAAB3AH1ZAAAAI0lEQVR4nGMI0Oj5P5C
     assert.match(await page.locator("#status").textContent(), /all be approved/);
     // A failed action invalidates old evidence and confirmation. Reopen the
     // same workspace and select the exact saved draft before recording approvals.
-    assert.equal(await page.locator("#plan-fields").isDisabled(), true);
+    await page.waitForFunction(() => document.querySelector("#plan-fields").disabled === true);
+    assert.equal(await page.locator("#plan-fields").evaluate(fieldset => fieldset.disabled), true);
+    assert.equal(await page.getByRole("button", { name: "Record planned handoff", exact: true }).isDisabled(), true);
     assert.equal(await page.locator("#plan-consent").isChecked(), false);
     assert.equal(await page.locator("#stage option").count(), 0);
     await open();
