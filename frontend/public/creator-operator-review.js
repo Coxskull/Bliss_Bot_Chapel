@@ -317,6 +317,43 @@
         ["Exact creator allocation",row.currencyCode+" "+String(row.creatorAllocation)],["Agreement evidence",v.settlement.agreementEvidenceId]])
         card.append(node("p",label+": "+String(value)));
       if(v.existingEvidence){card.append(node("p","A settlement evidence record already exists. Do not record or pay again; review any discrepancies separately."));settlementReview.append(card);settlementStatus.textContent="Existing evidence found.";return;}
+      if(v.payableReviewEnabled===true && v.payableReviewRecorded!==true){
+        if(v.payableReviewExists===true){
+          card.append(node("p","Existing payable review evidence no longer matches. Resolve the discrepancy separately."));
+          settlementReview.append(card);settlementStatus.textContent="Payable review requires correction.";return;
+        }
+        card.append(node("h3","Fulfillment and funding review"),node("p","Record reviewed evidence before settlement. This does not establish an accounting liability or authorize a transfer."));
+        const field=(label,type,max)=>{const wrap=node("label",label),input=document.createElement("input");input.type=type;input.autocomplete="off";if(max)input.maxLength=max;wrap.append(input);card.append(wrap,document.createElement("br"));return input;};
+        const fulfillment=field("Accepted fulfillment evidence SHA-256","text",64),funding=field("Received funding evidence SHA-256","text",64),fulfilled=field("Fulfillment date and time (local time)","datetime-local");
+        fulfilled.step="1";
+        const checks=["I reviewed completed and accepted fulfillment for this exact placement.","I reviewed receipt of the advertiser funds for this agreement.","I reviewed the agreed payment terms and exact creator allocation.","I checked for unresolved disputes, cancellations or refunds.","I checked that no prior payment has been made for this placement."].map(label=>{
+          const wrap=node("label",label),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
+        const review=node("button","Record payable review evidence");review.type="button";review.disabled=true;
+        const update=()=>{review.disabled=!/^[a-f0-9]{64}$/.test(fulfillment.value.trim())||!/^[a-f0-9]{64}$/.test(funding.value.trim())||!Number.isFinite(Date.parse(fulfilled.value))||Date.parse(fulfilled.value)>Date.now()||!checks.every(x=>x.checked);};
+        for(const input of [fulfillment,funding,fulfilled])input.addEventListener("input",update);
+        for(const input of checks)input.addEventListener("change",update);
+        review.addEventListener("click",async()=>{
+          if(busy||review.disabled||!card.isConnected||settlementInput.value.trim().toLowerCase()!==historyId)return;
+          if(!window.confirm("Record the human-reviewed fulfillment and funding evidence? This does not authorize payment."))return;
+          busy=true;lock(true);review.disabled=true;
+          try{
+            const s=await session();
+            const r=await fetch("/api/creators/operator-review/payable-review",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},
+              body:JSON.stringify({historyId,digest:v.digest,amount:row.creatorAllocation,currencyCode:row.currencyCode,fulfillmentSha256:fulfillment.value.trim(),
+                fundingSha256:funding.value.trim(),fulfilledAt:new Date(fulfilled.value).toISOString(),fulfillmentAcceptedReviewed:checks[0].checked,
+                fundingReceivedReviewed:checks[1].checked,paymentTermsReviewed:checks[2].checked,noDisputeReviewed:checks[3].checked,noPriorPaymentReviewed:checks[4].checked})});
+            if(!r.ok)throw Error("Payable review refused.");
+            const receipt=await r.json();
+            if(receipt.historyId!==historyId||!guid.test(receipt.payableReviewId)||receipt.reviewRecorded!==true||receipt.liabilityVerified!==false||
+              receipt.payable!==false||receipt.transferAuthorized!==false||receipt.providerVerified!==false)throw Error("Unexpected receipt.");
+            settlementStatus.textContent="Payable review evidence recorded: "+receipt.payableReviewId+". Reload the current placement to continue.";
+          }catch{settlementStatus.textContent="Payable review not confirmed. Reload the current record before acting.";}
+          finally{clearSettlement();busy=false;lock(false);}
+        });
+        card.append(review);settlementReview.append(card);settlementStatus.textContent="Fulfillment and funding review required.";return;
+      }
+      if(v.payableReviewRecorded===true)card.append(node("p","Current payable review evidence recorded. No transfer is authorized."));
       const field=(label,type,max)=>{const wrap=node("label",label),input=document.createElement("input");input.type=type;input.autocomplete="off";if(max)input.maxLength=max;wrap.append(input);card.append(wrap,document.createElement("br"));return input;};
       const transfer=field("Provider-qualified transfer reference SHA-256","text",64),documentHash=field("Transfer evidence document SHA-256","text",64),completed=field("Completed transfer date and time (local time)","datetime-local");
       completed.step="1";
