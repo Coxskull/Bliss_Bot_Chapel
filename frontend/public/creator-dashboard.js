@@ -241,6 +241,14 @@
           ["p","Payment and settlement status: not verified"]]){
           const n=document.createElement(tag);n.textContent=value;card.appendChild(n);
         }
+        const evidence=row.settlementEvidence;
+        if(evidence && guid.test(evidence.evidenceId) && evidence.providerVerified===false && evidence.transferAuthorized===false){
+          const n=document.createElement("p");
+          n.textContent=evidence.status==="OPERATOR_RECORDED"&&Number.isFinite(Date.parse(evidence.completedAt))
+            ?"External transfer evidence recorded by operator: "+evidence.completedAt+" · Reference: "+evidence.evidenceId+" · Provider verification unavailable."
+            :"Settlement evidence requires review. Do not treat as confirmed payment.";
+          card.appendChild(n);
+        }
         rows.appendChild(card);
       }
     }catch{rows.replaceChildren();notice.textContent="Unable to confirm allocation history. Refresh or sign in again.";}
