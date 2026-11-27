@@ -52,7 +52,7 @@ public sealed class AdvertiserOperatorReviewController(
     {
         Response.Headers.CacheControl = "no-store";
         if (!TryOperator(out _)) return StatusCode(403);
-        var rows = new List<object>();
+        var rows = new List<(string Session, string Intent, string? Reference, long Amount, string Currency, DateTime Received, string EventId)>();
         try
         {
             await db.Database.OpenConnectionAsync(ct);
@@ -61,26 +61,54 @@ public sealed class AdvertiserOperatorReviewController(
                 await using var cmd = db.Database.GetDbConnection().CreateCommand();
                 cmd.CommandTimeout = 10;
                 cmd.CommandText = """
-                    SELECT session_id, payment_intent_id, quote_reference, amount_cents, currency, received_at
+                    SELECT session_id, payment_intent_id, quote_reference, amount_cents, currency, received_at, event_id
                     FROM public.alpha_starter_stripe_receipts
                     ORDER BY received_at DESC, event_id DESC LIMIT 50
                     """;
                 await using var reader = await cmd.ExecuteReaderAsync(ct);
                 while (await reader.ReadAsync(ct))
-                    rows.Add(new { checkoutSessionId = reader.GetString(0), paymentIntentId = reader.GetString(1),
-                        quoteReference = reader.IsDBNull(2) ? null : reader.GetString(2),
-                        amountCents = reader.GetInt64(3), currency = reader.GetString(4),
-                        receivedAt = reader.GetFieldValue<DateTime>(5),
-                        status = "SIGNED_NOTIFICATION_PENDING_ORDER_RECONCILIATION" });
+                    rows.Add((reader.GetString(0), reader.GetString(1),
+                        reader.IsDBNull(2) ? null : reader.GetString(2), reader.GetInt64(3),
+                        reader.GetString(4), reader.GetFieldValue<DateTime>(5), reader.GetString(6)));
             }
             finally { await db.Database.CloseConnectionAsync(); }
+
+            // Read the existing append-only reconciliation audit in one bounded query.
+            var keys = rows.Select(row => StarterReceiptKey(StarterReceiptDigest(row.Session, row.Intent))).ToArray();
+            var audits = keys.Length == 0 ? new Dictionary<Guid, WeddingPlannerAuditEvent>()
+                : await db.WeddingPlannerAuditEvents.AsNoTracking().Where(x => keys.Contains(x.Id))
+                    .ToDictionaryAsync(x => x.Id, ct);
+            return Ok(new { receipts = rows.Select(row =>
+            {
+                var digest = StarterReceiptDigest(row.Session, row.Intent);
+                audits.TryGetValue(StarterReceiptKey(digest), out var audit);
+                return new { checkoutSessionId = row.Session, paymentIntentId = row.Intent,
+                    quoteReference = row.Reference, amountCents = row.Amount, currency = row.Currency,
+                    receivedAt = row.Received, status = StarterReceiptStatus(row.Reference, row.EventId, digest, audit) };
+            }).ToArray(), fulfillmentAuthorized = false });
         }
         catch (Exception e) when (e is System.Data.Common.DbException or InvalidOperationException or TimeoutException)
         { return StatusCode(503, new { error = "Payment receipt storage unavailable." }); }
-        return Ok(new { receipts = rows, fulfillmentAuthorized = false });
     }
 
     public const string StarterReconciliationAction = "STARTER_PAYMENT_RECONCILED";
+    public static string StarterReceiptDigest(string session, string intent) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(session + "\n" + intent))).ToLowerInvariant();
+    public static Guid StarterReceiptKey(string digest) => new(Convert.FromHexString(digest[..32]));
+
+    public static string StarterReceiptStatus(string? reference, string eventId, string digest, WeddingPlannerAuditEvent? audit)
+    {
+        if (audit is null) return "SIGNED_NOTIFICATION_PENDING_ORDER_RECONCILIATION";
+        var parts = audit.Detail?.Split(':');
+        if (audit.Id == StarterReceiptKey(digest) && audit.Action == StarterReconciliationAction
+            && audit.Outcome == "RECONCILED" && audit.RequestId == eventId
+            && parts is { Length: 4 } && parts[0] == "quote"
+            && Guid.TryParseExact(parts[1], "N", out var version) && ExactQuoteReference(reference, version)
+            && Guid.TryParseExact(parts[2], "N", out var campaign) && campaign != Guid.Empty
+            && parts[3] == digest)
+            return "RECONCILED_BY_OPERATOR";
+        return "RECONCILIATION_REVIEW_REQUIRED";
+    }
     public static bool ExactQuoteReference(string? reference, Guid versionId) =>
         versionId != Guid.Empty && reference is not null
         && (Guid.TryParseExact(reference, "D", out var value) || Guid.TryParseExact(reference, "N", out value))
@@ -163,8 +191,8 @@ public sealed class AdvertiserOperatorReviewController(
                     && receipt.TermsVersion == AdvertiserRegistrationController.TermsVersion
                 select m.Id).AnyAsync(ct);
             if (!active) return StatusCode(403);
-            var receiptDigest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(request.CheckoutSessionId + "\n" + intentId))).ToLowerInvariant();
-            var receiptKey = new Guid(Convert.FromHexString(receiptDigest[..32]));
+            var receiptDigest = StarterReceiptDigest(request.CheckoutSessionId, intentId);
+            var receiptKey = StarterReceiptKey(receiptDigest);
             var prefix = "quote:" + versionId.ToString("N") + ":";
             var detail = prefix + request.CampaignId.ToString("N") + ":" + receiptDigest;
             var prior = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x => x.Id == receiptKey, ct);
