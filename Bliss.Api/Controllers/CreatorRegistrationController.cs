@@ -144,7 +144,12 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
                 membership.Creator.PrimaryLanguage, "VERIFIED") : null;
         if (profile is not null && auth.CreatorInventoryReadbackRequested)
             profile = profile with { Inventory = await CreatorsController.ReadOwnInventory(db, membership.CreatorId, cancellationToken),
-                CanPauseInventory = auth.CreatorInventoryPauseRequested };
+                CanPauseInventory = auth.CreatorInventoryPauseRequested,
+                InventoryDraftContent = auth.CreatorInventoryDraftRequested
+                    ? await db.ContentItems.AsNoTracking().Where(c => c.CreatorId == membership.CreatorId
+                        && c.Creator.AuthorityStatus == "VERIFIED").OrderBy(c => c.Id).Take(50)
+                        .Select(c => new CreatorInventoryContentSummary(c.Id, c.Title, c.ContentType)).ToArrayAsync(cancellationToken)
+                    : null };
         return Ok(new CreatorRegistrationStatusDto(membership.CreatorId, receipt.Id, membership.Status, receipt.CreatedAt,
             code, code is null ? null : membership.SubmittedChannelUrl,
             code is null ? null : now.Date.AddDays(1), profile));
@@ -188,6 +193,68 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
         catch (DbUpdateException) { return Conflict(); }
     }
 
+    // Drafts are deliberately unavailable: channel verification alone does not
+    // establish commercial rights, fit, pricing or capacity for a new slot.
+    [Authorize]
+    [HttpPost("inventory/draft")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(1024)]
+    public async Task<IActionResult> CreateOwnInventoryDraft([FromBody] CreatorInventoryDraftRequest request, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.CreatorInventoryReadbackRequested || !auth.CreatorInventoryDraftRequested
+            || !auth.CreatorAuthorityVerificationRequested || !BlissAuthorization.IsPendingCreatorRegistration(User, auth))
+            return StatusCode(StatusCodes.Status403Forbidden);
+        if (request.RequestId == Guid.Empty || request.ContentItemId == Guid.Empty || !request.ConfirmDraft
+            || request.StartSecond is < 0 or > 86400 || request.DurationSeconds is < 1 or > 3600
+            || request.SlotType is not ("PRE_ROLL" or "MID_ROLL" or "POST_ROLL" or "LOWER_THIRD"
+                or "PERIMETER_OVERLAY" or "CORNER_OVERLAY" or "ROTATING_OVERLAY" or "SPONSORED_SEGMENT"))
+            return BadRequest();
+        var subject = User.FindFirst("sub")!.Value;
+        try
+        {
+            await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+            var creatorId = await (from m in db.CreatorAccountMemberships.AsNoTracking()
+                join r in db.CreatorRegistrationReceipts.AsNoTracking()
+                    on new { m.Subject, m.CreatorId } equals new { r.Subject, r.CreatorId }
+                where m.Subject == subject && m.Status == "ACTIVE" && m.Creator.AuthorityStatus == "VERIFIED"
+                    && r.ProcessingConsent && r.TermsAccepted && r.PrivacyNoticeVersion == PrivacyNoticeVersion
+                    && r.TermsVersion == TermsVersion
+                select (Guid?)m.CreatorId).SingleOrDefaultAsync(ct);
+            if (creatorId is null) return StatusCode(StatusCodes.Status403Forbidden);
+            if (!await db.ContentItems.AsNoTracking().AnyAsync(c => c.Id == request.ContentItemId
+                && c.CreatorId == creatorId.Value && c.Creator.AuthorityStatus == "VERIFIED", ct)) return NotFound();
+            var existing = await db.AdInventorySlots.AsNoTracking().SingleOrDefaultAsync(s => s.Id == request.RequestId, ct);
+            if (existing is not null)
+            {
+                if (existing.ContentItemId != request.ContentItemId || existing.SlotType != request.SlotType
+                    || existing.StartSecond != request.StartSecond || existing.DurationSeconds != request.DurationSeconds
+                    || existing.IsAvailable) return Conflict();
+            }
+            else
+            {
+                if (await db.AdInventorySlots.CountAsync(s => s.ContentItem.CreatorId == creatorId.Value, ct) >= 50)
+                    return Conflict(new { error = "The dashboard inventory limit has been reached." });
+                if (await db.AdInventorySlots.AnyAsync(s => s.ContentItemId == request.ContentItemId
+                    && s.SlotType == request.SlotType && s.StartSecond == request.StartSecond
+                    && s.DurationSeconds == request.DurationSeconds, ct)) return Conflict(new { error = "An identical slot already exists." });
+                db.AdInventorySlots.Add(new AdInventorySlot { Id = request.RequestId, ContentItemId = request.ContentItemId,
+                    SlotType = request.SlotType, StartSecond = request.StartSecond, DurationSeconds = request.DurationSeconds,
+                    IsAvailable = false });
+                await db.SaveChangesAsync(ct);
+                // Check actual persisted availability rather than trusting an EF default.
+                if (!await db.AdInventorySlots.AsNoTracking().AnyAsync(s => s.Id == request.RequestId && !s.IsAvailable, ct))
+                    return Conflict();
+            }
+            await tx.CommitAsync(ct);
+            return StatusCode(existing is null ? 201 : 200, new { slotId = request.RequestId,
+                contentItemId = request.ContentItemId, isAvailable = false, reviewRequired = true,
+                bookingAuthorized = false, paymentAuthorized = false, deliveryAuthorized = false });
+        }
+        catch (PostgresException pg) when (pg.SqlState == PostgresErrorCodes.SerializationFailure) { return Conflict(); }
+        catch (DbUpdateException) { return Conflict(); }
+    }
+
     private IActionResult ReplayOrConflict(CreatorRegistrationReceipt prior, string subject, string digest) =>
         prior.Subject == subject && prior.RequestSha256 == digest
             ? Ok(new CreatorRegistrationReceiptDto(prior.Id, prior.CreatorId, "PENDING_REVIEW", prior.CreatedAt, prior.MarketingOptIn))
@@ -215,3 +282,5 @@ public sealed record CreatorRegistrationStatusDto(
     CreatorSelfSummaryDto? VerifiedProfile = null);
 
 public sealed record CreatorInventoryPauseRequest(Guid SlotId, bool ConfirmPause);
+
+public sealed record CreatorInventoryDraftRequest(Guid RequestId, Guid ContentItemId, string SlotType, int StartSecond, int DurationSeconds, bool ConfirmDraft);
