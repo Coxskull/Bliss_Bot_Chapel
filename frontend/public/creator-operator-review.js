@@ -557,7 +557,44 @@
               if(!["SCHEDULE_RECORDED","CLAIMED_OUTCOME_UNCONFIRMED","PRIVATE_PREVIEW_READY","REVIEW_REQUIRED","FAILED_OR_INCOMPLETE"].includes(row.status)||!/^[a-f0-9]{64}$/.test(row.specSha256))throw Error("Status invalid.");
             }
             results.append(node("p",r.results.length? "Stored private Factory status — human visual review pending.":"No private render schedule recorded."));
-            for(const row of r.results)results.append(node("p",row.status+" · "+row.specSha256.slice(0,16)+"… · HELD / NOT_SENT"));
+            for(const row of r.results){
+              const item=node("div","");
+              item.append(node("p",row.status+" · "+row.specSha256.slice(0,16)+"… · HELD / NOT_SENT"));
+              if(packet.factoryVisualReviewEnabled===true&&["PRIVATE_PREVIEW_READY","REVIEW_REQUIRED"].includes(row.status)&&/^[a-f0-9]{64}$/.test(row.previewSha256)){
+                item.append(node("p","Exact preview SHA-256: "+row.previewSha256));
+                const hash=node("input","");hash.type="text";hash.maxLength=64;hash.placeholder="Review document SHA-256";hash.setAttribute("aria-label","Review document SHA-256");
+                const labels=["I reviewed the exact private video","Brand readability checked","Creator safe area checked","Audio and timing checked","Keep this output held"];
+                const checks=labels.map(label=>{const wrapper=node("label",""),input=node("input","");input.type="checkbox";wrapper.append(input,document.createTextNode(" "+label));item.append(wrapper);return input;});
+                item.append(hash);
+                const status=node("p","");
+                for(const decision of ["VISUAL_ACCEPTED","REVISION_REQUESTED"]){
+                  if(decision==="VISUAL_ACCEPTED"&&row.status!=="PRIVATE_PREVIEW_READY")continue;
+                  const b=node("button",decision==="VISUAL_ACCEPTED"?"Record visual acceptance":"Request revision");b.type="button";
+                  b.addEventListener("click",async()=>{
+                    if(busy||!item.isConnected||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+                    const reviewDocumentSha256=hash.value.trim();
+                    if(!/^[a-f0-9]{64}$/.test(reviewDocumentSha256)||!checks[0].checked||!checks[4].checked||(decision==="VISUAL_ACCEPTED"&&!checks.slice(1,4).every(x=>x.checked))){status.textContent="Complete the required review evidence and confirmations.";return;}
+                    if(!window.confirm("Record this immutable review for the exact preview? No campaign release, delivery or payment is authorized."))return;
+                    busy=true;b.disabled=true;
+                    try{
+                      const s=await session();
+                      const res=await fetch("/api/creators/operator-review/factory-visual-review",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+                        headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,
+                          specSha256:row.specSha256,previewSha256:row.previewSha256,reviewDocumentSha256,decision,exactPreviewReviewed:checks[0].checked,
+                          brandReadabilityReviewed:checks[1].checked,creatorSafeAreaReviewed:checks[2].checked,audioTimingReviewed:checks[3].checked,confirmHeld:checks[4].checked})});
+                      if(!res.ok)throw Error("Review not confirmed.");
+                      const a=await res.json();
+                      if(a.placementId!==m.placementId||a.specSha256!==row.specSha256||a.previewSha256!==row.previewSha256||a.decision!==decision||a.reviewRecorded!==true||a.release!=="HELD"||a.delivery!=="NOT_SENT"||a.dispatchAuthorized!==false||a.paymentAuthorized!==false)throw Error("Receipt invalid.");
+                      if(item.isConnected){item.replaceChildren(node("p","Review recorded: "+decision+" · HELD / NOT_SENT."));}
+                    }catch{if(item.isConnected)status.textContent="Review not confirmed. Reload current preview evidence.";}
+                    finally{busy=false;b.disabled=false;}
+                  });
+                  item.append(b);
+                }
+                item.append(status);
+              }
+              results.append(item);
+            }
           }catch{if(card.isConnected){results.replaceChildren(node("p","Private render status unavailable."));}}
           finally{busy=false;refresh.disabled=false;}
         });
