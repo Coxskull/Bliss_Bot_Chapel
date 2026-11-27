@@ -16,7 +16,8 @@ public static class CreatorRegistrationBoundary
                 || path.Equals("/api/auth/supabase-config", StringComparison.OrdinalIgnoreCase)
                 || (options.CreatorRegistrationRequested
                     && (path.Equals("/api/creators/registration", StringComparison.OrdinalIgnoreCase)
-                        || (options.CreatorCampaignInvitationRequested && path.Equals("/api/creators/campaign-invitations", StringComparison.OrdinalIgnoreCase))))))
+                        || (options.CreatorCampaignInvitationRequested && path.Equals("/api/creators/campaign-invitations", StringComparison.OrdinalIgnoreCase))
+                        || (options.CreatorAllocationHistoryRequested && path.Equals("/api/creators/allocation-history", StringComparison.OrdinalIgnoreCase))))))
             return false;
         if (HttpMethods.IsPost(context.Request.Method)
             && (path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase)
