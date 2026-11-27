@@ -251,6 +251,9 @@
           const n=document.createElement("p");
           n.textContent=evidence.status==="OPERATOR_RECORDED"&&Number.isFinite(Date.parse(evidence.completedAt))
             ?"External transfer evidence recorded by operator: "+evidence.completedAt+" · Reference: "+evidence.evidenceId+" · Provider verification unavailable."
+            :evidence.status==="FULL_REVERSAL_REPORTED"?"Full reversal reported by operator — settlement under review; provider verification unavailable."
+            :evidence.status==="DISPUTE_REPORTED"?"Settlement dispute reported — under review."
+            :evidence.status==="RECORD_CORRECTION_REQUIRED"?"Settlement correction required — under review."
             :"Settlement evidence requires review. Do not treat as confirmed payment.";
           card.appendChild(n);
         }
