@@ -513,6 +513,20 @@ public sealed class CreatorOperatorReviewController(
         catch(DbUpdateException){return Conflict();}
     }
 
+    [HttpGet("fulfillment-manifest")]
+    public async Task<IActionResult> FulfillmentManifest([FromQuery] Guid handoffId,[FromQuery] Guid illustrationId,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorFulfillmentManifestRequested || !auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested
+            || !auth.CreatorAgreementEvidenceRequested || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out _))return StatusCode(403);
+        if(handoffId==Guid.Empty || illustrationId==Guid.Empty)return BadRequest();
+        await using var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,ct);
+        var manifest=await CreatorFulfillmentManifest.Build(db,handoffId,illustrationId,ct);
+        if(manifest is null)return NotFound();
+        await tx.CommitAsync(ct);
+        return Ok(manifest);
+    }
+
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
