@@ -25,6 +25,8 @@ public sealed class BlissAuthenticationOptions
     // recovery/ingress release gates are separately accepted. Never infer
     // these values from a public interest record or CRM contact.
     public bool CreatorSelfServiceRequested { get; set; }
+    // Separate read-only, owner-scoped inventory capability. Never grants booking.
+    public bool CreatorInventoryReadbackRequested { get; set; }
     public string CreatorRole { get; set; } = "bliss.creator";
     public string CreatorIdClaimType { get; set; } = "bliss_creator_id";
     // Explicit approved OIDC subject IDs, not editable email or form IDs.
