@@ -10,6 +10,25 @@ public static class CreatorCompensationProposal
 {
     public const string Action = "CREATOR_COMPENSATION_PROPOSED";
     public const string ResponseAction = "CREATOR_COMPENSATION_RESPONSE";
+    public const string AgreementAction = "CREATOR_AGREEMENT_EVIDENCE";
+    public static Guid AgreementId(Guid proposalId) => StarterArtworkDelivery.StableId(AgreementAction,proposalId.ToString("N"));
+    public static bool ValidDocumentHash(string? value) => value is {Length:64} && value.All(c=>c is >= '0' and <= '9' or >= 'a' and <= 'f');
+    public static string AgreementDetail(Snapshot value,string documentHash) =>
+        Id(value.InvitationId).ToString("N")+":"+Digest(value)+":"+documentHash;
+    public static bool MatchesAgreement(WeddingPlannerAuditEvent audit,Snapshot value) =>
+        audit.Id==AgreementId(Id(value.InvitationId)) && audit.Action==AgreementAction && audit.ActorType=="OPERATOR"
+        && audit.Outcome=="EVIDENCE_RECORDED" && audit.AdvertiserId==value.AdvertiserId && audit.WorkspaceId==value.WorkspaceId
+        && audit.RequestId==value.CreatorId.ToString("N")
+        && audit.Detail is not null && audit.Detail.Split(':') is {Length:3} parts
+        && ValidDocumentHash(parts[2]) && audit.Detail==AgreementDetail(value,parts[2]);
+    public static async Task<bool> HasCurrentAcknowledgment(BlissDbContext db,Snapshot value,CancellationToken ct)
+    {
+        var id=ResponseId(Id(value.InvitationId));
+        var response=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
+        if(response is null || response.Outcome!="ALLOCATION_ACKNOWLEDGED" || !MatchesResponse(response,value,response.ActorLabel))return false;
+        return await db.CreatorAccountMemberships.AnyAsync(m=>m.CreatorId==value.CreatorId && m.Subject==response.ActorLabel
+            && m.Status=="ACTIVE",ct);
+    }
     public static Guid ResponseId(Guid proposalId) => StarterArtworkDelivery.StableId(ResponseAction,proposalId.ToString("N"));
     public static bool MatchesResponse(WeddingPlannerAuditEvent audit, Snapshot value, string subject) =>
         audit.Id==ResponseId(Id(value.InvitationId)) && audit.Action==ResponseAction && audit.ActorType=="CREATOR"
