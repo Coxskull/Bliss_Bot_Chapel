@@ -68,6 +68,57 @@
       container.appendChild(card);
     }
     show("inventory-panel",true);
+    showDraftForm(profile,container);
+  }
+  const draftKeys = new Map();
+  const types = ["PRE_ROLL","MID_ROLL","POST_ROLL","LOWER_THIRD","PERIMETER_OVERLAY","CORNER_OVERLAY","ROTATING_OVERLAY","SPONSORED_SEGMENT"];
+  const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  function showDraftForm(profile,container) {
+    const content = profile.inventoryDraftContent;
+    if (!csrfToken || !Array.isArray(content) || content.length > 50 ||
+        content.some(x => !x || !guid.test(x.contentItemId) || typeof x.title !== "string" || typeof x.contentType !== "string") ||
+        new Set(content.map(x => x.contentItemId)).size !== content.length) return;
+    const form = document.createElement("form");
+    const title = document.createElement("h4");title.textContent = "Prepare a new advertising slot";form.appendChild(title);
+    const note = document.createElement("p");note.textContent = content.length
+      ? "New slots remain unavailable for matching until separately reviewed. Use only content you control."
+      : "No recorded content is available. Contact ALPHA to add your content before preparing slots.";form.appendChild(note);
+    container.appendChild(form);
+    if (!content.length) return;
+    function labeled(label,field) {const node=document.createElement("label");node.textContent=label+" ";node.appendChild(field);form.appendChild(node);}
+    const item=document.createElement("select");
+    for(const row of content){const option=document.createElement("option");option.value=row.contentItemId;option.textContent=row.title+" · "+row.contentType;item.appendChild(option);}
+    labeled("Content",item);
+    const type=document.createElement("select");
+    for(const value of types){const option=document.createElement("option");option.value=value;option.textContent=value.replaceAll("_"," ");type.appendChild(option);}
+    labeled("Slot format",type);
+    const start=document.createElement("input");start.type="number";start.min="0";start.max="86400";start.step="1";start.required=true;start.value="0";labeled("Start second",start);
+    const duration=document.createElement("input");duration.type="number";duration.min="1";duration.max="3600";duration.step="1";duration.required=true;duration.value="15";labeled("Duration in seconds",duration);
+    const consent=document.createElement("input");consent.type="checkbox";consent.required=true;labeled("I confirm this is an unavailable draft requiring review",consent);
+    const submit=document.createElement("button");submit.type="submit";submit.textContent="Save unavailable slot draft";form.appendChild(submit);
+    form.addEventListener("submit",async event=>{
+      event.preventDefault();
+      if(busy||!csrfToken||!form.isConnected||!consent.checked||!content.some(x=>x.contentItemId===item.value)||!types.includes(type.value))return;
+      const startSecond=Number(start.value),durationSeconds=Number(duration.value);
+      if(!start.value||!duration.value||!Number.isSafeInteger(startSecond)||startSecond<0||startSecond>86400||
+        !Number.isSafeInteger(durationSeconds)||durationSeconds<1||durationSeconds>3600)return;
+      const payload={contentItemId:item.value,slotType:type.value,startSecond,durationSeconds,confirmDraft:true};
+      const signature=JSON.stringify([profile.creatorId,payload]);
+      if(!draftKeys.has(signature))draftKeys.set(signature,crypto.randomUUID());
+      const requestId=draftKeys.get(signature);
+      busy=true;refreshButton.disabled=true;submit.disabled=true;
+      let confirmed=false;
+      try{
+        const response=await fetch("/api/creators/inventory/draft",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+          headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrfToken},body:JSON.stringify({...payload,requestId})});
+        if(!response.ok)throw Error("Draft unavailable");
+        const result=await response.json();
+        confirmed=result.slotId===requestId&&result.contentItemId===payload.contentItemId&&result.isAvailable===false&&result.reviewRequired===true&&
+          result.bookingAuthorized===false&&result.paymentAuthorized===false&&result.deliveryAuthorized===false;
+      }catch{}finally{busy=false;}
+      await loadDashboard();
+      message(confirmed?"Unavailable slot draft saved for review. No booking authorized.":"Draft save not confirmed. Check refreshed inventory before retrying.",confirmed?"success":"error");
+    });
   }
   const clearProfile = () => {
     show("inventory-panel",false);
@@ -246,6 +297,7 @@
     show("application-panel", false);
     show("channel-proof-panel", false);
     clearProfile();
+    draftKeys.clear();
     logoutButton.disabled = true;
     message("Signing out securely…");
     // OIDC logout is a top-level redirect to the identity provider. A fetch()
