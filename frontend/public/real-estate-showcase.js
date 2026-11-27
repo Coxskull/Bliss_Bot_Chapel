@@ -53,21 +53,25 @@
     advertiserCapacity: layout.slots.length, protectedCreatorArea: { x: layout.protected[0], y: layout.protected[1], width: layout.protected[2], height: layout.protected[3] },
     durationSeconds: 15, occurrenceCount: null, exclusivity: "SHARED_DEMO_ONLY", creatorAuthorization: "NOT_RECORDED",
     availability: "UNVERIFIED", deviceCompatibility: "UNVERIFIED", economicsQuoteReference: null, campaignReady: false,
-    delivery: "NOT_SENT", source: "Existing AlphaTemplateComposer.render; fictional offline fixtures",
+    delivery: "NOT_SENT", source: "Existing AlphaTemplateComposer.renderShowcaseSlot; exact-size fictional offline fixtures",
     slots: layout.slots.map(s => ({ id: s[0], x: s[1], y: s[2], width: s[3], height: s[4], advertiser: s[6], color: s[5] }))
   })])));
   async function prepare() {
-    if (typeof window.AlphaTemplateComposer?.render !== "function") throw Error("Existing ALPHA ad composer is not loaded");
+    if (typeof window.AlphaTemplateComposer?.renderShowcaseSlot !== "function") throw Error("Existing ALPHA native slot composer is not loaded");
     const images = {};
-    for (const layout of Object.values(fixtures)) {
-      for (const slot of layout.slots) {
-        const name = slot[6];
-        if (images[name]) continue;
-        const blob = await window.AlphaTemplateComposer.render({ format: "landscape", brandName: name, headline: slot[7], colors: `${slot[5]} #F7D79D`, cta: "FICTIONAL DEMO", market: "DEMONSTRATION" });
-        images[name] = await createImageBitmap(blob);
+    try {
+      for (const layout of Object.values(fixtures)) {
+        for (const slot of layout.slots) {
+          const name = slot[6];
+          if (images[name]) continue;
+          const blob = await window.AlphaTemplateComposer.renderShowcaseSlot({ width:slot[3],height:slot[4],brandName:name,headline:slot[7],colors:`${slot[5]} #F7D79D` });
+          const image=await createImageBitmap(blob);
+          if(image.width!==slot[3]||image.height!==slot[4]){image.close();throw Error("Native slot artwork dimensions do not match inventory.");}
+          images[name]=image;
+        }
       }
-    }
-    return images;
+      return images;
+    }catch(error){Object.values(images).forEach(image=>image.close());throw error;}
   }
   function fitText(ctx,value,x,y,maxWidth,weight,initial,minimum) {
     for(let size=initial;size>=minimum;size--){
@@ -112,18 +116,8 @@
       ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
       ctx.fillStyle=color;ctx.fillRect(x,y,w,h);
       const img=images[brand];
-      if (img) { // Contain original artwork: never stretch or crop a landscape banner into a narrow vertical slot.
-        const ratio=Math.min(w/img.width,h/img.height);
-        const iw=img.width*ratio,ih=img.height*ratio;
-        ctx.globalAlpha=.22;ctx.filter="blur(12px)";ctx.drawImage(img,x+(w-iw)/2,y+(h-ih)/2,iw,ih);ctx.filter="none";ctx.globalAlpha=1;
-      }
-      const panel=ctx.createLinearGradient(x,y,x+w,y);panel.addColorStop(0,"rgba(0,0,0,.55)");panel.addColorStop(1,"rgba(0,0,0,.04)");ctx.fillStyle=panel;ctx.fillRect(x,y,w,h);
-      const side=w<350;
-      ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillStyle="#FFFFFF";ctx.shadowColor="#06142A";ctx.shadowBlur=9;
-      fitText(ctx,brand,x+24,y+(side?95:h*.30),w-48,800,side?34:46,16);
-      fitText(ctx,category,x+24,y+(side?142:h*.58),w-48,600,side?19:26,13);
-      ctx.shadowBlur=0;ctx.fillStyle="#FFFFFF";
-      fitText(ctx,"FICTIONAL DEMO · NOT SENT",x+24,y+h-28,w-48,700,side?13:16,10);
+      if(!img||img.width!==w||img.height!==h)throw Error("Exact slot artwork required.");
+      ctx.drawImage(img,x,y);
       ctx.restore();
     });
     // A single divider is painted on each shared advertiser boundary, never in the protected program.
