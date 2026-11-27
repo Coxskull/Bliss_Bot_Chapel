@@ -296,6 +296,59 @@
     finally{busy=false;lock(false);}
   });
   window.addEventListener("pagehide",clearHistory);
+  const settlementInput=document.getElementById("settlement-history-id"),settlementPreview=document.getElementById("settlement-preview");
+  const settlementReview=document.getElementById("settlement-review"),settlementStatus=document.getElementById("settlement-status");
+  const clearSettlement=()=>settlementReview?.replaceChildren();
+  settlementInput?.addEventListener("input",clearSettlement);
+  settlementPreview?.addEventListener("click",async()=>{
+    if(busy||!guid.test(settlementInput.value.trim()))return;
+    const historyId=settlementInput.value.trim().toLowerCase(),lock=locked=>{settlementInput.disabled=locked;settlementPreview.disabled=locked;};
+    busy=true;lock(true);clearSettlement();
+    try{
+      await session();
+      const response=await fetch("/api/creators/operator-review/settlement-evidence?historyId="+encodeURIComponent(historyId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!response.ok)throw Error("No eligible current settlement record. Review the allocation and agreement evidence.");
+      const v=await response.json(),row=v.settlement?.allocation;
+      if(!row||row.historyId!==historyId||!guid.test(row.placementId)||!guid.test(v.settlement.agreementEvidenceId)||
+        !Number.isFinite(row.creatorAllocation)||row.creatorAllocation<=0||!/^[A-Z]{3}$/.test(row.currencyCode)||
+        !/^[a-f0-9]{64}$/.test(v.digest)||v.transferAuthorized!==false||v.providerVerified!==false||v.payable!==false||
+        typeof v.existingEvidence!=="boolean")throw Error("Unexpected settlement response.");
+      const card=document.createElement("section");for(const [label,value] of [["Campaign",row.campaignName],["Placement",row.placementId],
+        ["Exact creator allocation",row.currencyCode+" "+String(row.creatorAllocation)],["Agreement evidence",v.settlement.agreementEvidenceId]])
+        card.append(node("p",label+": "+String(value)));
+      if(v.existingEvidence){card.append(node("p","A settlement evidence record already exists. Do not record or pay again; review any discrepancies separately."));settlementReview.append(card);settlementStatus.textContent="Existing evidence found.";return;}
+      const field=(label,type,max)=>{const wrap=node("label",label),input=document.createElement("input");input.type=type;input.autocomplete="off";if(max)input.maxLength=max;wrap.append(input);card.append(wrap,document.createElement("br"));return input;};
+      const transfer=field("Provider-qualified transfer reference SHA-256","text",64),documentHash=field("Transfer evidence document SHA-256","text",64),completed=field("Completed transfer date and time (local time)","datetime-local");
+      completed.step="1";
+      const checks=["I independently reviewed completed campaign fulfillment.","I independently verified the correct creator recipient.","I reviewed an actual completed external transfer for the exact full amount and currency shown.","I checked the transfer has not been reversed or refunded.","I checked that this transfer and placement have not already been reconciled."].map(label=>{
+        const wrap=node("label",label),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
+      const record=node("button","Record completed-transfer evidence");record.type="button";record.disabled=true;
+      const update=()=>{record.disabled=!/^[a-f0-9]{64}$/.test(transfer.value.trim())||!/^[a-f0-9]{64}$/.test(documentHash.value.trim())||!Number.isFinite(Date.parse(completed.value))||Date.parse(completed.value)>Date.now()||!checks.every(x=>x.checked);};
+      for(const input of [transfer,documentHash,completed])input.addEventListener("input",update);
+      for(const input of checks)input.addEventListener("change",update);
+      record.addEventListener("click",async()=>{
+        if(busy||record.disabled||!card.isConnected||settlementInput.value.trim().toLowerCase()!==historyId)return;
+        if(!window.confirm("Record evidence of the external transfer already completed? This does not send money or independently verify the provider."))return;
+        busy=true;lock(true);record.disabled=true;
+        try{
+          const s=await session();
+          const r=await fetch("/api/creators/operator-review/settlement-evidence",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},
+            body:JSON.stringify({historyId,digest:v.digest,amount:row.creatorAllocation,currencyCode:row.currencyCode,transferReferenceSha256:transfer.value.trim(),
+              evidenceDocumentSha256:documentHash.value.trim(),completedAt:new Date(completed.value).toISOString(),fulfillmentReviewed:checks[0].checked,
+              recipientReviewed:checks[1].checked,completedTransferReviewed:checks[2].checked,noReversalReviewed:checks[3].checked,noDuplicateReviewed:checks[4].checked})});
+          if(!r.ok)throw Error("Settlement evidence refused.");
+          const receipt=await r.json();
+          if(receipt.historyId!==historyId||!guid.test(receipt.settlementEvidenceId)||receipt.evidenceRecorded!==true||receipt.providerVerified!==false||
+            receipt.transferAuthorized!==false||receipt.payable!==false)throw Error("Unexpected receipt.");
+          settlementStatus.textContent="Operator-reviewed external transfer evidence recorded: "+receipt.settlementEvidenceId;
+        }catch{settlementStatus.textContent="Evidence not confirmed. Do not send money or retry until the current record is reviewed.";}
+        finally{clearSettlement();busy=false;lock(false);}
+      });card.append(record);settlementReview.append(card);settlementStatus.textContent="Review exact settlement evidence.";
+    }catch(e){clearSettlement();settlementStatus.textContent=e.message;}
+    finally{busy=false;lock(false);}
+  });
+  window.addEventListener("pagehide",clearSettlement);
   inventoryLoad.addEventListener("click",loadInventory);
   window.addEventListener("pagehide",clearInventory);
   load.addEventListener("click", refresh);
