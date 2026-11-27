@@ -598,6 +598,29 @@ public sealed class CreatorOperatorReviewController(
         return File(bytes,"image/png","alpha-private-"+candidateId.ToString("N")+".png");
     }
 
+    [HttpPost("factory-render-status")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> FactoryRenderStatus([FromBody] SubmitCreatorFactoryPreparation request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorFactorySubmissionRequested || !auth.CreatorFulfillmentManifestRequested || !auth.CreatorCampaignInvitationRequested
+            || !auth.CreatorCompensationProposalRequested || !auth.CreatorAgreementEvidenceRequested || !auth.CreatorAuthorityVerificationRequested
+            || !TryOperator(out _))return StatusCode(403);
+        if(request.HandoffId==Guid.Empty || request.IllustrationId==Guid.Empty || !request.ConfirmHeldMetadataOnly
+            || !CreatorCompensationProposal.ValidDocumentHash(request.ManifestSha256))return BadRequest();
+        string body;
+        await using(var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,ct)){
+            var manifest=await CreatorFulfillmentManifest.Build(db,request.HandoffId,request.IllustrationId,ct);
+            if(manifest is null)return NotFound();
+            body=CreatorFactorySubmission.Serialize(manifest);
+            if(ControlledAiService.Hash(body)!=request.ManifestSha256)return Conflict();
+            await tx.CommitAsync(ct);
+        }
+        var status=await CreatorFactorySubmission.Submit(body,request.HandoffId,ct,renderStatus:true);
+        return status is null?StatusCode(503,new {error="Factory render status unavailable."}):Ok(status.Value);
+    }
+
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
