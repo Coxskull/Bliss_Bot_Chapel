@@ -145,12 +145,37 @@
           const n=document.createElement(tag);n.textContent=value;card.appendChild(n);
         }
         const proposal=item.compensationProposal;
-        if(proposal && item.response==="INTERESTED" && guid.test(proposal.proposalId) && proposal.status==="PROPOSED" &&
-          proposal.payable===false && Number.isFinite(proposal.amount) && proposal.amount>0 && /^[A-Z]{3}$/.test(proposal.currencyCode)){
+        if(proposal && item.response==="INTERESTED" && guid.test(proposal.proposalId) &&
+          ["PROPOSED","ALLOCATION_ACKNOWLEDGED","ALLOCATION_DECLINED"].includes(proposal.status) &&
+          /^[a-f0-9]{64}$/.test(proposal.digest) && proposal.payable===false && Number.isFinite(proposal.amount) &&
+          proposal.amount>0 && /^[A-Z]{3}$/.test(proposal.currencyCode)){
           const terms=document.createElement("p");
           terms.textContent="Proposed creator allocation: "+proposal.currencyCode+" "+String(proposal.amount)+
-            " — not earned, payable, agreed or paid. Separate commercial terms must be approved.";
-          card.appendChild(terms);
+            " — not earned, payable or paid. Separate commercial terms must be approved.";
+          const allocationStatus=document.createElement("p");
+          allocationStatus.textContent=proposal.status==="PROPOSED"?"Awaiting allocation response":
+            proposal.status==="ALLOCATION_ACKNOWLEDGED"?"Allocation acknowledged — non-binding":"Allocation declined";
+          card.append(terms,allocationStatus);
+          if(proposal.status==="PROPOSED")for(const decision of ["ALLOCATION_ACKNOWLEDGED","ALLOCATION_DECLINED"]){
+            const action=document.createElement("button");action.type="button";
+            action.textContent=decision==="ALLOCATION_ACKNOWLEDGED"?"Acknowledge proposed amount":"Decline proposed amount";
+            action.addEventListener("click",async()=>{
+              if(busy||!csrfToken||panel.hidden||!card.isConnected)return;
+              if(!window.confirm("Record your non-binding response to "+proposal.currencyCode+" "+String(proposal.amount)+"? This does not authorize a booking, contract, delivery or payment. This response cannot be changed here."))return;
+              busy=true;refreshButton.disabled=true;button.disabled=true;
+              let confirmed=false;
+              try{
+                const r=await fetch("/api/creators/compensation-response",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+                  headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrfToken},
+                  body:JSON.stringify({invitationId:item.invitationId,proposalId:proposal.proposalId,digest:proposal.digest,decision,confirmNonBinding:true})});
+                if(!r.ok)throw Error("Allocation response refused");
+                const v=await r.json();
+                confirmed=v.proposalId===proposal.proposalId&&v.response===decision&&v.payable===false&&v.bookingAuthorized===false&&v.paymentAuthorized===false&&v.deliveryAuthorized===false;
+              }catch{}finally{busy=false;}
+              await loadInvitations();
+              notice.textContent=confirmed?"Allocation response recorded. No payable or binding agreement created.":"Allocation response not confirmed. Review the current proposal.";
+            });card.appendChild(action);
+          }
         }
         if(item.response==="AWAITING_RESPONSE")for(const decision of ["INTERESTED","DECLINED"]){
           const action=document.createElement("button");action.type="button";action.textContent=decision==="INTERESTED"?"Express interest (non-binding)":"Decline invitation";
