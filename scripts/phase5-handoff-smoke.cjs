@@ -58,10 +58,19 @@ const png = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAYAAAB3AH1ZAAAAI0lEQVR4nGMI0Oj5P5C
     await page.locator("#campaign-name").fill("TEST browser campaign");
     await page.getByRole("button", { name: "Create draft campaign", exact: true }).click();
     await page.waitForFunction(() => document.querySelector("#status").textContent.includes("Draft campaign created"));
+    const createdCampaignId = await page.locator("#campaign").inputValue();
+    assert.ok(createdCampaignId);
     await page.locator("#plan-consent").check();
     await page.getByRole("button", { name: "Record planned handoff", exact: true }).click();
     await page.waitForFunction(() => document.querySelector("#status").dataset.error === "true");
     assert.match(await page.locator("#status").textContent(), /all be approved/);
+    // A failed action invalidates old evidence and confirmation. Reopen the
+    // same workspace and select the exact saved draft before recording approvals.
+    assert.equal(await page.locator("#plan-fields").isDisabled(), true);
+    assert.equal(await page.locator("#plan-consent").isChecked(), false);
+    assert.equal(await page.locator("#stage option").count(), 0);
+    await open();
+    await page.locator("#campaign").selectOption(createdCampaignId);
     for (const stage of ["ADVERTISER", "ALPHA_QA", "INVENTORY_FIT"]) {
       await page.locator("#stage").selectOption(stage);
       await page.locator("#rationale").fill("TEST <script>fixture</script> human workflow decision");
@@ -80,6 +89,8 @@ const png = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAYAAAB3AH1ZAAAAI0lEQVR4nGMI0Oj5P5C
       assert.equal(await page.locator("#status").getAttribute("data-error"), "false", await page.locator("#status").textContent());
     }
     assert.equal(await page.locator("#approvals script").count(), 0);
+    assert.equal(await page.locator("#plan-consent").isChecked(), false);
+    await page.locator("#plan-consent").check();
     await page.getByRole("button", { name: "Record planned handoff", exact: true }).click();
     await page.waitForFunction(() => document.querySelector("#status").textContent.includes("handoff recorded as PLANNED"));
     const plans = await api(root + "/handoff/plans"); assert.equal(plans.length, 1); assert.equal(plans[0].status, "PLANNED"); assert.equal(plans[0].delivery, "NOT_SENT");
@@ -108,7 +119,7 @@ const png = "iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAYAAAB3AH1ZAAAAI0lEQVR4nGMI0Oj5P5C
     assert.equal(unchangedPlans.length, 1, "Rejected quote must not add a handoff");
     assert.equal(unchangedPlans[0].snapshotJson, originalSnapshot,
       "Rejected quote must not change persisted Economics evidence");
-    await page.reload(); await open(); assert.match(await page.locator("#plans").textContent(), /PLANNED · NOT_SENT/);
+    await page.reload(); await open(); await page.locator("#campaign").selectOption(createdCampaignId); assert.match(await page.locator("#plans").textContent(), /PLANNED · NOT_SENT/);
     assert.equal(await page.locator("#approvals h3").count(), 3);
     await page.locator("#stage").selectOption("ADVERTISER"); await page.locator("#decision").selectOption("WITHHOLD");
     await page.locator("#rationale").fill("TEST revoke new planning authority");
