@@ -457,7 +457,7 @@
       const r=await fetch("/api/creators/operator-review/fulfillment-manifest?handoffId="+encodeURIComponent(handoffId)+"&illustrationId="+encodeURIComponent(illustrationId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
       if(!r.ok)throw Error("Current handoff or agreement evidence unavailable.");
       const packet=await r.json(),m=packet.manifest;
-      if(!m||!/^[a-f0-9]{64}$/.test(packet.manifestSha256)||typeof packet.factorySubmissionEnabled!=="boolean"||typeof packet.factoryArtworkEnabled!=="boolean"||m.schema!=="alpha-creator-fulfillment-preparation/v1"||m.handoffId!==handoffId||m.status!=="PREPARATION_ONLY"||m.delivery!=="NOT_SENT"||
+      if(!m||!/^[a-f0-9]{64}$/.test(packet.manifestSha256)||typeof packet.factorySubmissionEnabled!=="boolean"||typeof packet.factoryArtworkEnabled!=="boolean"||typeof packet.factoryArtworkTransferEnabled!=="boolean"||m.schema!=="alpha-creator-fulfillment-preparation/v1"||m.handoffId!==handoffId||m.status!=="PREPARATION_ONLY"||m.delivery!=="NOT_SENT"||
         m.fundingVerified!==false||m.bookingAuthorized!==false||m.paymentAuthorized!==false||m.deliveryAuthorized!==false||m.factoryDispatchAuthorized!==false||
         ![m.placementId,m.campaignId,m.creatorId,m.slotId,m.candidateId,m.agreementEvidenceId].every(x=>guid.test(x))||
         ![m.imageSha256,m.handoffSha256,m.agreementEvidenceSha256].every(x=>/^[a-f0-9]{64}$/.test(x)))throw Error("Invalid preparation manifest.");
@@ -514,6 +514,28 @@
           finally{clearFulfill();busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
         });
         card.append(artwork);
+      }
+      if(packet.factoryArtworkTransferEnabled){
+        const transfer=node("button","Transfer exact private PNG to Factory");transfer.type="button";
+        transfer.addEventListener("click",async()=>{
+          if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+          if(!window.confirm("Store this exact admitted PNG in the separately authorized private staging Factory custody ledger? No rendering, publishing, or payment is authorized."))return;
+          busy=true;transfer.disabled=true;download.disabled=true;fulfillPreview.disabled=true;fulfillHandoff.disabled=true;fulfillIllustration.disabled=true;
+          try{
+            const s=await session();
+            const response=await fetch("/api/creators/operator-review/factory-artwork",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,confirmPrivateArtworkHandling:true,transferToFactory:true})});
+            if(!response.ok)throw Error("Custody not confirmed.");
+            const r=await response.json();
+            if(r.schema!=="alpha.henry-ford.held-artwork-custody.v1"||r.placementId!==m.placementId||r.handoffId!==handoffId||
+              r.manifestSha256!==packet.manifestSha256||r.imageSha256!==m.imageSha256||r.imageWidth!==m.imageWidth||r.imageHeight!==m.imageHeight||
+              r.status!=="HELD_ARTWORK_STORED"||r.release!=="HELD"||r.delivery!=="NOT_SENT"||
+              r.renderAuthorized!==false||r.dispatchAuthorized!==false||r.paymentAuthorized!==false)throw Error("Unexpected custody receipt.");
+            fulfillStatus.textContent="Private Factory artwork custody confirmed. HELD / NOT_SENT.";
+          }catch{fulfillStatus.textContent="Factory custody not confirmed. Review the exact current admission before retrying.";}
+          finally{clearFulfill();busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
+        });
+        card.append(transfer);
       }
       fulfillReview.append(card);fulfillStatus.textContent="Current preparation manifest generated.";
     }catch(e){clearFulfill();fulfillStatus.textContent=e.message;}
