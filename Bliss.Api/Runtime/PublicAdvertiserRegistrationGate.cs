@@ -53,6 +53,7 @@ public static class PublicAdvertiserRegistrationGate
         "/creator-registration.html", "/creator-registration.js",
         "/creator-dashboard.html", "/creator-dashboard.js",
         "/api/creators/registration", "/api/creators/operator-review",
+        "/api/creators/operator-review/inventory",
         "/creator-operator-review.html", "/creator-operator-review.js",
         "/alpha-privacy.html", "/alpha-terms.html",
         "/creator-account-privacy.html", "/creator-account-terms.html",
@@ -61,7 +62,8 @@ public static class PublicAdvertiserRegistrationGate
     private static readonly HashSet<string> CreatorPostPaths = new(StringComparer.OrdinalIgnoreCase)
     {
         "/api/creators/register", "/api/creators/operator-review", "/api/creators/operator-review/verify-channel",
-        "/api/creators/inventory/pause", "/api/creators/inventory/draft"
+        "/api/creators/inventory/pause", "/api/creators/inventory/draft",
+        "/api/creators/operator-review/inventory"
     };
 
     public static bool IsAllowed(string? method, PathString path, bool creatorRegistrationEnabled = false, bool staffCreativeReadinessEnabled = false, bool staffCreativePreparationEnabled = false)
