@@ -45,4 +45,27 @@ public sealed class StarterArtworkDeliveryTests
         audit.Id = Guid.NewGuid();
         Assert.False(Matches(receipt));
     }
+    [Fact]
+    public void Download_history_requires_exact_release_and_customer_identity()
+    {
+        var advertiser = Guid.NewGuid();
+        var workspace = Guid.NewGuid();
+        var release = Guid.NewGuid();
+        const string subject = "customer-fixture";
+        var row = new Bliss.Domain.Entities.WeddingPlannerAuditEvent
+        {
+            Id = StarterArtworkDelivery.DownloadRequestId(release, subject),
+            AdvertiserId = advertiser, WorkspaceId = workspace,
+            Action = StarterArtworkDelivery.DownloadAction,
+            ActorType = "ADVERTISER", ActorLabel = subject,
+            Outcome = "REQUESTED", Detail = release.ToString("N")
+        };
+        Assert.True(StarterArtworkDelivery.MatchesDownloadRequest(row,advertiser,workspace,release,subject));
+        Assert.False(StarterArtworkDelivery.MatchesDownloadRequest(row,Guid.NewGuid(),workspace,release,subject));
+        Assert.False(StarterArtworkDelivery.MatchesDownloadRequest(row,advertiser,Guid.NewGuid(),release,subject));
+        Assert.False(StarterArtworkDelivery.MatchesDownloadRequest(row,advertiser,workspace,Guid.NewGuid(),subject));
+        Assert.False(StarterArtworkDelivery.MatchesDownloadRequest(row,advertiser,workspace,release,"other"));
+        row.Outcome = "DELIVERED";
+        Assert.False(StarterArtworkDelivery.MatchesDownloadRequest(row,advertiser,workspace,release,subject));
+    }
 }
