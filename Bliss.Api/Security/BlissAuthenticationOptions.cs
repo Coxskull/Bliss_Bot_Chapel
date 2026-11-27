@@ -31,6 +31,7 @@ public sealed class BlissAuthenticationOptions
     public bool CreatorInventoryPauseRequested { get; set; }
     public bool CreatorInventoryDraftRequested { get; set; }
     public bool CreatorInventoryOperatorReviewRequested { get; set; }
+    public bool CreatorCampaignInvitationRequested { get; set; }
     public string CreatorRole { get; set; } = "bliss.creator";
     public string CreatorIdClaimType { get; set; } = "bliss_creator_id";
     // Explicit approved OIDC subject IDs, not editable email or form IDs.
