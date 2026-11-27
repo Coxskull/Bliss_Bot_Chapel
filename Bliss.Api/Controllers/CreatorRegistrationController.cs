@@ -151,6 +151,8 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
                         && c.Creator.AuthorityStatus == "VERIFIED").OrderBy(c => c.Id).Take(50)
                         .Select(c => new CreatorInventoryContentSummary(c.Id, c.Title, c.ContentType)).ToArrayAsync(cancellationToken)
                     : null };
+        if (profile is not null && auth.CreatorCampaignInvitationRequested)
+            profile = profile with { CanViewCampaignInvitations = true };
         return Ok(new CreatorRegistrationStatusDto(membership.CreatorId, receipt.Id, membership.Status, receipt.CreatedAt,
             code, code is null ? null : membership.SubmittedChannelUrl,
             code is null ? null : now.Date.AddDays(1), profile));
