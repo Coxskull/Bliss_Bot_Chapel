@@ -36,3 +36,19 @@ assert.ok(build.includes("Ask Alpha AI consent/release controls missing"));
 for(const sensitive of ["OPENAI_API_KEY","SUPABASE_SERVICE_ROLE_KEY","ALPHA_ASK_ALPHA_HASH_SECRET","localStorage","sessionStorage"])
  assert.ok(!script.includes(sensitive),"Secret or persistent chat state leaked to browser: "+sensitive);
 console.log("TASK20_HOSTED_BROWSER_CONSENT_CONTRACT_PASS: default-off; separate opt-in; existing Edge endpoint; no browser secrets");
+
+assert.ok(script.includes('response.status === 503 && result?.error === "AI_TEMPORARILY_UNAVAILABLE"'),"Operational hold must use the specific trusted status and code");
+assert.ok(script.includes('appendAskAlphaMessage("guide",askAlphaAnswer(cleaned),askAlphaGuideActions(cleaned))'),"Local guidance must answer the actual question");
+assert.ok(!script.includes('(result?.error || response.status)'),"Untrusted server errors must not be displayed directly");
+assert.ok(script.includes("No AI provider request was sent. Guided help remains available."),"Known no-provider hold must be distinguished from an uncertain failure");
+
+for(const href of ["/join-advertiser.html","/join-creator.html","/contact.html","/alpha-privacy.html","/privacy-request.html"]) {
+ assert.ok(script.includes('href:"'+href+'"'),"Fixed guide action missing: "+href);
+ assert.ok(read("frontend/public"+href).length>0,"Public destination missing: "+href);
+}
+assert.ok(script.includes('if (who === "guide") for (const action of actions)'));
+assert.ok(script.includes("Object.values(askAlphaActions).includes(action)"));
+assert.ok(!script.includes("when the commercial intake opens"));
+assert.ok(!script.includes("once intake is available"));
+assert.ok(script.includes("If you explicitly opt in to live AI"));
+assert.ok(read("frontend/public/global-media.css").includes(".ask-alpha-action:focus-visible"));
