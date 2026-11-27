@@ -107,7 +107,9 @@
           const send = body=>fetch(endpoint+"/creative-artwork",{method:"POST",credentials:"same-origin",cache:"no-store",
             headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrf},body:JSON.stringify(body)});
           const payload={campaignId:row.campaignId,action};
-          if(action!=="STATUS"){
+          if(action==="ACKNOWLEDGE"){
+            Object.assign(payload,{candidateId:prior.candidateId,reviewId:prior.reviewId,imageSha256:prior.imageSha256,releaseId:prior.releaseId,confirmedReceipt:true});
+          }else if(action!=="STATUS"){
             const change={candidateId:prior.candidateId,reviewId:prior.reviewId,imageSha256:prior.imageSha256,expectedVersion:prior.approvalVersion,rationale};
             const fingerprint=JSON.stringify({action,...change});
             if(!artRetry || artRetry.fingerprint!==fingerprint) artRetry={fingerprint,key:crypto.randomUUID()};
@@ -129,6 +131,11 @@
                 (result.downloadRequestRecorded ? result.release !== "ARTWORK_DOWNLOAD_AVAILABLE" ||
                    typeof result.downloadRequestedAt !== "string" || !Number.isFinite(Date.parse(result.downloadRequestedAt))
                   : result.downloadRequestedAt != null)))throw Error("Unexpected delivery history.");
+          if(result.receiptAcknowledged !== undefined &&
+              (typeof result.receiptAcknowledged !== "boolean" ||
+                (result.receiptAcknowledged ? !result.downloadRequestRecorded ||
+                   typeof result.receiptAcknowledgedAt !== "string" || !Number.isFinite(Date.parse(result.receiptAcknowledgedAt))
+                   : result.receiptAcknowledgedAt != null)))throw Error("Unexpected receipt acknowledgment.");
           const imageResponse=await send({campaignId:row.campaignId,action:"PREVIEW",candidateId:result.candidateId,
             reviewId:result.reviewId,imageSha256:result.imageSha256});
           if(!imageResponse.ok || !imageResponse.headers.get("content-type")?.startsWith("image/png"))throw Error("Artwork preview unavailable.");
@@ -153,11 +160,16 @@
           }
           const delivery=document.createElement("p");delivery.setAttribute("role","status");
           delivery.textContent=result.release==="HELD" ? "Delivery: held pending release."
+            : result.receiptAcknowledged ? "Customer acknowledged receipt on "+new Date(result.receiptAcknowledgedAt).toLocaleString()+". This is a customer statement, not independent proof of file storage."
             : result.downloadRequestRecorded ? "Download requested on "+new Date(result.downloadRequestedAt).toLocaleString()+". Saving the file is not confirmed."
             : "Delivery: artwork available; download completion is not confirmed.";
           artPanel.appendChild(delivery);
           if(result.release==="ARTWORK_DOWNLOAD_AVAILABLE"){
             const download=document.createElement("button");download.type="button";download.textContent="Download final approved artwork";artPanel.appendChild(download);
+            const ack=document.createElement("button");ack.type="button";ack.textContent="Confirm I received the final artwork";
+            ack.hidden=result.receiptAcknowledged===true;ack.disabled=!result.downloadRequestRecorded;
+            ack.addEventListener("click",()=>{if(!ack.disabled&&window.confirm("Confirm that you received this exact final artwork? This records your acknowledgment only; it does not waive support or refund rights."))artwork("ACKNOWLEDGE",result);});
+            artPanel.appendChild(ack);
             download.addEventListener("click",async()=>{
               if(download.disabled || !csrf)return;download.disabled=true;
               try{
@@ -169,7 +181,7 @@
                 if(digest!==result.imageSha256 || current!==generation || !card.isConnected)throw Error("Final artwork verification failed.");
                 const url=URL.createObjectURL(blob);previewUrls.push(url);
                 const link=document.createElement("a");link.href=url;link.download="alpha-artwork-"+row.campaignId+".png";link.textContent="Save verified final PNG";artPanel.appendChild(link);
-                delivery.textContent="Download request recorded; verified PNG received by this browser. Saving the file is not confirmed.";
+                if(!result.receiptAcknowledged){ack.disabled=false;delivery.textContent="Download request recorded; verified PNG received by this browser. Saving the file is not confirmed.";}
                 status.textContent="Final artwork received by browser. Save the verified PNG.";
               }catch(e){status.textContent=e.message;}finally{download.disabled=false;}
             });

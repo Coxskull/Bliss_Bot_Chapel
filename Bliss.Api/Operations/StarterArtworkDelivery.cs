@@ -26,6 +26,17 @@ public static class StarterArtworkDelivery
         && row.ActorType == "ADVERTISER" && row.ActorLabel == subject
         && row.Outcome == "REQUESTED" && row.Detail == releaseId.ToString("N");
 
+    public const string AcknowledgeAction = "STARTER_ARTWORK_RECEIPT_ACKNOWLEDGED";
+    public static Guid AcknowledgmentId(Guid releaseId, string subject) =>
+        StableId(AcknowledgeAction, releaseId.ToString("N") + ":" + subject);
+
+    public static bool MatchesAcknowledgment(WeddingPlannerAuditEvent row, Guid advertiserId,
+        Guid workspaceId, Guid releaseId, string subject, string imageSha256) =>
+        row.Id == AcknowledgmentId(releaseId, subject) && row.AdvertiserId == advertiserId
+        && row.WorkspaceId == workspaceId && row.Action == AcknowledgeAction
+        && row.ActorType == "ADVERTISER" && row.ActorLabel == subject
+        && row.Outcome == "ACKNOWLEDGED" && row.Detail == $"{releaseId:N}:{imageSha256}";
+
     // Historical signed notification evidence is necessary but is not a live
     // Stripe refund/dispute check or independent fulfillment authorization.
     public static bool MatchesSignedReceipt(WeddingPlannerAuditEvent audit, Guid versionId,
