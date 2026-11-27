@@ -297,11 +297,19 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
                 if(proposal?.Detail is not null && Guid.TryParseExact(proposal.Detail.Split(':')[0],"N",out var illustrationId)){
                     var current=await CreatorCompensationProposal.Current(db,audit.Id,illustrationId,ct);
                     if(current is not null && current.CreatorId==creator.Value && CreatorCompensationProposal.Matches(proposal,current)){
-                        var responseId=CreatorCompensationProposal.ResponseId(proposalId);
-                        var allocationResponse=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==responseId,ct);
-                        if(allocationResponse is null || CreatorCompensationProposal.MatchesResponse(allocationResponse,current,subject))
+                        var allocationResponseId=CreatorCompensationProposal.ResponseId(proposalId);
+                        var allocationResponse=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==allocationResponseId,ct);
+                        if(allocationResponse is null || CreatorCompensationProposal.MatchesResponse(allocationResponse,current,subject)){
+                            Guid? agreementEvidenceId=null;
+                            if(auth.CreatorAgreementEvidenceRequested && allocationResponse?.Outcome=="ALLOCATION_ACKNOWLEDGED"){
+                                var agreementId=CreatorCompensationProposal.AgreementId(proposalId);
+                                var evidence=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==agreementId,ct);
+                                if(evidence is not null && CreatorCompensationProposal.MatchesAgreement(evidence,current))agreementEvidenceId=evidence.Id;
+                            }
                             compensationProposal=new {proposalId,amount=current.CreatorAmount,currencyCode=current.CurrencyCode,
-                                digest=CreatorCompensationProposal.Digest(current),status=allocationResponse?.Outcome??"PROPOSED",payable=false};
+                                digest=CreatorCompensationProposal.Digest(current),status=allocationResponse?.Outcome??"PROPOSED",payable=false,
+                                agreementEvidenceId,signatureVerifiedBySystem=false};
+                        }
                     }
                 }
             }
