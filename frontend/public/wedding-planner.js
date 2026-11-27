@@ -35,20 +35,39 @@ if (askAlphaLive && askAlphaAiPanel && askAlphaAiConsent) {
 }
 
 
+const askAlphaActions = Object.freeze({
+  advertiser: Object.freeze({label:"Open advertiser inquiry form",href:"/join-advertiser.html"}),
+  creator: Object.freeze({label:"Open creator inquiry form",href:"/join-creator.html"}),
+  contact: Object.freeze({label:"View contact options",href:"/contact.html"}),
+  privacy: Object.freeze({label:"Read the Privacy Notice",href:"/alpha-privacy.html"}),
+  privacyRequest: Object.freeze({label:"Open privacy request form",href:"/privacy-request.html"})
+});
+function askAlphaGuideActions(question) {
+  const q = question.toLowerCase();
+  if (/privacy|personal|store|save|data|record|transcript/.test(q))
+    return [askAlphaActions.privacy,askAlphaActions.privacyRequest];
+  if (/human|person|representative|contact|call|email|support|meeting|refund|dispute/.test(q))
+    return [askAlphaActions.contact,askAlphaActions.advertiser,askAlphaActions.creator];
+  if (/price|pricing|cost|quote|budget|fee|payment/.test(q)) return [askAlphaActions.advertiser];
+  if (/creator|podcast|streamer|influenc|channel|earn|monetiz/.test(q)) return [askAlphaActions.creator];
+  if (/advertis|sponsor|brand|campaign|restaurant|product|business|ad placement/.test(q)) return [askAlphaActions.advertiser];
+  return [askAlphaActions.advertiser,askAlphaActions.creator];
+}
+
 function askAlphaAnswer(question) {
   const q = question.toLowerCase();
   const has = (...terms) => terms.some(term => q.includes(term));
   if (question.includes("@") || /(?:\+?\d[ -]?){8,}/.test(question)) {
-    return "Please do not enter email addresses or phone numbers here. This informational guide does not collect leads or send messages. A verified contact form will be needed for a private follow-up.";
+    return "Please do not enter email addresses or phone numbers here. This informational guide does not collect leads or send messages. Use the appropriate public inquiry form for human review.";
   }
   if (has("privacy", "personal", "store", "save", "data", "record", "transcript")) {
-    return "This guided conversation runs inside your current browser tab. It does not send your questions to a server, save a transcript, or contact anyone. Do not enter private business or personal details.";
+    return "Guided answers are generated locally in this tab. If you explicitly opt in to live AI, your question and limited conversation context may be sent for AI processing under the separate Privacy Notice. This chat does not authorize commercial actions. Do not enter private business or personal details.";
   }
   if (has("price", "pricing", "cost", "quote", "budget", "fee", "payment")) {
-    return "Campaign pricing depends on an approved placement, audience, creative scope and an accepted quote. Ask Alpha cannot invent a price or collect payment. A human will review custom pricing when the commercial intake opens.";
+    return "Start with your total campaign budget. Creator and media costs, creative scope and Alpha's disclosed fee must fit an accepted human-reviewed quote. A smaller scope or alternative inventory may be considered. Ask Alpha cannot invent prices or collect payment; use the advertiser inquiry form.";
   }
   if (has("human", "person", "representative", "contact", "call", "email", "support", "meeting")) {
-    return "A human representative will be required for a custom proposal or binding agreement. This guide cannot book a call, submit your contact details, or promise a reply. Verified human-contact options will appear once the commercial intake is activated.";
+    return "A human representative will be required for a custom proposal or binding agreement. This guide cannot book a call, submit your contact details, or promise a reply. Use the existing Contact page or relevant public inquiry form for human review.";
   }
   if (has("creator", "podcaster", "streamer", "influencer", "channel", "earn", "monetiz")) {
     return "Alpha aims to connect suitable podcasters, livestreamers and content creators with advertisers. A creator's audience, content, availability and eligibility need review before any proposed campaign. Earnings or placements are not guaranteed.";
@@ -65,10 +84,10 @@ function askAlphaAnswer(question) {
   if (has("what", "how", "work", "alpha", "help", "hello", "hi", "start", "join")) {
     return "Ask Alpha is the information guide for Alpha Global Media's advertiser–creator marketplace. We help explain partnerships, possible ad formats and human-reviewed next steps. You can ask about creators, advertiser campaigns, pricing or privacy.";
   }
-  return "I can help with general questions about Alpha advertising, creator partnerships, pricing, campaign expectations and human assistance. For an individualized answer, a human review will be needed once intake is available.";
+  return "I can help with general questions about Alpha advertising, creator partnerships, pricing, campaign expectations and human assistance. For an individualized answer, use the existing public inquiry form for human review.";
 }
 
-function appendAskAlphaMessage(who, body) {
+function appendAskAlphaMessage(who, body, actions = []) {
   const bubble = document.createElement("p");
   bubble.className = "ask-alpha-bubble " + (who === "visitor" ? "ask-alpha-visitor" : "ask-alpha-guide");
   const heading = document.createElement("strong");
@@ -77,6 +96,14 @@ function appendAskAlphaMessage(who, body) {
   const text = document.createElement("span");
   text.textContent = body;
   bubble.append(heading, text);
+  if (who === "guide") for (const action of actions) {
+    if (!Object.values(askAlphaActions).includes(action)) continue;
+    const link = document.createElement("a");
+    link.className = "ask-alpha-action";
+    link.href = action.href;
+    link.textContent = action.label;
+    bubble.append(link);
+  }
   askAlphaThread.append(bubble);
   askAlphaThread.scrollTop = askAlphaThread.scrollHeight;
 }
@@ -96,7 +123,7 @@ async function sendAskAlpha(question) {
   askAlphaInput.value = "";
   askAlphaTurns++;
   if (!askAlphaLive || !askAlphaAiConsent?.checked || !askAlphaSessionId) {
-    appendAskAlphaMessage("guide",askAlphaAnswer(cleaned));
+    appendAskAlphaMessage("guide",askAlphaAnswer(cleaned),askAlphaGuideActions(cleaned));
     if (askAlphaLive && askAlphaAiStatus) {
       askAlphaAiStatus.textContent = "No AI request made. You can use guided help without agreeing to AI processing.";
     }
@@ -138,14 +165,13 @@ async function sendAskAlpha(question) {
         // A known operational hold is not a visitor fault or a confirmed AI reply.
         // Use the existing local guide, never retry automatically or expose raw server errors.
         const held = response.status === 503 && result?.error === "AI_TEMPORARILY_UNAVAILABLE";
-        appendAskAlphaMessage("guide",askAlphaAnswer(cleaned));
+        appendAskAlphaMessage("guide",askAlphaAnswer(cleaned),askAlphaGuideActions(cleaned));
         if (askAlphaAiStatus) askAlphaAiStatus.textContent = held
           ? "Live AI is temporarily unavailable. No AI provider request was sent. Guided help remains available."
           : "AI answer or receipt not confirmed. Guided help remains available; no automatic retry was made.";
       }
     } catch {
-      appendAskAlphaMessage("guide",
-        "The AI reply was not confirmed. Please use the public inquiry/contact forms for human review.");
+      appendAskAlphaMessage("guide",askAlphaAnswer(cleaned),askAlphaGuideActions(cleaned));
       if (askAlphaAiStatus) askAlphaAiStatus.textContent =
         "Unable to verify the AI receipt. No automatic retry or submission was made.";
     } finally {
