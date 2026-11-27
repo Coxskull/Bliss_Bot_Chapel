@@ -61,7 +61,7 @@ public static class PublicAdvertiserRegistrationGate
     private static readonly HashSet<string> CreatorPostPaths = new(StringComparer.OrdinalIgnoreCase)
     {
         "/api/creators/register", "/api/creators/operator-review", "/api/creators/operator-review/verify-channel",
-        "/api/creators/inventory/pause"
+        "/api/creators/inventory/pause", "/api/creators/inventory/draft"
     };
 
     public static bool IsAllowed(string? method, PathString path, bool creatorRegistrationEnabled = false, bool staffCreativeReadinessEnabled = false, bool staffCreativePreparationEnabled = false)
