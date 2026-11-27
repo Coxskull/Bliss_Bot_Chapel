@@ -26,7 +26,7 @@ public static class CreatorAllocationHistory
             .Include(x=>x.CampaignPlacement).ThenInclude(x=>x.AdInventorySlot)
             .Include(x=>x.CampaignPlacement).ThenInclude(x=>x.Campaign).ThenInclude(x=>x.AdvertiserOpportunity).ThenInclude(x=>x!.AdvertiserProgram)
             .Include(x=>x.RateRecommendation).Include(x=>x.QuoteVersion).ThenInclude(x=>x.LineItems)
-            .Include(x=>x.QuoteOutcome).Include(x=>x.QuoteLineItem)
+            .Include(x=>x.QuoteOutcome).ThenInclude(x=>x.Quote).Include(x=>x.QuoteLineItem)
             .Include(x=>x.CompensationIllustration).ThenInclude(x=>x!.Lines)
             .SingleOrDefaultAsync(x=>x.Id==historyId,ct);
         if(h is null || h.CompensationIllustration is null || !h.CompensationIllustrationId.HasValue
@@ -45,6 +45,7 @@ public static class CreatorAllocationHistory
             || h.QuoteLineItem.RateRecommendationId!=h.RateRecommendationId || h.QuoteLineItem.QuoteVersionId!=h.QuoteVersionId
             || h.QuoteVersion.LineItems.Count!=1 || h.QuoteLineItem.Quantity!=1
             || h.QuoteOutcome.QuoteVersionId!=h.QuoteVersionId || h.QuoteOutcome.QuoteId!=h.QuoteVersion.QuoteId
+            || h.QuoteOutcome.Quote.AdvertiserOpportunityId!=opportunity.Id
             || h.QuoteOutcome.Response!="ACCEPTED" || h.QuoteOutcome.Amount!=h.ContractedAmount
             || h.QuoteOutcome.CurrencyCode!=h.CurrencyCode || h.QuoteLineItem.CurrencyCode!=h.CurrencyCode
             || h.QuoteVersion.CurrencyCode!=h.CurrencyCode || h.QuoteVersion.TotalAmount!=h.ContractedAmount
