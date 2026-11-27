@@ -143,10 +143,49 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
             ? new CreatorSelfSummaryDto(membership.CreatorId, membership.Creator.Name, membership.Creator.CountryCode,
                 membership.Creator.PrimaryLanguage, "VERIFIED") : null;
         if (profile is not null && auth.CreatorInventoryReadbackRequested)
-            profile = profile with { Inventory = await CreatorsController.ReadOwnInventory(db, membership.CreatorId, cancellationToken) };
+            profile = profile with { Inventory = await CreatorsController.ReadOwnInventory(db, membership.CreatorId, cancellationToken),
+                CanPauseInventory = auth.CreatorInventoryPauseRequested };
         return Ok(new CreatorRegistrationStatusDto(membership.CreatorId, receipt.Id, membership.Status, receipt.CreatedAt,
             code, code is null ? null : membership.SubmittedChannelUrl,
             code is null ? null : now.Date.AddDays(1), profile));
+    }
+
+    // A creator may withdraw their own available slot from future matching.
+    // No re-enable, existing placement cancellation, pricing or delivery authority.
+    [Authorize]
+    [HttpPost("inventory/pause")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(1024)]
+    public async Task<IActionResult> PauseOwnInventory([FromBody] CreatorInventoryPauseRequest request, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.CreatorInventoryReadbackRequested || !auth.CreatorInventoryPauseRequested
+            || !auth.CreatorAuthorityVerificationRequested || !BlissAuthorization.IsPendingCreatorRegistration(User, auth))
+            return StatusCode(StatusCodes.Status403Forbidden);
+        if (request.SlotId == Guid.Empty || !request.ConfirmPause) return BadRequest();
+        var subject = User.FindFirst("sub")!.Value;
+        try
+        {
+            await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+            var creatorId = await (from m in db.CreatorAccountMemberships.AsNoTracking()
+                join r in db.CreatorRegistrationReceipts.AsNoTracking()
+                    on new { m.Subject, m.CreatorId } equals new { r.Subject, r.CreatorId }
+                where m.Subject == subject && m.Status == "ACTIVE" && m.Creator.AuthorityStatus == "VERIFIED"
+                    && r.ProcessingConsent && r.TermsAccepted && r.PrivacyNoticeVersion == PrivacyNoticeVersion
+                    && r.TermsVersion == TermsVersion
+                select (Guid?)m.CreatorId).SingleOrDefaultAsync(ct);
+            if (creatorId is null) return StatusCode(StatusCodes.Status403Forbidden);
+            var slot = await db.AdInventorySlots.SingleOrDefaultAsync(s => s.Id == request.SlotId
+                && s.ContentItem.CreatorId == creatorId.Value && s.ContentItem.Creator.AuthorityStatus == "VERIFIED", ct);
+            if (slot is null) return NotFound();
+            slot.IsAvailable = false;
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            return Ok(new { slotId = slot.Id, isAvailable = false, existingPlacementsChanged = false,
+                bookingAuthorized = false, paymentAuthorized = false, deliveryAuthorized = false });
+        }
+        catch (PostgresException pg) when (pg.SqlState == PostgresErrorCodes.SerializationFailure) { return Conflict(); }
+        catch (DbUpdateException) { return Conflict(); }
     }
 
     private IActionResult ReplayOrConflict(CreatorRegistrationReceipt prior, string subject, string digest) =>
@@ -174,3 +213,5 @@ public sealed record CreatorRegistrationStatusDto(
     Guid CreatorId, Guid ReceiptId, string Status, DateTime CreatedAt,
     string? ChannelProofCode = null, string? SubmittedChannelUrl = null, DateTime? ProofExpiresAt = null,
     CreatorSelfSummaryDto? VerifiedProfile = null);
+
+public sealed record CreatorInventoryPauseRequest(Guid SlotId, bool ConfirmPause);
