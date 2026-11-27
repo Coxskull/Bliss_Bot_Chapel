@@ -9,6 +9,13 @@ namespace Bliss.Api.Operations;
 public static class CreatorCompensationProposal
 {
     public const string Action = "CREATOR_COMPENSATION_PROPOSED";
+    public const string ResponseAction = "CREATOR_COMPENSATION_RESPONSE";
+    public static Guid ResponseId(Guid proposalId) => StarterArtworkDelivery.StableId(ResponseAction,proposalId.ToString("N"));
+    public static bool MatchesResponse(WeddingPlannerAuditEvent audit, Snapshot value, string subject) =>
+        audit.Id==ResponseId(Id(value.InvitationId)) && audit.Action==ResponseAction && audit.ActorType=="CREATOR"
+        && audit.ActorLabel==subject && audit.AdvertiserId==value.AdvertiserId && audit.WorkspaceId==value.WorkspaceId
+        && audit.Detail==Id(value.InvitationId).ToString("N")+":"+Digest(value)
+        && audit.Outcome is "ALLOCATION_ACKNOWLEDGED" or "ALLOCATION_DECLINED";
     public sealed record Snapshot(Guid InvitationId, Guid PlacementId, Guid CreatorId, Guid AdvertiserId,
         Guid WorkspaceId, Guid IllustrationId, Guid QuoteVersionId, Guid QuoteOutcomeId, Guid QuoteLineId,
         decimal CreatorAmount, string CurrencyCode, string PlacementDigest);
