@@ -36,3 +36,8 @@ assert.ok(build.includes("Ask Alpha AI consent/release controls missing"));
 for(const sensitive of ["OPENAI_API_KEY","SUPABASE_SERVICE_ROLE_KEY","ALPHA_ASK_ALPHA_HASH_SECRET","localStorage","sessionStorage"])
  assert.ok(!script.includes(sensitive),"Secret or persistent chat state leaked to browser: "+sensitive);
 console.log("TASK20_HOSTED_BROWSER_CONSENT_CONTRACT_PASS: default-off; separate opt-in; existing Edge endpoint; no browser secrets");
+
+assert.ok(script.includes('response.status === 503 && result?.error === "AI_TEMPORARILY_UNAVAILABLE"'),"Operational hold must use the specific trusted status and code");
+assert.ok(script.includes('appendAskAlphaMessage("guide",askAlphaAnswer(cleaned))'),"Local guidance must answer the actual question");
+assert.ok(!script.includes('(result?.error || response.status)'),"Untrusted server errors must not be displayed directly");
+assert.ok(script.includes("No AI provider request was sent. Guided help remains available."),"Known no-provider hold must be distinguished from an uncertain failure");
