@@ -67,7 +67,7 @@ public static class PublicAdvertiserRegistrationGate
         "/api/creators/inventory/pause", "/api/creators/inventory/draft",
         "/api/creators/operator-review/inventory",
         "/api/creators/operator-review/campaign-invitation", "/api/creators/campaign-invitations",
-        "/api/creators/operator-review/compensation-proposal"
+        "/api/creators/operator-review/compensation-proposal", "/api/creators/compensation-response"
     };
 
     public static bool IsAllowed(string? method, PathString path, bool creatorRegistrationEnabled = false, bool staffCreativeReadinessEnabled = false, bool staffCreativePreparationEnabled = false)
