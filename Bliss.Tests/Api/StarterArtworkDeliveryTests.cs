@@ -68,4 +68,30 @@ public sealed class StarterArtworkDeliveryTests
         row.Outcome = "DELIVERED";
         Assert.False(StarterArtworkDelivery.MatchesDownloadRequest(row,advertiser,workspace,release,subject));
     }
+    [Fact]
+    public void Customer_acknowledgment_binds_exact_release_subject_and_image()
+    {
+        var advertiser = Guid.NewGuid();
+        var workspace = Guid.NewGuid();
+        var release = Guid.NewGuid();
+        const string subject = "customer-fixture";
+        var hash = new string('a',64);
+        var row = new Bliss.Domain.Entities.WeddingPlannerAuditEvent
+        {
+            Id = StarterArtworkDelivery.AcknowledgmentId(release, subject),
+            AdvertiserId = advertiser, WorkspaceId = workspace,
+            Action = StarterArtworkDelivery.AcknowledgeAction,
+            ActorType = "ADVERTISER", ActorLabel = subject,
+            Outcome = "ACKNOWLEDGED", Detail = $"{release:N}:{hash}"
+        };
+        Assert.True(StarterArtworkDelivery.MatchesAcknowledgment(row,advertiser,workspace,release,subject,hash));
+        Assert.False(StarterArtworkDelivery.MatchesAcknowledgment(row,Guid.NewGuid(),workspace,release,subject,hash));
+        Assert.False(StarterArtworkDelivery.MatchesAcknowledgment(row,advertiser,Guid.NewGuid(),release,subject,hash));
+        Assert.False(StarterArtworkDelivery.MatchesAcknowledgment(row,advertiser,workspace,Guid.NewGuid(),subject,hash));
+        Assert.False(StarterArtworkDelivery.MatchesAcknowledgment(row,advertiser,workspace,release,"other",hash));
+        Assert.False(StarterArtworkDelivery.MatchesAcknowledgment(row,advertiser,workspace,release,subject,new string('b',64)));
+        Assert.NotEqual(StarterArtworkDelivery.DownloadRequestId(release,subject),row.Id);
+        row.ActorType = "OPERATOR";
+        Assert.False(StarterArtworkDelivery.MatchesAcknowledgment(row,advertiser,workspace,release,subject,hash));
+    }
 }
