@@ -296,8 +296,13 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
                 var proposal=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==proposalId,ct);
                 if(proposal?.Detail is not null && Guid.TryParseExact(proposal.Detail.Split(':')[0],"N",out var illustrationId)){
                     var current=await CreatorCompensationProposal.Current(db,audit.Id,illustrationId,ct);
-                    if(current is not null && current.CreatorId==creator.Value && CreatorCompensationProposal.Matches(proposal,current))
-                        compensationProposal=new {proposalId,amount=current.CreatorAmount,currencyCode=current.CurrencyCode,status="PROPOSED",payable=false};
+                    if(current is not null && current.CreatorId==creator.Value && CreatorCompensationProposal.Matches(proposal,current)){
+                        var responseId=CreatorCompensationProposal.ResponseId(proposalId);
+                        var allocationResponse=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==responseId,ct);
+                        if(allocationResponse is null || CreatorCompensationProposal.MatchesResponse(allocationResponse,current,subject))
+                            compensationProposal=new {proposalId,amount=current.CreatorAmount,currencyCode=current.CurrencyCode,
+                                digest=CreatorCompensationProposal.Digest(current),status=allocationResponse?.Outcome??"PROPOSED",payable=false};
+                    }
                 }
             }
             items.Add(new { invitationId = audit.Id, row.PlacementId, row.CampaignName, row.ContentTitle, row.SlotType,
@@ -348,6 +353,48 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
         catch (DbUpdateException) { return Conflict(); }
     }
 
+    [Authorize]
+    [HttpPost("compensation-response")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(1024)]
+    public async Task<IActionResult> RespondToCompensation([FromBody] CreatorAllocationResponse request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested
+            || !auth.CreatorAuthorityVerificationRequested || !BlissAuthorization.IsPendingCreatorRegistration(User,auth)) return StatusCode(403);
+        if(request.InvitationId==Guid.Empty || request.ProposalId!=CreatorCompensationProposal.Id(request.InvitationId)
+            || request.Digest is not {Length:64} || request.Decision is not ("ALLOCATION_ACKNOWLEDGED" or "ALLOCATION_DECLINED")
+            || !request.ConfirmNonBinding) return BadRequest();
+        var subject=User.FindFirst("sub")!.Value;
+        try {
+            await using var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable,ct);
+            var creator=await CurrentInvitationCreator(subject,ct);
+            if(creator is null) return StatusCode(403);
+            var creatorKey=creator.Value.ToString("N");
+            var audit=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==request.ProposalId
+                && a.RequestId==creatorKey && a.Action==CreatorCompensationProposal.Action,ct);
+            if(audit?.Detail is null || !Guid.TryParseExact(audit.Detail.Split(':')[0],"N",out var illustrationId))return NotFound();
+            var row=await CreatorCompensationProposal.Current(db,request.InvitationId,illustrationId,ct);
+            if(row is null || row.CreatorId!=creator.Value || !CreatorCompensationProposal.Matches(audit,row)
+                || audit.ActorLabel==subject || CreatorCompensationProposal.Digest(row)!=request.Digest) return Conflict();
+            var invitationResponseId=CreatorCampaignInvitation.ResponseId(request.InvitationId);
+            if(!await db.WeddingPlannerAuditEvents.AnyAsync(a=>a.Id==invitationResponseId && a.ActorLabel==subject
+                && a.ActorType=="CREATOR" && a.Outcome=="INTERESTED" && a.Action==CreatorCampaignInvitation.ResponseAction,ct))return StatusCode(403);
+            var id=CreatorCompensationProposal.ResponseId(audit.Id);
+            var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
+            if(prior is not null && (!CreatorCompensationProposal.MatchesResponse(prior,row,subject) || prior.Outcome!=request.Decision))return Conflict();
+            if(prior is null){
+                db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent {Id=id,AdvertiserId=row.AdvertiserId,WorkspaceId=row.WorkspaceId,
+                    Action=CreatorCompensationProposal.ResponseAction,ActorType="CREATOR",ActorLabel=subject,Outcome=request.Decision,
+                    Detail=audit.Id.ToString("N")+":"+CreatorCompensationProposal.Digest(row),OccurredAt=DateTime.UtcNow});
+                await db.SaveChangesAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new {proposalId=audit.Id,response=request.Decision,payable=false,bookingAuthorized=false,paymentAuthorized=false,deliveryAuthorized=false});
+        }catch(PostgresException pg) when(pg.SqlState==PostgresErrorCodes.SerializationFailure){return Conflict();}
+        catch(DbUpdateException){return Conflict();}
+    }
+
     private IActionResult ReplayOrConflict(CreatorRegistrationReceipt prior, string subject, string digest) =>
         prior.Subject == subject && prior.RequestSha256 == digest
             ? Ok(new CreatorRegistrationReceiptDto(prior.Id, prior.CreatorId, "PENDING_REVIEW", prior.CreatedAt, prior.MarketingOptIn))
@@ -379,3 +426,5 @@ public sealed record CreatorInventoryPauseRequest(Guid SlotId, bool ConfirmPause
 public sealed record CreatorInventoryDraftRequest(Guid RequestId, Guid ContentItemId, string SlotType, int StartSecond, int DurationSeconds, bool ConfirmDraft);
 
 public sealed record CreatorInvitationResponse(Guid InvitationId, Guid PlacementId, string Digest, string Decision, bool ConfirmNonBinding);
+
+public sealed record CreatorAllocationResponse(Guid InvitationId,Guid ProposalId,string Digest,string Decision,bool ConfirmNonBinding);
