@@ -25,6 +25,22 @@ const assert = require("node:assert/strict");
       await page.waitForFunction(() => document.querySelector("#status").textContent.includes("Measurement workspace loaded"));
     }
     await open(); assert.match(await page.locator("#lineage").textContent(), /PLANNED · NOT_SENT/);
+    // Pure report-math fixtures: no new observations, provider calls or claims of live traffic.
+    const rates = await page.evaluate(() => [
+      reportedPerformance({kind:"EXTERNAL_REPORT",impressions:1000,clicks:50,conversions:5}),
+      reportedPerformance({kind:"EXTERNAL_REPORT",impressions:100,clicks:0,conversions:0}),
+      reportedPerformance({kind:"EXTERNAL_REPORT",impressions:null,clicks:5,conversions:6}),
+      reportedPerformance({kind:"LOCAL_VALIDATION",impressions:100,clicks:5,conversions:1}),
+      reportedPerformance({kind:"EXTERNAL_REPORT",impressions:100,clicks:101,conversions:0})
+    ]);
+    assert.deepEqual(rates, [
+      {ctr:"5%",clickConversion:"10%"},
+      {ctr:"0%",clickConversion:"Not calculable"},
+      {ctr:"Not calculable",clickConversion:"Not calculable"},
+      null,
+      {ctr:"Not calculable",clickConversion:"0%"}
+    ]);
+
     if (process.env.BLISS_VERIFY_RESTORE !== "1") {
       await page.locator("#kind").selectOption("LOCAL_VALIDATION");
       await page.locator("#source").fill("TEST local workflow drill");
