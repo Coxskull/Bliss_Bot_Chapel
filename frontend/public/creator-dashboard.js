@@ -120,7 +120,56 @@
       message(confirmed?"Unavailable slot draft saved for review. No booking authorized.":"Draft save not confirmed. Check refreshed inventory before retrying.",confirmed?"success":"error");
     });
   }
+  function clearInvitations() {
+    const panel=byId("invitation-panel"),rows=byId("invitation-rows"),status=byId("invitation-status");
+    if(panel)panel.hidden=true;
+    if(rows)rows.replaceChildren();
+    if(status)status.textContent="";
+  }
+  async function loadInvitations() {
+    const panel=byId("invitation-panel"),rows=byId("invitation-rows"),notice=byId("invitation-status"),button=byId("invitation-load");
+    if(busy||!csrfToken||!panel||panel.hidden)return;
+    busy=true;refreshButton.disabled=true;button.disabled=true;rows.replaceChildren();
+    try{
+      const r=await fetch("/api/creators/campaign-invitations",{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!r.ok)throw Error("Invitations unavailable");
+      const v=await r.json();
+      if(v.bookingAuthorized!==false||v.paymentAuthorized!==false||v.deliveryAuthorized!==false||!Array.isArray(v.items)||v.items.length>25||
+        new Set(v.items.map(x=>x?.invitationId)).size!==v.items.length||v.items.some(x=>!x||!guid.test(x.invitationId)||!guid.test(x.placementId)||
+        !/^[a-f0-9]{64}$/.test(x.digest)||!["AWAITING_RESPONSE","INTERESTED","DECLINED"].includes(x.response)||
+        ![x.campaignName,x.contentTitle,x.slotType].every(t=>typeof t==="string")))throw Error("Invalid invitation response");
+      notice.textContent=v.items.length+" current invitation(s).";
+      for(const item of v.items){
+        const card=document.createElement("article");
+        for(const [tag,value] of [["h4",item.campaignName],["p",item.contentTitle+" · "+item.slotType],["p","Invitation: "+item.invitationId],["p","Response: "+item.response]]){
+          const n=document.createElement(tag);n.textContent=value;card.appendChild(n);
+        }
+        if(item.response==="AWAITING_RESPONSE")for(const decision of ["INTERESTED","DECLINED"]){
+          const action=document.createElement("button");action.type="button";action.textContent=decision==="INTERESTED"?"Express interest (non-binding)":"Decline invitation";
+          action.addEventListener("click",async()=>{
+            if(busy||!csrfToken||panel.hidden||!card.isConnected)return;
+            if(!window.confirm("Record this non-binding response? It cannot be changed here and does not establish a contract or payment."))return;
+            busy=true;refreshButton.disabled=true;button.disabled=true;
+            let confirmed=false;
+            try{
+              const res=await fetch("/api/creators/campaign-invitations",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+                headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrfToken},body:JSON.stringify({invitationId:item.invitationId,placementId:item.placementId,digest:item.digest,decision,confirmNonBinding:true})});
+              if(!res.ok)throw Error("Response refused");
+              const receipt=await res.json();
+              confirmed=receipt.invitationId===item.invitationId&&receipt.response===decision&&receipt.bookingAuthorized===false&&receipt.paymentAuthorized===false&&receipt.deliveryAuthorized===false;
+            }catch{}finally{busy=false;}
+            await loadInvitations();
+            notice.textContent=confirmed?"Your non-binding response was recorded.":"Response not confirmed. Review current invitations before retrying.";
+          });card.appendChild(action);
+        }
+        rows.appendChild(card);
+      }
+    }catch{rows.replaceChildren();notice.textContent="Unable to verify current invitations. Refresh or sign in again.";}
+    finally{busy=false;refreshButton.disabled=false;button.disabled=false;}
+  }
+  byId("invitation-load")?.addEventListener("click",loadInvitations);
   const clearProfile = () => {
+    clearInvitations();
     show("inventory-panel",false);
     byId("inventory-count").textContent = "";
     byId("inventory-rows").replaceChildren();
@@ -214,6 +263,7 @@
             badgeText("VERIFIED"); message("Channel control verified. Your private creator profile is ready.", "success");
             show("profile-panel", true);
             showInventory(p);
+            if(p.canViewCampaignInvitations===true&&byId("invitation-panel"))show("invitation-panel",true);
           } else if (item.status === "ACTIVE" && typeof item.channelProofCode === "string"
               && /^ALPHA-[0-9A-F]{32}$/.test(item.channelProofCode)
               && typeof item.submittedChannelUrl === "string" && typeof item.proofExpiresAt === "string") {
