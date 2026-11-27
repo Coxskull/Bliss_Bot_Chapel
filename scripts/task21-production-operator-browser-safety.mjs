@@ -122,3 +122,22 @@ assert.equal(nodes.get("intake-review-rows").children.length,0);
 assert.equal(nodes.get("intake-review-details").hidden,true);
 const before=requests.length;await run();assert.equal(requests.length,before);
 console.log("TASK330_BROWSER_QUEUE_FIXTURE_PASS — restricted GET, strict response, no PII, no automatic approval, clear on deny/signout");
+
+// Support queue lifecycle: refusal and invalid readback erase actionable data.
+runInNewContext('token="fictional-token";expiresAt=Date.now()+60000;showPanel("queue-panel");',ctx);
+const fixtureCase={case_id:"33333333-3333-4333-8333-333333333333",category:"GENERAL_SUPPORT",status:"OPEN",observed_at:"2026-11-24T01:00:00Z"};
+const loadCases=()=>runInNewContext("loadQueue(0)",ctx);
+nextResponse={ok:true,status:200,json:async()=>({cases:[fixtureCase]})};
+await loadCases();
+assert.equal(nodes.get("case-rows").children.length,1);
+assert.equal(runInNewContext("queueVerified",ctx),true);
+nextResponse={ok:false,status:503,json:async()=>({error:"unavailable"})};await loadCases();
+assert.equal(nodes.get("case-rows").children.length,0);
+assert.equal(runInNewContext("queueVerified",ctx),false);
+nextResponse={ok:true,status:200,json:async()=>({cases:[fixtureCase,fixtureCase]})};await loadCases();
+assert.equal(nodes.get("case-rows").children.length,0);
+nextResponse={ok:true,status:200,json:async()=>({cases:[fixtureCase]})};await loadCases();
+runInNewContext("clearQueue()",ctx);
+assert.equal(nodes.get("case-rows").children.length,0);
+assert.equal(runInNewContext("queueVerified",ctx),false);
+console.log("TASK21_SUPPORT_QUEUE_LIFECYCLE_PASS");
