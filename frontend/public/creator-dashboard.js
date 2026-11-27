@@ -144,6 +144,14 @@
         for(const [tag,value] of [["h4",item.campaignName],["p",item.contentTitle+" · "+item.slotType],["p","Invitation: "+item.invitationId],["p","Response: "+item.response]]){
           const n=document.createElement(tag);n.textContent=value;card.appendChild(n);
         }
+        const proposal=item.compensationProposal;
+        if(proposal && item.response==="INTERESTED" && guid.test(proposal.proposalId) && proposal.status==="PROPOSED" &&
+          proposal.payable===false && Number.isFinite(proposal.amount) && proposal.amount>0 && /^[A-Z]{3}$/.test(proposal.currencyCode)){
+          const terms=document.createElement("p");
+          terms.textContent="Proposed creator allocation: "+proposal.currencyCode+" "+String(proposal.amount)+
+            " — not earned, payable, agreed or paid. Separate commercial terms must be approved.";
+          card.appendChild(terms);
+        }
         if(item.response==="AWAITING_RESPONSE")for(const decision of ["INTERESTED","DECLINED"]){
           const action=document.createElement("button");action.type="button";action.textContent=decision==="INTERESTED"?"Express interest (non-binding)":"Decline invitation";
           action.addEventListener("click",async()=>{
