@@ -456,8 +456,8 @@
       await session();
       const r=await fetch("/api/creators/operator-review/fulfillment-manifest?handoffId="+encodeURIComponent(handoffId)+"&illustrationId="+encodeURIComponent(illustrationId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
       if(!r.ok)throw Error("Current handoff or agreement evidence unavailable.");
-      const m=await r.json();
-      if(m.schema!=="alpha-creator-fulfillment-preparation/v1"||m.handoffId!==handoffId||m.status!=="PREPARATION_ONLY"||m.delivery!=="NOT_SENT"||
+      const packet=await r.json(),m=packet.manifest;
+      if(!m||!/^[a-f0-9]{64}$/.test(packet.manifestSha256)||typeof packet.factorySubmissionEnabled!=="boolean"||m.schema!=="alpha-creator-fulfillment-preparation/v1"||m.handoffId!==handoffId||m.status!=="PREPARATION_ONLY"||m.delivery!=="NOT_SENT"||
         m.fundingVerified!==false||m.bookingAuthorized!==false||m.paymentAuthorized!==false||m.deliveryAuthorized!==false||m.factoryDispatchAuthorized!==false||
         ![m.placementId,m.campaignId,m.creatorId,m.slotId,m.candidateId,m.agreementEvidenceId].every(x=>guid.test(x))||
         ![m.imageSha256,m.handoffSha256,m.agreementEvidenceSha256].every(x=>/^[a-f0-9]{64}$/.test(x)))throw Error("Invalid preparation manifest.");
@@ -471,7 +471,29 @@
         const a=document.createElement("a");a.href=url;a.download="alpha-fulfillment-"+handoffId+".json";a.click();URL.revokeObjectURL(url);
         clearFulfill();fulfillStatus.textContent="Preparation manifest export requested. No delivery or dispatch authorized.";
       });
-      card.append(download);fulfillReview.append(card);fulfillStatus.textContent="Current preparation manifest generated.";
+      card.append(download);
+      if(packet.factorySubmissionEnabled){
+        const submit=node("button","Submit held job metadata to Factory");submit.type="button";
+        submit.addEventListener("click",async()=>{
+          if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+          if(!window.confirm("Send only this exact preparation metadata to the existing staging Factory? No artwork, rendering, payment or delivery is authorized."))return;
+          busy=true;submit.disabled=true;download.disabled=true;fulfillPreview.disabled=true;fulfillHandoff.disabled=true;fulfillIllustration.disabled=true;
+          try{
+            const s=await session();
+            const response=await fetch("/api/creators/operator-review/factory-submission",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,confirmHeldMetadataOnly:true})});
+            if(!response.ok)throw Error("Admission not confirmed.");
+            const a=await response.json();
+            if(a.schema!=="alpha.henry-ford.held-job-admission.v1"||a.handoffId!==handoffId||a.placementId!==m.placementId||
+              a.manifestSha256!==packet.manifestSha256||a.status!=="HELD_METADATA_ONLY"||a.release!=="HELD"||a.delivery!=="NOT_SENT"||
+              a.renderAuthorized!==false||a.dispatchAuthorized!==false||a.paymentAuthorized!==false)throw Error("Unexpected admission receipt.");
+            fulfillStatus.textContent="Factory metadata admission confirmed: "+a.placementId+". HELD / NOT_SENT.";
+          }catch{fulfillStatus.textContent="Factory admission not confirmed. Reload the exact manifest before retrying.";}
+          finally{clearFulfill();busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
+        });
+        card.append(submit);
+      }
+      fulfillReview.append(card);fulfillStatus.textContent="Current preparation manifest generated.";
     }catch(e){clearFulfill();fulfillStatus.textContent=e.message;}
     finally{busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
   });
