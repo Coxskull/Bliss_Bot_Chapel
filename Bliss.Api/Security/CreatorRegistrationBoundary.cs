@@ -20,7 +20,9 @@ public static class CreatorRegistrationBoundary
         if (HttpMethods.IsPost(context.Request.Method)
             && (path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase)
                 || (options.CreatorRegistrationRequested
-                    && path.Equals("/api/creators/register", StringComparison.OrdinalIgnoreCase))))
+                    && (path.Equals("/api/creators/register", StringComparison.OrdinalIgnoreCase)
+                        || (options.CreatorInventoryReadbackRequested && options.CreatorInventoryPauseRequested
+                            && path.Equals("/api/creators/inventory/pause", StringComparison.OrdinalIgnoreCase))))))
             return false;
         return true;
     }
