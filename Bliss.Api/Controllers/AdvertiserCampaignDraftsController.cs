@@ -211,7 +211,7 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
         Response.Headers.CacheControl = "private, no-store";
         if (!auth.AdvertiserCreativeArtworkRequested || !auth.AdvertiserCreativeProviderConsentRequested
             || request.CampaignId == Guid.Empty) return StatusCode(403);
-        if (request.Action is not ("STATUS" or "PREVIEW" or "APPROVE" or "WITHHOLD" or "DOWNLOAD")
+        if (request.Action is not ("STATUS" or "PREVIEW" or "APPROVE" or "WITHHOLD" or "DOWNLOAD" or "ACKNOWLEDGE")
             || ((request.Action is "APPROVE" or "WITHHOLD") &&
                 (request.CandidateId is null || request.ReviewId is null || request.ImageSha256 is not { Length: 64 }
                     || request.ExpectedVersion is null or < 0 || request.RequestKey is null || request.RequestKey == Guid.Empty
@@ -311,6 +311,31 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
                 if (downloadRequest is not null && !StarterArtworkDelivery.MatchesDownloadRequest(downloadRequest,
                     advertiserId, prepared.WorkspaceId, releaseId!.Value, subject)) return Conflict();
             }
+            WeddingPlannerAuditEvent? acknowledgment = null;
+            if (releaseId.HasValue)
+            {
+                var ackId = StarterArtworkDelivery.AcknowledgmentId(releaseId.Value, subject);
+                acknowledgment = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x => x.Id == ackId, ct);
+                if (acknowledgment is not null && (downloadRequest is null ||
+                    !StarterArtworkDelivery.MatchesAcknowledgment(acknowledgment, advertiserId,
+                        prepared.WorkspaceId, releaseId.Value, subject, candidate.ImageSha256))) return Conflict();
+                if (request.Action == "ACKNOWLEDGE")
+                {
+                    if (downloadRequest is null || request.ReleaseId != releaseId || request.CandidateId != candidate.Id
+                        || request.ReviewId != review.Id || request.ImageSha256 != candidate.ImageSha256
+                        || request.ConfirmedReceipt != true) return Conflict();
+                    if (acknowledgment is null)
+                    {
+                        acknowledgment = new WeddingPlannerAuditEvent {Id=ackId,AdvertiserId=advertiserId,
+                            WorkspaceId=prepared.WorkspaceId,Action=StarterArtworkDelivery.AcknowledgeAction,
+                            ActorType="ADVERTISER",ActorLabel=subject,Outcome="ACKNOWLEDGED",
+                            Detail=$"{releaseId.Value:N}:{candidate.ImageSha256}",OccurredAt=DateTime.UtcNow};
+                        db.WeddingPlannerAuditEvents.Add(acknowledgment);
+                        await db.SaveChangesAsync(ct);
+                    }
+                }
+            }
+            else if (request.Action == "ACKNOWLEDGE") return Conflict();
             if (request.Action == "DOWNLOAD")
             {
                 if (releaseId is null || request.CandidateId != candidate.Id || request.ReviewId != review.Id
@@ -332,6 +357,7 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
                 approval = latest?.ReviewId == review.Id ? latest.Decision : "PENDING", releaseId, release = releaseId.HasValue ? "ARTWORK_DOWNLOAD_AVAILABLE" : "HELD",
                 delivery = releaseId.HasValue ? "DOWNLOAD_NOT_CONFIRMED" : "NOT_SENT",
                 downloadRequestRecorded = downloadRequest is not null, downloadRequestedAt = downloadRequest?.OccurredAt,
+                receiptAcknowledged = acknowledgment is not null, receiptAcknowledgedAt = acknowledgment?.OccurredAt,
                 dispatchAuthorized = false, paymentAuthorized = false });
         }
         catch (WeddingPlannerNotFoundException) { return NotFound(); }
@@ -492,6 +518,7 @@ public sealed record CampaignProviderConsentRequest(Guid CampaignId, string Acti
     string? NoticeVersion, Guid? RequestKey, Guid? ExpectedReceiptId);
 
 public sealed record CampaignArtworkRequest(Guid CampaignId, string Action, Guid? CandidateId, Guid? ReviewId,
-    string? ImageSha256, int? ExpectedVersion, Guid? RequestKey, string? Rationale);
+    string? ImageSha256, int? ExpectedVersion, Guid? RequestKey, string? Rationale,
+    Guid? ReleaseId = null, bool? ConfirmedReceipt = null);
 
 public sealed record CustomerStarterOfferRequest(Guid CampaignId,string Action,Guid? OfferId,string? OfferSha256,bool AcceptedExactTerms);
