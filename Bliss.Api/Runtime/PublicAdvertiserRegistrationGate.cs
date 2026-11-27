@@ -73,7 +73,7 @@ public static class PublicAdvertiserRegistrationGate
         "/api/creators/operator-review/compensation-proposal", "/api/creators/compensation-response",
         "/api/creators/operator-review/agreement-evidence", "/api/creators/operator-review/allocation-history",
         "/api/creators/operator-review/settlement-evidence", "/api/creators/operator-review/payable-review",
-        "/api/creators/operator-review/factory-submission",
+        "/api/creators/operator-review/factory-submission", "/api/creators/operator-review/factory-artwork",
         "/api/creators/operator-review/settlement-exception"
     };
 
