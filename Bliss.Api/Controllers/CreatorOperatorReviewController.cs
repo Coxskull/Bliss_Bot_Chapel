@@ -238,7 +238,7 @@ public sealed class CreatorOperatorReviewController(
     public async Task<IActionResult> PreviewCompensation([FromQuery] Guid invitationId,[FromQuery] Guid illustrationId,CancellationToken ct)
     {
         Response.Headers.CacheControl="no-store";
-        if(!auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested || !TryOperator(out _)) return StatusCode(403);
+        if(!auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out _)) return StatusCode(403);
         if(invitationId==Guid.Empty || illustrationId==Guid.Empty) return BadRequest();
         var row=await CreatorCompensationProposal.Current(db,invitationId,illustrationId,ct);
         return row is null ? NotFound() : Ok(new {proposal=row,digest=CreatorCompensationProposal.Digest(row),paymentAuthorized=false,deliveryAuthorized=false});
@@ -249,7 +249,7 @@ public sealed class CreatorOperatorReviewController(
     public async Task<IActionResult> PublishCompensation([FromBody] PublishCreatorCompensation request,CancellationToken ct)
     {
         Response.Headers.CacheControl="no-store";
-        if(!auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested || !TryOperator(out var subject)) return StatusCode(403);
+        if(!auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out var subject)) return StatusCode(403);
         if(request.InvitationId==Guid.Empty || request.IllustrationId==Guid.Empty || request.Digest is not {Length:64}
             || !request.AllocationReviewed || !request.PermissionToShareReviewed) return BadRequest();
         try {
