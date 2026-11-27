@@ -352,6 +352,63 @@ public sealed class CreatorOperatorReviewController(
         }catch(Npgsql.PostgresException pg) when(pg.SqlState==Npgsql.PostgresErrorCodes.SerializationFailure){return Conflict();}
         catch(DbUpdateException){return Conflict();}
     }
+    [HttpGet("settlement-evidence")]
+    public async Task<IActionResult> PreviewSettlementEvidence([FromQuery] Guid historyId,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorSettlementEvidenceRequested || !auth.CreatorAllocationHistoryRequested || !auth.CreatorAgreementEvidenceRequested
+            || !auth.CreatorCompensationProposalRequested || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out _))return StatusCode(403);
+        if(historyId==Guid.Empty)return BadRequest();
+        var row=await CreatorSettlementEvidence.Current(db,historyId,ct);
+        if(row is null)return NotFound();
+        var id=CreatorSettlementEvidence.Id(row.Allocation.PlacementId);
+        var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
+        return Ok(new {settlement=row,digest=CreatorSettlementEvidence.Digest(row),existingEvidence=prior is not null,
+            transferAuthorized=false,providerVerified=false,payable=false});
+    }
+
+    [HttpPost("settlement-evidence")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> RecordSettlementEvidence([FromBody] RecordCreatorSettlementEvidence request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorSettlementEvidenceRequested || !auth.CreatorAllocationHistoryRequested || !auth.CreatorAgreementEvidenceRequested
+            || !auth.CreatorCompensationProposalRequested || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out var subject))return StatusCode(403);
+        if(request.HistoryId==Guid.Empty || !CreatorCompensationProposal.ValidDocumentHash(request.Digest)
+            || !CreatorCompensationProposal.ValidDocumentHash(request.TransferReferenceSha256)
+            || !CreatorCompensationProposal.ValidDocumentHash(request.EvidenceDocumentSha256)
+            || request.Amount<=0 || request.CurrencyCode is not {Length:3}
+            || !request.FulfillmentReviewed || !request.RecipientReviewed || !request.CompletedTransferReviewed
+            || !request.NoReversalReviewed || !request.NoDuplicateReviewed)return BadRequest();
+        // Canonical UTC whole-second evidence timestamp.
+        var completedAt=DateTimeOffset.FromUnixTimeSeconds(request.CompletedAt.ToUnixTimeSeconds());
+        if(completedAt>DateTimeOffset.UtcNow || completedAt.Year<2020)return BadRequest();
+        try{
+            await using var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable,ct);
+            var row=await CreatorSettlementEvidence.Current(db,request.HistoryId,ct);
+            if(row is null || CreatorSettlementEvidence.Digest(row)!=request.Digest
+                || row.Allocation.CreatorAllocation!=request.Amount || row.Allocation.CurrencyCode!=request.CurrencyCode
+                || completedAt.UtcDateTime<row.AgreementRecordedAt)return Conflict();
+            if(await db.CreatorAccountMemberships.AnyAsync(m=>m.CreatorId==row.Allocation.CreatorId && m.Subject==subject,ct))return StatusCode(403);
+            var id=CreatorSettlementEvidence.Id(row.Allocation.PlacementId);
+            var detail=CreatorSettlementEvidence.Detail(row,request.TransferReferenceSha256,request.EvidenceDocumentSha256,completedAt);
+            var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
+            if(prior is not null && (!CreatorSettlementEvidence.Matches(prior,row,out _) || prior.Detail!=detail))return Conflict();
+            if(await db.WeddingPlannerAuditEvents.AnyAsync(a=>a.Action==CreatorSettlementEvidence.Action
+                && a.RequestId==request.TransferReferenceSha256 && a.Id!=id,ct))return Conflict();
+            if(prior is null){
+                db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent {Id=id,AdvertiserId=row.Allocation.AdvertiserId,
+                    WorkspaceId=row.Allocation.WorkspaceId,Action=CreatorSettlementEvidence.Action,ActorType="OPERATOR",ActorLabel=subject,
+                    Outcome="EVIDENCE_RECORDED",RequestId=request.TransferReferenceSha256,Detail=detail,OccurredAt=DateTime.UtcNow});
+                await db.SaveChangesAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new {settlementEvidenceId=id,historyId=request.HistoryId,evidenceRecorded=true,
+                providerVerified=false,transferAuthorized=false,payable=false});
+        }catch(Npgsql.PostgresException pg) when(pg.SqlState==Npgsql.PostgresErrorCodes.SerializationFailure){return Conflict();}
+        catch(DbUpdateException){return Conflict();}
+    }
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
@@ -398,3 +455,7 @@ public sealed record RecordCreatorAgreementEvidence(Guid InvitationId,Guid Illus
     bool SignedAgreementReviewed,bool PartiesAndScopeReviewed,bool CompensationAndPaymentTermsReviewed,bool CancellationAndRightsReviewed);
 
 public sealed record ShareCreatorAllocationHistory(Guid HistoryId,string Digest,bool AllocationReviewed,bool PermissionToShareReviewed);
+
+public sealed record RecordCreatorSettlementEvidence(Guid HistoryId,string Digest,decimal Amount,string CurrencyCode,
+    string TransferReferenceSha256,string EvidenceDocumentSha256,DateTimeOffset CompletedAt,bool FulfillmentReviewed,
+    bool RecipientReviewed,bool CompletedTransferReviewed,bool NoReversalReviewed,bool NoDuplicateReviewed);
