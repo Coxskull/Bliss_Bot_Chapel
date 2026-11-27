@@ -142,6 +142,8 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
         var profile = approved && membership.Creator.AuthorityStatus == "VERIFIED"
             ? new CreatorSelfSummaryDto(membership.CreatorId, membership.Creator.Name, membership.Creator.CountryCode,
                 membership.Creator.PrimaryLanguage, "VERIFIED") : null;
+        if (profile is not null && auth.CreatorInventoryReadbackRequested)
+            profile = profile with { Inventory = await CreatorsController.ReadOwnInventory(db, membership.CreatorId, cancellationToken) };
         return Ok(new CreatorRegistrationStatusDto(membership.CreatorId, receipt.Id, membership.Status, receipt.CreatedAt,
             code, code is null ? null : membership.SubmittedChannelUrl,
             code is null ? null : now.Date.AddDays(1), profile));
