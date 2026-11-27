@@ -173,6 +173,7 @@ public sealed class CreatorsController : ControllerBase
 public sealed record CreatorSelfSummaryDto(
     Guid CreatorId, string Name, string? CountryCode,
     string? PrimaryLanguage, string AuthorityStatus,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     CreatorInventorySlotSummary[]? Inventory = null);
 
 public sealed record CreatorInventorySlotSummary(Guid SlotId, Guid ContentItemId,
