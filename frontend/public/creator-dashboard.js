@@ -14,6 +14,30 @@
     status.className = "status" + (tone ? " " + tone : "");
   };
   const badgeText = text => { badge.textContent = text; };
+  async function pauseSlot(slotId, button) {
+    if (busy || !csrfToken || !button.isConnected ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slotId)) return;
+    if (!window.confirm("Withdraw this slot from future matching? Existing placements are not cancelled. Contact ALPHA to request restoration.")) return;
+    busy = true; refreshButton.disabled = true; button.disabled = true;
+    let confirmed = false;
+    try {
+      const response = await fetch("/api/creators/inventory/pause", {
+        method:"POST", credentials:"same-origin", cache:"no-store", redirect:"error",
+        headers:{"Content-Type":"application/json","X-CSRF-TOKEN":csrfToken},
+        body:JSON.stringify({slotId,confirmPause:true})
+      });
+      if (!response.ok) throw Error("Pause unavailable");
+      const result = await response.json();
+      confirmed = result.slotId === slotId && result.isAvailable === false &&
+        result.existingPlacementsChanged === false && result.bookingAuthorized === false &&
+        result.paymentAuthorized === false && result.deliveryAuthorized === false;
+    } catch { /* authoritative refresh below */ }
+    finally { busy = false; }
+    await loadDashboard();
+    message(confirmed ? "Slot withdrawal recorded. Existing placements were not cancelled."
+      : "Slot withdrawal was not confirmed. Review the refreshed inventory before taking another action.",
+      confirmed ? "success" : "error");
+  }
   function showInventory(profile) {
     const rows = profile.inventory;
     const valid = Array.isArray(rows) && rows.length <= 50 &&
@@ -34,6 +58,12 @@
         " · Duration (seconds): " + (row.durationSeconds ?? "Not recorded")],
         ["p",row.isAvailable ? "Recorded available — not a booking confirmation" : "Recorded unavailable"]]) {
         const node = document.createElement(tag); node.textContent = text; card.appendChild(node);
+      }
+      if (profile.canPauseInventory === true && row.isAvailable && csrfToken) {
+        const button = document.createElement("button");
+        button.type = "button"; button.textContent = "Pause future availability";
+        button.addEventListener("click", () => pauseSlot(row.slotId, button));
+        card.appendChild(button);
       }
       container.appendChild(card);
     }
