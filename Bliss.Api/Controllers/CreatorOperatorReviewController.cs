@@ -314,6 +314,44 @@ public sealed class CreatorOperatorReviewController(
         }catch(Npgsql.PostgresException pg) when(pg.SqlState==Npgsql.PostgresErrorCodes.SerializationFailure){return Conflict();}
         catch(DbUpdateException){return Conflict();}
     }
+    [HttpGet("allocation-history")]
+    public async Task<IActionResult> PreviewAllocationHistory([FromQuery] Guid historyId,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorAllocationHistoryRequested || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out _))return StatusCode(403);
+        if(historyId==Guid.Empty)return BadRequest();
+        var row=await CreatorAllocationHistory.Current(db,historyId,ct);
+        if(row is null)return NotFound();
+        return Ok(new {allocation=row,digest=CreatorAllocationHistory.Digest(row),payable=false,settlementVerified=false});
+    }
+    [HttpPost("allocation-history")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(1024)]
+    public async Task<IActionResult> ShareAllocationHistory([FromBody] ShareCreatorAllocationHistory request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorAllocationHistoryRequested || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out var subject))return StatusCode(403);
+        if(request.HistoryId==Guid.Empty || !CreatorCompensationProposal.ValidDocumentHash(request.Digest)
+            || !request.AllocationReviewed || !request.PermissionToShareReviewed)return BadRequest();
+        try {
+            await using var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable,ct);
+            var row=await CreatorAllocationHistory.Current(db,request.HistoryId,ct);
+            if(row is null || CreatorAllocationHistory.Digest(row)!=request.Digest)return Conflict();
+            if(await db.CreatorAccountMemberships.AnyAsync(m=>m.CreatorId==row.CreatorId && m.Subject==subject,ct))return StatusCode(403);
+            var id=CreatorAllocationHistory.Id(row.HistoryId);
+            var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
+            if(prior is not null && !CreatorAllocationHistory.Matches(prior,row))return Conflict();
+            if(prior is null){
+                db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent {Id=id,AdvertiserId=row.AdvertiserId,WorkspaceId=row.WorkspaceId,
+                    Action=CreatorAllocationHistory.Action,ActorType="OPERATOR",ActorLabel=subject,Outcome="SHARED",
+                    RequestId=row.CreatorId.ToString("N"),Detail=CreatorAllocationHistory.Detail(row),OccurredAt=DateTime.UtcNow});
+                await db.SaveChangesAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new {publicationId=id,historyId=row.HistoryId,shared=true,payable=false,settlementVerified=false});
+        }catch(Npgsql.PostgresException pg) when(pg.SqlState==Npgsql.PostgresErrorCodes.SerializationFailure){return Conflict();}
+        catch(DbUpdateException){return Conflict();}
+    }
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
@@ -358,3 +396,5 @@ public sealed record PublishCreatorCompensation(Guid InvitationId,Guid Illustrat
 
 public sealed record RecordCreatorAgreementEvidence(Guid InvitationId,Guid IllustrationId,string Digest,string DocumentSha256,
     bool SignedAgreementReviewed,bool PartiesAndScopeReviewed,bool CompensationAndPaymentTermsReviewed,bool CancellationAndRightsReviewed);
+
+public sealed record ShareCreatorAllocationHistory(Guid HistoryId,string Digest,bool AllocationReviewed,bool PermissionToShareReviewed);
