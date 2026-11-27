@@ -271,6 +271,43 @@ public sealed class CreatorOperatorReviewController(
         } catch(Npgsql.PostgresException pg) when(pg.SqlState==Npgsql.PostgresErrorCodes.SerializationFailure){return Conflict();}
         catch(DbUpdateException){return Conflict();}
     }
+    [HttpPost("agreement-evidence")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> RecordAgreementEvidence([FromBody] RecordCreatorAgreementEvidence request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested
+            || !auth.CreatorAgreementEvidenceRequested || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out var subject))return StatusCode(403);
+        if(request.InvitationId==Guid.Empty || request.IllustrationId==Guid.Empty || !CreatorCompensationProposal.ValidDocumentHash(request.Digest)
+            || !CreatorCompensationProposal.ValidDocumentHash(request.DocumentSha256)
+            || !request.SignedAgreementReviewed || !request.PartiesAndScopeReviewed || !request.CompensationAndPaymentTermsReviewed
+            || !request.CancellationAndRightsReviewed)return BadRequest();
+        try {
+            await using var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable,ct);
+            var row=await CreatorCompensationProposal.Current(db,request.InvitationId,request.IllustrationId,ct);
+            if(row is null || CreatorCompensationProposal.Digest(row)!=request.Digest
+                || !await CreatorCompensationProposal.HasCurrentAcknowledgment(db,row,ct))return Conflict();
+            if(await db.CreatorAccountMemberships.AnyAsync(m=>m.CreatorId==row.CreatorId && m.Subject==subject,ct))return StatusCode(403);
+            var proposalId=CreatorCompensationProposal.Id(row.InvitationId);
+            var proposal=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==proposalId,ct);
+            if(proposal is null || !CreatorCompensationProposal.Matches(proposal,row))return Conflict();
+            var id=CreatorCompensationProposal.AgreementId(proposalId);
+            var detail=CreatorCompensationProposal.AgreementDetail(row,request.DocumentSha256);
+            var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
+            if(prior is not null && (!CreatorCompensationProposal.MatchesAgreement(prior,row) || prior.Detail!=detail))return Conflict();
+            if(prior is null){
+                db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent {Id=id,AdvertiserId=row.AdvertiserId,WorkspaceId=row.WorkspaceId,
+                    Action=CreatorCompensationProposal.AgreementAction,ActorType="OPERATOR",ActorLabel=subject,Outcome="EVIDENCE_RECORDED",
+                    RequestId=row.CreatorId.ToString("N"),Detail=detail,OccurredAt=DateTime.UtcNow});
+                await db.SaveChangesAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new {agreementEvidenceId=id,proposalId,agreementEvidenceRecorded=true,signatureVerifiedBySystem=false,
+                payable=false,bookingAuthorized=false,paymentAuthorized=false,deliveryAuthorized=false});
+        }catch(Npgsql.PostgresException pg) when(pg.SqlState==Npgsql.PostgresErrorCodes.SerializationFailure){return Conflict();}
+        catch(DbUpdateException){return Conflict();}
+    }
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
@@ -312,3 +349,6 @@ public sealed record CreatorInventoryReviewRequest(Guid SlotId, Guid CreatorId, 
 public sealed record IssueCreatorInvitation(Guid PlacementId, string Digest, bool AdvertiserPermissionReviewed, bool CreatorContactPermissionReviewed, bool PlacementReviewed);
 
 public sealed record PublishCreatorCompensation(Guid InvitationId,Guid IllustrationId,string Digest,bool AllocationReviewed,bool PermissionToShareReviewed);
+
+public sealed record RecordCreatorAgreementEvidence(Guid InvitationId,Guid IllustrationId,string Digest,string DocumentSha256,
+    bool SignedAgreementReviewed,bool PartiesAndScopeReviewed,bool CompensationAndPaymentTermsReviewed,bool CancellationAndRightsReviewed);
