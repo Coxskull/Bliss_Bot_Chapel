@@ -27,6 +27,15 @@ const askAlphaMarketingConsent = document.querySelector("#ask-alpha-marketing-co
 const askAlphaAiStatus = document.querySelector("#ask-alpha-ai-status");
 const askAlphaSessionId = window.crypto?.randomUUID?.() ?? null;
 const askAlphaHistory = [];
+let askAlphaConsentEpoch = 0;
+askAlphaAiConsent?.addEventListener("change", () => {
+  if (!askAlphaAiConsent.checked) {
+    askAlphaConsentEpoch++;
+    askAlphaHistory.length = 0;
+    if (askAlphaAiStatus) askAlphaAiStatus.textContent =
+      "AI processing consent withdrawn. Future questions use guided help unless you consent again. A request already sent may still be processed.";
+  }
+});
 let askAlphaPending = false;
 if (askAlphaLive && askAlphaAiPanel && askAlphaAiConsent) {
   askAlphaAiPanel.hidden = false;
@@ -129,6 +138,7 @@ async function sendAskAlpha(question) {
     }
   } else {
     askAlphaPending = true;
+    const consentEpoch = askAlphaConsentEpoch;
     askAlphaSend.disabled = true;
     askAlphaInput.disabled = true;
     const q = cleaned.toLowerCase();
@@ -152,7 +162,11 @@ async function sendAskAlpha(question) {
         }
       );
       const result = await response.json();
-      if (response.ok && result?.status === "ANSWERED" &&
+      if (consentEpoch !== askAlphaConsentEpoch || !askAlphaAiConsent?.checked) {
+        appendAskAlphaMessage("guide",askAlphaAnswer(cleaned),askAlphaGuideActions(cleaned));
+        if (askAlphaAiStatus) askAlphaAiStatus.textContent =
+          "AI consent changed while the request was pending. Its answer is not displayed or retained in chat history; the prior request may still have been processed.";
+      } else if (response.ok && result?.status === "ANSWERED" &&
           typeof result.answer === "string" &&
           /^[0-9a-f-]{36}$/i.test(result.receipt_id || "")) {
         appendAskAlphaMessage("ai",result.answer);
@@ -173,7 +187,7 @@ async function sendAskAlpha(question) {
     } catch {
       appendAskAlphaMessage("guide",askAlphaAnswer(cleaned),askAlphaGuideActions(cleaned));
       if (askAlphaAiStatus) askAlphaAiStatus.textContent =
-        "Unable to verify the AI receipt. No automatic retry or submission was made.";
+        "Unable to verify the AI receipt. The original request may have been processed; no automatic retry was made.";
     } finally {
       askAlphaPending = false;
       askAlphaSend.disabled = askAlphaTurns >= 12;
