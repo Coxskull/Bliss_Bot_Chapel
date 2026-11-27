@@ -251,6 +251,51 @@
     finally{busy=false;lock(false);}
   });
   window.addEventListener("pagehide",clearComp);
+  const historyInput=document.getElementById("allocation-history-id"),historyPreview=document.getElementById("allocation-history-preview");
+  const historyReview=document.getElementById("allocation-history-review"),historyStatus=document.getElementById("allocation-history-review-status");
+  const clearHistory=()=>historyReview?.replaceChildren();
+  historyInput?.addEventListener("input",clearHistory);
+  historyPreview?.addEventListener("click",async()=>{
+    if(busy||!guid.test(historyInput.value.trim()))return;
+    const historyId=historyInput.value.trim().toLowerCase(),lock=locked=>{historyPreview.disabled=locked;historyInput.disabled=locked;};
+    busy=true;lock(true);clearHistory();
+    try{
+      await session();
+      const r=await fetch("/api/creators/operator-review/allocation-history?historyId="+encodeURIComponent(historyId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!r.ok)throw Error("No current eligible allocation record.");
+      const v=await r.json(),row=v.allocation;
+      if(!row||row.historyId!==historyId||!guid.test(row.creatorId)||!guid.test(row.placementId)||!/^[A-Z]{3}$/.test(row.currencyCode)||
+        ![row.contractedAmount,row.creatorAllocation,row.alphaAllocation,row.otherAllocation].every(n=>Number.isFinite(n)&&n>=0)||
+        row.creatorAllocation<=0||! /^[a-f0-9]{64}$/.test(v.digest)||v.payable!==false||v.settlementVerified!==false)throw Error("Invalid allocation response.");
+      const card=document.createElement("section"),money=n=>row.currencyCode+" "+String(n);
+      for(const [label,value] of [["Campaign",row.campaignName],["Placement",row.placementId],["Creator",row.creatorId],["Historical contracted amount",money(row.contractedAmount)],
+        ["Creator allocation",money(row.creatorAllocation)],["ALPHA allocation",money(row.alphaAllocation)],["Other authorized allocation",money(row.otherAllocation)],["Measurement as of",row.measurementAsOf]])
+        card.append(node("p",label+": "+String(value)));
+      const checks=["I reviewed the exact historical allocation and its lineage.","I confirmed permission to disclose the creator's allocation privately."].map(t=>{
+        const wrap=node("label",t),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
+      const publish=node("button","Share creator allocation history");publish.type="button";publish.disabled=true;
+      for(const input of checks)input.addEventListener("change",()=>{publish.disabled=!checks.every(x=>x.checked);});
+      publish.addEventListener("click",async()=>{
+        if(busy||!card.isConnected||publish.disabled||historyInput.value.trim().toLowerCase()!==historyId)return;
+        if(!window.confirm("Share this historical creator allocation? No settlement or payable will be created."))return;
+        busy=true;lock(true);publish.disabled=true;
+        try{
+          const s=await session();
+          const r=await fetch("/api/creators/operator-review/allocation-history",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},
+            body:JSON.stringify({historyId,digest:v.digest,allocationReviewed:checks[0].checked,permissionToShareReviewed:checks[1].checked})});
+          if(!r.ok)throw Error("Sharing refused.");
+          const receipt=await r.json();
+          if(receipt.historyId!==historyId||!guid.test(receipt.publicationId)||receipt.shared!==true||receipt.payable!==false||receipt.settlementVerified!==false)throw Error("Unexpected receipt.");
+          historyStatus.textContent="Historical allocation shared: "+receipt.publicationId;
+        }catch{historyStatus.textContent="Sharing not confirmed. Reload the exact record before acting.";}
+        finally{clearHistory();busy=false;lock(false);}
+      });
+      card.append(publish);historyReview.append(card);historyStatus.textContent="Review the current historical allocation.";
+    }catch(e){clearHistory();historyStatus.textContent=e.message;}
+    finally{busy=false;lock(false);}
+  });
+  window.addEventListener("pagehide",clearHistory);
   inventoryLoad.addEventListener("click",loadInventory);
   window.addEventListener("pagehide",clearInventory);
   load.addEventListener("click", refresh);
