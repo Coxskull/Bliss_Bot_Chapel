@@ -219,7 +219,34 @@
         }catch{compStatus.textContent="Publication not confirmed. Reload the exact proposal before acting.";}
         finally{clearComp();busy=false;lock(false);}
       });
-      card.append(publish);compReview.append(card);compStatus.textContent="Review the proposed allocation.";
+      card.append(publish);
+      if(v.canRecordAgreementEvidence===true && v.allocationAcknowledged===true){
+        const area=document.createElement("section");
+        area.append(node("h3","Record separately signed agreement evidence"),node("p","Review the signed agreement outside this workspace. Record only its SHA-256 fingerprint. This is a human attestation, not electronic signature verification or payment authorization."));
+        const label=node("label","Signed document SHA-256");const hash=document.createElement("input");hash.maxLength=64;hash.autocomplete="off";label.append(hash);area.append(label,document.createElement("br"));
+        const reviewChecks=["I reviewed the signed agreement.","I reviewed the parties and exact placement scope.","I reviewed compensation and payment terms against this allocation.","I reviewed cancellation and commercial rights."].map(t=>{
+          const wrap=node("label",t),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);area.append(wrap,document.createElement("br"));return input;});
+        const record=node("button","Record agreement evidence");record.type="button";record.disabled=true;
+        const update=()=>{record.disabled=!/^[a-f0-9]{64}$/.test(hash.value.trim())||!reviewChecks.every(x=>x.checked);};
+        hash.addEventListener("input",update);for(const input of reviewChecks)input.addEventListener("change",update);
+        record.addEventListener("click",async()=>{
+          if(busy||record.disabled||!card.isConnected||compInvitation.value.trim().toLowerCase()!==invitationId||compIllustration.value.trim().toLowerCase()!==illustrationId)return;
+          if(!window.confirm("Record this human-reviewed signed document fingerprint? No payment or delivery is authorized."))return;
+          busy=true;lock(true);record.disabled=true;
+          try{
+            const s=await session();
+            const r=await fetch("/api/creators/operator-review/agreement-evidence",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},
+              body:JSON.stringify({invitationId,illustrationId,digest:v.digest,documentSha256:hash.value.trim(),signedAgreementReviewed:reviewChecks[0].checked,partiesAndScopeReviewed:reviewChecks[1].checked,compensationAndPaymentTermsReviewed:reviewChecks[2].checked,cancellationAndRightsReviewed:reviewChecks[3].checked})});
+            if(!r.ok)throw Error("Agreement evidence refused");
+            const receipt=await r.json();
+            if(!guid.test(receipt.agreementEvidenceId)||!guid.test(receipt.proposalId)||receipt.agreementEvidenceRecorded!==true||receipt.signatureVerifiedBySystem!==false||receipt.payable!==false||receipt.bookingAuthorized!==false||receipt.paymentAuthorized!==false||receipt.deliveryAuthorized!==false)throw Error("Unexpected receipt");
+            compStatus.textContent="Agreement evidence recorded: "+receipt.agreementEvidenceId;
+          }catch{compStatus.textContent="Evidence not confirmed. Reload the current allocation before acting.";}
+          finally{clearComp();busy=false;lock(false);}
+        });area.append(record);card.append(area);
+      }
+      compReview.append(card);compStatus.textContent="Review the proposed allocation.";
     }catch(e){clearComp();compStatus.textContent=e.message;}
     finally{busy=false;lock(false);}
   });
