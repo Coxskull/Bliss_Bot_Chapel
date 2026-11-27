@@ -23,6 +23,20 @@ async function api(url, body) {
 }
 async function action(run) { if (busy) return; busy = true; sync(); try { await run(); } catch (error) { tell(error.message, true); } finally { busy = false; sync(); } }
 function selectedHandoff() { return handoffs.find(x => x.id === $("#handoff").value); }
+function reportedRate(numerator, denominator) {
+  if (!Number.isSafeInteger(numerator) || numerator < 0 ||
+      !Number.isSafeInteger(denominator) || denominator <= 0 ||
+      numerator > denominator) return "Not calculable";
+  return new Intl.NumberFormat("en-US", {style:"percent", maximumFractionDigits:2})
+    .format(numerator / denominator);
+}
+function reportedPerformance(row) {
+  if (row.kind !== "EXTERNAL_REPORT") return null;
+  return {
+    ctr: reportedRate(row.clicks,row.impressions),
+    clickConversion: reportedRate(row.conversions,row.clicks)
+  };
+}
 function render() {
   const handoff = selectedHandoff(), lineage = $("#lineage"); lineage.replaceChildren();
   if (handoff) { const snapshot = JSON.parse(handoff.snapshotJson); text(lineage, "p", `${handoff.status} · ${handoff.delivery}\nAsset: ${snapshot.imageSha256}\nBrand DNA: ${snapshot.brandDnaId}\nAccepted quote: ${snapshot.lineAmount} ${snapshot.currencyCode}`); }
@@ -32,7 +46,12 @@ function render() {
   const view = $("#observations"); view.replaceChildren();
   for (const row of observations) {
     text(view, "h3", `${row.kind} · ${row.evidenceStatus}`); text(view, "p", `${row.sourceLabel} · ${row.observedAt}\n${row.evidence}`);
-    if (row.kind === "EXTERNAL_REPORT") text(view, "p", `Reported impressions: ${row.impressions ?? "unknown"}; clicks: ${row.clicks ?? "unknown"}; conversions: ${row.conversions ?? "unknown"}.`);
+    if (row.kind === "EXTERNAL_REPORT") {
+      text(view, "p", `Reported impressions: ${row.impressions ?? "unknown"}; clicks: ${row.clicks ?? "unknown"}; conversions: ${row.conversions ?? "unknown"}.`);
+      const performance = reportedPerformance(row);
+      text(view, "p", `Reported click-through rate: ${performance.ctr}; reported conversions per click: ${performance.clickConversion}.`);
+      text(view, "p", "Calculated from this unverified report only. Missing, zero-denominator or non-subset counts are not calculable. Reports may overlap; no totals, verified traffic, attribution or campaign delivery are inferred.");
+    }
     const detail = document.createElement("details"); view.append(detail); text(detail, "summary", "Frozen creative and pricing lineage"); text(detail, "pre", row.lineageSnapshotJson);
   }
   const research = $("#proposals"); research.replaceChildren();
