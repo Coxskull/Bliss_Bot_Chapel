@@ -457,7 +457,7 @@
       const r=await fetch("/api/creators/operator-review/fulfillment-manifest?handoffId="+encodeURIComponent(handoffId)+"&illustrationId="+encodeURIComponent(illustrationId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
       if(!r.ok)throw Error("Current handoff or agreement evidence unavailable.");
       const packet=await r.json(),m=packet.manifest;
-      if(!m||!/^[a-f0-9]{64}$/.test(packet.manifestSha256)||typeof packet.factorySubmissionEnabled!=="boolean"||m.schema!=="alpha-creator-fulfillment-preparation/v1"||m.handoffId!==handoffId||m.status!=="PREPARATION_ONLY"||m.delivery!=="NOT_SENT"||
+      if(!m||!/^[a-f0-9]{64}$/.test(packet.manifestSha256)||typeof packet.factorySubmissionEnabled!=="boolean"||typeof packet.factoryArtworkEnabled!=="boolean"||m.schema!=="alpha-creator-fulfillment-preparation/v1"||m.handoffId!==handoffId||m.status!=="PREPARATION_ONLY"||m.delivery!=="NOT_SENT"||
         m.fundingVerified!==false||m.bookingAuthorized!==false||m.paymentAuthorized!==false||m.deliveryAuthorized!==false||m.factoryDispatchAuthorized!==false||
         ![m.placementId,m.campaignId,m.creatorId,m.slotId,m.candidateId,m.agreementEvidenceId].every(x=>guid.test(x))||
         ![m.imageSha256,m.handoffSha256,m.agreementEvidenceSha256].every(x=>/^[a-f0-9]{64}$/.test(x)))throw Error("Invalid preparation manifest.");
@@ -492,6 +492,28 @@
           finally{clearFulfill();busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
         });
         card.append(submit);
+      }
+      if(packet.factoryArtworkEnabled){
+        const artwork=node("button","Retrieve admitted private PNG");artwork.type="button";
+        artwork.addEventListener("click",async()=>{
+          if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+          if(!window.confirm("Retrieve the exact admitted artwork for authorized private handling only? Do not upload or distribute it publicly."))return;
+          busy=true;artwork.disabled=true;download.disabled=true;fulfillPreview.disabled=true;fulfillHandoff.disabled=true;fulfillIllustration.disabled=true;
+          try{
+            const s=await session();
+            const response=await fetch("/api/creators/operator-review/factory-artwork",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,confirmPrivateArtworkHandling:true})});
+            if(!response.ok||response.headers.get("content-type")!=="image/png")throw Error("Artwork unavailable.");
+            const blob=await response.blob();
+            if(blob.size<33||blob.size>16000000||!card.isConnected)throw Error("Artwork unavailable.");
+            const actual=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await blob.arrayBuffer())),b=>b.toString(16).padStart(2,"0")).join("");
+            if(actual!==m.imageSha256||!card.isConnected)throw Error("Artwork fingerprint mismatch.");
+            const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="alpha-private-"+m.candidateId+".png";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+            fulfillStatus.textContent="Private artwork export requested. No rendering or distribution authorized.";
+          }catch{fulfillStatus.textContent="Artwork retrieval refused or unavailable. Confirm current admission and approval.";}
+          finally{clearFulfill();busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
+        });
+        card.append(artwork);
       }
       fulfillReview.append(card);fulfillStatus.textContent="Current preparation manifest generated.";
     }catch(e){clearFulfill();fulfillStatus.textContent=e.message;}
