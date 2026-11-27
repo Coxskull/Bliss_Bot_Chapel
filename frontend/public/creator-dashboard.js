@@ -241,6 +241,11 @@
           ["p","Payment and settlement status: not verified"]]){
           const n=document.createElement(tag);n.textContent=value;card.appendChild(n);
         }
+        const review=row.payableReview;
+        if(review && guid.test(review.reviewId) && review.status==="REVIEW_RECORDED" && review.liabilityVerified===false && review.payable===false){
+          const n=document.createElement("p");n.textContent="Operator-reviewed fulfillment and funding evidence recorded: "+review.reviewId+
+            ". This is not a confirmed liability, payable balance or authorization to transfer money.";card.appendChild(n);
+        }
         const evidence=row.settlementEvidence;
         if(evidence && guid.test(evidence.evidenceId) && evidence.providerVerified===false && evidence.transferAuthorized===false){
           const n=document.createElement("p");
