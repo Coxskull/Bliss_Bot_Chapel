@@ -118,10 +118,36 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
             var accepted=await StarterServiceOffer.CurrentAccepted(db,draft.CampaignId,offerId,ct);
             var orderProgress = accepted is null ? "AWAITING_ACCEPTANCE"
                 : await StarterServiceOffer.OrderProgress(db,accepted,draft.CampaignId,ct);
+            var creativeProgress = "NOT_AVAILABLE";
+            if (auth.AdvertiserCreativeProviderConsentRequested && auth.AdvertiserCreativeArtworkRequested)
+            {
+                var prepared = await CampaignRecipeRevision.ForCampaign(db.AcademyProductionBriefs.AsNoTracking()
+                    .Where(x => x.WorkspaceId == offer.WorkspaceId), draft.CampaignId, digest).FirstOrDefaultAsync(ct);
+                creativeProgress = "AWAITING_RECIPE";
+                if (prepared is not null && CampaignRecipeRevision.Matches(prepared.IdempotencyKey, draft.CampaignId, digest))
+                {
+                    creativeProgress = "RECIPE_RECORDED";
+                    var grant = await CampaignImageAuthorization.Current(db, prepared.WorkspaceId, prepared.Id, ct);
+                    if (grant is not null && grant.CampaignId == draft.CampaignId && grant.CampaignDigest == digest)
+                    {
+                        creativeProgress = "CONSENT_RECORDED";
+                        var run = await db.ControlledAiRuns.AsNoTracking().Where(x => x.WorkspaceId == prepared.WorkspaceId
+                            && x.BriefId == prepared.Id && x.IdempotencyKey == CampaignImageAuthorization.RunKey(prepared.Id)
+                            && x.Kind == "IMAGE").Select(x => new { x.Status, x.InputSnapshotJson, x.InputSha256,
+                                x.Model, x.Provider, HasOutput = x.OutputImage != null }).SingleOrDefaultAsync(ct);
+                        if (run is not null && run.Model == ProviderConsentModel
+                            && string.Equals(run.Provider, "OpenAI", StringComparison.OrdinalIgnoreCase)
+                            && ControlledAiService.Hash(run.InputSnapshotJson) == run.InputSha256
+                            && CampaignImageAuthorization.ProviderInput(run.InputSnapshotJson, grant) is not null)
+                            creativeProgress = run.Status == "SUCCEEDED_PENDING_REVIEW" && run.HasOutput
+                                ? "IMAGE_RECORDED_PENDING_REVIEW" : "IMAGE_RUN_RECORDED";
+                    }
+                }
+            }
             await tx.CommitAsync(ct);
             return Ok(new{campaignId=draft.CampaignId,offerId,offerSha256=sha,scope=terms.Scope,terms=terms.TermsText,
                 amountCents=14900,currency="usd",status=accepted is null?"OFFERED":"ACCEPTED",
-                orderProgress,paymentAuthorized=false,release="HELD"});
+                orderProgress,creativeProgress,paymentAuthorized=false,release="HELD"});
         }catch(PostgresException pg) when(pg.SqlState==PostgresErrorCodes.SerializationFailure){return Conflict();}
         catch(DbUpdateException){return Conflict();}
     }
@@ -272,15 +298,25 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
                     && x.ActorType == "OPERATOR" && x.Outcome == "RELEASED" && x.Detail != null && x.Detail.EndsWith(suffix))
                     .OrderByDescending(x => x.OccurredAt).FirstOrDefaultAsync(ct);
                 if (release?.Detail is not null && Guid.TryParseExact(release.Detail.Split(':')[0],"N",out var paymentId)
+                    && release.Id == StarterArtworkDelivery.StableId(StarterArtworkDelivery.ReleaseAction,paymentId.ToString("N"))
+                    && release.Detail == paymentId.ToString("N") + suffix
                     && await StarterArtworkDelivery.Reconciliation(db,advertiserId,prepared.WorkspaceId,draft.CampaignId,paymentId,ct) is not null)
                     releaseId = release.Id;
+            }
+            WeddingPlannerAuditEvent? downloadRequest = null;
+            Guid? downloadRequestId = releaseId.HasValue ? StarterArtworkDelivery.DownloadRequestId(releaseId.Value, subject) : null;
+            if (downloadRequestId.HasValue)
+            {
+                downloadRequest = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x => x.Id == downloadRequestId.Value, ct);
+                if (downloadRequest is not null && !StarterArtworkDelivery.MatchesDownloadRequest(downloadRequest,
+                    advertiserId, prepared.WorkspaceId, releaseId!.Value, subject)) return Conflict();
             }
             if (request.Action == "DOWNLOAD")
             {
                 if (releaseId is null || request.CandidateId != candidate.Id || request.ReviewId != review.Id
                     || request.ImageSha256 != candidate.ImageSha256) return Conflict();
-                var id = StarterArtworkDelivery.StableId(StarterArtworkDelivery.DownloadAction,releaseId.Value.ToString("N")+":"+subject);
-                if (!await db.WeddingPlannerAuditEvents.AnyAsync(x => x.Id == id,ct))
+                var id = downloadRequestId!.Value;
+                if (downloadRequest is null)
                 {
                     db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent {Id=id,AdvertiserId=advertiserId,WorkspaceId=prepared.WorkspaceId,
                         Action=StarterArtworkDelivery.DownloadAction,ActorType="ADVERTISER",ActorLabel=subject,
@@ -294,7 +330,9 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
             return Ok(new { campaignId = draft.CampaignId, candidateId = candidate.Id, reviewId = review.Id,
                 imageSha256 = candidate.ImageSha256, approvalVersion = latest?.Version ?? 0,
                 approval = latest?.ReviewId == review.Id ? latest.Decision : "PENDING", releaseId, release = releaseId.HasValue ? "ARTWORK_DOWNLOAD_AVAILABLE" : "HELD",
-                delivery = releaseId.HasValue ? "DOWNLOAD_NOT_CONFIRMED" : "NOT_SENT", dispatchAuthorized = false, paymentAuthorized = false });
+                delivery = releaseId.HasValue ? "DOWNLOAD_NOT_CONFIRMED" : "NOT_SENT",
+                downloadRequestRecorded = downloadRequest is not null, downloadRequestedAt = downloadRequest?.OccurredAt,
+                dispatchAuthorized = false, paymentAuthorized = false });
         }
         catch (WeddingPlannerNotFoundException) { return NotFound(); }
         catch (WeddingPlannerForbiddenException) { return StatusCode(403); }
