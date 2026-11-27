@@ -15,7 +15,8 @@ public static class CreatorRegistrationBoundary
                 || path.Equals("/api/auth/login", StringComparison.OrdinalIgnoreCase)
                 || path.Equals("/api/auth/supabase-config", StringComparison.OrdinalIgnoreCase)
                 || (options.CreatorRegistrationRequested
-                    && path.Equals("/api/creators/registration", StringComparison.OrdinalIgnoreCase))))
+                    && (path.Equals("/api/creators/registration", StringComparison.OrdinalIgnoreCase)
+                        || (options.CreatorCampaignInvitationRequested && path.Equals("/api/creators/campaign-invitations", StringComparison.OrdinalIgnoreCase))))))
             return false;
         if (HttpMethods.IsPost(context.Request.Method)
             && (path.Equals("/api/auth/logout", StringComparison.OrdinalIgnoreCase)
@@ -24,7 +25,8 @@ public static class CreatorRegistrationBoundary
                         || (options.CreatorInventoryReadbackRequested && options.CreatorInventoryPauseRequested
                             && path.Equals("/api/creators/inventory/pause", StringComparison.OrdinalIgnoreCase))
                         || (options.CreatorInventoryReadbackRequested && options.CreatorInventoryDraftRequested
-                            && path.Equals("/api/creators/inventory/draft", StringComparison.OrdinalIgnoreCase))))))
+                            && path.Equals("/api/creators/inventory/draft", StringComparison.OrdinalIgnoreCase))
+                        || (options.CreatorCampaignInvitationRequested && path.Equals("/api/creators/campaign-invitations", StringComparison.OrdinalIgnoreCase))))))
             return false;
         return true;
     }
