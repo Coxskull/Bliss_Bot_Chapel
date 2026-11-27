@@ -363,7 +363,11 @@ public sealed class CreatorOperatorReviewController(
         if(row is null)return NotFound();
         var id=CreatorSettlementEvidence.Id(row.Allocation.PlacementId);
         var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
+        var review=auth.CreatorPayableReviewRequested?await CreatorPayableReview.FindCurrent(db,row,ct):null;
+        var reviewId=CreatorPayableReview.Id(row.Allocation.PlacementId);
+        var reviewExists=await db.WeddingPlannerAuditEvents.AnyAsync(a=>a.Id==reviewId,ct);
         return Ok(new {settlement=row,digest=CreatorSettlementEvidence.Digest(row),existingEvidence=prior is not null,
+            payableReviewEnabled=auth.CreatorPayableReviewRequested,payableReviewRecorded=review is not null,payableReviewExists=reviewExists,
             transferAuthorized=false,providerVerified=false,payable=false});
     }
 
@@ -391,6 +395,11 @@ public sealed class CreatorOperatorReviewController(
                 || row.Allocation.CreatorAllocation!=request.Amount || row.Allocation.CurrencyCode!=request.CurrencyCode
                 || completedAt.UtcDateTime<row.AgreementRecordedAt)return Conflict();
             if(await db.CreatorAccountMemberships.AnyAsync(m=>m.CreatorId==row.Allocation.CreatorId && m.Subject==subject,ct))return StatusCode(403);
+            if(auth.CreatorPayableReviewRequested){
+                var review=await CreatorPayableReview.FindCurrent(db,row,ct);
+                if(review is null || !CreatorPayableReview.Matches(review,row,out var fulfilledAt) || completedAt<fulfilledAt)
+                    return Conflict(new {error="Current fulfillment and payable review evidence required."});
+            }
             var id=CreatorSettlementEvidence.Id(row.Allocation.PlacementId);
             var detail=CreatorSettlementEvidence.Detail(row,request.TransferReferenceSha256,request.EvidenceDocumentSha256,completedAt);
             var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
@@ -409,6 +418,49 @@ public sealed class CreatorOperatorReviewController(
         }catch(Npgsql.PostgresException pg) when(pg.SqlState==Npgsql.PostgresErrorCodes.SerializationFailure){return Conflict();}
         catch(DbUpdateException){return Conflict();}
     }
+    [HttpPost("payable-review")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> RecordPayableReview([FromBody] RecordCreatorPayableReview request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorPayableReviewRequested || !auth.CreatorSettlementEvidenceRequested || !auth.CreatorAllocationHistoryRequested
+            || !auth.CreatorAgreementEvidenceRequested || !auth.CreatorCompensationProposalRequested
+            || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out var subject))return StatusCode(403);
+        if(request.HistoryId==Guid.Empty || !CreatorCompensationProposal.ValidDocumentHash(request.Digest)
+            || !CreatorCompensationProposal.ValidDocumentHash(request.FulfillmentSha256)
+            || !CreatorCompensationProposal.ValidDocumentHash(request.FundingSha256)
+            || request.Amount<=0 || request.CurrencyCode is not {Length:3}
+            || !request.FulfillmentAcceptedReviewed || !request.FundingReceivedReviewed || !request.PaymentTermsReviewed
+            || !request.NoDisputeReviewed || !request.NoPriorPaymentReviewed)return BadRequest();
+        var fulfilledAt=DateTimeOffset.FromUnixTimeSeconds(request.FulfilledAt.ToUnixTimeSeconds());
+        if(fulfilledAt.Year<2020 || fulfilledAt>DateTimeOffset.UtcNow)return BadRequest();
+        try{
+            await using var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable,ct);
+            var row=await CreatorSettlementEvidence.Current(db,request.HistoryId,ct);
+            if(row is null || CreatorSettlementEvidence.Digest(row)!=request.Digest || row.Allocation.CreatorAllocation!=request.Amount
+                || row.Allocation.CurrencyCode!=request.CurrencyCode || fulfilledAt.UtcDateTime<row.AgreementRecordedAt)return Conflict();
+            if(await db.CreatorAccountMemberships.AnyAsync(m=>m.CreatorId==row.Allocation.CreatorId && m.Subject==subject,ct))return StatusCode(403);
+            var settlementId=CreatorSettlementEvidence.Id(row.Allocation.PlacementId);
+            if(await db.WeddingPlannerAuditEvents.AnyAsync(a=>a.Id==settlementId,ct))return Conflict(new {error="Settlement evidence already exists."});
+            var id=CreatorPayableReview.Id(row.Allocation.PlacementId);
+            var detail=CreatorPayableReview.Detail(row,request.FulfillmentSha256,request.FundingSha256,fulfilledAt);
+            var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
+            if(prior is not null && (!CreatorPayableReview.Matches(prior,row,out _) || prior.Detail!=detail))return Conflict();
+            if(prior is null){
+                db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent {Id=id,AdvertiserId=row.Allocation.AdvertiserId,
+                    WorkspaceId=row.Allocation.WorkspaceId,Action=CreatorPayableReview.Action,ActorType="OPERATOR",
+                    ActorLabel=subject,Outcome="REVIEW_RECORDED",RequestId=row.Allocation.CreatorId.ToString("N"),
+                    Detail=detail,OccurredAt=DateTime.UtcNow});
+                await db.SaveChangesAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new {payableReviewId=id,historyId=request.HistoryId,reviewRecorded=true,liabilityVerified=false,
+                payable=false,transferAuthorized=false,providerVerified=false});
+        }catch(Npgsql.PostgresException pg) when(pg.SqlState==Npgsql.PostgresErrorCodes.SerializationFailure){return Conflict();}
+        catch(DbUpdateException){return Conflict();}
+    }
+
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
@@ -459,3 +511,7 @@ public sealed record ShareCreatorAllocationHistory(Guid HistoryId,string Digest,
 public sealed record RecordCreatorSettlementEvidence(Guid HistoryId,string Digest,decimal Amount,string CurrencyCode,
     string TransferReferenceSha256,string EvidenceDocumentSha256,DateTimeOffset CompletedAt,bool FulfillmentReviewed,
     bool RecipientReviewed,bool CompletedTransferReviewed,bool NoReversalReviewed,bool NoDuplicateReviewed);
+
+public sealed record RecordCreatorPayableReview(Guid HistoryId,string Digest,decimal Amount,string CurrencyCode,
+    string FulfillmentSha256,string FundingSha256,DateTimeOffset FulfilledAt,bool FulfillmentAcceptedReviewed,
+    bool FundingReceivedReviewed,bool PaymentTermsReviewed,bool NoDisputeReviewed,bool NoPriorPaymentReviewed);
