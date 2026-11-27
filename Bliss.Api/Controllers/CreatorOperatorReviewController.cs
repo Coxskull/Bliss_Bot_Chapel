@@ -234,6 +234,43 @@ public sealed class CreatorOperatorReviewController(
         catch (DbUpdateException) { return Conflict(); }
     }
 
+    [HttpGet("compensation-proposal")]
+    public async Task<IActionResult> PreviewCompensation([FromQuery] Guid invitationId,[FromQuery] Guid illustrationId,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested || !TryOperator(out _)) return StatusCode(403);
+        if(invitationId==Guid.Empty || illustrationId==Guid.Empty) return BadRequest();
+        var row=await CreatorCompensationProposal.Current(db,invitationId,illustrationId,ct);
+        return row is null ? NotFound() : Ok(new {proposal=row,digest=CreatorCompensationProposal.Digest(row),paymentAuthorized=false,deliveryAuthorized=false});
+    }
+    [HttpPost("compensation-proposal")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(1024)]
+    public async Task<IActionResult> PublishCompensation([FromBody] PublishCreatorCompensation request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested || !TryOperator(out var subject)) return StatusCode(403);
+        if(request.InvitationId==Guid.Empty || request.IllustrationId==Guid.Empty || request.Digest is not {Length:64}
+            || !request.AllocationReviewed || !request.PermissionToShareReviewed) return BadRequest();
+        try {
+            await using var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable,ct);
+            var row=await CreatorCompensationProposal.Current(db,request.InvitationId,request.IllustrationId,ct);
+            if(row is null || CreatorCompensationProposal.Digest(row)!=request.Digest) return Conflict();
+            if(await db.CreatorAccountMemberships.AnyAsync(m=>m.CreatorId==row.CreatorId && m.Subject==subject,ct))return StatusCode(403);
+            var id=CreatorCompensationProposal.Id(row.InvitationId);
+            var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
+            if(prior is not null && !CreatorCompensationProposal.Matches(prior,row)) return Conflict();
+            if(prior is null){
+                db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent {Id=id,AdvertiserId=row.AdvertiserId,WorkspaceId=row.WorkspaceId,
+                    Action=CreatorCompensationProposal.Action,ActorType="OPERATOR",ActorLabel=subject,Outcome="PROPOSED",
+                    RequestId=row.CreatorId.ToString("N"),Detail=CreatorCompensationProposal.Detail(row),OccurredAt=DateTime.UtcNow});
+                await db.SaveChangesAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new {proposalId=id,invitationId=row.InvitationId,proposalRecorded=true,paymentAuthorized=false,deliveryAuthorized=false});
+        } catch(Npgsql.PostgresException pg) when(pg.SqlState==Npgsql.PostgresErrorCodes.SerializationFailure){return Conflict();}
+        catch(DbUpdateException){return Conflict();}
+    }
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
@@ -273,3 +310,5 @@ public sealed record CreatorInventoryReviewRequest(Guid SlotId, Guid CreatorId, 
     bool CreatorPermissionReviewed, bool RightsReviewed, bool InventoryFitReviewed, bool CurrentConsentReviewed);
 
 public sealed record IssueCreatorInvitation(Guid PlacementId, string Digest, bool AdvertiserPermissionReviewed, bool CreatorContactPermissionReviewed, bool PlacementReviewed);
+
+public sealed record PublishCreatorCompensation(Guid InvitationId,Guid IllustrationId,string Digest,bool AllocationReviewed,bool PermissionToShareReviewed);
