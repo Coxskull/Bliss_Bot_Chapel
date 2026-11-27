@@ -525,7 +525,7 @@ public sealed class CreatorOperatorReviewController(
         if(manifest is null)return NotFound();
         await tx.CommitAsync(ct);
         return Ok(new {manifest,manifestSha256=ControlledAiService.Hash(CreatorFactorySubmission.Serialize(manifest)),
-            factorySubmissionEnabled=auth.CreatorFactorySubmissionRequested});
+            factorySubmissionEnabled=auth.CreatorFactorySubmissionRequested, factoryArtworkEnabled=auth.CreatorFactorySubmissionRequested && auth.CreatorFactoryArtworkRequested});
     }
 
     [HttpPost("factory-submission")]
