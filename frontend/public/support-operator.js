@@ -14,6 +14,7 @@ const $=id=>document.getElementById(id);
 const panels=["signin-panel","mfa-setup-panel","mfa-verify-panel","pending-panel","queue-panel"];
 let token=null,expiresAt=0,verifiedId=null,activeFactor=null,pendingEnrollFactor=null;
 let busy=false,page=0,cases=[],intakeExpiryTimer=null,intakeGeneration=0;
+let queueExpiryTimer=null,queueGeneration=0,queueVerified=false;
 function showPanel(id){
  if(id!=="queue-panel")clearIntakeReview();
  for(const p of panels)$(p).hidden=p!==id;
@@ -26,11 +27,18 @@ function showPanel(id){
 }
 function announce(message){$("status").textContent=message;}
 function clearCaseRows(){$("case-rows").replaceChildren();}
+function clearQueue(){
+ queueGeneration++;queueVerified=false;
+ if(queueExpiryTimer!==null){clearTimeout(queueExpiryTimer);queueExpiryTimer=null;}
+ clearCaseRows();cases=[];
+ $("previous").disabled=true;$("next").disabled=true;
+ $("page-label").textContent="Queue not verified";
+}
 function resetSession(){
  token=null;expiresAt=0;verifiedId=null;activeFactor=null;pendingEnrollFactor=null;
  $("staff-password").value="";$("mfa-code").value="";$("mfa-enroll-code").value="";
  $("mfa-enroll-secret").textContent="";$("pending-user-id").textContent="";
- clearCaseRows();cases=[];page=0;
+ clearQueue();page=0;
  $("crm-review-result").textContent="Not checked in this session. Follow-up remains on hold.";
  $("crm-consent-result").textContent="Not checked. All historical inquiries remain on HOLD. This report cannot approve outreach.";
  showPanel("signin-panel");
@@ -42,8 +50,8 @@ function setBusy(value){
  busy=value;
  for(const e of document.querySelectorAll("button"))e.disabled=value;
  if(!value){
-  $("previous").disabled=page===0;
-  $("next").disabled=cases.length!==20||page>=100;
+  $("previous").disabled=!queueVerified||page===0;
+  $("next").disabled=!queueVerified||cases.length!==20||page>=100;
  }
 }
 function authHeaders(access){
@@ -194,7 +202,7 @@ async function operatorRequest(method,path,body=null){
  return json;
 }
 function showPending(){
- clearCaseRows();cases=[];page=0;
+ clearQueue();page=0;
  if(UUID.test(verifiedId||""))$("pending-user-id").textContent=verifiedId;
  showPanel("pending-panel");
  announce("Verified login. Your owner-approved private operator grant is not yet enabled. No support records were loaded.");
@@ -228,21 +236,28 @@ function renderCases(list){
  $("next").disabled=busy||cases.length!==20||page>=100;
 }
 async function loadQueue(target=0){
- clearIntakeReview();
+ clearIntakeReview();clearQueue();
+ const generation=queueGeneration,access=token;
  try{
   const result=await operatorRequest("GET","?page="+target);
+  if(generation!==queueGeneration||access!==token)return;
+  guardUI();
   if(!Array.isArray(result?.cases)||result.cases.length>20||
     result.cases.some(c=>!UUID.test(c?.case_id||"")||
-      !["OPEN","IN_REVIEW"].includes(c?.status)||typeof c?.category!=="string"))
+      !["OPEN","IN_REVIEW"].includes(c?.status)||typeof c?.category!=="string")||
+    new Set(result.cases.map(c=>c.case_id)).size!==result.cases.length)
     throw Error("OPERATOR_BAD_QUEUE");
   page=target;
-  cases=result.cases;
+  cases=result.cases;queueVerified=true;
   renderCases(cases);
+  queueExpiryTimer=setTimeout(()=>{resetSession();announce("Session expired. Sign in again.");},Math.max(0,expiresAt-Date.now()-1500));
   showPanel("queue-panel");
   announce(cases.length?
    "Private support queue loaded; only minimal case metadata is available.":
    "Operator authorized. No open support cases currently in this queue.");
  }catch(error){
+  if(generation!==queueGeneration||access!==token)return;
+  clearQueue();
   if(error.message==="OPERATOR_NOT_AUTHORIZED"){showPending();return;}
   if(error.message==="SESSION_EXPIRED"){
    resetSession();announce("Session expired. Sign in again.");return;
@@ -255,7 +270,7 @@ async function claim(caseId,button){
  setBusy(true);
  try{
   guardUI();
-  if(!UUID.test(caseId)||!cases.some(c=>c.case_id===caseId&&c.status==="OPEN"))
+  if(!queueVerified||!UUID.test(caseId)||!cases.some(c=>c.case_id===caseId&&c.status==="OPEN"))
    throw Error("INVALID_CASE");
   const result=await operatorRequest("POST","",{action:"CLAIM",case_id:caseId});
   if(result?.committed!==true||result?.case_id!==caseId||result?.status!=="IN_REVIEW")
@@ -264,7 +279,8 @@ async function claim(caseId,button){
   await loadQueue(page);
  }catch(error){
   if(error.message==="SESSION_EXPIRED"){resetSession();announce("Session expired.");}
-  else announce("The claim was not confirmed. Refresh the queue before taking another action.");
+  else if(error.message==="OPERATOR_NOT_AUTHORIZED")showPending();
+  else {clearQueue();announce("The claim was not confirmed. Refresh the queue before taking another action.");}
  }finally{setBusy(false);}
 }
 async function signOut(){
@@ -444,5 +460,5 @@ $("next").addEventListener("click",async()=>{if(busy||cases.length!==20||page>=1
   }finally{setBusy(false);}
  }
  $("intake-review-refresh").addEventListener("click",loadIntakeReview);
- window.addEventListener("pagehide",()=>clearIntakeReview());
- document.addEventListener("visibilitychange",()=>{if(document.hidden)clearIntakeReview();});
+ window.addEventListener("pagehide",()=>{clearIntakeReview();clearQueue();});
+ document.addEventListener("visibilitychange",()=>{if(document.hidden){clearIntakeReview();clearQueue();}});
