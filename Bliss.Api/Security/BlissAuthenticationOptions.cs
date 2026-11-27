@@ -30,6 +30,7 @@ public sealed class BlissAuthenticationOptions
     // Separate, default-off withdrawal only. Never authorizes new bookings.
     public bool CreatorInventoryPauseRequested { get; set; }
     public bool CreatorInventoryDraftRequested { get; set; }
+    public bool CreatorInventoryOperatorReviewRequested { get; set; }
     public string CreatorRole { get; set; } = "bliss.creator";
     public string CreatorIdClaimType { get; set; } = "bliss_creator_id";
     // Explicit approved OIDC subject IDs, not editable email or form IDs.
