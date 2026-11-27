@@ -367,6 +367,7 @@ public sealed class CreatorOperatorReviewController(
         var reviewId=CreatorPayableReview.Id(row.Allocation.PlacementId);
         var reviewExists=await db.WeddingPlannerAuditEvents.AnyAsync(a=>a.Id==reviewId,ct);
         return Ok(new {settlement=row,digest=CreatorSettlementEvidence.Digest(row),existingEvidence=prior is not null,
+            settlementEvidenceId=prior?.Id,settlementExceptionEnabled=auth.CreatorSettlementExceptionRequested,
             payableReviewEnabled=auth.CreatorPayableReviewRequested,payableReviewRecorded=review is not null,payableReviewExists=reviewExists,
             transferAuthorized=false,providerVerified=false,payable=false});
     }
@@ -401,6 +402,8 @@ public sealed class CreatorOperatorReviewController(
                     return Conflict(new {error="Current fulfillment and payable review evidence required."});
             }
             var id=CreatorSettlementEvidence.Id(row.Allocation.PlacementId);
+            var exceptionId=CreatorSettlementException.Id(id);
+            if(await db.WeddingPlannerAuditEvents.AnyAsync(a=>a.Id==exceptionId,ct))return Conflict(new {error="Settlement exception recorded. No repeat settlement permitted."});
             var detail=CreatorSettlementEvidence.Detail(row,request.TransferReferenceSha256,request.EvidenceDocumentSha256,completedAt);
             var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
             if(prior is not null && (!CreatorSettlementEvidence.Matches(prior,row,out _) || prior.Detail!=detail))return Conflict();
@@ -461,6 +464,55 @@ public sealed class CreatorOperatorReviewController(
         catch(DbUpdateException){return Conflict();}
     }
 
+    [HttpGet("settlement-exception")]
+    public async Task<IActionResult> PreviewSettlementException([FromQuery] Guid evidenceId,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorSettlementExceptionRequested || !auth.CreatorSettlementEvidenceRequested || !TryOperator(out _))return StatusCode(403);
+        if(evidenceId==Guid.Empty)return BadRequest();
+        var row=await CreatorSettlementException.Original(db,evidenceId,ct);
+        if(row is null)return NotFound();
+        var id=CreatorSettlementException.Id(evidenceId);
+        var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
+        return Ok(new {original=row,exceptionExists=prior is not null,
+            exceptionStatus=prior is null?"NONE":CreatorSettlementException.Matches(prior,row)?prior.Outcome:"REVIEW_REQUIRED",
+            providerVerified=false,refundAuthorized=false,transferAuthorized=false,payable=false});
+    }
+
+    [HttpPost("settlement-exception")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> RecordSettlementException([FromBody] RecordCreatorSettlementException request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorSettlementExceptionRequested || !auth.CreatorSettlementEvidenceRequested || !TryOperator(out var subject))return StatusCode(403);
+        if(request.EvidenceId==Guid.Empty || !CreatorCompensationProposal.ValidDocumentHash(request.OriginalDigest)
+            || !CreatorCompensationProposal.ValidDocumentHash(request.DocumentSha256) || !CreatorSettlementException.ValidReason(request.Reason)
+            || !request.OriginalTransferReviewed || !request.ExceptionEvidenceReviewed || !request.ConfirmHold)return BadRequest();
+        var observed=DateTimeOffset.FromUnixTimeSeconds(request.ObservedAt.ToUnixTimeSeconds());
+        if(observed.Year<2020 || observed>DateTimeOffset.UtcNow)return BadRequest();
+        try{
+            await using var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable,ct);
+            var row=await CreatorSettlementException.Original(db,request.EvidenceId,ct);
+            if(row is null || row.OriginalDigest!=request.OriginalDigest || observed<row.TransferAt)return Conflict();
+            if(await db.CreatorAccountMemberships.AnyAsync(m=>m.CreatorId==row.CreatorId && m.Subject==subject,ct))return StatusCode(403);
+            var id=CreatorSettlementException.Id(row.EvidenceId);
+            var detail=CreatorSettlementException.Detail(row,request.DocumentSha256,observed);
+            var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
+            if(prior is not null && (!CreatorSettlementException.Matches(prior,row) || prior.Detail!=detail || prior.Outcome!=request.Reason))return Conflict();
+            if(prior is null){
+                db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent {Id=id,AdvertiserId=row.AdvertiserId,WorkspaceId=row.WorkspaceId,
+                    Action=CreatorSettlementException.Action,ActorType="OPERATOR",ActorLabel=subject,Outcome=request.Reason,
+                    RequestId=row.CreatorId.ToString("N"),Detail=detail,OccurredAt=DateTime.UtcNow});
+                await db.SaveChangesAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new {exceptionId=id,evidenceId=row.EvidenceId,status=request.Reason,holdRecorded=true,
+                providerVerified=false,refundAuthorized=false,transferAuthorized=false,payable=false});
+        }catch(Npgsql.PostgresException pg) when(pg.SqlState==Npgsql.PostgresErrorCodes.SerializationFailure){return Conflict();}
+        catch(DbUpdateException){return Conflict();}
+    }
+
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
@@ -515,3 +567,6 @@ public sealed record RecordCreatorSettlementEvidence(Guid HistoryId,string Diges
 public sealed record RecordCreatorPayableReview(Guid HistoryId,string Digest,decimal Amount,string CurrencyCode,
     string FulfillmentSha256,string FundingSha256,DateTimeOffset FulfilledAt,bool FulfillmentAcceptedReviewed,
     bool FundingReceivedReviewed,bool PaymentTermsReviewed,bool NoDisputeReviewed,bool NoPriorPaymentReviewed);
+
+public sealed record RecordCreatorSettlementException(Guid EvidenceId,string OriginalDigest,string DocumentSha256,string Reason,
+    DateTimeOffset ObservedAt,bool OriginalTransferReviewed,bool ExceptionEvidenceReviewed,bool ConfirmHold);
