@@ -290,9 +290,19 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
             if (response is not null && (response.Action != CreatorCampaignInvitation.ResponseAction || response.ActorType != "CREATOR"
                 || response.ActorLabel != subject || response.AdvertiserId != row.AdvertiserId || response.WorkspaceId != row.WorkspaceId
                 || response.Detail != audit.Id.ToString("N") || response.Outcome is not ("INTERESTED" or "DECLINED"))) continue;
+            object? compensationProposal = null;
+            if(auth.CreatorCompensationProposalRequested && response?.Outcome=="INTERESTED"){
+                var proposalId=CreatorCompensationProposal.Id(audit.Id);
+                var proposal=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==proposalId,ct);
+                if(proposal?.Detail is not null && Guid.TryParseExact(proposal.Detail.Split(':')[0],"N",out var illustrationId)){
+                    var current=await CreatorCompensationProposal.Current(db,audit.Id,illustrationId,ct);
+                    if(current is not null && current.CreatorId==creator.Value && CreatorCompensationProposal.Matches(proposal,current))
+                        compensationProposal=new {proposalId,amount=current.CreatorAmount,currencyCode=current.CurrencyCode,status="PROPOSED",payable=false};
+                }
+            }
             items.Add(new { invitationId = audit.Id, row.PlacementId, row.CampaignName, row.ContentTitle, row.SlotType,
                 row.StartSecond,row.DurationSeconds, digest = CreatorCampaignInvitation.Digest(row),
-                response = response?.Outcome ?? "AWAITING_RESPONSE" });
+                response = response?.Outcome ?? "AWAITING_RESPONSE", compensationProposal });
         }
         return Ok(new { items, bookingAuthorized = false, paymentAuthorized = false, deliveryAuthorized = false });
     }
