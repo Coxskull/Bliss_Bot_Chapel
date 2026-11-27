@@ -525,7 +525,7 @@ public sealed class CreatorOperatorReviewController(
         if(manifest is null)return NotFound();
         await tx.CommitAsync(ct);
         return Ok(new {manifest,manifestSha256=ControlledAiService.Hash(CreatorFactorySubmission.Serialize(manifest)),
-            factorySubmissionEnabled=auth.CreatorFactorySubmissionRequested, factoryArtworkEnabled=auth.CreatorFactorySubmissionRequested && auth.CreatorFactoryArtworkRequested});
+            factorySubmissionEnabled=auth.CreatorFactorySubmissionRequested, factoryArtworkEnabled=auth.CreatorFactorySubmissionRequested && auth.CreatorFactoryArtworkRequested, factoryArtworkTransferEnabled=auth.CreatorFactorySubmissionRequested && auth.CreatorFactoryArtworkRequested && auth.CreatorFactoryArtworkTransferRequested});
     }
 
     [HttpPost("factory-submission")]
@@ -562,6 +562,7 @@ public sealed class CreatorOperatorReviewController(
             || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out _))return StatusCode(403);
         if(!request.ConfirmPrivateArtworkHandling || request.HandoffId==Guid.Empty || request.IllustrationId==Guid.Empty
             || !CreatorCompensationProposal.ValidDocumentHash(request.ManifestSha256))return BadRequest();
+        if(request.TransferToFactory && !auth.CreatorFactoryArtworkTransferRequested)return StatusCode(403);
         string body;
         await using(var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,ct)){
             var current=await CreatorFulfillmentManifest.Build(db,request.HandoffId,request.IllustrationId,ct);
@@ -589,6 +590,10 @@ public sealed class CreatorOperatorReviewController(
             || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(16,4))!=manifest.GetProperty("imageWidth").GetInt32()
             || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(20,4))!=manifest.GetProperty("imageHeight").GetInt32())return Conflict();
         await snapshot.CommitAsync(ct);
+        if(request.TransferToFactory){
+            var custody=await CreatorFactoryArtworkTransfer.Send(body,bytes,ct);
+            return custody is null?StatusCode(503,new {error="Private Factory custody not confirmed."}):Ok(custody.Value);
+        }
         Response.Headers["X-Content-Type-Options"]="nosniff";
         return File(bytes,"image/png","alpha-private-"+candidateId.ToString("N")+".png");
     }
@@ -653,4 +658,4 @@ public sealed record RecordCreatorSettlementException(Guid EvidenceId,string Ori
 
 public sealed record SubmitCreatorFactoryPreparation(Guid HandoffId,Guid IllustrationId,string ManifestSha256,bool ConfirmHeldMetadataOnly);
 
-public sealed record RetrieveCreatorFactoryArtwork(Guid HandoffId,Guid IllustrationId,string ManifestSha256,bool ConfirmPrivateArtworkHandling);
+public sealed record RetrieveCreatorFactoryArtwork(Guid HandoffId,Guid IllustrationId,string ManifestSha256,bool ConfirmPrivateArtworkHandling,bool TransferToFactory=false);
