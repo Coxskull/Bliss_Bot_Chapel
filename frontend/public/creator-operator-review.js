@@ -316,7 +316,9 @@
       const card=document.createElement("section");for(const [label,value] of [["Campaign",row.campaignName],["Placement",row.placementId],
         ["Exact creator allocation",row.currencyCode+" "+String(row.creatorAllocation)],["Agreement evidence",v.settlement.agreementEvidenceId]])
         card.append(node("p",label+": "+String(value)));
-      if(v.existingEvidence){card.append(node("p","A settlement evidence record already exists. Do not record or pay again; review any discrepancies separately."));settlementReview.append(card);settlementStatus.textContent="Existing evidence found.";return;}
+      if(v.existingEvidence){card.append(node("p","A settlement evidence record already exists. Do not record or pay again; review any discrepancies separately."));
+        if(guid.test(v.settlementEvidenceId))card.append(node("p","Original settlement evidence ID: "+v.settlementEvidenceId));
+        settlementReview.append(card);settlementStatus.textContent="Existing evidence found.";return;}
       if(v.payableReviewEnabled===true && v.payableReviewRecorded!==true){
         if(v.payableReviewExists===true){
           card.append(node("p","Existing payable review evidence no longer matches. Resolve the discrepancy separately."));
@@ -386,6 +388,62 @@
     finally{busy=false;lock(false);}
   });
   window.addEventListener("pagehide",clearSettlement);
+  const exceptionInput=document.getElementById("settlement-exception-id"),exceptionPreview=document.getElementById("settlement-exception-preview");
+  const exceptionReview=document.getElementById("settlement-exception-review"),exceptionStatus=document.getElementById("settlement-exception-status");
+  const clearException=()=>exceptionReview?.replaceChildren();
+  exceptionInput?.addEventListener("input",clearException);
+  exceptionPreview?.addEventListener("click",async()=>{
+    if(busy||!guid.test(exceptionInput.value.trim()))return;
+    const evidenceId=exceptionInput.value.trim().toLowerCase(),lock=locked=>{exceptionInput.disabled=locked;exceptionPreview.disabled=locked;};
+    busy=true;lock(true);clearException();
+    try{
+      await session();
+      const response=await fetch("/api/creators/operator-review/settlement-exception?evidenceId="+encodeURIComponent(evidenceId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!response.ok)throw Error("Original settlement evidence unavailable.");
+      const v=await response.json(),row=v.original;
+      if(!row||row.evidenceId!==evidenceId||!guid.test(row.placementId)||!Number.isFinite(row.amount)||row.amount<=0||!/^[A-Z]{3}$/.test(row.currencyCode)||
+        !/^[a-f0-9]{64}$/.test(row.originalDigest)||!Number.isFinite(Date.parse(row.transferAt))||typeof v.exceptionExists!=="boolean"||
+        v.providerVerified!==false||v.refundAuthorized!==false||v.transferAuthorized!==false||v.payable!==false)throw Error("Unexpected original settlement response.");
+      const card=document.createElement("section");
+      for(const [label,value] of [["Original settlement evidence",row.evidenceId],["Placement",row.placementId],["Original allocation",row.currencyCode+" "+String(row.amount)],["Recorded transfer time",row.transferAt]])
+        card.append(node("p",label+": "+String(value)));
+      if(v.exceptionExists){card.append(node("p","Existing exception: "+String(v.exceptionStatus)+". Original record remains under review; no repeat payment or refund is authorized."));exceptionReview.append(card);exceptionStatus.textContent="Exception already recorded.";return;}
+      if(v.exceptionStatus!=="NONE")throw Error("Unexpected exception status.");
+      const reason=document.createElement("select");
+      for(const [value,label] of [["FULL_REVERSAL_REPORTED","Reported full reversal"],["DISPUTE_REPORTED","Reported dispute"],["RECORD_CORRECTION_REQUIRED","Record correction required"]]){
+        const opt=document.createElement("option");opt.value=value;opt.textContent=label;reason.append(opt);}
+      const reasonLabel=node("label","Exception category");reasonLabel.append(reason);card.append(reasonLabel,document.createElement("br"));
+      const field=(label,type,max)=>{const wrap=node("label",label),input=document.createElement("input");input.type=type;input.autocomplete="off";if(max)input.maxLength=max;wrap.append(input);card.append(wrap,document.createElement("br"));return input;};
+      const hash=field("Exception evidence document SHA-256","text",64),observed=field("Observed date and time (local time)","datetime-local");observed.step="1";
+      const checks=["I reviewed the exact original transfer evidence.","I independently reviewed supporting evidence for this reported exception.","I confirm the record must remain under review without authorizing a refund, repeat payment or payable balance."].map(label=>{
+        const wrap=node("label",label),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
+      const record=node("button","Record settlement exception");record.type="button";record.disabled=true;
+      const update=()=>{record.disabled=!/^[a-f0-9]{64}$/.test(hash.value.trim())||!Number.isFinite(Date.parse(observed.value))||Date.parse(observed.value)<Date.parse(row.transferAt)||Date.parse(observed.value)>Date.now()||!checks.every(x=>x.checked);};
+      for(const input of [hash,observed])input.addEventListener("input",update);
+      for(const input of checks)input.addEventListener("change",update);
+      record.addEventListener("click",async()=>{
+        if(busy||record.disabled||!card.isConnected||exceptionInput.value.trim().toLowerCase()!==evidenceId)return;
+        if(!window.confirm("Record this exception against the original settlement? No refund or payment will be initiated."))return;
+        busy=true;lock(true);record.disabled=true;
+        try{
+          const s=await session();
+          const r=await fetch("/api/creators/operator-review/settlement-exception",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({evidenceId,originalDigest:row.originalDigest,
+              documentSha256:hash.value.trim(),reason:reason.value,observedAt:new Date(observed.value).toISOString(),originalTransferReviewed:checks[0].checked,
+              exceptionEvidenceReviewed:checks[1].checked,confirmHold:checks[2].checked})});
+          if(!r.ok)throw Error("Exception refused.");
+          const receipt=await r.json();
+          if(receipt.evidenceId!==evidenceId||!guid.test(receipt.exceptionId)||receipt.status!==reason.value||receipt.holdRecorded!==true||receipt.providerVerified!==false||
+            receipt.refundAuthorized!==false||receipt.transferAuthorized!==false||receipt.payable!==false)throw Error("Unexpected receipt.");
+          exceptionStatus.textContent="Settlement exception recorded: "+receipt.exceptionId+". No repeat payment or refund authorized.";
+        }catch{exceptionStatus.textContent="Exception not confirmed. Reload original evidence before acting.";}
+        finally{clearException();busy=false;lock(false);}
+      });
+      card.append(record);exceptionReview.append(card);exceptionStatus.textContent="Review the original settlement and exception evidence.";
+    }catch(e){clearException();exceptionStatus.textContent=e.message;}
+    finally{busy=false;lock(false);}
+  });
+  window.addEventListener("pagehide",clearException);
   inventoryLoad.addEventListener("click",loadInventory);
   window.addEventListener("pagehide",clearInventory);
   load.addEventListener("click", refresh);
