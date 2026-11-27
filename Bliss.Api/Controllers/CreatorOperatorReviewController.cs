@@ -241,7 +241,13 @@ public sealed class CreatorOperatorReviewController(
         if(!auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out _)) return StatusCode(403);
         if(invitationId==Guid.Empty || illustrationId==Guid.Empty) return BadRequest();
         var row=await CreatorCompensationProposal.Current(db,invitationId,illustrationId,ct);
-        return row is null ? NotFound() : Ok(new {proposal=row,digest=CreatorCompensationProposal.Digest(row),paymentAuthorized=false,deliveryAuthorized=false});
+        if(row is null)return NotFound();
+        var proposalId=CreatorCompensationProposal.Id(invitationId);
+        var published=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==proposalId,ct);
+        var acknowledged=published is not null && CreatorCompensationProposal.Matches(published,row)
+            && await CreatorCompensationProposal.HasCurrentAcknowledgment(db,row,ct);
+        return Ok(new {proposal=row,digest=CreatorCompensationProposal.Digest(row),paymentAuthorized=false,deliveryAuthorized=false,
+            allocationAcknowledged=acknowledged,canRecordAgreementEvidence=auth.CreatorAgreementEvidenceRequested && acknowledged});
     }
     [HttpPost("compensation-proposal")]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
