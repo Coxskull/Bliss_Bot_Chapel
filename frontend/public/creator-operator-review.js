@@ -444,6 +444,38 @@
     finally{busy=false;lock(false);}
   });
   window.addEventListener("pagehide",clearException);
+  const fulfillHandoff=document.getElementById("fulfillment-handoff"),fulfillIllustration=document.getElementById("fulfillment-illustration");
+  const fulfillPreview=document.getElementById("fulfillment-preview"),fulfillReview=document.getElementById("fulfillment-review"),fulfillStatus=document.getElementById("fulfillment-status");
+  const clearFulfill=()=>fulfillReview?.replaceChildren();
+  for(const input of [fulfillHandoff,fulfillIllustration])input?.addEventListener("input",clearFulfill);
+  fulfillPreview?.addEventListener("click",async()=>{
+    if(busy||!guid.test(fulfillHandoff.value.trim())||!guid.test(fulfillIllustration.value.trim()))return;
+    const handoffId=fulfillHandoff.value.trim().toLowerCase(),illustrationId=fulfillIllustration.value.trim().toLowerCase();
+    busy=true;fulfillPreview.disabled=true;fulfillHandoff.disabled=true;fulfillIllustration.disabled=true;clearFulfill();
+    try{
+      await session();
+      const r=await fetch("/api/creators/operator-review/fulfillment-manifest?handoffId="+encodeURIComponent(handoffId)+"&illustrationId="+encodeURIComponent(illustrationId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!r.ok)throw Error("Current handoff or agreement evidence unavailable.");
+      const m=await r.json();
+      if(m.schema!=="alpha-creator-fulfillment-preparation/v1"||m.handoffId!==handoffId||m.status!=="PREPARATION_ONLY"||m.delivery!=="NOT_SENT"||
+        m.fundingVerified!==false||m.bookingAuthorized!==false||m.paymentAuthorized!==false||m.deliveryAuthorized!==false||m.factoryDispatchAuthorized!==false||
+        ![m.placementId,m.campaignId,m.creatorId,m.slotId,m.candidateId,m.agreementEvidenceId].every(x=>guid.test(x))||
+        ![m.imageSha256,m.handoffSha256,m.agreementEvidenceSha256].every(x=>/^[a-f0-9]{64}$/.test(x)))throw Error("Invalid preparation manifest.");
+      const card=document.createElement("section");
+      for(const [label,value] of [["Placement",m.placementId],["Creator",m.creatorId],["Artwork fingerprint",m.imageSha256],["Agreement evidence",m.agreementEvidenceId],["Delivery",m.delivery]])
+        card.append(node("p",label+": "+value));
+      const download=node("button","Export private preparation JSON");download.type="button";
+      download.addEventListener("click",()=>{
+        if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+        const url=URL.createObjectURL(new Blob([JSON.stringify(m,null,2)+"\n"],{type:"application/json"}));
+        const a=document.createElement("a");a.href=url;a.download="alpha-fulfillment-"+handoffId+".json";a.click();URL.revokeObjectURL(url);
+        clearFulfill();fulfillStatus.textContent="Preparation manifest export requested. No delivery or dispatch authorized.";
+      });
+      card.append(download);fulfillReview.append(card);fulfillStatus.textContent="Current preparation manifest generated.";
+    }catch(e){clearFulfill();fulfillStatus.textContent=e.message;}
+    finally{busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
+  });
+  window.addEventListener("pagehide",clearFulfill);
   inventoryLoad.addEventListener("click",loadInventory);
   window.addEventListener("pagehide",clearInventory);
   load.addEventListener("click", refresh);
