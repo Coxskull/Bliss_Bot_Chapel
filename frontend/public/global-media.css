@@ -44,3 +44,8 @@
   .hero-actions a { width: 100%; min-height: 48px; }
   .hero-actions .tertiary { padding-left: 18px; padding-right: 18px; }
 }
+
+/* Local Ask Alpha guide actions, never provider-generated links. */
+.ask-alpha-action{display:inline-flex;align-items:center;min-height:44px;margin:8px 8px 0 0;padding:8px 12px;border:1px solid #bd99db;border-radius:9px;color:#f4d7ff;font-weight:700;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
+.ask-alpha-action:hover{background:#35214f}
+.ask-alpha-action:focus-visible{outline:2px solid #f4d7ff;outline-offset:3px}
