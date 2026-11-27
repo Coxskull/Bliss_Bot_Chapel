@@ -11,7 +11,7 @@ public static class CreatorFactorySubmission
     private static readonly Uri Endpoint=new("https://alpha-hf-factory-engine-staging.up.railway.app/internal/bliss/held-creative-jobs");
     private static readonly HttpClient Client=new(new HttpClientHandler{AllowAutoRedirect=false,UseCookies=false}){Timeout=TimeSpan.FromSeconds(12)};
     public static string Serialize(object manifest)=>JsonSerializer.Serialize(manifest,new JsonSerializerOptions(JsonSerializerDefaults.Web));
-    public static async Task<JsonElement?> Submit(string body,Guid handoffId,CancellationToken ct)
+    public static async Task<JsonElement?> Submit(string body,Guid handoffId,CancellationToken ct,bool readOnly=false)
     {
         var secret=Environment.GetEnvironmentVariable("BLISS_FACTORY_CREATIVE_INTAKE_HMAC_KEY");
         if(!CreatorCompensationProposal.ValidDocumentHash(secret) || Encoding.UTF8.GetByteCount(body)>16384)return null;
@@ -21,9 +21,9 @@ public static class CreatorFactorySubmission
         var bytes=Encoding.UTF8.GetBytes(body);
         var digest=Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
         var timestamp=DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
-        var signed=Encoding.UTF8.GetBytes("alpha-bliss-held-creative-v1\n"+timestamp+"\n"+body);
+        var signed=Encoding.UTF8.GetBytes((readOnly?"alpha-bliss-held-creative-read-v1\n":"alpha-bliss-held-creative-v1\n")+timestamp+"\n"+body);
         var signature=Convert.ToHexString(HMACSHA256.HashData(Convert.FromHexString(secret!),signed)).ToLowerInvariant();
-        using var req=new HttpRequestMessage(HttpMethod.Post,Endpoint);
+        using var req=new HttpRequestMessage(HttpMethod.Post,readOnly?new Uri(Endpoint.AbsoluteUri+"/readback"):Endpoint);
         req.Content=new ByteArrayContent(bytes);
         req.Content.Headers.ContentType=new MediaTypeHeaderValue("application/json");
         req.Headers.Add("X-Alpha-Timestamp",timestamp);
