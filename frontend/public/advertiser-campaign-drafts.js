@@ -233,6 +233,8 @@
           if(!response.ok)throw Error("Service offer unavailable or no longer current.");
           const result=await response.json();if(current!==generation||!card.isConnected)return;
           if(result.campaignId!==row.campaignId||result.amountCents!==14900||result.currency!=="usd"||!result.offerId
+            ||!uuid.test(result.offerId)||typeof result.scope!=="string"||!result.scope.trim()||result.scope.length>2000
+            ||typeof result.terms!=="string"||!result.terms.trim()||result.terms.length>2000
             ||!/^[0-9a-f]{64}$/.test(result.offerSha256)||!["OFFERED","ACCEPTED"].includes(result.status)||result.paymentAuthorized!==false||result.release!=="HELD")throw Error("Unexpected offer receipt.");
           const progressLabels = {
             AWAITING_ACCEPTANCE: "Waiting for your acceptance.",
@@ -269,6 +271,33 @@
             const progress=document.createElement("p");progress.setAttribute("role","status");
             progress.textContent=progressLabels[result.orderProgress] || "Order progress unavailable. Contact ALPHA before making any payment.";
             offerPanel.appendChild(progress);
+            const receipt=document.createElement("button");receipt.type="button";receipt.textContent="Save order acceptance record (TXT)";
+            receipt.addEventListener("click",()=>{
+              if(current!==generation||!csrf||panel.hidden||!card.isConnected||!receipt.isConnected||offerButton.disabled)return;
+              const content=[
+                "ALPHA GLOBAL MEDIA LLC — ORDER ACCEPTANCE RECORD",
+                "Not a tax invoice, payment receipt, payment instruction or delivery confirmation.",
+                "Order reference: "+result.offerId,
+                "Campaign reference: "+row.campaignId,
+                "Campaign name: "+row.name,
+                "Offer fingerprint (SHA-256): "+result.offerSha256,
+                "Accepted service price: USD 149.00",
+                "Order status: ACCEPTED",
+                "Readback saved (UTC): "+new Date().toISOString(),
+                "",
+                "Accepted scope:",result.scope,"","Accepted terms:",result.terms,
+                "","Recorded order progress:",progress.textContent,
+                "","Recorded creative progress:",creative.textContent,
+                "","This record does not confirm current payment, refund, artwork delivery or campaign authorization."
+              ].join("\n");
+              const url=URL.createObjectURL(new Blob([content],{type:"text/plain;charset=utf-8"}));
+              previewUrls.push(url);
+              const link=document.createElement("a");link.href=url;
+              link.download="alpha-order-"+result.offerId+".txt";link.textContent="Download order record";
+              receipt.replaceWith(link);
+            });
+            offerPanel.appendChild(receipt);
+            const help=document.createElement("a");help.href="/support.html";help.textContent="Contact ALPHA support about this order";offerPanel.appendChild(help);
             const refresh=document.createElement("button");refresh.type="button";refresh.textContent="Refresh order progress";
             refresh.addEventListener("click",()=>serviceOffer("STATUS"));offerPanel.appendChild(refresh);
           }
