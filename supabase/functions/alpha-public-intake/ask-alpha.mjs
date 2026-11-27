@@ -186,7 +186,13 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
   try {
     const result = await client.rpc("alpha_ask_alpha_reserve", params);
     if (result.error) {
-      if (result.error.code === "P0001") return out(origin,{error:"AI_BUDGET_OR_RATE_LIMIT_REACHED"},429);
+      if (result.error.code === "P0001") {
+        // Do not expose database text or misreport an operational finance
+        // hold as a visitor rate-limit. No provider request has been made.
+        if (["ASK_ALPHA_METERING_NOT_VERIFIED","ASK_ALPHA_UNRECONCILED_USAGE"].includes(result.error.message))
+          return out(origin,{error:"AI_TEMPORARILY_UNAVAILABLE",fallback:"Guided help and the public inquiry forms remain available. No AI request was sent."},503);
+        return out(origin,{error:"AI_BUDGET_OR_RATE_LIMIT_REACHED"},429);
+      }
       return out(origin,{error:"AI_METERING_UNAVAILABLE"},503);
     }
     reservation = Array.isArray(result.data) ? result.data[0] : result.data;
@@ -216,7 +222,7 @@ export async function handleAskAlpha({payload, req, client, origin, out, env = k
           input:[...(payload.history ?? []).map(h => ({role:h.role,content:h.content})),
             {role:"user",content:payload.message}]
         }),
-        signal:abort.signal
+        redirect:"error",signal:abort.signal
       });
       if (!response.ok) throw Error("PROVIDER_NOT_SUCCESSFUL");
       const data = await readBoundedProviderJson(response,abort.signal);
