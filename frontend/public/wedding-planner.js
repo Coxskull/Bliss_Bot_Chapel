@@ -135,10 +135,13 @@ async function sendAskAlpha(question) {
         if (askAlphaAiStatus) askAlphaAiStatus.textContent =
           "AI request recorded: " + result.receipt_id + ". Not an official support case or approved proposal.";
       } else {
-        appendAskAlphaMessage("guide",
-          "AI could not verify an answer or receipt. No commercial action was taken. You can use the public interest or contact forms.");
-        if (askAlphaAiStatus) askAlphaAiStatus.textContent =
-          "AI unavailable (" + (result?.error || response.status) + "). The scripted guide remains available.";
+        // A known operational hold is not a visitor fault or a confirmed AI reply.
+        // Use the existing local guide, never retry automatically or expose raw server errors.
+        const held = response.status === 503 && result?.error === "AI_TEMPORARILY_UNAVAILABLE";
+        appendAskAlphaMessage("guide",askAlphaAnswer(cleaned));
+        if (askAlphaAiStatus) askAlphaAiStatus.textContent = held
+          ? "Live AI is temporarily unavailable. No AI provider request was sent. Guided help remains available."
+          : "AI answer or receipt not confirmed. Guided help remains available; no automatic retry was made.";
       }
     } catch {
       appendAskAlphaMessage("guide",
