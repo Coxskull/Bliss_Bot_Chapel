@@ -22,7 +22,7 @@ DECLARE
  IF EXISTS(SELECT 1 FROM public.alpha_ask_alpha_turns t WHERE t.state='UNKNOWN')$guard$;
 BEGIN
   PERFORM pg_catalog.pg_advisory_xact_lock(2941,20);
-  SELECT pg_get_functiondef('public.alpha_ask_alpha_reserve(uuid,text,text,text,text,boolean)'::regprocedure) INTO f;
+  SELECT pg_get_functiondef('public.alpha_ask_alpha_reserve(uuid,text,text,text,text,text,boolean)'::regprocedure) INTO f;
   IF position(old_gate IN f)=0 OR position(old_guard IN f)=0 OR
      position('month_usd+cfg.externally_billed_usd+0.010000>9.000000' IN f)=0 OR
      position('today_usd+0.010000>1.000000' IN f)=0 OR
