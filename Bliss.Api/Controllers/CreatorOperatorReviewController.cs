@@ -551,6 +551,48 @@ public sealed class CreatorOperatorReviewController(
         return receipt is null?StatusCode(503,new {error="Factory admission not confirmed. Recheck the exact manifest before retrying."}):Ok(receipt.Value);
     }
 
+    [HttpPost("factory-artwork")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> RetrieveFactoryArtwork([FromBody] RetrieveCreatorFactoryArtwork request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorFactoryArtworkRequested || !auth.CreatorFactorySubmissionRequested || !auth.CreatorFulfillmentManifestRequested
+            || !auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested || !auth.CreatorAgreementEvidenceRequested
+            || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out _))return StatusCode(403);
+        if(!request.ConfirmPrivateArtworkHandling || request.HandoffId==Guid.Empty || request.IllustrationId==Guid.Empty
+            || !CreatorCompensationProposal.ValidDocumentHash(request.ManifestSha256))return BadRequest();
+        string body;
+        await using(var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,ct)){
+            var current=await CreatorFulfillmentManifest.Build(db,request.HandoffId,request.IllustrationId,ct);
+            if(current is null)return NotFound();
+            body=CreatorFactorySubmission.Serialize(current);
+            if(ControlledAiService.Hash(body)!=request.ManifestSha256)return Conflict();
+            await tx.CommitAsync(ct);
+        }
+        if(await CreatorFactorySubmission.Submit(body,request.HandoffId,ct,readOnly:true) is null)
+            return StatusCode(503,new {error="Exact Factory admission not confirmed."});
+        await using var snapshot=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,ct);
+        var refreshed=await CreatorFulfillmentManifest.Build(db,request.HandoffId,request.IllustrationId,ct);
+        if(refreshed is null || CreatorFactorySubmission.Serialize(refreshed)!=body)return Conflict();
+        using var doc=System.Text.Json.JsonDocument.Parse(body);
+        var manifest=doc.RootElement;
+        var candidateId=manifest.GetProperty("candidateId").GetGuid();
+        var candidate=await db.AcademyProductionCandidates.AsNoTracking().SingleOrDefaultAsync(c=>c.Id==candidateId,ct);
+        if(candidate is null || candidate.ImageBytes.Length is <33 or >16000000)return NotFound();
+        var bytes=candidate.ImageBytes;
+        var hash=Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)).ToLowerInvariant();
+        if(hash!=manifest.GetProperty("imageSha256").GetString()
+            || !bytes.AsSpan(0,8).SequenceEqual(new byte[]{137,80,78,71,13,10,26,10})
+            || !bytes.AsSpan(12,4).SequenceEqual(new byte[]{73,72,68,82})
+            || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(8,4))!=13
+            || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(16,4))!=manifest.GetProperty("imageWidth").GetInt32()
+            || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(bytes.AsSpan(20,4))!=manifest.GetProperty("imageHeight").GetInt32())return Conflict();
+        await snapshot.CommitAsync(ct);
+        Response.Headers["X-Content-Type-Options"]="nosniff";
+        return File(bytes,"image/png","alpha-private-"+candidateId.ToString("N")+".png");
+    }
+
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
@@ -610,3 +652,5 @@ public sealed record RecordCreatorSettlementException(Guid EvidenceId,string Ori
     DateTimeOffset ObservedAt,bool OriginalTransferReviewed,bool ExceptionEvidenceReviewed,bool ConfirmHold);
 
 public sealed record SubmitCreatorFactoryPreparation(Guid HandoffId,Guid IllustrationId,string ManifestSha256,bool ConfirmHeldMetadataOnly);
+
+public sealed record RetrieveCreatorFactoryArtwork(Guid HandoffId,Guid IllustrationId,string ManifestSha256,bool ConfirmPrivateArtworkHandling);
