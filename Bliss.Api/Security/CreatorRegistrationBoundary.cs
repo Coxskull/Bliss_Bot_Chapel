@@ -26,7 +26,9 @@ public static class CreatorRegistrationBoundary
                             && path.Equals("/api/creators/inventory/pause", StringComparison.OrdinalIgnoreCase))
                         || (options.CreatorInventoryReadbackRequested && options.CreatorInventoryDraftRequested
                             && path.Equals("/api/creators/inventory/draft", StringComparison.OrdinalIgnoreCase))
-                        || (options.CreatorCampaignInvitationRequested && path.Equals("/api/creators/campaign-invitations", StringComparison.OrdinalIgnoreCase))))))
+                        || (options.CreatorCampaignInvitationRequested && path.Equals("/api/creators/campaign-invitations", StringComparison.OrdinalIgnoreCase))
+                        || (options.CreatorCampaignInvitationRequested && options.CreatorCompensationProposalRequested
+                            && path.Equals("/api/creators/compensation-response", StringComparison.OrdinalIgnoreCase))))))
             return false;
         return true;
     }
