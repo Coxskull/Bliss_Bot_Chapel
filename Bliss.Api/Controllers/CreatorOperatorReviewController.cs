@@ -524,7 +524,31 @@ public sealed class CreatorOperatorReviewController(
         var manifest=await CreatorFulfillmentManifest.Build(db,handoffId,illustrationId,ct);
         if(manifest is null)return NotFound();
         await tx.CommitAsync(ct);
-        return Ok(manifest);
+        return Ok(new {manifest,manifestSha256=ControlledAiService.Hash(CreatorFactorySubmission.Serialize(manifest)),
+            factorySubmissionEnabled=auth.CreatorFactorySubmissionRequested});
+    }
+
+    [HttpPost("factory-submission")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> SubmitFactoryPreparation([FromBody] SubmitCreatorFactoryPreparation request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorFactorySubmissionRequested || !auth.CreatorFulfillmentManifestRequested || !auth.CreatorCampaignInvitationRequested
+            || !auth.CreatorCompensationProposalRequested || !auth.CreatorAgreementEvidenceRequested || !auth.CreatorAuthorityVerificationRequested
+            || !TryOperator(out _))return StatusCode(403);
+        if(request.HandoffId==Guid.Empty || request.IllustrationId==Guid.Empty || !request.ConfirmHeldMetadataOnly
+            || !CreatorCompensationProposal.ValidDocumentHash(request.ManifestSha256))return BadRequest();
+        string body;
+        await using(var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,ct)){
+            var manifest=await CreatorFulfillmentManifest.Build(db,request.HandoffId,request.IllustrationId,ct);
+            if(manifest is null)return NotFound();
+            body=CreatorFactorySubmission.Serialize(manifest);
+            if(ControlledAiService.Hash(body)!=request.ManifestSha256)return Conflict(new {error="Current manifest changed. Review again."});
+            await tx.CommitAsync(ct);
+        }
+        var receipt=await CreatorFactorySubmission.Submit(body,request.HandoffId,ct);
+        return receipt is null?StatusCode(503,new {error="Factory admission not confirmed. Recheck the exact manifest before retrying."}):Ok(receipt.Value);
     }
 
     private bool TryOperator(out string subject)
@@ -584,3 +608,5 @@ public sealed record RecordCreatorPayableReview(Guid HistoryId,string Digest,dec
 
 public sealed record RecordCreatorSettlementException(Guid EvidenceId,string OriginalDigest,string DocumentSha256,string Reason,
     DateTimeOffset ObservedAt,bool OriginalTransferReviewed,bool ExceptionEvidenceReviewed,bool ConfirmHold);
+
+public sealed record SubmitCreatorFactoryPreparation(Guid HandoffId,Guid IllustrationId,string ManifestSha256,bool ConfirmHeldMetadataOnly);
