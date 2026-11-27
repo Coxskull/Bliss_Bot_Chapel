@@ -64,6 +64,13 @@
 <button type="button" id="artwork-attach" disabled>Attach artwork to candidate history</button>
 <img id="artwork" alt="Private AI advertising draft" hidden style="max-width:100%;height:auto">
 <p id="artwork-status" role="status"></p>
+<section id="placement-preview-panel" hidden><h3>Private advertising placement preview</h3>
+<p>Preview the verified source artwork within the existing 2, 4 or 6-slot geometry. Letterboxing may be needed. This is a local mockup, not approved placement artwork or creator consent.</p>
+<label for="placement-layout">Advertising layout</label><select id="placement-layout"><option value="2">2 advertisements</option><option value="4">4 advertisements</option><option value="6">6 advertisements</option></select>
+<label for="placement-slot">Advertising slot</label><select id="placement-slot"></select>
+<button type="button" id="placement-preview" disabled>Preview private placement</button>
+<canvas id="placement-canvas" hidden width="1920" height="1080" style="max-width:100%;height:auto" aria-label="Unapproved placement mockup"></canvas>
+<p id="placement-status" role="status"></p></section>
 <section id="artwork-review" hidden>
 <label for="artwork-decision">Review decision</label><select id="artwork-decision"><option>PASS</option><option>REVISE</option><option>FAIL</option></select>
 <label><input type="checkbox" id="artwork-custom"> Customized for advertiser</label>
@@ -83,4 +90,4 @@
 <label><input type="checkbox" id="release-scope"> Approved paid service scope and artwork complete.</label>
 <button type="button" id="release-artwork" disabled>Authorize private artwork download</button><button type="button" id="delivery-readback" disabled>Check customer receipt (read only)</button></section></section>
 <section aria-live="polite"><h2>Preparation result</h2><p id="result">No preparation requested.</p></section>
-</section><script src="/staff-creative-preparation.js" defer></script></main></body></html>
+</section><script src="/real-estate-showcase.js" defer></script><script src="/staff-creative-preparation.js" defer></script></main></body></html>

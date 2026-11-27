@@ -15,7 +15,11 @@ assert(homepage.includes('href="/real-estate-showcase.html"'),'homepage demo rou
 assert(homepage.includes('Public account registration') || homepage.includes('Account registration not yet available') || homepage.includes('online payments are not available'),'existing commercial limitations changed');
 const src=await get(resolve(output,'real-estate-showcase.js'));
 assert(src.includes('["LEFT_PURPLE", 0, 180, 270, 720,') && src.includes('["RIGHT_GREEN", 1650, 180, 270, 720,'),'six-layout side bands not repaired');
-assert(src.includes('Math.min(w/img.width,h/img.height)'), 'asset contain-not-stretch omitted');
+assert(src.includes('renderShowcaseSlot({ width:slot[3],height:slot[4]') &&
+ src.includes('image.width!==slot[3]||image.height!==slot[4]') &&
+ src.includes('img.width!==w||img.height!==h') &&
+ src.includes('ctx.drawImage(img,x,y)') &&
+ !/ctx\.drawImage\(img,x,y,/.test(src), 'exact-size decode and unscaled draw gate omitted');
 assert(src.includes('campaignReady: false') && src.includes('delivery: "NOT_SENT"'), 'draft status not fail closed');
 for (const file of ['real-estate-showcase.js','real-estate-showcase-page.js','ad-composer.js']){
  const text=await get(resolve(output,file));

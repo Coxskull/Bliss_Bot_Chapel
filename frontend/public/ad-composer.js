@@ -109,5 +109,28 @@
       canvas.toBlob(blob => blob && blob.size ? resolve(blob) : reject(new Error("Unable to render PNG.")), "image/png");
     });
   }
-  window.AlphaTemplateComposer = Object.freeze({ render });
+  // Native dimensions from the existing 1920x1080 fictional showcase.
+  // Not a production inventory/rights grant. Do not stretch source artwork.
+  function renderShowcaseSlot(input) {
+    const {width,height}=input||{};
+    if (![[960,270],[960,180],[270,720]].some(([w,h])=>width===w&&height===h))
+      throw Error("Unsupported fictional showcase slot size.");
+    const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;
+    const ctx=canvas.getContext("2d",{alpha:false});if(!ctx)throw Error("Canvas unavailable.");
+    const [base,accent]=colors(input.colors),vertical=width<height;
+    const gradient=ctx.createLinearGradient(0,0,width,height);
+    gradient.addColorStop(0,"#101629");gradient.addColorStop(.65,base);gradient.addColorStop(1,"#101629");
+    ctx.fillStyle=gradient;ctx.fillRect(0,0,width,height);
+    ctx.save();ctx.globalAlpha=.18;ctx.strokeStyle=accent;
+    for(let i=0;i<5;i++){ctx.lineWidth=2;ctx.beginPath();ctx.arc(width*.84,height*.38,35+i*(vertical?25:42),0,Math.PI*2);ctx.stroke();}
+    ctx.restore();
+    const pad=vertical?20:32,max=width-pad*2;
+    roundRect(ctx,pad,pad,vertical?44:64,5,2,accent);
+    const brand=clean(input.brandName,120)||"FICTIONAL BRAND";
+    drawWrapped(ctx,brand,pad,vertical?105:65,max,{fontWeight:800,initialSize:vertical?31:42,minSize:16,maxLines:vertical?2:1,color:"#FFFFFF"});
+    drawWrapped(ctx,clean(input.headline,160),pad,vertical?218:height*.58,max,{initialSize:vertical?26:24,minSize:14,maxLines:vertical?5:1,color:"#FFF2D9"});
+    drawWrapped(ctx,"FICTIONAL DEMO • NOT SENT",pad,height-24,max,{fontWeight:700,initialSize:vertical?12:15,minSize:10,maxLines:1,color:"#FFFFFF"});
+    return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob&&blob.size?resolve(blob):reject(Error("Slot PNG unavailable.")),"image/png"));
+  }
+  window.AlphaTemplateComposer = Object.freeze({ render,renderShowcaseSlot });
 })();

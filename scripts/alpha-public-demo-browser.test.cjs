@@ -47,6 +47,29 @@ async function go(){
   const dimensions=await page.locator("#stage").evaluate(canvas=>[canvas.width,canvas.height]);
   assert.deepEqual(dimensions,[1920,1080]);
   const inv=await page.evaluate(()=>window.AlphaAdvertisingRealEstate.inventory);
+  const native=await page.evaluate(async()=>{
+   const report=[];
+   for(const [width,height] of [[960,270],[960,180],[270,720]]){
+    const blob=await window.AlphaTemplateComposer.renderShowcaseSlot({width,height,brandName:"Fictional fixture",headline:"Exact placement",colors:"#245A80 #FFD181"});
+    const bitmap=await createImageBitmap(blob);
+    report.push([bitmap.width,bitmap.height,blob.type]);
+    bitmap.close();
+   }
+   let rejected=false;
+   try{await window.AlphaTemplateComposer.renderShowcaseSlot({width:1280,height:720});}catch{rejected=true;}
+   return {report,rejected};
+  });
+  assert.deepEqual(native.report,[[960,270,"image/png"],[960,180,"image/png"],[270,720,"image/png"]]);
+  assert.equal(native.rejected,true);
+  const nativeImages=await page.evaluate(async()=>{
+   const images=await window.AlphaAdvertisingRealEstate.prepare();
+   try{return Object.fromEntries(Object.entries(images).map(([brand,img])=>[brand,[img.width,img.height]]));}
+   finally{Object.values(images).forEach(img=>img.close());}
+  });
+  for(const layout of Object.values(inv))for(const slot of layout.slots)
+   assert.deepEqual(nativeImages[slot.advertiser],[slot.width,slot.height]);
+  console.log("ALPHA_NATIVE_SLOT_PNG_PASS",JSON.stringify({assets:Object.keys(nativeImages).length,exactDimensions:true,delivery:"NOT_SENT"}));
+
   for(const count of [2,4,6]){
    assert.equal(inv[String(count)].slots.length,count);
    assert.equal(inv[String(count)].campaignReady,false);
