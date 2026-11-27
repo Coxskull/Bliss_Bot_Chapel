@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Bliss.Api.Security;
+using Bliss.Api.Operations;
 using Bliss.Api.Runtime;
 using Bliss.Domain.Entities;
 using Bliss.Infrastructure.Persistence;
@@ -255,6 +256,86 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
         catch (DbUpdateException) { return Conflict(); }
     }
 
+    private Task<Guid?> CurrentInvitationCreator(string subject, CancellationToken ct) =>
+        (from m in db.CreatorAccountMemberships.AsNoTracking()
+            join r in db.CreatorRegistrationReceipts.AsNoTracking() on new { m.Subject,m.CreatorId } equals new { r.Subject,r.CreatorId }
+            where m.Subject == subject && m.Status == "ACTIVE" && m.Creator.AuthorityStatus == "VERIFIED"
+                && r.ProcessingConsent && r.TermsAccepted && r.PrivacyNoticeVersion == PrivacyNoticeVersion && r.TermsVersion == TermsVersion
+            select (Guid?)m.CreatorId).SingleOrDefaultAsync(ct);
+
+    [Authorize]
+    [HttpGet("campaign-invitations")]
+    public async Task<IActionResult> MyInvitations(CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.CreatorCampaignInvitationRequested || !auth.CreatorAuthorityVerificationRequested
+            || !BlissAuthorization.IsPendingCreatorRegistration(User,auth)) return StatusCode(403);
+        var subject = User.FindFirst("sub")!.Value;
+        var creator = await CurrentInvitationCreator(subject,ct);
+        if (creator is null) return StatusCode(403);
+        var key = creator.Value.ToString("N");
+        var audits = await db.WeddingPlannerAuditEvents.AsNoTracking()
+            .Where(a => a.Action == CreatorCampaignInvitation.Action && a.ActorType == "OPERATOR" && a.Outcome == "INVITED" && a.RequestId == key)
+            .OrderByDescending(a => a.OccurredAt).ThenBy(a => a.Id).Take(25).ToArrayAsync(ct);
+        var items = new List<object>();
+        foreach (var audit in audits)
+        {
+            if (audit.Detail is null || !Guid.TryParseExact(audit.Detail.Split(':')[0],"N",out var placementId)) continue;
+            var row = await CreatorCampaignInvitation.Current(db,placementId,ct);
+            if (row is null || row.CreatorId != creator.Value || !CreatorCampaignInvitation.Matches(audit,row)) continue;
+            var responseId = CreatorCampaignInvitation.ResponseId(audit.Id);
+            var response = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a => a.Id == responseId,ct);
+            if (response is not null && (response.Action != CreatorCampaignInvitation.ResponseAction || response.ActorType != "CREATOR"
+                || response.ActorLabel != subject || response.AdvertiserId != row.AdvertiserId || response.WorkspaceId != row.WorkspaceId
+                || response.Detail != audit.Id.ToString("N") || response.Outcome is not ("INTERESTED" or "DECLINED"))) continue;
+            items.Add(new { invitationId = audit.Id, row.PlacementId, row.CampaignName, row.ContentTitle, row.SlotType,
+                row.StartSecond,row.DurationSeconds, digest = CreatorCampaignInvitation.Digest(row),
+                response = response?.Outcome ?? "AWAITING_RESPONSE" });
+        }
+        return Ok(new { items, bookingAuthorized = false, paymentAuthorized = false, deliveryAuthorized = false });
+    }
+
+    [Authorize]
+    [HttpPost("campaign-invitations")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(1024)]
+    public async Task<IActionResult> RespondToInvitation([FromBody] CreatorInvitationResponse request, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.CreatorCampaignInvitationRequested || !auth.CreatorAuthorityVerificationRequested
+            || !BlissAuthorization.IsPendingCreatorRegistration(User,auth)) return StatusCode(403);
+        if (request.InvitationId == Guid.Empty || request.PlacementId == Guid.Empty || request.Digest is not { Length: 64 }
+            || request.Decision is not ("INTERESTED" or "DECLINED") || !request.ConfirmNonBinding) return BadRequest();
+        var subject = User.FindFirst("sub")!.Value;
+        try
+        {
+            await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable,ct);
+            var creator = await CurrentInvitationCreator(subject,ct);
+            if (creator is null) return StatusCode(403);
+            var row = await CreatorCampaignInvitation.Current(db,request.PlacementId,ct);
+            if (row is null || row.CreatorId != creator.Value) return NotFound();
+            var audit = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a => a.Id == request.InvitationId,ct);
+            if (audit is null || !CreatorCampaignInvitation.Matches(audit,row) || audit.ActorLabel == subject
+                || CreatorCampaignInvitation.Digest(row) != request.Digest) return Conflict();
+            var id = CreatorCampaignInvitation.ResponseId(audit.Id);
+            var prior = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a => a.Id == id,ct);
+            if (prior is not null && (prior.Action != CreatorCampaignInvitation.ResponseAction || prior.ActorType != "CREATOR"
+                || prior.ActorLabel != subject || prior.AdvertiserId != row.AdvertiserId || prior.WorkspaceId != row.WorkspaceId
+                || prior.Detail != audit.Id.ToString("N") || prior.Outcome != request.Decision)) return Conflict();
+            if (prior is null)
+            {
+                db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent { Id = id, AdvertiserId = row.AdvertiserId,
+                    WorkspaceId = row.WorkspaceId, Action = CreatorCampaignInvitation.ResponseAction, ActorType = "CREATOR",
+                    ActorLabel = subject, Outcome = request.Decision, Detail = audit.Id.ToString("N"), OccurredAt = DateTime.UtcNow });
+                await db.SaveChangesAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new { invitationId = audit.Id, response = request.Decision, bookingAuthorized = false, paymentAuthorized = false, deliveryAuthorized = false });
+        }
+        catch (PostgresException pg) when (pg.SqlState == PostgresErrorCodes.SerializationFailure) { return Conflict(); }
+        catch (DbUpdateException) { return Conflict(); }
+    }
+
     private IActionResult ReplayOrConflict(CreatorRegistrationReceipt prior, string subject, string digest) =>
         prior.Subject == subject && prior.RequestSha256 == digest
             ? Ok(new CreatorRegistrationReceiptDto(prior.Id, prior.CreatorId, "PENDING_REVIEW", prior.CreatedAt, prior.MarketingOptIn))
@@ -284,3 +365,5 @@ public sealed record CreatorRegistrationStatusDto(
 public sealed record CreatorInventoryPauseRequest(Guid SlotId, bool ConfirmPause);
 
 public sealed record CreatorInventoryDraftRequest(Guid RequestId, Guid ContentItemId, string SlotType, int StartSecond, int DurationSeconds, bool ConfirmDraft);
+
+public sealed record CreatorInvitationResponse(Guid InvitationId, Guid PlacementId, string Digest, string Decision, bool ConfirmNonBinding);
