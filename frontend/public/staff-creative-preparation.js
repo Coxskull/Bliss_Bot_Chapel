@@ -58,6 +58,7 @@
     el("artwork-attach").disabled = busy || !artworkRun || !artworkUrl || !!artworkCandidate || !review.checked;
     el("artwork-record").disabled = busy || !artworkCandidate || !artworkUrl || !review.checked || !el("artwork-rationale").value.trim();
     artworkFields.forEach(f=>f.disabled=busy);
+    el("delivery-readback").disabled=busy || !artworkCandidate || !artworkUrl || !review.checked || !uuid.test(el("reconciliation-id").value.trim());
     el("release-artwork").disabled=busy || !artworkCandidate || !artworkUrl || !review.checked
         || !uuid.test(el("reconciliation-id").value.trim()) || !el("release-payment").checked || !el("release-scope").checked;
   }
@@ -252,8 +253,11 @@
         if(!artworkRetry || artworkRetry.fingerprint!==fingerprint) artworkRetry={fingerprint,key:crypto.randomUUID()};
         Object.assign(payload,{candidateId:artworkCandidate,review:{...data,idempotencyKey:artworkRetry.key}});
       }
-      if(action==="RELEASE"){
-        if(!artworkCandidate || !artworkUrl || !uuid.test(el("reconciliation-id").value.trim()) || !el("release-payment").checked || !el("release-scope").checked)throw Error("Complete release checks.");
+      if(action==="DELIVERY_STATUS"){
+        if(!artworkCandidate || !uuid.test(el("reconciliation-id").value.trim()))throw Error("Select the exact reconciliation receipt.");
+        Object.assign(payload,{candidateId:artworkCandidate,reconciliationId:el("reconciliation-id").value.trim()});
+      }
+      if(action==="RELEASE"){        if(!artworkCandidate || !artworkUrl || !uuid.test(el("reconciliation-id").value.trim()) || !el("release-payment").checked || !el("release-scope").checked)throw Error("Complete release checks.");
         Object.assign(payload,{candidateId:artworkCandidate,reconciliationId:el("reconciliation-id").value.trim(),currentPaymentVerified:true,scopeVerified:true});
       }
       const request=async body=>fetch("/api/internal/creative-image-review",{method:"POST",credentials:"same-origin",cache:"no-store",
@@ -275,8 +279,18 @@
       const result=await response.json();if(current!==epoch)return;
       if(result.runId!==artworkRun || !hex.test(result.imageSha256) || result.dispatchAuthorized!==false
         || (action==="RELEASE" ? result.release!=="ARTWORK_DOWNLOAD_AVAILABLE" || result.delivery!=="DOWNLOAD_NOT_CONFIRMED" || !uuid.test(result.releaseId)
+          : action==="DELIVERY_STATUS" ? !((result.release==="HELD" && result.delivery==="NOT_SENT" && result.releaseId==null) || (result.release==="ARTWORK_DOWNLOAD_AVAILABLE" && result.delivery==="DOWNLOAD_NOT_CONFIRMED" && uuid.test(result.releaseId)))
           : result.release!=="HELD" || result.delivery!=="NOT_SENT") || !Number.isInteger(result.reviewVersion))
         throw Error("Unexpected artwork review receipt.");
+      if(action==="DELIVERY_STATUS"){
+        if(result.candidateId!==artworkCandidate||typeof result.downloadRequestRecorded!=="boolean"||typeof result.receiptAcknowledged!=="boolean"||
+          (result.downloadRequestRecorded?result.release!=="ARTWORK_DOWNLOAD_AVAILABLE"||!Number.isFinite(Date.parse(result.downloadRequestedAt)):result.downloadRequestedAt!=null)||
+          (result.receiptAcknowledged?!result.downloadRequestRecorded||!Number.isFinite(Date.parse(result.receiptAcknowledgedAt)):result.receiptAcknowledgedAt!=null))throw Error("Invalid delivery readback.");
+        el("artwork-status").textContent=result.receiptAcknowledged?"Customer approval actor acknowledged receipt: "+new Date(result.receiptAcknowledgedAt).toLocaleString()+". Not independent proof of saved file."
+          :result.downloadRequestRecorded?"Customer approval actor requested download; receipt not acknowledged."
+          :result.release==="HELD"?"No matching artwork release recorded.":"Artwork released; no download request from the approving customer recorded.";
+        return;
+      }
       if(action==="PREVIEW"){
         const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await previewBlob.arrayBuffer())),x=>x.toString(16).padStart(2,"0")).join("");
         if(digest!==result.imageSha256)throw Error("Artwork integrity verification failed.");
@@ -304,6 +318,7 @@
   el("artwork-record").addEventListener("click",()=>artworkAction("REVIEW"));
   artworkFields.forEach(f=>f.addEventListener("input",sync));
   ["reconciliation-id","release-payment","release-scope"].forEach(id=>el(id).addEventListener("input",sync));
+  el("delivery-readback").addEventListener("click",()=>{if(!el("delivery-readback").disabled)artworkAction("DELIVERY_STATUS");});
   el("release-artwork").addEventListener("click",()=>{if(!el("release-artwork").disabled)artworkAction("RELEASE");});
   imageReview.addEventListener("click",()=>imageAction("REVIEW"));
   imageReserve.addEventListener("click",()=>imageAction("RESERVE"));
