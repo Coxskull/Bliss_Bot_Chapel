@@ -237,10 +237,11 @@ function renderCases(list){
 }
 async function loadQueue(target=0){
  clearIntakeReview();clearQueue();
+ if(document.hidden)return;
  const generation=queueGeneration,access=token;
  try{
   const result=await operatorRequest("GET","?page="+target);
-  if(generation!==queueGeneration||access!==token)return;
+  if(generation!==queueGeneration||access!==token||document.hidden)return;
   guardUI();
   if(!Array.isArray(result?.cases)||result.cases.length>20||
     result.cases.some(c=>!UUID.test(c?.case_id||"")||
@@ -266,18 +267,21 @@ async function loadQueue(target=0){
  }
 }
 async function claim(caseId,button){
- if(busy)return;
+ if(busy||document.hidden)return;
+ const generation=queueGeneration,access=token;
  setBusy(true);
  try{
   guardUI();
   if(!queueVerified||!UUID.test(caseId)||!cases.some(c=>c.case_id===caseId&&c.status==="OPEN"))
    throw Error("INVALID_CASE");
   const result=await operatorRequest("POST","",{action:"CLAIM",case_id:caseId});
+  if(generation!==queueGeneration||access!==token||document.hidden)return;
   if(result?.committed!==true||result?.case_id!==caseId||result?.status!=="IN_REVIEW")
    throw Error("UNCONFIRMED_CLAIM");
   announce("Claim recorded as IN_REVIEW in the protected audit ledger. No customer was contacted.");
   await loadQueue(page);
  }catch(error){
+  if(generation!==queueGeneration||access!==token)return;
   if(error.message==="SESSION_EXPIRED"){resetSession();announce("Session expired.");}
   else if(error.message==="OPERATOR_NOT_AUTHORIZED")showPending();
   else {clearQueue();announce("The claim was not confirmed. Refresh the queue before taking another action.");}
