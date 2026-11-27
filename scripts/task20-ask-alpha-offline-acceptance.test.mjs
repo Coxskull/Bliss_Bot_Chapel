@@ -135,6 +135,7 @@ test("valid synthetic request reserves budget, settles exact usage, returns rece
     paidCalls++;
     assert.equal(_url,"https://api.openai.com/v1/responses");
     assert.equal(opts.method,"POST");
+    assert.equal(opts.redirect,"error");
     assert.equal(opts.headers["Idempotency-Key"],validId(2));
     assert.equal(opts.headers["OpenAI-Project"],"proj_example");
     assert.equal(opts.headers["OpenAI-Organization"],"org-example");
@@ -240,4 +241,17 @@ test("header-only provider stream hits body deadline and settles UNKNOWN",async(
   ]);
   assert.equal(client.calls[1].params.p_state,"UNKNOWN");
   assert.equal(client.calls[1].params.p_actual_usd,null);
+});
+
+test("stale billing and unresolved usage return a truthful guided fallback without reserving or calling AI",async()=>{
+ for(const message of ["ASK_ALPHA_METERING_NOT_VERIFIED","ASK_ALPHA_UNRECONCILED_USAGE"]){
+  let calls=0;
+  const client={rpc:async(name)=>{assert.equal(name,"alpha_ask_alpha_reserve");return {error:{code:"P0001",message}};}};
+  const result=await handleAskAlpha(context(client,async()=>{calls++;throw Error("unexpected provider")}));
+  assert.equal(result.status,503);
+  assert.equal(result.body.error,"AI_TEMPORARILY_UNAVAILABLE");
+  assert.match(result.body.fallback,/No AI request was sent/);
+  assert.equal(calls,0);
+  assert.equal(result.body.answer,undefined);
+ }
 });
