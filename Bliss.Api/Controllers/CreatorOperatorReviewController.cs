@@ -115,6 +115,74 @@ public sealed class CreatorOperatorReviewController(
             authorityStatus = "VERIFIED", workspaceAuthorized = true, commercialAuthorized = false });
     }
 
+    // An unavailable record may be a new draft, a withdrawal, or older inventory.
+    // No automatic restoration: the operator must review the exact current slot,
+    // independently confirm current creator permission and commercial rights.
+    [HttpGet("inventory")]
+    public async Task<IActionResult> InventoryQueue(CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.CreatorInventoryOperatorReviewRequested || !auth.CreatorInventoryReadbackRequested
+            || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out var subject)) return StatusCode(403);
+        var rows = await (from s in db.AdInventorySlots.AsNoTracking()
+            join m in db.CreatorAccountMemberships.AsNoTracking() on s.ContentItem.CreatorId equals m.CreatorId
+            join r in db.CreatorRegistrationReceipts.AsNoTracking() on new { m.Subject, m.CreatorId } equals new { r.Subject, r.CreatorId }
+            where !s.IsAvailable && m.Subject != subject && m.Status == "ACTIVE"
+                && m.Creator.AuthorityStatus == "VERIFIED" && r.ProcessingConsent && r.TermsAccepted
+                && r.PrivacyNoticeVersion == CreatorRegistrationController.PrivacyNoticeVersion
+                && r.TermsVersion == CreatorRegistrationController.TermsVersion
+            orderby s.Id
+            select new { slotId = s.Id, contentItemId = s.ContentItemId, creatorId = m.CreatorId,
+                receiptId = r.Id, creatorName = m.Creator.Name, channelUrl = m.SubmittedChannelUrl,
+                contentTitle = s.ContentItem.Title, contentType = s.ContentItem.ContentType,
+                s.SlotType, s.StartSecond, s.DurationSeconds, s.IsAvailable }).Take(50).ToArrayAsync(ct);
+        return Ok(new { items = rows, bookingAuthorized = false, paymentAuthorized = false, deliveryAuthorized = false });
+    }
+
+    [HttpPost("inventory")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(4096)]
+    public async Task<IActionResult> ReviewInventory([FromBody] CreatorInventoryReviewRequest request, CancellationToken ct)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!auth.CreatorInventoryOperatorReviewRequested || !auth.CreatorInventoryReadbackRequested
+            || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out var subject)) return StatusCode(403);
+        if (request.SlotId == Guid.Empty || request.CreatorId == Guid.Empty || request.ContentItemId == Guid.Empty
+            || request.ReceiptId == Guid.Empty || !request.CreatorPermissionReviewed || !request.RightsReviewed
+            || !request.InventoryFitReviewed || !request.CurrentConsentReviewed
+            || request.StartSecond is null or < 0 or > 86400 || request.DurationSeconds is null or < 1 or > 3600
+            || request.SlotType is not ("PRE_ROLL" or "MID_ROLL" or "POST_ROLL" or "LOWER_THIRD"
+                or "PERIMETER_OVERLAY" or "CORNER_OVERLAY" or "ROTATING_OVERLAY" or "SPONSORED_SEGMENT")
+            || string.IsNullOrWhiteSpace(request.ContentTitle) || request.ContentTitle.Length > 512
+            || string.IsNullOrWhiteSpace(request.ChannelUrl) || request.ChannelUrl.Length > 1024)
+            return BadRequest(new { error = "Exact slot details and independent human review required." });
+        try
+        {
+            await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+            var slot = await db.AdInventorySlots.SingleOrDefaultAsync(s => s.Id == request.SlotId
+                && !s.IsAvailable && s.ContentItemId == request.ContentItemId
+                && s.ContentItem.CreatorId == request.CreatorId && s.ContentItem.Creator.AuthorityStatus == "VERIFIED"
+                && s.ContentItem.Title == request.ContentTitle && s.SlotType == request.SlotType
+                && s.StartSecond == request.StartSecond && s.DurationSeconds == request.DurationSeconds
+                && db.CreatorAccountMemberships.Any(m => m.CreatorId == request.CreatorId
+                    && m.Subject != subject && m.Status == "ACTIVE" && m.SubmittedChannelUrl == request.ChannelUrl
+                    && db.CreatorRegistrationReceipts.Any(r => r.Id == request.ReceiptId
+                        && r.CreatorId == m.CreatorId && r.Subject == m.Subject && r.ProcessingConsent && r.TermsAccepted
+                        && r.PrivacyNoticeVersion == CreatorRegistrationController.PrivacyNoticeVersion
+                        && r.TermsVersion == CreatorRegistrationController.TermsVersion)), ct);
+            if (slot is null) return Conflict(new { error = "Slot or creator authority changed. Refresh and review again." });
+            slot.IsAvailable = true;
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            logger.LogInformation("Creator inventory availability reviewed: SlotId={SlotId} CreatorId={CreatorId} ReceiptId={ReceiptId} OperatorSubject={OperatorSubject}",
+                request.SlotId, request.CreatorId, request.ReceiptId, subject);
+            return Ok(new { slotId = slot.Id, isAvailable = true, existingPlacementsChanged = false,
+                bookingAuthorized = false, paymentAuthorized = false, deliveryAuthorized = false });
+        }
+        catch (Npgsql.PostgresException pg) when (pg.SqlState == Npgsql.PostgresErrorCodes.SerializationFailure) { return Conflict(); }
+        catch (DbUpdateException) { return Conflict(); }
+    }
+
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
@@ -148,3 +216,7 @@ public sealed class CreatorOperatorReviewController(
 public sealed record CreatorOperatorApproval(Guid ReceiptId, Guid CreatorId, bool ProfileReviewed, bool ConsentReviewed);
 
 public sealed record CreatorChannelVerification(Guid ReceiptId, Guid CreatorId, string ObservedCode, bool ChannelControlReviewed, bool ConsentReviewed);
+
+public sealed record CreatorInventoryReviewRequest(Guid SlotId, Guid CreatorId, Guid ContentItemId, Guid ReceiptId,
+    string ContentTitle, string ChannelUrl, string SlotType, int? StartSecond, int? DurationSeconds,
+    bool CreatorPermissionReviewed, bool RightsReviewed, bool InventoryFitReviewed, bool CurrentConsentReviewed);
