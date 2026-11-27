@@ -116,10 +116,12 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
                 }
             }
             var accepted=await StarterServiceOffer.CurrentAccepted(db,draft.CampaignId,offerId,ct);
+            var orderProgress = accepted is null ? "AWAITING_ACCEPTANCE"
+                : await StarterServiceOffer.OrderProgress(db,accepted,draft.CampaignId,ct);
             await tx.CommitAsync(ct);
             return Ok(new{campaignId=draft.CampaignId,offerId,offerSha256=sha,scope=terms.Scope,terms=terms.TermsText,
                 amountCents=14900,currency="usd",status=accepted is null?"OFFERED":"ACCEPTED",
-                paymentAuthorized=false,release="HELD"});
+                orderProgress,paymentAuthorized=false,release="HELD"});
         }catch(PostgresException pg) when(pg.SqlState==PostgresErrorCodes.SerializationFailure){return Conflict();}
         catch(DbUpdateException){return Conflict();}
     }
