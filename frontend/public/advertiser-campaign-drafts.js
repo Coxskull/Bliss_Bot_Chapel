@@ -124,6 +124,11 @@
               || result.dispatchAuthorized!==false
               || result.paymentAuthorized!==false || !["PENDING","APPROVE","WITHHOLD"].includes(result.approval))
             throw Error("Unexpected artwork receipt.");
+          if(result.downloadRequestRecorded !== undefined &&
+              (typeof result.downloadRequestRecorded !== "boolean" ||
+                (result.downloadRequestRecorded ? result.release !== "ARTWORK_DOWNLOAD_AVAILABLE" ||
+                   typeof result.downloadRequestedAt !== "string" || !Number.isFinite(Date.parse(result.downloadRequestedAt))
+                  : result.downloadRequestedAt != null)))throw Error("Unexpected delivery history.");
           const imageResponse=await send({campaignId:row.campaignId,action:"PREVIEW",candidateId:result.candidateId,
             reviewId:result.reviewId,imageSha256:result.imageSha256});
           if(!imageResponse.ok || !imageResponse.headers.get("content-type")?.startsWith("image/png"))throw Error("Artwork preview unavailable.");
@@ -146,6 +151,11 @@
             const button=document.createElement("button");button.type="button";button.textContent=label;
             button.addEventListener("click",()=>{const reason=rationaleInput.value.trim();if(!reason){status.textContent="Enter your decision notes first.";return;}artwork(choice,result,reason);});artPanel.appendChild(button);
           }
+          const delivery=document.createElement("p");delivery.setAttribute("role","status");
+          delivery.textContent=result.release==="HELD" ? "Delivery: held pending release."
+            : result.downloadRequestRecorded ? "Download requested on "+new Date(result.downloadRequestedAt).toLocaleString()+". Saving the file is not confirmed."
+            : "Delivery: artwork available; download completion is not confirmed.";
+          artPanel.appendChild(delivery);
           if(result.release==="ARTWORK_DOWNLOAD_AVAILABLE"){
             const download=document.createElement("button");download.type="button";download.textContent="Download final approved artwork";artPanel.appendChild(download);
             download.addEventListener("click",async()=>{
@@ -159,6 +169,7 @@
                 if(digest!==result.imageSha256 || current!==generation || !card.isConnected)throw Error("Final artwork verification failed.");
                 const url=URL.createObjectURL(blob);previewUrls.push(url);
                 const link=document.createElement("a");link.href=url;link.download="alpha-artwork-"+row.campaignId+".png";link.textContent="Save verified final PNG";artPanel.appendChild(link);
+                delivery.textContent="Download request recorded; verified PNG received by this browser. Saving the file is not confirmed.";
                 status.textContent="Final artwork received by browser. Save the verified PNG.";
               }catch(e){status.textContent=e.message;}finally{download.disabled=false;}
             });
@@ -194,10 +205,22 @@
               (!Object.hasOwn(progressLabels,result.orderProgress)
                 || (result.status === "OFFERED") !== (result.orderProgress === "AWAITING_ACCEPTANCE")))
             throw Error("Unexpected order progress.");
+          const creativeLabels = {
+            NOT_AVAILABLE: "Creative progress is not available for this order.",
+            AWAITING_RECIPE: "Creative recipe not yet recorded.",
+            RECIPE_RECORDED: "Creative recipe recorded. Current AI consent or preparation checks may still be required.",
+            CONSENT_RECORDED: "Current AI consent recorded. No matching image run recorded yet.",
+            IMAGE_RUN_RECORDED: "Image production record exists. Completion and quality are not yet confirmed.",
+            IMAGE_RECORDED_PENDING_REVIEW: "Generated image recorded. Check private artwork review for approval and release."
+          };
+          if (result.creativeProgress !== undefined && !Object.hasOwn(creativeLabels,result.creativeProgress))
+            throw Error("Unexpected creative progress.");
           offerPanel.replaceChildren();
           for(const [tag,value] of [["h4","Service offer — USD 149 — "+result.status],["p",result.scope],["p",result.terms]]){
             const node=document.createElement(tag);node.textContent=value;offerPanel.appendChild(node);
           }
+          const creative = document.createElement("p");creative.textContent=creativeLabels[result.creativeProgress] || "Creative progress unavailable.";
+          offerPanel.appendChild(creative);
           if(result.status==="OFFERED"){
             const accept=document.createElement("button");accept.type="button";accept.textContent="Accept exact service scope and terms ($149)";
             accept.addEventListener("click",()=>{if(window.confirm("Accept the displayed service scope and terms for USD 149? No payment will be taken by this action."))serviceOffer("ACCEPT",result);});offerPanel.appendChild(accept);
