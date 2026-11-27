@@ -525,7 +525,7 @@ public sealed class CreatorOperatorReviewController(
         if(manifest is null)return NotFound();
         await tx.CommitAsync(ct);
         return Ok(new {manifest,manifestSha256=ControlledAiService.Hash(CreatorFactorySubmission.Serialize(manifest)),
-            factorySubmissionEnabled=auth.CreatorFactorySubmissionRequested, factoryArtworkEnabled=auth.CreatorFactorySubmissionRequested && auth.CreatorFactoryArtworkRequested, factoryArtworkTransferEnabled=auth.CreatorFactorySubmissionRequested && auth.CreatorFactoryArtworkRequested && auth.CreatorFactoryArtworkTransferRequested});
+            factoryVisualReviewEnabled=auth.CreatorFactoryVisualReviewRequested, factorySubmissionEnabled=auth.CreatorFactorySubmissionRequested, factoryArtworkEnabled=auth.CreatorFactorySubmissionRequested && auth.CreatorFactoryArtworkRequested, factoryArtworkTransferEnabled=auth.CreatorFactorySubmissionRequested && auth.CreatorFactoryArtworkRequested && auth.CreatorFactoryArtworkTransferRequested});
     }
 
     [HttpPost("factory-submission")]
@@ -621,6 +621,62 @@ public sealed class CreatorOperatorReviewController(
         return status is null?StatusCode(503,new {error="Factory render status unavailable."}):Ok(status.Value);
     }
 
+    [HttpPost("factory-visual-review")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(4096)]
+    public async Task<IActionResult> FactoryVisualReview([FromBody] RecordCreatorFactoryVisualReview request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="no-store";
+        if(!auth.CreatorFactoryVisualReviewRequested || !auth.CreatorFactorySubmissionRequested || !auth.CreatorFulfillmentManifestRequested
+            || !auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested || !auth.CreatorAgreementEvidenceRequested
+            || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out var subject))return StatusCode(403);
+        if(request.HandoffId==Guid.Empty || request.IllustrationId==Guid.Empty ||
+            !new[]{request.ManifestSha256,request.SpecSha256,request.PreviewSha256,request.ReviewDocumentSha256}.All(CreatorCompensationProposal.ValidDocumentHash)
+            || !CreatorFactoryVisualReview.ValidDecision(request.Decision) || !request.ExactPreviewReviewed || !request.ConfirmHeld)
+            return BadRequest();
+        string body;
+        await using(var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,ct)){
+            var manifest=await CreatorFulfillmentManifest.Build(db,request.HandoffId,request.IllustrationId,ct);
+            if(manifest is null)return NotFound();
+            body=CreatorFactorySubmission.Serialize(manifest);
+            if(ControlledAiService.Hash(body)!=request.ManifestSha256)return Conflict();
+            await tx.CommitAsync(ct);
+        }
+        var remote=await CreatorFactorySubmission.Submit(body,request.HandoffId,ct,renderStatus:true);
+        if(remote is null)return StatusCode(503);
+        var preview=CreatorFactoryVisualReview.Select(remote.Value,request.SpecSha256);
+        if(preview is null || preview.PreviewSha256!=request.PreviewSha256
+            || (request.Decision=="VISUAL_ACCEPTED" && (preview.TechnicalStatus!="PRIVATE_PREVIEW_READY"
+                || !request.BrandReadabilityReviewed || !request.CreatorSafeAreaReviewed || !request.AudioTimingReviewed)))return Conflict();
+        try{
+            await using var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable,ct);
+            var refreshed=await CreatorFulfillmentManifest.Build(db,request.HandoffId,request.IllustrationId,ct);
+            if(refreshed is null || CreatorFactorySubmission.Serialize(refreshed)!=body)return Conflict();
+            using var doc=System.Text.Json.JsonDocument.Parse(body);
+            var placementId=doc.RootElement.GetProperty("placementId").GetGuid();
+            var placement=await CreatorCampaignInvitation.Current(db,placementId,ct);
+            if(placement is null)return Conflict();
+            if(await db.CreatorAccountMemberships.AnyAsync(m=>m.CreatorId==placement.CreatorId && m.Subject==subject,ct)
+                || await db.AdvertiserAccountMemberships.AnyAsync(m=>m.AdvertiserId==placement.AdvertiserId && m.Subject==subject,ct))
+                return StatusCode(403);
+            var id=CreatorFactoryVisualReview.Id(placementId,preview.SpecSha256);
+            var detail=CreatorFactoryVisualReview.Detail(placementId,request.ManifestSha256,preview,request.ReviewDocumentSha256);
+            var prior=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==id,ct);
+            if(prior is not null && (!CreatorFactoryVisualReview.Matches(prior,placement,request.ManifestSha256,preview)
+                || prior.Outcome!=request.Decision || prior.Detail!=detail))return Conflict(new {error="Review already recorded. A revision requires new preview evidence."});
+            if(prior is null){
+                db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent {Id=id,AdvertiserId=placement.AdvertiserId,
+                    WorkspaceId=placement.WorkspaceId,Action=CreatorFactoryVisualReview.Action,ActorType="OPERATOR",
+                    ActorLabel=subject,Outcome=request.Decision,RequestId=placement.CreatorId.ToString("N"),Detail=detail,OccurredAt=DateTime.UtcNow});
+                await db.SaveChangesAsync(ct);
+            }
+            await tx.CommitAsync(ct);
+            return Ok(new {reviewId=id,placementId,specSha256=preview.SpecSha256,previewSha256=preview.PreviewSha256,
+                decision=request.Decision,reviewRecorded=true,release="HELD",delivery="NOT_SENT",dispatchAuthorized=false,paymentAuthorized=false});
+        }catch(Npgsql.PostgresException pg) when(pg.SqlState==Npgsql.PostgresErrorCodes.SerializationFailure){return Conflict();}
+        catch(DbUpdateException){return Conflict();}
+    }
+
     private bool TryOperator(out string subject)
     {
         subject = string.Empty;
@@ -682,3 +738,5 @@ public sealed record RecordCreatorSettlementException(Guid EvidenceId,string Ori
 public sealed record SubmitCreatorFactoryPreparation(Guid HandoffId,Guid IllustrationId,string ManifestSha256,bool ConfirmHeldMetadataOnly);
 
 public sealed record RetrieveCreatorFactoryArtwork(Guid HandoffId,Guid IllustrationId,string ManifestSha256,bool ConfirmPrivateArtworkHandling,bool TransferToFactory=false);
+
+public sealed record RecordCreatorFactoryVisualReview(Guid HandoffId,Guid IllustrationId,string ManifestSha256,string SpecSha256,string PreviewSha256,string ReviewDocumentSha256,string Decision,bool ExactPreviewReviewed,bool BrandReadabilityReviewed,bool CreatorSafeAreaReviewed,bool AudioTimingReviewed,bool ConfirmHeld);
