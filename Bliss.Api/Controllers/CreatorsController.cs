@@ -180,7 +180,9 @@ public sealed record CreatorSelfSummaryDto(
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     CreatorInventoryContentSummary[]? InventoryDraftContent = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
-    bool CanViewCampaignInvitations = false);
+    bool CanViewCampaignInvitations = false,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    bool CanViewAllocationHistory = false);
 
 public sealed record CreatorInventoryContentSummary(Guid ContentItemId, string Title, string ContentType);
 
