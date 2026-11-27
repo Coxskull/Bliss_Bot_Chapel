@@ -213,8 +213,42 @@
     finally{busy=false;refreshButton.disabled=false;button.disabled=false;}
   }
   byId("invitation-load")?.addEventListener("click",loadInvitations);
+  function clearAllocationHistory(){
+    const panel=byId("allocation-history-panel"),rows=byId("allocation-history-rows"),status=byId("allocation-history-status");
+    if(panel)panel.hidden=true;
+    if(rows)rows.replaceChildren();
+    if(status)status.textContent="";
+  }
+  async function loadAllocationHistory(){
+    const panel=byId("allocation-history-panel"),rows=byId("allocation-history-rows"),notice=byId("allocation-history-status"),button=byId("allocation-history-load");
+    if(busy||!csrfToken||!panel||panel.hidden)return;
+    busy=true;button.disabled=true;refreshButton.disabled=true;rows.replaceChildren();notice.textContent="Loading current allocation records…";
+    try{
+      const r=await fetch("/api/creators/allocation-history",{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!r.ok)throw Error("Allocation history unavailable.");
+      const v=await r.json();
+      if(v.payable!==false||v.settlementVerified!==false||v.balanceAvailable!==false||!Array.isArray(v.items)||v.items.length>25||
+        new Set(v.items.map(x=>x?.historyId)).size!==v.items.length||new Set(v.items.map(x=>x?.placementId)).size!==v.items.length||
+        v.items.some(x=>!x||!guid.test(x.historyId)||!guid.test(x.placementId)||typeof x.campaignName!=="string"||
+          !/^[A-Z]{3}$/.test(x.currencyCode)||!Number.isFinite(x.amount)||x.amount<=0||x.status!=="HISTORICAL_ALLOCATION"||
+          x.payable!==false||x.settlementVerified!==false||!Number.isFinite(Date.parse(x.measurementAsOf))||!Number.isFinite(Date.parse(x.recordedAt))))
+        throw Error("Invalid allocation history.");
+      notice.textContent=v.items.length+" current shared allocation record(s). Up to 25 recent publications; not a complete financial ledger.";
+      for(const row of v.items){
+        const card=document.createElement("article");
+        for(const [tag,value] of [["h4",row.campaignName],["p","Historical creator allocation: "+row.currencyCode+" "+String(row.amount)],
+          ["p","Measurement date: "+row.measurementAsOf],["p","Record date: "+row.recordedAt],["p","Reference: "+row.historyId],
+          ["p","Payment and settlement status: not verified"]]){
+          const n=document.createElement(tag);n.textContent=value;card.appendChild(n);
+        }
+        rows.appendChild(card);
+      }
+    }catch{rows.replaceChildren();notice.textContent="Unable to confirm allocation history. Refresh or sign in again.";}
+    finally{busy=false;button.disabled=false;refreshButton.disabled=false;}
+  }
+  byId("allocation-history-load")?.addEventListener("click",loadAllocationHistory);
   const clearProfile = () => {
-    clearInvitations();
+    clearInvitations();clearAllocationHistory();
     show("inventory-panel",false);
     byId("inventory-count").textContent = "";
     byId("inventory-rows").replaceChildren();
@@ -309,6 +343,7 @@
             show("profile-panel", true);
             showInventory(p);
             if(p.canViewCampaignInvitations===true&&byId("invitation-panel"))show("invitation-panel",true);
+            if(p.canViewAllocationHistory===true&&byId("allocation-history-panel"))show("allocation-history-panel",true);
           } else if (item.status === "ACTIVE" && typeof item.channelProofCode === "string"
               && /^ALPHA-[0-9A-F]{32}$/.test(item.channelProofCode)
               && typeof item.submittedChannelUrl === "string" && typeof item.proofExpiresAt === "string") {
