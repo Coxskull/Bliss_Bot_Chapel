@@ -15,6 +15,17 @@ public static class StarterArtworkDelivery
         $":{campaignId:N}:{candidateId:N}:{reviewId:N}:{approvalId:N}:{hash}";
     public static Guid StableId(string action, string value) =>
         new Guid(Convert.FromHexString(ControlledAiService.Hash(action + "\n" + value)[..32]));
+    public static Guid DownloadRequestId(Guid releaseId, string subject) =>
+        StableId(DownloadAction, releaseId.ToString("N") + ":" + subject);
+
+    // A request is not proof of completed transfer or saving the PNG.
+    public static bool MatchesDownloadRequest(WeddingPlannerAuditEvent row, Guid advertiserId,
+        Guid workspaceId, Guid releaseId, string subject) =>
+        row.Id == DownloadRequestId(releaseId, subject) && row.AdvertiserId == advertiserId
+        && row.WorkspaceId == workspaceId && row.Action == DownloadAction
+        && row.ActorType == "ADVERTISER" && row.ActorLabel == subject
+        && row.Outcome == "REQUESTED" && row.Detail == releaseId.ToString("N");
+
     // Historical signed notification evidence is necessary but is not a live
     // Stripe refund/dispute check or independent fulfillment authorization.
     public static bool MatchesSignedReceipt(WeddingPlannerAuditEvent audit, Guid versionId,
