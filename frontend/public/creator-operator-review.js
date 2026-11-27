@@ -138,6 +138,46 @@
     }catch(e){clearInventory();inventoryStatus.textContent=e.message;}
     finally{busy=false;load.disabled=false;inventoryLoad.disabled=false;}
   }
+  const placementInput=document.getElementById("invitation-placement"),previewButton=document.getElementById("invitation-preview");
+  const invitationReview=document.getElementById("invitation-review"),invitationStatus=document.getElementById("invitation-review-status");
+  placementInput?.addEventListener("input",()=>invitationReview.replaceChildren());
+  previewButton?.addEventListener("click",async()=>{
+    if(busy||!guid.test(placementInput.value.trim()))return;
+    busy=true;previewButton.disabled=true;placementInput.disabled=true;invitationReview.replaceChildren();
+    const placementId=placementInput.value.trim().toLowerCase();
+    try{
+      await session();
+      const response=await fetch("/api/creators/operator-review/campaign-invitation?placementId="+encodeURIComponent(placementId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!response.ok)throw Error("No currently eligible placement.");
+      const result=await response.json(),row=result.placement;
+      if(!row||row.placementId!==placementId||!/^[a-f0-9]{64}$/.test(result.digest)||result.bookingAuthorized!==false||result.paymentAuthorized!==false||result.deliveryAuthorized!==false)
+        throw Error("Unexpected placement response.");
+      const card=document.createElement("section");
+      for(const [label,value] of [["Campaign",row.campaignName],["Content",row.contentTitle],["Slot",row.slotType],["Creator ID",row.creatorId],["Advertiser ID",row.advertiserId],["Start",row.startSecond],["Duration",row.durationSeconds]])
+        card.append(node("p",label+": "+String(value??"Not recorded")));
+      const checks=["I independently confirmed the advertiser permits sharing this exact invitation.","I confirmed permission to contact this creator through their workspace.","I reviewed this exact planned placement and its availability."].map(label=>{
+        const wrap=node("label",label),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
+      const issue=node("button","Issue planning invitation");issue.type="button";issue.disabled=true;
+      for(const input of checks)input.addEventListener("change",()=>{issue.disabled=!checks.every(x=>x.checked);});
+      issue.addEventListener("click",async()=>{
+        if(busy||!card.isConnected||issue.disabled||placementInput.value.trim().toLowerCase()!==placementId)return;
+        if(!window.confirm("Issue this non-binding invitation to the verified creator's private workspace?"))return;
+        busy=true;issue.disabled=true;previewButton.disabled=true;placementInput.disabled=true;
+        try{
+          const s=await session();
+          const r=await fetch("/api/creators/operator-review/campaign-invitation",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({placementId,digest:result.digest,advertiserPermissionReviewed:checks[0].checked,creatorContactPermissionReviewed:checks[1].checked,placementReviewed:checks[2].checked})});
+          if(!r.ok)throw Error("Invitation refused");
+          const receipt=await r.json();
+          if(receipt.placementId!==placementId||!guid.test(receipt.invitationId)||receipt.invitationRecorded!==true||receipt.bookingAuthorized!==false||receipt.paymentAuthorized!==false||receipt.deliveryAuthorized!==false)throw Error("Invalid receipt");
+          invitationStatus.textContent="Invitation recorded: "+receipt.invitationId;
+        }catch{invitationStatus.textContent="Invitation not confirmed. Reload exact placement before acting.";}
+        finally{invitationReview.replaceChildren();busy=false;previewButton.disabled=false;placementInput.disabled=false;}
+      });
+      card.append(issue);invitationReview.append(card);invitationStatus.textContent="Review current placement and permissions.";
+    }catch(e){invitationReview.replaceChildren();invitationStatus.textContent=e.message;}
+    finally{busy=false;previewButton.disabled=false;placementInput.disabled=false;}
+  });
   inventoryLoad.addEventListener("click",loadInventory);
   window.addEventListener("pagehide",clearInventory);
   load.addEventListener("click", refresh);
