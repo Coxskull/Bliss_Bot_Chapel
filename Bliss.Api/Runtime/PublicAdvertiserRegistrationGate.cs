@@ -55,6 +55,7 @@ public static class PublicAdvertiserRegistrationGate
         "/api/creators/registration", "/api/creators/operator-review",
         "/api/creators/operator-review/inventory",
         "/api/creators/operator-review/campaign-invitation", "/api/creators/campaign-invitations",
+        "/api/creators/operator-review/compensation-proposal",
         "/creator-operator-review.html", "/creator-operator-review.js",
         "/alpha-privacy.html", "/alpha-terms.html",
         "/creator-account-privacy.html", "/creator-account-terms.html",
@@ -65,7 +66,8 @@ public static class PublicAdvertiserRegistrationGate
         "/api/creators/register", "/api/creators/operator-review", "/api/creators/operator-review/verify-channel",
         "/api/creators/inventory/pause", "/api/creators/inventory/draft",
         "/api/creators/operator-review/inventory",
-        "/api/creators/operator-review/campaign-invitation", "/api/creators/campaign-invitations"
+        "/api/creators/operator-review/campaign-invitation", "/api/creators/campaign-invitations",
+        "/api/creators/operator-review/compensation-proposal"
     };
 
     public static bool IsAllowed(string? method, PathString path, bool creatorRegistrationEnabled = false, bool staffCreativeReadinessEnabled = false, bool staffCreativePreparationEnabled = false)
