@@ -424,8 +424,20 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
             if(publication.Detail is null || !Guid.TryParseExact(publication.Detail.Split(':')[0],"N",out var historyId))continue;
             var row=await CreatorAllocationHistory.Current(db,historyId,ct);
             if(row is null || row.CreatorId!=creator.Value || !CreatorAllocationHistory.Matches(publication,row))continue;
+            object? settlementEvidence=null;
+            if(auth.CreatorSettlementEvidenceRequested && auth.CreatorAgreementEvidenceRequested && auth.CreatorCompensationProposalRequested){
+                var evidenceId=CreatorSettlementEvidence.Id(row.PlacementId);
+                var evidence=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==evidenceId,ct);
+                if(evidence is not null){
+                    var current=await CreatorSettlementEvidence.Current(db,row.HistoryId,ct);
+                    if(current is not null && current.Allocation.CreatorId==creator.Value
+                        && CreatorSettlementEvidence.Matches(evidence,current,out var completedAt))
+                        settlementEvidence=new {evidenceId,completedAt,status="OPERATOR_RECORDED",providerVerified=false,transferAuthorized=false};
+                    else settlementEvidence=new {evidenceId,status="REVIEW_REQUIRED",providerVerified=false,transferAuthorized=false};
+                }
+            }
             items.Add(new {row.HistoryId,row.PlacementId,row.CampaignName,row.CurrencyCode,
-                amount=row.CreatorAllocation,row.MeasurementAsOf,row.RecordedAt,status="HISTORICAL_ALLOCATION",payable=false,settlementVerified=false});
+                amount=row.CreatorAllocation,row.MeasurementAsOf,row.RecordedAt,status="HISTORICAL_ALLOCATION",payable=false,settlementVerified=false,settlementEvidence});
         }
         return Ok(new {items,payable=false,settlementVerified=false,balanceAvailable=false});
     }
