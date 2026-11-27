@@ -14,7 +14,35 @@
     status.className = "status" + (tone ? " " + tone : "");
   };
   const badgeText = text => { badge.textContent = text; };
+  function showInventory(profile) {
+    const rows = profile.inventory;
+    const valid = Array.isArray(rows) && rows.length <= 50 &&
+      rows.every(row => row && typeof row.slotId === "string" &&
+        typeof row.contentItemId === "string" && typeof row.contentTitle === "string" &&
+        typeof row.contentType === "string" && typeof row.slotType === "string" &&
+        typeof row.isAvailable === "boolean" &&
+        [row.startSecond,row.durationSeconds].every(v => v === null || Number.isSafeInteger(v))) &&
+      new Set(rows.map(row => row.slotId)).size === rows.length;
+    if (!valid) return;
+    byId("inventory-count").textContent = rows.length + " recorded slots" +
+      (rows.length === 50 ? " (first 50)." : ".");
+    const container = byId("inventory-rows");
+    for (const row of rows) {
+      const card = document.createElement("article");
+      for (const [tag,text] of [["h4",row.contentTitle],["p",row.contentType + " · " + row.slotType],
+        ["p","Slot reference: " + row.slotId],["p","Start: " + (row.startSecond ?? "Not recorded") +
+        " · Duration (seconds): " + (row.durationSeconds ?? "Not recorded")],
+        ["p",row.isAvailable ? "Recorded available — not a booking confirmation" : "Recorded unavailable"]]) {
+        const node = document.createElement(tag); node.textContent = text; card.appendChild(node);
+      }
+      container.appendChild(card);
+    }
+    show("inventory-panel",true);
+  }
   const clearProfile = () => {
+    show("inventory-panel",false);
+    byId("inventory-count").textContent = "";
+    byId("inventory-rows").replaceChildren();
     // Private details must not survive a session refresh, failed role check
     // or sign-out in a hidden DOM node.
     for (const id of [
@@ -104,6 +132,7 @@
             byId("creator-status").textContent = p.authorityStatus;
             badgeText("VERIFIED"); message("Channel control verified. Your private creator profile is ready.", "success");
             show("profile-panel", true);
+            showInventory(p);
           } else if (item.status === "ACTIVE" && typeof item.channelProofCode === "string"
               && /^ALPHA-[0-9A-F]{32}$/.test(item.channelProofCode)
               && typeof item.submittedChannelUrl === "string" && typeof item.proofExpiresAt === "string") {
@@ -170,6 +199,7 @@
       badgeText("VERIFIED");
       message("Your verified creator profile is ready. Additional marketplace features remain unavailable until separately approved.", "success");
       show("profile-panel", true);
+      showInventory(profile);
     } catch {
       badgeText("UNAVAILABLE");
       message("We could not reach the account service. Please retry in a moment.", "error");
