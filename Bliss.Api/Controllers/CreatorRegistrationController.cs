@@ -437,11 +437,22 @@ public sealed class CreatorRegistrationController(BlissDbContext db, BlissAuthen
                 var evidenceId=CreatorSettlementEvidence.Id(row.PlacementId);
                 var evidence=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==evidenceId,ct);
                 if(evidence is not null){
+                    var exceptionId=CreatorSettlementException.Id(evidenceId);
+                    var exception=await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(a=>a.Id==exceptionId,ct);
+                    if(exception is not null){
+                        var original=await CreatorSettlementException.Original(db,evidenceId,ct);
+                        var status=original is not null && original.CreatorId==creator.Value && CreatorSettlementException.Matches(exception,original)
+                            ? exception.Outcome : "REVIEW_REQUIRED";
+                        settlementEvidence=new {evidenceId,exceptionId,status,providerVerified=false,transferAuthorized=false};
+                        payableReview=null;
+                    }
+                    else {
                     var current=await CreatorSettlementEvidence.Current(db,row.HistoryId,ct);
                     if(current is not null && current.Allocation.CreatorId==creator.Value
                         && CreatorSettlementEvidence.Matches(evidence,current,out var completedAt))
                         settlementEvidence=new {evidenceId,completedAt,status="OPERATOR_RECORDED",providerVerified=false,transferAuthorized=false};
                     else settlementEvidence=new {evidenceId,status="REVIEW_REQUIRED",providerVerified=false,transferAuthorized=false};
+                    }
                 }
             }
             items.Add(new {row.HistoryId,row.PlacementId,row.CampaignName,row.CurrencyCode,
