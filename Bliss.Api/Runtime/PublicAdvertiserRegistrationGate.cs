@@ -58,6 +58,7 @@ public static class PublicAdvertiserRegistrationGate
         "/api/creators/operator-review/compensation-proposal",
         "/api/creators/operator-review/allocation-history", "/api/creators/allocation-history",
         "/api/creators/operator-review/settlement-evidence", "/api/creators/operator-review/settlement-exception",
+        "/api/creators/operator-review/fulfillment-manifest",
         "/creator-operator-review.html", "/creator-operator-review.js",
         "/alpha-privacy.html", "/alpha-terms.html",
         "/creator-account-privacy.html", "/creator-account-terms.html",
