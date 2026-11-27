@@ -134,8 +134,11 @@ async function refresh() {
   }
   evidenceReady = true;
 }
-$("#open").addEventListener("click", () => action(async () => { workspace = $("#workspace").value; clearEvidence(); keys.clear(); $("#rationale").value = ""; $("#campaign-name").value = ""; await refresh(); tell("Handoff workspace loaded. Review the latest evidence before acting."); }));
-$("#refresh").addEventListener("click", () => action(async () => { await refresh(); tell("Saved approvals and planning history refreshed."); }));
+$("#workspace").addEventListener("change", () => {
+  workspace = null; clearEvidence(); $("#rationale").value = ""; $("#campaign-name").value = ""; sync();
+});
+$("#open").addEventListener("click", () => action(async () => { workspace = $("#workspace").value; clearEvidence(); await refresh(); tell("Handoff workspace loaded. Review the latest evidence before acting."); }));
+$("#refresh").addEventListener("click", () => action(async () => { if (!workspace) throw Error("Open a workspace first."); await refresh(); tell("Saved approvals and planning history refreshed."); }));
 $("#resume").addEventListener("click", () => action(loadBrief)); $("#candidate").addEventListener("change", () => action(loadApprovals));
 $("#stage").addEventListener("change", () => {resetIntent(); sync();});
 $("#campaign").addEventListener("change", resetIntent); $("#match").addEventListener("change", inventoryChoices); $("#slot").addEventListener("change", quoteChoices); $("#quote").addEventListener("change", quoteChoices);
