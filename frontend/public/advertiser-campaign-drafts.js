@@ -6,23 +6,49 @@
   const name = el("draft-name"), brief = el("draft-brief");
   const endpoint = "/api/advertisers/my-campaign-drafts";
   let generation = 0, csrf = null, busy = false, retry = null;
-  let previewUrls = [];
+  let previewUrls = [], loadSequence = 0;
+  const tools = el("draft-tools"), search = el("draft-search"), refresh = el("draft-refresh");
+  const count = el("draft-count"), readback = el("draft-readback");
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  function filterCampaigns() {
+    const q = search.value.trim().toLowerCase();
+    const cards = Array.from(list.querySelectorAll("article[data-campaign-search]"));
+    let visible = 0;
+    for (const card of cards) {
+      card.hidden = !card.dataset.campaignSearch.includes(q);
+      if (!card.hidden) visible++;
+    }
+    count.textContent = visible + " of " + cards.length + " saved campaigns shown" +
+      (cards.length === 50 ? " (latest 50 only)." : ".");
+  }
+  function validRows(rows) {
+    return Array.isArray(rows) && rows.length <= 50 &&
+      rows.every(row => row && uuid.test(row.campaignId || "") &&
+        typeof row.name === "string" && row.name.length > 0 && row.name.length <= 256 &&
+        typeof row.brief === "string" && row.brief.length <= 4000 &&
+        row.status === "DRAFT" && typeof row.createdAt === "string" &&
+        Number.isFinite(Date.parse(row.createdAt))) &&
+      new Set(rows.map(row => row.campaignId)).size === rows.length;
+  }
   function disposePreviews() {
     for (const url of previewUrls) URL.revokeObjectURL(url);
     previewUrls = [];
   }
   function clear() {
-    generation++; csrf = null; busy = false; retry = null;
+    generation++; loadSequence++; csrf = null; busy = false; retry = null;
+    tools.hidden = true; search.value = ""; count.textContent = ""; readback.textContent = ""; refresh.disabled = true;
     disposePreviews();
     panel.hidden = true; form.reset(); list.replaceChildren(); status.textContent = "";
     save.disabled = true;
   }
   function render(rows) {
     disposePreviews(); list.replaceChildren();
-    if (!rows.length) { list.textContent = "No campaign drafts yet."; return; }
+    if (!rows.length) { list.textContent = "No campaign drafts yet."; filterCampaigns(); return; }
     for (const row of rows) {
       const card = document.createElement("article");
-      for (const [tag, text] of [["h3",row.name],["p",row.brief],["p","Status: "+row.status]]) {
+      card.dataset.campaignSearch = (row.name + " " + row.campaignId).toLowerCase();
+      for (const [tag, text] of [["h3",row.name],["p","Campaign reference: "+row.campaignId],
+        ["p","Created: "+new Date(row.createdAt).toLocaleString()],["p",row.brief],["p","Status: "+row.status]]) {
         const node = document.createElement(tag); node.textContent = text; card.appendChild(node);
       }
       const preview = document.createElement("button");
@@ -44,6 +70,7 @@
             return;
           }
           const manifest = await response.json();
+          if (current !== generation || !card.isConnected) return;
           if (manifest.schema !== "alpha.advertiser.campaign-creative-handoff.v1"
               || manifest.campaignId !== row.campaignId || manifest.modelCall !== "NOT_REQUESTED"
               || manifest.release !== "HELD" || manifest.delivery !== "NOT_SENT"
@@ -78,6 +105,7 @@
           if (current !== generation) return;
           if (!response.ok) throw Error("Prepared recipe unavailable or changed. No provider call was requested.");
           const result = await response.json();
+          if (current !== generation || !card.isConnected) return;
           if (result.campaignId !== row.campaignId || result.provider !== "OpenAI" || result.model !== "gpt-image-2.5-flare"
               || result.noticeVersion !== "alpha-creative-provider-consent-v1" || !/^[0-9a-f]{64}$/.test(result.scopeSha256)
               || typeof result.generationRecipe !== "string" || result.dispatchAuthorized !== false
@@ -250,24 +278,43 @@
       offerButton.addEventListener("click",()=>serviceOffer("STATUS"));
       list.appendChild(card);
     }
+    filterCampaigns();
   }
   async function get(path) {
     return fetch(path,{credentials:"same-origin",cache:"no-store",headers:{"Accept":"application/json"}});
   }
   async function load() {
-    const current = generation;
+    const current = generation, sequence = ++loadSequence;
+    const stillCurrent = () => current === generation && sequence === loadSequence && !el("profile-panel").hidden;
+    csrf = null; save.disabled = true; refresh.disabled = true;
+    disposePreviews(); list.replaceChildren(); count.textContent = "";
+    readback.textContent = "Loading saved campaigns…";
     try {
       const session = await get("/api/auth/session");
-      if (!session.ok) return;
+      if (!stillCurrent()) return;
+      if (!session.ok) throw Error("session");
       const data = await session.json();
-      if (!data.isAuthenticated || typeof data.csrfToken !== "string") return;
+      if (!stillCurrent()) return;
+      if (!data.isAuthenticated || typeof data.csrfToken !== "string" || !data.csrfToken) throw Error("session");
+      panel.hidden = false; tools.hidden = false;
       const response = await get(endpoint);
-      if (!response.ok || current !== generation) return;
+      if (!stillCurrent()) return;
+      if (!response.ok) throw Error("readback");
       const rows = await response.json();
-      if (!Array.isArray(rows) || current !== generation) return;
-      csrf = data.csrfToken; render(rows); panel.hidden = false; save.disabled = busy;
-    } catch { /* fail closed */ }
+      if (!stillCurrent()) return;
+      if (!validRows(rows)) throw Error("readback");
+      csrf = data.csrfToken; render(rows); save.disabled = busy;
+      readback.textContent = "Saved campaigns refreshed from your account.";
+    } catch {
+      if (!stillCurrent()) return;
+      csrf = null; save.disabled = true;
+      disposePreviews(); list.replaceChildren(); count.textContent = "";
+      panel.hidden = false; tools.hidden = false;
+      readback.textContent = "Unable to verify saved campaigns. Refresh saved campaigns or sign in again. Saving is paused until verification succeeds.";
+    } finally { if (stillCurrent()) refresh.disabled = busy; }
   }
+  search.addEventListener("input",filterCampaigns);
+  refresh.addEventListener("click",()=>{if(!busy)load();});
   form.addEventListener("submit", async event => {
     event.preventDefault();
     if (busy || !csrf || panel.hidden) return;
@@ -275,7 +322,7 @@
     if (!n || !b) return;
     if (!retry || retry.name !== n || retry.brief !== b)
       retry = {requestKey:crypto.randomUUID(),name:n,brief:b};
-    const current = generation; busy = true; save.disabled = true;
+    const current = generation; busy = true; save.disabled = true; refresh.disabled = true;
     status.textContent = "Saving draft…";
     try {
       const response = await fetch(endpoint,{method:"POST",credentials:"same-origin",cache:"no-store",
@@ -283,11 +330,12 @@
       if (current !== generation) return;
       if (!response.ok) {status.textContent = "Draft not accepted. Refresh account status if your access changed. Retry the same draft if needed.";return;}
       const result = await response.json();
+      if (current !== generation || !retry) return;
       if (result.campaignId !== retry.requestKey || result.status !== "DRAFT") throw new Error("Unexpected receipt");
       retry = null; form.reset(); status.textContent = "Draft saved. No campaign launched and no charges incurred.";
       await load();
     } catch { if (current === generation) status.textContent = "Unable to confirm save. Retry the unchanged draft."; }
-    finally { if (current === generation) {busy = false; save.disabled = !csrf;} }
+    finally { if (current === generation) {busy = false; save.disabled = !csrf; refresh.disabled = false;} }
   });
   document.addEventListener("alpha-profile-cleared",clear);
   document.addEventListener("alpha-profile-approved",load);

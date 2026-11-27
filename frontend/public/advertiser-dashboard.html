@@ -37,7 +37,9 @@
 <button id="logout" type="button" hidden>Sign out</button></div></section>
 <section class="panel" id="draft-panel" aria-labelledby="draft-title" hidden><h2 id="draft-title">Your campaign drafts</h2>
 <p>Prepare an advertising brief for review. Saving a draft does not launch advertisements, order services, generate AI content, or incur charges.</p>
-<form id="draft-form"><label for="draft-name">Campaign name</label><input id="draft-name" maxlength="256" required><label for="draft-brief">Advertising brief</label><textarea id="draft-brief" maxlength="4000" rows="5" required placeholder="Product or service, target audience, market, goal and creative requirements"></textarea><button type="submit" id="draft-save">Save campaign draft</button></form><p id="draft-status" role="status" aria-live="polite"></p><div id="draft-list"></div></section>
+<form id="draft-form"><label for="draft-name">Campaign name</label><input id="draft-name" maxlength="256" required><label for="draft-brief">Advertising brief</label><textarea id="draft-brief" maxlength="4000" rows="5" required placeholder="Product or service, target audience, market, goal and creative requirements"></textarea><button type="submit" id="draft-save">Save campaign draft</button></form><p id="draft-status" role="status" aria-live="polite"></p>
+<div id="draft-tools" hidden><label for="draft-search">Find a saved campaign</label><input id="draft-search" type="search" maxlength="256" placeholder="Search by campaign name or reference"><button id="draft-refresh" type="button">Refresh saved campaigns</button><p id="draft-count" role="status" aria-live="polite"></p></div>
+<p id="draft-readback" role="status" aria-live="polite"></p><div id="draft-list"></div></section>
 <section class="locked-grid" aria-label="Feature availability">
 <article><span>01</span><h3>Campaign execution</h3><p>Not yet enabled</p></article>
 <article><span>02</span><h3>Messages</h3><p>Not yet enabled</p></article>
