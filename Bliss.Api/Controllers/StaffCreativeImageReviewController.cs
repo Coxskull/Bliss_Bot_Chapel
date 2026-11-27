@@ -31,10 +31,11 @@ public sealed class StaffCreativeImageReviewController(BlissDbContext db, BlissA
             || !StaffCreativeReadinessController.IsStaff(User, auth)) return StatusCode(403);
         if (request.CampaignId == Guid.Empty || request.WorkspaceId == Guid.Empty || request.BriefId == Guid.Empty
             || request.RunId == Guid.Empty || request.BriefSha256 is not { Length: 64 }
-            || request.Action is not ("PREVIEW" or "STATUS" or "ATTACH" or "REVIEW" or "RELEASE")
+            || request.Action is not ("PREVIEW" or "STATUS" or "ATTACH" or "REVIEW" or "RELEASE" or "DELIVERY_STATUS")
             || (request.Action == "REVIEW" && (request.Review is null || request.CandidateId is null))
             || (request.Action != "REVIEW" && request.Review is not null)
-            || (request.Action is not ("REVIEW" or "RELEASE") && request.CandidateId is not null)
+            || (request.Action is not ("REVIEW" or "RELEASE" or "DELIVERY_STATUS") && request.CandidateId is not null)
+            || (request.Action == "DELIVERY_STATUS" && (request.CandidateId is null || request.ReconciliationId is null || request.ReconciliationId == Guid.Empty))
             || (request.Action == "RELEASE" && (request.CandidateId is null || request.ReconciliationId is null
                 || request.ReconciliationId == Guid.Empty || !request.CurrentPaymentVerified || !request.ScopeVerified)))
             return BadRequest();
@@ -77,7 +78,7 @@ public sealed class StaffCreativeImageReviewController(BlissDbContext db, BlissA
                         "", key), "OPERATOR", subject, RequestCorrelation.Resolve(HttpContext), ct, run.OutputImage);
                 candidate = new { saved.Row.Id, saved.Row.Version, saved.Row.ExpectedVersion, saved.Row.ImageSha256 };
             }
-            if (request.Action == "RELEASE")
+            if (request.Action is "RELEASE" or "DELIVERY_STATUS")
             {
                 if (!auth.StarterArtworkDeliveryRequested || !auth.StarterPaymentReconciliationRequested
                     || !auth.AdvertiserCreativeArtworkRequested) return StatusCode(403);
@@ -104,7 +105,32 @@ public sealed class StaffCreativeImageReviewController(BlissDbContext db, BlissA
                 var releaseId = StarterArtworkDelivery.StableId(StarterArtworkDelivery.ReleaseAction,payment.Id.ToString("N"));
                 var existing = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x => x.Id == releaseId,ct);
                 if (existing is not null && (existing.Detail != detail || existing.Action != StarterArtworkDelivery.ReleaseAction
-                    || existing.AdvertiserId != workspace.AdvertiserId || existing.WorkspaceId != workspace.WorkspaceId)) return Conflict();
+                    || existing.AdvertiserId != workspace.AdvertiserId || existing.WorkspaceId != workspace.WorkspaceId
+                    || existing.ActorType != "OPERATOR" || existing.Outcome != "RELEASED")) return Conflict();
+                if (request.Action == "DELIVERY_STATUS")
+                {
+                    // Readback only. An absent release is never created by this action.
+                    var customer = approval.ActorSubject;
+                    if (string.IsNullOrWhiteSpace(customer)) return Conflict();
+                    var downloadId = StarterArtworkDelivery.DownloadRequestId(releaseId, customer);
+                    var ackId = StarterArtworkDelivery.AcknowledgmentId(releaseId, customer);
+                    var download = existing is null ? null : await db.WeddingPlannerAuditEvents.AsNoTracking()
+                        .SingleOrDefaultAsync(x => x.Id == downloadId, ct);
+                    var ack = existing is null ? null : await db.WeddingPlannerAuditEvents.AsNoTracking()
+                        .SingleOrDefaultAsync(x => x.Id == ackId, ct);
+                    if (download is not null && !StarterArtworkDelivery.MatchesDownloadRequest(download,
+                        workspace.AdvertiserId,workspace.WorkspaceId,releaseId,customer)) return Conflict();
+                    if (ack is not null && (download is null || !StarterArtworkDelivery.MatchesAcknowledgment(ack,
+                        workspace.AdvertiserId,workspace.WorkspaceId,releaseId,customer,candidate.ImageSha256))) return Conflict();
+                    await tx.CommitAsync(ct);
+                    return Ok(new {runId=run.Id,candidateId=candidate.Id,imageSha256=candidate.ImageSha256,
+                        reviewVersion=review.Version,releaseId=existing is null ? (Guid?)null : releaseId,
+                        release=existing is null ? "HELD" : "ARTWORK_DOWNLOAD_AVAILABLE",
+                        delivery=existing is null ? "NOT_SENT" : "DOWNLOAD_NOT_CONFIRMED",
+                        downloadRequestRecorded=download is not null,downloadRequestedAt=download?.OccurredAt,
+                        receiptAcknowledged=ack is not null,receiptAcknowledgedAt=ack?.OccurredAt,
+                        dispatchAuthorized=false});
+                }
                 if (existing is null)
                 {
                     db.WeddingPlannerAuditEvents.Add(new WeddingPlannerAuditEvent { Id=releaseId,AdvertiserId=workspace.AdvertiserId,
