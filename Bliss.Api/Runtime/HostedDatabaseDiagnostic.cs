@@ -8,7 +8,31 @@ public sealed record HostedDatabaseDiagnosticResult(
     bool Connected, bool TlsVerified, bool MigrationHistoryPresent,
     long PublicTableCount, string ErrorCode)
 {
-    public bool Success => Connected && TlsVerified;
+    // Connection/TLS and basic catalog presence are separate facts. A connected
+    // but empty database is NOT a successful hosted database diagnostic.
+    public bool ConnectionVerified => Connected && TlsVerified;
+    public bool CatalogMetadataPresent => MigrationHistoryPresent && PublicTableCount > 0;
+    public bool Success => ConnectionVerified && CatalogMetadataPresent && string.IsNullOrEmpty(ErrorCode);
+
+    // This permits ONLY a deliberately locked, account-write-disabled interface
+    // preview to redeploy while its separate hosted business DB is uninitialized.
+    // The diagnostic Success above remains false, and full registration stays held.
+    public bool AllowsLockedPreviewPredeploy(bool previewOnly) =>
+        previewOnly && ConnectionVerified && !Success
+        && ErrorCode is ("schema_not_initialized" or "migration_history_missing" or "public_tables_missing");
+
+    // Basic catalog presence is a prerequisite, NOT proof the full application
+    // schema, backup, authorization or hosted registration has been accepted.
+    public static HostedDatabaseDiagnosticResult FromReadOnlyCatalog(
+        bool tls, bool migrationHistory, long publicTables)
+    {
+        var code = !tls ? "tls_not_active"
+            : !migrationHistory && publicTables == 0 ? "schema_not_initialized"
+            : !migrationHistory ? "migration_history_missing"
+            : publicTables == 0 ? "public_tables_missing"
+            : "";
+        return new(true, tls, migrationHistory, publicTables, code);
+    }
 }
 
 // Console-only probe. Never starts HTTP, runs migrations, or reads customer rows.
@@ -44,7 +68,8 @@ public static class HostedDatabaseDiagnostic
             await using var result = await command.ExecuteReaderAsync(deadline.Token);
             if (!await result.ReadAsync(deadline.Token)) return Failure("no_diagnostic_result", connected);
             var tls = result.GetBoolean(0);
-            return new(connected, tls, result.GetBoolean(1), result.GetInt64(2), tls ? "" : "tls_not_active");
+            return HostedDatabaseDiagnosticResult.FromReadOnlyCatalog(
+                tls, result.GetBoolean(1), result.GetInt64(2));
             // Disposing the transaction rolls it back. Only catalog metadata was read.
         }
         catch (Exception error)

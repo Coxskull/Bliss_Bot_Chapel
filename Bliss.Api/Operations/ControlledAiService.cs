@@ -25,14 +25,24 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
     public static string Hash(string text) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))).ToLowerInvariant();
     private string ConfigHash(string kind) => Hash(Serialize(new { Options.Protocol, Options.Provider,
         model = kind == "TEXT" ? Options.TextModel : Options.ImageModel, endpoint = kind == "TEXT" ? Options.TextEndpoint : Options.ImageEndpoint,
-        Options.TimeoutSeconds, Options.MaxOutputTokens, Options.MaxResponseBytes }));
+        Options.TimeoutSeconds, Options.MaxOutputTokens, Options.MaxResponseBytes,
+        Options.ImagePilotEnabled, Options.ImageReservationUsd, Options.DailyBudgetUsd,
+        Options.TotalBudgetUsd, Options.MaxCallsPerDay, Options.RestrictedRevisionBriefId }));
     public bool Ready(string kind) => Options.Configured(kind) && provider.Configured(kind);
+    private static bool PilotUnknownCharge(ControlledAiRun run) =>
+        run.Kind == "IMAGE" && run.Model == "gpt-image-2.5-flare"
+        && run.Status is not ("QUEUED" or "RUNNING")
+        && run.CostStatus != "PROVIDER_REPORTED";
+
     public async Task<object> Readiness(CancellationToken ct)
     {
         var day = DateTime.UtcNow.Date;
         var daily = await db.ControlledAiDailyUsage.AsNoTracking().SingleOrDefaultAsync(x => x.Day == day, ct);
         var total = await db.ControlledAiBudgetLedgers.AsNoTracking().SingleOrDefaultAsync(x => x.Id == 1, ct);
-        var anomaly = await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", ct);
+        var anomaly = await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", ct)
+            || (Options.ImagePilotEnabled && (await db.ControlledAiRuns.AsNoTracking()
+                .Where(x => x.Kind == "IMAGE" && x.Model == "gpt-image-2.5-flare")
+                .ToListAsync(ct)).Any(PilotUnknownCharge));
         bool Capacity(decimal reservation) => (daily?.Calls ?? 0) < Options.MaxCallsPerDay
             && (daily?.ReservedUsd ?? 0) + reservation <= Options.DailyBudgetUsd
             && (total?.ReservedUsd ?? 0) + reservation <= Options.TotalBudgetUsd;
@@ -55,7 +65,7 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         .Where(x => x.RunId == run).OrderBy(x => x.CreatedAt).ToListAsync(ct);
 
     public async Task<(ControlledAiRun Run, bool Replay)> Submit(WeddingPlannerWorkspaceResult workspace, SubmitAiRun request,
-        string actorType, string actorLabel, string? requestId, CancellationToken ct)
+        string actorType, string actorLabel, string? requestId, CancellationToken ct, Guid? campaignConsentReceiptId = null)
     {
         var kind = (request.Kind ?? "").Trim().ToUpperInvariant(); var prompt = (request.Prompt ?? "").Trim();
         var key = (request.IdempotencyKey ?? "").Trim();
@@ -76,7 +86,16 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         if (request.PreviousRunId.HasValue && previous is null) throw new WeddingPlannerNotFoundException("Previous suggestion was not found in this session.");
         var brief = kind == "IMAGE" ? await db.AcademyProductionBriefs.AsNoTracking().SingleOrDefaultAsync(x => x.Id == request.BriefId && x.WorkspaceId == workspace.WorkspaceId, ct) : null;
         if (kind == "IMAGE" && brief is null) throw new WeddingPlannerNotFoundException("Production brief was not found.");
-        var fingerprint = Hash(Serialize(new { kind, request.SessionId, request.BriefId, request.PreviousRunId, prompt, consent = true }));
+        var campaignImage = key.StartsWith(CampaignImageAuthorization.KeyPrefix, StringComparison.Ordinal);
+        if (campaignImage != campaignConsentReceiptId.HasValue || (campaignImage && (kind != "IMAGE" || brief is null
+            || key != CampaignImageAuthorization.RunKey(brief.Id) || actorType != "OPERATOR"
+            || campaignConsentReceiptId == Guid.Empty || !RestrictedCampaignPilotConfigured
+            || !Options.RestrictedBriefAllowed(brief.Id)
+            || (Options.MaxCallsPerDay == 2 && !brief.IdempotencyKey.StartsWith("rev:",StringComparison.Ordinal)))))
+            throw new InvalidOperationException("Exact staff campaign image reservation required.");
+        var fingerprint = campaignImage
+            ? Hash(Serialize(new { kind, request.BriefId, consentReceiptId = campaignConsentReceiptId }))
+            : Hash(Serialize(new { kind, request.SessionId, request.BriefId, request.PreviousRunId, prompt, consent = true }));
         async Task<ControlledAiRun?> Replay() => await db.ControlledAiRuns.AsNoTracking().SingleOrDefaultAsync(x => x.WorkspaceId == workspace.WorkspaceId && x.IdempotencyKey == key, ct);
         var existing = await Replay();
         if (existing is not null) { Same(existing.RequestSha256, fingerprint); return (existing, true); }
@@ -88,6 +107,10 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
             brand.BrandName, brand.Niche, brand.Market, brand.Language, brand.Colors, brand.Font, brand.Goals, brand.Restrictions,
             previousReply = previous?.OutputText }) : Serialize(new { briefId = brief!.Id, recipeSha256 = brief.RecipeSha256,
                 productionRecipe = savedBrief!.RootElement.GetProperty("generationRecipe").GetString() });
+        if (campaignImage)
+            snapshot = Serialize(new { briefId = brief!.Id, recipeSha256 = brief.RecipeSha256,
+                productionRecipe = savedBrief!.RootElement.GetProperty("generationRecipe").GetString(),
+                consentReceiptId = campaignConsentReceiptId });
         if (snapshot.Length > 24000) throw new InvalidOperationException("Selected context exceeds the worker input limit.");
         var reserve = kind == "TEXT" ? Options.TextReservationUsd : Options.ImageReservationUsd;
         if (decimal.Round(reserve, 6) != reserve) throw new InvalidOperationException("Configure reservation amounts to at most six decimal places.");
@@ -95,7 +118,18 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         try
         {
             if (db.Database.IsRelational()) tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-            if (await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", ct)) throw new AiQuotaException("A reported charge exceeded its reservation. Billing reconciliation is required before more calls.");
+            if (campaignImage)
+            {
+                var currentGrant = await CampaignImageAuthorization.Current(db, workspace.WorkspaceId, brief!.Id, ct);
+                if (currentGrant is null || currentGrant.ReceiptId != campaignConsentReceiptId
+                    || CampaignImageAuthorization.ProviderInput(snapshot, currentGrant) is null)
+                    throw new WeddingPlannerConflictException("Current advertiser provider consent is required.");
+            }
+            if (await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", ct)
+                || (Options.ImagePilotEnabled && (await db.ControlledAiRuns.AsNoTracking()
+                    .Where(x => x.Kind == "IMAGE" && x.Model == "gpt-image-2.5-flare")
+                    .ToListAsync(ct)).Any(PilotUnknownCharge)))
+                throw new AiQuotaException("Pilot billed cost is unknown or over reservation. Reconcile before any additional paid requests.");
             var day = DateTime.UtcNow.Date;
             var daily = await db.ControlledAiDailyUsage.SingleOrDefaultAsync(x => x.Day == day, ct);
             var ledger = await db.ControlledAiBudgetLedgers.SingleOrDefaultAsync(x => x.Id == 1, ct);
@@ -149,10 +183,35 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
         catch (Exception ex) when (ReservationConflict(ex)) { throw new WeddingPlannerConflictException("Run state changed. Refresh before cancelling."); }
         return run;
     }
+    public bool RestrictedCampaignPilotConfigured => runtime.RestrictedPreview && runtime.PublicAdvertiserRegistrationOnly
+        && Options.ImagePilotEnabled && Options.Protocol == "OpenAI" && Options.Configured("IMAGE")
+        && Options.Provider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase)
+        && Options.ImageModel == Bliss.Api.Controllers.AdvertiserCampaignDraftsController.ProviderConsentModel
+        && Options.RestrictedImageCapacityConfigured;
+    public bool RestrictedCampaignBriefAllowed(Guid briefId) => RestrictedCampaignPilotConfigured && Options.RestrictedBriefAllowed(briefId);
+    // In restricted mode never select from the global queue, even if RunOne is called manually.
+    public IQueryable<ControlledAiRun> WorkerCandidates()
+    {
+        var runs = db.ControlledAiRuns.AsQueryable();
+        if (!runtime.RestrictedPreview) return runs;
+        var pin = Options.RestrictedImageRun;
+        if (pin is null || !pin.Configured || !Options.ImagePilotEnabled
+            || Options.Protocol != "OpenAI" || !Options.Configured("IMAGE")
+            || !Options.RestrictedBriefAllowed(pin.BriefId))
+            return runs.Where(x => false);
+        return runs.Where(x => x.Id == pin.RunId && x.WorkspaceId == pin.WorkspaceId
+            && x.BriefId == pin.BriefId && x.Kind == "IMAGE"
+            && x.Model == Options.ImageModel && x.Provider == Options.Provider
+            && x.InputSha256 == pin.InputSha256 && x.ReservedUsd == Options.ImageReservationUsd);
+    }
+
     public async Task<bool> RunOne(CancellationToken stopping)
     {
+        if (runtime.RestrictedPreview && (!RestrictedCampaignPilotConfigured
+            || !Options.RestrictedImageRun.DispatchRequested || !Options.RestrictedImageRun.ExternalBillingReconciled))
+            return false;
         var now = DateTime.UtcNow;
-        var expired = await db.ControlledAiRuns.FirstOrDefaultAsync(x => (x.Status == "RUNNING" || x.Status == "CANCEL_REQUESTED") && x.DeadlineAt < now, stopping);
+        var expired = await WorkerCandidates().FirstOrDefaultAsync(x => (x.Status == "RUNNING" || x.Status == "CANCEL_REQUESTED") && x.DeadlineAt < now, stopping);
         if (expired is not null)
         {
             expired.Status = "UNKNOWN"; expired.FailureCode = "EXECUTION_DEADLINE_EXPIRED"; expired.FinishedAt = now;
@@ -161,15 +220,29 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
             return true;
         }
         if (!Options.Enabled) return false;
-        var run = await db.ControlledAiRuns.Where(x => x.Status == "QUEUED").OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(stopping);
+        var run = await WorkerCandidates().Where(x => x.Status == "QUEUED").OrderBy(x => x.CreatedAt).FirstOrDefaultAsync(stopping);
         if (run is null) return false;
         run.Status = "RUNNING"; run.StartedAt = now; run.DeadlineAt = now.AddSeconds(Options.TimeoutSeconds + 5);
         AddEvent(run, "RUNNING", "AI_RUNNER");
         try { await db.SaveChangesAsync(stopping); } catch (Exception ex) when (ReservationConflict(ex)) { db.ChangeTracker.Clear(); return true; }
         AiProviderResult? result = null; string status = "SUCCEEDED_PENDING_REVIEW", failure = "";
-        var billingAnomaly = await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", stopping);
-        if (billingAnomaly) { status = "FAILED"; failure = "BILLING_RECONCILIATION_REQUIRED"; }
-        else if (!Ready(run.Kind) || run.ExecutionConfigSha256 != ConfigHash(run.Kind)) { status = "FAILED"; failure = "EXECUTION_CONFIG_CHANGED"; }
+        string? rejectedProviderRequestId = null;
+        var billingAnomaly = await db.ControlledAiRuns.AnyAsync(x => x.CostStatus == "OVER_RESERVATION", stopping)
+            || (Options.ImagePilotEnabled && (await db.ControlledAiRuns.AsNoTracking()
+                .Where(x => x.Id != run.Id && x.Kind == "IMAGE" && x.Model == "gpt-image-2.5-flare")
+                .ToListAsync(stopping)).Any(PilotUnknownCharge));
+        string? providerInput = run.InputSnapshotJson;
+        if (runtime.RestrictedPreview || run.IdempotencyKey.StartsWith(CampaignImageAuthorization.KeyPrefix, StringComparison.Ordinal))
+        {
+            var grant = run.Kind == "IMAGE" && run.BriefId.HasValue
+                && run.IdempotencyKey == CampaignImageAuthorization.RunKey(run.BriefId.Value)
+                ? await CampaignImageAuthorization.Current(db, run.WorkspaceId, run.BriefId.Value, stopping) : null;
+            providerInput = grant is null ? null : CampaignImageAuthorization.ProviderInput(run.InputSnapshotJson, grant);
+        }
+        if (providerInput is null) { status = "FAILED"; failure = "CAMPAIGN_PROVIDER_CONSENT_REQUIRED"; }
+        else if (billingAnomaly) { status = "FAILED"; failure = "BILLING_RECONCILIATION_REQUIRED"; }
+        else if (!Ready(run.Kind) || run.ExecutionConfigSha256 != ConfigHash(run.Kind)
+            || (runtime.RestrictedPreview && Hash(run.InputSnapshotJson) != run.InputSha256)) { status = "FAILED"; failure = "EXECUTION_CONFIG_CHANGED"; }
         else
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(stopping); timeout.CancelAfter(TimeSpan.FromSeconds(Options.TimeoutSeconds));
@@ -185,13 +258,19 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
             var monitor = Monitor();
             try
             {
-                result = await provider.ExecuteAsync(new AiProviderRequest(run.Id, run.Kind, run.Model, run.InputSnapshotJson, Options.MaxOutputTokens), timeout.Token).WaitAsync(timeout.Token);
+                result = await provider.ExecuteAsync(new AiProviderRequest(run.Id, run.Kind, run.Model, providerInput, Options.MaxOutputTokens), timeout.Token).WaitAsync(timeout.Token);
                 if (run.Kind == "TEXT" && (string.IsNullOrWhiteSpace(result.Text) || result.Text.Length > 8000)) throw new AiProviderException("INVALID_TEXT_OUTPUT");
-                if (run.Kind == "IMAGE") CandidatePng.Validate(result.Image ?? []);
+                if (run.Kind == "IMAGE")
+                {
+                    if (Options.ImagePilotEnabled && Options.Protocol == "OpenAI"
+                        && run.Model == "gpt-image-2.5-flare")
+                        CandidatePng.ValidateGenerated(result.Image ?? []);
+                    else CandidatePng.Validate(result.Image ?? []);
+                }
                 if (result.RequestId.Length > 200 || result.InputTokens < 0 || result.OutputTokens < 0 || result.ActualUsd < 0) throw new AiProviderException("INVALID_USAGE_RECEIPT");
             }
             catch (OperationCanceledException) { status = stopping.IsCancellationRequested ? "UNKNOWN" : "TIMED_OUT"; failure = stopping.IsCancellationRequested ? "HOST_INTERRUPTED" : "CALL_INTERRUPTED"; result = null; }
-            catch (AiProviderException ex) { status = "FAILED"; failure = ex.Code; result = null; }
+            catch (AiProviderException ex) { status = "FAILED"; failure = ex.Code; rejectedProviderRequestId = ex.ProviderRequestId; result = null; }
             catch (Exception) { status = "FAILED"; failure = "PROVIDER_FAILURE"; result = null; }
             finally
             {
@@ -210,6 +289,13 @@ public sealed class ControlledAiService(BlissDbContext db, BlissRuntimeOptions r
             {
                 run.OutputText = run.Kind == "TEXT" ? result.Text : ""; run.OutputImage = run.Kind == "IMAGE" ? result.Image : null;
                 run.OutputSha256 = run.Kind == "TEXT" ? Hash(run.OutputText) : Convert.ToHexString(SHA256.HashData(result.Image!)).ToLowerInvariant();
+            }
+            if (receipt is null && !string.IsNullOrWhiteSpace(rejectedProviderRequestId)
+                && status == "FAILED" && failure.StartsWith("PROVIDER_HTTP_", StringComparison.Ordinal))
+            {
+                // Preserve the provider-assigned correlation ID for manual
+                // charge investigation; never take it as evidence of zero cost.
+                run.ProviderRequestId = rejectedProviderRequestId;
             }
             if (receipt is not null)
             {

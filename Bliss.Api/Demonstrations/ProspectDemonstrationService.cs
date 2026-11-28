@@ -73,6 +73,8 @@ public sealed class ProspectDemonstrationService(ProspectDemonstrationStore stor
         string provenance,
         CancellationToken cancellationToken)
     {
+        if (!SourceMediaRules.IsMp4Upload(bytes, originalFileName))
+            throw new InvalidOperationException("Only MP4 source clips with a valid media signature are accepted.");
         var temporary = Path.Combine(store.ClipsDirectory, Guid.NewGuid().ToString("N") + ".upload");
         await File.WriteAllBytesAsync(temporary, bytes, cancellationToken);
         try

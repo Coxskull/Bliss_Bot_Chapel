@@ -1,47 +1,104 @@
 "use strict";
 const $ = selector => document.querySelector(selector);
-let session, workspace, permissions, options, production, approvals = [], busy = false;
+let session, workspace, permissions, options, production, approvals = [], busy = false, evidenceReady = false;
 const keys = new Map();
 function tell(text, error = false) { $("#status").textContent = text; $("#status").dataset.error = String(error); }
 function key(name, payload) { const signature = JSON.stringify([workspace, name, payload]); if (!keys.has(signature)) keys.set(signature, crypto.randomUUID()); return keys.get(signature); }
 function path() { return `/api/wedding-planner/workspaces/${workspace}/handoff`; }
+function resetIntent() {
+  for (const id of ["#plan-consent", "#dimensions", "#format", "#safe-area"]) $(id).checked = false;
+  $("#proposed-start").value = ""; $("#proposed-end").value = "";
+}
+function clearEvidence() {
+  evidenceReady = false; permissions = null; options = null; production = null; approvals = [];
+  for (const id of ["#brief", "#candidate", "#stage", "#match", "#slot", "#campaign", "#quote", "#creative", "#approvals", "#plans"]) $(id).replaceChildren();
+  $("#identity").textContent = ""; $("#price").textContent = "Refresh current matching and Economics evidence.";
+  $("#placement-recommendations").replaceChildren();
+  resetIntent();
+}
 function sync() {
   $("#open").disabled = busy || !$("#workspace").value; $("#workspace").disabled = busy;
   $("#resume").disabled = busy || !$("#brief").value; $("#refresh").disabled = busy || !workspace;
-  $("#approval-fields").disabled = busy || !$("#candidate").value || !$("#stage").value;
-  $("#campaign-fields").disabled = busy || !permissions?.canPlan || !$("#match").value;
-  $("#plan-fields").disabled = busy || !permissions?.canPlan || !$("#candidate").value || !$("#quote").value || !$("#campaign").value;
+  $("#approval-fields").disabled = busy || !evidenceReady || !$("#candidate").value || !$("#stage").value;
+  $("#campaign-fields").disabled = busy || !evidenceReady || !permissions?.canPlan || !$("#match").value;
+  $("#plan-fields").disabled = busy || !evidenceReady || !permissions?.canPlan || !$("#candidate").value || !$("#match").value || !$("#slot").value || !$("#quote").value || !$("#campaign").value;
   for (const id of ["#brief", "#candidate", "#match", "#slot", "#campaign", "#quote"]) $(id).disabled = busy;
   $("#fit-checks").hidden = $("#stage").value !== "INVENTORY_FIT";
+  for (const button of $("#placement-recommendations").querySelectorAll("button")) button.disabled = busy || !evidenceReady || !permissions?.canPlan;
 }
 async function api(url, body) {
-  const response = await fetch(url, { credentials: "same-origin", method: body ? "POST" : "GET", headers: { Accept: "application/json",
+  const response = await fetch(url, { credentials: "same-origin", cache: "no-store", redirect: "error", method: body ? "POST" : "GET", headers: { Accept: "application/json",
     ...(body ? { "Content-Type": "application/json", "X-CSRF-TOKEN": session?.csrfToken || "" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
   const data = await response.json().catch(() => null); if (!response.ok) throw new Error(data?.error || `Request failed (${response.status}). Your input is kept.`); return data;
 }
-async function action(run) { if (busy) return; busy = true; sync(); try { await run(); } catch (error) { tell(error.message, true); } finally { busy = false; sync(); } }
+async function action(run) { if (busy) return; busy = true; sync(); try { await run(); } catch (error) { clearEvidence(); tell("Current workspace evidence is not confirmed. Refresh before acting. " + error.message, true); } finally { busy = false; sync(); } }
 function text(parent, tag, value) { const node = document.createElement(tag); node.textContent = value; parent.append(node); return node; }
 function choices(id, rows, value, label) { const select = $(id), previous = select.value; select.replaceChildren(); for (const row of rows) { const option = document.createElement("option"); option.value = value(row); option.textContent = label(row); select.append(option); } if ([...select.options].some(x => x.value === previous)) select.value = previous; }
 function selectedCandidate() { return production?.candidates.find(x => x.id === $("#candidate").value); }
 function latestReview() { return production?.reviews.filter(x => x.candidateId === $("#candidate").value).sort((a, b) => b.version - a.version)[0]; }
 function latest(scope) { return approvals.filter(x => x.scopeKey === scope).sort((a, b) => b.version - a.version)[0]; }
+// Rank only recorded combinations; never invent audience fit, price or availability.
+function placementRecommendations() {
+  const panel=$("#placement-recommendations");panel.replaceChildren();
+  if(!options || !permissions?.canPlan)return;
+  const review=latestReview(),candidate=selectedCandidate();
+  const approved=(scope)=>{const a=latest(scope);return !!review && a?.reviewId===review.id && a.decision==="APPROVE";};
+  const creativeReviewed=!!candidate && review?.decision==="PASS" && approved("ADVERTISER") && approved("ALPHA_QA");
+  const matches=new Map(options.matches.map(x=>[x.id,x])),slots=new Map(options.slots.map(x=>[x.id,x]));
+  const campaignsByOpportunity=new Map();
+  for(const campaign of options.campaigns){
+    if(!campaignsByOpportunity.has(campaign.advertiserOpportunityId))campaignsByOpportunity.set(campaign.advertiserOpportunityId,[]);
+    campaignsByOpportunity.get(campaign.advertiserOpportunityId).push(campaign);
+  }
+  const rows=[];
+  for(const quote of options.quoteLines){
+    const match=matches.get(quote.blissMatchId),slot=slots.get(quote.adInventorySlotId);
+    if(!match || !slot || slot.creatorId!==match.creatorId || quote.advertiserOpportunityId!==match.advertiserOpportunityId || quote.quantity!==1)continue;
+    const fit=latest("FIT:"+slot.id);
+    const fitRecorded=approved("FIT:"+slot.id) && fit.adInventorySlotId===slot.id && fit.dimensionsVerified===true && fit.formatVerified===true && fit.creatorSafeAreaVerified===true;
+    const drafts=campaignsByOpportunity.get(match.advertiserOpportunityId)||[];
+    for(const campaign of drafts)rows.push({match,slot,quote,campaign,rank:Number(creativeReviewed)+Number(fitRecorded)});
+  }
+  rows.sort((a,b)=>b.rank-a.rank || a.match.creatorName.localeCompare(b.match.creatorName) || a.quote.id.localeCompare(b.quote.id));
+  text(panel,"p",rows.length?rows.length+" combinations with a recorded accepted quote and draft campaign. Showing up to 20; ordered by matching approval evidence, not predicted performance.":"No complete match, available overlay, draft and accepted quote combination. Prepare the missing Economics or campaign record.");
+  for(const row of rows.slice(0,20)){
+    const item=document.createElement("section");panel.append(item);
+    text(item,"h3",row.match.creatorName+" · "+row.slot.slotType);
+    text(item,"p",row.campaign.name+" · "+row.slot.contentTitle+" · "+row.slot.durationSeconds+" seconds");
+    text(item,"p","Recorded accepted quote: "+row.quote.lineAmount+" "+row.quote.currencyCode);
+    text(item,"p",row.rank===2?"Matching creative and inventory approvals recorded; current authority must still be checked.":"Additional creative or inventory approvals required.");
+    const choose=document.createElement("button");choose.type="button";choose.textContent="Select placement for review";item.append(choose);
+    choose.addEventListener("click",()=>{
+      if(busy||!evidenceReady||!permissions?.canPlan||!item.isConnected)return;
+      $("#match").value=row.match.id;inventoryChoices();
+      $("#slot").value=row.slot.id;quoteChoices();
+      $("#campaign").value=row.campaign.id;$("#quote").value=row.quote.id;quoteChoices();
+      resetIntent();sync();tell("Recorded combination selected. Review current approvals and explicitly confirm planning intent.");
+    });
+  }
+}
 function inventoryChoices() {
+  resetIntent();
   const match = options?.matches.find(x => x.id === $("#match").value);
   choices("#slot", options?.slots.filter(x => x.creatorId === match?.creatorId) || [], x => x.id, x => `${x.slotType} · ${x.contentTitle}`);
   choices("#campaign", options?.campaigns.filter(x => x.advertiserOpportunityId === match?.advertiserOpportunityId) || [], x => x.id, x => x.name);
   quoteChoices();
 }
 function quoteChoices() {
-  choices("#quote", options?.quoteLines.filter(x => x.blissMatchId === $("#match").value && x.adInventorySlotId === $("#slot").value) || [], x => x.id, x => `${x.description} · ${x.lineAmount} ${x.currencyCode}`);
+  resetIntent();
+  const match = options?.matches.find(x => x.id === $("#match").value);
+  choices("#quote", options?.quoteLines.filter(x => match && x.advertiserOpportunityId === match.advertiserOpportunityId && x.blissMatchId === match.id && x.adInventorySlotId === $("#slot").value) || [], x => x.id, x => `${x.description} · ${x.lineAmount} ${x.currencyCode}`);
   const line = options?.quoteLines.find(x => x.id === $("#quote").value);
   $("#price").textContent = line ? `Accepted Economics amount: ${line.lineAmount} ${line.currencyCode} for quantity ${line.quantity}.` : "No accepted quote for this exact match and slot. Prepare, approve, and accept a quote in Economics first.";
   sync();
 }
 async function loadApprovals() {
+  resetIntent();
   const id = $("#candidate").value; approvals = id ? await api(`${path()}/candidates/${id}/approvals`) : [];
   const view = $("#approvals"); view.replaceChildren();
   for (const row of approvals) { text(view, "h3", `${row.stage} · ${row.decision} · version ${row.version}`); text(view, "p", `${row.actorLabel}: ${row.rationale}${row.adInventorySlotId ? `\nSlot: ${row.adInventorySlotId}; dimensions: ${row.imageWidth} × ${row.imageHeight}` : ""}`); }
   const candidate = selectedCandidate(), review = latestReview(), creative = $("#creative"); creative.replaceChildren();
+  placementRecommendations();
   if (candidate) { text(creative, "h3", candidate.label); text(creative, "p", `Candidate revision ${candidate.version}; latest instructor assessment: ${review?.decision || "unrecorded"}.`); const image = document.createElement("img"); image.src = `/api/wedding-planner/workspaces/${workspace}/production/briefs/${production.brief.id}/candidates/${candidate.id}/image`; image.alt = candidate.label; image.style.maxWidth = "100%"; image.style.maxHeight = "400px"; creative.append(image); }
 }
 async function loadBrief() {
@@ -50,7 +107,11 @@ async function loadBrief() {
   await loadApprovals();
 }
 async function refresh() {
+  evidenceReady = false; resetIntent();
   permissions = await api(`${path()}/options`); options = permissions.options;
+  if (!options || options.delivery !== "NOT_SENT" ||
+      !["matches","slots","campaigns","quoteLines"].every(k => Array.isArray(options[k])))
+    throw Error("Unexpected matching and Economics evidence.");
   $("#identity").textContent = permissions.developmentIdentity ? "Local Development identity: fictional approval proof. Hosted advertiser and QA approvals require separate authenticated principals." : "Each approval is tied to your authenticated identity and authority.";
   const stages = []; if (permissions.canAdvertiserApprove) stages.push("ADVERTISER"); if (permissions.canAlphaQa) stages.push("ALPHA_QA", "INVENTORY_FIT");
   choices("#stage", stages, x => x, x => x);
@@ -62,6 +123,9 @@ async function refresh() {
     const snapshot = JSON.parse(plan.snapshotJson);
     text(view, "h3", `${plan.status} · ${plan.delivery}`);
     text(view, "p", `Economics quote: ${snapshot.lineAmount} ${snapshot.currencyCode}. Asset: ${snapshot.imageSha256}. Placement: ${plan.campaignPlacementId}.`);
+    if(snapshot.scheduleStatus==="PROPOSED_NOT_RESERVED" && Number.isFinite(Date.parse(snapshot.proposedStartUtc)) && Number.isFinite(Date.parse(snapshot.proposedEndUtc)))
+      text(view,"p","Proposed schedule (UTC): "+new Date(snapshot.proposedStartUtc).toISOString()+" to "+new Date(snapshot.proposedEndUtc).toISOString()+". Not reserved or scheduled for dispatch.");
+    else text(view,"p","No proposed campaign window recorded.");
     const details = document.createElement("details"); view.append(details);
     text(details, "summary", "Approval and Economics evidence");
     text(details, "pre", JSON.stringify(snapshot, null, 2)).style.whiteSpace = "pre-wrap";
@@ -115,12 +179,20 @@ async function refresh() {
       });
     });
   }
+  evidenceReady = true;
+  placementRecommendations();
 }
-$("#open").addEventListener("click", () => action(async () => { workspace = $("#workspace").value; production = null; approvals = []; $("#brief").replaceChildren(); await refresh(); tell("Handoff workspace loaded. Review the latest evidence before acting."); }));
-$("#refresh").addEventListener("click", () => action(async () => { await refresh(); tell("Saved approvals and planning history refreshed."); }));
+$("#workspace").addEventListener("change", () => {
+  workspace = null; clearEvidence(); $("#rationale").value = ""; $("#campaign-name").value = ""; sync();
+});
+$("#open").addEventListener("click", () => action(async () => { workspace = $("#workspace").value; clearEvidence(); await refresh(); tell("Handoff workspace loaded. Review the latest evidence before acting."); }));
+$("#refresh").addEventListener("click", () => action(async () => { if (!workspace) throw Error("Open a workspace first."); await refresh(); tell("Saved approvals and planning history refreshed."); }));
 $("#resume").addEventListener("click", () => action(loadBrief)); $("#candidate").addEventListener("change", () => action(loadApprovals));
-$("#stage").addEventListener("change", sync); $("#match").addEventListener("change", inventoryChoices); $("#slot").addEventListener("change", quoteChoices); $("#quote").addEventListener("change", quoteChoices);
+$("#stage").addEventListener("change", () => {resetIntent(); sync();});
+for(const id of ["#proposed-start","#proposed-end"]) $(id).addEventListener("change",()=>{$("#plan-consent").checked=false;});
+$("#campaign").addEventListener("change", resetIntent); $("#match").addEventListener("change", inventoryChoices); $("#slot").addEventListener("change", quoteChoices); $("#quote").addEventListener("change", quoteChoices);
 $("#approval-form").addEventListener("submit", event => { event.preventDefault(); action(async () => {
+  if (!evidenceReady) throw Error("Refresh verified workspace evidence first.");
   const stage = $("#stage").value, slot = stage === "INVENTORY_FIT" ? $("#slot").value : null;
   if (stage === "INVENTORY_FIT" && !slot) throw new Error("Choose compatible image-overlay inventory first.");
   const scope = stage === "INVENTORY_FIT" ? `FIT:${slot}` : stage;
@@ -131,16 +203,28 @@ $("#approval-form").addEventListener("submit", event => { event.preventDefault()
   await loadApprovals(); tell("Candidate-specific human decision saved. No campaign was activated.");
 }); });
 $("#campaign-form").addEventListener("submit", event => { event.preventDefault(); action(async () => {
+  if (!evidenceReady || !permissions?.canPlan || !$("#match").value) throw Error("Refresh approved matching evidence first.");
   const payload = { blissMatchId: $("#match").value, name: $("#campaign-name").value.trim() };
   const result = await api(`${path()}/campaigns`, { ...payload, campaignId: key("campaign", payload) });
   await refresh(); $("#campaign").value = result.campaign.id; tell("Draft campaign created for this advertiser's approved opportunity.");
 }); });
 $("#plan-form").addEventListener("submit", event => { event.preventDefault(); action(async () => {
-  if (!$("#plan-consent").checked) throw new Error("Review and confirm the planning intent first.");
+  if (!evidenceReady || !permissions?.canPlan || !$("#plan-consent").checked) throw new Error("Refresh and confirm the current planning intent first.");
+  const match = options.matches.find(x => x.id === $("#match").value);
+  const slot = options.slots.find(x => x.id === $("#slot").value && x.creatorId === match?.creatorId);
+  const campaign = options.campaigns.find(x => x.id === $("#campaign").value && x.advertiserOpportunityId === match?.advertiserOpportunityId);
+  const quote = options.quoteLines.find(x => x.id === $("#quote").value && x.blissMatchId === match?.id && x.adInventorySlotId === slot?.id && x.advertiserOpportunityId === match?.advertiserOpportunityId);
+  if (!match || !slot || !campaign || !quote) throw Error("Selected match, slot, draft and accepted quote do not agree.");
   const advertiser = latest("ADVERTISER"), qa = latest("ALPHA_QA"), fit = latest(`FIT:${$("#slot").value}`);
   if (![advertiser, qa, fit].every(x => x?.decision === "APPROVE")) throw new Error("Latest advertiser approval, Alpha QA, and inventory fit must all be approved.");
   const payload = { candidateId: $("#candidate").value, reviewId: latestReview()?.id, advertiserApprovalId: advertiser.id, alphaQaApprovalId: qa.id,
     inventoryFitId: fit.id, blissMatchId: $("#match").value, campaignId: $("#campaign").value, adInventorySlotId: $("#slot").value, quoteLineItemId: $("#quote").value };
+  const start=$("#proposed-start").value,end=$("#proposed-end").value;
+  if(start||end){
+    const s=Date.parse(start+"Z"),e=Date.parse(end+"Z");
+    if(!start||!end||!Number.isFinite(s)||!Number.isFinite(e)||s<Date.now()||e<=s||e-s>90*86400000)throw Error("Enter a future UTC window with both timestamps, no longer than 90 days.");
+    payload.proposedStartUtc=new Date(s).toISOString();payload.proposedEndUtc=new Date(e).toISOString();
+  }
   await api(`${path()}/plans`, { ...payload, idempotencyKey: key("plan", payload) }); await refresh(); $("#plan-consent").checked = false; tell("Creative handoff recorded as PLANNED. Inventory was not reserved and nothing was sent.");
 }); });
 action(async () => {

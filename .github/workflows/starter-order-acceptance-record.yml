@@ -1,0 +1,25 @@
+name: Starter order acceptance record
+on:
+  pull_request:
+    paths:
+      - 'frontend/public/advertiser-campaign-drafts.js'
+      - 'scripts/starter-order-acceptance-record.test.mjs'
+      - '.github/workflows/starter-order-acceptance-record.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/public/advertiser-campaign-drafts.js'
+      - 'scripts/starter-order-acceptance-record.test.mjs'
+      - '.github/workflows/starter-order-acceptance-record.yml'
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node --check frontend/public/advertiser-campaign-drafts.js
+      - run: node --test scripts/starter-order-acceptance-record.test.mjs

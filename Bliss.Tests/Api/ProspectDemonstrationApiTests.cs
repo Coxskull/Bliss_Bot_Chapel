@@ -86,6 +86,26 @@ public sealed class ProspectDemonstrationApiTests : IClassFixture<BlissApiFactor
         Assert.Contains("prospect.js", await html.Content.ReadAsStringAsync());
     }
 
+    [Fact]
+    public async Task Source_media_upload_refuses_playlist_and_disguised_non_mp4_before_ffmpeg()
+    {
+        var client = _factory.CreateClient();
+        foreach (var (name, bytes) in new[]
+        {
+            ("playlist.m3u8", System.Text.Encoding.UTF8.GetBytes("#EXTM3U\nhttp://example.invalid/segment.ts")),
+            ("forged.mp4", System.Text.Encoding.UTF8.GetBytes("#EXTM3U\nasync:rist://example.invalid:7777"))
+        })
+        {
+            using var content = new MultipartFormDataContent();
+            content.Add(new ByteArrayContent(bytes), "file", name);
+            content.Add(new StringContent("Panama City"), "market");
+            content.Add(new StringContent("Panama"), "country");
+            var response = await client.PostAsync("/api/demonstrations/source-media", content);
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Contains("Only MP4", await response.Content.ReadAsStringAsync());
+        }
+    }
+
     private static async Task<JsonElement> UploadAsync(HttpClient client, string path, string fileName)
     {
         using var content = new MultipartFormDataContent();

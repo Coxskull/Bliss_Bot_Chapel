@@ -13,6 +13,10 @@
     for (const id of ["business-name", "business-id", "business-country", "business-website"])
       el(id).textContent = "—";
     show("profile-panel", false);
+    document.dispatchEvent(new Event("alpha-profile-cleared"));
+    show("application-panel", false);
+    for (const id of ["application-status", "application-receipt", "application-privacy", "application-terms", "application-consent", "application-marketing"])
+      el(id).textContent = "—";
   }
   async function get(path) {
     const response = await fetch(path, {
@@ -45,7 +49,7 @@
       }
       if (!session.isAuthenticated) {
         badge.textContent = "SIGN IN";
-        message("Sign in with your approved advertiser account.");
+        message("Sign in with your verified advertiser account.");
         show("signin-panel", true);
         return;
       }
@@ -57,15 +61,51 @@
         return;
       }
       if (response.status === 403 || response.status === 404) {
+        const application = await get("/api/advertisers/registration-status");
+        const own = application.body;
+        if (application.response.ok && own && typeof own.receiptId === "string"
+            && typeof own.status === "string") {
+          el("application-status").textContent = own.status;
+          el("application-receipt").textContent = own.receiptId;
+          el("application-privacy").textContent = own.privacyNoticeVersion;
+          el("application-terms").textContent = own.termsVersion;
+          el("application-consent").textContent = own.processingConsent && own.termsAccepted ? "Accepted" : "Not confirmed";
+          el("application-marketing").textContent = own.marketingOptIn ? "Opted in" : "Not opted in";
+          badge.textContent = own.status === "PENDING_REVIEW" ? "PENDING REVIEW" : "ACCESS PENDING";
+          message("Your application is recorded. Workspace access requires separate approval.");
+          show("application-panel", true);
+          return;
+        }
+        if (application.response.status === 401) {
+          badge.textContent = "SESSION EXPIRED";
+          message("Your session expired. Sign in again.", true);
+          logout.hidden = true; show("signin-panel", true);
+          return;
+        }
+        if (application.response.status !== 403 && application.response.status !== 404) {
+          badge.textContent = "UNAVAILABLE";
+          message("Your application status is temporarily unavailable.", true);
+          return;
+        }
         badge.textContent = "ACCESS PENDING";
         message("No verified business profile is assigned to this account.");
         show("pending-panel", true);
         return;
       }
-      if (!response.ok || !body || typeof body.name !== "string"
-          || typeof body.advertiserId !== "string") {
+      if (!response.ok || !body) {
         badge.textContent = "UNAVAILABLE";
         message("Your business profile is unavailable.", true);
+        return;
+      }
+      // Only the protected own-tenant endpoint may confirm workspace access.
+      if (body.authorityStatus !== "VERIFIED" ||
+          typeof body.name !== "string" || !body.name.trim() ||
+          typeof body.advertiserId !== "string" ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.advertiserId) ||
+          body.advertiserId === "00000000-0000-0000-0000-000000000000") {
+        badge.textContent = "NOT VERIFIED";
+        message("The server did not confirm a verified business profile.", true);
+        show("pending-panel", true);
         return;
       }
       el("business-name").textContent = body.name;
@@ -73,8 +113,9 @@
       el("business-country").textContent = body.countryCode || "Not recorded";
       el("business-website").textContent = body.website || "Not recorded";
       badge.textContent = "APPROVED";
-      message("Your approved business profile is available. Other services remain disabled.");
+      message("Your approved business profile is available. Campaign execution and payments remain disabled.");
       show("profile-panel", true);
+      document.dispatchEvent(new Event("alpha-profile-approved"));
     } catch {
       badge.textContent = "UNAVAILABLE";
       message("The secure account service could not be reached.", true);

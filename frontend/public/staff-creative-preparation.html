@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+<title>Campaign preparation | ALPHA GLOBAL MEDIA</title><link rel="stylesheet" href="/creator-dashboard.css"></head>
+<body class="staff-production"><main><h1>Campaign production preparation</h1>
+<p>Authorized staff only. Select an existing campaign or import its private QA manifest to prepare the campaign workspace. This does not generate images, spend money, dispatch jobs, or release creative.</p>
+<p><a href="/api/auth/login?returnUrl=%2Fstaff-creative-preparation.html">Operator sign-in</a> · <a href="/advertiser-operator-review.html">Advertiser review</a></p>
+<p id="status" role="status" aria-live="polite">Checking staff access…</p>
+<section id="panel" hidden>
+<h2>Eligible advertiser campaigns</h2>
+<p>Select an existing draft from the authorized production queue or import its private QA manifest below.</p>
+<label for="campaign-search">Exact campaign UUID (optional)</label><input id="campaign-search" maxlength="36">
+<button type="button" id="campaign-refresh">Load campaigns</button>
+<label for="campaign-select">Campaign</label><select id="campaign-select"><option value="">Load campaigns first</option></select>
+<button type="button" id="campaign-open" disabled>Review selected campaign</button>
+<p id="queue-status" role="status"></p>
+<label for="manifest">Private campaign QA manifest (JSON, optional)</label>
+<input type="file" id="manifest" accept=".json,application/json">
+<article id="summary" hidden><h2 id="campaign-name"></h2><p id="campaign-id"></p><p id="brief"></p>
+<label><input type="checkbox" id="review"> I reviewed the actual campaign brief and confirm this exact draft.</label>
+<button type="button" id="prepare" disabled>Prepare workspace</button></article>
+<section id="starter-offer" hidden><h2>Standalone $149 service offer</h2>
+<p>Enter the actual approved deliverables, exclusions, delivery limits, cancellation/refund terms and tax treatment. This sends no payment request and cannot be overwritten.</p>
+<label for="offer-scope">Service scope</label><textarea id="offer-scope" maxlength="1000"></textarea>
+<label for="offer-terms">Paid-service terms</label><textarea id="offer-terms" maxlength="700"></textarea>
+<label><input id="offer-approved" type="checkbox"> Approved scope and paid-service terms reviewed.</label>
+<label><input id="offer-tax" type="checkbox"> Applicable tax treatment verified; USD 149 is the final agreed total.</label>
+<button type="button" id="offer-save" disabled>Issue private offer for customer acceptance</button><p id="offer-status" role="status"></p>
+<h3>Private payment instructions</h3><p>Issue only after the customer accepted this offer and you reviewed current live Stripe checkout/payment state. This link is reusable outside ALPHA; do not send it again or allow a second payment. No charge is made here.</p>
+<label for="checkout-offer-id">Accepted offer reference</label><input id="checkout-offer-id" maxlength="36">
+<label><input id="checkout-merchant" type="checkbox"> Live merchant, exact $149 one-time price and applicable tax verified.</label>
+<label><input id="checkout-clear" type="checkbox"> No prior paid or open checkout for this exact customer/order verified in Stripe.</label>
+<button id="checkout-issue" type="button" disabled>Prepare one set of payment instructions</button>
+<p id="checkout-status" role="status"></p><label for="checkout-url">Private link for the accepted customer only</label><input id="checkout-url" readonly></section>
+<section id="brand-panel" hidden><h2>Advertiser brand direction</h2>
+<p>Record the advertiser's supplied brand information. Confirm only after the advertiser has explicitly approved the saved direction. This is not consent to send data to an AI provider.</p>
+<p id="brand-status"></p>
+<label for="brand-name">Brand name</label><input id="brand-name" maxlength="200">
+<label for="brand-niche">Business niche</label><input id="brand-niche" maxlength="200">
+<label for="brand-market">Market</label><input id="brand-market" maxlength="200">
+<label for="brand-language">Language</label><input id="brand-language" maxlength="100">
+<label for="brand-colors">Colors</label><input id="brand-colors" maxlength="500">
+<label for="brand-font">Font</label><input id="brand-font" maxlength="200">
+<label for="brand-goals">Campaign goals</label><textarea id="brand-goals" maxlength="2000"></textarea>
+<label for="brand-restrictions">Restrictions</label><textarea id="brand-restrictions" maxlength="2000"></textarea>
+<button type="button" id="brand-draft" disabled>Save brand draft</button>
+<label><input type="checkbox" id="brand-approved"> The advertiser explicitly approved this exact saved brand direction.</label>
+<button type="button" id="brand-confirm" disabled>Confirm saved brand</button></section>
+<section id="recipe" hidden><h2>Save production recipe</h2><p>Use the latest confirmed brand returned by the workspace. Only supply reviewed production copy.</p>
+<label for="family">Approved template family</label><select id="family"><option value="">Load eligible templates</option></select>
+<label for="headline">Headline</label><input id="headline" maxlength="256">
+<label for="cta">Call to action</label><input id="cta" maxlength="128">
+<button type="button" id="save" disabled>Save recipe</button></section>
+<section id="image-reservation" hidden><h2>One image pilot reservation</h2>
+<p>Review the advertiser's current AI provider consent and available budget. Reservation does not authorize dispatch, payment collection or customer delivery.</p>
+<button type="button" id="image-review">Check consent and budget</button>
+<p id="image-readiness" role="status"></p>
+<label><input type="checkbox" id="image-budget-approved"> I authorize the displayed pilot budget reservation for this exact recipe.</label>
+<button type="button" id="image-reserve" disabled>Reserve one image run</button>
+<pre id="image-receipt"></pre></section>
+<section id="artwork-panel" hidden><h2>Private generated artwork review</h2>
+<p>Inspect the actual provider output before saving a quality review. A PASS does not publish or deliver the artwork.</p>
+<button type="button" id="artwork-preview">Load artwork</button>
+<button type="button" id="artwork-attach" disabled>Attach artwork to candidate history</button>
+<img id="artwork" alt="Private AI advertising draft" hidden style="max-width:100%;height:auto">
+<p id="artwork-status" role="status"></p>
+<section id="placement-preview-panel" hidden><h3>Private advertising placement preview</h3>
+<p>Preview the verified source artwork within the existing 2, 4 or 6-slot geometry. Letterboxing may be needed. This is a local mockup, not approved placement artwork or creator consent.</p>
+<label for="placement-layout">Advertising layout</label><select id="placement-layout"><option value="2">2 advertisements</option><option value="4">4 advertisements</option><option value="6">6 advertisements</option></select>
+<label for="placement-slot">Advertising slot</label><select id="placement-slot"></select>
+<button type="button" id="placement-preview" disabled>Preview private placement</button>
+<canvas id="placement-canvas" hidden width="1920" height="1080" style="max-width:100%;height:auto" aria-label="Unapproved placement mockup"></canvas>
+<p id="placement-status" role="status"></p></section>
+<section id="advertiser-revision-feedback" hidden aria-live="polite"></section>
+<section id="artwork-review" hidden>
+<label for="artwork-decision">Review decision</label><select id="artwork-decision"><option>PASS</option><option>REVISE</option><option>FAIL</option></select>
+<label><input type="checkbox" id="artwork-custom"> Customized for advertiser</label>
+<label><input type="checkbox" id="artwork-quality"> Professional quality</label>
+<label><input type="checkbox" id="artwork-original"> Original artwork</label>
+<label><input type="checkbox" id="artwork-geo"> Geographic authenticity</label>
+<label><input type="checkbox" id="artwork-defect"> Critical defect</label>
+<label for="artwork-rationale">Review rationale</label><textarea id="artwork-rationale" maxlength="2000"></textarea>
+<label for="artwork-preserve">Preserve</label><textarea id="artwork-preserve" maxlength="2000"></textarea>
+<label for="artwork-repair">Repair instructions</label><textarea id="artwork-repair" maxlength="2000"></textarea>
+<button type="button" id="artwork-record" disabled>Save human review</button></section>
+<section id="revision-panel" hidden><h3>Prepare revised recipe</h3><p>Use the saved review instructions. Choose a suitable family, corrected headline and CTA in the production recipe section above. The original artwork stays in history. Fresh customer consent and budget authorization will be required.</p>
+<button type="button" id="revision-save" disabled>Save revised production recipe</button><p id="revision-status" role="status"></p></section>
+<section id="artwork-release" hidden><h3>Final private artwork handoff</h3>
+<label for="reconciliation-id">Payment reconciliation ID</label><input id="reconciliation-id">
+<label><input type="checkbox" id="release-payment"> Current live payment verified; no refund or dispute.</label>
+<label><input type="checkbox" id="release-scope"> Approved paid service scope and artwork complete.</label>
+<button type="button" id="release-artwork" disabled>Authorize private artwork download</button><button type="button" id="delivery-readback" disabled>Check customer receipt (read only)</button></section></section>
+<section aria-live="polite"><h2>Preparation result</h2><p id="result">No preparation requested.</p></section>
+</section><script src="/real-estate-showcase.js" defer></script><script src="/staff-creative-preparation.js" defer></script></main></body></html>

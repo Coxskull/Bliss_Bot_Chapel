@@ -5,6 +5,8 @@ public sealed class BlissRuntimeOptions
     public const string SectionName = "Runtime";
     // Interface-only hosting. All API/data access and background work are locked.
     public bool RestrictedPreview { get; set; }
+    // Explicit, fail-closed public advertiser signup only. All other routes stay locked.
+    public bool PublicAdvertiserRegistrationOnly { get; set; }
     public bool IngressDiagnostics { get; set; }
     public LoopbackIngressOptions LoopbackIngress { get; set; } = new();
 
@@ -35,7 +37,7 @@ public sealed class CreativeGenerationOptions
     public string Provider { get; set; } = string.Empty;
     public string Endpoint { get; set; } = string.Empty;
     public string ApiToken { get; set; } = string.Empty;
-    public string Model { get; set; } = "gpt-image-1";
+    public string Model { get; set; } = "gpt-image-2.5-flare";
     public string OutputPath { get; set; } = string.Empty;
     public int TimeoutSeconds { get; set; } = 120;
     public int MaxImageBytes { get; set; } = 20 * 1024 * 1024;
@@ -52,7 +54,11 @@ public sealed class CreativeGenerationOptions
     public bool Configured =>
         !string.IsNullOrWhiteSpace(ApiToken)
         && Uri.TryCreate(ResolvedEndpoint, UriKind.Absolute, out var endpoint)
-        && endpoint.Scheme == Uri.UriSchemeHttps;
+        && endpoint.Scheme == Uri.UriSchemeHttps
+        // The legacy Creative Academy image generator does not own a USD ledger.
+        // During the $20 pilot, OpenAI calls must flow through ControlledAiService.
+        // Do not revive this unmetered path by merely adding a provider token.
+        && !IsOpenAi;
 }
 
 public static class BlissRateLimitPolicies

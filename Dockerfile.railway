@@ -6,27 +6,28 @@ RUN npm ci --ignore-scripts --strict-ssl=true
 COPY bliss-frontend/ ./
 RUN npm test && npm run build
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS build
 WORKDIR /src
 COPY . .
 COPY --from=financial-ui /src/frontend/operations/financial-review/ ./frontend/operations/financial-review/
 RUN dotnet publish Bliss.Api/Bliss.Api.csproj -c Release -o /app/publish /p:UseAppHost=false \
-    && test -s /app/publish/frontend/operations/financial-review/index.html
+    && test -s /app/publish/frontend/operations/financial-review/index.html \
+    && sh scripts/package-academy-references.sh /src/assets/alpha-prototypes/creative-academy /app/publish/assets/alpha-prototypes/creative-academy
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS runtime
 WORKDIR /app
 RUN apt-get update \
     && apt-cache policy perl-base \
     && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core perl-base openssl util-linux \
-    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' perl-base)" ge '5.36.0-7+deb12u4' \
+    && dpkg --compare-versions "$(dpkg-query -W -f='${Version}' perl-base)" ge '5.38.2-3.2ubuntu0.6' \
     && dpkg-query -W -f='perl-base installed: ${Version}\n' perl-base \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/publish .
-# Private fixed-fixture client only; no startup job or public route.
+# Reuse the existing Node build-stage binary for the fixed operator-only
+# staging roundtrip client. No public route, npm dependencies or startup job.
 COPY --from=financial-ui /usr/local/bin/node /usr/local/bin/node
-RUN install -d -m 0755 /usr/local/lib/bliss-ops
-COPY --chmod=644 scripts/alpha-p0-fictional-creative-roundtrip.mjs /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs
-RUN node --version && setpriv --reuid=app --regid=app --init-groups --no-new-privs sh -ec 'test -r /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs && node --check /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs'
+COPY --chmod=644 scripts/alpha-p0-fictional-creative-roundtrip.mjs /app/ops/alpha-p0-fictional-creative-roundtrip.mjs
+RUN node --version && node --check /app/ops/alpha-p0-fictional-creative-roundtrip.mjs
 ARG SOURCE_REVISION=unknown
 LABEL org.opencontainers.image.revision=$SOURCE_REVISION
 ENV ASPNETCORE_ENVIRONMENT=Production

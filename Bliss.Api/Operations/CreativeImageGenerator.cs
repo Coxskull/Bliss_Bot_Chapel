@@ -138,7 +138,7 @@ public sealed class ConfiguredCreativeImageGenerator(
 
     public static object OpenAiBody(CreativeImageRequest request, string? model)
     {
-        var selected = string.IsNullOrWhiteSpace(model) ? "gpt-image-1" : model.Trim();
+        var selected = string.IsNullOrWhiteSpace(model) ? "gpt-image-2.5-flare" : model.Trim();
         var size = MapOpenAiSize(request.Width, request.Height, selected);
         if (selected.StartsWith("dall-e", StringComparison.OrdinalIgnoreCase))
         {
@@ -167,6 +167,20 @@ public sealed class ConfiguredCreativeImageGenerator(
         if (model.StartsWith("dall-e", StringComparison.OrdinalIgnoreCase))
         {
             return landscape ? "1792x1024" : "1024x1792";
+        }
+
+        // GPT Image 2+ can render the requested artwork aspect ratio directly.
+        // Fail back to a supported standard size for invalid/unsupported dimensions.
+        // This only formats the provider request; it never initiates a model call.
+        if (model.StartsWith("gpt-image-2", StringComparison.OrdinalIgnoreCase)
+            && width >= 512 && height >= 512
+            && width <= 3840 && height <= 3840
+            && width % 16 == 0 && height % 16 == 0
+            && (long)width * height >= 655360
+            && (long)width * height <= 8294400
+            && (long)Math.Max(width, height) <= 3L * Math.Min(width, height))
+        {
+            return $"{width}x{height}";
         }
 
         return landscape ? "1536x1024" : "1024x1536";
@@ -306,6 +320,13 @@ public sealed class CreativeGenerationService(
     IWebHostEnvironment environment,
     BlueprintPhaseService phases)
 {
+    // Single-replica idempotency fence: an identical concurrent request must
+    // not make a second paid provider call before the first draft is persisted.
+    // Fixed stripes avoid an unbounded lock per request key. This does not
+    // replace a durable claim before enabling multiple service replicas.
+    private static readonly SemaphoreSlim[] GenerationLanes =
+        Enumerable.Range(0, 128).Select(_ => new SemaphoreSlim(1, 1)).ToArray();
+
     public bool Configured => generator.Configured;
 
     public async Task<IReadOnlyList<CreativeAcademyGenerationRow>> ReadAsync(
@@ -330,6 +351,11 @@ public sealed class CreativeGenerationService(
         CancellationToken cancellationToken)
     {
         var key = RequireKey(requestKey);
+        var lane = GenerationLanes[(int)((uint)StringComparer.Ordinal.GetHashCode(key)
+            % (uint)GenerationLanes.Length)];
+        await lane.WaitAsync(cancellationToken);
+        try
+        {
         var prior = await database.CreativeAcademyGenerations.AsNoTracking()
             .FirstOrDefaultAsync(item => item.RequestKey == key, cancellationToken);
         if (prior is not null)
@@ -445,6 +471,11 @@ public sealed class CreativeGenerationService(
         }
 
         return Decision(row, false);
+        }
+        finally
+        {
+            lane.Release();
+        }
     }
 
     private string ResolveOutputRoot()

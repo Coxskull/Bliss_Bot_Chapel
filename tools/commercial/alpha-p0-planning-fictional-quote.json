@@ -1,0 +1,25 @@
+{
+  "packageKind": "planning",
+  "quoteId": "ALPHA-P0-PLANNING-FIXTURE-20261127",
+  "currency": "USD",
+  "customer": "Fictional advertiser — operator review template, not a customer",
+  "market": "To be confirmed by operator",
+  "scope": "Five planning outputs only: discovery brief; creator/channel suitability criteria; creative direction outline; coordination schedule; final planning summary. No artwork, booking, placement, publication or guaranteed results.",
+  "schedule": "Proposed 3 business days after written scope approval and receipt of complete materials; subject to operator confirmation.",
+  "revisions": 1,
+  "serviceCents": 14900,
+  "taxCents": 0,
+  "costs": {
+    "laborCents": 6000,
+    "creativeCents": 0,
+    "thirdPartyCents": 0,
+    "processorCents": 500,
+    "otherCents": 500
+  },
+  "policies": {
+    "termsVersion": "PENDING exact order approval",
+    "refundVersion": "PENDING exact order approval",
+    "privacyVersion": "PENDING exact order approval",
+    "supportContact": "Existing approved human operator channel — confirm coverage"
+  }
+}

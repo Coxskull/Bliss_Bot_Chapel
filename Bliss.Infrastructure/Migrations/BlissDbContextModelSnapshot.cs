@@ -342,6 +342,9 @@ namespace Bliss.Infrastructure.Migrations
                     b.Property<Guid>("AdvertiserId").HasColumnType("uuid");
                     b.Property<DateTime?>("AcknowledgedAt").HasColumnType("timestamp with time zone");
                     b.Property<string>("AcknowledgedBySubject").HasMaxLength(255).HasColumnType("character varying(255)");
+                    b.Property<DateTime?>("DisposedAt").HasColumnType("timestamp with time zone");
+                    b.Property<string>("DisposedBySubject").HasMaxLength(255).HasColumnType("character varying(255)");
+                    b.Property<string>("DispositionEvidenceSha256").HasMaxLength(64).HasColumnType("character varying(64)");
                     b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
                     b.Property<Guid>("RequestKey").HasColumnType("uuid");
                     b.Property<string>("RequestType").IsRequired().HasMaxLength(32).HasColumnType("character varying(32)");
@@ -354,6 +357,8 @@ namespace Bliss.Infrastructure.Migrations
                     b.HasIndex("Subject", "CreatedAt");
                     b.ToTable("AdvertiserPrivacyRequests", (string)null, t =>
                     {
+                        t.HasCheckConstraint("CK_AdvertiserPrivacyRequests_DispositionEvidence",
+                            @"""Status"" IN ('RECEIVED', 'VERIFYING') OR (""DispositionEvidenceSha256"" IS NOT NULL AND length(""DispositionEvidenceSha256"") = 64 AND ""DisposedBySubject"" IS NOT NULL AND ""DisposedAt"" IS NOT NULL)");
                         t.HasCheckConstraint("CK_AdvertiserPrivacyRequests_Type", "\"RequestType\" IN ('ACCESS', 'CORRECTION', 'ERASURE', 'MARKETING_WITHDRAWAL', 'OBJECTION', 'ACCOUNT_CLOSURE')");
                         t.HasCheckConstraint("CK_AdvertiserPrivacyRequests_Status", "\"Status\" IN ('RECEIVED', 'VERIFYING', 'RESOLVED', 'DECLINED')");
                     });
@@ -380,6 +385,46 @@ namespace Bliss.Infrastructure.Migrations
                     {
                         t.HasCheckConstraint("CK_AdvertiserRegistrationReceipts_Consent", "\"ProcessingConsent\" AND \"TermsAccepted\"");
                         t.HasCheckConstraint("CK_AdvertiserRegistrationReceipts_RequestSha256", "\"RequestSha256\" ~ '^[0-9a-f]{64}$'");
+                    });
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.CreatorAccountMembership", b =>
+                {
+                    b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uuid");
+                    b.Property<Guid>("CreatorId").HasColumnType("uuid");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
+                    b.Property<string>("Status").IsRequired().ValueGeneratedOnAdd().HasMaxLength(32)
+                        .HasColumnType("character varying(32)").HasDefaultValue("PENDING_REVIEW");
+                    b.Property<string>("SubmittedChannelUrl").IsRequired().HasMaxLength(1024).HasColumnType("character varying(1024)");
+                    b.Property<string>("Subject").IsRequired().HasMaxLength(255).HasColumnType("character varying(255)");
+                    b.HasKey("Id");
+                    b.HasIndex("CreatorId").IsUnique();
+                    b.HasIndex("Subject").IsUnique();
+                    b.ToTable("CreatorAccountMemberships", (string)null, t =>
+                        t.HasCheckConstraint("CK_CreatorAccountMemberships_Status", "\"Status\" IN ('PENDING_REVIEW', 'ACTIVE', 'REVOKED')"));
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.CreatorRegistrationReceipt", b =>
+                {
+                    b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uuid");
+                    b.Property<Guid>("CreatorId").HasColumnType("uuid");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
+                    b.Property<bool>("MarketingOptIn").HasColumnType("boolean");
+                    b.Property<bool>("ProcessingConsent").HasColumnType("boolean");
+                    b.Property<string>("PrivacyNoticeVersion").IsRequired().HasMaxLength(96).HasColumnType("character varying(96)");
+                    b.Property<Guid>("RequestKey").HasColumnType("uuid");
+                    b.Property<string>("RequestSha256").IsRequired().HasMaxLength(64).HasColumnType("character varying(64)");
+                    b.Property<string>("Subject").IsRequired().HasMaxLength(255).HasColumnType("character varying(255)");
+                    b.Property<bool>("TermsAccepted").HasColumnType("boolean");
+                    b.Property<string>("TermsVersion").IsRequired().HasMaxLength(96).HasColumnType("character varying(96)");
+                    b.HasKey("Id");
+                    b.HasIndex("CreatorId");
+                    b.HasIndex("RequestKey").IsUnique();
+                    b.HasIndex("Subject", "CreatorId").IsUnique();
+                    b.ToTable("CreatorRegistrationReceipts", (string)null, t =>
+                    {
+                        t.HasCheckConstraint("CK_CreatorRegistrationReceipts_Consent", "\"ProcessingConsent\" AND \"TermsAccepted\"");
+                        t.HasCheckConstraint("CK_CreatorRegistrationReceipts_RequestSha256", "\"RequestSha256\" ~ '^[0-9a-f]{64}$'");
                     });
                 });
 
@@ -482,6 +527,20 @@ namespace Bliss.Infrastructure.Migrations
                     b.HasOne("Bliss.Domain.Entities.Advertiser", "Advertiser").WithMany()
                         .HasForeignKey("AdvertiserId").OnDelete(DeleteBehavior.Restrict).IsRequired();
                     b.Navigation("Advertiser");
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.CreatorAccountMembership", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.Creator", "Creator").WithMany()
+                        .HasForeignKey("CreatorId").OnDelete(DeleteBehavior.Restrict).IsRequired();
+                    b.Navigation("Creator");
+                });
+
+            modelBuilder.Entity("Bliss.Domain.Entities.CreatorRegistrationReceipt", b =>
+                {
+                    b.HasOne("Bliss.Domain.Entities.Creator", "Creator").WithMany()
+                        .HasForeignKey("CreatorId").OnDelete(DeleteBehavior.Restrict).IsRequired();
+                    b.Navigation("Creator");
                 });
 
             modelBuilder.Entity("Bliss.Domain.Entities.AdvertiserProgram", b =>

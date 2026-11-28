@@ -24,12 +24,27 @@ export function verifyResult(r){
  if(q.schema!=="alpha.henry-ford.held-multi-overlay-receipt.v1"||q.compositionSha256!==r.compositionSha256||q.release!=="HELD"||q.delivery!=="NOT_SENT"||q.dispatchAuthorized!==false||q.providerCalls!==0||q.renderExecuted!==true||!hex(q.previewSha256)||!hex(q.sourceRenderReceiptSha256)||q.artworkFrame?.sha256!==r.artworkSha256||q.artworkFrame?.sourcePreviewSha256!==q.previewSha256||q.artworkFrame?.atSeconds!==1.5||q.artworkFrame?.width!==960||q.artworkFrame?.height!==540||q.placements?.length!==1)throw Error("Held receipt mismatch");
  return {artwork,receipt};
 }
-async function send(env){
- if(env.BLISS_FICTIONAL_ROUNDTRIP!=="YES"||
+export async function verifyHostedRetry(sendResult){
+ const first=await sendResult();
+ verifyResult(first); // Refuse malformed or released evidence before requesting a replay.
+ const again=await sendResult();
+ verifyResult(again);
+ if(JSON.stringify(first)!==JSON.stringify(again))throw Error("Retry returned different evidence");
+ return first;
+}
+export function requireHostedStaging(env){
+ // Enforce the locked staging contract even when Node is invoked directly.
+ const requiredOff=["Authentication__Enabled","Authentication__SupabaseEnabled","Authentication__AdvertiserRegistrationRequested","Authentication__AdvertiserPrivacyRequestsRequested","Authentication__AdvertiserSelfServiceRequested"];
+ const additionalOff=["Runtime__PublicAdvertiserRegistrationOnly","Authentication__CreatorRegistrationRequested","Authentication__CreatorSelfServiceRequested","Authentication__AdvertiserMembershipSelfServiceRequested","Authentication__AskAlphaVisitorEnrollmentRequested"];
+ if(env.Runtime__RestrictedPreview!=="true"||requiredOff.some(k=>env[k]!=="false")||additionalOff.some(k=>env[k]!==undefined&&env[k]!=="false")||
+    env.BLISS_FICTIONAL_ROUNDTRIP!=="YES"||
     env.RAILWAY_PROJECT_ID!=="43062727-bca5-400a-b801-27828161324b"||
     env.RAILWAY_ENVIRONMENT_ID!=="04edd217-035e-4c18-b864-9b7ded76de7d"||
     env.RAILWAY_SERVICE_ID!=="990e3d3e-b09a-4c43-8873-ab10e9bffd02"||
     !hex(env.BLISS_FICTIONAL_ROUNDTRIP_HMAC_KEY))throw Error("Exact Bliss staging configuration required");
+}
+async function send(env){
+ requireHostedStaging(env);
  const timestamp=String(Math.floor(Date.now()/1000));
  const signature=createHmac("sha256",Buffer.from(env.BLISS_FICTIONAL_ROUNDTRIP_HMAC_KEY,"hex")).update("alpha-fictional-roundtrip-v1\n"+timestamp+"\n").update(REQUEST).digest("hex");
  const res=await fetch(URL,{method:"POST",redirect:"error",headers:{"content-type":"application/json","x-alpha-timestamp":timestamp,"x-alpha-signature":signature},body:REQUEST,signal:AbortSignal.timeout(240000)});
@@ -51,7 +66,7 @@ async function main(){
  const s=await lstat(root);if(!s.isDirectory()||s.isSymbolicLink()||s.mode&0o077||await realpath(root)!==root)throw Error("Private directory required");
  let r;
  if(local){const stat=await lstat(args[1]);if(!stat.isFile()||stat.isSymbolicLink()||stat.size>4_000_000)throw Error("Invalid local fixture response");r=JSON.parse(await readFile(args[1],"utf8"));}
- else{r=await send(process.env);const again=await send(process.env);verifyResult(again);if(JSON.stringify(r)!==JSON.stringify(again))throw Error("Retry returned different evidence");}
+ else{r=await verifyHostedRetry(()=>send(process.env));}
  const {artwork,receipt}=verifyResult(r);
  await save(join(root,"artwork.png"),artwork);await save(join(root,"receipt.json"),receipt);
  await save(join(root,"preview.html"),Buffer.from('<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src &apos;none&apos;; img-src &apos;self&apos;; style-src &apos;unsafe-inline&apos;"><title>Bliss fictional preview</title><h1>FICTIONAL ONLY — HELD</h1><p>Job '+JOB+'</p><img width="960" height="540" src="artwork.png" alt="Private fictional rendered frame"><p>Receipt SHA-256: '+r.receiptSha256+'</p><p>Not sent; no payment or production delivery.</p>'));

@@ -131,6 +131,59 @@ public sealed class AdvertiserPrivacyRequestsController(BlissDbContext db, Bliss
         return exists ? Conflict(new { error = "Case already acknowledged or disposition changed." }) : NotFound();
     }
 
+    // A controlled HUMAN final disposition. This endpoint does not delete data,
+    // revoke Auth sessions, contact processors, send a notice, or alter marketing.
+    // The allowlisted operator attests to those actions separately, and stores
+    // only the SHA-256 digest of an owner-private case evidence manifest.
+    [HttpPost("{caseId:guid}/finalize")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2 * 1024)]
+    public async Task<IActionResult> FinalizeCase(
+        Guid caseId, [FromBody] AdvertiserPrivacyCaseFinalization request, CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+        if (!IsVerifiedPrivacyOperator(out var operatorSubject))
+            return StatusCode(StatusCodes.Status403Forbidden);
+
+        var isResolution = request.Decision == "RESOLVED";
+        var isDecline = request.Decision == "DECLINED";
+        var hash = request.EvidenceSha256;
+        if (caseId == Guid.Empty || !(isResolution || isDecline)
+            || hash is null || hash.Length != 64
+            || hash.Any(c => (c is < '0' or > '9') && (c is < 'a' or > 'f'))
+            || !request.IdentityVerified || !request.ApplicantNotified
+            || !request.LawfulBasisReviewed || (isResolution && !request.RequiredActionsVerified))
+            return BadRequest(new { error = "Private human-verification and disposition evidence is required." });
+
+        // Marketing withdrawal is a request to stop optional marketing. A
+        // simple DECLINED disposition, or a status change without send-side
+        // suppression evidence, cannot fulfill that request.
+        var existing = await db.AdvertiserPrivacyRequests.AsNoTracking()
+            .Where(x => x.Id == caseId)
+            .Select(x => new { x.Id, x.RequestType, x.Status })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (existing is null) return NotFound();
+        if (existing.Status != "VERIFYING")
+            return Conflict(new { error = "Case must be acknowledged and verifying." });
+        if (existing.RequestType == "MARKETING_WITHDRAWAL"
+            && (!isResolution || !request.MarketingSuppressionVerified))
+            return BadRequest(new { error = "Marketing suppression must be verified before withdrawal resolution." });
+
+        var disposedAt = DateTime.UtcNow;
+        var count = await db.AdvertiserPrivacyRequests
+            .Where(x => x.Id == caseId && x.Status == "VERIFYING"
+                && x.AcknowledgedBySubject != null && x.AcknowledgedAt != null)
+            .ExecuteUpdateAsync(change => change
+                .SetProperty(x => x.Status, request.Decision)
+                .SetProperty(x => x.DisposedBySubject, operatorSubject)
+                .SetProperty(x => x.DisposedAt, disposedAt)
+                .SetProperty(x => x.DispositionEvidenceSha256, hash), cancellationToken);
+        return count == 1
+            ? Ok(new { caseId, status = request.Decision, disposedAt,
+                attestation = "RECORDED_HUMAN_DISPOSITION_NOT_AUTOMATED_ACTION" })
+            : Conflict(new { error = "Case was modified or not acknowledged." });
+    }
+
     private bool IsVerifiedPrivacyOperator(out string operatorSubject)
     {
         operatorSubject = string.Empty;
@@ -207,3 +260,12 @@ public sealed record AdvertiserPrivacyCaseReceipt(Guid CaseId, string RequestTyp
 
 public sealed record AdvertiserPrivacyOperatorCase(Guid CaseId, string Subject, Guid AdvertiserId,
     string RequestType, string Status, DateTime CreatedAt, DateTime? AcknowledgedAt);
+
+public sealed record AdvertiserPrivacyCaseFinalization(
+    string Decision,
+    string? EvidenceSha256,
+    bool IdentityVerified,
+    bool ApplicantNotified,
+    bool LawfulBasisReviewed,
+    bool RequiredActionsVerified,
+    bool MarketingSuppressionVerified);

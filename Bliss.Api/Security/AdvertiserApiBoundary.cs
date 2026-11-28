@@ -41,6 +41,24 @@ public static class AdvertiserApiBoundary
                 || path.Equals("/api/auth/supabase-config", StringComparison.OrdinalIgnoreCase)
                 || path.Equals("/api/advertisers/me", StringComparison.OrdinalIgnoreCase)))
             return false;
+        if (auth.AdvertiserCampaignDraftsRequested
+            && (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsPost(context.Request.Method))
+            && path.Equals("/api/advertisers/my-campaign-drafts", StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (auth.AdvertiserCampaignDraftsRequested && auth.AdvertiserCreativeHandoffPreviewRequested
+            && HttpMethods.IsPost(context.Request.Method)
+            && path.Equals("/api/advertisers/my-campaign-drafts/creative-handoff-preview", StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (auth.AdvertiserCampaignDraftsRequested && auth.AdvertiserCreativeProviderConsentRequested
+            && HttpMethods.IsPost(context.Request.Method)
+            && path.Equals("/api/advertisers/my-campaign-drafts/creative-provider-consent", StringComparison.OrdinalIgnoreCase))
+            return false;
+        if (auth.AdvertiserCampaignDraftsRequested && auth.AdvertiserCreativeProviderConsentRequested
+            && auth.AdvertiserCreativeArtworkRequested && HttpMethods.IsPost(context.Request.Method)
+            && path.Equals("/api/advertisers/my-campaign-drafts/creative-artwork", StringComparison.OrdinalIgnoreCase))
+            return false;
+        if(auth.AdvertiserCampaignDraftsRequested && auth.StarterServiceOfferRequested && HttpMethods.IsPost(context.Request.Method)
+            && path.Equals("/api/advertisers/my-campaign-drafts/starter-offer",StringComparison.OrdinalIgnoreCase))return false;
         // One verified advertiser may access only its own privacy-case receipts
         // when the separately approved privacy feature is on. The controller
         // additionally enforces the issuer/subject/active membership binding.

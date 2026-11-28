@@ -7,13 +7,16 @@ const PUBLISHABLE_KEY="sb_publishable_6eUPcIl4irVSlm1Z117KTQ_KVhdjPgU";
 const OPERATOR_API=PROJECT+"/functions/v1/alpha-support-manual-operator";
 const CRM_REVIEW_API=PROJECT+"/functions/v1/alpha-ghl-operator-review";
 const CRM_CONSENT_API=PROJECT+"/functions/v1/alpha-ghl-consent-readiness";
+const INTAKE_REVIEW_API=PROJECT+"/functions/v1/alpha-intake-operator-review";
 const AUTH_API=PROJECT+"/auth/v1";
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const $=id=>document.getElementById(id);
 const panels=["signin-panel","mfa-setup-panel","mfa-verify-panel","pending-panel","queue-panel"];
 let token=null,expiresAt=0,verifiedId=null,activeFactor=null,pendingEnrollFactor=null;
-let busy=false,page=0,cases=[];
+let busy=false,page=0,cases=[],intakeExpiryTimer=null,intakeGeneration=0;
+let queueExpiryTimer=null,queueGeneration=0,queueVerified=false;
 function showPanel(id){
+ if(id!=="queue-panel")clearIntakeReview();
  for(const p of panels)$(p).hidden=p!==id;
  if(id!=="mfa-setup-panel"){
   $("mfa-enroll-secret").textContent="";
@@ -24,11 +27,18 @@ function showPanel(id){
 }
 function announce(message){$("status").textContent=message;}
 function clearCaseRows(){$("case-rows").replaceChildren();}
+function clearQueue(){
+ queueGeneration++;queueVerified=false;
+ if(queueExpiryTimer!==null){clearTimeout(queueExpiryTimer);queueExpiryTimer=null;}
+ clearCaseRows();cases=[];
+ $("previous").disabled=true;$("next").disabled=true;
+ $("page-label").textContent="Queue not verified";
+}
 function resetSession(){
  token=null;expiresAt=0;verifiedId=null;activeFactor=null;pendingEnrollFactor=null;
  $("staff-password").value="";$("mfa-code").value="";$("mfa-enroll-code").value="";
  $("mfa-enroll-secret").textContent="";$("pending-user-id").textContent="";
- clearCaseRows();cases=[];page=0;
+ clearQueue();page=0;
  $("crm-review-result").textContent="Not checked in this session. Follow-up remains on hold.";
  $("crm-consent-result").textContent="Not checked. All historical inquiries remain on HOLD. This report cannot approve outreach.";
  showPanel("signin-panel");
@@ -40,8 +50,8 @@ function setBusy(value){
  busy=value;
  for(const e of document.querySelectorAll("button"))e.disabled=value;
  if(!value){
-  $("previous").disabled=page===0;
-  $("next").disabled=cases.length!==20||page>=100;
+  $("previous").disabled=!queueVerified||page===0;
+  $("next").disabled=!queueVerified||cases.length!==20||page>=100;
  }
 }
 function authHeaders(access){
@@ -192,7 +202,7 @@ async function operatorRequest(method,path,body=null){
  return json;
 }
 function showPending(){
- clearCaseRows();cases=[];page=0;
+ clearQueue();page=0;
  if(UUID.test(verifiedId||""))$("pending-user-id").textContent=verifiedId;
  showPanel("pending-panel");
  announce("Verified login. Your owner-approved private operator grant is not yet enabled. No support records were loaded.");
@@ -226,20 +236,29 @@ function renderCases(list){
  $("next").disabled=busy||cases.length!==20||page>=100;
 }
 async function loadQueue(target=0){
+ clearIntakeReview();clearQueue();
+ if(document.hidden)return;
+ const generation=queueGeneration,access=token;
  try{
   const result=await operatorRequest("GET","?page="+target);
+  if(generation!==queueGeneration||access!==token||document.hidden)return;
+  guardUI();
   if(!Array.isArray(result?.cases)||result.cases.length>20||
     result.cases.some(c=>!UUID.test(c?.case_id||"")||
-      !["OPEN","IN_REVIEW"].includes(c?.status)||typeof c?.category!=="string"))
+      !["OPEN","IN_REVIEW"].includes(c?.status)||typeof c?.category!=="string")||
+    new Set(result.cases.map(c=>c.case_id)).size!==result.cases.length)
     throw Error("OPERATOR_BAD_QUEUE");
   page=target;
-  cases=result.cases;
+  cases=result.cases;queueVerified=true;
   renderCases(cases);
+  queueExpiryTimer=setTimeout(()=>{resetSession();announce("Session expired. Sign in again.");},Math.max(0,expiresAt-Date.now()-1500));
   showPanel("queue-panel");
   announce(cases.length?
    "Private support queue loaded; only minimal case metadata is available.":
    "Operator authorized. No open support cases currently in this queue.");
  }catch(error){
+  if(generation!==queueGeneration||access!==token)return;
+  clearQueue();
   if(error.message==="OPERATOR_NOT_AUTHORIZED"){showPending();return;}
   if(error.message==="SESSION_EXPIRED"){
    resetSession();announce("Session expired. Sign in again.");return;
@@ -248,20 +267,24 @@ async function loadQueue(target=0){
  }
 }
 async function claim(caseId,button){
- if(busy)return;
+ if(busy||document.hidden)return;
+ const generation=queueGeneration,access=token;
  setBusy(true);
  try{
   guardUI();
-  if(!UUID.test(caseId)||!cases.some(c=>c.case_id===caseId&&c.status==="OPEN"))
+  if(!queueVerified||!UUID.test(caseId)||!cases.some(c=>c.case_id===caseId&&c.status==="OPEN"))
    throw Error("INVALID_CASE");
   const result=await operatorRequest("POST","",{action:"CLAIM",case_id:caseId});
+  if(generation!==queueGeneration||access!==token||document.hidden)return;
   if(result?.committed!==true||result?.case_id!==caseId||result?.status!=="IN_REVIEW")
    throw Error("UNCONFIRMED_CLAIM");
   announce("Claim recorded as IN_REVIEW in the protected audit ledger. No customer was contacted.");
   await loadQueue(page);
  }catch(error){
+  if(generation!==queueGeneration||access!==token)return;
   if(error.message==="SESSION_EXPIRED"){resetSession();announce("Session expired.");}
-  else announce("The claim was not confirmed. Refresh the queue before taking another action.");
+  else if(error.message==="OPERATOR_NOT_AUTHORIZED")showPending();
+  else {clearQueue();announce("The claim was not confirmed. Refresh the queue before taking another action.");}
  }finally{setBusy(false);}
 }
 async function signOut(){
@@ -371,3 +394,75 @@ $("refresh").addEventListener("click",async()=>{if(busy)return;setBusy(true);awa
 $("previous").addEventListener("click",async()=>{if(busy||page===0)return;setBusy(true);await loadQueue(page-1);setBusy(false);});
 $("next").addEventListener("click",async()=>{if(busy||cases.length!==20||page>=100)return;setBusy(true);await loadQueue(page+1);setBusy(false);});
 // Deliberately no browser-stored access or refresh token, telemetry or background polling.
+
+ // Task330: separate read-only reviewer permission, enforced by the hosted API.
+ // Authorization is the only custom header allowed by its CORS contract.
+ function clearIntakeReview(message="Not loaded. Staff MFA and the separate reviewer grant are required."){
+  intakeGeneration++;
+  if(intakeExpiryTimer!==null){clearTimeout(intakeExpiryTimer);intakeExpiryTimer=null;}
+  $("intake-review-rows").replaceChildren();
+  $("intake-review-details").hidden=true;
+  $("intake-review-result").textContent=message;
+ }
+ const intakeFields=["request_id","kind","received_at","receipt_id","crm_delivery_state","review_state",
+  "manual_identity_and_rights_review_required","invitation_authorized","campaign_authorized","payment_authorized"];
+ function validIntakeQueue(v){
+  if(v?.source!=="BLISS_PUBLIC_INTEREST_ONLY"||v.readonly!==true||
+     Object.keys(v).length!==5||!Array.isArray(v.items)||v.items.length>50||
+     v.count!==v.items.length||!Number.isInteger(v.review_ready)||v.review_ready<0||
+     v.review_ready!==v.items.filter(r=>r?.review_state==="REVIEW_READY").length)return false;
+  const seen=new Set();
+  for(const r of v.items){
+   if(!r||typeof r!=="object"||Object.keys(r).length!==intakeFields.length||
+      !intakeFields.every(k=>Object.hasOwn(r,k))||!UUID.test(r.request_id||"")||
+      seen.has(r.request_id)||!["creator","advertiser"].includes(r.kind)||
+      typeof r.received_at!=="string"||!Number.isFinite(Date.parse(r.received_at))||
+      !(r.receipt_id===null||UUID.test(r.receipt_id||""))||
+      !["PENDING","SENDING","RETRY","DELIVERED","BLOCKED","UNCONFIRMED"].includes(r.crm_delivery_state)||
+      !["REVIEW_READY","HOLD_CONSENT","HOLD_STATUS","HOLD_RECEIPT","WAIT_CRM"].includes(r.review_state)||
+      r.manual_identity_and_rights_review_required!==true||
+      r.invitation_authorized!==false||r.campaign_authorized!==false||r.payment_authorized!==false)return false;
+   if(r.review_state==="REVIEW_READY"&&(!r.receipt_id||r.crm_delivery_state!=="DELIVERED"))return false;
+   seen.add(r.request_id);
+  }
+  return true;
+ }
+ async function loadIntakeReview(){
+  if(busy||$("queue-panel").hidden)return;
+  clearIntakeReview("Checking current reviewer permission…");
+  const generation=intakeGeneration,access=token;
+  setBusy(true);
+  try{
+   guardUI();
+   const response=await fetch(INTAKE_REVIEW_API,{
+    method:"GET",headers:{Authorization:"Bearer "+access},
+    credentials:"omit",cache:"no-store",referrerPolicy:"no-referrer",
+    redirect:"error",signal:AbortSignal.timeout(18000)
+   });
+   if(generation!==intakeGeneration||access!==token||$("queue-panel").hidden)return;
+   if(response.status===401){resetSession();announce("Session expired. Sign in again.");return;}
+   if(!response.ok)throw Error("INTAKE_REVIEW_DENIED");
+   const v=await response.json();
+   if(generation!==intakeGeneration||access!==token||$("queue-panel").hidden)return;
+   guardUI();
+   if(!validIntakeQueue(v))throw Error("INVALID_INTAKE_REVIEW");
+   const dateFormat=new Intl.DateTimeFormat("en-PH",{dateStyle:"medium",timeStyle:"short",timeZone:"Asia/Manila"});
+   for(const r of v.items){
+    const tr=document.createElement("tr");
+    for(const value of [r.kind,dateFormat.format(new Date(r.received_at)),
+      r.receipt_id||"Not verified",r.crm_delivery_state,r.review_state]){
+     const td=document.createElement("td");td.textContent=value;tr.append(td);
+    }
+    $("intake-review-rows").append(tr);
+   }
+   $("intake-review-details").hidden=false;
+   $("intake-review-result").textContent="Inquiries: "+v.count+" · Ready for human review: "+v.review_ready+
+    " · Held or waiting: "+(v.count-v.review_ready)+". No invitations, campaigns, payments or customer contact authorized.";
+   intakeExpiryTimer=setTimeout(()=>clearIntakeReview("Session expired. Refresh after signing in again."),Math.max(0,expiresAt-Date.now()-1500));
+  }catch{
+   if(generation===intakeGeneration)clearIntakeReview("Reviewer queue unavailable or permission denied. No inquiry data displayed.");
+  }finally{setBusy(false);}
+ }
+ $("intake-review-refresh").addEventListener("click",loadIntakeReview);
+ window.addEventListener("pagehide",()=>{clearIntakeReview();clearQueue();});
+ document.addEventListener("visibilitychange",()=>{if(document.hidden){clearIntakeReview();clearQueue();}});

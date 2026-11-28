@@ -19,6 +19,32 @@ test('offline Vercel portal build contains the existing consented advertiser inq
   assert.ok(terms.length > 100);
 });
 
+test('effective advertiser account notices are public and match app+browser receipt versions without signup', async () => {
+  const privacy = await load('advertiser-account-privacy.html');
+  const terms = await load('advertiser-account-terms.html');
+  const registrationJs = await readFile(new URL('../frontend/public/advertiser-registration.js', import.meta.url), 'utf8');
+  const registrationHtml = await readFile(new URL('../frontend/public/advertiser-registration.html', import.meta.url), 'utf8');
+  const registrationApi = await readFile(new URL('../Bliss.Api/Controllers/AdvertiserRegistrationController.cs', import.meta.url), 'utf8');
+  const privacyVersion = 'advertiser-privacy-2026-11-20-v2';
+  const termsVersion = 'advertiser-terms-2026-11-20-v2';
+  for (const [content, version] of [
+    [privacy, privacyVersion], [terms, termsVersion],
+    [registrationJs, privacyVersion], [registrationJs, termsVersion],
+    [registrationHtml, privacyVersion], [registrationHtml, termsVersion],
+    [registrationApi, privacyVersion], [registrationApi, termsVersion]
+  ]) assert.ok(content.includes(version), 'mismatched disclosed/accepted consent version ' + version);
+  assert.match(privacy, /Effective November 20, 2026/);
+  assert.match(terms, /Effective November 20, 2026/);
+  assert.match(privacy, /mailto:alpha7auto@gmail.com/);
+  assert.match(privacy, /do not claim to have an automated account-deletion schedule/);
+  assert.match(terms, /There is no charge simply to submit/);
+  assert.doesNotMatch(privacy + terms, /LEGAL REVIEW DRAFT|Not yet approved for live registration|pending owner approval/i);
+  // Publishing policies does not create a route to collect customer passwords
+  // or publish protected account registration / privacy forms on Vercel.
+  await assert.rejects(access(generated('advertiser-registration.html')), { code: 'ENOENT' });
+  await assert.rejects(access(generated('advertiser-account-rights.html')), { code: 'ENOENT' });
+});
+
 test('generated services explain exactly five planning-only outputs and no checkout', async () => {
   const services = await load('services.html');
   const start = services.indexOf('<h2>Campaign Planning &amp; Coordination');
@@ -44,7 +70,8 @@ test('public advertiser login does not expose a missing registration route befor
   assert.match(login, /Account registration not yet available/);
   assert.match(login, /aria-disabled="true"/);
   assert.ok(!login.includes('href="/advertiser-registration.html"'));
-  assert.ok(login.includes('href="https://')); // Private sign-in remains on Railway.
+  assert.match(login, /href="https:\/\/[^\/@?#"\s]+\/api\/auth\/login\?returnUrl=%2Fadvertiser-registration\.html"/); // Only the exact issuer-backed app route, never same-origin Vercel or userinfo.
+  assert.ok(!login.includes('href="/api/auth/login?returnUrl='), 'Vercel must not receive sign-in credentials');
 });
 
 test('generated portal does not publish internal proposal tools or restricted operator routes', async () => {
@@ -77,4 +104,13 @@ test('consolidated homepage directly exposes consented public forms with accessi
   assert.match(css, /\.hero-actions a:focus-visible/);
   assert.match(css, /min-height:\s*48px/);
   assert.doesNotMatch(homepage, /payment checkout is now available|book your creator now/i);
+});
+
+
+test('generated Starter Package inquiry remains non-transactional',async()=>{
+ const services=await load('services.html');
+ assert.match(services,/Digital Advertising Starter Package — \$149 USD/);
+ assert.ok(services.includes('href="/join-advertiser.html?service=starter"'));
+ assert.match(services,/free inquiry, not a purchase or a request for payment/);
+ assert.doesNotMatch(services,/buy\.stripe\.com/);
 });

@@ -1,0 +1,33 @@
+name: ALPHA Task3 advertiser dashboard verified-profile guard
+
+on:
+  pull_request:
+    paths:
+      - 'Bliss.Api/Controllers/AdvertiserAccountController.cs'
+      - 'frontend/public/advertiser-dashboard.js'
+      - 'frontend/public/advertiser-dashboard.html'
+      - 'scripts/task3-advertiser-dashboard-unit.mjs'
+      - '.github/workflows/alpha-task3-advertiser-dashboard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  advertiser-profile-fail-closed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact review head
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify advertiser dashboard and protected DTO contract offline
+        run: |
+          node --check frontend/public/advertiser-dashboard.js
+          node --check scripts/task3-advertiser-dashboard-unit.mjs
+          node scripts/task3-advertiser-dashboard-unit.mjs

@@ -10,20 +10,22 @@ const currencyExponent = Object.freeze({DOP:2,PAB:2,COP:2,PHP:2,MYR:2,IDR:0});
 export function parseBudgetToMinor(amount, currency) {
   const code=String(currency||"").toUpperCase();
   const exponent=currencyExponent[code];
-  if (exponent===undefined || typeof amount!=="string" ||
+  if (!Object.hasOwn(currencyExponent,code) || typeof amount!=="string" || amount.length>64 ||
       !/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(amount.trim()))
     throw new Error("INVALID_BUDGET_OR_CURRENCY");
   const parts=amount.trim().split(".");
   if ((parts[1]||"").length>exponent) throw new Error("INVALID_CURRENCY_PRECISION");
-  const factor=10**exponent;
-  const whole=Number(parts[0]);
-  const fraction=exponent ? Number((parts[1]||"").padEnd(exponent,"0")) : 0;
-  const minor=whole*factor+fraction;
-  if (!Number.isSafeInteger(minor) || minor<=0) throw new Error("INVALID_BUDGET_OR_CURRENCY");
-  return minor;
+  const minor=BigInt(parts[0])*10n**BigInt(exponent)+BigInt((parts[1]||"").padEnd(exponent,"0")||"0");
+  if (minor<=0n || minor>BigInt(Number.MAX_SAFE_INTEGER)) throw new Error("INVALID_BUDGET_OR_CURRENCY");
+  return Number(minor);
 }
 const validText = (v,max) => typeof v === "string" && v.trim().length > 0 && v.trim().length <= max;
 const whole = v => Number.isSafeInteger(v) && v >= 0;
+const marginBasisPoints=(contribution,total)=>{
+  if(total===0)return 0;
+  const n=BigInt(contribution)*10000n,d=BigInt(total);
+  return Number(n/d-(n<0n&&n%d!==0n?1n:0n));
+};
 const overlap = (a,b) => Array.isArray(a) && Array.isArray(b) &&
   a.some(x => b.map(y => String(y).toLowerCase()).includes(String(x).toLowerCase()));
 const nowMs = value => new Date(value).getTime();
@@ -33,7 +35,7 @@ export function validateAdvertiserBrief(brief) {
   if (!brief || brief.kind !== "advertiser" ||
       !Number.isSafeInteger(brief.budgetMinor) || brief.budgetMinor <= 0 ||
       !validText(brief.currency,3) || !validText(brief.marketCode,80) ||
-      (MARKET_CURRENCIES[brief.marketCode.trim().toUpperCase()] &&
+      (!Object.hasOwn(MARKET_CURRENCIES,brief.marketCode.trim().toUpperCase()) ||
         MARKET_CURRENCIES[brief.marketCode.trim().toUpperCase()] !== brief.currency.toUpperCase()) ||
       !validText(brief.objective,80) || !Array.isArray(formats) || !formats.length ||
       formats.some(x => !media.has(x)) ||
@@ -70,8 +72,8 @@ export function calculatePlanningServiceQuote(offer, policy, now = new Date()) {
 
   const market=String(offer.marketCode||"").trim().toUpperCase();
   const currency=String(offer.currency||"").trim().toUpperCase();
-  if (!MARKET_CURRENCIES[market] || MARKET_CURRENCIES[market] !== currency ||
-      currencyExponent[currency] === undefined || offer.creatorId || offer.adInventorySlotId || offer.placementId)
+  if (!Object.hasOwn(MARKET_CURRENCIES,market) || MARKET_CURRENCIES[market] !== currency ||
+      !Object.hasOwn(currencyExponent,currency) || offer.creatorId || offer.adInventorySlotId || offer.placementId)
     return {eligible:false,reason:"UNSUPPORTED_MARKET_OR_CURRENCY",status:"DRAFT"};
   if (!validText(offer.customerRequirements,2000) ||
       offer.requirementsVerified !== true ||
@@ -120,8 +122,7 @@ export function calculatePlanningServiceQuote(offer, policy, now = new Date()) {
   if (!Number.isSafeInteger(totalAdvertiserCostMinor) ||
       !Number.isSafeInteger(contributionMinor))
     return {eligible:false,reason:"SERVICE_COST_OUT_OF_RANGE",status:"DRAFT"};
-  const contributionBasisPoints=totalAdvertiserCostMinor===0?0:
-    Math.floor(contributionMinor*10000/totalAdvertiserCostMinor);
+  const contributionBasisPoints=marginBasisPoints(contributionMinor,totalAdvertiserCostMinor);
   if (totalAdvertiserCostMinor>offer.budgetMinor)
     return {eligible:false,reason:"OVER_CUSTOMER_BUDGET",status:"DRAFT",
       currency,totalAdvertiserCostMinor,budgetMinor:offer.budgetMinor};
@@ -178,8 +179,9 @@ export function calculateSustainableQuote(offer, policy, now = new Date()) {
     c.creatorCompensationMinor+c.alphaFeeMinor+c.paymentProcessingMinor+c.fulfillmentMinor+c.taxMinor;
   const contributionMinor =
     c.alphaFeeMinor-c.paymentProcessingMinor-c.fulfillmentMinor-c.taxMinor;
-  const contributionBasisPoints = totalAdvertiserCostMinor === 0 ? 0
-    : Math.floor(contributionMinor*10000/totalAdvertiserCostMinor);
+  if (!Number.isSafeInteger(totalAdvertiserCostMinor) || !Number.isSafeInteger(contributionMinor))
+    return {eligible:false,reason:"COST_OUT_OF_RANGE"};
+  const contributionBasisPoints=marginBasisPoints(contributionMinor,totalAdvertiserCostMinor);
   const meetsMargin=contributionMinor>=0 &&
     contributionMinor>=policy.minimumContributionMinor &&
     contributionBasisPoints>=policy.minimumContributionBasisPoints;

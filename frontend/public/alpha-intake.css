@@ -16,3 +16,17 @@ footer{max-width:1180px;margin:auto;padding:28px 25px 38px;color:#c3b2d9;display
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 /* Invitation-only creator account explainer */
 .account-steps{padding-left:22px;margin:22px 0}.account-steps li{padding:8px 0 8px 5px}.account-steps li strong{display:block;color:#302044}.account-steps li span{display:block;margin-top:4px;color:#645a70;font-size:14px;line-height:1.6}.account-actions{display:grid;gap:12px;margin-top:22px}.submit.secondary-action{background:#f0e9f8;color:#4c2d74;border:1px solid #c8b8dc}.submit.secondary-action:hover{background:#e4d7f2}
+
+/* Creator registration: scoped to avoid changing the existing public intake forms. */
+.creator-registration-page .panel{color-scheme:light}
+.creator-registration-page .panel a:not(.submit){color:#6036a5;font-weight:650}
+.creator-registration-page .creator-field{display:block;margin:17px 0;font-size:14px;font-weight:750}
+.creator-registration-page .creator-field input{display:block;width:100%;margin-top:7px;border:1px solid #cbbfd9;background:#fff;color:#241c32;padding:12px 14px;border-radius:10px;min-height:46px}
+.creator-registration-page .creator-field input:focus-visible{outline:3px solid #ab82e6;outline-offset:1px}
+.creator-registration-page .check{font-weight:400}
+.creator-registration-page .panel hr{border:0;border-top:1px solid #dfd3ec;margin:30px 0}
+.creator-registration-page .creator-access-status{padding:14px 16px;border-radius:10px;background:#f3edf9;color:#4c2d74;font-size:14px;overflow-wrap:anywhere}
+.creator-registration-page #creator-access-signin{margin:12px 0;text-decoration:none}
+.creator-registration-page [hidden]{display:none!important}
+.creator-registration-page .submit:disabled{cursor:not-allowed}
+.creator-registration-page .check code{font-size:11px;overflow-wrap:anywhere}

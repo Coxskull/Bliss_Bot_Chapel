@@ -7,14 +7,16 @@ import vm from "node:vm";
 const dashboard = readFileSync(
   new URL("../frontend/public/creator-dashboard.js", import.meta.url), "utf8");
 
-const ids = [
-  "status", "access-badge", "refresh", "logout", "signin-panel",
-  "pending-panel", "profile-panel", "creator-name", "creator-id",
-  "creator-market", "creator-language", "creator-status"
-];
+// Mirror the actual static page rather than maintaining a stale ID allowlist.
+const dashboardHtml = readFileSync(
+  new URL("../frontend/public/creator-dashboard.html", import.meta.url), "utf8");
+const elements = [...dashboardHtml.matchAll(/<[a-z][\w-]*\b[^>]*\bid="([^"]+)"[^>]*>/gi)];
+const ids = elements.map(match => match[1]);
+assert.equal(new Set(ids).size, ids.length, "dashboard IDs must be unique");
+const hiddenIds = new Set(elements.filter(match => /\shidden(?:\s|=|>)/i.test(match[0])).map(match => match[1]));
 const privateIds = [
   "creator-name", "creator-id", "creator-market",
-  "creator-language", "creator-status"
+  "creator-language", "creator-status", "application-state", "application-receipt", "channel-proof-code", "channel-proof-url", "channel-proof-expiry"
 ];
 const verifiedProfile = Object.freeze({
   creatorId: "14d778d7-1a4e-4419-b23d-7aed5e32998b",
@@ -30,12 +32,13 @@ const response = (status, data = null) => ({
   redirected: false,
   json: async () => data
 });
-const fixture = (sessionResponse, profileResponse = null) => {
+const fixture = (sessionResponse, profileResponse = null, applicationResponse = null) => {
   const nodes = Object.fromEntries(ids.map(id => [
     id, {
-      hidden: ["logout", "signin-panel", "pending-panel", "profile-panel"].includes(id),
+      hidden: hiddenIds.has(id),
       disabled: false,
-      textContent: "", className: "", handlers: {},
+      textContent: "", className: "", handlers: {}, children: [],
+      replaceChildren() { this.children = []; }, appendChild(child) { this.children.push(child); },
       addEventListener(name, callback) { this.handlers[name] = callback; }
     }
   ]));
@@ -69,6 +72,10 @@ const fixture = (sessionResponse, profileResponse = null) => {
     if (url === "/api/auth/session") {
       assert.equal(options.method, "GET");
       return currentSession;
+    }
+    if (url === "/api/creators/registration") {
+      assert.equal(options.method, "GET");
+      return applicationResponse;
     }
     if (url === "/api/creators/me") {
       assert.equal(options.method, "GET");
@@ -106,6 +113,8 @@ const check = (condition, label) => {
 };
 const noPrivateData = h => {
   check(h.nodes["profile-panel"].hidden, "private profile hidden");
+  check(h.nodes["invitation-panel"].hidden && h.nodes["invitation-rows"].children.length === 0, "private invitations hidden and cleared");
+  check(h.nodes["allocation-history-panel"].hidden && h.nodes["allocation-history-rows"].children.length === 0, "private allocation history hidden and cleared");
   check(privateIds.every(id => !h.nodes[id].textContent.includes("Fixture Channel")), "no prior personal data in hidden DOM");
 };
 
@@ -203,6 +212,50 @@ const noPrivateData = h => {
   check(form.children[0].value === "fake-csrf-fixture", "logout carries current CSRF token");
   check(form.submitted === true && h.bodyChildren[0] === form, "browser submits logout navigation");
   check(!h.calls.some(x => x.url === "/api/auth/logout"), "logout avoids fetch following cross-origin OIDC redirect");
+}
+// Pending applicant sees only the receipt from the subject-scoped endpoint.
+{
+  const receipt = "14d778d7-1a4e-4419-b23d-7aed5e32998b";
+  for (const state of ["PENDING_REVIEW","ACTIVE","REVOKED"]) {
+    const h = fixture(response(200, {...session(true), roles: []}), null, response(200,{receiptId:receipt,status:state}));
+    await h.settle();
+    check(!h.nodes["application-panel"].hidden, "own application visible");
+    check(h.nodes["application-receipt"].textContent === receipt, "receipt from server");
+    check(h.calls.map(x=>x.url).join(",") === "/api/auth/session,/api/creators/registration", "no verified-profile call");
+    noPrivateData(h);
+    h.nodes.logout.handlers.click();
+    check(h.nodes["application-panel"].hidden && h.nodes["application-receipt"].textContent === "—", "logout clears receipt");
+  }
+  const denied = fixture(response(200,{...session(true),roles:[]}),null,response(403));
+  await denied.settle();
+  check(denied.nodes["application-panel"].hidden,"cross-lane denied");
+  check(denied.nodes["application-receipt"].textContent === "—","no denied receipt");
+}
+{
+  const receipt = "14d778d7-1a4e-4419-b23d-7aed5e32998b";
+  const code = "ALPHA-0123456789ABCDEF0123456789ABCDEF";
+  const h = fixture(response(200,{...session(true),roles:[]}),null,response(200,{receiptId:receipt,status:"ACTIVE",channelProofCode:code,submittedChannelUrl:"https://example.test/channel",proofExpiresAt:"2026-11-26T00:00:00Z"}));
+  await h.settle();
+  check(!h.nodes["channel-proof-panel"].hidden && h.nodes["channel-proof-code"].textContent===code,"approved applicant gets challenge");
+  noPrivateData(h);
+  h.nodes.logout.handlers.click();
+  check(h.nodes["channel-proof-panel"].hidden && h.nodes["channel-proof-code"].textContent==="—","logout erases proof");
+  const verified = fixture(response(200,{...session(true),roles:[]}),null,response(200,{receiptId:receipt,status:"ACTIVE",creatorId:verifiedProfile.creatorId,verifiedProfile}));
+  await verified.settle();
+  check(!verified.nodes["profile-panel"].hidden && verified.nodes["access-badge"].textContent==="VERIFIED","verified own profile");
+  check(verified.nodes["channel-proof-panel"].hidden,"verified profile has no challenge");
+  const revoked = fixture(response(200,{...session(true),roles:[]}),null,response(200,{receiptId:receipt,status:"REVOKED",creatorId:verifiedProfile.creatorId,verifiedProfile}));
+  await revoked.settle(); noPrivateData(revoked);
+}
+{
+  const inventory = [{slotId:"fixture-slot",contentItemId:"fixture-content",contentTitle:"<script>fixture</script>",contentType:"Podcast",slotType:"MID_ROLL",startSecond:30,durationSeconds:15,isAvailable:true}];
+  const h = fixture(response(200,session(true)),response(200,{...verifiedProfile,inventory}));
+  await h.settle();
+  check(!h.nodes["inventory-panel"].hidden,"own recorded inventory visible");
+  check(h.nodes["inventory-rows"].children.length===1,"one slot rendered");
+  check(h.nodes["inventory-rows"].children[0].children[0].textContent===inventory[0].contentTitle,"title treated as text");
+  h.nodes.logout.handlers.click();
+  check(h.nodes["inventory-panel"].hidden && h.nodes["inventory-rows"].children.length===0,"logout clears slots");
 }
 console.log("TASK4_CREATOR_DASHBOARD_UNIT_PASS assertions=" + assertions);
 console.log("All scenarios use synthetic data; no browser, Supabase or marketplace writes.");

@@ -45,26 +45,34 @@ for(const file of ["join-creator.html","join-advertiser.html"]){
 }
 assert.ok(existsSync(base+"creator-account.html"),"creator account explainer published");
 const account=read("creator-account.html");
-assert.ok(account.includes("INVITATION ONLY"),"creator account is invite-only");
+assert.ok(account.includes("Secure registration is handled by the application server and remains subject to its access controls."),"creator registration access controls remain disclosed");
+assert.ok(account.includes('href="https://bliss-bot-production-5eb8.up.railway.app/creator-registration.html"'),"registration and API stay on Railway origin");
 assert.ok(account.includes('href="https://bliss-bot-production-5eb8.up.railway.app/creator-dashboard.html"'),"dashboard link stays on Railway origin");
 assert.ok(account.includes('href="https://bliss-bot-production-5eb8.up.railway.app/api/auth/login?returnUrl=%2Fcreator-dashboard.html"'),"login and OIDC callback stay on Railway origin");
 assert.ok(!existsSync(base+"creator-dashboard.html"),"authenticated dashboard is not split onto Vercel");
 assert.ok(!existsSync(base+"creator-dashboard.js"),"dashboard API script remains on Railway");
+assert.ok(!existsSync(base+"creator-registration.html"),"password registration page stays on Railway origin");
+assert.ok(!existsSync(base+"creator-registration.js"),"registration API client stays on Railway origin");
 for(const file of ["alpha-privacy.html","alpha-terms.html","alpha-intake.css","alpha-intake.js"]){
   assert.ok(existsSync(base+file),file+" copied");
 }
 for(const file of ["creator-registration-preview.html","creator-registration-preview.js","oauth-consent.html","brand-intake.html"]){
   assert.ok(!existsSync(base+file),file+" must remain unpublished");
 }
+assert.ok(!existsSync(base+"creator-registration.html"),"creator signup/password page stays on Railway origin");
+assert.ok(!existsSync(base+"creator-registration.js"),"creator registration API client stays on Railway origin");
+assert.ok(!existsSync(base+"advertiser-registration.html"),"advertiser signup/password page stays on Railway origin");
+assert.ok(!existsSync(base+"advertiser-registration.js"),"advertiser registration API client stays on Railway origin");
 
 for (const [file, route] of [
-  ["creator-login.html", "/creator-signin-preview.html"],
-  ["advertiser-login.html", "/advertiser-signin-preview.html"]
+  ["creator-login.html", "/api/auth/login?returnUrl=%2Fcreator-dashboard.html"],
+  ["advertiser-login.html", "/api/auth/login?returnUrl=%2Fadvertiser-registration.html"]
 ]) {
   assert.ok(existsSync(base + file), file + " is publicly discoverable");
   const page = read(file);
   const expected = "href=\"https://bliss-bot-production-5eb8.up.railway.app" + route + "\"";
   assert.ok(page.includes(expected), file + " authenticates on protected Railway origin");
+  assert.ok(!page.includes('href="/api/auth/login?returnUrl='), file + " must not submit auth on public Vercel origin");
   assert.ok(!page.includes('<input type="password"'), file + " does not solicit passwords on Vercel");
   assert.ok(!page.includes("SUPABASE_SERVICE_ROLE_KEY"), file + " contains no service credential");
 }
