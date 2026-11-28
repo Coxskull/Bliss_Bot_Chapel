@@ -25,6 +25,18 @@ if [ "${1:-}" = "--fictional-roundtrip" ]; then
     # The existing client additionally verifies HMAC, output custody and held receipts.
     exec timeout 500s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --hosted "$2"
 fi
+# Preserve the deployed staging-only admission and video readback lanes.
+# Explicit invocation only; the Node client independently validates staging scope.
+case "${1:-}" in
+    --fictional-held-admission)
+        test "$#" -eq 1 || exit 2
+        exec timeout 45s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --held-admission
+        ;;
+    --fictional-held-video)
+        test "$#" -eq 2 || exit 2
+        exec timeout 100s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --held-video "$2"
+        ;;
+esac
 # A strictly locked, credential-free interface preview may use ephemeral local
 # data-protection keys. This does NOT make OIDC or advertiser registration usable.
 # Production and any preview with an enabled auth/account feature must retain
