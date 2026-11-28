@@ -797,20 +797,23 @@
                   b.addEventListener("click",async()=>{
                     if(busy||!item.isConnected||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
                     const reviewDocumentSha256=hash.value.trim();
+                    const confirmedChecks=checks.map(x=>x.checked);
+                    const reviewStillCurrent=()=>item.isConnected&&current()&&hash.value.trim()===reviewDocumentSha256&&checks.every((x,i)=>x.checked===confirmedChecks[i]);
                     if(prepared&&prepared.digest!==reviewDocumentSha256){status.textContent="Review evidence changed. Prepare a fresh document.";return;}
                     if(!/^[a-f0-9]{64}$/.test(reviewDocumentSha256)||!checks[0].checked||!checks[4].checked||(decision==="VISUAL_ACCEPTED"&&!checks.slice(1,4).every(x=>x.checked))){status.textContent="Complete the required review evidence and confirmations.";return;}
                     if(!window.confirm("Record this immutable review for the exact preview? No campaign release, delivery or payment is authorized."))return;
                     busy=true;b.disabled=true;
                     try{
                       const s=await session();
+                      if(!reviewStillCurrent())throw Error("Review changed before recording.");
                       const res=await fetch("/api/creators/operator-review/factory-visual-review",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
                         headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,
-                          specSha256:row.specSha256,previewSha256:row.previewSha256,reviewDocumentSha256,decision,exactPreviewReviewed:checks[0].checked,
-                          brandReadabilityReviewed:checks[1].checked,creatorSafeAreaReviewed:checks[2].checked,audioTimingReviewed:checks[3].checked,confirmHeld:checks[4].checked})});
+                          specSha256:row.specSha256,previewSha256:row.previewSha256,reviewDocumentSha256,decision,exactPreviewReviewed:confirmedChecks[0],
+                          brandReadabilityReviewed:confirmedChecks[1],creatorSafeAreaReviewed:confirmedChecks[2],audioTimingReviewed:confirmedChecks[3],confirmHeld:confirmedChecks[4]})});
                       if(!res.ok)throw Error("Review not confirmed.");
                       const a=await res.json();
-                      if(a.placementId!==m.placementId||a.specSha256!==row.specSha256||a.previewSha256!==row.previewSha256||a.decision!==decision||a.reviewRecorded!==true||a.release!=="HELD"||a.delivery!=="NOT_SENT"||a.dispatchAuthorized!==false||a.paymentAuthorized!==false)throw Error("Receipt invalid.");
-                      if(item.isConnected){clearVideo();item.replaceChildren(node("p","Review recorded: "+decision+" · HELD / NOT_SENT."));}
+                      if(!guid.test(a.reviewId)||a.placementId!==m.placementId||a.specSha256!==row.specSha256||a.previewSha256!==row.previewSha256||a.decision!==decision||a.reviewRecorded!==true||a.release!=="HELD"||a.delivery!=="NOT_SENT"||a.dispatchAuthorized!==false||a.paymentAuthorized!==false)throw Error("Receipt invalid.");
+                      if(item.isConnected&&current()){clearVideo();item.replaceChildren(node("p","Review recorded: "+decision+" · HELD / NOT_SENT."),node("p","Review reference: "+a.reviewId));}
                     }catch{if(item.isConnected)status.textContent="Review not confirmed. Reload current preview evidence.";}
                     finally{busy=false;b.disabled=false;}
                   });
