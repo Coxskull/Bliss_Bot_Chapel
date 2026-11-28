@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import {createHash} from "node:crypto";
 import {readFile} from "node:fs/promises";
 import {buildReviewQueue,authorizedReview,ACTIVE_NOTICE} from "../supabase/functions/alpha-intake-operator-review/review-core.mjs";
 import {estimateQuote,customerDraft} from "./alpha346-quote-costing.mjs";
@@ -21,5 +22,18 @@ assert.match(draft,/No finished advertising media, booked creators, paid placeme
 assert.doesNotMatch(draft,/\$70\.00/);
 assert.equal(JSON.parse(REQUEST).fixture,"ALPHA_P0_FICTIONAL_ONLY");
 assert.throws(()=>verifyResult({fictionalOnly:false}));
+
+// Synthetic header-only fixture exercises receipt binding, not image decoding.
+const digest=b=>createHash("sha256").update(b).digest("hex");
+const png=Buffer.alloc(33);
+Buffer.from("89504e470d0a1a0a","hex").copy(png);
+png.writeUInt32BE(960,16);png.writeUInt32BE(540,20);
+const artworkSha256=digest(png),compositionSha256=digest("fictional-composition");
+const qa={schema:"alpha.henry-ford.held-multi-overlay-receipt.v1",compositionSha256,release:"HELD",delivery:"NOT_SENT",dispatchAuthorized:false,providerCalls:0,renderExecuted:true,previewSha256:artworkSha256,placements:[{}]};
+const resultFor=q=>{const receipt=Buffer.from(JSON.stringify(q));return {schema:"alpha.factory-fictional-creative-result/v1",jobId:JSON.parse(REQUEST).jobId,fictionalOnly:true,requestSha256:digest(REQUEST),compositionSha256,artworkSha256,receiptSha256:digest(receipt),technicalStatus:"TECHNICAL_CHECKS_PASS",release:"HELD",delivery:"NOT_SENT",dispatchAuthorized:false,paymentAuthorized:false,providerCalls:0,artworkBase64:png.toString("base64"),receiptBase64:receipt.toString("base64")};};
+assert.deepEqual(verifyResult(resultFor(qa)).artwork,png);
+assert.throws(()=>verifyResult(resultFor({...qa,previewSha256:digest("different-preview")})),/Held receipt mismatch/);
+console.log("P0_FICTIONAL_ARTWORK_RECEIPT_BINDING_PASS");
+
 console.log("P0_FICTIONAL_ADVERTISER_OPERATOR_PROJECTION_PASS (offline fixture, no hosted intake)");
 console.log("P0_PLANNING_PROPOSAL_DRAFT_PASS totalUSD=149 estimatedCostUSD=70 no payment or outreach");
