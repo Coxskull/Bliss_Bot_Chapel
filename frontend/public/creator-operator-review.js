@@ -316,6 +316,15 @@
       const card=document.createElement("section");for(const [label,value] of [["Campaign",row.campaignName],["Placement",row.placementId],
         ["Exact creator allocation",row.currencyCode+" "+String(row.creatorAllocation)],["Agreement evidence",v.settlement.agreementEvidenceId]])
         card.append(node("p",label+": "+String(value)));
+      if(v.fulfillmentReview!=null){
+        const evidence=v.fulfillmentReview;
+        if(v.payableReviewRecorded!==true||!guid.test(evidence.reviewId)||!Number.isFinite(Date.parse(evidence.fulfilledAt))
+          ||!Number.isFinite(Date.parse(evidence.recordedAt))||evidence.status!=="OPERATOR_REVIEW_RECORDED"
+          ||evidence.deliveryIndependentlyVerified!==false)throw Error("Invalid fulfillment review evidence.");
+        card.append(node("p","Operator-reviewed fulfillment date: "+new Date(evidence.fulfilledAt).toLocaleString()),
+          node("p","Review recorded: "+new Date(evidence.recordedAt).toLocaleString()+" · "+evidence.reviewId),
+          node("p","Human-reviewed evidence only; delivery is not independently verified."));
+      }
       if(v.existingEvidence){card.append(node("p","A settlement evidence record already exists. Do not record or pay again; review any discrepancies separately."));
         if(guid.test(v.settlementEvidenceId))card.append(node("p","Original settlement evidence ID: "+v.settlementEvidenceId));
         settlementReview.append(card);settlementStatus.textContent="Existing evidence found.";return;}
@@ -328,6 +337,28 @@
         const field=(label,type,max)=>{const wrap=node("label",label),input=document.createElement("input");input.type=type;input.autocomplete="off";if(max)input.maxLength=max;wrap.append(input);card.append(wrap,document.createElement("br"));return input;};
         const fulfillment=field("Accepted fulfillment evidence SHA-256","text",64),funding=field("Received funding evidence SHA-256","text",64),fulfilled=field("Fulfillment date and time (local time)","datetime-local");
         fulfilled.step="1";
+        const localHash=(label,target)=>{
+          const wrap=node("label",label),file=document.createElement("input"),message=node("p","");
+          file.type="file";wrap.append(file);card.append(wrap,message);
+          let revision=0;
+          target.addEventListener("input",()=>{revision++;});
+          file.addEventListener("change",async()=>{
+            const current=++revision,selected=file.files?.[0];
+            if(!selected)return;
+            if(busy||!card.isConnected||settlementInput.value.trim().toLowerCase()!==historyId){file.value="";return;}
+            if(selected.size<1||selected.size>20*1024*1024){message.textContent="Choose a nonempty document no larger than 20 MiB.";file.value="";return;}
+            message.textContent="Computing SHA-256 locally…";
+            try{
+              const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await selected.arrayBuffer())),x=>x.toString(16).padStart(2,"0")).join("");
+              if(current!==revision||busy||!card.isConnected||settlementInput.value.trim().toLowerCase()!==historyId)return;
+              target.value=digest;target.dispatchEvent(new Event("input"));
+              message.textContent="Fingerprint prepared locally. No document uploaded; review the evidence before recording.";
+            }catch{if(current===revision&&card.isConnected)message.textContent="Fingerprint unavailable. Enter the verified SHA-256 manually.";}
+            finally{if(current===revision||file.files?.[0]===selected)file.value="";}
+          });
+        };
+        localHash("Compute fingerprint of fulfillment evidence on this device (optional)",fulfillment);
+        localHash("Compute fingerprint of funding evidence on this device (optional)",funding);
         const checks=["I reviewed completed and accepted fulfillment for this exact placement.","I reviewed receipt of the advertiser funds for this agreement.","I reviewed the agreed payment terms and exact creator allocation.","I checked for unresolved disputes, cancellations or refunds.","I checked that no prior payment has been made for this placement."].map(label=>{
           const wrap=node("label",label),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
         const review=node("button","Record payable review evidence");review.type="button";review.disabled=true;

@@ -366,7 +366,12 @@ public sealed class CreatorOperatorReviewController(
         var review=auth.CreatorPayableReviewRequested?await CreatorPayableReview.FindCurrent(db,row,ct):null;
         var reviewId=CreatorPayableReview.Id(row.Allocation.PlacementId);
         var reviewExists=await db.WeddingPlannerAuditEvents.AnyAsync(a=>a.Id==reviewId,ct);
+        var reviewedFulfillmentAt=review is not null && CreatorPayableReview.Matches(review,row,out var fulfilledAt)
+            ? (DateTimeOffset?)fulfilledAt : null;
         return Ok(new {settlement=row,digest=CreatorSettlementEvidence.Digest(row),existingEvidence=prior is not null,
+            fulfillmentReview=reviewedFulfillmentAt.HasValue && review is not null
+                ? new {reviewId=review.Id,fulfilledAt=reviewedFulfillmentAt.Value,recordedAt=review.OccurredAt,
+                    status="OPERATOR_REVIEW_RECORDED",deliveryIndependentlyVerified=false} : null,
             settlementEvidenceId=prior?.Id,settlementExceptionEnabled=auth.CreatorSettlementExceptionRequested,
             payableReviewEnabled=auth.CreatorPayableReviewRequested,payableReviewRecorded=review is not null,payableReviewExists=reviewExists,
             transferAuthorized=false,providerVerified=false,payable=false});
