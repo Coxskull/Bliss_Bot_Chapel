@@ -588,11 +588,27 @@
             for(const row of r.results){
               if(!["SCHEDULE_RECORDED","CLAIMED_OUTCOME_UNCONFIRMED","PRIVATE_PREVIEW_READY","REVIEW_REQUIRED","FAILED_OR_INCOMPLETE"].includes(row.status)||!/^[a-f0-9]{64}$/.test(row.specSha256))throw Error("Status invalid.");
             }
-            results.append(node("p",r.results.length? "Stored private Factory status — human visual review pending.":"No private render schedule recorded."));
+            const savedReviews=new Map();
+            if(packet.factoryVisualReviewEnabled===true && r.recordedVisualReviews!==undefined){
+              if(!Array.isArray(r.recordedVisualReviews)||r.recordedVisualReviews.length>20)throw Error("Invalid saved visual review records.");
+              for(const saved of r.recordedVisualReviews){
+                const exact=r.results.filter(row=>row.specSha256===saved.specSha256&&row.previewSha256===saved.previewSha256);
+                if(!guid.test(saved.reviewId)||!Number.isFinite(Date.parse(saved.recordedAt))||savedReviews.has(saved.specSha256)
+                    ||exact.length!==1||!["VISUAL_ACCEPTED","REVISION_REQUESTED"].includes(saved.decision)
+                    ||(saved.decision==="VISUAL_ACCEPTED"&&exact[0].status!=="PRIVATE_PREVIEW_READY"))throw Error("Invalid saved visual review record.");
+                savedReviews.set(saved.specSha256,saved);
+              }
+            }
+            results.append(node("p",r.results.length? "Stored private Factory status — "+savedReviews.size+" matching human review record(s).":"No private render schedule recorded."));
             for(const row of r.results){
               const item=node("div","");
               item.append(node("p",row.status+" · "+row.specSha256.slice(0,16)+"… · HELD / NOT_SENT"));
-              if(packet.factoryVisualReviewEnabled===true&&["PRIVATE_PREVIEW_READY","REVIEW_REQUIRED"].includes(row.status)&&/^[a-f0-9]{64}$/.test(row.previewSha256)){
+              const saved=savedReviews.get(row.specSha256);
+              if(saved){
+                item.append(node("p","Recorded human decision: "+saved.decision+" · "+new Date(saved.recordedAt).toLocaleString()));
+                item.append(node("p","Review reference: "+saved.reviewId+". This exact preview remains HELD / NOT_SENT."));
+                if(saved.decision==="REVISION_REQUESTED")item.append(node("p","A new preview is required before another review."));
+              }else if(packet.factoryVisualReviewEnabled===true&&["PRIVATE_PREVIEW_READY","REVIEW_REQUIRED"].includes(row.status)&&/^[a-f0-9]{64}$/.test(row.previewSha256)){
                 item.append(node("p","Exact preview SHA-256: "+row.previewSha256));
                 const hash=node("input","");hash.type="text";hash.maxLength=64;hash.placeholder="Review document SHA-256";hash.setAttribute("aria-label","Review document SHA-256");
                 const labels=["I reviewed the exact private video","Brand readability checked","Creator safe area checked","Audio and timing checked","Keep this output held"];
