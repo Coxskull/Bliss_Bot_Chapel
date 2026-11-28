@@ -34,3 +34,13 @@ test("reject a replay whose evidence differs",async()=>{
  await assert.rejects(verifyHostedRetry(async()=>{calls++;return calls===1?fixture:{...fixture,unexpected:true};}),/Retry returned different evidence/);
  assert.equal(calls,2);
 });
+
+import {requireHostedStaging} from "./alpha-p0-fictional-creative-roundtrip.mjs";
+test("direct client refuses unlocked preview and mismatched staging identity",()=>{
+ const env={Runtime__RestrictedPreview:"true",Authentication__Enabled:"false",Authentication__SupabaseEnabled:"false",Authentication__AdvertiserRegistrationRequested:"false",Authentication__AdvertiserPrivacyRequestsRequested:"false",Authentication__AdvertiserSelfServiceRequested:"false",BLISS_FICTIONAL_ROUNDTRIP:"YES",RAILWAY_PROJECT_ID:"43062727-bca5-400a-b801-27828161324b",RAILWAY_ENVIRONMENT_ID:"04edd217-035e-4c18-b864-9b7ded76de7d",RAILWAY_SERVICE_ID:"990e3d3e-b09a-4c43-8873-ab10e9bffd02",BLISS_FICTIONAL_ROUNDTRIP_HMAC_KEY:"0".repeat(64)};
+ assert.doesNotThrow(()=>requireHostedStaging(env));
+ for(const key of ["Runtime__RestrictedPreview","Authentication__Enabled","Authentication__SupabaseEnabled","Authentication__AdvertiserRegistrationRequested","Authentication__AdvertiserPrivacyRequestsRequested","Authentication__AdvertiserSelfServiceRequested","Runtime__PublicAdvertiserRegistrationOnly","Authentication__CreatorRegistrationRequested","Authentication__CreatorSelfServiceRequested","Authentication__AdvertiserMembershipSelfServiceRequested","Authentication__AskAlphaVisitorEnrollmentRequested","RAILWAY_PROJECT_ID","RAILWAY_ENVIRONMENT_ID","RAILWAY_SERVICE_ID"]){
+   assert.throws(()=>requireHostedStaging({...env,[key]:"wrong"}),/Exact Bliss staging configuration required/);
+ }
+ assert.throws(()=>requireHostedStaging({...env,Authentication__Enabled:undefined}),/Exact Bliss staging configuration required/);
+});
