@@ -477,7 +477,8 @@
   window.addEventListener("pagehide",clearException);
   const fulfillHandoff=document.getElementById("fulfillment-handoff"),fulfillIllustration=document.getElementById("fulfillment-illustration");
   const fulfillPreview=document.getElementById("fulfillment-preview"),fulfillReview=document.getElementById("fulfillment-review"),fulfillStatus=document.getElementById("fulfillment-status");
-  const clearFulfill=()=>fulfillReview?.replaceChildren();
+  let stopFulfillmentSync=()=>{};
+  const clearFulfill=()=>{stopFulfillmentSync();stopFulfillmentSync=()=>{};fulfillReview?.replaceChildren();};
   const fulfillmentLoad=document.getElementById("fulfillment-load"),fulfillmentJobs=document.getElementById("fulfillment-jobs");
   fulfillmentLoad?.addEventListener("click",async()=>{
     if(busy)return;
@@ -623,9 +624,18 @@
       if(packet.factorySubmissionEnabled){
         const refresh=node("button","Refresh private render status");refresh.type="button";
         const results=node("div","");
-        refresh.addEventListener("click",async()=>{
+        const watch=node("button","Synchronize scheduled render status");watch.type="button";
+        const stopWatch=node("button","Stop synchronization");stopWatch.type="button";stopWatch.disabled=true;
+        const syncStatus=node("p","");syncStatus.setAttribute("role","status");
+        let remaining=0,timer=null,watching=false;
+        const current=()=>card.isConnected&&fulfillHandoff.value.trim().toLowerCase()===handoffId&&fulfillIllustration.value.trim().toLowerCase()===illustrationId;
+        const stop=message=>{watching=false;remaining=0;if(timer!==null)clearTimeout(timer);timer=null;watch.disabled=false;stopWatch.disabled=true;if(message)syncStatus.textContent=message;};
+        stopFulfillmentSync=()=>stop("");
+        stopWatch.addEventListener("click",()=>stop("Synchronization stopped."));
+        const readStatus=async()=>{
           if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
-          busy=true;refresh.disabled=true;results.replaceChildren();
+          busy=true;refresh.disabled=true;watch.disabled=true;results.replaceChildren();
+          let pending=false;
           try{
             const s=await session();
             const response=await fetch("/api/creators/operator-review/factory-render-status",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
@@ -639,6 +649,7 @@
             for(const row of r.results){
               if(!["SCHEDULE_RECORDED","CLAIMED_OUTCOME_UNCONFIRMED","PRIVATE_PREVIEW_READY","REVIEW_REQUIRED","FAILED_OR_INCOMPLETE"].includes(row.status)||!/^[a-f0-9]{64}$/.test(row.specSha256))throw Error("Status invalid.");
             }
+            pending=r.results.length>0&&r.results.every(row=>["SCHEDULE_RECORDED","CLAIMED_OUTCOME_UNCONFIRMED"].includes(row.status));
             const savedReviews=new Map();
             if(packet.factoryVisualReviewEnabled===true && r.recordedVisualReviews!==undefined){
               if(!Array.isArray(r.recordedVisualReviews)||r.recordedVisualReviews.length>20)throw Error("Invalid saved visual review records.");
@@ -722,10 +733,23 @@
               }
               results.append(item);
             }
-          }catch{if(card.isConnected){results.replaceChildren(node("p","Private render status unavailable."));}}
-          finally{busy=false;refresh.disabled=false;}
+          }catch{if(card.isConnected){results.replaceChildren(node("p","Private render status unavailable."));}pending=false;}
+          finally{
+            busy=false;refresh.disabled=false;
+            if(watching&&current()&&pending&&remaining>0){
+              syncStatus.textContent="Waiting for held render output. "+remaining+" refresh(es) remaining.";
+              timer=setTimeout(()=>{timer=null;if(!watching||!current()||busy){stop("Synchronization stopped.");return;}remaining--;void readStatus();},30000);
+            }else if(watching)stop("Synchronization finished. Review the current status; no job was dispatched.");
+            else watch.disabled=false;
+          }
+        };
+        refresh.addEventListener("click",()=>{stop("");void readStatus();});
+        watch.addEventListener("click",()=>{
+          if(busy||!current()||watching)return;
+          if(!window.confirm("Read the existing held render status now and up to four more times at 30-second intervals? No execution or delivery is authorized."))return;
+          watching=true;remaining=4;watch.disabled=true;stopWatch.disabled=false;syncStatus.textContent="Synchronizing recorded held render status…";void readStatus();
         });
-        card.append(refresh,results);
+        card.append(refresh,watch,stopWatch,syncStatus,results);
       }
       fulfillReview.append(card);fulfillStatus.textContent="Current preparation manifest generated.";
     }catch(e){clearFulfill();fulfillStatus.textContent=e.message;}

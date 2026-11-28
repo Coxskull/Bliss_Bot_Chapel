@@ -653,12 +653,13 @@ public sealed class CreatorOperatorReviewController(
         }
         var status=await CreatorFactorySubmission.Submit(body,request.HandoffId,ct,renderStatus:true);
         if(status is null)return StatusCode(503,new {error="Factory render status unavailable."});
-        if(!auth.CreatorFactoryVisualReviewRequested)return Ok(status.Value);
+        // Revalidate the current manifest even when human visual review is disabled.
         // Match saved human decisions to exact current manifest and remote preview evidence.
         // A technical preview or human acceptance is not permission to deliver.
         await using var readback=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,ct);
         var refreshed=await CreatorFulfillmentManifest.Build(db,request.HandoffId,request.IllustrationId,ct);
         if(refreshed is null || CreatorFactorySubmission.Serialize(refreshed)!=body)return Conflict();
+        if(!auth.CreatorFactoryVisualReviewRequested){await readback.CommitAsync(ct);return Ok(status.Value);}
         var placementId=status.Value.GetProperty("placementId").GetGuid();
         var placement=await CreatorCampaignInvitation.Current(db,placementId,ct);
         if(placement is null)return Conflict();
