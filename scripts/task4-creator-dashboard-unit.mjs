@@ -7,11 +7,13 @@ import vm from "node:vm";
 const dashboard = readFileSync(
   new URL("../frontend/public/creator-dashboard.js", import.meta.url), "utf8");
 
-const ids = [
-  "status", "access-badge", "refresh", "logout", "signin-panel",
-  "pending-panel", "profile-panel", "creator-name", "creator-id",
-  "creator-market", "creator-language", "creator-status", "application-panel", "application-state", "application-receipt", "channel-proof-panel", "channel-proof-code", "channel-proof-url", "channel-proof-expiry", "inventory-panel", "inventory-count", "inventory-rows"
-];
+// Mirror the actual static page rather than maintaining a stale ID allowlist.
+const dashboardHtml = readFileSync(
+  new URL("../frontend/public/creator-dashboard.html", import.meta.url), "utf8");
+const elements = [...dashboardHtml.matchAll(/<[a-z][\w-]*\b[^>]*\bid="([^"]+)"[^>]*>/gi)];
+const ids = elements.map(match => match[1]);
+assert.equal(new Set(ids).size, ids.length, "dashboard IDs must be unique");
+const hiddenIds = new Set(elements.filter(match => /\shidden(?:\s|=|>)/i.test(match[0])).map(match => match[1]));
 const privateIds = [
   "creator-name", "creator-id", "creator-market",
   "creator-language", "creator-status", "application-state", "application-receipt", "channel-proof-code", "channel-proof-url", "channel-proof-expiry"
@@ -33,7 +35,7 @@ const response = (status, data = null) => ({
 const fixture = (sessionResponse, profileResponse = null, applicationResponse = null) => {
   const nodes = Object.fromEntries(ids.map(id => [
     id, {
-      hidden: ["logout", "signin-panel", "pending-panel", "profile-panel"].includes(id),
+      hidden: hiddenIds.has(id),
       disabled: false,
       textContent: "", className: "", handlers: {}, children: [],
       replaceChildren() { this.children = []; }, appendChild(child) { this.children.push(child); },
@@ -111,6 +113,8 @@ const check = (condition, label) => {
 };
 const noPrivateData = h => {
   check(h.nodes["profile-panel"].hidden, "private profile hidden");
+  check(h.nodes["invitation-panel"].hidden && h.nodes["invitation-rows"].children.length === 0, "private invitations hidden and cleared");
+  check(h.nodes["allocation-history-panel"].hidden && h.nodes["allocation-history-rows"].children.length === 0, "private allocation history hidden and cleared");
   check(privateIds.every(id => !h.nodes[id].textContent.includes("Fixture Channel")), "no prior personal data in hidden DOM");
 };
 

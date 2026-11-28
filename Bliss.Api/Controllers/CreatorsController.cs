@@ -174,7 +174,17 @@ public sealed record CreatorSelfSummaryDto(
     Guid CreatorId, string Name, string? CountryCode,
     string? PrimaryLanguage, string AuthorityStatus,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-    CreatorInventorySlotSummary[]? Inventory = null);
+    CreatorInventorySlotSummary[]? Inventory = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    bool CanPauseInventory = false,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    CreatorInventoryContentSummary[]? InventoryDraftContent = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    bool CanViewCampaignInvitations = false,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    bool CanViewAllocationHistory = false);
+
+public sealed record CreatorInventoryContentSummary(Guid ContentItemId, string Title, string ContentType);
 
 public sealed record CreatorInventorySlotSummary(Guid SlotId, Guid ContentItemId,
     string ContentTitle, string ContentType, string SlotType,

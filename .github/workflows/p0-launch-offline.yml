@@ -1,0 +1,25 @@
+name: P0 Fictional advertiser and planning proposal
+on:
+  pull_request:
+    paths:
+      - scripts/alpha-p0-*
+      - scripts/alpha346-quote-costing.mjs
+      - tools/commercial/alpha-p0-planning-fictional-quote.json
+      - supabase/functions/alpha-intake-operator-review/**
+      - .github/workflows/p0-launch-offline.yml
+permissions:
+  contents: read
+jobs:
+  fictional-proposal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/alpha-p0-launch-offline-check.mjs
+      - run: node scripts/alpha346-quote-costing.mjs --self-test
+      - run: node --test tests/alpha-intake-operator-review.test.mjs

@@ -27,6 +27,22 @@ public sealed class BlissAuthenticationOptions
     public bool CreatorSelfServiceRequested { get; set; }
     // Separate read-only, owner-scoped inventory capability. Never grants booking.
     public bool CreatorInventoryReadbackRequested { get; set; }
+    // Separate, default-off withdrawal only. Never authorizes new bookings.
+    public bool CreatorInventoryPauseRequested { get; set; }
+    public bool CreatorInventoryDraftRequested { get; set; }
+    public bool CreatorInventoryOperatorReviewRequested { get; set; }
+    public bool CreatorCampaignInvitationRequested { get; set; }
+    public bool CreatorCompensationProposalRequested { get; set; }
+    public bool CreatorAgreementEvidenceRequested { get; set; }
+    public bool CreatorAllocationHistoryRequested { get; set; }
+    public bool CreatorSettlementEvidenceRequested { get; set; }
+    public bool CreatorPayableReviewRequested { get; set; }
+    public bool CreatorSettlementExceptionRequested { get; set; }
+    public bool CreatorFulfillmentManifestRequested { get; set; }
+    public bool CreatorFactorySubmissionRequested { get; set; }
+    public bool CreatorFactoryArtworkRequested { get; set; }
+    public bool CreatorFactoryArtworkTransferRequested { get; set; }
+    public bool CreatorFactoryVisualReviewRequested { get; set; }
     public string CreatorRole { get; set; } = "bliss.creator";
     public string CreatorIdClaimType { get; set; } = "bliss_creator_id";
     // Explicit approved OIDC subject IDs, not editable email or form IDs.

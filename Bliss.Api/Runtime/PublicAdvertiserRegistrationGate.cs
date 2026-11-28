@@ -53,6 +53,12 @@ public static class PublicAdvertiserRegistrationGate
         "/creator-registration.html", "/creator-registration.js",
         "/creator-dashboard.html", "/creator-dashboard.js",
         "/api/creators/registration", "/api/creators/operator-review",
+        "/api/creators/operator-review/inventory",
+        "/api/creators/operator-review/campaign-invitation", "/api/creators/campaign-invitations",
+        "/api/creators/operator-review/compensation-proposal",
+        "/api/creators/operator-review/allocation-history", "/api/creators/allocation-history",
+        "/api/creators/operator-review/settlement-evidence", "/api/creators/operator-review/settlement-exception",
+        "/api/creators/operator-review/fulfillment-manifest",
         "/creator-operator-review.html", "/creator-operator-review.js",
         "/alpha-privacy.html", "/alpha-terms.html",
         "/creator-account-privacy.html", "/creator-account-terms.html",
@@ -60,7 +66,15 @@ public static class PublicAdvertiserRegistrationGate
     };
     private static readonly HashSet<string> CreatorPostPaths = new(StringComparer.OrdinalIgnoreCase)
     {
-        "/api/creators/register", "/api/creators/operator-review", "/api/creators/operator-review/verify-channel"
+        "/api/creators/register", "/api/creators/operator-review", "/api/creators/operator-review/verify-channel",
+        "/api/creators/inventory/pause", "/api/creators/inventory/draft",
+        "/api/creators/operator-review/inventory",
+        "/api/creators/operator-review/campaign-invitation", "/api/creators/campaign-invitations",
+        "/api/creators/operator-review/compensation-proposal", "/api/creators/compensation-response",
+        "/api/creators/operator-review/agreement-evidence", "/api/creators/operator-review/allocation-history",
+        "/api/creators/operator-review/settlement-evidence", "/api/creators/operator-review/payable-review",
+        "/api/creators/operator-review/factory-submission", "/api/creators/operator-review/factory-artwork", "/api/creators/operator-review/factory-render-status", "/api/creators/operator-review/factory-visual-review",
+        "/api/creators/operator-review/settlement-exception"
     };
 
     public static bool IsAllowed(string? method, PathString path, bool creatorRegistrationEnabled = false, bool staffCreativeReadinessEnabled = false, bool staffCreativePreparationEnabled = false)

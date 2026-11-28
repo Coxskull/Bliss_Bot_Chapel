@@ -65,8 +65,13 @@
       </section>
       <section id="inventory-panel" class="profile" hidden>
         <h3>Your recorded advertising inventory</h3>
-        <p>Read-only records of your own content and slots. A recorded availability flag does not confirm booking, pricing, creator consent or campaign release.</p>
+        <p>Records of your own content and slots. Where enabled, you may pause future availability; this does not cancel existing placements. Contact ALPHA to request restoration. A recorded availability flag does not confirm booking, pricing, creator consent or campaign release.</p>
         <p id="inventory-count" role="status"></p><div id="inventory-rows"></div>
+      </section>
+      <section id="invitation-panel" class="profile" hidden><h3>Your campaign invitations</h3><p>These are private, non-binding planning invitations. Your response does not accept a price, reserve inventory, create a contract or authorize delivery.</p><button id="invitation-load" type="button">Load current invitations</button><p id="invitation-status" role="status"></p><div id="invitation-rows"></div></section>
+      <section id="allocation-history-panel" class="profile" hidden>
+        <h3>Historical compensation allocations</h3><p>Operator-shared accounting records for your placements. These are historical allocation amounts, not earned balances, verified settlements or money available to withdraw.</p>
+        <button id="allocation-history-load" type="button">Load allocation history</button><p id="allocation-history-status" role="status"></p><div id="allocation-history-rows"></div>
       </section>
       <div class="panel-actions">
         <button id="refresh" type="button">Refresh account status</button>

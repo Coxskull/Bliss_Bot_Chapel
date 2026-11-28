@@ -76,5 +76,536 @@
     } catch (e) { status.textContent = e.message; }
     finally { busy = false; load.disabled = false; }
   }
+  const inventoryLoad = document.getElementById("load-inventory");
+  const inventoryQueue = document.getElementById("inventory-review-queue");
+  const inventoryStatus = document.getElementById("inventory-review-status");
+  const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const types = ["PRE_ROLL","MID_ROLL","POST_ROLL","LOWER_THIRD","PERIMETER_OVERLAY","CORNER_OVERLAY","ROTATING_OVERLAY","SPONSORED_SEGMENT"];
+  function clearInventory() { inventoryQueue.replaceChildren(); }
+  async function loadInventory() {
+    if (busy) return;
+    busy = true; load.disabled = true; inventoryLoad.disabled = true; clearInventory();
+    try {
+      await session();
+      const response = await fetch("/api/creators/operator-review/inventory",{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if (!response.ok) throw Error("Inventory review unavailable or access denied.");
+      const result = await response.json();
+      if (result.bookingAuthorized !== false || result.paymentAuthorized !== false || result.deliveryAuthorized !== false
+          || !Array.isArray(result.items) || result.items.length > 50
+          || new Set(result.items.map(x => x?.slotId)).size !== result.items.length
+          || result.items.some(x => !x || ![x.slotId,x.creatorId,x.contentItemId,x.receiptId].every(v => guid.test(v))
+              || x.isAvailable !== false || ![x.creatorName,x.channelUrl,x.contentTitle,x.contentType,x.slotType].every(v => typeof v === "string")
+              || ![x.startSecond,x.durationSeconds].every(v => v === null || Number.isSafeInteger(v))))
+        throw Error("Invalid inventory review response.");
+      inventoryStatus.textContent = result.items.length + " unavailable slot(s) returned. No automatic activation.";
+      for (const row of result.items) {
+        const card = document.createElement("section"); card.className = "profile";
+        for (const [label,value] of [["Creator",row.creatorName],["Channel",row.channelUrl],["Content",row.contentTitle],
+          ["Format",row.slotType],["Start (seconds)",row.startSecond],["Duration (seconds)",row.durationSeconds],["Slot reference",row.slotId]])
+          card.append(node("p",label+": "+String(value??"Not recorded")));
+        const eligible = types.includes(row.slotType) && Number.isSafeInteger(row.startSecond) && row.startSecond>=0 && row.startSecond<=86400
+          && Number.isSafeInteger(row.durationSeconds) && row.durationSeconds>=1 && row.durationSeconds<=3600;
+        if (!eligible) {card.append(node("p","Incomplete or unsupported slot. Keep unavailable; request correction."));inventoryQueue.append(card);continue;}
+        const checks = ["I independently confirmed the creator currently wants this exact slot available.",
+          "I reviewed commercial content and placement rights.","I reviewed this slot's format, timing and capacity.",
+          "I reviewed current consent and terms."].map(label=>{
+            const wrap=node("label",label), input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;
+          });
+        const approve=node("button","Approve availability for future matching");approve.type="button";approve.disabled=true;
+        const update=()=>{approve.disabled=!checks.every(x=>x.checked);};
+        for(const input of checks)input.addEventListener("change",update);
+        approve.addEventListener("click",async()=>{
+          if(busy||approve.disabled||!card.isConnected)return;
+          if(!window.confirm("Mark this reviewed slot available for future matching? No booking, payment or campaign delivery will be authorized."))return;
+          busy=true;load.disabled=true;inventoryLoad.disabled=true;approve.disabled=true;
+          try{
+            const s=await session();
+            const payload={slotId:row.slotId,creatorId:row.creatorId,contentItemId:row.contentItemId,receiptId:row.receiptId,
+              contentTitle:row.contentTitle,channelUrl:row.channelUrl,slotType:row.slotType,startSecond:row.startSecond,durationSeconds:row.durationSeconds,
+              creatorPermissionReviewed:checks[0].checked,rightsReviewed:checks[1].checked,inventoryFitReviewed:checks[2].checked,currentConsentReviewed:checks[3].checked};
+            const r=await fetch("/api/creators/operator-review/inventory",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify(payload)});
+            if(!r.ok)throw Error("Review refused or no longer current.");
+            const v=await r.json();
+            if(v.slotId!==row.slotId||v.isAvailable!==true||v.existingPlacementsChanged!==false||v.bookingAuthorized!==false||v.paymentAuthorized!==false||v.deliveryAuthorized!==false)
+              throw Error("Unexpected review receipt.");
+            clearInventory();inventoryStatus.textContent="Availability reviewed and recorded. Reload the current queue before another decision.";
+          }catch{clearInventory();inventoryStatus.textContent="Availability change not confirmed. Reload and review current records.";}
+          finally{busy=false;load.disabled=false;inventoryLoad.disabled=false;}
+        });
+        card.append(approve);inventoryQueue.append(card);
+      }
+    }catch(e){clearInventory();inventoryStatus.textContent=e.message;}
+    finally{busy=false;load.disabled=false;inventoryLoad.disabled=false;}
+  }
+  const placementInput=document.getElementById("invitation-placement"),previewButton=document.getElementById("invitation-preview");
+  const invitationReview=document.getElementById("invitation-review"),invitationStatus=document.getElementById("invitation-review-status");
+  placementInput?.addEventListener("input",()=>invitationReview.replaceChildren());
+  previewButton?.addEventListener("click",async()=>{
+    if(busy||!guid.test(placementInput.value.trim()))return;
+    busy=true;previewButton.disabled=true;placementInput.disabled=true;invitationReview.replaceChildren();
+    const placementId=placementInput.value.trim().toLowerCase();
+    try{
+      await session();
+      const response=await fetch("/api/creators/operator-review/campaign-invitation?placementId="+encodeURIComponent(placementId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!response.ok)throw Error("No currently eligible placement.");
+      const result=await response.json(),row=result.placement;
+      if(!row||row.placementId!==placementId||!/^[a-f0-9]{64}$/.test(result.digest)||result.bookingAuthorized!==false||result.paymentAuthorized!==false||result.deliveryAuthorized!==false)
+        throw Error("Unexpected placement response.");
+      const card=document.createElement("section");
+      for(const [label,value] of [["Campaign",row.campaignName],["Content",row.contentTitle],["Slot",row.slotType],["Creator ID",row.creatorId],["Advertiser ID",row.advertiserId],["Start",row.startSecond],["Duration",row.durationSeconds]])
+        card.append(node("p",label+": "+String(value??"Not recorded")));
+      const checks=["I independently confirmed the advertiser permits sharing this exact invitation.","I confirmed permission to contact this creator through their workspace.","I reviewed this exact planned placement and its availability."].map(label=>{
+        const wrap=node("label",label),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
+      const issue=node("button","Issue planning invitation");issue.type="button";issue.disabled=true;
+      for(const input of checks)input.addEventListener("change",()=>{issue.disabled=!checks.every(x=>x.checked);});
+      issue.addEventListener("click",async()=>{
+        if(busy||!card.isConnected||issue.disabled||placementInput.value.trim().toLowerCase()!==placementId)return;
+        if(!window.confirm("Issue this non-binding invitation to the verified creator's private workspace?"))return;
+        busy=true;issue.disabled=true;previewButton.disabled=true;placementInput.disabled=true;
+        try{
+          const s=await session();
+          const r=await fetch("/api/creators/operator-review/campaign-invitation",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({placementId,digest:result.digest,advertiserPermissionReviewed:checks[0].checked,creatorContactPermissionReviewed:checks[1].checked,placementReviewed:checks[2].checked})});
+          if(!r.ok)throw Error("Invitation refused");
+          const receipt=await r.json();
+          if(receipt.placementId!==placementId||!guid.test(receipt.invitationId)||receipt.invitationRecorded!==true||receipt.bookingAuthorized!==false||receipt.paymentAuthorized!==false||receipt.deliveryAuthorized!==false)throw Error("Invalid receipt");
+          invitationStatus.textContent="Invitation recorded: "+receipt.invitationId;
+        }catch{invitationStatus.textContent="Invitation not confirmed. Reload exact placement before acting.";}
+        finally{invitationReview.replaceChildren();busy=false;previewButton.disabled=false;placementInput.disabled=false;}
+      });
+      card.append(issue);invitationReview.append(card);invitationStatus.textContent="Review current placement and permissions.";
+    }catch(e){invitationReview.replaceChildren();invitationStatus.textContent=e.message;}
+    finally{busy=false;previewButton.disabled=false;placementInput.disabled=false;}
+  });
+  const compInvitation=document.getElementById("compensation-invitation"),compIllustration=document.getElementById("compensation-illustration");
+  const compPreview=document.getElementById("compensation-preview"),compReview=document.getElementById("compensation-review"),compStatus=document.getElementById("compensation-status");
+  const clearComp=()=>compReview?.replaceChildren();
+  for(const input of [compInvitation,compIllustration])input?.addEventListener("input",clearComp);
+  compPreview?.addEventListener("click",async()=>{
+    if(busy||!guid.test(compInvitation.value.trim())||!guid.test(compIllustration.value.trim()))return;
+    const invitationId=compInvitation.value.trim().toLowerCase(),illustrationId=compIllustration.value.trim().toLowerCase();
+    const lock=locked=>{compPreview.disabled=locked;compInvitation.disabled=locked;compIllustration.disabled=locked;};
+    busy=true;lock(true);clearComp();
+    try{
+      await session();
+      const url="/api/creators/operator-review/compensation-proposal?invitationId="+encodeURIComponent(invitationId)+"&illustrationId="+encodeURIComponent(illustrationId);
+      const r=await fetch(url,{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!r.ok)throw Error("No current eligible compensation proposal.");
+      const v=await r.json(),row=v.proposal;
+      if(!row||row.invitationId!==invitationId||row.illustrationId!==illustrationId||!guid.test(row.creatorId)||
+        !guid.test(row.placementId)||!guid.test(row.quoteVersionId)||!Number.isFinite(row.creatorAmount)||row.creatorAmount<=0||
+        !/^[A-Z]{3}$/.test(row.currencyCode)||!/^[a-f0-9]{64}$/.test(v.digest)||v.paymentAuthorized!==false||v.deliveryAuthorized!==false)
+        throw Error("Unexpected compensation response.");
+      const card=document.createElement("section");
+      for(const [label,value] of [["Creator",row.creatorId],["Placement",row.placementId],["Accepted quote version",row.quoteVersionId],["Proposed creator allocation",row.currencyCode+" "+String(row.creatorAmount)]])card.append(node("p",label+": "+value));
+      const checks=["I reviewed the exact current Economics allocation and its currency.","I independently confirmed permission to share this proposal with the creator."].map(label=>{
+        const wrap=node("label",label),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
+      const publish=node("button","Publish private compensation proposal");publish.type="button";publish.disabled=true;
+      for(const input of checks)input.addEventListener("change",()=>{publish.disabled=!checks.every(x=>x.checked);});
+      publish.addEventListener("click",async()=>{
+        if(busy||publish.disabled||!card.isConnected||compInvitation.value.trim().toLowerCase()!==invitationId||compIllustration.value.trim().toLowerCase()!==illustrationId)return;
+        if(!window.confirm("Publish this non-binding allocation? No payment, contract or delivery will be authorized."))return;
+        busy=true;lock(true);publish.disabled=true;
+        try{
+          const s=await session();
+          const response=await fetch("/api/creators/operator-review/compensation-proposal",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},
+            body:JSON.stringify({invitationId,illustrationId,digest:v.digest,allocationReviewed:checks[0].checked,permissionToShareReviewed:checks[1].checked})});
+          if(!response.ok)throw Error("Publication refused");
+          const receipt=await response.json();
+          if(receipt.invitationId!==invitationId||!guid.test(receipt.proposalId)||receipt.proposalRecorded!==true||receipt.paymentAuthorized!==false||receipt.deliveryAuthorized!==false)throw Error("Invalid receipt");
+          compStatus.textContent="Compensation proposal recorded: "+receipt.proposalId;
+        }catch{compStatus.textContent="Publication not confirmed. Reload the exact proposal before acting.";}
+        finally{clearComp();busy=false;lock(false);}
+      });
+      card.append(publish);
+      if(v.canRecordAgreementEvidence===true && v.allocationAcknowledged===true){
+        const area=document.createElement("section");
+        area.append(node("h3","Record separately signed agreement evidence"),node("p","Review the signed agreement outside this workspace. Record only its SHA-256 fingerprint. This is a human attestation, not electronic signature verification or payment authorization."));
+        const label=node("label","Signed document SHA-256");const hash=document.createElement("input");hash.maxLength=64;hash.autocomplete="off";label.append(hash);area.append(label,document.createElement("br"));
+        const reviewChecks=["I reviewed the signed agreement.","I reviewed the parties and exact placement scope.","I reviewed compensation and payment terms against this allocation.","I reviewed cancellation and commercial rights."].map(t=>{
+          const wrap=node("label",t),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);area.append(wrap,document.createElement("br"));return input;});
+        const record=node("button","Record agreement evidence");record.type="button";record.disabled=true;
+        const update=()=>{record.disabled=!/^[a-f0-9]{64}$/.test(hash.value.trim())||!reviewChecks.every(x=>x.checked);};
+        hash.addEventListener("input",update);for(const input of reviewChecks)input.addEventListener("change",update);
+        record.addEventListener("click",async()=>{
+          if(busy||record.disabled||!card.isConnected||compInvitation.value.trim().toLowerCase()!==invitationId||compIllustration.value.trim().toLowerCase()!==illustrationId)return;
+          if(!window.confirm("Record this human-reviewed signed document fingerprint? No payment or delivery is authorized."))return;
+          busy=true;lock(true);record.disabled=true;
+          try{
+            const s=await session();
+            const r=await fetch("/api/creators/operator-review/agreement-evidence",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},
+              body:JSON.stringify({invitationId,illustrationId,digest:v.digest,documentSha256:hash.value.trim(),signedAgreementReviewed:reviewChecks[0].checked,partiesAndScopeReviewed:reviewChecks[1].checked,compensationAndPaymentTermsReviewed:reviewChecks[2].checked,cancellationAndRightsReviewed:reviewChecks[3].checked})});
+            if(!r.ok)throw Error("Agreement evidence refused");
+            const receipt=await r.json();
+            if(!guid.test(receipt.agreementEvidenceId)||!guid.test(receipt.proposalId)||receipt.agreementEvidenceRecorded!==true||receipt.signatureVerifiedBySystem!==false||receipt.payable!==false||receipt.bookingAuthorized!==false||receipt.paymentAuthorized!==false||receipt.deliveryAuthorized!==false)throw Error("Unexpected receipt");
+            compStatus.textContent="Agreement evidence recorded: "+receipt.agreementEvidenceId;
+          }catch{compStatus.textContent="Evidence not confirmed. Reload the current allocation before acting.";}
+          finally{clearComp();busy=false;lock(false);}
+        });area.append(record);card.append(area);
+      }
+      compReview.append(card);compStatus.textContent="Review the proposed allocation.";
+    }catch(e){clearComp();compStatus.textContent=e.message;}
+    finally{busy=false;lock(false);}
+  });
+  window.addEventListener("pagehide",clearComp);
+  const historyInput=document.getElementById("allocation-history-id"),historyPreview=document.getElementById("allocation-history-preview");
+  const historyReview=document.getElementById("allocation-history-review"),historyStatus=document.getElementById("allocation-history-review-status");
+  const clearHistory=()=>historyReview?.replaceChildren();
+  historyInput?.addEventListener("input",clearHistory);
+  historyPreview?.addEventListener("click",async()=>{
+    if(busy||!guid.test(historyInput.value.trim()))return;
+    const historyId=historyInput.value.trim().toLowerCase(),lock=locked=>{historyPreview.disabled=locked;historyInput.disabled=locked;};
+    busy=true;lock(true);clearHistory();
+    try{
+      await session();
+      const r=await fetch("/api/creators/operator-review/allocation-history?historyId="+encodeURIComponent(historyId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!r.ok)throw Error("No current eligible allocation record.");
+      const v=await r.json(),row=v.allocation;
+      if(!row||row.historyId!==historyId||!guid.test(row.creatorId)||!guid.test(row.placementId)||!/^[A-Z]{3}$/.test(row.currencyCode)||
+        ![row.contractedAmount,row.creatorAllocation,row.alphaAllocation,row.otherAllocation].every(n=>Number.isFinite(n)&&n>=0)||
+        row.creatorAllocation<=0||! /^[a-f0-9]{64}$/.test(v.digest)||v.payable!==false||v.settlementVerified!==false)throw Error("Invalid allocation response.");
+      const card=document.createElement("section"),money=n=>row.currencyCode+" "+String(n);
+      for(const [label,value] of [["Campaign",row.campaignName],["Placement",row.placementId],["Creator",row.creatorId],["Historical contracted amount",money(row.contractedAmount)],
+        ["Creator allocation",money(row.creatorAllocation)],["ALPHA allocation",money(row.alphaAllocation)],["Other authorized allocation",money(row.otherAllocation)],["Measurement as of",row.measurementAsOf]])
+        card.append(node("p",label+": "+String(value)));
+      const checks=["I reviewed the exact historical allocation and its lineage.","I confirmed permission to disclose the creator's allocation privately."].map(t=>{
+        const wrap=node("label",t),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
+      const publish=node("button","Share creator allocation history");publish.type="button";publish.disabled=true;
+      for(const input of checks)input.addEventListener("change",()=>{publish.disabled=!checks.every(x=>x.checked);});
+      publish.addEventListener("click",async()=>{
+        if(busy||!card.isConnected||publish.disabled||historyInput.value.trim().toLowerCase()!==historyId)return;
+        if(!window.confirm("Share this historical creator allocation? No settlement or payable will be created."))return;
+        busy=true;lock(true);publish.disabled=true;
+        try{
+          const s=await session();
+          const r=await fetch("/api/creators/operator-review/allocation-history",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},
+            body:JSON.stringify({historyId,digest:v.digest,allocationReviewed:checks[0].checked,permissionToShareReviewed:checks[1].checked})});
+          if(!r.ok)throw Error("Sharing refused.");
+          const receipt=await r.json();
+          if(receipt.historyId!==historyId||!guid.test(receipt.publicationId)||receipt.shared!==true||receipt.payable!==false||receipt.settlementVerified!==false)throw Error("Unexpected receipt.");
+          historyStatus.textContent="Historical allocation shared: "+receipt.publicationId;
+        }catch{historyStatus.textContent="Sharing not confirmed. Reload the exact record before acting.";}
+        finally{clearHistory();busy=false;lock(false);}
+      });
+      card.append(publish);historyReview.append(card);historyStatus.textContent="Review the current historical allocation.";
+    }catch(e){clearHistory();historyStatus.textContent=e.message;}
+    finally{busy=false;lock(false);}
+  });
+  window.addEventListener("pagehide",clearHistory);
+  const settlementInput=document.getElementById("settlement-history-id"),settlementPreview=document.getElementById("settlement-preview");
+  const settlementReview=document.getElementById("settlement-review"),settlementStatus=document.getElementById("settlement-status");
+  const clearSettlement=()=>settlementReview?.replaceChildren();
+  settlementInput?.addEventListener("input",clearSettlement);
+  settlementPreview?.addEventListener("click",async()=>{
+    if(busy||!guid.test(settlementInput.value.trim()))return;
+    const historyId=settlementInput.value.trim().toLowerCase(),lock=locked=>{settlementInput.disabled=locked;settlementPreview.disabled=locked;};
+    busy=true;lock(true);clearSettlement();
+    try{
+      await session();
+      const response=await fetch("/api/creators/operator-review/settlement-evidence?historyId="+encodeURIComponent(historyId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!response.ok)throw Error("No eligible current settlement record. Review the allocation and agreement evidence.");
+      const v=await response.json(),row=v.settlement?.allocation;
+      if(!row||row.historyId!==historyId||!guid.test(row.placementId)||!guid.test(v.settlement.agreementEvidenceId)||
+        !Number.isFinite(row.creatorAllocation)||row.creatorAllocation<=0||!/^[A-Z]{3}$/.test(row.currencyCode)||
+        !/^[a-f0-9]{64}$/.test(v.digest)||v.transferAuthorized!==false||v.providerVerified!==false||v.payable!==false||
+        typeof v.existingEvidence!=="boolean")throw Error("Unexpected settlement response.");
+      const card=document.createElement("section");for(const [label,value] of [["Campaign",row.campaignName],["Placement",row.placementId],
+        ["Exact creator allocation",row.currencyCode+" "+String(row.creatorAllocation)],["Agreement evidence",v.settlement.agreementEvidenceId]])
+        card.append(node("p",label+": "+String(value)));
+      if(v.existingEvidence){card.append(node("p","A settlement evidence record already exists. Do not record or pay again; review any discrepancies separately."));
+        if(guid.test(v.settlementEvidenceId))card.append(node("p","Original settlement evidence ID: "+v.settlementEvidenceId));
+        settlementReview.append(card);settlementStatus.textContent="Existing evidence found.";return;}
+      if(v.payableReviewEnabled===true && v.payableReviewRecorded!==true){
+        if(v.payableReviewExists===true){
+          card.append(node("p","Existing payable review evidence no longer matches. Resolve the discrepancy separately."));
+          settlementReview.append(card);settlementStatus.textContent="Payable review requires correction.";return;
+        }
+        card.append(node("h3","Fulfillment and funding review"),node("p","Record reviewed evidence before settlement. This does not establish an accounting liability or authorize a transfer."));
+        const field=(label,type,max)=>{const wrap=node("label",label),input=document.createElement("input");input.type=type;input.autocomplete="off";if(max)input.maxLength=max;wrap.append(input);card.append(wrap,document.createElement("br"));return input;};
+        const fulfillment=field("Accepted fulfillment evidence SHA-256","text",64),funding=field("Received funding evidence SHA-256","text",64),fulfilled=field("Fulfillment date and time (local time)","datetime-local");
+        fulfilled.step="1";
+        const checks=["I reviewed completed and accepted fulfillment for this exact placement.","I reviewed receipt of the advertiser funds for this agreement.","I reviewed the agreed payment terms and exact creator allocation.","I checked for unresolved disputes, cancellations or refunds.","I checked that no prior payment has been made for this placement."].map(label=>{
+          const wrap=node("label",label),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
+        const review=node("button","Record payable review evidence");review.type="button";review.disabled=true;
+        const update=()=>{review.disabled=!/^[a-f0-9]{64}$/.test(fulfillment.value.trim())||!/^[a-f0-9]{64}$/.test(funding.value.trim())||!Number.isFinite(Date.parse(fulfilled.value))||Date.parse(fulfilled.value)>Date.now()||!checks.every(x=>x.checked);};
+        for(const input of [fulfillment,funding,fulfilled])input.addEventListener("input",update);
+        for(const input of checks)input.addEventListener("change",update);
+        review.addEventListener("click",async()=>{
+          if(busy||review.disabled||!card.isConnected||settlementInput.value.trim().toLowerCase()!==historyId)return;
+          if(!window.confirm("Record the human-reviewed fulfillment and funding evidence? This does not authorize payment."))return;
+          busy=true;lock(true);review.disabled=true;
+          try{
+            const s=await session();
+            const r=await fetch("/api/creators/operator-review/payable-review",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},
+              body:JSON.stringify({historyId,digest:v.digest,amount:row.creatorAllocation,currencyCode:row.currencyCode,fulfillmentSha256:fulfillment.value.trim(),
+                fundingSha256:funding.value.trim(),fulfilledAt:new Date(fulfilled.value).toISOString(),fulfillmentAcceptedReviewed:checks[0].checked,
+                fundingReceivedReviewed:checks[1].checked,paymentTermsReviewed:checks[2].checked,noDisputeReviewed:checks[3].checked,noPriorPaymentReviewed:checks[4].checked})});
+            if(!r.ok)throw Error("Payable review refused.");
+            const receipt=await r.json();
+            if(receipt.historyId!==historyId||!guid.test(receipt.payableReviewId)||receipt.reviewRecorded!==true||receipt.liabilityVerified!==false||
+              receipt.payable!==false||receipt.transferAuthorized!==false||receipt.providerVerified!==false)throw Error("Unexpected receipt.");
+            settlementStatus.textContent="Payable review evidence recorded: "+receipt.payableReviewId+". Reload the current placement to continue.";
+          }catch{settlementStatus.textContent="Payable review not confirmed. Reload the current record before acting.";}
+          finally{clearSettlement();busy=false;lock(false);}
+        });
+        card.append(review);settlementReview.append(card);settlementStatus.textContent="Fulfillment and funding review required.";return;
+      }
+      if(v.payableReviewRecorded===true)card.append(node("p","Current payable review evidence recorded. No transfer is authorized."));
+      const field=(label,type,max)=>{const wrap=node("label",label),input=document.createElement("input");input.type=type;input.autocomplete="off";if(max)input.maxLength=max;wrap.append(input);card.append(wrap,document.createElement("br"));return input;};
+      const transfer=field("Provider-qualified transfer reference SHA-256","text",64),documentHash=field("Transfer evidence document SHA-256","text",64),completed=field("Completed transfer date and time (local time)","datetime-local");
+      completed.step="1";
+      const checks=["I independently reviewed completed campaign fulfillment.","I independently verified the correct creator recipient.","I reviewed an actual completed external transfer for the exact full amount and currency shown.","I checked the transfer has not been reversed or refunded.","I checked that this transfer and placement have not already been reconciled."].map(label=>{
+        const wrap=node("label",label),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
+      const record=node("button","Record completed-transfer evidence");record.type="button";record.disabled=true;
+      const update=()=>{record.disabled=!/^[a-f0-9]{64}$/.test(transfer.value.trim())||!/^[a-f0-9]{64}$/.test(documentHash.value.trim())||!Number.isFinite(Date.parse(completed.value))||Date.parse(completed.value)>Date.now()||!checks.every(x=>x.checked);};
+      for(const input of [transfer,documentHash,completed])input.addEventListener("input",update);
+      for(const input of checks)input.addEventListener("change",update);
+      record.addEventListener("click",async()=>{
+        if(busy||record.disabled||!card.isConnected||settlementInput.value.trim().toLowerCase()!==historyId)return;
+        if(!window.confirm("Record evidence of the external transfer already completed? This does not send money or independently verify the provider."))return;
+        busy=true;lock(true);record.disabled=true;
+        try{
+          const s=await session();
+          const r=await fetch("/api/creators/operator-review/settlement-evidence",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},
+            body:JSON.stringify({historyId,digest:v.digest,amount:row.creatorAllocation,currencyCode:row.currencyCode,transferReferenceSha256:transfer.value.trim(),
+              evidenceDocumentSha256:documentHash.value.trim(),completedAt:new Date(completed.value).toISOString(),fulfillmentReviewed:checks[0].checked,
+              recipientReviewed:checks[1].checked,completedTransferReviewed:checks[2].checked,noReversalReviewed:checks[3].checked,noDuplicateReviewed:checks[4].checked})});
+          if(!r.ok)throw Error("Settlement evidence refused.");
+          const receipt=await r.json();
+          if(receipt.historyId!==historyId||!guid.test(receipt.settlementEvidenceId)||receipt.evidenceRecorded!==true||receipt.providerVerified!==false||
+            receipt.transferAuthorized!==false||receipt.payable!==false)throw Error("Unexpected receipt.");
+          settlementStatus.textContent="Operator-reviewed external transfer evidence recorded: "+receipt.settlementEvidenceId;
+        }catch{settlementStatus.textContent="Evidence not confirmed. Do not send money or retry until the current record is reviewed.";}
+        finally{clearSettlement();busy=false;lock(false);}
+      });card.append(record);settlementReview.append(card);settlementStatus.textContent="Review exact settlement evidence.";
+    }catch(e){clearSettlement();settlementStatus.textContent=e.message;}
+    finally{busy=false;lock(false);}
+  });
+  window.addEventListener("pagehide",clearSettlement);
+  const exceptionInput=document.getElementById("settlement-exception-id"),exceptionPreview=document.getElementById("settlement-exception-preview");
+  const exceptionReview=document.getElementById("settlement-exception-review"),exceptionStatus=document.getElementById("settlement-exception-status");
+  const clearException=()=>exceptionReview?.replaceChildren();
+  exceptionInput?.addEventListener("input",clearException);
+  exceptionPreview?.addEventListener("click",async()=>{
+    if(busy||!guid.test(exceptionInput.value.trim()))return;
+    const evidenceId=exceptionInput.value.trim().toLowerCase(),lock=locked=>{exceptionInput.disabled=locked;exceptionPreview.disabled=locked;};
+    busy=true;lock(true);clearException();
+    try{
+      await session();
+      const response=await fetch("/api/creators/operator-review/settlement-exception?evidenceId="+encodeURIComponent(evidenceId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!response.ok)throw Error("Original settlement evidence unavailable.");
+      const v=await response.json(),row=v.original;
+      if(!row||row.evidenceId!==evidenceId||!guid.test(row.placementId)||!Number.isFinite(row.amount)||row.amount<=0||!/^[A-Z]{3}$/.test(row.currencyCode)||
+        !/^[a-f0-9]{64}$/.test(row.originalDigest)||!Number.isFinite(Date.parse(row.transferAt))||typeof v.exceptionExists!=="boolean"||
+        v.providerVerified!==false||v.refundAuthorized!==false||v.transferAuthorized!==false||v.payable!==false)throw Error("Unexpected original settlement response.");
+      const card=document.createElement("section");
+      for(const [label,value] of [["Original settlement evidence",row.evidenceId],["Placement",row.placementId],["Original allocation",row.currencyCode+" "+String(row.amount)],["Recorded transfer time",row.transferAt]])
+        card.append(node("p",label+": "+String(value)));
+      if(v.exceptionExists){card.append(node("p","Existing exception: "+String(v.exceptionStatus)+". Original record remains under review; no repeat payment or refund is authorized."));exceptionReview.append(card);exceptionStatus.textContent="Exception already recorded.";return;}
+      if(v.exceptionStatus!=="NONE")throw Error("Unexpected exception status.");
+      const reason=document.createElement("select");
+      for(const [value,label] of [["FULL_REVERSAL_REPORTED","Reported full reversal"],["DISPUTE_REPORTED","Reported dispute"],["RECORD_CORRECTION_REQUIRED","Record correction required"]]){
+        const opt=document.createElement("option");opt.value=value;opt.textContent=label;reason.append(opt);}
+      const reasonLabel=node("label","Exception category");reasonLabel.append(reason);card.append(reasonLabel,document.createElement("br"));
+      const field=(label,type,max)=>{const wrap=node("label",label),input=document.createElement("input");input.type=type;input.autocomplete="off";if(max)input.maxLength=max;wrap.append(input);card.append(wrap,document.createElement("br"));return input;};
+      const hash=field("Exception evidence document SHA-256","text",64),observed=field("Observed date and time (local time)","datetime-local");observed.step="1";
+      const checks=["I reviewed the exact original transfer evidence.","I independently reviewed supporting evidence for this reported exception.","I confirm the record must remain under review without authorizing a refund, repeat payment or payable balance."].map(label=>{
+        const wrap=node("label",label),input=document.createElement("input");input.type="checkbox";wrap.prepend(input);card.append(wrap,document.createElement("br"));return input;});
+      const record=node("button","Record settlement exception");record.type="button";record.disabled=true;
+      const update=()=>{record.disabled=!/^[a-f0-9]{64}$/.test(hash.value.trim())||!Number.isFinite(Date.parse(observed.value))||Date.parse(observed.value)<Date.parse(row.transferAt)||Date.parse(observed.value)>Date.now()||!checks.every(x=>x.checked);};
+      for(const input of [hash,observed])input.addEventListener("input",update);
+      for(const input of checks)input.addEventListener("change",update);
+      record.addEventListener("click",async()=>{
+        if(busy||record.disabled||!card.isConnected||exceptionInput.value.trim().toLowerCase()!==evidenceId)return;
+        if(!window.confirm("Record this exception against the original settlement? No refund or payment will be initiated."))return;
+        busy=true;lock(true);record.disabled=true;
+        try{
+          const s=await session();
+          const r=await fetch("/api/creators/operator-review/settlement-exception",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+            headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({evidenceId,originalDigest:row.originalDigest,
+              documentSha256:hash.value.trim(),reason:reason.value,observedAt:new Date(observed.value).toISOString(),originalTransferReviewed:checks[0].checked,
+              exceptionEvidenceReviewed:checks[1].checked,confirmHold:checks[2].checked})});
+          if(!r.ok)throw Error("Exception refused.");
+          const receipt=await r.json();
+          if(receipt.evidenceId!==evidenceId||!guid.test(receipt.exceptionId)||receipt.status!==reason.value||receipt.holdRecorded!==true||receipt.providerVerified!==false||
+            receipt.refundAuthorized!==false||receipt.transferAuthorized!==false||receipt.payable!==false)throw Error("Unexpected receipt.");
+          exceptionStatus.textContent="Settlement exception recorded: "+receipt.exceptionId+". No repeat payment or refund authorized.";
+        }catch{exceptionStatus.textContent="Exception not confirmed. Reload original evidence before acting.";}
+        finally{clearException();busy=false;lock(false);}
+      });
+      card.append(record);exceptionReview.append(card);exceptionStatus.textContent="Review the original settlement and exception evidence.";
+    }catch(e){clearException();exceptionStatus.textContent=e.message;}
+    finally{busy=false;lock(false);}
+  });
+  window.addEventListener("pagehide",clearException);
+  const fulfillHandoff=document.getElementById("fulfillment-handoff"),fulfillIllustration=document.getElementById("fulfillment-illustration");
+  const fulfillPreview=document.getElementById("fulfillment-preview"),fulfillReview=document.getElementById("fulfillment-review"),fulfillStatus=document.getElementById("fulfillment-status");
+  const clearFulfill=()=>fulfillReview?.replaceChildren();
+  for(const input of [fulfillHandoff,fulfillIllustration])input?.addEventListener("input",clearFulfill);
+  fulfillPreview?.addEventListener("click",async()=>{
+    if(busy||!guid.test(fulfillHandoff.value.trim())||!guid.test(fulfillIllustration.value.trim()))return;
+    const handoffId=fulfillHandoff.value.trim().toLowerCase(),illustrationId=fulfillIllustration.value.trim().toLowerCase();
+    busy=true;fulfillPreview.disabled=true;fulfillHandoff.disabled=true;fulfillIllustration.disabled=true;clearFulfill();
+    try{
+      await session();
+      const r=await fetch("/api/creators/operator-review/fulfillment-manifest?handoffId="+encodeURIComponent(handoffId)+"&illustrationId="+encodeURIComponent(illustrationId),{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!r.ok)throw Error("Current handoff or agreement evidence unavailable.");
+      const packet=await r.json(),m=packet.manifest;
+      if(!m||!/^[a-f0-9]{64}$/.test(packet.manifestSha256)||typeof packet.factorySubmissionEnabled!=="boolean"||typeof packet.factoryArtworkEnabled!=="boolean"||typeof packet.factoryArtworkTransferEnabled!=="boolean"||m.schema!=="alpha-creator-fulfillment-preparation/v1"||m.handoffId!==handoffId||m.status!=="PREPARATION_ONLY"||m.delivery!=="NOT_SENT"||
+        m.fundingVerified!==false||m.bookingAuthorized!==false||m.paymentAuthorized!==false||m.deliveryAuthorized!==false||m.factoryDispatchAuthorized!==false||
+        ![m.placementId,m.campaignId,m.creatorId,m.slotId,m.candidateId,m.agreementEvidenceId].every(x=>guid.test(x))||
+        ![m.imageSha256,m.handoffSha256,m.agreementEvidenceSha256].every(x=>/^[a-f0-9]{64}$/.test(x)))throw Error("Invalid preparation manifest.");
+      const card=document.createElement("section");
+      for(const [label,value] of [["Placement",m.placementId],["Creator",m.creatorId],["Artwork fingerprint",m.imageSha256],["Agreement evidence",m.agreementEvidenceId],["Delivery",m.delivery]])
+        card.append(node("p",label+": "+value));
+      const download=node("button","Export private preparation JSON");download.type="button";
+      download.addEventListener("click",()=>{
+        if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+        const url=URL.createObjectURL(new Blob([JSON.stringify(m,null,2)+"\n"],{type:"application/json"}));
+        const a=document.createElement("a");a.href=url;a.download="alpha-fulfillment-"+handoffId+".json";a.click();URL.revokeObjectURL(url);
+        clearFulfill();fulfillStatus.textContent="Preparation manifest export requested. No delivery or dispatch authorized.";
+      });
+      card.append(download);
+      if(packet.factorySubmissionEnabled){
+        const submit=node("button","Submit held job metadata to Factory");submit.type="button";
+        submit.addEventListener("click",async()=>{
+          if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+          if(!window.confirm("Send only this exact preparation metadata to the existing staging Factory? No artwork, rendering, payment or delivery is authorized."))return;
+          busy=true;submit.disabled=true;download.disabled=true;fulfillPreview.disabled=true;fulfillHandoff.disabled=true;fulfillIllustration.disabled=true;
+          try{
+            const s=await session();
+            const response=await fetch("/api/creators/operator-review/factory-submission",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,confirmHeldMetadataOnly:true})});
+            if(!response.ok)throw Error("Admission not confirmed.");
+            const a=await response.json();
+            if(a.schema!=="alpha.henry-ford.held-job-admission.v1"||a.handoffId!==handoffId||a.placementId!==m.placementId||
+              a.manifestSha256!==packet.manifestSha256||a.status!=="HELD_METADATA_ONLY"||a.release!=="HELD"||a.delivery!=="NOT_SENT"||
+              a.renderAuthorized!==false||a.dispatchAuthorized!==false||a.paymentAuthorized!==false)throw Error("Unexpected admission receipt.");
+            fulfillStatus.textContent="Factory metadata admission confirmed: "+a.placementId+". HELD / NOT_SENT.";
+          }catch{fulfillStatus.textContent="Factory admission not confirmed. Reload the exact manifest before retrying.";}
+          finally{clearFulfill();busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
+        });
+        card.append(submit);
+      }
+      if(packet.factoryArtworkEnabled){
+        const artwork=node("button","Retrieve admitted private PNG");artwork.type="button";
+        artwork.addEventListener("click",async()=>{
+          if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+          if(!window.confirm("Retrieve the exact admitted artwork for authorized private handling only? Do not upload or distribute it publicly."))return;
+          busy=true;artwork.disabled=true;download.disabled=true;fulfillPreview.disabled=true;fulfillHandoff.disabled=true;fulfillIllustration.disabled=true;
+          try{
+            const s=await session();
+            const response=await fetch("/api/creators/operator-review/factory-artwork",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,confirmPrivateArtworkHandling:true})});
+            if(!response.ok||response.headers.get("content-type")!=="image/png")throw Error("Artwork unavailable.");
+            const blob=await response.blob();
+            if(blob.size<33||blob.size>16000000||!card.isConnected)throw Error("Artwork unavailable.");
+            const actual=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await blob.arrayBuffer())),b=>b.toString(16).padStart(2,"0")).join("");
+            if(actual!==m.imageSha256||!card.isConnected)throw Error("Artwork fingerprint mismatch.");
+            const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="alpha-private-"+m.candidateId+".png";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+            fulfillStatus.textContent="Private artwork export requested. No rendering or distribution authorized.";
+          }catch{fulfillStatus.textContent="Artwork retrieval refused or unavailable. Confirm current admission and approval.";}
+          finally{clearFulfill();busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
+        });
+        card.append(artwork);
+      }
+      if(packet.factoryArtworkTransferEnabled){
+        const transfer=node("button","Transfer exact private PNG to Factory");transfer.type="button";
+        transfer.addEventListener("click",async()=>{
+          if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+          if(!window.confirm("Store this exact admitted PNG in the separately authorized private staging Factory custody ledger? No rendering, publishing, or payment is authorized."))return;
+          busy=true;transfer.disabled=true;download.disabled=true;fulfillPreview.disabled=true;fulfillHandoff.disabled=true;fulfillIllustration.disabled=true;
+          try{
+            const s=await session();
+            const response=await fetch("/api/creators/operator-review/factory-artwork",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,confirmPrivateArtworkHandling:true,transferToFactory:true})});
+            if(!response.ok)throw Error("Custody not confirmed.");
+            const r=await response.json();
+            if(r.schema!=="alpha.henry-ford.held-artwork-custody.v1"||r.placementId!==m.placementId||r.handoffId!==handoffId||
+              r.manifestSha256!==packet.manifestSha256||r.imageSha256!==m.imageSha256||r.imageWidth!==m.imageWidth||r.imageHeight!==m.imageHeight||
+              r.status!=="HELD_ARTWORK_STORED"||r.release!=="HELD"||r.delivery!=="NOT_SENT"||
+              r.renderAuthorized!==false||r.dispatchAuthorized!==false||r.paymentAuthorized!==false)throw Error("Unexpected custody receipt.");
+            fulfillStatus.textContent="Private Factory artwork custody confirmed. HELD / NOT_SENT.";
+          }catch{fulfillStatus.textContent="Factory custody not confirmed. Review the exact current admission before retrying.";}
+          finally{clearFulfill();busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
+        });
+        card.append(transfer);
+      }
+      if(packet.factorySubmissionEnabled){
+        const refresh=node("button","Refresh private render status");refresh.type="button";
+        const results=node("div","");
+        refresh.addEventListener("click",async()=>{
+          if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+          busy=true;refresh.disabled=true;results.replaceChildren();
+          try{
+            const s=await session();
+            const response=await fetch("/api/creators/operator-review/factory-render-status",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,confirmHeldMetadataOnly:true})});
+            if(!response.ok)throw Error("Status unavailable.");
+            const r=await response.json();
+            if(!card.isConnected)return;
+            if(r.schema!=="alpha.henry-ford.held-render-status.v1"||r.placementId!==m.placementId||r.handoffId!==handoffId||
+              r.manifestSha256!==packet.manifestSha256||r.release!=="HELD"||r.delivery!=="NOT_SENT"||r.dispatchAuthorized!==false||
+              r.visualQa!=="HUMAN_REVIEW_PENDING"||!Array.isArray(r.results)||r.results.length>20)throw Error("Status invalid.");
+            for(const row of r.results){
+              if(!["SCHEDULE_RECORDED","CLAIMED_OUTCOME_UNCONFIRMED","PRIVATE_PREVIEW_READY","REVIEW_REQUIRED","FAILED_OR_INCOMPLETE"].includes(row.status)||!/^[a-f0-9]{64}$/.test(row.specSha256))throw Error("Status invalid.");
+            }
+            results.append(node("p",r.results.length? "Stored private Factory status — human visual review pending.":"No private render schedule recorded."));
+            for(const row of r.results){
+              const item=node("div","");
+              item.append(node("p",row.status+" · "+row.specSha256.slice(0,16)+"… · HELD / NOT_SENT"));
+              if(packet.factoryVisualReviewEnabled===true&&["PRIVATE_PREVIEW_READY","REVIEW_REQUIRED"].includes(row.status)&&/^[a-f0-9]{64}$/.test(row.previewSha256)){
+                item.append(node("p","Exact preview SHA-256: "+row.previewSha256));
+                const hash=node("input","");hash.type="text";hash.maxLength=64;hash.placeholder="Review document SHA-256";hash.setAttribute("aria-label","Review document SHA-256");
+                const labels=["I reviewed the exact private video","Brand readability checked","Creator safe area checked","Audio and timing checked","Keep this output held"];
+                const checks=labels.map(label=>{const wrapper=node("label",""),input=node("input","");input.type="checkbox";wrapper.append(input,document.createTextNode(" "+label));item.append(wrapper);return input;});
+                item.append(hash);
+                const status=node("p","");
+                for(const decision of ["VISUAL_ACCEPTED","REVISION_REQUESTED"]){
+                  if(decision==="VISUAL_ACCEPTED"&&row.status!=="PRIVATE_PREVIEW_READY")continue;
+                  const b=node("button",decision==="VISUAL_ACCEPTED"?"Record visual acceptance":"Request revision");b.type="button";
+                  b.addEventListener("click",async()=>{
+                    if(busy||!item.isConnected||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+                    const reviewDocumentSha256=hash.value.trim();
+                    if(!/^[a-f0-9]{64}$/.test(reviewDocumentSha256)||!checks[0].checked||!checks[4].checked||(decision==="VISUAL_ACCEPTED"&&!checks.slice(1,4).every(x=>x.checked))){status.textContent="Complete the required review evidence and confirmations.";return;}
+                    if(!window.confirm("Record this immutable review for the exact preview? No campaign release, delivery or payment is authorized."))return;
+                    busy=true;b.disabled=true;
+                    try{
+                      const s=await session();
+                      const res=await fetch("/api/creators/operator-review/factory-visual-review",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+                        headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,
+                          specSha256:row.specSha256,previewSha256:row.previewSha256,reviewDocumentSha256,decision,exactPreviewReviewed:checks[0].checked,
+                          brandReadabilityReviewed:checks[1].checked,creatorSafeAreaReviewed:checks[2].checked,audioTimingReviewed:checks[3].checked,confirmHeld:checks[4].checked})});
+                      if(!res.ok)throw Error("Review not confirmed.");
+                      const a=await res.json();
+                      if(a.placementId!==m.placementId||a.specSha256!==row.specSha256||a.previewSha256!==row.previewSha256||a.decision!==decision||a.reviewRecorded!==true||a.release!=="HELD"||a.delivery!=="NOT_SENT"||a.dispatchAuthorized!==false||a.paymentAuthorized!==false)throw Error("Receipt invalid.");
+                      if(item.isConnected){item.replaceChildren(node("p","Review recorded: "+decision+" · HELD / NOT_SENT."));}
+                    }catch{if(item.isConnected)status.textContent="Review not confirmed. Reload current preview evidence.";}
+                    finally{busy=false;b.disabled=false;}
+                  });
+                  item.append(b);
+                }
+                item.append(status);
+              }
+              results.append(item);
+            }
+          }catch{if(card.isConnected){results.replaceChildren(node("p","Private render status unavailable."));}}
+          finally{busy=false;refresh.disabled=false;}
+        });
+        card.append(refresh,results);
+      }
+      fulfillReview.append(card);fulfillStatus.textContent="Current preparation manifest generated.";
+    }catch(e){clearFulfill();fulfillStatus.textContent=e.message;}
+    finally{busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
+  });
+  window.addEventListener("pagehide",clearFulfill);
+  inventoryLoad.addEventListener("click",loadInventory);
+  window.addEventListener("pagehide",clearInventory);
   load.addEventListener("click", refresh);
 })();
