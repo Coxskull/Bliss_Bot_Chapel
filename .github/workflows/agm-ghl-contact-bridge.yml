@@ -25,6 +25,7 @@ on:
       - 'scripts/task20-ask-alpha-history-negative.mjs'
       - 'scripts/task20-hosted-ingress-attestation.test.mjs'
       - 'scripts/agm-marketplace-budget-smoke.mjs'
+      - 'scripts/agm-quote-boundaries.test.mjs'
       - 'scripts/task21/staging-alert-ledger-contract.test.mjs'
       - 'scripts/task21/staging-alert-gmail-agent-receipt-ledger-20261112.sql'
       - '.github/workflows/agm-ghl-contact-bridge.yml'
@@ -46,6 +47,8 @@ jobs:
       - name: Assert Task22 local CRM opt-out prevention gates
         run: node scripts/task22-crm-optout-source-contract.mjs
       - run: node scripts/agm-marketplace-budget-smoke.mjs
+      - name: Exact quote currency and arithmetic boundaries (offline)
+        run: node --test scripts/agm-quote-boundaries.test.mjs
       - name: Assert Task21 private staging-only alert provider/ACK ledger (offline)
         run: node scripts/task21/staging-alert-ledger-contract.test.mjs
       - run: node scripts/task20-hosted-ingress-attestation.test.mjs
