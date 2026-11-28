@@ -282,6 +282,7 @@
     if (artworkUrl) URL.revokeObjectURL(artworkUrl);
     artworkUrl=artworkRun=artworkCandidate=artworkRetry=revisionReviewId=null; artworkVersion=0;
     el("revision-panel").hidden=true;el("revision-status").textContent="";
+    el("advertiser-revision-feedback").replaceChildren();el("advertiser-revision-feedback").hidden=true;
     artwork.hidden=artworkPanel.hidden=artworkReview.hidden=el("artwork-release").hidden=true; artwork.removeAttribute("src");
     el("reconciliation-id").value="";el("release-payment").checked=el("release-scope").checked=false;
     artworkFields.forEach(f=>{if(f.type==="checkbox") f.checked=false;else if(f.tagName==="SELECT") f.selectedIndex=0;else f.value="";});
@@ -355,6 +356,31 @@
         }catch{URL.revokeObjectURL(url);artwork.removeAttribute("src");artwork.hidden=true;throw Error("Artwork could not be displayed; review remains unavailable.");}
       }
       artworkCandidate=uuid.test(result.candidateId)?result.candidateId:null;artworkVersion=result.reviewVersion;
+      const feedbackPanel=el("advertiser-revision-feedback");
+      feedbackPanel.replaceChildren();feedbackPanel.hidden=true;
+      if(result.advertiserRevisionRequest!=null){
+        const feedback=result.advertiserRevisionRequest;
+        if(!artworkCandidate || result.decision!=="PASS" || !uuid.test(feedback.decisionId)
+            || feedback.reviewId!==result.reviewId || !Number.isInteger(feedback.version) || feedback.version<1
+            || typeof feedback.rationale!=="string" || !feedback.rationale.trim() || feedback.rationale.length>2000
+            || typeof feedback.recordedAt!=="string" || !Number.isFinite(Date.parse(feedback.recordedAt)))throw Error("Invalid current advertiser revision request.");
+        const heading=document.createElement("h3");heading.textContent="Advertiser requested changes";
+        const reference=document.createElement("p");reference.textContent="Decision "+feedback.decisionId+" · version "+feedback.version+" · "+new Date(feedback.recordedAt).toLocaleString();
+        const notes=document.createElement("p");notes.textContent=feedback.rationale;notes.style.whiteSpace="pre-wrap";
+        const explanation=document.createElement("p");explanation.textContent="Review this feedback against the exact private artwork. Copying it creates no review, revised recipe, paid request or release.";
+        const use=document.createElement("button");use.type="button";use.textContent="Use feedback in human repair instructions";
+        const candidateAtRead=artworkCandidate,reviewAtRead=artworkVersion,urlAtRead=artworkUrl;
+        use.disabled=!urlAtRead;
+        use.addEventListener("click",()=>{
+          if(busy||current!==epoch||!feedbackPanel.contains(use)||!review.checked||artworkCandidate!==candidateAtRead||artworkVersion!==reviewAtRead||!urlAtRead||artworkUrl!==urlAtRead)return;
+          const repair=el("artwork-repair");
+          if(repair.value.trim()&&repair.value!==feedback.rationale&&!window.confirm("Replace the unsaved repair instructions with the recorded advertiser feedback?"))return;
+          repair.value=feedback.rationale;el("artwork-decision").value="REVISE";
+          el("artwork-status").textContent="Feedback copied into draft repair instructions. Review the artwork and record your own rationale and quality checks before saving.";
+          sync();
+        });
+        feedbackPanel.append(heading,reference,notes,explanation,use);feedbackPanel.hidden=false;
+      }
       revisionReviewId=result.decision==="REVISE" && uuid.test(result.reviewId)?result.reviewId:null;
       el("revision-panel").hidden=!revisionReviewId;
       artworkReview.hidden=el("artwork-release").hidden=!artworkCandidate;
