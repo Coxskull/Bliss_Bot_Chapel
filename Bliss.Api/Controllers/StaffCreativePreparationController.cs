@@ -267,6 +267,7 @@ public sealed class StaffCreativePreparationController(
             }
             Guid? productionBriefId = null;
             string? recipeSha256 = null;
+            string? recipeFamily = null, recipeHeadline = null, recipeCta = null;
             if (saveRecipe)
             {
                 if (brand is null || brand.Status != "CONFIRMED" || brand.Id != request.BrandDnaId)
@@ -305,19 +306,22 @@ public sealed class StaffCreativePreparationController(
                     "OPERATOR", subject, RequestCorrelation.Resolve(HttpContext), ct,revision);
                 productionBriefId = result.Row.Id;
                 recipeSha256 = result.Row.RecipeSha256;
+                recipeFamily = result.Row.Family; recipeHeadline = result.Row.Headline; recipeCta = result.Row.Cta;
                 await tx.CommitAsync(ct);
             }
             if (!saveRecipe && brand?.Status == "CONFIRMED")
             {
                 var existingRecipe = await CampaignRecipeRevision.ForCampaign(db.AcademyProductionBriefs.AsNoTracking()
                     .Where(x=>x.WorkspaceId==workspace.WorkspaceId),draft.Id,request.BriefSha256)
-                    .Where(x=>x.BrandDnaId==brand.Id).Select(x => new { x.Id, x.RecipeSha256 }).FirstOrDefaultAsync(ct);
+                    .Where(x=>x.BrandDnaId==brand.Id).Select(x => new { x.Id, x.RecipeSha256, x.Family, x.Headline, x.Cta }).FirstOrDefaultAsync(ct);
                 productionBriefId = existingRecipe?.Id;
                 recipeSha256 = existingRecipe?.RecipeSha256;
+                recipeFamily = existingRecipe?.Family; recipeHeadline = existingRecipe?.Headline; recipeCta = existingRecipe?.Cta;
             }
             return Ok(new { campaignId = draft.Id, briefSha256 = request.BriefSha256,
                 workspaceId = workspace.WorkspaceId, brandDnaId = brand?.Id,
                 brandStatus = brand?.Status ?? "NOT_PREPARED", productionBriefId, recipeSha256,
+                recipeFields = productionBriefId.HasValue ? new { family = recipeFamily, headline = recipeHeadline, cta = recipeCta } : null,
                 brandVersion = brand?.Version ?? 0,
                 brandFields = brand is null ? null : new BrandDnaFields(brand.BrandName, brand.Niche, brand.Market,
                     brand.Language, brand.Colors, brand.Font, brand.Goals, brand.Restrictions),

@@ -231,11 +231,22 @@
       el("brand-status").textContent = "Brand status: " + result.brandStatus + " | Revision " + result.brandVersion;
       brand = result.brandStatus === "CONFIRMED" && uuid.test(result.brandDnaId) ? result.brandDnaId : null;
       recipe.hidden = !brand;
+      let recipeNotice="";
+      if(result.recipeFields!=null){
+        const saved=result.recipeFields;
+        if(!brand || !uuid.test(result.productionBriefId) || !hex.test(result.recipeSha256)
+            || typeof saved.family!=="string" || !saved.family.trim() || saved.family.length>128
+            || typeof saved.headline!=="string" || !saved.headline.trim() || saved.headline.length>500
+            || typeof saved.cta!=="string" || !saved.cta.trim() || saved.cta.length>500)
+          throw Error("Stored recipe fields could not be verified.");
+        fields[0].value=saved.family;fields[1].value=saved.headline;fields[2].value=saved.cta;
+        recipeNotice=fields[0].value===saved.family?" Stored production copy restored.":" Stored copy restored; select a currently eligible template before saving a revision.";
+      }
       clearImage(brand && uuid.test(result.productionBriefId) && hex.test(result.recipeSha256)
         ? {workspaceId:result.workspaceId,briefId:result.productionBriefId} : null);
       el("result").textContent = "Workspace: " + result.workspaceId + " | Brand: " + result.brandStatus
         + (withRecipe ? " | Recipe: " + result.productionBriefId + " | SHA-256: " + result.recipeSha256 : "")
-        + " | Release HELD; no provider call or delivery.";
+        + " | Release HELD; no provider call or delivery." + recipeNotice;
       status.textContent = withRecipe ? (revising?"Revised recipe saved. Customer must grant fresh provider consent.":"Recipe saved.") : brandAction ? result.preparation === "BRAND_CONFIRMED" ? "Brand confirmed. Prepare the recipe." : "Brand draft saved. Confirm only after advertiser approval." : brand ? "Workspace ready; confirmed brand available." : "Workspace ready; enter the advertiser's brand information.";
     } catch(e) { status.textContent = e.message;if(revising)el("revision-status").textContent=e.message; }
     finally { busy = false; sync(); }
