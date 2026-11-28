@@ -236,6 +236,8 @@
           ||typeof order.terms!=="string"||!order.terms.trim()||order.terms.length>700
           ||!["AWAITING_ACCEPTANCE","AWAITING_PAYMENT_INSTRUCTIONS","PAYMENT_INSTRUCTIONS_RECORDED","RECONCILIATION_RECORDED","REVIEW_REQUIRED"].includes(order.milestone)))
         throw Error("Stored order could not be verified.");
+      if(order!=null && (order.milestone==="RECONCILIATION_RECORDED"? !uuid.test(order.reconciliationId||""):order.reconciliationId!=null))
+        throw Error("Stored order reconciliation reference invalid.");
       restoredOrder=order??null;
       offerWorkspace=result.workspaceId;el("starter-offer").hidden=false;
       if(restoredOrder){
@@ -325,7 +327,7 @@
     el("revision-panel").hidden=true;el("revision-status").textContent="";
     el("advertiser-revision-feedback").replaceChildren();el("advertiser-revision-feedback").hidden=true;
     artwork.hidden=artworkPanel.hidden=artworkReview.hidden=el("artwork-release").hidden=true; artwork.removeAttribute("src");
-    el("reconciliation-id").value="";el("release-payment").checked=el("release-scope").checked=false;
+    el("reconciliation-id").value=restoredOrder?.reconciliationId||"";el("release-payment").checked=el("release-scope").checked=false;
     artworkFields.forEach(f=>{if(f.type==="checkbox") f.checked=false;else if(f.tagName==="SELECT") f.selectedIndex=0;else f.value="";});
     el("artwork-status").textContent="";
   }
@@ -383,6 +385,21 @@
         el("artwork-status").textContent=result.receiptAcknowledged?"Customer approval actor acknowledged receipt: "+new Date(result.receiptAcknowledgedAt).toLocaleString()+". Not independent proof of saved file."
           :result.downloadRequestRecorded?"Customer approval actor requested download; receipt not acknowledged."
           :result.release==="HELD"?"No matching artwork release recorded.":"Artwork released; no download request from the approving customer recorded.";
+        if(result.release==="ARTWORK_DOWNLOAD_AVAILABLE"&&uuid.test(result.releaseId)){
+          const record={schema:"alpha.staff.artwork-delivery-readback.v1",campaignId:manifest.campaignId,candidateId:result.candidateId,imageSha256:result.imageSha256,
+            releaseId:result.releaseId,reconciliationId:payload.reconciliationId,downloadRequestRecorded:result.downloadRequestRecorded,downloadRequestedAt:result.downloadRequestedAt,
+            receiptAcknowledged:result.receiptAcknowledged,receiptAcknowledgedAt:result.receiptAcknowledgedAt,
+            independentDeliveryVerified:false,currentPaymentVerified:false,dispatchAuthorized:false,paymentAuthorized:false};
+          const target=el("artwork-status");
+          const button=document.createElement("button");button.type="button";button.textContent="Export operator delivery readback";
+          button.addEventListener("click",()=>{
+            if(current!==epoch||!button.isConnected||busy||!manifest||artworkCandidate!==record.candidateId||
+                el("reconciliation-id").value.trim()!==record.reconciliationId)return;
+            const url=URL.createObjectURL(new Blob([JSON.stringify(record,null,2)+"\n"],{type:"application/json"}));
+            const link=document.createElement("a");link.href=url;link.download="alpha-delivery-readback-"+record.releaseId+".json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+          });
+          target.appendChild(document.createTextNode(" "));target.appendChild(button);
+        }
         return;
       }
       if(action==="PREVIEW"){
