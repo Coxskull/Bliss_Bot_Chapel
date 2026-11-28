@@ -514,11 +514,38 @@ public sealed class CreatorOperatorReviewController(
     }
 
     [HttpGet("fulfillment-manifest")]
-    public async Task<IActionResult> FulfillmentManifest([FromQuery] Guid handoffId,[FromQuery] Guid illustrationId,CancellationToken ct)
+    public async Task<IActionResult> FulfillmentManifest([FromQuery] Guid handoffId,[FromQuery] Guid illustrationId,CancellationToken ct,[FromQuery] bool queue=false)
     {
         Response.Headers.CacheControl="no-store";
         if(!auth.CreatorFulfillmentManifestRequested || !auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested
             || !auth.CreatorAgreementEvidenceRequested || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out _))return StatusCode(403);
+        if(queue)
+        {
+            if(handoffId!=Guid.Empty || illustrationId!=Guid.Empty)return BadRequest();
+            // Discover planned handoffs only, without reading image bytes or calling Factory.
+            // A recorded proposal reference is not evidence that agreement or approval is current.
+            var handoffs=await db.CreativeCampaignHandoffs.AsNoTracking()
+                .Where(h=>h.Status=="PLANNED" && h.Delivery=="NOT_SENT")
+                .OrderByDescending(h=>h.CreatedAt).ThenBy(h=>h.Id).Take(50)
+                .Select(h=>new { h.Id,h.WorkspaceId,h.CampaignPlacementId,h.CreatedAt }).ToListAsync(ct);
+            var keys=handoffs.Select(h=>CreatorCompensationProposal.Id(
+                CreatorCampaignInvitation.InvitationId(h.CampaignPlacementId))).ToArray();
+            var proposals=await db.WeddingPlannerAuditEvents.AsNoTracking()
+                .Where(a=>keys.Contains(a.Id) && a.Action==CreatorCompensationProposal.Action
+                    && a.ActorType=="OPERATOR" && a.Outcome=="PROPOSED")
+                .Select(a=>new {a.Id,a.WorkspaceId,a.Detail}).ToListAsync(ct);
+            var jobs=handoffs.Select(h=>{
+                var proposal=proposals.SingleOrDefault(p=>p.WorkspaceId==h.WorkspaceId &&
+                    p.Id==CreatorCompensationProposal.Id(CreatorCampaignInvitation.InvitationId(h.CampaignPlacementId)));
+                Guid? reference=null;
+                if(proposal?.Detail is string detail && detail.Split(':') is {Length:2} parts
+                    && Guid.TryParseExact(parts[0],"N",out var parsed) && parsed!=Guid.Empty
+                    && CreatorCompensationProposal.ValidDocumentHash(parts[1]))reference=parsed;
+                return new {handoffId=h.Id,placementId=h.CampaignPlacementId,illustrationId=reference,
+                    recordedAt=h.CreatedAt,status=reference.HasValue?"PROPOSAL_REFERENCE_RECORDED":"PROPOSAL_REFERENCE_NOT_FOUND"};
+            }).ToArray();
+            return Ok(new {jobs,release="HELD",delivery="NOT_SENT",dispatchAuthorized=false,paymentAuthorized=false});
+        }
         if(handoffId==Guid.Empty || illustrationId==Guid.Empty)return BadRequest();
         await using var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,ct);
         var manifest=await CreatorFulfillmentManifest.Build(db,handoffId,illustrationId,ct);

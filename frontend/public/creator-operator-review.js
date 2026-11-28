@@ -447,6 +447,38 @@
   const fulfillHandoff=document.getElementById("fulfillment-handoff"),fulfillIllustration=document.getElementById("fulfillment-illustration");
   const fulfillPreview=document.getElementById("fulfillment-preview"),fulfillReview=document.getElementById("fulfillment-review"),fulfillStatus=document.getElementById("fulfillment-status");
   const clearFulfill=()=>fulfillReview?.replaceChildren();
+  const fulfillmentLoad=document.getElementById("fulfillment-load"),fulfillmentJobs=document.getElementById("fulfillment-jobs");
+  fulfillmentLoad?.addEventListener("click",async()=>{
+    if(busy)return;
+    busy=true;fulfillmentLoad.disabled=true;fulfillmentJobs.replaceChildren();clearFulfill();
+    try{
+      await session();
+      const zero="00000000-0000-0000-0000-000000000000";
+      const response=await fetch("/api/creators/operator-review/fulfillment-manifest?queue=true&handoffId="+zero+"&illustrationId="+zero,{credentials:"same-origin",cache:"no-store",redirect:"error"});
+      if(!response.ok)throw Error("Planned fulfillment queue unavailable.");
+      const data=await response.json();
+      if(!Array.isArray(data.jobs)||data.jobs.length>50||data.release!=="HELD"||data.delivery!=="NOT_SENT"||data.dispatchAuthorized!==false||data.paymentAuthorized!==false)throw Error("Invalid fulfillment queue.");
+      for(const job of data.jobs){
+        if(!guid.test(job.handoffId)||!guid.test(job.placementId)||!Number.isFinite(Date.parse(job.recordedAt))
+            ||!["PROPOSAL_REFERENCE_RECORDED","PROPOSAL_REFERENCE_NOT_FOUND"].includes(job.status)
+            ||(job.status==="PROPOSAL_REFERENCE_RECORDED"?!guid.test(job.illustrationId):job.illustrationId!=null))throw Error("Invalid planned handoff.");
+      }
+      for(const job of data.jobs){
+        const item=node("section","");item.append(node("p","Placement "+job.placementId+" · "+new Date(job.recordedAt).toLocaleString()));
+        item.append(node("p",job.illustrationId?"Compensation reference recorded — current eligibility not yet verified.":"Compensation reference not found."));
+        const select=node("button","Select for fulfillment review");select.type="button";select.disabled=!job.illustrationId;
+        select.addEventListener("click",()=>{
+          if(busy||!item.isConnected||!job.illustrationId)return;
+          clearFulfill();fulfillHandoff.value=job.handoffId;fulfillIllustration.value=job.illustrationId;
+          fulfillStatus.textContent="Planned references selected. Prepare the manifest to verify current eligibility.";
+          fulfillPreview.focus();
+        });item.append(select);fulfillmentJobs.append(item);
+      }
+      fulfillStatus.textContent=data.jobs.length+" planned handoff(s); select a recorded compensation reference for current verification.";
+    }catch(e){fulfillmentJobs.replaceChildren();fulfillStatus.textContent=e.message;}
+    finally{busy=false;fulfillmentLoad.disabled=false;}
+  });
+  window.addEventListener("pagehide",()=>fulfillmentJobs?.replaceChildren());
   for(const input of [fulfillHandoff,fulfillIllustration])input?.addEventListener("input",clearFulfill);
   fulfillPreview?.addEventListener("click",async()=>{
     if(busy||!guid.test(fulfillHandoff.value.trim())||!guid.test(fulfillIllustration.value.trim()))return;
