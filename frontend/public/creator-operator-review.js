@@ -478,7 +478,9 @@
   const fulfillHandoff=document.getElementById("fulfillment-handoff"),fulfillIllustration=document.getElementById("fulfillment-illustration");
   const fulfillPreview=document.getElementById("fulfillment-preview"),fulfillReview=document.getElementById("fulfillment-review"),fulfillStatus=document.getElementById("fulfillment-status");
   let stopFulfillmentSync=()=>{};
-  const clearFulfill=()=>{stopFulfillmentSync();stopFulfillmentSync=()=>{};fulfillReview?.replaceChildren();};
+  const privateVideoUrls=new Set();
+  const clearPrivateVideos=()=>{for(const url of privateVideoUrls)URL.revokeObjectURL(url);privateVideoUrls.clear();};
+  const clearFulfill=()=>{stopFulfillmentSync();stopFulfillmentSync=()=>{};clearPrivateVideos();fulfillReview?.replaceChildren();};
   const fulfillmentLoad=document.getElementById("fulfillment-load"),fulfillmentJobs=document.getElementById("fulfillment-jobs");
   fulfillmentLoad?.addEventListener("click",async()=>{
     if(busy)return;
@@ -535,7 +537,21 @@
         const a=document.createElement("a");a.href=url;a.download="alpha-fulfillment-"+handoffId+".json";a.click();URL.revokeObjectURL(url);
         clearFulfill();fulfillStatus.textContent="Preparation manifest export requested. No delivery or dispatch authorized.";
       });
-      card.append(download);
+      const wireDownload=node("button","Export exact Factory manifest wire");wireDownload.type="button";
+      wireDownload.addEventListener("click",async()=>{
+        if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+        busy=true;wireDownload.disabled=true;
+        try{
+          const bytes=new TextEncoder().encode(JSON.stringify(m));
+          const actual=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),v=>v.toString(16).padStart(2,"0")).join("");
+          if(actual!==packet.manifestSha256||!card.isConnected)throw Error("Wire mismatch");
+          const url=URL.createObjectURL(new Blob([bytes],{type:"application/json"}));
+          const link=document.createElement("a");link.href=url;link.download="alpha-factory-wire-"+handoffId+".json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+          fulfillStatus.textContent="Exact verified manifest export requested for private operator custody.";
+        }catch{fulfillStatus.textContent="Exact wire export refused; manifest fingerprint could not be reproduced.";}
+        finally{busy=false;wireDownload.disabled=false;}
+      });
+      card.append(download,wireDownload);
       if(packet.factorySubmissionEnabled){
         const submit=node("button","Submit held job metadata to Factory");submit.type="button";
         const admission=node("button","Check existing Factory admission (read only)");admission.type="button";
@@ -634,7 +650,7 @@
         stopWatch.addEventListener("click",()=>stop("Synchronization stopped."));
         const readStatus=async()=>{
           if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
-          busy=true;refresh.disabled=true;watch.disabled=true;results.replaceChildren();
+          busy=true;refresh.disabled=true;watch.disabled=true;clearPrivateVideos();results.replaceChildren();
           let pending=false;
           try{
             const s=await session();
@@ -672,6 +688,27 @@
                 if(saved.decision==="REVISION_REQUESTED")item.append(node("p","A new preview is required before another review."));
               }else if(packet.factoryVisualReviewEnabled===true&&["PRIVATE_PREVIEW_READY","REVIEW_REQUIRED"].includes(row.status)&&/^[a-f0-9]{64}$/.test(row.previewSha256)){
                 item.append(node("p","Exact preview SHA-256: "+row.previewSha256));
+                const videoFile=document.createElement("input");videoFile.type="file";videoFile.accept="video/mp4,.mp4";
+                const videoLabel=node("label","Open an authorized private Factory MP4 copy locally (optional; no upload)");videoLabel.append(videoFile);
+                const video=document.createElement("video");video.controls=true;video.preload="metadata";video.hidden=true;video.style.maxWidth="100%";
+                const videoStatus=node("p","");videoStatus.setAttribute("role","status");
+                let videoUrl=null,videoEpoch=0;
+                const clearVideo=()=>{video.pause();video.removeAttribute("src");video.load();video.hidden=true;if(videoUrl){URL.revokeObjectURL(videoUrl);privateVideoUrls.delete(videoUrl);videoUrl=null;}};
+                videoFile.addEventListener("change",async()=>{
+                  const version=++videoEpoch,selected=videoFile.files?.[0];clearVideo();
+                  if(!selected)return;
+                  if(busy||!item.isConnected||!current()||selected.size<12||selected.size>128*1024*1024){videoStatus.textContent="Select an authorized nonempty MP4 no larger than 128 MiB.";videoFile.value="";return;}
+                  busy=true;videoFile.disabled=true;videoStatus.textContent="Verifying exact local video…";
+                  try{
+                    const bytes=await selected.arrayBuffer();
+                    const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),v=>v.toString(16).padStart(2,"0")).join("");
+                    if(version!==videoEpoch||!item.isConnected||!current()||digest!==row.previewSha256)throw Error("Preview mismatch");
+                    videoUrl=URL.createObjectURL(new Blob([bytes],{type:"video/mp4"}));privateVideoUrls.add(videoUrl);
+                    video.src=videoUrl;video.hidden=false;videoStatus.textContent="Exact Factory preview fingerprint matched. Private local playback only; human review still required.";
+                  }catch{clearVideo();videoStatus.textContent="Local preview refused or fingerprint mismatch.";}
+                  finally{busy=false;videoFile.disabled=false;videoFile.value="";}
+                });
+                item.append(videoLabel,videoStatus,video);
                 const hash=node("input","");hash.type="text";hash.maxLength=64;hash.placeholder="Review document SHA-256";hash.setAttribute("aria-label","Review document SHA-256");
                 const labels=["I reviewed the exact private video","Brand readability checked","Creator safe area checked","Audio and timing checked","Keep this output held"];
                 const checks=labels.map(label=>{const wrapper=node("label",""),input=node("input","");input.type="checkbox";wrapper.append(input,document.createTextNode(" "+label));item.append(wrapper);return input;});
@@ -723,7 +760,7 @@
                       if(!res.ok)throw Error("Review not confirmed.");
                       const a=await res.json();
                       if(a.placementId!==m.placementId||a.specSha256!==row.specSha256||a.previewSha256!==row.previewSha256||a.decision!==decision||a.reviewRecorded!==true||a.release!=="HELD"||a.delivery!=="NOT_SENT"||a.dispatchAuthorized!==false||a.paymentAuthorized!==false)throw Error("Receipt invalid.");
-                      if(item.isConnected){item.replaceChildren(node("p","Review recorded: "+decision+" · HELD / NOT_SENT."));}
+                      if(item.isConnected){clearVideo();item.replaceChildren(node("p","Review recorded: "+decision+" · HELD / NOT_SENT."));}
                     }catch{if(item.isConnected)status.textContent="Review not confirmed. Reload current preview evidence.";}
                     finally{busy=false;b.disabled=false;}
                   });
