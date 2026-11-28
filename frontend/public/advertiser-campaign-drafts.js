@@ -273,7 +273,11 @@
             RECIPE_RECORDED: "Creative recipe recorded. Current AI consent or preparation checks may still be required.",
             CONSENT_RECORDED: "Current AI consent recorded. No matching image run recorded yet.",
             IMAGE_RUN_RECORDED: "Image production record exists. Completion and quality are not yet confirmed.",
-            IMAGE_RECORDED_PENDING_REVIEW: "Generated image recorded. Check private artwork review for approval and release."
+            IMAGE_RECORDED_PENDING_REVIEW: "Generated image recorded. Staff review is pending.",
+            STAFF_REVISION_RECORDED: "Staff requested a creative revision. The revised artwork has not yet been confirmed.",
+            ADVERTISER_REVIEW_PENDING: "Staff review passed. Open private artwork review to check the current version.",
+            ADVERTISER_REVISION_RECORDED: "Advertiser revision request recorded. A new creative version requires separate preparation and review.",
+            ADVERTISER_APPROVAL_RECORDED: "Advertiser artwork approval recorded. Check private artwork review for the separate release and delivery status."
           };
           if (result.creativeProgress !== undefined && !Object.hasOwn(creativeLabels,result.creativeProgress))
             throw Error("Unexpected creative progress.");
