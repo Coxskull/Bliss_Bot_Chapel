@@ -154,7 +154,21 @@ public sealed class StaffCreativeImageReviewController(BlissDbContext db, BlissA
             }
             var latestReview=candidate is null?null:await db.AcademyProductionReviews.AsNoTracking().Where(x=>x.CandidateId==candidate.Id)
                 .OrderByDescending(x=>x.Version).Select(x=>new{x.Id,x.Version,x.Decision}).FirstOrDefaultAsync(ct);
+            var latestApproval = candidate is null || latestReview is null ? null :
+                await db.CandidateApprovalDecisions.AsNoTracking().Where(x => x.CandidateId == candidate.Id
+                    && x.ScopeKey == "ADVERTISER").OrderByDescending(x => x.Version)
+                    .Select(x => new { x.Id, x.ReviewId, x.Version, x.Decision, x.Rationale, x.CreatedAt, x.ActorSubject })
+                    .FirstOrDefaultAsync(ct);
+            var revisionRequested = latestApproval is not null && latestReview is not null
+                && latestReview.Decision == "PASS" && latestApproval.ReviewId == latestReview.Id
+                && latestApproval.Decision == "WITHHOLD" && latestApproval.ActorSubject != subject
+                && !string.IsNullOrWhiteSpace(latestApproval.Rationale)
+                && latestApproval.Rationale.Length <= 2000;
             return Ok(new { runId = run.Id, candidateId = candidate?.Id, imageSha256 = run.OutputSha256,
+                advertiserRevisionRequest = revisionRequested && latestApproval is not null
+                    ? new { decisionId = latestApproval.Id, reviewId = latestApproval.ReviewId,
+                        version = latestApproval.Version, rationale = latestApproval.Rationale,
+                        recordedAt = latestApproval.CreatedAt } : null,
                 candidateVersion = candidate?.Version, reviewVersion=latestReview?.Version??0,reviewId=latestReview?.Id,decision=latestReview?.Decision,actualUsd = run.ActualUsd,
                 release = "HELD", delivery = "NOT_SENT", dispatchAuthorized = false });
         }
