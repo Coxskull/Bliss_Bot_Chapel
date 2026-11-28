@@ -7,6 +7,7 @@ function key(name, payload) { const signature = JSON.stringify([workspace, name,
 function path() { return `/api/wedding-planner/workspaces/${workspace}/handoff`; }
 function resetIntent() {
   for (const id of ["#plan-consent", "#dimensions", "#format", "#safe-area"]) $(id).checked = false;
+  $("#proposed-start").value = ""; $("#proposed-end").value = "";
 }
 function clearEvidence() {
   evidenceReady = false; permissions = null; options = null; production = null; approvals = [];
@@ -122,6 +123,9 @@ async function refresh() {
     const snapshot = JSON.parse(plan.snapshotJson);
     text(view, "h3", `${plan.status} · ${plan.delivery}`);
     text(view, "p", `Economics quote: ${snapshot.lineAmount} ${snapshot.currencyCode}. Asset: ${snapshot.imageSha256}. Placement: ${plan.campaignPlacementId}.`);
+    if(snapshot.scheduleStatus==="PROPOSED_NOT_RESERVED" && Number.isFinite(Date.parse(snapshot.proposedStartUtc)) && Number.isFinite(Date.parse(snapshot.proposedEndUtc)))
+      text(view,"p","Proposed schedule (UTC): "+new Date(snapshot.proposedStartUtc).toISOString()+" to "+new Date(snapshot.proposedEndUtc).toISOString()+". Not reserved or scheduled for dispatch.");
+    else text(view,"p","No proposed campaign window recorded.");
     const details = document.createElement("details"); view.append(details);
     text(details, "summary", "Approval and Economics evidence");
     text(details, "pre", JSON.stringify(snapshot, null, 2)).style.whiteSpace = "pre-wrap";
@@ -185,6 +189,7 @@ $("#open").addEventListener("click", () => action(async () => { workspace = $("#
 $("#refresh").addEventListener("click", () => action(async () => { if (!workspace) throw Error("Open a workspace first."); await refresh(); tell("Saved approvals and planning history refreshed."); }));
 $("#resume").addEventListener("click", () => action(loadBrief)); $("#candidate").addEventListener("change", () => action(loadApprovals));
 $("#stage").addEventListener("change", () => {resetIntent(); sync();});
+for(const id of ["#proposed-start","#proposed-end"]) $(id).addEventListener("change",()=>{$("#plan-consent").checked=false;});
 $("#campaign").addEventListener("change", resetIntent); $("#match").addEventListener("change", inventoryChoices); $("#slot").addEventListener("change", quoteChoices); $("#quote").addEventListener("change", quoteChoices);
 $("#approval-form").addEventListener("submit", event => { event.preventDefault(); action(async () => {
   if (!evidenceReady) throw Error("Refresh verified workspace evidence first.");
@@ -214,6 +219,12 @@ $("#plan-form").addEventListener("submit", event => { event.preventDefault(); ac
   if (![advertiser, qa, fit].every(x => x?.decision === "APPROVE")) throw new Error("Latest advertiser approval, Alpha QA, and inventory fit must all be approved.");
   const payload = { candidateId: $("#candidate").value, reviewId: latestReview()?.id, advertiserApprovalId: advertiser.id, alphaQaApprovalId: qa.id,
     inventoryFitId: fit.id, blissMatchId: $("#match").value, campaignId: $("#campaign").value, adInventorySlotId: $("#slot").value, quoteLineItemId: $("#quote").value };
+  const start=$("#proposed-start").value,end=$("#proposed-end").value;
+  if(start||end){
+    const s=Date.parse(start+"Z"),e=Date.parse(end+"Z");
+    if(!start||!end||!Number.isFinite(s)||!Number.isFinite(e)||s<Date.now()||e<=s||e-s>90*86400000)throw Error("Enter a future UTC window with both timestamps, no longer than 90 days.");
+    payload.proposedStartUtc=new Date(s).toISOString();payload.proposedEndUtc=new Date(e).toISOString();
+  }
   await api(`${path()}/plans`, { ...payload, idempotencyKey: key("plan", payload) }); await refresh(); $("#plan-consent").checked = false; tell("Creative handoff recorded as PLANNED. Inventory was not reserved and nothing was sent.");
 }); });
 action(async () => {
