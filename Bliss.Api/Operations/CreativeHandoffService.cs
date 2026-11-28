@@ -17,7 +17,9 @@ namespace Bliss.Api.Operations;
 public sealed record DecideCandidateApproval(string Stage, string Decision, Guid? ReviewId, Guid? AdInventorySlotId,
     int ExpectedVersion, string Rationale, bool DimensionsVerified, bool FormatVerified, bool CreatorSafeAreaVerified, string IdempotencyKey);
 public sealed record PlanCreativeHandoff(Guid CandidateId, Guid ReviewId, Guid AdvertiserApprovalId, Guid AlphaQaApprovalId,
-    Guid InventoryFitId, Guid BlissMatchId, Guid CampaignId, Guid AdInventorySlotId, Guid QuoteLineItemId, string IdempotencyKey);
+    Guid InventoryFitId, Guid BlissMatchId, Guid CampaignId, Guid AdInventorySlotId, Guid QuoteLineItemId, string IdempotencyKey,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? ProposedStartUtc = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] DateTimeOffset? ProposedEndUtc = null);
 public sealed record CreateHandoffCampaign(Guid CampaignId, Guid BlissMatchId, string Name);
 
 public sealed class CreativeHandoffService(BlissDbContext db, AcademyProductionService production, CampaignPlacementService placements)
@@ -216,6 +218,11 @@ public sealed class CreativeHandoffService(BlissDbContext db, AcademyProductionS
         var key = Text(request.IdempotencyKey, 128); var fingerprint = Hash(new { request, subject });
         async Task<CreativeCampaignHandoff?> Replay() => await db.CreativeCampaignHandoffs.AsNoTracking().SingleOrDefaultAsync(x => x.WorkspaceId == workspace.WorkspaceId && x.IdempotencyKey == key, ct);
         var previous = await Replay(); if (previous is not null) { Same(previous.RequestSha256, fingerprint); return (previous, true); }
+        if (request.ProposedStartUtc.HasValue != request.ProposedEndUtc.HasValue
+            || (request.ProposedStartUtc is DateTimeOffset start && request.ProposedEndUtc is DateTimeOffset end
+                && (start.Offset != TimeSpan.Zero || end.Offset != TimeSpan.Zero || start < DateTimeOffset.UtcNow
+                    || end <= start || end - start > TimeSpan.FromDays(90))))
+            throw new InvalidOperationException("Provide a future UTC proposed window, with both timestamps and a duration no greater than 90 days.");
         IDbContextTransaction? tx = null;
         try
         {
@@ -258,7 +265,9 @@ public sealed class CreativeHandoffService(BlissDbContext db, AcademyProductionS
                     advertiserApproval = advertiser.Id, advertiserSubject = advertiser.ActorSubject, qaApproval = qa.Id, qaSubject = qa.ActorSubject,
                     inventoryFit = fit.Id, fit.ImageWidth, fit.ImageHeight, slotId = slot.Id, slot.SlotType, slot.ContentItemId,
                     matchId = match.Id, match.RuleVersionId, match.OverallScore, match.Status, campaignId = campaign.Id,
-                    quoteId = quote.Id, quoteVersionId = version.Id, quoteLineId = line.Id, line.Quantity, line.LineAmount, line.CurrencyCode, rateRecommendationId = rate.Id }) };
+                    quoteId = quote.Id, quoteVersionId = version.Id, quoteLineId = line.Id, line.Quantity, line.LineAmount, line.CurrencyCode, rateRecommendationId = rate.Id,
+                    proposedStartUtc = request.ProposedStartUtc, proposedEndUtc = request.ProposedEndUtc,
+                    scheduleStatus = request.ProposedStartUtc.HasValue ? "PROPOSED_NOT_RESERVED" : "NOT_PROPOSED" }) };
             db.Add(row); db.Add(Audit(workspace, "CREATIVE_HANDOFF_PLANNED", label, row.Id));
             await db.SaveChangesAsync(ct); if (tx is not null) await tx.CommitAsync(ct); return (row, false);
         }
