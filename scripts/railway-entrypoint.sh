@@ -6,6 +6,25 @@ if [ "$(id -u)" = 0 ]; then
     exec setpriv --reuid=app --regid=app --init-groups --inh-caps=-all --ambient-caps=-all --no-new-privs /usr/local/bin/bliss-railway-entrypoint "$@"
 fi
 test "$(id -u)" -ne 0
+# Explicit operator command only. Never submit a creative job on app startup.
+if [ "${1:-}" = "--fictional-roundtrip" ]; then
+    if [ "$#" -ne 2 ] \
+        || [ "${Runtime__RestrictedPreview:-}" != "true" ] \
+        || [ "${Authentication__Enabled:-}" != "false" ] \
+        || [ "${Authentication__SupabaseEnabled:-}" != "false" ] \
+        || [ "${Authentication__AdvertiserRegistrationRequested:-}" != "false" ] \
+        || [ "${Authentication__AdvertiserPrivacyRequestsRequested:-}" != "false" ] \
+        || [ "${Authentication__AdvertiserSelfServiceRequested:-}" != "false" ] \
+        || [ "${BLISS_FICTIONAL_ROUNDTRIP:-}" != "YES" ] \
+        || [ "${RAILWAY_PROJECT_ID:-}" != "43062727-bca5-400a-b801-27828161324b" ] \
+        || [ "${RAILWAY_ENVIRONMENT_ID:-}" != "04edd217-035e-4c18-b864-9b7ded76de7d" ] \
+        || [ "${RAILWAY_SERVICE_ID:-}" != "990e3d3e-b09a-4c43-8873-ab10e9bffd02" ]; then
+        echo "BLISS_FICTIONAL_HOSTED_IDENTITY_REFUSED" >&2
+        exit 2
+    fi
+    # The existing client additionally verifies HMAC, output custody and held receipts.
+    exec timeout 500s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --hosted "$2"
+fi
 # A strictly locked, credential-free interface preview may use ephemeral local
 # data-protection keys. This does NOT make OIDC or advertiser registration usable.
 # Production and any preview with an enabled auth/account feature must retain
