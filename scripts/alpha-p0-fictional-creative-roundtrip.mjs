@@ -32,12 +32,19 @@ export async function verifyHostedRetry(sendResult){
  if(JSON.stringify(first)!==JSON.stringify(again))throw Error("Retry returned different evidence");
  return first;
 }
-async function send(env){
- if(env.BLISS_FICTIONAL_ROUNDTRIP!=="YES"||
+export function requireHostedStaging(env){
+ // Enforce the locked staging contract even when Node is invoked directly.
+ const requiredOff=["Authentication__Enabled","Authentication__SupabaseEnabled","Authentication__AdvertiserRegistrationRequested","Authentication__AdvertiserPrivacyRequestsRequested","Authentication__AdvertiserSelfServiceRequested"];
+ const additionalOff=["Runtime__PublicAdvertiserRegistrationOnly","Authentication__CreatorRegistrationRequested","Authentication__CreatorSelfServiceRequested","Authentication__AdvertiserMembershipSelfServiceRequested","Authentication__AskAlphaVisitorEnrollmentRequested"];
+ if(env.Runtime__RestrictedPreview!=="true"||requiredOff.some(k=>env[k]!=="false")||additionalOff.some(k=>env[k]!==undefined&&env[k]!=="false")||
+    env.BLISS_FICTIONAL_ROUNDTRIP!=="YES"||
     env.RAILWAY_PROJECT_ID!=="43062727-bca5-400a-b801-27828161324b"||
     env.RAILWAY_ENVIRONMENT_ID!=="04edd217-035e-4c18-b864-9b7ded76de7d"||
     env.RAILWAY_SERVICE_ID!=="990e3d3e-b09a-4c43-8873-ab10e9bffd02"||
     !hex(env.BLISS_FICTIONAL_ROUNDTRIP_HMAC_KEY))throw Error("Exact Bliss staging configuration required");
+}
+async function send(env){
+ requireHostedStaging(env);
  const timestamp=String(Math.floor(Date.now()/1000));
  const signature=createHmac("sha256",Buffer.from(env.BLISS_FICTIONAL_ROUNDTRIP_HMAC_KEY,"hex")).update("alpha-fictional-roundtrip-v1\n"+timestamp+"\n").update(REQUEST).digest("hex");
  const res=await fetch(URL,{method:"POST",redirect:"error",headers:{"content-type":"application/json","x-alpha-timestamp":timestamp,"x-alpha-signature":signature},body:REQUEST,signal:AbortSignal.timeout(240000)});
