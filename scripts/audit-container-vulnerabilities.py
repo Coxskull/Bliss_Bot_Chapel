@@ -130,7 +130,27 @@ def summarize(report, image_id):
                      "fix_state": fix.get("state", "unknown"),
                      "fix_versions": ";".join(fix.get("versions", [])), "namespace": v.get("namespace", "")})
     rows.sort(key=lambda r: tuple(r[k] for k in ["severity", "finding_id", "package_name", "installed_version"]))
+    # Distinct IDs per reported severity; an ID may appear in multiple severity
+    # buckets when providers disagree. Never discard any package-level match.
+    def distinct_by_severity(items):
+        ids = collections.defaultdict(set)
+        for row in items:
+            ids[row["severity"]].add(row["finding_id"])
+        return {severity: len(values) for severity, values in sorted(ids.items())}
+
+    media_rows = [row for row in rows if row["package_type"] == "deb" and re.match(
+        r"^(ffmpeg(?:-|$)|lib(?:avcodec|avdevice|avfilter|avformat|avutil|postproc|swresample|swscale)(?:[0-9]|-|$))",
+        row["package_name"])]
     return {"raw_match_count": len(matches), "all_package_matches_by_severity": dict(sorted(total.items())),
+            "unique_ids_by_reported_severity": distinct_by_severity(rows),
+            "ffmpeg_family": {
+                "package_match_count": len(media_rows),
+                "unique_vulnerability_ids": len({r["finding_id"] for r in media_rows}),
+                "unique_ids_by_reported_severity": distinct_by_severity(media_rows),
+                "fixed_state_matches": sum(r["fix_state"] == "fixed" for r in media_rows),
+                "matched_package_versions": sorted({r["package_name"] + "=" + r["installed_version"] for r in media_rows}),
+                "coverage": "matched Debian packages only; not an installed-package inventory or exploitability finding",
+            },
             "os_package_matches_by_severity": dict(sorted(os_counts.items())),
             "unique_vulnerability_ids": len({r["finding_id"] for r in rows}),
             "fixed_state_matches": sum(r["fix_state"] == "fixed" for r in rows),

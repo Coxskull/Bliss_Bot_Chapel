@@ -1,0 +1,73 @@
+// Build one local operator dashboard from the existing Creative Desk HTML.
+// node scripts/alpha346-build-commercial-desk.mjs CREATIVE_DESK.html NEW_DASHBOARD.html
+import {readFile,writeFile} from "node:fs/promises";
+import {estimateQuote,customerDraft} from "./alpha346-quote-costing.mjs";
+import {replayOrder} from "./alpha346-order-ledger.mjs";
+import {deliverables} from "./alpha346-manual-proposal-gate.mjs";
+
+function desk(){
+ const $=id=>document.getElementById(id);
+ let quote=null,raw=null;
+ let paymentDraft=null;
+ function clearPaymentDraft(){paymentDraft=null;$("paymentDraft").textContent="";$("copyPaymentDraft").disabled=true;}
+ function save(data,name,type="application/json"){
+  const u=URL.createObjectURL(new Blob([data],{type})),a=document.createElement("a");
+  a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),60000);
+ }
+ function invalidate(){quote=null;raw=null;clearPaymentDraft();for(const id of ["private","proposal","report"])$(id).disabled=true;$("summary").textContent="Calculate a new estimate."; $("orderStatus").textContent="No current order report.";}
+ $("quote").addEventListener("input",invalidate);
+ $("planningPreset").addEventListener("click",()=>{
+  const form=$("quote"),fields=form.elements;
+  // Fill proposed commercial inputs only. Do not invent a customer, market,
+  // policy version, tax clearance or order evidence. Never send or charge.
+  invalidate();
+  const preset={packageKind:"planning",scope:"Five planning deliverables only: discovery brief, channel suitability plan, creative direction, coordination schedule and final planning summary. No finished artwork, creator booking or paid placements.",schedule:"Proposed 3 business days after written acceptance and complete inputs; subject to operator confirmation.",revisions:"1",service:"149.00",tax:"0.00",labor:"60.00",creative:"0.00",thirdParty:"0.00",processor:"5.00",other:"5.00",termsVersion:"PENDING",refundVersion:"PENDING",privacyVersion:"PENDING",supportContact:"PENDING"};
+  for(const [key,value] of Object.entries(preset))fields.namedItem(key).value=value;
+  for(const key of ["quoteId","customer","market"])fields.namedItem(key).value="";
+  $("events").value="";
+  $("summary").textContent="Planning pilot loaded: estimated cost $70; $149 total only if tax is verified as zero. Enter actual quote ID, customer and market; verify tax, policy and support before review. No payment authorization.";
+  fields.namedItem("quoteId").focus();
+ });
+ $("quote").addEventListener("submit",e=>{
+  e.preventDefault();invalidate();
+  try{
+   const f=new FormData(e.currentTarget),val=k=>String(f.get(k)??"");
+   const cents=k=>{const s=val(k);if(!/^\d{1,7}(?:\.\d{1,2})?$/.test(s))throw Error("Invalid USD amount: "+k);return Math.round(Number(s)*100)};
+   raw={packageKind:val("packageKind"),quoteId:val("quoteId"),currency:"USD",customer:val("customer"),market:val("market"),scope:val("scope"),schedule:val("schedule"),revisions:Number(val("revisions")),serviceCents:cents("service"),taxCents:cents("tax"),costs:Object.fromEntries(["labor","creative","thirdParty","processor","other"].map(k=>[k+"Cents",cents(k)])),policies:Object.fromEntries(["termsVersion","refundVersion","privacyVersion","supportContact"].map(k=>[k,val(k)]))};
+   quote=estimateQuote(raw);
+   const usd=c=>"$"+(c/100).toFixed(2);
+   $("summary").textContent="Customer total "+usd(quote.total)+" | Estimated costs "+usd(quote.costTotal)+" | Estimated contribution "+usd(quote.contribution)+" | Margin "+(quote.marginBps/100).toFixed(2)+"%";
+   for(const id of ["private","proposal","report"])$(id).disabled=false;
+  }catch(err){invalidate();$("summary").textContent=err.message;}
+ });
+ $("private").addEventListener("click",()=>{if(quote)save(JSON.stringify({input:raw,estimate:quote},null,2),"PRIVATE-"+quote.quoteId+".json");});
+ $("proposal").addEventListener("click",()=>{if(quote)save(customerDraft(quote),quote.quoteId+"-DRAFT.md","text/markdown");});
+ $("events").addEventListener("change",()=>{clearPaymentDraft();$("orderStatus").textContent="Order evidence changed. Recalculate report.";});
+ $("report").addEventListener("click",async()=>{
+  const current=quote;clearPaymentDraft();if(!current)return;
+  try{const file=$("events").files[0];if(!file||file.size>1000000)throw Error("Select a private events JSON array under 1 MB");
+   const events=JSON.parse(await file.text());if(current!==quote||$("events").files[0]!==file)return;
+   const report=replayOrder(current,events,deliverables);
+   $("orderStatus").textContent=report.status+" | "+report.events+" events | Operator-reported, not independently verified.";
+   save(JSON.stringify(report,null,2),"PRIVATE-"+current.quoteId+"-order.json");
+   if(report.status==="AWAITING_PAYMENT"&&current.packageKind==="starter"&&current.subtotal===14900&&current.total===14900){
+    const url=new URL("https://buy.stripe.com/14A00j8fN6El79Q8Df0Jq00");
+    url.searchParams.set("client_reference_id",current.quoteId);
+    paymentDraft=url.href;
+    $("paymentDraft").textContent="Private payment-link draft — verify actual merchant, product, agreed scope and tax before sharing: "+paymentDraft;
+    $("copyPaymentDraft").disabled=false;
+   }
+  }catch(err){if(current===quote)$("orderStatus").textContent=err.message;}
+ });
+ $("copyPaymentDraft").addEventListener("click",()=>{if(paymentDraft)save(paymentDraft+"\n","PRIVATE-"+quote.quoteId+"-checkout-link-DRAFT.txt","text/plain");});
+}
+const args=process.argv.slice(2);
+if(args.length!==2)throw Error("Usage: node scripts/alpha346-build-commercial-desk.mjs CREATIVE_DESK.html NEW_DASHBOARD.html");
+const creative=await readFile(args[0],"utf8");
+if(creative.length>1000000||!creative.includes("<title>ALPHA Creative Desk</title>"))throw Error("Use the HTML generated by ALPHA Creative Desk.");
+const attr=s=>s.replace(/[&"<>]/g,c=>({"&":"&amp;",'"':"&quot;","<":"&lt;",">":"&gt;"}[c]));
+const field=(name,label,value,type="text")=>'<label>'+label+'<input required name="'+name+'" type="'+type+'" value="'+attr(value)+'"></label>';
+const fields=[["quoteId","Quote ID","ALPHA-001"],["customer","Customer business",""],["market","Market",""],["scope","Scope (asset count, formats, rights, review)",""],["schedule","Proposed schedule",""],["revisions","Included revisions","1","number"],["service","Service USD before tax","149.00"],["tax","Tax USD (verify applicability)","0.00"],["labor","Labor estimate USD","0.00"],["creative","Creative estimate USD","0.00"],["thirdParty","Third-party estimate USD","0.00"],["processor","Processing estimate USD","0.00"],["other","Other estimate USD","0.00"],["termsVersion","Terms version","PENDING"],["refundVersion","Refund policy version","PENDING"],["privacyVersion","Privacy version","PENDING"],["supportContact","Support contact","PENDING"]].map(a=>field(...a)).join("");
+const html=`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src blob: data:; frame-src 'self' about:; connect-src 'none'; form-action 'none'; base-uri 'none'"><title>ALPHA Commercial Desk</title><style>body{font:16px system-ui;background:#f6f5fa;color:#201b32;margin:0}main{max-width:1160px;margin:auto;padding:24px}section{background:white;border:1px solid #ddd9e8;border-radius:12px;padding:20px;margin:18px 0}form{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}label{display:grid;gap:5px}input,button{font:inherit;padding:9px;border:1px solid #aaa;border-radius:6px;min-width:0}button{background:#292553;color:white;cursor:pointer;margin:5px}button:disabled{opacity:.45}iframe{width:100%;height:950px;border:0}p{line-height:1.5}</style></head><body><main><h1>ALPHA Commercial Desk</h1><p>Private offline operator workflow: draft creative production, quote preparation and order evidence tracking. No payments, messages or publication are executed. Do not share private exports.</p><section><h2>1. Creative production</h2><iframe title="ALPHA Creative Desk" sandbox="allow-scripts allow-downloads allow-forms" srcdoc="${attr(creative)}"></iframe></section><section><h2>2. Quotation and estimated costs</h2><form id="quote"><label>Service package<select name="packageKind"><option value="planning">Campaign Planning &amp; Coordination</option><option value="starter">Digital Advertising Starter Package — $149</option></select></label>${fields}<button id="planningPreset" type="button">Load planning pilot estimates</button><button type="submit">Calculate draft quote</button></form><p role="status" id="summary">Calculate an estimate.</p><button id="private" disabled>Download private estimate</button><button id="proposal" disabled>Download customer draft</button></section><section><h2>3. Fulfillment evidence</h2><p>Import the private order event JSON array for the current quotation. Evidence is operator-reported, not a verified payment or accounting record.</p><label>Order events JSON<input id="events" type="file" accept=".json,application/json"></label><button id="report" disabled>Validate and export private order report</button><p id="orderStatus" role="status">No current order report.</p><p id="paymentDraft" role="status" style="overflow-wrap:anywhere"></p><button id="copyPaymentDraft" disabled>Download private payment-link draft</button><p>For a reviewed Starter Package $149 total order awaiting payment only. Planning quotes cannot generate this Stripe link. The link contains the non-secret quote reference; this is not verified payment or permission to send a link.</p></section></main><script>const deliverables=${JSON.stringify(deliverables)};\n${estimateQuote.toString()}\n${customerDraft.toString()}\n${replayOrder.toString()}\n(${desk.toString()})();</script></body></html>`;
+await writeFile(args[1],html,{flag:"wx",mode:0o600});
+console.log("Offline commercial desk built.");

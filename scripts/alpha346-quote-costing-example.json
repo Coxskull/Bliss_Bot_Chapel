@@ -1,0 +1,24 @@
+{
+  "quoteId": "ALPHA-SAMPLE-001",
+  "currency": "USD",
+  "customer": "Example business (fictional)",
+  "market": "Example market",
+  "scope": "Five planning deliverables, no finished advertising media",
+  "schedule": "Proposed delivery timing to be confirmed",
+  "revisions": 1,
+  "serviceCents": 14900,
+  "taxCents": 0,
+  "costs": {
+    "laborCents": 6000,
+    "creativeCents": 0,
+    "thirdPartyCents": 0,
+    "processorCents": 500,
+    "otherCents": 500
+  },
+  "policies": {
+    "termsVersion": "PENDING",
+    "refundVersion": "PENDING",
+    "privacyVersion": "PENDING",
+    "supportContact": "PENDING"
+  }
+}

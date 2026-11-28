@@ -383,7 +383,7 @@ public sealed class CreativeAcademyApiTests
         Assert.StartsWith("/operations/generated/", first.GetProperty("imagePath").GetString());
         Assert.Equal(1, first.GetProperty("modelCalls").GetInt32());
         Assert.Equal("UNNAMED", first.GetProperty("provider").GetString());
-        Assert.Equal("gpt-image-1", first.GetProperty("model").GetString());
+        Assert.Equal("gpt-image-2.5-flare", first.GetProperty("model").GetString());
         Assert.Equal("UNRECORDED", first.GetProperty("costStatus").GetString());
         Assert.False(first.TryGetProperty("cost", out _));
         Assert.False(first.GetProperty("campaignReady").GetBoolean());
@@ -397,6 +397,45 @@ public sealed class CreativeAcademyApiTests
         Assert.Equal(1, board.GetProperty("generations").GetArrayLength());
         Assert.Equal(HttpStatusCode.OK, imageResponse.StatusCode);
         Assert.Equal("image/png", imageResponse.Content.Headers.ContentType!.MediaType);
+    }
+
+    [Fact]
+    public async Task Parallel_identical_generation_requests_never_double_charge_one_replica()
+    {
+        await using var factory = new AdCreatorApiFactory();
+        factory.Generator.Delay = TimeSpan.FromMilliseconds(250);
+        var client = factory.CreateClient();
+        var request = new
+        {
+            requestKey = "ruta-libre-concurrent-paid-generation",
+            family = "motorcycle",
+            brandName = "Ruta Libre Motos",
+            palette = "Black and red",
+            cta = "Visita el showroom",
+            market = "Panama",
+            language = "Spanish",
+            marketResearchComplete = true
+        };
+
+        var responses = await Task.WhenAll(
+            Enumerable.Range(0, 3).Select(_ =>
+                client.PostAsJsonAsync("/api/operations/academy/generate", request)));
+        var results = await Task.WhenAll(
+            responses.Select(response => response.Content.ReadFromJsonAsync<JsonElement>()));
+
+        Assert.All(responses, response => Assert.Equal(HttpStatusCode.OK, response.StatusCode));
+        Assert.Equal(1, factory.Generator.Calls);
+        Assert.Single(results.Select(result => result.GetProperty("id").GetGuid()).Distinct());
+        Assert.Equal(1, results.Count(result => !result.GetProperty("duplicate").GetBoolean()));
+        Assert.Equal(2, results.Count(result => result.GetProperty("duplicate").GetBoolean()));
+        Assert.All(results, result =>
+        {
+            Assert.Equal("GENERATED_PENDING_REVIEW", result.GetProperty("status").GetString());
+            Assert.False(result.GetProperty("campaignReady").GetBoolean());
+            Assert.Equal("NOT_SENT", result.GetProperty("delivery").GetString());
+        });
+        var board = await client.GetFromJsonAsync<JsonElement>("/api/operations/academy");
+        Assert.Equal(1, board.GetProperty("generations").GetArrayLength());
     }
 
     [Fact]
@@ -610,6 +649,7 @@ public sealed class AdCreatorApiFactory : WebApplicationFactory<Program>
         {
             var toRemove = services.Where(d =>
                     d.ServiceType == typeof(DbContextOptions<BlissDbContext>)
+                    || d.ServiceType == typeof(Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptionsConfiguration<BlissDbContext>)
                     || d.ServiceType == typeof(BlissDbContext))
                 .ToList();
             foreach (var descriptor in toRemove)
@@ -639,20 +679,24 @@ public sealed class FakeCreativeImageGenerator : ICreativeImageGenerator
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
 
     public bool Configured => true;
-    public int Calls { get; private set; }
+    private int _calls;
+    public int Calls => Volatile.Read(ref _calls);
+    public TimeSpan Delay { get; set; }
 
-    public Task<CreativeImageResult> GenerateAsync(
+    public async Task<CreativeImageResult> GenerateAsync(
         CreativeImageRequest request,
         CancellationToken cancellationToken)
     {
-        Calls++;
+        Interlocked.Increment(ref _calls);
+        if (Delay > TimeSpan.Zero)
+            await Task.Delay(Delay, cancellationToken);
         Assert.Contains("Ruta Libre Motos", request.Prompt);
         Assert.Contains("brava-moto-reference", request.Prompt);
         Assert.Equal(1536, request.Width);
         Assert.Equal(864, request.Height);
-        return Task.FromResult(new CreativeImageResult(
+        return new CreativeImageResult(
             OnePixelPng,
             "image/png",
-            "provider-request-1"));
+            "provider-request-1");
     }
 }

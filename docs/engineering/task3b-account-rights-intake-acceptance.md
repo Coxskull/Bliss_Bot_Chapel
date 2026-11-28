@@ -56,3 +56,12 @@ Request types are a fixed allowlist; no free text, password, email, IP or identi
 - The source unit/integration tests are intentionally isolated, synthetic and disposable; they do not replace the required deployed OIDC, HTTPS ingress, case workflow, backup and rollback receipt.
 
 **CI note:** The repository's existing .NET and PostgreSQL workflows run for pull requests to `main`. PR #424 is temporarily pointed to `main` only for exact-head CI after the source repairs; return it to its stacked parent PR #349 for engineering review when CI is accepted. No merge or deploy is authorized.
+
+
+## November 20 — Human operator finalization candidate (not deployed)
+
+The existing durable account-rights intake and human-ACK lane lacked a controlled final disposition. This branch adds nullable human disposition metadata to the existing private advertiser privacy case table, using a non-destructive EF Core migration. The migration was NOT run on production.
+
+The operator-only POST /api/advertisers/privacy-requests/{caseId}/finalize requires the same issuer-bound role and explicitly allowlisted privacy-operator subject used by the existing queue, a previously acknowledged VERIFYING case, and a 64-character SHA-256 evidence-manifest digest. The private manifest itself remains in owner custody, outside database rows, responses, logs and GitHub. A verified human must attest to identity checking, a customer notice, applicable legal-basis review and the actions actually performed before declaring RESOLVED; a MARKETING_WITHDRAWAL cannot be declined and additionally requires actual send-side marketing suppression attestation. The endpoint itself does not revoke sessions, delete data, alter consent, stop messages, send mail, or perform any processor action. An operator's status is an attestation, not an independently verified completed legal action.
+
+The applicant sees only their own case status through the existing GET endpoint. The same feature flag remains OFF, and the original pending applicant boundary still denies all staff routes. Do not call this a live privacy case service until an authorized operator, the correctly recovered database, a real verified OIDC session, and effective published account notices have passed hosted acceptance. This addition does not activate public registration or Factory STOP.

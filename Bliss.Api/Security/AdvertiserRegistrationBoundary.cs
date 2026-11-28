@@ -16,7 +16,24 @@ public static class AdvertiserRegistrationBoundary
         if (HttpMethods.IsGet(context.Request.Method)
             && (path.Equals("/api/auth/session", StringComparison.OrdinalIgnoreCase)
                 || path.Equals("/api/auth/login", StringComparison.OrdinalIgnoreCase)
-                || path.Equals("/api/auth/supabase-config", StringComparison.OrdinalIgnoreCase)))
+                || path.Equals("/api/auth/supabase-config", StringComparison.OrdinalIgnoreCase)
+                || path.Equals("/api/advertisers/registration-status", StringComparison.OrdinalIgnoreCase)))
+            return false;
+        // The profile controller still requires a live ACTIVE membership and
+        // exact original receipt on every request. No other API is opened.
+        if (HttpMethods.IsGet(context.Request.Method)
+            && path.Equals("/api/advertisers/me", StringComparison.OrdinalIgnoreCase)
+            && BlissAuthorization.CanResolveAdvertiserMembershipProfile(context.User, options))
+            return false;
+        if (options.AdvertiserCampaignDraftsRequested
+            && (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsPost(context.Request.Method))
+            && path.Equals("/api/advertisers/my-campaign-drafts", StringComparison.OrdinalIgnoreCase)
+            && BlissAuthorization.CanResolveAdvertiserMembershipProfile(context.User, options))
+            return false;
+        if (options.AdvertiserCampaignDraftsRequested && options.AdvertiserCreativeHandoffPreviewRequested
+            && HttpMethods.IsPost(context.Request.Method)
+            && path.Equals("/api/advertisers/my-campaign-drafts/creative-handoff-preview", StringComparison.OrdinalIgnoreCase)
+            && BlissAuthorization.CanResolveAdvertiserMembershipProfile(context.User, options))
             return false;
         // Applicant privacy request intake and own receipts are explicitly scoped.
         // This does not grant access to other advertiser APIs or any workspace.

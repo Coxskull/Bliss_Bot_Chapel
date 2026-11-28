@@ -77,6 +77,18 @@
       <tbody id="case-rows"></tbody>
     </table>
     <div class="toolbar"><button type="button" id="previous" class="secondary" disabled>Previous</button><button type="button" id="next" class="secondary" disabled>Next</button></div>
+    <section class="panel" aria-labelledby="intake-review-heading">
+      <h3 id="intake-review-heading">Advertiser and creator inquiry review</h3>
+      <p>Read-only queue. A ready inquiry is not a verified customer, invitation, campaign or payment approval. Identity and rights require separate human review.</p>
+      <button type="button" id="intake-review-refresh">Load inquiry review queue</button>
+      <p class="small" id="intake-review-result" role="status" aria-live="polite">Not loaded. Staff MFA and the separate reviewer grant are required.</p>
+      <div id="intake-review-details" hidden>
+        <table>
+          <thead><tr><th>Type</th><th>Received (PH time)</th><th>Receipt reference</th><th>CRM delivery</th><th>Review status</th></tr></thead>
+          <tbody id="intake-review-rows"></tbody>
+        </table>
+      </div>
+    </section>
     <section class="panel" aria-labelledby="crm-consent-heading">
       <h3 id="crm-consent-heading">Local consent and follow-up readiness</h3>
       <p>Review aggregate consent readiness for existing and future ALPHA advertiser/creator inquiries. No customer details, contact actions, approvals, or HighLevel writes.</p>

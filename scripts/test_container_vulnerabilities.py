@@ -49,6 +49,27 @@ class VulnerabilityEvidenceTests(unittest.TestCase):
         self.assertEqual("not-fixed", rows[0]["fix_state"])
         self.assertEqual("2.0", rows[1]["fix_versions"])
 
+    def test_distinct_ids_and_ffmpeg_family_preserve_all_matches_and_disagreements(self):
+        report = self.report()
+        media = copy.deepcopy(report["matches"][0])
+        media["artifact"]["name"] = "libavcodec60"
+        report["matches"].append(media)
+        duplicate = copy.deepcopy(media)
+        duplicate["artifact"]["name"] = "ffmpeg"
+        report["matches"].append(duplicate)
+        disagreement = copy.deepcopy(media)
+        disagreement["vulnerability"]["severity"] = "Medium"
+        report["matches"].append(disagreement)
+        summary, rows = gate["summarize"](report, IMAGE)
+        self.assertEqual(5, len(rows))
+        self.assertEqual(2, summary["unique_vulnerability_ids"])
+        self.assertEqual({"High": 1, "Medium": 1, "Unknown": 1}, summary["unique_ids_by_reported_severity"])
+        self.assertEqual(3, summary["ffmpeg_family"]["package_match_count"])
+        self.assertEqual(1, summary["ffmpeg_family"]["unique_vulnerability_ids"])
+        self.assertEqual({"High": 1, "Medium": 1}, summary["ffmpeg_family"]["unique_ids_by_reported_severity"])
+        self.assertEqual(["ffmpeg=1.0", "libavcodec60=1.0"], summary["ffmpeg_family"]["matched_package_versions"])
+        self.assertFalse(summary["vulnerability_acceptance"])
+
     def test_wrong_image_scanner_missing_os_or_suppressed_results_are_not_clean(self):
         for change in [lambda r: r["source"]["target"].update(imageID="sha256:other"),
                        lambda r: r["descriptor"].update(version="other"), lambda r: r.update(matches=None),

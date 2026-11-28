@@ -1,4 +1,7 @@
 using System.Net;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using Microsoft.AspNetCore.DataProtection;
 using System.Net.Http.Json;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -184,6 +187,60 @@ public sealed class LoopbackIngressTests
             await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"http://{address}:{backendPort}/protected"));
         }
         finally { await proxy.StopAsync(); await backend.StopAsync(); }
+    }
+
+    [Fact]
+    public async Task Proxy_preserves_certificate_encrypted_persistent_keys_across_fresh_app_instances()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "bliss-proxy-key-test-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            // Entirely local, disposable test material; no real keys or credentials.
+            const string fixturePassword = "local-disposable-certificate-fixture";
+            using var rsa = RSA.Create(2048);
+            var request = new CertificateRequest(
+                "CN=Bliss-Local-Proxy-Fixture", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            using var certificate = request.CreateSelfSigned(
+                DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddDays(1));
+            var certificatePath = Path.Combine(directory, "fixture.pfx");
+            File.WriteAllBytes(certificatePath, certificate.Export(X509ContentType.Pfx, fixturePassword));
+
+            var (publicPort, backendPort) = FreePorts();
+            var runtime = Policy(publicPort, backendPort);
+            runtime.DataProtectionKeysPath = Path.Combine(directory, "keys");
+            runtime.DataProtectionCertificatePath = certificatePath;
+            runtime.DataProtectionCertificatePassword = fixturePassword;
+            var config = Deployment(publicPort);
+            string protectedFixture;
+            await using (var firstProxy = LoopbackIngress.BuildProxy(runtime, config))
+            {
+                protectedFixture = firstProxy.Services.GetRequiredService<IDataProtectionProvider>()
+                    .CreateProtector("stable-proxy-fixture").Protect("opaque-fixture-data");
+            }
+
+            var keyFiles = Directory.GetFiles(runtime.DataProtectionKeysPath, "*.xml");
+            Assert.NotEmpty(keyFiles);
+            foreach (var file in keyFiles)
+            {
+                var xml = File.ReadAllText(file);
+                Assert.Contains("encryptedSecret", xml, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("opaque-fixture-data", xml);
+            }
+
+            // Recreating the public proxy MUST NOT make previously minted
+            // protected data unreadable after a Railway container restart.
+            await using (var secondProxy = LoopbackIngress.BuildProxy(runtime, config))
+            {
+                var restored = secondProxy.Services.GetRequiredService<IDataProtectionProvider>()
+                    .CreateProtector("stable-proxy-fixture").Unprotect(protectedFixture);
+                Assert.Equal("opaque-fixture-data", restored);
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     private static (int, int) FreePorts()

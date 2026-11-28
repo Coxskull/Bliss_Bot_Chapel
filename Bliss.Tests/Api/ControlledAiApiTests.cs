@@ -51,7 +51,7 @@ public sealed class ControlledAiApiTests : IClassFixture<WeddingPlannerOidcFacto
             services.RemoveAll<BlissRuntimeOptions>(); services.AddSingleton(runtime);
             services.RemoveAll<IControlledAiProvider>(); services.AddSingleton<IControlledAiProvider>(provider);
             foreach (var descriptor in services.Where(x => x.ImplementationType == typeof(ControlledAiWorker)).ToList()) services.Remove(descriptor);
-            services.RemoveAll<BlissDbContext>(); services.RemoveAll<DbContextOptions<BlissDbContext>>();
+            services.RemoveAll<BlissDbContext>(); services.RemoveAll<DbContextOptions<BlissDbContext>>(); services.RemoveAll<Microsoft.EntityFrameworkCore.Infrastructure.IDbContextOptionsConfiguration<BlissDbContext>>();
             services.AddDbContext<BlissDbContext>(options => options.UseInMemoryDatabase(dbName));
         }));
         var scenario = new Scenario(app) { Provider = provider }; var advertiserId = Guid.NewGuid();

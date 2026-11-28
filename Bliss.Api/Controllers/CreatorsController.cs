@@ -41,8 +41,24 @@ public sealed class CreatorsController : ControllerBase
                 c.Id, c.Name, c.CountryCode, c.PrimaryLanguage,
                 c.AuthorityStatus))
             .SingleOrDefaultAsync(cancellationToken);
-        return record is null ? NotFound() : Ok(record);
+        if (record is null) return NotFound();
+        if (_auth.CreatorInventoryReadbackRequested)
+            record = record with { Inventory = await ReadOwnInventory(_db, creatorId, cancellationToken) };
+        return Ok(record);
     }
+
+    // The caller must already resolve the verified creator identity from the
+    // server session. This query never accepts a browser creator ID.
+    internal static Task<CreatorInventorySlotSummary[]> ReadOwnInventory(
+        BlissDbContext db, Guid creatorId, CancellationToken ct) =>
+        db.AdInventorySlots.AsNoTracking()
+            .Where(s => s.ContentItem.CreatorId == creatorId &&
+                s.ContentItem.Creator.AuthorityStatus == "VERIFIED")
+            .OrderBy(s => s.ContentItemId).ThenBy(s => s.Id).Take(50)
+            .Select(s => new CreatorInventorySlotSummary(s.Id, s.ContentItemId,
+                s.ContentItem.Title, s.ContentItem.ContentType, s.SlotType,
+                s.StartSecond, s.DurationSeconds, s.IsAvailable))
+            .ToArrayAsync(ct);
 
     // Task #4: creator login authorizes own verified profile only, never
     // the shared creator directory, match inventory or platform details.
@@ -63,6 +79,11 @@ public sealed class CreatorsController : ControllerBase
 
         var items = await _db.Creators
             .AsNoTracking()
+            // Keep creator-account registrations out of shared directories
+            // until review. Existing ingestion records retain their current
+            // catalog behavior until a separate source-verification change.
+            .Where(x => x.AuthorityStatus == "VERIFIED"
+                || !_db.CreatorAccountMemberships.Any(m => m.CreatorId == x.Id))
             .OrderBy(x => x.Name)
             .Select(x => new CreatorListDto(
                 x.Id,
@@ -88,7 +109,9 @@ public sealed class CreatorsController : ControllerBase
             .Include(x => x.ContentItems)
                 .ThenInclude(x => x.AdInventorySlots)
             .Include(x => x.BlissMatches)
-            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == id
+                && (x.AuthorityStatus == "VERIFIED"
+                    || !_db.CreatorAccountMemberships.Any(m => m.CreatorId == x.Id)), cancellationToken);
 
         if (creator is null)
         {
@@ -145,7 +168,24 @@ public sealed class CreatorsController : ControllerBase
 }
 
 // Deliberately minimal read-only response; never include prospect emails,
-// CRM contact IDs, intake receipts, inventory or marketplace credentials.
+// CRM contact IDs, intake receipts or marketplace credentials. Inventory is optional,
+// scoped to the verified creator and independently gated.
 public sealed record CreatorSelfSummaryDto(
     Guid CreatorId, string Name, string? CountryCode,
-    string? PrimaryLanguage, string AuthorityStatus);
+    string? PrimaryLanguage, string AuthorityStatus,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    CreatorInventorySlotSummary[]? Inventory = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    bool CanPauseInventory = false,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    CreatorInventoryContentSummary[]? InventoryDraftContent = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    bool CanViewCampaignInvitations = false,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    bool CanViewAllocationHistory = false);
+
+public sealed record CreatorInventoryContentSummary(Guid ContentItemId, string Title, string ContentType);
+
+public sealed record CreatorInventorySlotSummary(Guid SlotId, Guid ContentItemId,
+    string ContentTitle, string ContentType, string SlotType,
+    int? StartSecond, int? DurationSeconds, bool IsAvailable);

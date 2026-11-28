@@ -1,0 +1,28 @@
+name: Creative Desk offline pack
+on:
+  pull_request:
+    paths:
+      - 'scripts/alpha-build-creative-desk.mjs'
+      - 'scripts/alpha-manual-creative-export.mjs'
+      - 'scripts/alpha-creative-desk-manifest.mjs'
+      - 'scripts/test-alpha-creative-desk-manifest.mjs'
+      - '.github/workflows/creative-desk-offline-pack.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/alpha-manual-creative-export.mjs --self-test
+      - run: node scripts/test-alpha-creative-desk-manifest.mjs
+      - run: node scripts/alpha-build-creative-desk.mjs "$RUNNER_TEMP/alpha-creative-desk.html"
+      - run: |
+          node --input-type=module -e 'import fs from "node:fs"; const html=fs.readFileSync(process.argv[1],"utf8"); const script=html.split("<script>")[1].split("</script>")[0]; new Function(script); if(!html.includes("Download Factory manifest")) throw Error("missing manifest control");' "$RUNNER_TEMP/alpha-creative-desk.html"

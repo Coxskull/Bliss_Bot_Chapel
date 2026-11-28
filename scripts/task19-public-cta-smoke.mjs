@@ -58,3 +58,13 @@ assert.ok(!existsSync(resolve(root, ".vercel-portal/creator-dashboard.html")), "
 assert.ok(!existsSync(resolve(root, ".vercel-portal/advertiser-dashboard.html")), "protected advertiser dashboard never copied");
 assert.ok(!hero.includes("https://"), "public inquiry hero must use same-origin URLs");
 console.log("TASK19_PUBLIC_CTA_STATIC_BUILD_PASS — both forms, consent, mobile, accessibility and restricted routing validated");
+
+const creatorLogin = read(".vercel-portal/creator-login.html");
+const applicationOrigin = new URL(process.env.BLISS_APPLICATION_ORIGIN);
+for (const route of ["/api/auth/login?returnUrl=%2Fcreator-dashboard.html", "/creator-registration.html"]) {
+  assert.ok(creatorLogin.includes('href="' + new URL(route, applicationOrigin).href + '"'), "creator account entry stays on application origin: " + route);
+}
+assert.ok(!creatorLogin.includes('href="/creator-signin-preview.html"') && !creatorLogin.includes('/creator-signin-preview.html'), "obsolete preview is not the creator login entry");
+assert.ok(!existsSync(resolve(root, ".vercel-portal/creator-registration.html")), "creator registration and its credentials remain on application origin");
+assert.ok(creatorLogin.includes("manual review") && creatorLogin.includes("payout permissions"), "creator access and commercial boundaries disclosed");
+console.log("TASK4_CREATOR_PUBLIC_ENTRY_BUILD_PASS");

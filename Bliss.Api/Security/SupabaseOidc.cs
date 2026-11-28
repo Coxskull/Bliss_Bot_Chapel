@@ -13,6 +13,17 @@ namespace Bliss.Api.Security;
 // token carries server-owned app_metadata. UserInfo/user_metadata never grant roles.
 public static class SupabaseOidc
 {
+    // The route choice is server-selected then integrity-protected by OIDC
+    // state. Never take it from editable user_metadata or a role claim.
+    public const string RegistrationLaneProperty = "bliss.pending.registration.lane";
+    public const string CreatorLane = "creator";
+    public const string AdvertiserLane = "advertiser";
+
+    public static string ResolvePublicRegistrationLane(string safeLocalReturnUrl) =>
+        (string.Equals(safeLocalReturnUrl, "/creator-registration.html", StringComparison.Ordinal)
+         || string.Equals(safeLocalReturnUrl, "/creator-dashboard.html", StringComparison.Ordinal))
+            ? CreatorLane : AdvertiserLane;
+
     public static void Configure(OpenIdConnectOptions options, BlissAuthenticationOptions auth)
     {
         options.GetClaimsFromUserInfoEndpoint = false;
@@ -64,7 +75,10 @@ public static class SupabaseOidc
                         RequireExpirationTime = true, ClockSkew = TimeSpan.FromSeconds(30)
                         , ValidAlgorithms = [SecurityAlgorithms.EcdsaSha256, SecurityAlgorithms.RsaSha256]
                     }, out _);
-                ApplyVerifiedAccessToken((ClaimsIdentity)context.Principal!.Identity!, access, auth);
+                string? requestedLane = null;
+                if (context.Properties?.Items is { } protectedState)
+                    protectedState.TryGetValue(RegistrationLaneProperty, out requestedLane);
+                ApplyVerifiedAccessToken((ClaimsIdentity)context.Principal!.Identity!, access, auth, requestedLane);
                 await existing(context);
             }
             catch (Exception error) when (error is SecurityTokenException or JsonException or InvalidOperationException)
@@ -77,7 +91,8 @@ public static class SupabaseOidc
 
     // Caller must first cryptographically verify both tokens. Kept separate so
     // identity binding and role isolation can be tested without a hosted provider.
-    public static void ApplyVerifiedAccessToken(ClaimsIdentity identity, ClaimsPrincipal access, BlissAuthenticationOptions auth)
+    public static void ApplyVerifiedAccessToken(ClaimsIdentity identity, ClaimsPrincipal access, BlissAuthenticationOptions auth,
+        string? requestedLane = null)
     {
         var subject = identity.FindFirst("sub")?.Value;
         if (string.IsNullOrEmpty(subject) || subject != access.FindFirst("sub")?.Value
@@ -98,20 +113,42 @@ public static class SupabaseOidc
             && !auth.ApprovedTestSubjects.Contains(subject, StringComparer.Ordinal)
             && !auth.ApprovedCreatorSubjects.Contains(subject, StringComparer.Ordinal)
             && !auth.ApprovedAdvertiserSubjects.Contains(subject, StringComparer.Ordinal);
+        var pendingCreatorRegistration = auth.Enabled && auth.SupabaseEnabled
+            && auth.CreatorRegistrationRequested
+            && !auth.ApprovedTestSubjects.Contains(subject, StringComparer.Ordinal)
+            && !auth.ApprovedCreatorSubjects.Contains(subject, StringComparer.Ordinal)
+            && !auth.ApprovedAdvertiserSubjects.Contains(subject, StringComparer.Ordinal);
+        // An OIDC correlation-state selector cannot grant a role or tenant ID,
+        // and a pending cookie can carry exactly ONE enrollment marker.
+        // Single-lane offline identity checks remain backward-compatible.
+        if (!approvedTest && !approvedCreator && !approvedAdvertiser && requestedLane is not null)
+        {
+            if (requestedLane == CreatorLane)
+                pendingAdvertiserRegistration = false;
+            else if (requestedLane == AdvertiserLane)
+                pendingCreatorRegistration = false;
+            else
+                throw new SecurityTokenValidationException("Unknown registration lane.");
+        }
+        if (pendingAdvertiserRegistration && pendingCreatorRegistration)
+            throw new SecurityTokenValidationException("Ambiguous applicant registration scope.");
+        var pendingRegistration = pendingAdvertiserRegistration || pendingCreatorRegistration;
 
         // The creator lane is deliberately disjoint from privileged test/staff
         // subjects. A missing allowlist, disabled flag, or accidental overlap
         // cannot silently turn a CRM lead into an authenticated account.
         if ((approvedTest ? 1 : 0) + (approvedCreator ? 1 : 0) + (approvedAdvertiser ? 1 : 0)
-            + (pendingAdvertiserRegistration ? 1 : 0) != 1)
+            + (pendingRegistration ? 1 : 0) != 1)
             throw new SecurityTokenValidationException("Unapproved identity.");
 
         foreach (var claim in identity.Claims.Where(c => c.Type == auth.RoleClaimType
             || c.Type == ClaimTypes.Role || c.Type == auth.AdvertiserIdClaimType
+            || (pendingRegistration && c.Type == auth.CreatorIdClaimType)
             || c.Type == BlissAuthenticationOptions.AdvertiserSelfServiceMarkerClaimType
             || c.Type == BlissAuthenticationOptions.AdvertiserRegistrationPendingMarkerClaimType
+            || c.Type == BlissAuthenticationOptions.CreatorRegistrationPendingMarkerClaimType
             || c.Type == auth.ReviewerWorkspaceClaimType
-            || (pendingAdvertiserRegistration && (c.Type == "role" || c.Type == "roles"))
+            || (pendingRegistration && (c.Type == "role" || c.Type == "roles"))
             || ((approvedCreator || approvedAdvertiser) && (c.Type == auth.CreatorIdClaimType
                 || c.Type == "role" || c.Type == "roles"))).ToArray())
             identity.RemoveClaim(claim);
@@ -203,15 +240,15 @@ public static class SupabaseOidc
             return;
         }
 
-        if (pendingAdvertiserRegistration)
+        if (pendingRegistration)
         {
-            // Newly authenticated users receive a registration-only session.
-            // They must have a verified email and no issuer-stamped role or
-            // tenant scope; the request body and user_metadata cannot grant it.
+            // Newly authenticated applicants receive only the requested
+            // registration scopes. They must have a verified email and no
+            // issuer-stamped role or tenant scope; user_metadata cannot grant it.
             var pendingEmail = identity.FindAll("email_verified").ToArray();
             if (metadataClaim is null || pendingEmail.Length != 1
                 || !string.Equals(pendingEmail[0].Value, "true", StringComparison.OrdinalIgnoreCase))
-                throw new SecurityTokenValidationException("Advertiser registration identity is incomplete.");
+                throw new SecurityTokenValidationException("Registration identity is incomplete.");
 
             using var pendingDocument = JsonDocument.Parse(metadataClaim.Value);
             var pendingMetadata = pendingDocument.RootElement;
@@ -223,11 +260,14 @@ public static class SupabaseOidc
                     || property.Name.Equals("bliss_creator_id", StringComparison.OrdinalIgnoreCase)
                     || property.Name.Equals("bliss_creator_verified", StringComparison.OrdinalIgnoreCase)
                     || property.Name.Equals("bliss_review_workspace_ids", StringComparison.OrdinalIgnoreCase)))
-                throw new SecurityTokenValidationException("Advertiser registration identity is incomplete.");
+                throw new SecurityTokenValidationException("Registration identity is incomplete.");
 
-            identity.AddClaim(new Claim(
-                BlissAuthenticationOptions.AdvertiserRegistrationPendingMarkerClaimType,
-                "true", ClaimValueTypes.Boolean, auth.Authority));
+            if (pendingAdvertiserRegistration)
+                identity.AddClaim(new Claim(BlissAuthenticationOptions.AdvertiserRegistrationPendingMarkerClaimType,
+                    "true", ClaimValueTypes.Boolean, auth.Authority));
+            if (pendingCreatorRegistration)
+                identity.AddClaim(new Claim(BlissAuthenticationOptions.CreatorRegistrationPendingMarkerClaimType,
+                    "true", ClaimValueTypes.Boolean, auth.Authority));
             return;
         }
 

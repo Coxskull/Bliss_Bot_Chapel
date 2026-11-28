@@ -31,7 +31,7 @@ public sealed record PodcastAdvertisingLayout(
 /// </summary>
 public static class PodcastAdvertisingGeometry
 {
-    public const string Version = "ARE-PODCAST-16X9-V2";
+    public const string Version = "ARE-PODCAST-16X9-V3-QUALITY-357";
     public const int CanvasWidth = 1920;
     public const int CanvasHeight = 1080;
     public const int CanvasArea = CanvasWidth * CanvasHeight;
@@ -66,13 +66,13 @@ public static class PodcastAdvertisingGeometry
                 [
                     new("TOP_LEFT", 0, 0, 960, 180),
                     new("TOP_RIGHT", 960, 0, 960, 180),
-                    new("LEFT_SIDE", 0, 270, 270, 540),
-                    new("RIGHT_SIDE", 1650, 270, 270, 540),
+                    new("LEFT_SIDE", 0, 180, 270, 720),
+                    new("RIGHT_SIDE", 1650, 180, 270, 720),
                     new("BOTTOM_LEFT", 0, 900, 960, 180),
                     new("BOTTOM_RIGHT", 960, 900, 960, 180)
                 ];
-                // Side slots are vertically centered in the 720-pixel band;
-                // their 90-pixel upper/lower margins are not ad inventory.
+                // Side slots abut the top and bottom advertising bands.
+                // This fixes four unintended 270x90 outer gap strips.
                 protectedCreator = new("CREATOR_SAFE", 270, 180, 1380, 720);
                 break;
             default:
@@ -157,9 +157,10 @@ public static class PodcastAdvertisingGeometry
             }
         }
 
-        if (slots.Sum(slot => (long)slot.Area) + protectedCreator.Area > CanvasArea)
+        if (slots.Sum(slot => (long)slot.Area) + protectedCreator.Area != CanvasArea)
         {
-            throw new InvalidOperationException("Creator and ad coverage exceeds canvas area.");
+            throw new InvalidOperationException(
+                "Advertising slots and the creator-safe region must partition the entire canvas without gaps.");
         }
     }
 

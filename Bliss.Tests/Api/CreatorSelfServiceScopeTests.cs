@@ -69,8 +69,33 @@ public sealed class CreatorSelfServiceScopeTests
         Assert.Equal(ApprovedCreator, profile.CreatorId);
         Assert.Equal("VERIFIED", profile.AuthorityStatus);
         Assert.Equal("no-store", controller.Response.Headers.CacheControl.ToString());
-        // Only five intentionally public fields; no CRM/receipts/contacts.
-        Assert.Equal(5, typeof(CreatorSelfSummaryDto).GetProperties().Length);
+        // Default-off inventory preserves the existing five-field serialized response.
+        Assert.Null(profile.Inventory);
+        using var json = System.Text.Json.JsonDocument.Parse(System.Text.Json.JsonSerializer.Serialize(profile));
+        Assert.Equal(5, json.RootElement.EnumerateObject().Count());
+        Assert.False(json.RootElement.TryGetProperty("Inventory", out _));
+    }
+
+    [Fact]
+    public async Task Inventory_opt_in_returns_only_verified_callers_own_slots()
+    {
+        await using var db = Database();
+        var ownContent = new ContentItem { Id = Guid.NewGuid(), CreatorId = ApprovedCreator, Title = "Own fixture", ContentType = "Podcast" };
+        var otherContent = new ContentItem { Id = Guid.NewGuid(), CreatorId = OtherCreator, Title = "Other fixture", ContentType = "Podcast" };
+        var ownSlot = new AdInventorySlot { Id = Guid.NewGuid(), ContentItemId = ownContent.Id, SlotType = "MID_ROLL", StartSecond = 30, DurationSeconds = 15, IsAvailable = true };
+        db.ContentItems.AddRange(ownContent, otherContent);
+        db.AdInventorySlots.AddRange(ownSlot, new AdInventorySlot { Id = Guid.NewGuid(), ContentItemId = otherContent.Id, SlotType = "MID_ROLL" });
+        await db.SaveChangesAsync();
+        var options = Auth();
+        options.CreatorInventoryReadbackRequested = true;
+        var response = await Controller(db, options, Principal(ApprovedCreator)).GetMyVerifiedCreator(default);
+        var profile = Assert.IsType<CreatorSelfSummaryDto>(Assert.IsType<OkObjectResult>(response.Result).Value);
+        var slot = Assert.Single(profile.Inventory!);
+        Assert.Equal(ownSlot.Id, slot.SlotId);
+        Assert.Equal(ownContent.Id, slot.ContentItemId);
+        Assert.Equal("Own fixture", slot.ContentTitle);
+        var denied = await Controller(db, options, new ClaimsPrincipal(new ClaimsIdentity())).GetMyVerifiedCreator(default);
+        Assert.Equal(403, Assert.IsType<StatusCodeResult>(denied.Result).StatusCode);
     }
 
     [Fact]
@@ -116,6 +141,32 @@ public sealed class CreatorSelfServiceScopeTests
         Assert.IsType<ForbidResult>(catalog.Result);
         var otherCreator = await controller.GetById(OtherCreator, default);
         Assert.IsType<ForbidResult>(otherCreator.Result);
+    }
+
+    [Fact]
+    public async Task Shared_creator_directory_and_detail_hide_unverified_registration_records()
+    {
+        await using var db = Database();
+        var pendingId = Guid.NewGuid();
+        db.Creators.Add(new Creator { Id = pendingId, Name = "Pending registration", AuthorityStatus = "UNVERIFIED" });
+        db.CreatorAccountMemberships.Add(new CreatorAccountMembership
+        {
+            Id = Guid.NewGuid(), Subject = "pending-subject", CreatorId = pendingId,
+            SubmittedChannelUrl = "https://creator.example/channel", Status = "PENDING_REVIEW",
+            CreatedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+        var staff = new ClaimsPrincipal(new ClaimsIdentity(new[] {
+            new Claim("sub", "synthetic-staff"),
+            new Claim("roles", "bliss.operator", ClaimValueTypes.String, Issuer)
+        }, "verified-issuer", "name", "roles"));
+        var controller = Controller(db, Auth(), staff);
+
+        var catalogResponse = await controller.GetAll(default);
+        var catalog = Assert.IsType<OkObjectResult>(catalogResponse.Result);
+        var items = Assert.IsAssignableFrom<IReadOnlyList<Bliss.Api.Contracts.CreatorListDto>>(catalog.Value);
+        Assert.DoesNotContain(items, x => x.Id == pendingId);
+        Assert.IsType<NotFoundResult>((await controller.GetById(pendingId, default)).Result);
     }
 
     [Fact]

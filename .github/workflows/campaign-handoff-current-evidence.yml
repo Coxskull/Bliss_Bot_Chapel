@@ -1,0 +1,24 @@
+name: Campaign handoff current evidence
+on:
+  pull_request:
+    paths:
+      - 'frontend/public/campaign-handoff.js'
+      - 'scripts/campaign-handoff-current-evidence.test.mjs'
+      - '.github/workflows/campaign-handoff-current-evidence.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/public/campaign-handoff.js'
+      - 'scripts/campaign-handoff-current-evidence.test.mjs'
+      - '.github/workflows/campaign-handoff-current-evidence.yml'
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: node --test scripts/campaign-handoff-current-evidence.test.mjs

@@ -28,6 +28,19 @@ jobs:
       - name: Validate generated inquiry-only service and private-tool exclusion
         run: node --test scripts/alpha346-generated-public-portal.test.mjs
       - run: node --test scripts/alpha346-manual-proposal-gate.test.mjs scripts/alpha346-proposal-desk-smoke.test.mjs scripts/alpha346-support-receipt.test.mjs scripts/alpha346-approved-service.test.mjs
+      - name: Build integrated private Commercial Desk and run focused commercial checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/alpha346-quote-costing.mjs --self-test
+          node scripts/alpha346-order-ledger.mjs --self-test
+          node --test scripts/alpha346-stripe-reconcile.test.mjs
+          node scripts/alpha-manual-creative-export.mjs --self-test
+          work="$(mktemp -d)"
+          node scripts/alpha-build-creative-desk.mjs "$work/creative.html"
+          node scripts/alpha346-build-commercial-desk.mjs "$work/creative.html" "$work/commercial.html"
+          node scripts/alpha346-quote-costing.mjs scripts/alpha346-quote-costing-example.json "$work/quote"
+          node --input-type=module -e 'import fs from "node:fs";import assert from "node:assert/strict";let p=process.argv[1];let h=fs.readFileSync(p+"/commercial.html","utf8");assert.ok(h.includes("ALPHA Commercial Desk")&&h.includes("srcdoc=")&&h.includes("Validate and export private order report"));let q=JSON.parse(fs.readFileSync(p+"/quote/PRIVATE-estimate.json"));assert.equal(q.total,14900);assert.equal(q.contribution,7900);assert.ok(!fs.readFileSync(p+"/quote/customer-proposal-DRAFT.md","utf8").includes("$70.00"));' "$work"
       - name: Assert unapproved synthetic offer never passes
         shell: bash
         run: |

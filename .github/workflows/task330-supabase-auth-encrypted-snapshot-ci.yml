@@ -1,0 +1,62 @@
+name: Task330 Supabase Auth+intake — disposable encrypted recovery contract
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/task330-supabase-auth-encrypted-snapshot-ci.yml'
+      - 'scripts/task330-bliss-supabase-auth-intake-capture.sh'
+      - 'tests/task330-supabase-auth-snapshot-ci.sh'
+      - 'docs/launch/ISSUE330-SUPABASE-AUTH-INTAKE-RECOVERY.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: task330-auth-restore-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  fictional-encrypted-capture-and-restore:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci_alpha330_only
+          POSTGRES_DB: ci_alpha330
+        ports:
+          - 127.0.0.1:5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ci_alpha330"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install PostgreSQL17 client and GPG for disposable fixture only
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ca-certificates curl gnupg
+          sudo install -d -m 0755 /usr/share/postgresql-common/pgdg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc |
+            sudo gpg --batch --yes --dearmor -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt $(. /etc/os-release && echo "$VERSION_CODENAME")-pgdg main" |
+            sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-17
+      - name: Verify only the fictional encrypted archive and local restoration
+        env:
+          PGHOST: 127.0.0.1
+          PGPORT: '5432'
+          PGUSER: postgres
+          PGDATABASE: ci_alpha330
+          PGPASSWORD: ci_alpha330_only
+          PGSSLMODE: disable
+          CI: 'true'
+          GITHUB_ACTIONS: 'true'
+        run: |
+          export PATH="/usr/lib/postgresql/17/bin:$PATH"
+          test "$(pg_dump --version | awk '{print $3}' | cut -d. -f1)" = 17
+          bash -n scripts/task330-bliss-supabase-auth-intake-capture.sh
+          bash -n tests/task330-supabase-auth-snapshot-ci.sh
+          bash tests/task330-supabase-auth-snapshot-ci.sh
+          echo 'SOURCE_ONLY_FIXTURE_PASS — NO LIVE SUPABASE, NO CUSTOMER RECORDS, NO REAL BACKUP OR HOSTED RESTORE'

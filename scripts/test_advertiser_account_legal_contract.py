@@ -60,19 +60,25 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
             self.assertIn(f"<code>{value}</code>", self.form)
             self.assertIn(f"<code>{value}</code>", page)
 
-    def test_draft_pages_cannot_be_mistaken_for_approved_live_terms(self):
+    def test_effective_account_notices_are_published_with_runtime_gated_signup(self):
         for page in (self.privacy, self.terms):
-            self.assertIn('name="robots" content="noindex,nofollow"', page)
-            self.assertIn("Not yet approved for live registration.", page)
-            self.assertIn("LEGAL REVIEW DRAFT", page)
-        self.assertIn("legally approved", self.form)
-        self.assertIn("Registration is disabled", self.form)
+            self.assertIn('name="robots" content="index,follow"', page)
+            self.assertIn("Effective November 20, 2026", page)
+            self.assertNotIn("LEGAL REVIEW DRAFT", page)
+            self.assertNotIn("Not yet approved for live registration.", page)
+        self.assertIn("The application checks its current registration setting before enabling this form.", self.form)
+        self.assertIn("New accounts remain PENDING_REVIEW", self.form)
+        self.assertIn("does not approve a workspace", self.form)
+        self.assertIn('configuration?.advertiserRegistrationEnabled === true', self.js)
+        self.assertIn("no charge simply to submit", self.terms.lower())
+        self.assertIn("PENDING_REVIEW", self.terms)
 
     def test_account_privacy_does_not_claim_inquiry_only_privacy_form_handles_accounts(self):
-        # The public interest-form privacy endpoint is not an account data-subject request route.
+        # Public-interest case intake is NEVER a verified account-rights endpoint.
         self.assertNotIn('href="/privacy-request.html"', self.privacy)
-        self.assertIn("limited to public-interest submissions", self.privacy)
-        self.assertIn("not</strong> a verified account-registration privacy request channel", self.privacy)
+        self.assertIn("public-interest privacy form is not an authenticated account-rights channel", self.privacy)
+        self.assertIn("do not claim to have an automated account-deletion schedule", self.privacy)
+        self.assertIn("mailto:alpha7auto@gmail.com", self.privacy)
 
     def test_account_rights_preview_is_separate_from_public_inquiry_and_not_live(self):
         rights = (PUBLIC / "advertiser-account-rights.html").read_text(encoding="utf-8")
@@ -186,6 +192,43 @@ class AdvertiserAccountNoticeContractTests(unittest.TestCase):
         self.assertIn("catch (DbUpdateException ex) when (ex.InnerException is PostgresException pg", self.server)
         self.assertIn("pg.SqlState == PostgresErrorCodes.UniqueViolation", self.server)
         self.assertNotIn("catch (DbUpdateException)\n", self.server)
+
+    def test_registration_forms_fail_closed_until_client_auth_readback(self):
+        self.assertIn('<button class="submit" type="submit" disabled>Create sign-in</button>', self.form)
+        self.assertIn('<button class="submit" type="submit" disabled>Submit registration</button>', self.form)
+        self.assertIn('signup.querySelector("button").disabled = !enabled', self.js)
+        self.assertIn('registration.querySelector("button").disabled = !enabled || session?.isAuthenticated !== true', self.js)
+
+    def test_existing_account_password_recovery_is_fail_closed(self):
+        signin = (PUBLIC / "oauth-consent.html").read_text(encoding="utf-8")
+        login = (PUBLIC / "advertiser-login.html").read_text(encoding="utf-8")
+        self.assertIn('href="/advertiser-registration.html#account-recovery"', signin)
+        self.assertIn('href="/advertiser-registration.html#account-recovery"', login)
+        self.assertIn('id="account-recovery"', self.form)
+        self.assertIn('id="recovery-request-form"', self.form)
+        self.assertIn('id="recovery-update-form" hidden', self.form)
+        self.assertIn('<style>[hidden]{display:none!important}</style>', self.form)
+        self.assertIn('Send password-reset link</button>', self.form)
+        self.assertIn('Update my password</button>', self.form)
+        # Require existing-user recovery rather than a duplicate new signup.
+        self.assertIn('use password recovery instead of creating a duplicate sign-in', self.form)
+        self.assertIn('new URL("/auth/v1/recover", configuration.url)', self.js)
+        self.assertIn('new URL("/auth/v1/user", configuration.url)', self.js)
+        self.assertIn('method: "PUT"', self.js)
+        self.assertIn('method: "GET"', self.js)
+        self.assertIn('method: "POST"', self.js)
+        self.assertIn('fragment.get("type") === "recovery" ? fragment.get("access_token") : null', self.js)
+        self.assertIn('history.replaceState(null, "", window.location.pathname', self.js)
+        self.assertIn('if (!recoveryToken || configuration?.advertiserRegistrationEnabled !== true) return;', self.js)
+        self.assertIn('recoveryRequest.querySelector("button").disabled = !enabled', self.js)
+        self.assertIn('recoveryUpdate.querySelector("button").disabled = false', self.js)
+        self.assertIn('password.length < 12 || password !== confirmation', self.js)
+        self.assertIn('Authorization: `Bearer ${recoveryToken}`', self.js)
+        self.assertIn('If an account exists for this email', self.js)
+        self.assertNotIn('service_role', self.js)
+        self.assertNotIn('localStorage.setItem("recovery', self.js)
+        self.assertNotIn('sessionStorage.setItem("recovery', self.js)
+        self.assertNotIn('console.log(recoveryToken', self.js)
 
     def test_marketing_is_optional_and_not_preselected(self):
         marketing = [x for x in self.parsed.inputs if x.get("id") == "marketing-consent"]

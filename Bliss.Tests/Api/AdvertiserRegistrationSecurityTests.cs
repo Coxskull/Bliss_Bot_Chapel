@@ -185,6 +185,9 @@ public sealed class AdvertiserRegistrationSecurityTests
         Assert.False(Denied("POST", "/api/auth/logout"));
         Assert.False(Denied("POST", "/api/advertisers/register"));
         Assert.True(Denied("GET", "/api/advertisers/me"));
+        Assert.False(Denied("GET", "/api/advertisers/registration-status"));
+        Assert.True(Denied("POST", "/api/advertisers/registration-status"));
+        Assert.True(Denied("GET", "/api/advertisers/registration-status/other"));
         Assert.True(Denied("GET", "/api/creators"));
         Assert.True(Denied("POST", "/api/advertisers/register/other"));
     }
@@ -263,6 +266,32 @@ public sealed class AdvertiserRegistrationSecurityTests
             Assert.False(saved.MarketingOptIn);
             Assert.Equal("auth-subject-123", saved.Subject);
             Assert.Equal(64, saved.RequestSha256.Length);
+
+            var statusController = new AdvertiserRegistrationController(db, Options);
+            statusController.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = Pending("auth-subject-123") }
+            };
+            var ownStatus = Assert.IsType<OkObjectResult>(
+                await statusController.GetRegistrationStatus(CancellationToken.None));
+            var ownReceipt = Assert.IsType<AdvertiserApplicationStatusDto>(ownStatus.Value);
+            Assert.Equal(receipt.ReceiptId, ownReceipt.ReceiptId);
+            Assert.Equal("PENDING_REVIEW", ownReceipt.Status);
+            Assert.True(ownReceipt.ProcessingConsent);
+            Assert.True(ownReceipt.TermsAccepted);
+            Assert.False(ownReceipt.MarketingOptIn);
+            Assert.Equal(request.PrivacyNoticeVersion, ownReceipt.PrivacyNoticeVersion);
+            Assert.Equal(request.TermsVersion, ownReceipt.TermsVersion);
+            statusController.HttpContext.User = Pending("another-auth-subject");
+            Assert.IsType<NotFoundResult>(
+                await statusController.GetRegistrationStatus(CancellationToken.None));
+            statusController.HttpContext.User = Pending(new Claim(ClaimTypes.Role, Options.OperatorRole));
+            Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeResult>(
+                await statusController.GetRegistrationStatus(CancellationToken.None)).StatusCode);
+            statusController.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity());
+            Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<StatusCodeResult>(
+                await statusController.GetRegistrationStatus(CancellationToken.None)).StatusCode);
+
             await Assert.ThrowsAsync<PostgresException>(() => db.Database.ExecuteSqlRawAsync(
                 "UPDATE \"AdvertiserRegistrationReceipts\" SET \"MarketingOptIn\" = TRUE WHERE \"Id\" = {0}", saved.Id));
             await Assert.ThrowsAsync<PostgresException>(() => db.Database.ExecuteSqlRawAsync(

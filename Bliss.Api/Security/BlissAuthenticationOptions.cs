@@ -25,6 +25,24 @@ public sealed class BlissAuthenticationOptions
     // recovery/ingress release gates are separately accepted. Never infer
     // these values from a public interest record or CRM contact.
     public bool CreatorSelfServiceRequested { get; set; }
+    // Separate read-only, owner-scoped inventory capability. Never grants booking.
+    public bool CreatorInventoryReadbackRequested { get; set; }
+    // Separate, default-off withdrawal only. Never authorizes new bookings.
+    public bool CreatorInventoryPauseRequested { get; set; }
+    public bool CreatorInventoryDraftRequested { get; set; }
+    public bool CreatorInventoryOperatorReviewRequested { get; set; }
+    public bool CreatorCampaignInvitationRequested { get; set; }
+    public bool CreatorCompensationProposalRequested { get; set; }
+    public bool CreatorAgreementEvidenceRequested { get; set; }
+    public bool CreatorAllocationHistoryRequested { get; set; }
+    public bool CreatorSettlementEvidenceRequested { get; set; }
+    public bool CreatorPayableReviewRequested { get; set; }
+    public bool CreatorSettlementExceptionRequested { get; set; }
+    public bool CreatorFulfillmentManifestRequested { get; set; }
+    public bool CreatorFactorySubmissionRequested { get; set; }
+    public bool CreatorFactoryArtworkRequested { get; set; }
+    public bool CreatorFactoryArtworkTransferRequested { get; set; }
+    public bool CreatorFactoryVisualReviewRequested { get; set; }
     public string CreatorRole { get; set; } = "bliss.creator";
     public string CreatorIdClaimType { get; set; } = "bliss_creator_id";
     // Explicit approved OIDC subject IDs, not editable email or form IDs.
@@ -34,10 +52,34 @@ public sealed class BlissAuthenticationOptions
     // Advertiser-only self-service stays off until identity-to-business
     // verification and hosted recovery/ingress checks are accepted.
     public bool AdvertiserSelfServiceRequested { get; set; }
+    // Narrow application-owned authorization of the read-only profile, based on
+    // a verified registration identity and an ACTIVE receipt-bound membership.
+    // Does not mint roles, change issuer metadata or open other business APIs.
+    public bool AdvertiserMembershipSelfServiceRequested { get; set; }
+    // Independent customer DRAFT intake gate; never enables campaign execution.
+    public bool AdvertiserCampaignDraftsRequested { get; set; }
+    // Read-only, no-cost creative/Factory QA preview; never permits provider calls.
+    public bool AdvertiserCreativeHandoffPreviewRequested { get; set; }
+    // Customer consent for exact prepared recipe; never authorizes payment or dispatch.
+    public bool AdvertiserCreativeProviderConsentRequested { get; set; }
+    // Separate private customer artwork review, never releases paid delivery or campaigns.
+    public bool AdvertiserCreativeArtworkRequested { get; set; }
+    // Separate staff-only no-call readiness lane. Never enables a worker or submission.
+    public bool StaffCreativeReadinessRequested { get; set; }
+    // Explicit staff preparation writes only; no AI calls or queue submission.
+    public bool StaffCreativePreparationRequested { get; set; }
     public string[] ApprovedAdvertiserSubjects { get; set; } = [];
     // Verified Supabase identities with no trusted roles may enter only the
     // registration endpoint while this is explicitly enabled. It is OFF by default.
     public bool AdvertiserRegistrationRequested { get; set; }
+    // Explicit human review lane; never enables issuer provisioning.
+    public bool AdvertiserOperatorReviewRequested { get; set; }
+    // Separate manual payment-to-order reconciliation; never authorizes release.
+    public bool StarterPaymentReconciliationRequested { get; set; }
+    public bool StarterArtworkDeliveryRequested { get; set; }
+    public bool StarterServiceOfferRequested { get; set; }
+    public bool StarterCheckoutInstructionsRequested { get; set; }
+    public string[] ApprovedRegistrationOperatorSubjects { get; set; } = [];
     // Separate fail-closed account privacy case switch. Never inferred from registration
     // or self-service enrollment, and must stay OFF until hosted human handling is accepted.
     public bool AdvertiserPrivacyRequestsRequested { get; set; }
@@ -45,6 +87,12 @@ public sealed class BlissAuthenticationOptions
     // Empty by default: operator queues and ACK are inaccessible until verified.
     public string[] ApprovedPrivacyOperatorSubjects { get; set; } = [];
     public const string AdvertiserRegistrationPendingMarkerClaimType = "bliss_advertiser_registration_pending";
+    // Creator registration is a separate, no-role Supabase identity lane.
+    // Like advertiser registration, it creates no verified creator authority.
+    public bool CreatorRegistrationRequested { get; set; }
+    public bool CreatorOperatorReviewRequested { get; set; }
+    public bool CreatorAuthorityVerificationRequested { get; set; }
+    public const string CreatorRegistrationPendingMarkerClaimType = "bliss_creator_registration_pending";
 
     // Requires explicit issuer configuration; defaults cannot enable visitor
     // claims as trusted evidence of historic conversation ownership.

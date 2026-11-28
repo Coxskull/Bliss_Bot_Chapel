@@ -326,7 +326,10 @@ public sealed class EfModelConstraintTests
     [Fact]
     public void Required_foreign_key_indexes_exist()
     {
-        using var db = TestDb.CreateContext();
+        // Check the actual relational provider model, not InMemory conventions.
+        // Constructing model metadata does not connect to a database.
+        using var db = new BlissDbContext(new DbContextOptionsBuilder<BlissDbContext>()
+            .UseNpgsql(BlissDbContextFactory.LocalDesignTimePlaceholder).Options);
 
         AssertIndex(db, typeof(CreatorPlatform), nameof(CreatorPlatform.CreatorId));
         AssertIndex(db, typeof(ContentItem), nameof(ContentItem.CreatorId));
