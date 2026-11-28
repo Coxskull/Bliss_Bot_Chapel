@@ -45,16 +45,18 @@ async function save(path,data){
 }
 // One fixed fictional metadata-only job through the real restricted intake ledger.
 // The same IDs and body are reused on restart; no asset, render, booking or payment.
-async function heldAdmission(env){
+async function heldAdmission(env,artwork=false){
  if(env.BLISS_FICTIONAL_HELD_ADMISSION!=="YES"||
     env.RAILWAY_PROJECT_ID!=="43062727-bca5-400a-b801-27828161324b"||
     env.RAILWAY_ENVIRONMENT_ID!=="04edd217-035e-4c18-b864-9b7ded76de7d"||
     env.RAILWAY_SERVICE_ID!=="990e3d3e-b09a-4c43-8873-ab10e9bffd02"||
     env.Runtime__RestrictedPreview!=="true"||env.Authentication__Enabled!=="false"||
     !hex(env.BLISS_FACTORY_CREATIVE_INTAKE_HMAC_KEY))throw Error("HELD_ADMISSION_SCOPE_REFUSED");
+ if(artwork&&(!hex(env.BLISS_FACTORY_PRIVATE_ARTWORK_HMAC_KEY)||env.BLISS_FACTORY_PRIVATE_ARTWORK_HMAC_KEY===env.BLISS_FACTORY_CREATIVE_INTAKE_HMAC_KEY))throw Error("ARTWORK_KEY_REFUSED");
+ const png=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGMUCVjAwMDAxMDAwMDAAAALzgEI/t/+UgAAAABJRU5ErkJggg==","base64");
  const ids=["handoffId","placementId","campaignId","creatorId","slotId","candidateId","reviewId","advertiserApprovalId","alphaQaApprovalId","inventoryFitId","quoteVersionId","quoteLineId","agreementEvidenceId"];
- const m=Object.fromEntries(ids.map((k,i)=>[k,"cafe1000-0000-4000-8000-"+String(i+1).padStart(12,"0")]));
- Object.assign(m,{imageSha256:sha("ALPHA_FICTIONAL_IMAGE_NOT_TRANSFERRED"),handoffSha256:sha("ALPHA_FICTIONAL_HANDOFF"),agreementEvidenceSha256:sha("ALPHA_FICTIONAL_AGREEMENT"),schema:"alpha-creator-fulfillment-preparation/v1",status:"PREPARATION_ONLY",delivery:"NOT_SENT",fundingVerified:false,bookingAuthorized:false,paymentAuthorized:false,deliveryAuthorized:false,factoryDispatchAuthorized:false,slotType:"LOWER_THIRD",startSecond:0,durationSeconds:2,imageWidth:960,imageHeight:540});
+ const m=Object.fromEntries(ids.map((k,i)=>[k,(artwork?"cafe2000-0000-4000-8000-":"cafe1000-0000-4000-8000-")+String(i+1).padStart(12,"0")]));
+ Object.assign(m,{imageSha256:artwork?sha(png):sha("ALPHA_FICTIONAL_IMAGE_NOT_TRANSFERRED"),handoffSha256:sha("ALPHA_FICTIONAL_HANDOFF"),agreementEvidenceSha256:sha("ALPHA_FICTIONAL_AGREEMENT"),schema:"alpha-creator-fulfillment-preparation/v1",status:"PREPARATION_ONLY",delivery:"NOT_SENT",fundingVerified:false,bookingAuthorized:false,paymentAuthorized:false,deliveryAuthorized:false,factoryDispatchAuthorized:false,slotType:"LOWER_THIRD",startSecond:0,durationSeconds:2,imageWidth:artwork?2:960,imageHeight:artwork?2:540});
  const body=JSON.stringify(m),digest=sha(body);
  const base="https://alpha-hf-factory-engine-staging.up.railway.app/internal/bliss/held-creative-jobs";
  async function send(path,readOnly){
@@ -75,11 +77,23 @@ async function heldAdmission(env){
  const admitted=await send("",false),again=await send("/readback",true);
  if(admitted.admittedAt!==again.admittedAt)throw Error("HELD_ADMISSION_READBACK_MISMATCH");
  await send("/render-status",true);
+ if(artwork){
+  const mb=Buffer.from(body),len=Buffer.alloc(4);len.writeUInt32BE(mb.length);const payload=Buffer.concat([len,mb,png]);
+  const timestamp=String(Math.floor(Date.now()/1000));
+  const signature=createHmac("sha256",Buffer.from(env.BLISS_FACTORY_PRIVATE_ARTWORK_HMAC_KEY,"hex")).update("alpha-bliss-held-artwork-v1\n"+timestamp+"\n").update(payload).digest("hex");
+  const res=await fetch("https://alpha-hf-factory-engine-staging.up.railway.app/internal/bliss/held-creative-artwork",{method:"POST",redirect:"error",headers:{"content-type":"application/octet-stream","x-alpha-timestamp":timestamp,"x-alpha-signature":signature},body:payload,signal:AbortSignal.timeout(12000)});
+  if(!res.ok){await res.body?.cancel();throw Error("ARTWORK_CUSTODY_HTTP_"+res.status);}
+  const reader=res.body.getReader(),chunks=[];let size=0;
+  try{while(true){const {value,done}=await reader.read();if(done)break;size+=value.byteLength;if(size>4096)throw Error("ARTWORK_RESPONSE_LIMIT");chunks.push(Buffer.from(value));}}finally{await reader.cancel().catch(()=>{});}
+  const v=JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  if(v.schema!=="alpha.henry-ford.held-artwork-custody.v1"||v.placementId!==m.placementId||v.handoffId!==m.handoffId||v.manifestSha256!==digest||v.imageSha256!==sha(png)||v.imageWidth!==2||v.imageHeight!==2||v.status!=="HELD_ARTWORK_STORED"||v.release!=="HELD"||v.delivery!=="NOT_SENT"||v.renderAuthorized!==false||v.dispatchAuthorized!==false||v.paymentAuthorized!==false||!Number.isFinite(Date.parse(v.receivedAt)))throw Error("ARTWORK_RECEIPT_MISMATCH");
+  console.log(JSON.stringify({marker:"BLISS_FICTIONAL_ARTWORK_CUSTODY_PASS",placementId:m.placementId,imageSha256:sha(png),delivery:"NOT_SENT"}));
+ }
  console.log(JSON.stringify({marker:"BLISS_HELD_ADMISSION_PASS",placementId:m.placementId,manifestSha256:digest,admission:"HELD_METADATA_ONLY",statusReadback:"PASS",delivery:"NOT_SENT"}));
 }
 async function main(){
  const args=process.argv.slice(2);
- if(args.length===1&&args[0]==="--held-admission")return heldAdmission(process.env);
+ if(args.length===1&&args[0]==="--held-admission")return heldAdmission(process.env,process.env.BLISS_FICTIONAL_ARTWORK_CUSTODY==="YES");
  if(args[0]!=="--hosted"&&args[0]!=="--verify-local")throw Error("Use --hosted OUTPUT or --verify-local RESULT OUTPUT");
  const local=args[0]==="--verify-local",root=args[local?2:1];
  if(args.length!==(local?3:2)||!root||!isAbsolute(root))throw Error("Existing absolute private output directory required");
