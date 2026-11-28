@@ -43,8 +43,43 @@ async function save(path,data){
  try{await writeFile(path,data,{flag:"wx",mode:0o600});}
  catch(e){if(e.code!=="EEXIST")throw e;const s=await lstat(path);if(!s.isFile()||s.isSymbolicLink()||s.size!==data.length||!(await readFile(path)).equals(data))throw Error("Existing evidence differs");}
 }
+// One fixed fictional metadata-only job through the real restricted intake ledger.
+// The same IDs and body are reused on restart; no asset, render, booking or payment.
+async function heldAdmission(env){
+ if(env.BLISS_FICTIONAL_HELD_ADMISSION!=="YES"||
+    env.RAILWAY_PROJECT_ID!=="43062727-bca5-400a-b801-27828161324b"||
+    env.RAILWAY_ENVIRONMENT_ID!=="04edd217-035e-4c18-b864-9b7ded76de7d"||
+    env.RAILWAY_SERVICE_ID!=="990e3d3e-b09a-4c43-8873-ab10e9bffd02"||
+    env.Runtime__RestrictedPreview!=="true"||env.Authentication__Enabled!=="false"||
+    !hex(env.BLISS_FACTORY_CREATIVE_INTAKE_HMAC_KEY))throw Error("HELD_ADMISSION_SCOPE_REFUSED");
+ const ids=["handoffId","placementId","campaignId","creatorId","slotId","candidateId","reviewId","advertiserApprovalId","alphaQaApprovalId","inventoryFitId","quoteVersionId","quoteLineId","agreementEvidenceId"];
+ const m=Object.fromEntries(ids.map((k,i)=>[k,"cafe1000-0000-4000-8000-"+String(i+1).padStart(12,"0")]));
+ Object.assign(m,{imageSha256:sha("ALPHA_FICTIONAL_IMAGE_NOT_TRANSFERRED"),handoffSha256:sha("ALPHA_FICTIONAL_HANDOFF"),agreementEvidenceSha256:sha("ALPHA_FICTIONAL_AGREEMENT"),schema:"alpha-creator-fulfillment-preparation/v1",status:"PREPARATION_ONLY",delivery:"NOT_SENT",fundingVerified:false,bookingAuthorized:false,paymentAuthorized:false,deliveryAuthorized:false,factoryDispatchAuthorized:false,slotType:"LOWER_THIRD",startSecond:0,durationSeconds:2,imageWidth:960,imageHeight:540});
+ const body=JSON.stringify(m),digest=sha(body);
+ const base="https://alpha-hf-factory-engine-staging.up.railway.app/internal/bliss/held-creative-jobs";
+ async function send(path,readOnly){
+  const timestamp=String(Math.floor(Date.now()/1000));
+  const signature=createHmac("sha256",Buffer.from(env.BLISS_FACTORY_CREATIVE_INTAKE_HMAC_KEY,"hex")).update((readOnly?"alpha-bliss-held-creative-read-v1":"alpha-bliss-held-creative-v1")+"\n"+timestamp+"\n").update(body).digest("hex");
+  const res=await fetch(base+path,{method:"POST",redirect:"error",headers:{"content-type":"application/json","x-alpha-timestamp":timestamp,"x-alpha-signature":signature},body,signal:AbortSignal.timeout(12000)});
+  if(!res.ok){await res.body?.cancel();throw Error("HELD_ADMISSION_HTTP_"+res.status);}
+  const reader=res.body.getReader(),chunks=[];let size=0;
+  try{while(true){const {value,done}=await reader.read();if(done)break;size+=value.byteLength;if(size>16384)throw Error("HELD_ADMISSION_RESPONSE_LIMIT");chunks.push(Buffer.from(value));}}
+  finally{await reader.cancel().catch(()=>{});}
+  const v=JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  if(v.placementId!==m.placementId||v.handoffId!==m.handoffId||v.manifestSha256!==digest||v.release!=="HELD"||v.delivery!=="NOT_SENT"||v.dispatchAuthorized!==false)throw Error("HELD_ADMISSION_RECEIPT_MISMATCH");
+  if(path==="/render-status"){
+   if(v.schema!=="alpha.henry-ford.held-render-status.v1"||v.visualQa!=="HUMAN_REVIEW_PENDING"||!Array.isArray(v.results)||v.results.length!==0)throw Error("HELD_STATUS_RECEIPT_MISMATCH");
+  }else if(v.schema!=="alpha.henry-ford.held-job-admission.v1"||v.status!=="HELD_METADATA_ONLY"||v.renderAuthorized!==false||v.paymentAuthorized!==false||!Number.isFinite(Date.parse(v.admittedAt)))throw Error("HELD_ADMISSION_RECEIPT_MISMATCH");
+  return v;
+ }
+ const admitted=await send("",false),again=await send("/readback",true);
+ if(admitted.admittedAt!==again.admittedAt)throw Error("HELD_ADMISSION_READBACK_MISMATCH");
+ await send("/render-status",true);
+ console.log(JSON.stringify({marker:"BLISS_HELD_ADMISSION_PASS",placementId:m.placementId,manifestSha256:digest,admission:"HELD_METADATA_ONLY",statusReadback:"PASS",delivery:"NOT_SENT"}));
+}
 async function main(){
  const args=process.argv.slice(2);
+ if(args.length===1&&args[0]==="--held-admission")return heldAdmission(process.env);
  if(args[0]!=="--hosted"&&args[0]!=="--verify-local")throw Error("Use --hosted OUTPUT or --verify-local RESULT OUTPUT");
  const local=args[0]==="--verify-local",root=args[local?2:1];
  if(args.length!==(local?3:2)||!root||!isAbsolute(root))throw Error("Existing absolute private output directory required");
