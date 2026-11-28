@@ -102,7 +102,7 @@ fi
 export BLISS_TASK4_CREATOR_RECOVERY_MANIFEST_SHA256=__RECOVERY_DIGEST__
 exec /usr/local/bin/bliss-railway-entrypoint --migrate --task4-creator-incremental
 '@
-$remote = $remote.Replace('__RECOVERY_DIGEST__', $receiptHash)
+$remote = $remote.Replace('__RECOVERY_DIGEST__', $receiptHash).Replace("`r`n", "`n").Replace("`r", "")
 # Railway's verified Windows PowerShell 5.1 SSH bridge does not forward
 # piped local stdin reliably. Encode only the REVIEWED source (no DB rows or
 # credentials), decode on the already running service and run in remote bash.
@@ -126,6 +126,19 @@ $passed = @($raw | Where-Object {
 }).Count
 # Raw SSH/provider errors could contain private host/DB context: no printing.
 if ($exit -ne 0 -or $passed -ne 1) {
+    # Fixed allowlist only: raw SSH/database output can contain private context.
+    $safeMarkers = @($raw | ForEach-Object {
+        $line = ([string]$_).Trim()
+        if ($line -cmatch '^TASK4_CREATOR_(SCHEMA=REFUSED_REMOTE_IDENTITY_OR_FLAGS|INCREMENTAL_SCHEMA=REFUSED_OR_NOT_VERIFIED|INCREMENTAL_SCHEMA=PASS_PREVIEW_AND_ADVERTISER_UNCHANGED|INCREMENTAL_SCHEMA=ALREADY_PRESENT_VERIFIED)
+}
+Write-Output 'TASK4_CREATOR_SCHEMA_MIGRATION=PASS'
+Write-Output 'TASK4_CREATOR_PRODUCTION_SIGNUP=STILL_OFF_PENDING_HOSTED_ACCEPTANCE'
+Write-Output 'TASK4_CREATOR_ADVERTISER_AND_GLOBAL_STOP=UNCHANGED'
+) { $line }
+    } | Select-Object -Unique)
+    if ($safeMarkers.Count -gt 0) { $safeMarkers | Write-Output }
+    else { Write-Output 'TASK4_CREATOR_REMOTE_STAGE=TRANSPORT_OR_UNCLASSIFIED' }
+    Write-Output ('TASK4_CREATOR_REMOTE_EXIT=' + [int]$exit)
     throw 'TASK4_CREATOR_SCHEMA=NOT_VERIFIED; CREATOR_SIGNUP_REMAINS_OFF'
 }
 Write-Output 'TASK4_CREATOR_SCHEMA_MIGRATION=PASS'
