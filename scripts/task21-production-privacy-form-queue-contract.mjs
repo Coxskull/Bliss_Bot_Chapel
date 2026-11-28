@@ -4,6 +4,18 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 const ddl=readFileSync(new URL("./task21/production-privacy-form-private-queue-20261112.sql",import.meta.url),"utf8");
 const privacy=readFileSync(new URL("../frontend/public/privacy-request.html",import.meta.url),"utf8");
+const operator=readFileSync(new URL("./task21/production-locked-single-operator-20261112.sql",import.meta.url),"utf8");
+// A Supabase with_data=false branch has no staff Auth account and no grant.
+// The queue schema MUST still install; protected RPCs must remain default-deny.
+assert.match(ddl,/count\(\*\) FROM alpha_support_private\.manual_operator_grants WHERE enabled=true\)>1/,
+    "Schema must allow zero or one verified operator, never multiple");
+assert.doesNotMatch(ddl,/count\(\*\) FROM alpha_support_private\.manual_operator_grants WHERE enabled=true\)<>1/,
+    "Migration may not depend on operator data absent on a clean branch");
+assert.match(operator,/JOIN auth\.users u ON u\.id=g\.user_id/);
+assert.match(operator,/g\.enabled=true/);
+assert.match(operator,/public\.alpha_support_manual_operator_authorized\(p_actor_user_id\)/);
+assert.doesNotMatch(ddl,/INSERT\s+INTO\s+(?:auth\.users|alpha_support_private\.manual_operator_grants)/i,
+    "Never create a synthetic staff identity or enabled grant in a real migration");
 const retention=readFileSync(new URL("./task21/production-mailcase-retention-cascade-fix-20261112.sql",import.meta.url),"utf8");
 for(const necessary of [
  "TASK21_90DAY_MAIL_RETENTION_GUARD_FAILED",
@@ -14,7 +26,12 @@ for(const necessary of [
  "ON DELETE CASCADE",
  "90-day case purge"
 ])assert.ok(retention.includes(necessary),"Missing safe existing support mail retention repair: "+necessary);
-assert.doesNotMatch(retention,/DELETE FROM alpha_support_private\.manual_mail_cases/i);
+// The ONLY allowed DELETE in the migration is the SQL-only 90-day pg_cron
+// command. Neither the migration itself nor a trigger may delete a live row.
+assert.match(retention,/PERFORM cron\.schedule\(/);
+assert.match(retention,/\$retention\$DELETE FROM alpha_support_private\.manual_mail_cases[\s\S]*?interval '90 days';\$retention\$/);
+const retentionNoScheduledCommand=retention.replace(/\$retention\$[\s\S]*?\$retention\$/g,"'[SCHEDULED_SQL_ONLY]'");
+assert.doesNotMatch(retentionNoScheduledCommand,/DELETE FROM alpha_support_private\.manual_mail_cases/i);
 assert.doesNotMatch(retention,/DROP\s+TRIGGER/i);
 
 const edge=readFileSync(new URL("../supabase/functions/alpha-public-intake/index.ts",import.meta.url),"utf8");

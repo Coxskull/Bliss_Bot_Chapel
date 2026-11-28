@@ -7,7 +7,11 @@ BEGIN
  IF (SELECT count(*) FROM public.alpha_public_intake_requests
      WHERE kind IN ('advertiser','creator') AND marketing_opt_in IS NOT TRUE
      AND id IN (SELECT request_id FROM public.alpha_ghl_delivery))<>0
- OR (SELECT count(*) FROM public.alpha_ghl_delivery WHERE state='DELIVERED')<>5
+ -- Empty development branches have no historical GHL deliveries. Only
+ -- require the production five-delivery baseline if ANY delivery row exists.
+ -- No synthetic contact, remote CRM state or marketing permission is created.
+ OR (EXISTS(SELECT 1 FROM public.alpha_ghl_delivery)
+     AND (SELECT count(*) FROM public.alpha_ghl_delivery WHERE state='DELIVERED')<>5)
  THEN RAISE EXCEPTION 'TASK22_CRM_OPT_OUT_SOURCE_SCOPE_CHANGED'; END IF;
 END $crm$;
 CREATE OR REPLACE FUNCTION public.alpha_ghl_delivery_on_intake()
