@@ -20,6 +20,8 @@ on:
       - 'scripts/test_advertiser_account_rights_runtime.mjs'
       - 'scripts/test_advertiser_registration_receipt_runtime.mjs'
       - 'scripts/railway-entrypoint.sh'
+      - 'scripts/alpha-p0-fictional-creative-roundtrip.mjs'
+      - 'scripts/alpha-p0-fictional-creative-retry.test.mjs'
       - 'railway.json'
       - '.github/workflows/task3b-advertiser-pg18-http-acceptance.yml'
   workflow_dispatch:
@@ -163,6 +165,8 @@ jobs:
           if run_command sh scripts/railway-entrypoint.sh --fictional-roundtrip >"$bin_dir/rejected" 2>&1; then
             exit 1
           fi
+      - name: Verify held creative replay contract (offline)
+        run: node --test scripts/alpha-p0-fictional-creative-retry.test.mjs
       - name: Verify registration and privacy-rights source contract
         run: python3 -m unittest discover -s scripts -p 'test_advertiser_account_legal_contract.py' -v
       - name: Verify browser privacy form behavior when case history is unavailable
