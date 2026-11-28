@@ -32,7 +32,7 @@ public static class CreatorFactoryVideoTransfer
             await using var stream=await response.Content.ReadAsStreamAsync(deadline.Token);
             var bytes=new byte[(int)len];
             await stream.ReadExactlyAsync(bytes,deadline.Token);
-            if(await stream.ReadAsync(new byte[1],deadline.Token)!=0
+            if(!bytes.AsSpan(4,4).SequenceEqual("ftyp"u8)||await stream.ReadAsync(new byte[1],deadline.Token)!=0
                 ||Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant()!=previewSha256)return null;
             return bytes;
         }catch(Exception e) when(e is HttpRequestException or IOException or OperationCanceledException or InvalidOperationException){return null;}
