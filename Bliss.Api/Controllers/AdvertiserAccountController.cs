@@ -38,7 +38,7 @@ public sealed class AdvertiserAccountController : ControllerBase
                              join b in _db.Advertisers.AsNoTracking() on m.AdvertiserId equals b.Id
                              where m.Subject == verifiedSubject && m.Status == "ACTIVE"
                                  && r.ProcessingConsent && r.TermsAccepted
-                             select new AdvertiserSelfSummaryDto(b.Id, b.Name, b.CountryCode, b.Website))
+                             select new AdvertiserSelfSummaryDto(b.Id, b.Name, b.CountryCode, b.Website, "VERIFIED"))
                 .SingleOrDefaultAsync(cancellationToken);
             return own is null ? StatusCode(StatusCodes.Status403Forbidden) : Ok(own);
         }
@@ -61,7 +61,7 @@ public sealed class AdvertiserAccountController : ControllerBase
 
         var record = await _db.Advertisers.AsNoTracking()
             .Where(a => a.Id == advertiserId)
-            .Select(a => new AdvertiserSelfSummaryDto(a.Id, a.Name, a.CountryCode, a.Website))
+            .Select(a => new AdvertiserSelfSummaryDto(a.Id, a.Name, a.CountryCode, a.Website, "VERIFIED"))
             .SingleOrDefaultAsync(cancellationToken);
         return record is null ? NotFound() : Ok(record);
     }
@@ -70,4 +70,4 @@ public sealed class AdvertiserAccountController : ControllerBase
 // Minimal business identity only; never disclose private prospect, lead,
 // campaign, billing, match, CRM or payout records.
 public sealed record AdvertiserSelfSummaryDto(Guid AdvertiserId, string Name,
-    string? CountryCode, string? Website);
+    string? CountryCode, string? Website, string AuthorityStatus);
