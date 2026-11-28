@@ -354,7 +354,11 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
             await tx.CommitAsync(ct);
             return Ok(new { campaignId = draft.CampaignId, candidateId = candidate.Id, reviewId = review.Id,
                 imageSha256 = candidate.ImageSha256, approvalVersion = latest?.Version ?? 0,
-                approval = latest?.ReviewId == review.Id ? latest.Decision : "PENDING", releaseId, release = releaseId.HasValue ? "ARTWORK_DOWNLOAD_AVAILABLE" : "HELD",
+                approval = latest?.ReviewId == review.Id ? latest.Decision : "PENDING",
+                decisionReceipt = latest is not null && latest.ReviewId == review.Id && latest.ActorSubject == subject
+                    ? new { decisionId = latest.Id, version = latest.Version, decision = latest.Decision,
+                        rationale = latest.Rationale, recordedAt = latest.CreatedAt } : null,
+                releaseId, release = releaseId.HasValue ? "ARTWORK_DOWNLOAD_AVAILABLE" : "HELD",
                 delivery = releaseId.HasValue ? "DOWNLOAD_NOT_CONFIRMED" : "NOT_SENT",
                 downloadRequestRecorded = downloadRequest is not null, downloadRequestedAt = downloadRequest?.OccurredAt,
                 receiptAcknowledged = acknowledgment is not null, receiptAcknowledgedAt = acknowledgment?.OccurredAt,
