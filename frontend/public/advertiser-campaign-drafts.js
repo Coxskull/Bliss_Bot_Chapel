@@ -181,6 +181,26 @@
           if(current!==generation || !card.isConnected)return;
           artPanel.appendChild(image);
           const note=document.createElement("p");note.textContent="Review only. Approval is not payment, final commercial delivery, publication or permission to launch advertising.";artPanel.appendChild(note);
+          if(result.decisionReceipt!=null){
+            const receipt=result.decisionReceipt;
+            if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(receipt.decisionId)
+              || receipt.version!==result.approvalVersion || receipt.decision!==result.approval
+              || !["APPROVE","WITHHOLD"].includes(receipt.decision)
+              || typeof receipt.rationale!=="string" || !receipt.rationale.trim() || receipt.rationale.length>2000
+              || typeof receipt.recordedAt!=="string" || !Number.isFinite(Date.parse(receipt.recordedAt)))throw Error("Unexpected decision receipt.");
+            const summary=document.createElement("section");
+            const heading=document.createElement("h5");heading.textContent=receipt.decision==="WITHHOLD"?"Recorded revision request":"Recorded artwork approval";summary.appendChild(heading);
+            const date=document.createElement("p");date.textContent="Decision version "+receipt.version+" · "+new Date(receipt.recordedAt).toLocaleString();summary.appendChild(date);
+            const notes=document.createElement("p");notes.textContent=receipt.rationale;notes.style.whiteSpace="pre-wrap";summary.appendChild(notes);
+            const explanation=document.createElement("p");explanation.textContent=receipt.decision==="WITHHOLD"?"Your requested changes are recorded. A revised creative requires separate preparation and review.":"Your approval applies only to this exact artwork and review. It is not permission to publish or charge.";summary.appendChild(explanation);
+            const save=document.createElement("button");save.type="button";save.textContent="Download my decision record";
+            save.addEventListener("click",()=>{
+              if(current!==generation||!card.isConnected||!summary.isConnected||!csrf||artButton.disabled)return;
+              const record={schema:"alpha.advertiser.artwork-decision-receipt.v1",campaignId:result.campaignId,candidateId:result.candidateId,reviewId:result.reviewId,imageSha256:result.imageSha256,...receipt,recordType:"DECISION_ONLY",dispatchAuthorized:false,paymentAuthorized:false};
+              const url=URL.createObjectURL(new Blob([JSON.stringify(record,null,2)+"\n"],{type:"application/json"}));
+              const link=document.createElement("a");link.href=url;link.download="alpha-artwork-decision-"+receipt.decisionId+".json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+            });summary.appendChild(save);artPanel.appendChild(summary);
+          }
           const rationaleInput=document.createElement("textarea");rationaleInput.maxLength=2000;rationaleInput.placeholder="Approval notes or requested changes";rationaleInput.setAttribute("aria-label","Artwork decision notes");artPanel.appendChild(rationaleInput);
           for(const [choice,label] of [["APPROVE","Approve this artwork"],["WITHHOLD","Request changes / withhold approval"]]){
             const button=document.createElement("button");button.type="button";button.textContent=label;
