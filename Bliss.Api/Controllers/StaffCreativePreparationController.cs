@@ -45,7 +45,7 @@ public sealed class StaffCreativePreparationController(
     // Existing staff authorization only. No workspace creation, customer consent,
     // or provider dispatch on this read. Limit to eligible current drafts.
     [HttpGet("queue")]
-    public async Task<IActionResult> Queue([FromQuery] Guid? campaignId, CancellationToken ct)
+    public async Task<IActionResult> Queue([FromQuery] Guid? campaignId, CancellationToken ct, [FromQuery] bool includeProgress = false)
     {
         Response.Headers.CacheControl = "private, no-store";
         if (!auth.StaffCreativePreparationRequested || !StaffCreativeReadinessController.IsStaff(User, auth))
@@ -66,11 +66,49 @@ public sealed class StaffCreativePreparationController(
             && c.AdvertiserOpportunity.AdvertiserProgram.ExternalProgramId == "alpha:customer-campaign-draft:v1"
             && eligible.Contains(c.AdvertiserOpportunity.AdvertiserProgram.AdvertiserId))
             .OrderByDescending(c => c.CreatedAt).ThenBy(c => c.Id).Take(50)
-            .Select(c => new { c.Id, c.Name, Brief = c.AdvertiserOpportunity!.Description! }).ToListAsync(ct);
+            .Select(c => new { c.Id, c.Name, Brief = c.AdvertiserOpportunity!.Description!, AdvertiserId = c.AdvertiserOpportunity.AdvertiserProgram.AdvertiserId }).ToListAsync(ct);
         var families = production.References().Select(x => x.NicheKey).Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToArray();
+        var progress = new Dictionary<Guid, string>();
+        // Optional bounded progress readback; normal campaign listing remains unchanged.
+        // These are recorded milestones, not an assertion of current consent or authorization.
+        if (includeProgress)
+        {
+            foreach (var row in rows.Take(20))
+            {
+                var digest = CampaignDigest(row.Id, row.Name, row.Brief);
+                var recipe = await CampaignRecipeRevision.ForCampaign(
+                    from p in db.AcademyProductionBriefs.AsNoTracking()
+                    join w in db.WeddingPlannerWorkspaces.AsNoTracking() on p.WorkspaceId equals w.Id
+                    where w.AdvertiserId == row.AdvertiserId && w.IsPrimary && w.Status == "ACTIVE"
+                    select p, row.Id, digest).Select(x => new { x.Id, x.WorkspaceId }).FirstOrDefaultAsync(ct);
+                if (recipe is null) { progress[row.Id] = "RECIPE_NOT_RECORDED"; continue; }
+                var run = await db.ControlledAiRuns.AsNoTracking().Where(x => x.WorkspaceId == recipe.WorkspaceId
+                    && x.BriefId == recipe.Id && x.Kind == "IMAGE"
+                    && x.IdempotencyKey == CampaignImageAuthorization.RunKey(recipe.Id))
+                    .Select(x => new { x.Id, x.Status, x.OutputSha256 }).SingleOrDefaultAsync(ct);
+                if (run is null) { progress[row.Id] = "RECIPE_RECORDED"; continue; }
+                if (run.Status != "SUCCEEDED_PENDING_REVIEW") { progress[row.Id] = "IMAGE_RUN_RECORDED"; continue; }
+                var candidate = await db.AcademyProductionCandidates.AsNoTracking().Where(x => x.BriefId == recipe.Id)
+                    .OrderByDescending(x => x.Version).Select(x => new { x.Id, x.ImageSha256, x.IdempotencyKey }).FirstOrDefaultAsync(ct);
+                if (candidate is null || candidate.ImageSha256 != run.OutputSha256 || candidate.IdempotencyKey != "ai-run-" + run.Id)
+                { progress[row.Id] = "IMAGE_RECORDED"; continue; }
+                var review = await db.AcademyProductionReviews.AsNoTracking().Where(x => x.CandidateId == candidate.Id)
+                    .OrderByDescending(x => x.Version).Select(x => new { x.Id, x.Decision }).FirstOrDefaultAsync(ct);
+                if (review is null) { progress[row.Id] = "STAFF_REVIEW_PENDING"; continue; }
+                if (review.Decision == "REVISE") { progress[row.Id] = "STAFF_REVISION_RECORDED"; continue; }
+                if (review.Decision != "PASS") { progress[row.Id] = "STAFF_REVIEW_RECORDED"; continue; }
+                var approval = await db.CandidateApprovalDecisions.AsNoTracking().Where(x => x.CandidateId == candidate.Id
+                    && x.ScopeKey == "ADVERTISER").OrderByDescending(x => x.Version)
+                    .Select(x => new { x.ReviewId, x.Decision }).FirstOrDefaultAsync(ct);
+                progress[row.Id] = approval?.ReviewId != review.Id ? "ADVERTISER_REVIEW_PENDING"
+                    : approval.Decision == "WITHHOLD" ? "ADVERTISER_REVISION_RECORDED"
+                    : approval.Decision == "APPROVE" ? "ADVERTISER_APPROVAL_RECORDED" : "ADVERTISER_REVIEW_PENDING";
+            }
+        }
         return Ok(new { campaigns = rows.Select(x => new { campaignId = x.Id, campaignName = x.Name,
-            creativeBrief = x.Brief, briefSha256 = CampaignDigest(x.Id, x.Name, x.Brief) }),
+            creativeBrief = x.Brief, briefSha256 = CampaignDigest(x.Id, x.Name, x.Brief),
+            creativeMilestone = progress.GetValueOrDefault(x.Id, "NOT_LOADED") }),
             families, dispatchAuthorized = false, release = "HELD", delivery = "NOT_SENT" });
     }
 
