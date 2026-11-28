@@ -21,7 +21,7 @@ export function verifyResult(r){
  const artwork=bytes(r.artworkBase64,2_000_000),receipt=bytes(r.receiptBase64,100_000);
  if(sha(artwork)!==r.artworkSha256||sha(receipt)!==r.receiptSha256||artwork.length<33||artwork.subarray(0,8).toString("hex")!=="89504e470d0a1a0a"||artwork.readUInt32BE(16)!==960||artwork.readUInt32BE(20)!==540)throw Error("Artwork or receipt mismatch");
  const q=JSON.parse(receipt.toString("utf8"));
- if(q.schema!=="alpha.henry-ford.held-multi-overlay-receipt.v1"||q.compositionSha256!==r.compositionSha256||q.release!=="HELD"||q.delivery!=="NOT_SENT"||q.dispatchAuthorized!==false||q.providerCalls!==0||q.renderExecuted!==true||!hex(q.previewSha256)||q.placements?.length!==1)throw Error("Held receipt mismatch");
+ if(q.schema!=="alpha.henry-ford.held-multi-overlay-receipt.v1"||q.compositionSha256!==r.compositionSha256||q.release!=="HELD"||q.delivery!=="NOT_SENT"||q.dispatchAuthorized!==false||q.providerCalls!==0||q.renderExecuted!==true||q.previewSha256!==r.artworkSha256||q.placements?.length!==1)throw Error("Held receipt mismatch");
  return {artwork,receipt};
 }
 async function send(env){
