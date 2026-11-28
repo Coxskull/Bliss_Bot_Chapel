@@ -64,6 +64,15 @@ if [ -z "${BLISS_DP_CERTIFICATE_BASE64:-}" ] \
             fi
         ) &
     fi
+    if [ "${BLISS_FICTIONAL_HELD_ADMISSION:-NO}" = "YES" ]; then
+        (
+            if timeout 45s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --held-admission; then
+                echo "BLISS_HELD_ADMISSION_HOSTED_PASS"
+            else
+                echo "BLISS_HELD_ADMISSION_HOSTED_REFUSED" >&2
+            fi
+        ) &
+    fi
     exec dotnet /app/Bliss.Api.dll "$@"
 fi
 : "${BLISS_DP_CERTIFICATE_BASE64:?Data protection certificate secret is required}"
