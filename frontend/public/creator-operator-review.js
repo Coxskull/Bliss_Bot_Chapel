@@ -709,6 +709,28 @@
                   finally{busy=false;videoFile.disabled=false;videoFile.value="";}
                 });
                 item.append(videoLabel,videoStatus,video);
+                if(packet.factoryPrivateVideoEnabled===true&&row.status==="PRIVATE_PREVIEW_READY"){
+                  const hosted=node("button","Retrieve verified private video from Factory");hosted.type="button";
+                  hosted.addEventListener("click",async()=>{
+                    if(busy||!item.isConnected||!current())return;
+                    if(!window.confirm("Retrieve this exact single-placement preview for private operator review only? No customer delivery is authorized."))return;
+                    busy=true;hosted.disabled=true;clearVideo();videoStatus.textContent="Retrieving exact private Factory video…";
+                    try{
+                      const s=await session();
+                      const response=await fetch("/api/creators/operator-review/factory-private-video",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+                        headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,specSha256:row.specSha256,previewSha256:row.previewSha256,confirmPrivateHandling:true})});
+                      if(!response.ok||response.headers.get("content-type")!=="video/mp4")throw Error("Unavailable");
+                      const blob=await response.blob();
+                      if(blob.size<12||blob.size>16*1024*1024)throw Error("Invalid size");
+                      const actual=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await blob.arrayBuffer())),v=>v.toString(16).padStart(2,"0")).join("");
+                      if(actual!==row.previewSha256||!item.isConnected||!current())throw Error("Mismatch");
+                      videoUrl=URL.createObjectURL(blob);privateVideoUrls.add(videoUrl);video.src=videoUrl;video.hidden=false;
+                      videoStatus.textContent="Exact hosted private video verified. Review locally; no delivery authorized.";
+                    }catch{clearVideo();videoStatus.textContent="Hosted preview unavailable or verification failed. Use the authorized local export for composites or larger files.";}
+                    finally{busy=false;hosted.disabled=false;}
+                  });
+                  item.append(hosted);
+                }
                 const hash=node("input","");hash.type="text";hash.maxLength=64;hash.placeholder="Review document SHA-256";hash.setAttribute("aria-label","Review document SHA-256");
                 const labels=["I reviewed the exact private video","Brand readability checked","Creator safe area checked","Audio and timing checked","Keep this output held"];
                 const checks=labels.map(label=>{const wrapper=node("label",""),input=node("input","");input.type="checkbox";wrapper.append(input,document.createTextNode(" "+label));item.append(wrapper);return input;});
