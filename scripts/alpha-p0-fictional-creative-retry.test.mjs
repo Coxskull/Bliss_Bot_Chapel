@@ -44,3 +44,9 @@ test("direct client refuses unlocked preview and mismatched staging identity",()
  }
  assert.throws(()=>requireHostedStaging({...env,Authentication__Enabled:undefined}),/Exact Bliss staging configuration required/);
 });
+
+test("guard diagnostics identify failed keys without revealing values",()=>{
+ const env={Runtime__RestrictedPreview:"true",Authentication__Enabled:"false",Authentication__SupabaseEnabled:"false",Authentication__AdvertiserRegistrationRequested:"false",Authentication__AdvertiserPrivacyRequestsRequested:"false",Authentication__AdvertiserSelfServiceRequested:"false",BLISS_FICTIONAL_ROUNDTRIP:"NO",RAILWAY_PROJECT_ID:"43062727-bca5-400a-b801-27828161324b",RAILWAY_ENVIRONMENT_ID:"04edd217-035e-4c18-b864-9b7ded76de7d",RAILWAY_SERVICE_ID:"990e3d3e-b09a-4c43-8873-ab10e9bffd02",BLISS_FICTIONAL_ROUNDTRIP_HMAC_KEY:"DO_NOT_PRINT_THIS"};
+ assert.throws(()=>requireHostedStaging(env),e=>e.message==="Exact Bliss staging configuration required: BLISS_FICTIONAL_ROUNDTRIP,BLISS_FICTIONAL_ROUNDTRIP_HMAC_KEY");
+ assert.throws(()=>requireHostedStaging({...env,RAILWAY_SERVICE_ID:undefined}),e=>e.message==="Exact Bliss staging configuration required: RAILWAY_SERVICE_ID");
+});

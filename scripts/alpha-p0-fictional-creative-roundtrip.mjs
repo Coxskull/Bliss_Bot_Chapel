@@ -34,17 +34,19 @@ export async function verifyHostedRetry(sendResult){
  return first;
 }
 function requireLockedStaging(env){
- // Enforce the locked staging contract even when Node is invoked directly.
+ // Report only names of failed checks, never configuration values.
  const requiredOff=["Authentication__Enabled","Authentication__SupabaseEnabled","Authentication__AdvertiserRegistrationRequested","Authentication__AdvertiserPrivacyRequestsRequested","Authentication__AdvertiserSelfServiceRequested"];
  const additionalOff=["Runtime__PublicAdvertiserRegistrationOnly","Authentication__CreatorRegistrationRequested","Authentication__CreatorSelfServiceRequested","Authentication__AdvertiserMembershipSelfServiceRequested","Authentication__AskAlphaVisitorEnrollmentRequested"];
- if(env.Runtime__RestrictedPreview!=="true"||requiredOff.some(k=>env[k]!=="false")||additionalOff.some(k=>env[k]!==undefined&&env[k]!=="false")||
-    env.RAILWAY_PROJECT_ID!=="43062727-bca5-400a-b801-27828161324b"||
-    env.RAILWAY_ENVIRONMENT_ID!=="04edd217-035e-4c18-b864-9b7ded76de7d"||
-    env.RAILWAY_SERVICE_ID!=="990e3d3e-b09a-4c43-8873-ab10e9bffd02")throw Error("Exact Bliss staging configuration required");
+ const expected={Runtime__RestrictedPreview:"true",RAILWAY_PROJECT_ID:"43062727-bca5-400a-b801-27828161324b",RAILWAY_ENVIRONMENT_ID:"04edd217-035e-4c18-b864-9b7ded76de7d",RAILWAY_SERVICE_ID:"990e3d3e-b09a-4c43-8873-ab10e9bffd02"};
+ const failures=[...Object.keys(expected).filter(k=>env[k]!==expected[k]),...requiredOff.filter(k=>env[k]!=="false"),...additionalOff.filter(k=>env[k]!==undefined&&env[k]!=="false")];
+ if(failures.length)throw Error("Exact Bliss staging configuration required: "+failures.join(","));
 }
 export function requireHostedStaging(env){
  requireLockedStaging(env);
- if(env.BLISS_FICTIONAL_ROUNDTRIP!=="YES"||!hex(env.BLISS_FICTIONAL_ROUNDTRIP_HMAC_KEY))throw Error("Exact Bliss staging configuration required");
+ const failures=[];
+ if(env.BLISS_FICTIONAL_ROUNDTRIP!=="YES")failures.push("BLISS_FICTIONAL_ROUNDTRIP");
+ if(!hex(env.BLISS_FICTIONAL_ROUNDTRIP_HMAC_KEY))failures.push("BLISS_FICTIONAL_ROUNDTRIP_HMAC_KEY");
+ if(failures.length)throw Error("Exact Bliss staging configuration required: "+failures.join(","));
 }
 async function send(env){
  requireHostedStaging(env);

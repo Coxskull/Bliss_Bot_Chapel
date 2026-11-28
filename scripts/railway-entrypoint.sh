@@ -83,6 +83,25 @@ if [ -z "${BLISS_DP_CERTIFICATE_BASE64:-}" ] \
     # Never reuse keys from a real session/volume. This directory disappears
     # with the preview container; the middleware denies all auth/write routes.
     export Runtime__DataProtectionKeysPath=/tmp/bliss-restricted-preview-keys
+    # Deployment-specific, default-off operator invocation. The fixed job is
+    # idempotent at the Factory; no restart loop or generic render input.
+    if [ "${BLISS_FICTIONAL_ROUNDTRIP_ON_STARTUP:-}" = "YES" ]; then
+        if [ "$#" -ne 0 ] || [ "${RAILWAY_PROJECT_ID:-}" != "43062727-bca5-400a-b801-27828161324b" ] \
+            || [ "${RAILWAY_ENVIRONMENT_ID:-}" != "04edd217-035e-4c18-b864-9b7ded76de7d" ] \
+            || [ "${RAILWAY_SERVICE_ID:-}" != "990e3d3e-b09a-4c43-8873-ab10e9bffd02" ]; then
+            echo "BLISS_FICTIONAL_STARTUP_SCOPE_REFUSED" >&2
+            exit 2
+        fi
+        (
+            dir=$(mktemp -d /tmp/bliss-fictional.XXXXXXXX) || exit 2
+            trap 'rm -rf -- "$dir"' EXIT
+            if timeout 500s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --hosted "$dir"; then
+                echo "BLISS_FICTIONAL_STARTUP_VERIFIED"
+            else
+                echo "BLISS_FICTIONAL_STARTUP_REFUSED" >&2
+            fi
+        ) &
+    fi
     echo "Bliss restricted interface preview: login and writes disabled."
     exec dotnet /app/Bliss.Api.dll "$@"
 fi
