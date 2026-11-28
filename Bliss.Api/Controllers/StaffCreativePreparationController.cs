@@ -318,8 +318,28 @@ public sealed class StaffCreativePreparationController(
                 recipeSha256 = existingRecipe?.RecipeSha256;
                 recipeFamily = existingRecipe?.Family; recipeHeadline = existingRecipe?.Headline; recipeCta = existingRecipe?.Cta;
             }
+            object? currentOrder = null;
+            if (auth.StarterServiceOfferRequested)
+            {
+                var offerId = StarterServiceOffer.OfferId(draft.Id,request.BriefSha256);
+                var offer = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x=>x.Id==offerId
+                    && x.WorkspaceId==workspace.WorkspaceId && x.Action==StarterServiceOffer.OfferAction
+                    && x.ActorType=="OPERATOR" && x.Outcome=="OFFERED",ct);
+                var terms=StarterServiceOffer.Parse(offer?.Detail);
+                if (offer is not null && terms is not null && terms.CampaignId==draft.Id
+                    && terms.CampaignDigest==request.BriefSha256)
+                {
+                    var accepted=await StarterServiceOffer.CurrentAccepted(db,draft.Id,offerId,ct);
+                    var milestone=accepted is null
+                        ? await db.WeddingPlannerAuditEvents.AnyAsync(x=>x.Id==StarterServiceOffer.AcceptanceId(offerId),ct)
+                            ? "REVIEW_REQUIRED" : "AWAITING_ACCEPTANCE"
+                        : await StarterServiceOffer.OrderProgress(db,accepted,draft.Id,ct);
+                    currentOrder=new {offerId,offerSha256=ControlledAiService.Hash(offer.Detail!),scope=terms.Scope,
+                        terms=terms.TermsText,amountCents=14900,currency="usd",milestone};
+                }
+            }
             return Ok(new { campaignId = draft.Id, briefSha256 = request.BriefSha256,
-                workspaceId = workspace.WorkspaceId, brandDnaId = brand?.Id,
+                workspaceId = workspace.WorkspaceId, brandDnaId = brand?.Id,currentOrder,
                 brandStatus = brand?.Status ?? "NOT_PREPARED", productionBriefId, recipeSha256,
                 recipeFields = productionBriefId.HasValue ? new { family = recipeFamily, headline = recipeHeadline, cta = recipeCta } : null,
                 brandVersion = brand?.Version ?? 0,
