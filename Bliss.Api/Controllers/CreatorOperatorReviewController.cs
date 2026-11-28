@@ -557,7 +557,7 @@ public sealed class CreatorOperatorReviewController(
         if(manifest is null)return NotFound();
         await tx.CommitAsync(ct);
         return Ok(new {manifest,manifestSha256=ControlledAiService.Hash(CreatorFactorySubmission.Serialize(manifest)),
-            factoryVisualReviewEnabled=auth.CreatorFactoryVisualReviewRequested, factorySubmissionEnabled=auth.CreatorFactorySubmissionRequested, factoryArtworkEnabled=auth.CreatorFactorySubmissionRequested && auth.CreatorFactoryArtworkRequested, factoryArtworkTransferEnabled=auth.CreatorFactorySubmissionRequested && auth.CreatorFactoryArtworkRequested && auth.CreatorFactoryArtworkTransferRequested});
+            factoryPrivateVideoEnabled=auth.CreatorFactorySubmissionRequested && CreatorFactoryVideoTransfer.Enabled, factoryVisualReviewEnabled=auth.CreatorFactoryVisualReviewRequested, factorySubmissionEnabled=auth.CreatorFactorySubmissionRequested, factoryArtworkEnabled=auth.CreatorFactorySubmissionRequested && auth.CreatorFactoryArtworkRequested, factoryArtworkTransferEnabled=auth.CreatorFactorySubmissionRequested && auth.CreatorFactoryArtworkRequested && auth.CreatorFactoryArtworkTransferRequested});
     }
 
     [HttpPost("factory-submission")]
