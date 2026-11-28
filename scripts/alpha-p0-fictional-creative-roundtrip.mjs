@@ -145,6 +145,7 @@ async function heldVideo(env,root){
   console.log(JSON.stringify({marker:"BLISS_HELD_VIDEO_PENDING",specSha256:spec,status:row.status,transfer:false}));return;
  }
  if(row.status!=="PRIVATE_PREVIEW_READY"||![row.previewSha256,row.compositionSha256,row.qaSha256,row.receiptSha256].every(hex)||!Number.isFinite(Date.parse(row.recordedAt)))throw Error("RESULT_MISMATCH");
+ if(env.BLISS_FACTORY_PRIVATE_VIDEO_READ!=="YES"){console.log(JSON.stringify({marker:"BLISS_HELD_VIDEO_READY_TRANSFER_DISABLED",specSha256:spec,transfer:false}));return;}
  const p=await pull("/private-video",row.previewSha256),length=Number(p.headers.get("content-length"));
  if(!p.ok||p.headers.get("content-type")?.split(";")[0]!=="video/mp4"||p.headers.get("x-alpha-preview-sha256")!==row.previewSha256||!Number.isSafeInteger(length)||length<12||length>16777216){await p.body?.cancel();throw Error("VIDEO_RESPONSE_REFUSED");}
  const video=await bounded(p,16777216);
