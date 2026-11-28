@@ -128,6 +128,24 @@ jobs:
             echo "::error::Partially configured certificate was accepted"
             exit 1
           fi
+          # Exact Railway identity remains locked, while other environments and migration commands are refused.
+          run_staging() {
+            run_preview env RAILWAY_PROJECT_ID=43062727-bca5-400a-b801-27828161324b \
+              RAILWAY_ENVIRONMENT_ID=04edd217-035e-4c18-b864-9b7ded76de7d \
+              RAILWAY_SERVICE_ID=990e3d3e-b09a-4c43-8873-ab10e9bffd02 "$@"
+          }
+          output="$(run_staging sh scripts/railway-entrypoint.sh)"
+          [[ "$output" == *TASK3B_DOTNET_STUB_EXECUTED* ]]
+          for blocked in RAILWAY_PROJECT_ID RAILWAY_ENVIRONMENT_ID RAILWAY_SERVICE_ID Runtime__PublicAdvertiserRegistrationOnly Authentication__CreatorRegistrationRequested Authentication__CreatorSelfServiceRequested Authentication__AdvertiserMembershipSelfServiceRequested Authentication__AskAlphaVisitorEnrollmentRequested; do
+            if run_staging env "$blocked=wrong" sh scripts/railway-entrypoint.sh >"$bin_dir/rejected" 2>&1; then
+              exit 1
+            fi
+            grep -q BLISS_CREATIVE_STAGING_SCOPE_REFUSED "$bin_dir/rejected"
+          done
+          if run_staging sh scripts/railway-entrypoint.sh --apply-migrations=true >"$bin_dir/rejected" 2>&1; then
+            exit 1
+          fi
+          grep -q BLISS_CREATIVE_STAGING_COMMAND_REFUSED "$bin_dir/rejected"
           echo "TASK3B_LOCKED_CERTLESS_PREVIEW_ONLY_PASS"
       - name: Verify explicit fictional staging command without network
         shell: bash
