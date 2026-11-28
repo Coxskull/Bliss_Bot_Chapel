@@ -2,6 +2,34 @@
   "use strict";
   const status = document.getElementById("review-status"), queue = document.getElementById("queue"), load = document.getElementById("load");
   const node = (tag, text) => { const e = document.createElement(tag); e.textContent = text; return e; };
+  const privateMp4Header = bytes => bytes.byteLength >= 12 && new Uint8Array(bytes,4,4).every((v,i)=>v===[102,116,121,112][i]);
+  // Bound the hosted response before buffering; never trust a length header alone.
+  async function readPrivateHostedVideo(response, stillCurrent) {
+    const max=16*1024*1024;
+    const rawLength=response.headers.get("content-length");
+    const declared=rawLength===null?null:Number(rawLength);
+    if(!response.ok||response.headers.get("content-type")?.split(";")[0]!=="video/mp4"||!response.body
+      ||(declared!==null&&(!Number.isSafeInteger(declared)||declared<12||declared>max))){
+      await response.body?.cancel();throw Error("Invalid video response");
+    }
+    const reader=response.body.getReader(),parts=[];let total=0;
+    try{
+      while(true){
+        if(!stillCurrent())throw Error("Selection changed");
+        const {done,value}=await reader.read();
+        if(done)break;
+        total+=value.byteLength;
+        if(total>max||(declared!==null&&total>declared))throw Error("Video size exceeded");
+        parts.push(value);
+      }
+      if(total<12||(declared!==null&&total!==declared)||!stillCurrent())throw Error("Incomplete video");
+      const bytes=new Uint8Array(total);let offset=0;
+      for(const part of parts){bytes.set(part,offset);offset+=part.byteLength;}
+      if(!privateMp4Header(bytes.buffer))throw Error("Invalid MP4 header");
+      return bytes;
+    }catch(e){await reader.cancel().catch(()=>{});throw e;}
+    finally{reader.releaseLock();}
+  }
   let busy = false;
   async function session() {
     const r = await fetch("/api/auth/session", { credentials: "same-origin", cache: "no-store" });
@@ -701,6 +729,7 @@
                   busy=true;videoFile.disabled=true;videoStatus.textContent="Verifying exact local video…";
                   try{
                     const bytes=await selected.arrayBuffer();
+                    if(!privateMp4Header(bytes))throw Error("Invalid MP4 header");
                     const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),v=>v.toString(16).padStart(2,"0")).join("");
                     if(version!==videoEpoch||!item.isConnected||!current()||digest!==row.previewSha256)throw Error("Preview mismatch");
                     videoUrl=URL.createObjectURL(new Blob([bytes],{type:"video/mp4"}));privateVideoUrls.add(videoUrl);
@@ -718,11 +747,10 @@
                     try{
                       const s=await session();
                       const response=await fetch("/api/creators/operator-review/factory-private-video",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
-                        headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,specSha256:row.specSha256,previewSha256:row.previewSha256,confirmPrivateHandling:true})});
-                      if(!response.ok||response.headers.get("content-type")!=="video/mp4")throw Error("Unavailable");
-                      const blob=await response.blob();
-                      if(blob.size<12||blob.size>16*1024*1024)throw Error("Invalid size");
-                      const actual=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await blob.arrayBuffer())),v=>v.toString(16).padStart(2,"0")).join("");
+                        headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},signal:AbortSignal.timeout(60000),body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,specSha256:row.specSha256,previewSha256:row.previewSha256,confirmPrivateHandling:true})});
+                      const bytes=await readPrivateHostedVideo(response,()=>item.isConnected&&current());
+                      const blob=new Blob([bytes],{type:"video/mp4"});
+                      const actual=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),v=>v.toString(16).padStart(2,"0")).join("");
                       if(actual!==row.previewSha256||!item.isConnected||!current())throw Error("Mismatch");
                       videoUrl=URL.createObjectURL(blob);privateVideoUrls.add(videoUrl);video.src=videoUrl;video.hidden=false;
                       videoStatus.textContent="Exact hosted private video verified. Review locally; no delivery authorized.";
