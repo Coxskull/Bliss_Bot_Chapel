@@ -126,6 +126,43 @@ jobs:
             exit 1
           fi
           echo "TASK3B_LOCKED_CERTLESS_PREVIEW_ONLY_PASS"
+      - name: Verify explicit fictional staging command without network
+        shell: bash
+        run: |
+          set -euo pipefail
+          bin_dir="$(mktemp -d)"
+          trap 'rm -rf "$bin_dir"' EXIT
+          cat > "$bin_dir/timeout" <<'STUB'
+          #!/bin/sh
+          test "$#" -eq 5 && test "$1" = 500s && test "$2" = node &&
+            test "$3" = /app/ops/alpha-p0-fictional-creative-roundtrip.mjs &&
+            test "$4" = --hosted && test "$5" = /tmp/fictional-only || exit 1
+          echo FICTIONAL_COMMAND_STUB
+          STUB
+          chmod 700 "$bin_dir/timeout"
+          run_command() {
+            env PATH="$bin_dir:$PATH" Runtime__RestrictedPreview=true \
+              Authentication__Enabled=false Authentication__SupabaseEnabled=false \
+              Authentication__AdvertiserRegistrationRequested=false \
+              Authentication__AdvertiserPrivacyRequestsRequested=false \
+              Authentication__AdvertiserSelfServiceRequested=false \
+              BLISS_FICTIONAL_ROUNDTRIP=YES \
+              RAILWAY_PROJECT_ID=43062727-bca5-400a-b801-27828161324b \
+              RAILWAY_ENVIRONMENT_ID=04edd217-035e-4c18-b864-9b7ded76de7d \
+              RAILWAY_SERVICE_ID=990e3d3e-b09a-4c43-8873-ab10e9bffd02 "$@"
+          }
+          output="$(run_command sh scripts/railway-entrypoint.sh --fictional-roundtrip /tmp/fictional-only)"
+          [[ "$output" == FICTIONAL_COMMAND_STUB ]]
+          for key in RAILWAY_PROJECT_ID RAILWAY_ENVIRONMENT_ID RAILWAY_SERVICE_ID BLISS_FICTIONAL_ROUNDTRIP Runtime__RestrictedPreview Authentication__Enabled Authentication__SupabaseEnabled Authentication__AdvertiserRegistrationRequested Authentication__AdvertiserPrivacyRequestsRequested Authentication__AdvertiserSelfServiceRequested; do
+            if run_command env "$key=wrong" sh scripts/railway-entrypoint.sh --fictional-roundtrip /tmp/fictional-only >"$bin_dir/rejected" 2>&1; then
+              echo "::error::Fictional command accepted wrong $key"
+              exit 1
+            fi
+            ! grep -q FICTIONAL_COMMAND_STUB "$bin_dir/rejected"
+          done
+          if run_command sh scripts/railway-entrypoint.sh --fictional-roundtrip >"$bin_dir/rejected" 2>&1; then
+            exit 1
+          fi
       - name: Verify registration and privacy-rights source contract
         run: python3 -m unittest discover -s scripts -p 'test_advertiser_account_legal_contract.py' -v
       - name: Verify browser privacy form behavior when case history is unavailable
