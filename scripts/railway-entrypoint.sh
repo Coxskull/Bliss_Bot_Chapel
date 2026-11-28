@@ -64,6 +64,15 @@ if [ -z "${BLISS_DP_CERTIFICATE_BASE64:-}" ] \
             fi
         ) &
     fi
+    if [ "${BLISS_FICTIONAL_HELD_VIDEO_READ:-NO}" = "YES" ]; then
+        (
+            dir="$(mktemp -d /tmp/alpha-held-video.XXXXXXXX)"
+            chmod 0700 "$dir"
+            if ! timeout 100s node /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs --held-video "$dir"; then
+                echo "BLISS_HELD_VIDEO_HOSTED_REFUSED" >&2
+            fi
+        ) &
+    fi
     if [ "${BLISS_FICTIONAL_HELD_ADMISSION:-NO}" = "YES" ]; then
         (
             if timeout 45s node /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs --held-admission; then
