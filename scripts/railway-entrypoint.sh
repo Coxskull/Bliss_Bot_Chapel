@@ -1,6 +1,24 @@
 #!/bin/sh
 set -eu
 umask 077
+# This integration candidate is deployable only as the existing locked staging preview.
+# Refuse accidental production use, feature activation or one-shot migration commands.
+if [ "${RAILWAY_PROJECT_ID:-}" != "43062727-bca5-400a-b801-27828161324b" ] \
+    || [ "${RAILWAY_ENVIRONMENT_ID:-}" != "04edd217-035e-4c18-b864-9b7ded76de7d" ] \
+    || [ "${RAILWAY_SERVICE_ID:-}" != "990e3d3e-b09a-4c43-8873-ab10e9bffd02" ] \
+    || [ "${Runtime__RestrictedPreview:-}" != "true" ] \
+    || [ "${Runtime__PublicAdvertiserRegistrationOnly:-false}" != "false" ] \
+    || [ "${Authentication__Enabled:-}" != "false" ] \
+    || [ "${Authentication__SupabaseEnabled:-}" != "false" ] \
+    || [ "${Authentication__AdvertiserRegistrationRequested:-}" != "false" ] \
+    || [ "${Authentication__AdvertiserPrivacyRequestsRequested:-}" != "false" ] \
+    || [ "${Authentication__AdvertiserSelfServiceRequested:-}" != "false" ] \
+    || [ "${Authentication__CreatorSelfServiceRequested:-false}" != "false" ] \
+    || [ "${Authentication__AskAlphaVisitorEnrollmentRequested:-false}" != "false" ] \
+    || [ "$#" -ne 0 ]; then
+    echo "BLISS_CREATIVE_STAGING_SCOPE_REFUSED" >&2
+    exit 2
+fi
 if [ "$(id -u)" = 0 ]; then
     install -d -m 0700 -o app -g app /data/keys /data/secrets
     exec setpriv --reuid=app --regid=app --init-groups --inh-caps=-all --ambient-caps=-all --no-new-privs /usr/local/bin/bliss-railway-entrypoint "$@"
