@@ -13,6 +13,7 @@
   const imagePanel = el("image-reservation"), imageReview = el("image-review"), imageReserve = el("image-reserve"),
     budgetApproval = el("image-budget-approved");
   let imageTarget = null, imageGrant = null, offerWorkspace = null;
+  let restoredOrder=null;
   let artworkRun = null, artworkCandidate = null, artworkVersion = 0, artworkUrl = null, artworkRetry = null, revisionReviewId=null;
   const artworkPanel = el("artwork-panel"), artwork = el("artwork"), artworkReview = el("artwork-review");
   const artworkFields = ["decision","custom","quality","original","geo","defect","rationale","preserve","repair"].map(k=>el("artwork-"+k));
@@ -81,8 +82,10 @@
   function sync() {
     file.disabled = busy; review.disabled = busy;
     el("checkout-issue").disabled=busy || !manifest || !offerWorkspace || !review.checked
+        || (restoredOrder!==null && (restoredOrder.milestone!=="AWAITING_PAYMENT_INSTRUCTIONS" || el("checkout-offer-id").value.trim()!==restoredOrder.offerId))
         || !uuid.test(el("checkout-offer-id").value.trim()) || !el("checkout-merchant").checked || !el("checkout-clear").checked;
     el("offer-save").disabled=busy || !manifest || !offerWorkspace || !review.checked || !el("offer-approved").checked
+        || restoredOrder!==null
         || !el("offer-tax").checked || !el("offer-scope").value.trim() || !el("offer-terms").value.trim();
     queueRefresh.disabled=busy || queueLoading;queueSelect.disabled=busy || queueLoading;
     queueOpen.disabled=busy || queueLoading || !queuedCampaigns.some(x=>x.campaignId===queueSelect.value);
@@ -114,7 +117,7 @@
   }
   function reset() {
     manifest = brand = brandState = pendingBrand = null; review.checked = approval.checked = false;
-    offerWorkspace=null;el("starter-offer").hidden=true;el("offer-scope").value=el("offer-terms").value="";
+    restoredOrder=null;el("offer-scope").readOnly=el("offer-terms").readOnly=el("checkout-offer-id").readOnly=false;offerWorkspace=null;el("starter-offer").hidden=true;el("offer-scope").value=el("offer-terms").value="";
     el("offer-approved").checked=el("offer-tax").checked=false;el("offer-status").textContent="";
     el("checkout-offer-id").value=el("checkout-url").value=el("checkout-status").textContent="";
     el("checkout-merchant").checked=el("checkout-clear").checked=false;
@@ -227,7 +230,25 @@
           || !["NOT_PREPARED","DRAFT","CONFIRMED"].includes(result.brandStatus)
           || (result.brandVersion > 0 && (!result.brandFields || brandKeys.some(k=>typeof result.brandFields[k]!=="string"))))
         throw Error("Brand response could not be verified.");
+      const order=result.currentOrder;
+      if(order!=null && (!uuid.test(order.offerId)||!hex.test(order.offerSha256)||order.amountCents!==14900||order.currency!=="usd"
+          ||typeof order.scope!=="string"||!order.scope.trim()||order.scope.length>1000
+          ||typeof order.terms!=="string"||!order.terms.trim()||order.terms.length>700
+          ||!["AWAITING_ACCEPTANCE","AWAITING_PAYMENT_INSTRUCTIONS","PAYMENT_INSTRUCTIONS_RECORDED","RECONCILIATION_RECORDED","REVIEW_REQUIRED"].includes(order.milestone)))
+        throw Error("Stored order could not be verified.");
+      restoredOrder=order??null;
       offerWorkspace=result.workspaceId;el("starter-offer").hidden=false;
+      if(restoredOrder){
+        el("offer-scope").value=order.scope;el("offer-terms").value=order.terms;
+        el("checkout-offer-id").value=order.offerId;
+        el("offer-approved").checked=el("offer-tax").checked=false;
+        el("checkout-merchant").checked=el("checkout-clear").checked=false;
+        el("checkout-url").value="";
+        el("offer-status").textContent="Existing immutable offer: "+order.offerId;
+        el("checkout-status").textContent=({AWAITING_ACCEPTANCE:"Await customer acceptance.",AWAITING_PAYMENT_INSTRUCTIONS:"Accepted order; independently check Stripe before preparing instructions.",PAYMENT_INSTRUCTIONS_RECORDED:"Instructions already recorded. Do not issue another.",RECONCILIATION_RECORDED:"Reconciliation recorded. Continue creative preparation; verify current payment before release.",REVIEW_REQUIRED:"Resolve order discrepancies before proceeding."})[order.milestone];
+      }
+      el("offer-scope").readOnly=el("offer-terms").readOnly=!!restoredOrder;
+      el("checkout-offer-id").readOnly=!!restoredOrder;
       const values = Object.fromEntries(brandKeys.map(k=>[k,result.brandFields?.[k]??""]));
       brandState = {version:result.brandVersion,status:result.brandStatus,fields:values};
       brandInputs.forEach((f,i)=>f.value=values[brandKeys[i]]);
