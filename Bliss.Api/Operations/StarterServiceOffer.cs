@@ -67,7 +67,11 @@ public static class StarterServiceOffer
             ? "PAYMENT_INSTRUCTIONS_RECORDED" : "REVIEW_REQUIRED";
     }
 
-    public static async Task<string> OrderProgress(BlissDbContext db, Accepted accepted, Guid campaignId, CancellationToken ct)
+    public sealed record ProgressReference(string Milestone, Guid? ReconciliationId);
+    public static async Task<string> OrderProgress(BlissDbContext db, Accepted accepted, Guid campaignId, CancellationToken ct) =>
+        (await OrderProgressReference(db, accepted, campaignId, ct)).Milestone;
+
+    public static async Task<ProgressReference> OrderProgressReference(BlissDbContext db, Accepted accepted, Guid campaignId, CancellationToken ct)
     {
         var instructionsId = StarterArtworkDelivery.StableId(
             StaffCreativePreparationController.StarterCheckoutIssued, accepted.VersionId.ToString("N"));
@@ -78,7 +82,8 @@ public static class StarterServiceOffer
             x.AdvertiserId == accepted.AdvertiserId && x.WorkspaceId == accepted.WorkspaceId
             && x.Action == AdvertiserOperatorReviewController.StarterReconciliationAction
             && x.Detail != null && x.Detail.StartsWith(prefix)).Take(2).ToArrayAsync(ct);
-        return RecordedProgress(accepted, campaignId, instructions, reconciliations);
+        var milestone=RecordedProgress(accepted,campaignId,instructions,reconciliations);
+        return new ProgressReference(milestone,milestone=="RECONCILIATION_RECORDED"?reconciliations[0].Id:null);
     }
 
     public static async Task<Accepted?> CurrentAccepted(BlissDbContext db,Guid campaignId,Guid offerId,CancellationToken ct)
