@@ -134,13 +134,48 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
                         var run = await db.ControlledAiRuns.AsNoTracking().Where(x => x.WorkspaceId == prepared.WorkspaceId
                             && x.BriefId == prepared.Id && x.IdempotencyKey == CampaignImageAuthorization.RunKey(prepared.Id)
                             && x.Kind == "IMAGE").Select(x => new { x.Status, x.InputSnapshotJson, x.InputSha256,
-                                x.Model, x.Provider, HasOutput = x.OutputImage != null }).SingleOrDefaultAsync(ct);
+                                x.Id, x.OutputSha256, x.Model, x.Provider, HasOutput = x.OutputImage != null }).SingleOrDefaultAsync(ct);
                         if (run is not null && run.Model == ProviderConsentModel
                             && string.Equals(run.Provider, "OpenAI", StringComparison.OrdinalIgnoreCase)
                             && ControlledAiService.Hash(run.InputSnapshotJson) == run.InputSha256
                             && CampaignImageAuthorization.ProviderInput(run.InputSnapshotJson, grant) is not null)
+                        {
                             creativeProgress = run.Status == "SUCCEEDED_PENDING_REVIEW" && run.HasOutput
                                 ? "IMAGE_RECORDED_PENDING_REVIEW" : "IMAGE_RUN_RECORDED";
+                            // Recorded milestones only. Artwork access, payment reconciliation and
+                            // final delivery remain subject to their existing independent checks.
+                            if (creativeProgress == "IMAGE_RECORDED_PENDING_REVIEW")
+                            {
+                                var candidate = await db.AcademyProductionCandidates.AsNoTracking()
+                                    .Where(x => x.BriefId == prepared.Id).OrderByDescending(x => x.Version)
+                                    .Select(x => new { x.Id, x.IdempotencyKey, x.ImageSha256 }).FirstOrDefaultAsync(ct);
+                                if (candidate is not null && candidate.IdempotencyKey == "ai-run-" + run.Id
+                                    && candidate.ImageSha256 == run.OutputSha256)
+                                {
+                                    var review = await db.AcademyProductionReviews.AsNoTracking()
+                                        .Where(x => x.CandidateId == candidate.Id).OrderByDescending(x => x.Version)
+                                        .Select(x => new { x.Id, x.Decision, x.CriticalDefect, x.Customization,
+                                            x.QualityParity, x.Originality, x.GeographicAuthenticity, x.ActorLabel }).FirstOrDefaultAsync(ct);
+                                    if (review?.Decision == "REVISE")
+                                        creativeProgress = "STAFF_REVISION_RECORDED";
+                                    else if (review is not null && review.Decision == "PASS" && !review.CriticalDefect
+                                        && review.ActorLabel != subject
+                                        && new[] { review.Customization, review.QualityParity, review.Originality,
+                                            review.GeographicAuthenticity }.All(x => x == "PASS"))
+                                    {
+                                        creativeProgress = "ADVERTISER_REVIEW_PENDING";
+                                        var decision = await db.CandidateApprovalDecisions.AsNoTracking()
+                                            .Where(x => x.CandidateId == candidate.Id && x.ScopeKey == "ADVERTISER")
+                                            .OrderByDescending(x => x.Version)
+                                            .Select(x => new { x.ReviewId, x.Decision, x.ActorSubject }).FirstOrDefaultAsync(ct);
+                                        if (decision is not null && decision.ReviewId == review.Id
+                                            && decision.ActorSubject != review.ActorLabel)
+                                            creativeProgress = decision.Decision == "APPROVE" ? "ADVERTISER_APPROVAL_RECORDED"
+                                                : decision.Decision == "WITHHOLD" ? "ADVERTISER_REVISION_RECORDED" : creativeProgress;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
