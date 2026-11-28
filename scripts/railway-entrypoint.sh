@@ -50,18 +50,18 @@ if [ "${1:-}" = "--fictional-roundtrip" ]; then
         exit 2
     fi
     # The existing client additionally verifies HMAC, output custody and held receipts.
-    exec timeout 500s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --hosted "$2"
+    exec timeout 500s node /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs --hosted "$2"
 fi
 # Preserve the deployed staging-only admission and video readback lanes.
 # Explicit invocation only; the Node client independently validates staging scope.
 case "${1:-}" in
     --fictional-held-admission)
         test "$#" -eq 1 || exit 2
-        exec timeout 45s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --held-admission
+        exec timeout 45s node /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs --held-admission
         ;;
     --fictional-held-video)
         test "$#" -eq 2 || exit 2
-        exec timeout 100s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --held-video "$2"
+        exec timeout 100s node /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs --held-video "$2"
         ;;
 esac
 # A strictly locked, credential-free interface preview may use ephemeral local
@@ -95,7 +95,7 @@ if [ -z "${BLISS_DP_CERTIFICATE_BASE64:-}" ] \
         (
             dir=$(mktemp -d /tmp/bliss-fictional.XXXXXXXX) || exit 2
             trap 'rm -rf -- "$dir"' EXIT
-            if timeout 500s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --hosted "$dir"; then
+            if timeout 500s node /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs --hosted "$dir"; then
                 echo "BLISS_FICTIONAL_STARTUP_VERIFIED"
             else
                 echo "BLISS_FICTIONAL_STARTUP_REFUSED" >&2

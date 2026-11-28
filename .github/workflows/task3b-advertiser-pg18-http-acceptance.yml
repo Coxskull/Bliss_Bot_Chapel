@@ -156,7 +156,7 @@ jobs:
           cat > "$bin_dir/timeout" <<'STUB'
           #!/bin/sh
           test "$#" -eq 5 && test "$1" = 500s && test "$2" = node &&
-            test "$3" = /app/ops/alpha-p0-fictional-creative-roundtrip.mjs &&
+            test "$3" = /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs &&
             test "$4" = --hosted && test "$5" = /tmp/fictional-only || exit 1
           echo FICTIONAL_COMMAND_STUB
           STUB
