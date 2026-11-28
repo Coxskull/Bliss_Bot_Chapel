@@ -323,7 +323,7 @@ public sealed class StaffCreativePreparationController(
             {
                 var offerId = StarterServiceOffer.OfferId(draft.Id,request.BriefSha256);
                 var offer = await db.WeddingPlannerAuditEvents.AsNoTracking().SingleOrDefaultAsync(x=>x.Id==offerId
-                    && x.WorkspaceId==workspace.WorkspaceId && x.Action==StarterServiceOffer.OfferAction
+                    && x.AdvertiserId==draft.AdvertiserId && x.WorkspaceId==workspace.WorkspaceId && x.Action==StarterServiceOffer.OfferAction
                     && x.ActorType=="OPERATOR" && x.Outcome=="OFFERED",ct);
                 var terms=StarterServiceOffer.Parse(offer?.Detail);
                 if (offer is not null && terms is not null && terms.CampaignId==draft.Id
