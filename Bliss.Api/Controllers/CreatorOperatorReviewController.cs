@@ -632,6 +632,37 @@ public sealed class CreatorOperatorReviewController(
         return File(bytes,"image/png","alpha-private-"+candidateId.ToString("N")+".png");
     }
 
+    [HttpPost("factory-private-video")]
+    [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
+    [RequestSizeLimit(2048)]
+    public async Task<IActionResult> RetrieveFactoryVideo([FromBody] RetrieveCreatorFactoryVideo request,CancellationToken ct)
+    {
+        Response.Headers.CacheControl="private, no-store";
+        if(!CreatorFactoryVideoTransfer.Enabled || !auth.CreatorFactorySubmissionRequested || !auth.CreatorFulfillmentManifestRequested
+            || !auth.CreatorCampaignInvitationRequested || !auth.CreatorCompensationProposalRequested || !auth.CreatorAgreementEvidenceRequested
+            || !auth.CreatorAuthorityVerificationRequested || !TryOperator(out _))return StatusCode(403);
+        if(!request.ConfirmPrivateHandling || request.HandoffId==Guid.Empty || request.IllustrationId==Guid.Empty
+            || !CreatorCompensationProposal.ValidDocumentHash(request.ManifestSha256)
+            || !CreatorCompensationProposal.ValidDocumentHash(request.SpecSha256)
+            || !CreatorCompensationProposal.ValidDocumentHash(request.PreviewSha256))return BadRequest();
+        string body;
+        await using(var tx=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,ct)){
+            var current=await CreatorFulfillmentManifest.Build(db,request.HandoffId,request.IllustrationId,ct);
+            if(current is null)return NotFound();
+            body=CreatorFactorySubmission.Serialize(current);
+            if(ControlledAiService.Hash(body)!=request.ManifestSha256)return Conflict();
+            await tx.CommitAsync(ct);
+        }
+        var bytes=await CreatorFactoryVideoTransfer.Read(body,request.SpecSha256,request.PreviewSha256,ct);
+        if(bytes is null)return StatusCode(503,new {error="Private Factory video unavailable."});
+        await using var readback=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,ct);
+        var refreshed=await CreatorFulfillmentManifest.Build(db,request.HandoffId,request.IllustrationId,ct);
+        if(refreshed is null || CreatorFactorySubmission.Serialize(refreshed)!=body)return Conflict();
+        await readback.CommitAsync(ct);
+        Response.Headers["X-Content-Type-Options"]="nosniff";
+        return File(bytes,"video/mp4","alpha-private-"+request.PreviewSha256+".mp4");
+    }
+
     [HttpPost("factory-render-status")]
     [EnableRateLimiting(BlissRateLimitPolicies.Writes)]
     [RequestSizeLimit(2048)]
@@ -799,3 +830,5 @@ public sealed record SubmitCreatorFactoryPreparation(Guid HandoffId,Guid Illustr
 public sealed record RetrieveCreatorFactoryArtwork(Guid HandoffId,Guid IllustrationId,string ManifestSha256,bool ConfirmPrivateArtworkHandling,bool TransferToFactory=false);
 
 public sealed record RecordCreatorFactoryVisualReview(Guid HandoffId,Guid IllustrationId,string ManifestSha256,string SpecSha256,string PreviewSha256,string ReviewDocumentSha256,string Decision,bool ExactPreviewReviewed,bool BrandReadabilityReviewed,bool CreatorSafeAreaReviewed,bool AudioTimingReviewed,bool ConfirmHeld);
+
+public sealed record RetrieveCreatorFactoryVideo(Guid HandoffId,Guid IllustrationId,string ManifestSha256,string SpecSha256,string PreviewSha256,bool ConfirmPrivateHandling);
