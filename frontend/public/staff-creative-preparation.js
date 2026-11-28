@@ -131,7 +131,7 @@
     queueLoading=true;sync();
     try{
       await session();
-      const response=await get("/api/internal/creative-preparation/queue"+(search?"?campaignId="+encodeURIComponent(search):""));
+      const response=await get("/api/internal/creative-preparation/queue?includeProgress=true"+(search?"&campaignId="+encodeURIComponent(search):""));
       if(!response.ok)throw Error("Campaign queue unavailable (HTTP "+response.status+").");
       const result=await response.json();
       if(!Array.isArray(result.campaigns)||result.campaigns.length>50||!Array.isArray(result.families)
@@ -139,11 +139,16 @@
       queuedCampaigns=result.campaigns.filter(x=>uuid.test(x.campaignId)&&hex.test(x.briefSha256)
           &&typeof x.campaignName==="string"&&typeof x.creativeBrief==="string");
       queueSelect.replaceChildren(new Option("Select campaign",""));
-      for(const row of queuedCampaigns)queueSelect.add(new Option(row.campaignName+" — "+row.campaignId,row.campaignId));
+      const milestones={RECIPE_NOT_RECORDED:"Needs recipe",RECIPE_RECORDED:"Recipe saved",IMAGE_RUN_RECORDED:"Image run recorded",IMAGE_RECORDED:"Image recorded",STAFF_REVIEW_PENDING:"Needs staff review",STAFF_REVISION_RECORDED:"Staff revision",STAFF_REVIEW_RECORDED:"Staff review recorded",ADVERTISER_REVIEW_PENDING:"Needs advertiser review",ADVERTISER_REVISION_RECORDED:"Advertiser requested changes",ADVERTISER_APPROVAL_RECORDED:"Advertiser approval recorded",NOT_LOADED:"Progress not loaded"};
+      const revisionFirst=row=>["ADVERTISER_REVISION_RECORDED","STAFF_REVISION_RECORDED"].includes(row.creativeMilestone)?0:1;
+      queuedCampaigns.sort((a,b)=>revisionFirst(a)-revisionFirst(b));
+      for(const row of queuedCampaigns)queueSelect.add(new Option((milestones[row.creativeMilestone]||"Progress unavailable")+" — "+row.campaignName+" — "+row.campaignId,row.campaignId));
       const old=fields[0].value;fields[0].replaceChildren(new Option("Select eligible template",""));
       for(const family of result.families.filter(x=>typeof x==="string"&&x.length>0&&x.length<=128))fields[0].add(new Option(family,family));
       fields[0].value=old;
-      queueStatus.textContent=queuedCampaigns.length+" eligible campaign(s); "+(fields[0].options.length-1)+" eligible template families.";
+      const revisions=queuedCampaigns.filter(row=>revisionFirst(row)===0).length;
+      const loaded=queuedCampaigns.filter(row=>Object.hasOwn(milestones,row.creativeMilestone)&&row.creativeMilestone!=="NOT_LOADED").length;
+      queueStatus.textContent=queuedCampaigns.length+" eligible campaign(s); "+loaded+" with recorded progress; "+revisions+" with recorded revision feedback. Search by exact campaign ID for other progress. Milestones are not release or payment authorization.";
     }catch(e){queuedCampaigns=[];queueSelect.replaceChildren(new Option("Queue unavailable",""));queueStatus.textContent=e.message;}
     finally{queueLoading=false;sync();}
   }
