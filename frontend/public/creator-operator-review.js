@@ -584,13 +584,12 @@
                       specSha256:row.specSha256,previewSha256:row.previewSha256,observations:notes.value.trim(),
                       exactPreviewReviewed:checks[0].checked,brandReadabilityReviewed:checks[1].checked,creatorSafeAreaReviewed:checks[2].checked,audioTimingReviewed:checks[3].checked,
                       confirmHeld:checks[4].checked,release:"HELD",delivery:"NOT_SENT",dispatchAuthorized:false,paymentAuthorized:false};
-                    const snapshot=JSON.stringify(evidence);
                     const bytes=new TextEncoder().encode(JSON.stringify(evidence,null,2)+"\n");
                     const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),v=>v.toString(16).padStart(2,"0")).join("");
                     if(!item.isConnected||notes.value.trim()!==evidence.observations||checks.some((v,i)=>v.checked!==[evidence.exactPreviewReviewed,evidence.brandReadabilityReviewed,evidence.creatorSafeAreaReviewed,evidence.audioTimingReviewed,evidence.confirmHeld][i]))throw Error("Review changed");
                     const url=URL.createObjectURL(new Blob([bytes],{type:"application/json"}));
                     const link=document.createElement("a");link.href=url;link.download="alpha-visual-review-"+row.specSha256.slice(0,16)+".json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-                    prepared={digest,snapshot};hash.value=digest;status.textContent="Private review document download requested. Its exact SHA-256 is ready to record; no release authorized.";
+                    prepared={digest};hash.value=digest;status.textContent="Private review document download requested. Its exact SHA-256 is ready to record; no release authorized.";
                   }catch{status.textContent="Review evidence preparation failed. Refresh and retry."; }
                   finally{busy=false;exportReview.disabled=false;}
                 });
@@ -601,6 +600,7 @@
                   b.addEventListener("click",async()=>{
                     if(busy||!item.isConnected||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
                     const reviewDocumentSha256=hash.value.trim();
+                    if(prepared&&prepared.digest!==reviewDocumentSha256){status.textContent="Review evidence changed. Prepare a fresh document.";return;}
                     if(!/^[a-f0-9]{64}$/.test(reviewDocumentSha256)||!checks[0].checked||!checks[4].checked||(decision==="VISUAL_ACCEPTED"&&!checks.slice(1,4).every(x=>x.checked))){status.textContent="Complete the required review evidence and confirmations.";return;}
                     if(!window.confirm("Record this immutable review for the exact preview? No campaign release, delivery or payment is authorized."))return;
                     busy=true;b.disabled=true;
