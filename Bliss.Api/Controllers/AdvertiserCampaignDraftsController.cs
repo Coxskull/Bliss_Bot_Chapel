@@ -397,6 +397,7 @@ public sealed class AdvertiserCampaignDraftsController(BlissDbContext db, BlissA
                 delivery = releaseId.HasValue ? "DOWNLOAD_NOT_CONFIRMED" : "NOT_SENT",
                 downloadRequestRecorded = downloadRequest is not null, downloadRequestedAt = downloadRequest?.OccurredAt,
                 receiptAcknowledged = acknowledgment is not null, receiptAcknowledgedAt = acknowledgment?.OccurredAt,
+                downloadRequestReceiptId = downloadRequest?.Id, receiptAcknowledgmentId = acknowledgment?.Id,
                 dispatchAuthorized = false, paymentAuthorized = false });
         }
         catch (WeddingPlannerNotFoundException) { return NotFound(); }

@@ -10,12 +10,19 @@
   const tools = el("draft-tools"), search = el("draft-search"), refresh = el("draft-refresh");
   const count = el("draft-count"), readback = el("draft-readback");
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const assetFilter=document.createElement("select");
+  assetFilter.setAttribute("aria-label","Filter private artwork library");
+  for(const [value,label] of [["ALL","All campaigns"],["RELEASED","Verified available artwork"],["ACKNOWLEDGED","Verified receipt acknowledged"],["REVIEW","Verified artwork pending release"],["UNCHECKED","Artwork not checked"]]){
+    const option=document.createElement("option");option.value=value;option.textContent=label;assetFilter.appendChild(option);
+  }
+  tools.appendChild(assetFilter);
+  assetFilter.addEventListener("change",()=>filterCampaigns());
   function filterCampaigns() {
     const q = search.value.trim().toLowerCase();
     const cards = Array.from(list.querySelectorAll("article[data-campaign-search]"));
     let visible = 0;
     for (const card of cards) {
-      card.hidden = !card.dataset.campaignSearch.includes(q);
+      card.hidden = !card.dataset.campaignSearch.includes(q) || (assetFilter.value!=="ALL" && card.dataset.assetState!==assetFilter.value);
       if (!card.hidden) visible++;
     }
     count.textContent = visible + " of " + cards.length + " saved campaigns shown" +
@@ -36,7 +43,7 @@
   }
   function clear() {
     generation++; loadSequence++; csrf = null; busy = false; retry = null;
-    tools.hidden = true; search.value = ""; count.textContent = ""; readback.textContent = ""; refresh.disabled = true;
+    assetFilter.value="ALL";tools.hidden = true; search.value = ""; count.textContent = ""; readback.textContent = ""; refresh.disabled = true;
     disposePreviews();
     panel.hidden = true; form.reset(); list.replaceChildren(); status.textContent = "";
     save.disabled = true;
@@ -47,6 +54,7 @@
     for (const row of rows) {
       const card = document.createElement("article");
       card.dataset.campaignSearch = (row.name + " " + row.campaignId).toLowerCase();
+      card.dataset.assetState="UNCHECKED";
       for (const [tag, text] of [["h3",row.name],["p","Campaign reference: "+row.campaignId],
         ["p","Created: "+new Date(row.createdAt).toLocaleString()],["p",row.brief],["p","Status: "+row.status]]) {
         const node = document.createElement(tag); node.textContent = text; card.appendChild(node);
@@ -126,10 +134,13 @@
       consentButton.addEventListener("click",()=>consent("REVIEW"));
       const artButton = document.createElement("button"); artButton.type="button"; artButton.textContent="Review prepared artwork"; card.appendChild(artButton);
       const artPanel = document.createElement("section"); card.appendChild(artPanel);
+      const assetSummary=document.createElement("p");assetSummary.textContent="Private artwork: not yet checked.";card.appendChild(assetSummary);
+      const checkAsset=document.createElement("button");checkAsset.type="button";checkAsset.textContent="Check artwork availability";card.appendChild(checkAsset);
+      checkAsset.addEventListener("click",()=>artwork("STATUS",null,null,true));
       let artUrl = null, artRetry = null;
-      async function artwork(action, prior, rationale) {
+      async function artwork(action, prior, rationale, metadataOnly=false) {
         if(!csrf || panel.hidden || artButton.disabled) return;
-        const current=generation; artButton.disabled=true;
+        const current=generation; artButton.disabled=true;checkAsset.disabled=true;
         for(const button of artPanel.querySelectorAll("button"))button.disabled=true;
         try {
           const send = body=>fetch(endpoint+"/creative-artwork",{method:"POST",credentials:"same-origin",cache:"no-store",
@@ -164,6 +175,12 @@
                 (result.receiptAcknowledged ? !result.downloadRequestRecorded ||
                    typeof result.receiptAcknowledgedAt !== "string" || !Number.isFinite(Date.parse(result.receiptAcknowledgedAt))
                    : result.receiptAcknowledgedAt != null)))throw Error("Unexpected receipt acknowledgment.");
+          if((result.downloadRequestRecorded===true && !uuid.test(result.downloadRequestReceiptId||""))
+              ||(result.receiptAcknowledged===true && !uuid.test(result.receiptAcknowledgmentId||"")))throw Error("Missing exact receipt reference.");
+          card.dataset.assetState=result.receiptAcknowledged?"ACKNOWLEDGED":result.release==="ARTWORK_DOWNLOAD_AVAILABLE"?"RELEASED":"REVIEW";
+          assetSummary.textContent="Private artwork: "+({ACKNOWLEDGED:"receipt acknowledged",RELEASED:"available for authorized download",REVIEW:"review only; held"})[card.dataset.assetState]+". Recorded status; refresh before use.";
+          filterCampaigns();
+          if(metadataOnly){artPanel.replaceChildren();if(artUrl){URL.revokeObjectURL(artUrl);artUrl=null;}return;}
           const imageResponse=await send({campaignId:row.campaignId,action:"PREVIEW",candidateId:result.candidateId,
             reviewId:result.reviewId,imageSha256:result.imageSha256});
           if(!imageResponse.ok || !imageResponse.headers.get("content-type")?.startsWith("image/png"))throw Error("Artwork preview unavailable.");
@@ -212,6 +229,18 @@
             : result.downloadRequestRecorded ? "Download requested on "+new Date(result.downloadRequestedAt).toLocaleString()+". Saving the file is not confirmed."
             : "Delivery: artwork available; download completion is not confirmed.";
           artPanel.appendChild(delivery);
+          if(result.release==="ARTWORK_DOWNLOAD_AVAILABLE" && result.downloadRequestRecorded){
+            const receiptButton=document.createElement("button");receiptButton.type="button";receiptButton.textContent="Export my artwork receipt record";
+            receiptButton.addEventListener("click",()=>{
+              if(current!==generation||!card.isConnected||!receiptButton.isConnected||!csrf||artButton.disabled)return;
+              const record={schema:"alpha.advertiser.artwork-receipt.v1",campaignId:result.campaignId,candidateId:result.candidateId,reviewId:result.reviewId,
+                releaseId:result.releaseId,imageSha256:result.imageSha256,downloadRequestReceiptId:result.downloadRequestReceiptId,
+                downloadRequestedAt:result.downloadRequestedAt,receiptAcknowledgmentId:result.receiptAcknowledgmentId??null,
+                receiptAcknowledgedAt:result.receiptAcknowledgedAt??null,recordType:"CUSTOMER_RECORDED_EVIDENCE",independentDeliveryVerified:false,dispatchAuthorized:false,paymentAuthorized:false};
+              const url=URL.createObjectURL(new Blob([JSON.stringify(record,null,2)+"\n"],{type:"application/json"}));
+              const link=document.createElement("a");link.href=url;link.download="alpha-artwork-receipt-"+result.releaseId+".json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+            });artPanel.appendChild(receiptButton);
+          }
           if(result.release==="ARTWORK_DOWNLOAD_AVAILABLE"){
             const download=document.createElement("button");download.type="button";download.textContent="Download final approved artwork";artPanel.appendChild(download);
             const ack=document.createElement("button");ack.type="button";ack.textContent="Confirm I received the final artwork";
@@ -235,8 +264,8 @@
             });
           }
           status.textContent="Artwork decision: "+result.approval+". Campaign remains held.";
-        }catch(e){if(current===generation && card.isConnected){artPanel.replaceChildren();if(artUrl){URL.revokeObjectURL(artUrl);artUrl=null;}status.textContent=e.message;}}
-        finally{if(current===generation)artButton.disabled=false;}
+        }catch(e){if(current===generation && card.isConnected){card.dataset.assetState="UNCHECKED";assetSummary.textContent="Private artwork: current availability unverified.";filterCampaigns();artPanel.replaceChildren();if(artUrl){URL.revokeObjectURL(artUrl);artUrl=null;}status.textContent=e.message;}}
+        finally{if(current===generation){artButton.disabled=false;checkAsset.disabled=false;}}
       }
       artButton.addEventListener("click",()=>artwork("STATUS"));
       const offerButton=document.createElement("button");offerButton.type="button";offerButton.textContent="Review $149 service offer";card.appendChild(offerButton);
