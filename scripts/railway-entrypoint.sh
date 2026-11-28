@@ -57,7 +57,7 @@ if [ -z "${BLISS_DP_CERTIFICATE_BASE64:-}" ] \
             dir="$(mktemp -d /tmp/alpha-fictional.XXXXXXXX)"
             trap 'rm -rf -- "$dir"' EXIT
             chmod 0700 "$dir"
-            if test -r /app/ops/alpha-p0-fictional-creative-roundtrip.mjs && timeout 500s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --hosted "$dir"; then
+            if test -r /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs && timeout 500s node /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs --hosted "$dir"; then
                 echo "BLISS_FICTIONAL_HOSTED_RETRY_PASS"
             else
                 echo "BLISS_FICTIONAL_HOSTED_REFUSED" >&2
@@ -66,7 +66,7 @@ if [ -z "${BLISS_DP_CERTIFICATE_BASE64:-}" ] \
     fi
     if [ "${BLISS_FICTIONAL_HELD_ADMISSION:-NO}" = "YES" ]; then
         (
-            if timeout 45s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --held-admission; then
+            if timeout 45s node /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs --held-admission; then
                 echo "BLISS_HELD_ADMISSION_HOSTED_PASS"
             else
                 echo "BLISS_HELD_ADMISSION_HOSTED_REFUSED" >&2
