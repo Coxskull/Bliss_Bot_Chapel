@@ -110,8 +110,52 @@ async function heldAdmission(env,artwork=false){
  }
  console.log(JSON.stringify({marker:"BLISS_HELD_ADMISSION_PASS",placementId:m.placementId,manifestSha256:digest,admission:"HELD_METADATA_ONLY",statusReadback:"PASS",delivery:"NOT_SENT"}));
 }
+// Read the exact approved fictional schedule. Never fabricate hosted output
+// from an offline preview. A held/pending status is not a successful transfer.
+async function heldVideo(env,root){
+ if(env.BLISS_FICTIONAL_HELD_VIDEO_READ!=="YES"||
+    env.RAILWAY_PROJECT_ID!=="43062727-bca5-400a-b801-27828161324b"||
+    env.RAILWAY_ENVIRONMENT_ID!=="04edd217-035e-4c18-b864-9b7ded76de7d"||
+    env.RAILWAY_SERVICE_ID!=="990e3d3e-b09a-4c43-8873-ab10e9bffd02"||
+    env.Runtime__RestrictedPreview!=="true"||env.Authentication__Enabled!=="false"||
+    !hex(env.BLISS_FACTORY_CREATIVE_INTAKE_HMAC_KEY))throw Error("HELD_VIDEO_SCOPE_REFUSED");
+ const dir=await lstat(root);
+ if(!isAbsolute(root)||!dir.isDirectory()||dir.isSymbolicLink()||dir.mode&0o077||await realpath(root)!==root)throw Error("PRIVATE_DIRECTORY_REQUIRED");
+ const ids=["handoffId","placementId","campaignId","creatorId","slotId","candidateId","reviewId","advertiserApprovalId","alphaQaApprovalId","inventoryFitId","quoteVersionId","quoteLineId","agreementEvidenceId"];
+ const m=Object.fromEntries(ids.map((k,i)=>[k,"cafe3000-0000-4000-8000-"+String(i+1).padStart(12,"0")]));
+ Object.assign(m,{imageSha256:"e69276ac3d961f7c662ca5d52a855606c022fb1a1f672e311cd8b3c48bd82658",handoffSha256:sha("ALPHA_FICTIONAL_HANDOFF"),agreementEvidenceSha256:sha("ALPHA_FICTIONAL_AGREEMENT"),schema:"alpha-creator-fulfillment-preparation/v1",status:"PREPARATION_ONLY",delivery:"NOT_SENT",fundingVerified:false,bookingAuthorized:false,paymentAuthorized:false,deliveryAuthorized:false,factoryDispatchAuthorized:false,slotType:"PERIMETER_OVERLAY",startSecond:0,durationSeconds:2,imageWidth:960,imageHeight:270});
+ const body=JSON.stringify(m),digest=sha(body),spec="40862f4c2afabeb0c00218e479fe21982fdffe8572e241f3d7dd933aa4754238";
+ if(digest!=="a00be413c73167b98a801922b2020350a0cc885fdb74e362a202ab048df3b4f5")throw Error("MANIFEST_MISMATCH");
+ const base="https://alpha-hf-factory-engine-staging.up.railway.app/internal/bliss/held-creative-jobs";
+ async function pull(path,preview){
+  const ts=String(Math.floor(Date.now()/1000));
+  const prefix=preview?"alpha-bliss-private-video-read-v1\n"+ts+"\n"+spec+"\n"+preview+"\n":"alpha-bliss-held-creative-read-v1\n"+ts+"\n";
+  const signature=createHmac("sha256",Buffer.from(env.BLISS_FACTORY_CREATIVE_INTAKE_HMAC_KEY,"hex")).update(prefix).update(body).digest("hex");
+  return fetch(base+path,{method:"POST",redirect:"error",headers:{"content-type":"application/json","x-alpha-timestamp":ts,"x-alpha-signature":signature,...(preview?{"x-alpha-spec-sha256":spec,"x-alpha-preview-sha256":preview}:{})},body,signal:AbortSignal.timeout(45000)});
+ }
+ async function bounded(res,max){const reader=res.body.getReader(),chunks=[];let n=0;try{while(true){const {value,done}=await reader.read();if(done)break;n+=value.byteLength;if(n>max)throw Error("RESPONSE_LIMIT");chunks.push(Buffer.from(value));}}finally{await reader.cancel().catch(()=>{});}return Buffer.concat(chunks);}
+ const res=await pull("/render-status");
+ if(!res.ok){await res.body?.cancel();throw Error("STATUS_HTTP_"+res.status);}
+ const v=JSON.parse((await bounded(res,32768)).toString("utf8"));
+ if(v.schema!=="alpha.henry-ford.held-render-status.v1"||v.placementId!==m.placementId||v.handoffId!==m.handoffId||v.manifestSha256!==digest||v.visualQa!=="HUMAN_REVIEW_PENDING"||v.release!=="HELD"||v.delivery!=="NOT_SENT"||v.dispatchAuthorized!==false||!Array.isArray(v.results))throw Error("STATUS_MISMATCH");
+ const rows=v.results.filter(x=>x.specSha256===spec);
+ if(rows.length!==1)throw Error("SCHEDULE_MISMATCH");
+ const row=rows[0];
+ if(["SCHEDULE_RECORDED","CLAIMED_OUTCOME_UNCONFIRMED","FAILED_OR_INCOMPLETE","REVIEW_REQUIRED"].includes(row.status)){
+  console.log(JSON.stringify({marker:"BLISS_HELD_VIDEO_PENDING",specSha256:spec,status:row.status,transfer:false}));return;
+ }
+ if(row.status!=="PRIVATE_PREVIEW_READY"||![row.previewSha256,row.compositionSha256,row.qaSha256,row.receiptSha256].every(hex)||!Number.isFinite(Date.parse(row.recordedAt)))throw Error("RESULT_MISMATCH");
+ const p=await pull("/private-video",row.previewSha256),length=Number(p.headers.get("content-length"));
+ if(!p.ok||p.headers.get("content-type")?.split(";")[0]!=="video/mp4"||p.headers.get("x-alpha-preview-sha256")!==row.previewSha256||!Number.isSafeInteger(length)||length<12||length>16777216){await p.body?.cancel();throw Error("VIDEO_RESPONSE_REFUSED");}
+ const video=await bounded(p,16777216);
+ if(video.length!==length||sha(video)!==row.previewSha256||video.toString("ascii",4,8)!=="ftyp")throw Error("VIDEO_CHECKSUM_MISMATCH");
+ await save(join(root,"private-preview.mp4"),video);
+ await save(join(root,"private-preview-receipt.json"),Buffer.from(JSON.stringify({placementId:m.placementId,specSha256:spec,manifestSha256:digest,previewSha256:row.previewSha256,compositionSha256:row.compositionSha256,qaSha256:row.qaSha256,receiptSha256:row.receiptSha256,release:"HELD",delivery:"NOT_SENT",visualQa:"HUMAN_REVIEW_PENDING"})));
+ console.log(JSON.stringify({marker:"BLISS_HELD_VIDEO_TRANSFER_PASS",specSha256:spec,previewSha256:row.previewSha256,bytes:video.length,delivery:"NOT_SENT"}));
+}
 async function main(){
  const args=process.argv.slice(2);
+ if(args.length===2&&args[0]==="--held-video")return heldVideo(process.env,args[1]);
  if(args.length===1&&args[0]==="--held-admission")return heldAdmission(process.env,process.env.BLISS_FICTIONAL_ARTWORK_CUSTODY==="YES");
  if(args[0]!=="--hosted"&&args[0]!=="--verify-local")throw Error("Use --hosted OUTPUT or --verify-local RESULT OUTPUT");
  const local=args[0]==="--verify-local",root=args[local?2:1];
