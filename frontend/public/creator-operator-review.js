@@ -566,7 +566,35 @@
                 const labels=["I reviewed the exact private video","Brand readability checked","Creator safe area checked","Audio and timing checked","Keep this output held"];
                 const checks=labels.map(label=>{const wrapper=node("label",""),input=node("input","");input.type="checkbox";wrapper.append(input,document.createTextNode(" "+label));item.append(wrapper);return input;});
                 item.append(hash);
-                const status=node("p","");
+                const notes=node("textarea","");notes.maxLength=2000;notes.rows=3;notes.placeholder="Private visual review observations; do not include personal data";notes.setAttribute("aria-label","Private visual review observations");
+                const exportReview=node("button","Prepare and download review evidence");exportReview.type="button";
+                const status=node("p","");status.setAttribute("role","status");
+                let prepared=null;
+                const invalidate=()=>{if(prepared){prepared=null;hash.value="";status.textContent="Review observations changed. Prepare fresh evidence before recording."; }};
+                for(const check of checks)check.addEventListener("change",invalidate);
+                notes.addEventListener("input",invalidate);
+                hash.addEventListener("input",()=>{prepared=null;});
+                exportReview.addEventListener("click",async()=>{
+                  if(busy||!item.isConnected||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+                  if(!checks[0].checked||!checks[4].checked||!notes.value.trim()){status.textContent="Review the exact private video, confirm it remains held, and enter your observations.";return;}
+                  busy=true;exportReview.disabled=true;prepared=null;hash.value="";
+                  try{
+                    await session();
+                    const evidence={schema:"alpha.bliss.private-visual-review-evidence.v1",handoffId,placementId:m.placementId,manifestSha256:packet.manifestSha256,
+                      specSha256:row.specSha256,previewSha256:row.previewSha256,observations:notes.value.trim(),
+                      exactPreviewReviewed:checks[0].checked,brandReadabilityReviewed:checks[1].checked,creatorSafeAreaReviewed:checks[2].checked,audioTimingReviewed:checks[3].checked,
+                      confirmHeld:checks[4].checked,release:"HELD",delivery:"NOT_SENT",dispatchAuthorized:false,paymentAuthorized:false};
+                    const snapshot=JSON.stringify(evidence);
+                    const bytes=new TextEncoder().encode(JSON.stringify(evidence,null,2)+"\n");
+                    const digest=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),v=>v.toString(16).padStart(2,"0")).join("");
+                    if(!item.isConnected||notes.value.trim()!==evidence.observations||checks.some((v,i)=>v.checked!==[evidence.exactPreviewReviewed,evidence.brandReadabilityReviewed,evidence.creatorSafeAreaReviewed,evidence.audioTimingReviewed,evidence.confirmHeld][i]))throw Error("Review changed");
+                    const url=URL.createObjectURL(new Blob([bytes],{type:"application/json"}));
+                    const link=document.createElement("a");link.href=url;link.download="alpha-visual-review-"+row.specSha256.slice(0,16)+".json";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+                    prepared={digest,snapshot};hash.value=digest;status.textContent="Private review document download requested. Its exact SHA-256 is ready to record; no release authorized.";
+                  }catch{status.textContent="Review evidence preparation failed. Refresh and retry."; }
+                  finally{busy=false;exportReview.disabled=false;}
+                });
+                item.append(notes,exportReview);
                 for(const decision of ["VISUAL_ACCEPTED","REVISION_REQUESTED"]){
                   if(decision==="VISUAL_ACCEPTED"&&row.status!=="PRIVATE_PREVIEW_READY")continue;
                   const b=node("button",decision==="VISUAL_ACCEPTED"?"Record visual acceptance":"Request revision");b.type="button";
