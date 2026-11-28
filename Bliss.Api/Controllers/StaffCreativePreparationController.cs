@@ -357,12 +357,11 @@ public sealed class StaffCreativePreparationController(
                     && terms.CampaignDigest==request.BriefSha256)
                 {
                     var accepted=await StarterServiceOffer.CurrentAccepted(db,draft.Id,offerId,ct);
-                    var milestone=accepted is null
-                        ? await db.WeddingPlannerAuditEvents.AnyAsync(x=>x.Id==StarterServiceOffer.AcceptanceId(offerId),ct)
-                            ? "REVIEW_REQUIRED" : "AWAITING_ACCEPTANCE"
-                        : await StarterServiceOffer.OrderProgress(db,accepted,draft.Id,ct);
+                    var recorded=accepted is null ? null : await StarterServiceOffer.OrderProgressReference(db,accepted,draft.Id,ct);
+                    var milestone=recorded?.Milestone ?? (await db.WeddingPlannerAuditEvents.AnyAsync(x=>x.Id==StarterServiceOffer.AcceptanceId(offerId),ct)
+                            ? "REVIEW_REQUIRED" : "AWAITING_ACCEPTANCE");
                     currentOrder=new {offerId,offerSha256=ControlledAiService.Hash(offer.Detail!),scope=terms.Scope,
-                        terms=terms.TermsText,amountCents=14900,currency="usd",milestone};
+                        terms=terms.TermsText,amountCents=14900,currency="usd",milestone,reconciliationId=recorded?.ReconciliationId};
                 }
             }
             return Ok(new { campaignId = draft.Id, briefSha256 = request.BriefSha256,
