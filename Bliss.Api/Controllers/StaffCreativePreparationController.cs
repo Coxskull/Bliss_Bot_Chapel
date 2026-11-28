@@ -70,6 +70,7 @@ public sealed class StaffCreativePreparationController(
         var families = production.References().Select(x => x.NicheKey).Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToArray();
         var progress = new Dictionary<Guid, string>();
+        var orderProgress = new Dictionary<Guid, string>();
         // Optional bounded progress readback; normal campaign listing remains unchanged.
         // These are recorded milestones, not an assertion of current consent or authorization.
         if (includeProgress)
@@ -77,6 +78,31 @@ public sealed class StaffCreativePreparationController(
             foreach (var row in rows.Take(20))
             {
                 var digest = CampaignDigest(row.Id, row.Name, row.Brief);
+                if (auth.StarterServiceOfferRequested)
+                {
+                    var offerId = StarterServiceOffer.OfferId(row.Id, digest);
+                    var offer = await db.WeddingPlannerAuditEvents.AsNoTracking()
+                        .Where(x => x.Id == offerId && x.AdvertiserId == row.AdvertiserId)
+                        .Select(x => new { x.Action, x.Outcome, x.ActorType, x.Detail, x.WorkspaceId }).SingleOrDefaultAsync(ct);
+                    if (offer is null) orderProgress[row.Id] = "OFFER_NOT_RECORDED";
+                    else
+                    {
+                        var terms = StarterServiceOffer.Parse(offer.Detail);
+                        if (offer.Action != StarterServiceOffer.OfferAction || offer.Outcome != "OFFERED"
+                            || offer.ActorType != "OPERATOR" || terms?.CampaignId != row.Id || terms.CampaignDigest != digest
+                            || !await db.WeddingPlannerWorkspaces.AnyAsync(w => w.Id == offer.WorkspaceId
+                                && w.AdvertiserId == row.AdvertiserId && w.IsPrimary && w.Status == "ACTIVE", ct))
+                            orderProgress[row.Id] = "REVIEW_REQUIRED";
+                        else
+                        {
+                            var accepted = await StarterServiceOffer.CurrentAccepted(db, row.Id, offerId, ct);
+                            orderProgress[row.Id] = accepted is not null
+                                ? await StarterServiceOffer.OrderProgress(db, accepted, row.Id, ct)
+                                : await db.WeddingPlannerAuditEvents.AnyAsync(x => x.Id == StarterServiceOffer.AcceptanceId(offerId), ct)
+                                    ? "REVIEW_REQUIRED" : "AWAITING_ACCEPTANCE";
+                        }
+                    }
+                }
                 var recipe = await CampaignRecipeRevision.ForCampaign(
                     from p in db.AcademyProductionBriefs.AsNoTracking()
                     join w in db.WeddingPlannerWorkspaces.AsNoTracking() on p.WorkspaceId equals w.Id
@@ -108,7 +134,8 @@ public sealed class StaffCreativePreparationController(
         }
         return Ok(new { campaigns = rows.Select(x => new { campaignId = x.Id, campaignName = x.Name,
             creativeBrief = x.Brief, briefSha256 = CampaignDigest(x.Id, x.Name, x.Brief),
-            creativeMilestone = progress.GetValueOrDefault(x.Id, "NOT_LOADED") }),
+            creativeMilestone = progress.GetValueOrDefault(x.Id, "NOT_LOADED"),
+            orderMilestone = orderProgress.GetValueOrDefault(x.Id, "NOT_LOADED") }),
             families, dispatchAuthorized = false, release = "HELD", delivery = "NOT_SENT" });
     }
 

@@ -141,14 +141,18 @@
       queueSelect.replaceChildren(new Option("Select campaign",""));
       const milestones={RECIPE_NOT_RECORDED:"Needs recipe",RECIPE_RECORDED:"Recipe saved",IMAGE_RUN_RECORDED:"Image run recorded",IMAGE_RECORDED:"Image recorded",STAFF_REVIEW_PENDING:"Needs staff review",STAFF_REVISION_RECORDED:"Staff revision",STAFF_REVIEW_RECORDED:"Staff review recorded",ADVERTISER_REVIEW_PENDING:"Needs advertiser review",ADVERTISER_REVISION_RECORDED:"Advertiser requested changes",ADVERTISER_APPROVAL_RECORDED:"Advertiser approval recorded",NOT_LOADED:"Progress not loaded"};
       const revisionFirst=row=>["ADVERTISER_REVISION_RECORDED","STAFF_REVISION_RECORDED"].includes(row.creativeMilestone)?0:1;
-      queuedCampaigns.sort((a,b)=>revisionFirst(a)-revisionFirst(b));
-      for(const row of queuedCampaigns)queueSelect.add(new Option((milestones[row.creativeMilestone]||"Progress unavailable")+" — "+row.campaignName+" — "+row.campaignId,row.campaignId));
+      const orderLabels={OFFER_NOT_RECORDED:"Needs offer",AWAITING_ACCEPTANCE:"Awaiting acceptance",AWAITING_PAYMENT_INSTRUCTIONS:"Needs payment instructions",PAYMENT_INSTRUCTIONS_RECORDED:"Instructions recorded",RECONCILIATION_RECORDED:"Reconciliation recorded",REVIEW_REQUIRED:"Order needs review",NOT_LOADED:"Order progress not loaded"};
+      const orderPriority=row=>({REVIEW_REQUIRED:0,RECONCILIATION_RECORDED:1,AWAITING_PAYMENT_INSTRUCTIONS:2,PAYMENT_INSTRUCTIONS_RECORDED:3,AWAITING_ACCEPTANCE:4,OFFER_NOT_RECORDED:5})[row.orderMilestone]??6;
+      queuedCampaigns.sort((a,b)=>orderPriority(a)-orderPriority(b)||revisionFirst(a)-revisionFirst(b));
+      for(const row of queuedCampaigns)queueSelect.add(new Option((orderLabels[row.orderMilestone]||"Order progress unavailable")+" | "+(milestones[row.creativeMilestone]||"Creative progress unavailable")+" — "+row.campaignName+" — "+row.campaignId,row.campaignId));
       const old=fields[0].value;fields[0].replaceChildren(new Option("Select eligible template",""));
       for(const family of result.families.filter(x=>typeof x==="string"&&x.length>0&&x.length<=128))fields[0].add(new Option(family,family));
       fields[0].value=old;
       const revisions=queuedCampaigns.filter(row=>revisionFirst(row)===0).length;
       const loaded=queuedCampaigns.filter(row=>Object.hasOwn(milestones,row.creativeMilestone)&&row.creativeMilestone!=="NOT_LOADED").length;
-      queueStatus.textContent=queuedCampaigns.length+" eligible campaign(s); "+loaded+" with recorded progress; "+revisions+" with recorded revision feedback. Search by exact campaign ID for other progress. Milestones are not release or payment authorization.";
+      const accepted=queuedCampaigns.filter(row=>["AWAITING_PAYMENT_INSTRUCTIONS","PAYMENT_INSTRUCTIONS_RECORDED","RECONCILIATION_RECORDED"].includes(row.orderMilestone)).length;
+      const exceptions=queuedCampaigns.filter(row=>row.orderMilestone==="REVIEW_REQUIRED").length;
+      queueStatus.textContent=queuedCampaigns.length+" eligible campaign(s); "+loaded+" with creative progress; "+revisions+" with revision feedback; "+accepted+" with current accepted-order milestones; "+exceptions+" requiring order review. Search by exact campaign ID for other progress. Recorded milestones do not authorize payment or delivery.";
     }catch(e){queuedCampaigns=[];queueSelect.replaceChildren(new Option("Queue unavailable",""));queueStatus.textContent=e.message;}
     finally{queueLoading=false;sync();}
   }
