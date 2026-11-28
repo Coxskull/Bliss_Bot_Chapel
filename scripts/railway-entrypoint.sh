@@ -26,6 +26,26 @@ if [ -z "${BLISS_DP_CERTIFICATE_BASE64:-}" ] \
     # with the preview container; the middleware denies all auth/write routes.
     export Runtime__DataProtectionKeysPath=/tmp/bliss-restricted-preview-keys
     echo "Bliss restricted interface preview: login and writes disabled."
+    # Only the exact isolated staging service may run the fixed fictional job.
+    # One bounded invocation per startup; no customer data, no provider spend.
+    if [ "${BLISS_FICTIONAL_ROUNDTRIP:-NO}" = "YES" ]; then
+        if [ "${RAILWAY_PROJECT_ID:-}" != "43062727-bca5-400a-b801-27828161324b" ] \
+            || [ "${RAILWAY_ENVIRONMENT_ID:-}" != "04edd217-035e-4c18-b864-9b7ded76de7d" ] \
+            || [ "${RAILWAY_SERVICE_ID:-}" != "990e3d3e-b09a-4c43-8873-ab10e9bffd02" ]; then
+            echo "BLISS_FICTIONAL_HOSTED_IDENTITY_REFUSED" >&2
+            exit 2
+        fi
+        (
+            dir="$(mktemp -d /tmp/alpha-fictional.XXXXXXXX)"
+            trap 'rm -rf -- "$dir"' EXIT
+            chmod 0700 "$dir"
+            if test -r /app/ops/alpha-p0-fictional-creative-roundtrip.mjs && timeout 500s node /app/ops/alpha-p0-fictional-creative-roundtrip.mjs --hosted "$dir"; then
+                echo "BLISS_FICTIONAL_HOSTED_RETRY_PASS"
+            else
+                echo "BLISS_FICTIONAL_HOSTED_REFUSED" >&2
+            fi
+        ) &
+    fi
     exec dotnet /app/Bliss.Api.dll "$@"
 fi
 : "${BLISS_DP_CERTIFICATE_BASE64:?Data protection certificate secret is required}"
