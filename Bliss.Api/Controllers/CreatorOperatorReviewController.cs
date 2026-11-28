@@ -645,7 +645,31 @@ public sealed class CreatorOperatorReviewController(
             await tx.CommitAsync(ct);
         }
         var status=await CreatorFactorySubmission.Submit(body,request.HandoffId,ct,renderStatus:true);
-        return status is null?StatusCode(503,new {error="Factory render status unavailable."}):Ok(status.Value);
+        if(status is null)return StatusCode(503,new {error="Factory render status unavailable."});
+        if(!auth.CreatorFactoryVisualReviewRequested)return Ok(status.Value);
+        // Match saved human decisions to exact current manifest and remote preview evidence.
+        // A technical preview or human acceptance is not permission to deliver.
+        await using var readback=await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.RepeatableRead,ct);
+        var refreshed=await CreatorFulfillmentManifest.Build(db,request.HandoffId,request.IllustrationId,ct);
+        if(refreshed is null || CreatorFactorySubmission.Serialize(refreshed)!=body)return Conflict();
+        var placementId=status.Value.GetProperty("placementId").GetGuid();
+        var placement=await CreatorCampaignInvitation.Current(db,placementId,ct);
+        if(placement is null)return Conflict();
+        var previews=status.Value.GetProperty("results").EnumerateArray()
+            .Select(row=>CreatorFactoryVisualReview.Select(status.Value,row.GetProperty("specSha256").GetString()!))
+            .Where(p=>p is not null).Select(p=>p!).ToArray();
+        var ids=previews.Select(p=>CreatorFactoryVisualReview.Id(placementId,p.SpecSha256)).ToArray();
+        var recorded=await db.WeddingPlannerAuditEvents.AsNoTracking().Where(a=>ids.Contains(a.Id)).ToListAsync(ct);
+        var reviews=previews.Select(p=> {
+            var row=recorded.SingleOrDefault(a=>a.Id==CreatorFactoryVisualReview.Id(placementId,p.SpecSha256));
+            return row is not null && CreatorFactoryVisualReview.Matches(row,placement,request.ManifestSha256,p)
+                ? new {reviewId=row.Id,specSha256=p.SpecSha256,previewSha256=p.PreviewSha256,decision=row.Outcome,recordedAt=row.OccurredAt}
+                : null;
+        }).Where(x=>x is not null).ToArray();
+        await readback.CommitAsync(ct);
+        var response=status.Value.EnumerateObject().ToDictionary(x=>x.Name,x=>(object)x.Value.Clone());
+        response["recordedVisualReviews"]=reviews;
+        return Ok(response);
     }
 
     [HttpPost("factory-visual-review")]
