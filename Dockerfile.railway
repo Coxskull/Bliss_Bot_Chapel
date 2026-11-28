@@ -23,6 +23,11 @@ RUN apt-get update \
     && dpkg-query -W -f='perl-base installed: ${Version}\n' perl-base \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app/publish .
+# Reuse the existing Node build-stage binary for the fixed operator-only
+# staging roundtrip client. No public route, npm dependencies or startup job.
+COPY --from=financial-ui /usr/local/bin/node /usr/local/bin/node
+COPY --chmod=644 scripts/alpha-p0-fictional-creative-roundtrip.mjs /app/ops/alpha-p0-fictional-creative-roundtrip.mjs
+RUN node --version && node --check /app/ops/alpha-p0-fictional-creative-roundtrip.mjs
 ARG SOURCE_REVISION=unknown
 LABEL org.opencontainers.image.revision=$SOURCE_REVISION
 ENV ASPNETCORE_ENVIRONMENT=Production
