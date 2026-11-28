@@ -12,6 +12,7 @@ function clearEvidence() {
   evidenceReady = false; permissions = null; options = null; production = null; approvals = [];
   for (const id of ["#brief", "#candidate", "#stage", "#match", "#slot", "#campaign", "#quote", "#creative", "#approvals", "#plans"]) $(id).replaceChildren();
   $("#identity").textContent = ""; $("#price").textContent = "Refresh current matching and Economics evidence.";
+  $("#placement-recommendations").replaceChildren();
   resetIntent();
 }
 function sync() {
@@ -22,6 +23,7 @@ function sync() {
   $("#plan-fields").disabled = busy || !evidenceReady || !permissions?.canPlan || !$("#candidate").value || !$("#match").value || !$("#slot").value || !$("#quote").value || !$("#campaign").value;
   for (const id of ["#brief", "#candidate", "#match", "#slot", "#campaign", "#quote"]) $(id).disabled = busy;
   $("#fit-checks").hidden = $("#stage").value !== "INVENTORY_FIT";
+  for (const button of $("#placement-recommendations").querySelectorAll("button")) button.disabled = busy || !evidenceReady || !permissions?.canPlan;
 }
 async function api(url, body) {
   const response = await fetch(url, { credentials: "same-origin", cache: "no-store", redirect: "error", method: body ? "POST" : "GET", headers: { Accept: "application/json",
@@ -34,6 +36,46 @@ function choices(id, rows, value, label) { const select = $(id), previous = sele
 function selectedCandidate() { return production?.candidates.find(x => x.id === $("#candidate").value); }
 function latestReview() { return production?.reviews.filter(x => x.candidateId === $("#candidate").value).sort((a, b) => b.version - a.version)[0]; }
 function latest(scope) { return approvals.filter(x => x.scopeKey === scope).sort((a, b) => b.version - a.version)[0]; }
+// Rank only recorded combinations; never invent audience fit, price or availability.
+function placementRecommendations() {
+  const panel=$("#placement-recommendations");panel.replaceChildren();
+  if(!options || !permissions?.canPlan)return;
+  const review=latestReview(),candidate=selectedCandidate();
+  const approved=(scope)=>{const a=latest(scope);return !!review && a?.reviewId===review.id && a.decision==="APPROVE";};
+  const creativeReviewed=!!candidate && review?.decision==="PASS" && approved("ADVERTISER") && approved("ALPHA_QA");
+  const matches=new Map(options.matches.map(x=>[x.id,x])),slots=new Map(options.slots.map(x=>[x.id,x]));
+  const campaignsByOpportunity=new Map();
+  for(const campaign of options.campaigns){
+    if(!campaignsByOpportunity.has(campaign.advertiserOpportunityId))campaignsByOpportunity.set(campaign.advertiserOpportunityId,[]);
+    campaignsByOpportunity.get(campaign.advertiserOpportunityId).push(campaign);
+  }
+  const rows=[];
+  for(const quote of options.quoteLines){
+    const match=matches.get(quote.blissMatchId),slot=slots.get(quote.adInventorySlotId);
+    if(!match || !slot || slot.creatorId!==match.creatorId || quote.advertiserOpportunityId!==match.advertiserOpportunityId || quote.quantity!==1)continue;
+    const fit=latest("FIT:"+slot.id);
+    const fitRecorded=approved("FIT:"+slot.id) && fit.adInventorySlotId===slot.id && fit.dimensionsVerified===true && fit.formatVerified===true && fit.creatorSafeAreaVerified===true;
+    const drafts=campaignsByOpportunity.get(match.advertiserOpportunityId)||[];
+    for(const campaign of drafts)rows.push({match,slot,quote,campaign,rank:Number(creativeReviewed)+Number(fitRecorded)});
+  }
+  rows.sort((a,b)=>b.rank-a.rank || a.match.creatorName.localeCompare(b.match.creatorName) || a.quote.id.localeCompare(b.quote.id));
+  text(panel,"p",rows.length?rows.length+" combinations with a recorded accepted quote and draft campaign. Showing up to 20; ordered by matching approval evidence, not predicted performance.":"No complete match, available overlay, draft and accepted quote combination. Prepare the missing Economics or campaign record.");
+  for(const row of rows.slice(0,20)){
+    const item=document.createElement("section");panel.append(item);
+    text(item,"h3",row.match.creatorName+" · "+row.slot.slotType);
+    text(item,"p",row.campaign.name+" · "+row.slot.contentTitle+" · "+row.slot.durationSeconds+" seconds");
+    text(item,"p","Recorded accepted quote: "+row.quote.lineAmount+" "+row.quote.currencyCode);
+    text(item,"p",row.rank===2?"Matching creative and inventory approvals recorded; current authority must still be checked.":"Additional creative or inventory approvals required.");
+    const choose=document.createElement("button");choose.type="button";choose.textContent="Select placement for review";item.append(choose);
+    choose.addEventListener("click",()=>{
+      if(busy||!evidenceReady||!permissions?.canPlan||!item.isConnected)return;
+      $("#match").value=row.match.id;inventoryChoices();
+      $("#slot").value=row.slot.id;quoteChoices();
+      $("#campaign").value=row.campaign.id;$("#quote").value=row.quote.id;quoteChoices();
+      resetIntent();sync();tell("Recorded combination selected. Review current approvals and explicitly confirm planning intent.");
+    });
+  }
+}
 function inventoryChoices() {
   resetIntent();
   const match = options?.matches.find(x => x.id === $("#match").value);
@@ -55,6 +97,7 @@ async function loadApprovals() {
   const view = $("#approvals"); view.replaceChildren();
   for (const row of approvals) { text(view, "h3", `${row.stage} · ${row.decision} · version ${row.version}`); text(view, "p", `${row.actorLabel}: ${row.rationale}${row.adInventorySlotId ? `\nSlot: ${row.adInventorySlotId}; dimensions: ${row.imageWidth} × ${row.imageHeight}` : ""}`); }
   const candidate = selectedCandidate(), review = latestReview(), creative = $("#creative"); creative.replaceChildren();
+  placementRecommendations();
   if (candidate) { text(creative, "h3", candidate.label); text(creative, "p", `Candidate revision ${candidate.version}; latest instructor assessment: ${review?.decision || "unrecorded"}.`); const image = document.createElement("img"); image.src = `/api/wedding-planner/workspaces/${workspace}/production/briefs/${production.brief.id}/candidates/${candidate.id}/image`; image.alt = candidate.label; image.style.maxWidth = "100%"; image.style.maxHeight = "400px"; creative.append(image); }
 }
 async function loadBrief() {
@@ -133,6 +176,7 @@ async function refresh() {
     });
   }
   evidenceReady = true;
+  placementRecommendations();
 }
 $("#workspace").addEventListener("change", () => {
   workspace = null; clearEvidence(); $("#rationale").value = ""; $("#campaign-name").value = ""; sync();
