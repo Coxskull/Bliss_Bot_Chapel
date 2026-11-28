@@ -1,5 +1,6 @@
 // Operator-only fictional staging client. No production route or customer delivery.
 import {createHash,createHmac} from "node:crypto";
+import {deflateSync} from "node:zlib";
 import {readFile,writeFile,lstat,realpath} from "node:fs/promises";
 import {join,isAbsolute} from "node:path";
 import {pathToFileURL} from "node:url";
@@ -45,7 +46,25 @@ async function save(path,data){
 }
 // One fixed fictional metadata-only job through the real restricted intake ledger.
 // The same IDs and body are reused on restart; no asset, render, booking or payment.
+// Exact V3 layout-2 perimeter geometry; generated RGB fixture, no customer media.
+function perimeterPng(){
+ const width=960,height=270,raw=Buffer.alloc((width*3+1)*height);
+ for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+  const i=y*(width*3+1)+1+x*3, stripe=x>=40&&x<920&&y>=40&&y<230;
+  raw[i]=stripe?40:12;raw[i+1]=stripe?140:38;raw[i+2]=stripe?170:64;
+ }
+ function chunk(type,data){
+  const tag=Buffer.from(type),len=Buffer.alloc(4),crc=Buffer.alloc(4);
+  len.writeUInt32BE(data.length);let v=0xffffffff;
+  for(const byte of Buffer.concat([tag,data])){v^=byte;for(let j=0;j<8;j++)v=(v>>>1)^((v&1)?0xedb88320:0);}
+  crc.writeUInt32BE((v^0xffffffff)>>>0);return Buffer.concat([len,tag,data,crc]);
+ }
+ const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(width,0);ihdr.writeUInt32BE(height,4);ihdr[8]=8;ihdr[9]=2;
+ return Buffer.concat([Buffer.from("89504e470d0a1a0a","hex"),chunk("IHDR",ihdr),chunk("IDAT",deflateSync(raw,{level:9})),chunk("IEND",Buffer.alloc(0))]);
+}
 async function heldAdmission(env,artwork=false){
+ const renderFixture=env.BLISS_FICTIONAL_RENDER_FIXTURE==="YES";
+ if(renderFixture&&!artwork)throw Error("RENDER_FIXTURE_REQUIRES_CUSTODY");
  if(env.BLISS_FICTIONAL_HELD_ADMISSION!=="YES"||
     env.RAILWAY_PROJECT_ID!=="43062727-bca5-400a-b801-27828161324b"||
     env.RAILWAY_ENVIRONMENT_ID!=="04edd217-035e-4c18-b864-9b7ded76de7d"||
@@ -53,10 +72,10 @@ async function heldAdmission(env,artwork=false){
     env.Runtime__RestrictedPreview!=="true"||env.Authentication__Enabled!=="false"||
     !hex(env.BLISS_FACTORY_CREATIVE_INTAKE_HMAC_KEY))throw Error("HELD_ADMISSION_SCOPE_REFUSED");
  if(artwork&&(!hex(env.BLISS_FACTORY_PRIVATE_ARTWORK_HMAC_KEY)||env.BLISS_FACTORY_PRIVATE_ARTWORK_HMAC_KEY===env.BLISS_FACTORY_CREATIVE_INTAKE_HMAC_KEY))throw Error("ARTWORK_KEY_REFUSED");
- const png=Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGMUCVjAwMDAxMDAwMDAAAALzgEI/t/+UgAAAABJRU5ErkJggg==","base64");
+ const png=renderFixture?perimeterPng():Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGMUCVjAwMDAxMDAwMDAAAALzgEI/t/+UgAAAABJRU5ErkJggg==","base64");
  const ids=["handoffId","placementId","campaignId","creatorId","slotId","candidateId","reviewId","advertiserApprovalId","alphaQaApprovalId","inventoryFitId","quoteVersionId","quoteLineId","agreementEvidenceId"];
- const m=Object.fromEntries(ids.map((k,i)=>[k,(artwork?"cafe2000-0000-4000-8000-":"cafe1000-0000-4000-8000-")+String(i+1).padStart(12,"0")]));
- Object.assign(m,{imageSha256:artwork?sha(png):sha("ALPHA_FICTIONAL_IMAGE_NOT_TRANSFERRED"),handoffSha256:sha("ALPHA_FICTIONAL_HANDOFF"),agreementEvidenceSha256:sha("ALPHA_FICTIONAL_AGREEMENT"),schema:"alpha-creator-fulfillment-preparation/v1",status:"PREPARATION_ONLY",delivery:"NOT_SENT",fundingVerified:false,bookingAuthorized:false,paymentAuthorized:false,deliveryAuthorized:false,factoryDispatchAuthorized:false,slotType:"LOWER_THIRD",startSecond:0,durationSeconds:2,imageWidth:artwork?2:960,imageHeight:artwork?2:540});
+ const m=Object.fromEntries(ids.map((k,i)=>[k,(renderFixture?"cafe3000-0000-4000-8000-":artwork?"cafe2000-0000-4000-8000-":"cafe1000-0000-4000-8000-")+String(i+1).padStart(12,"0")]));
+ Object.assign(m,{imageSha256:artwork?sha(png):sha("ALPHA_FICTIONAL_IMAGE_NOT_TRANSFERRED"),handoffSha256:sha("ALPHA_FICTIONAL_HANDOFF"),agreementEvidenceSha256:sha("ALPHA_FICTIONAL_AGREEMENT"),schema:"alpha-creator-fulfillment-preparation/v1",status:"PREPARATION_ONLY",delivery:"NOT_SENT",fundingVerified:false,bookingAuthorized:false,paymentAuthorized:false,deliveryAuthorized:false,factoryDispatchAuthorized:false,slotType:renderFixture?"PERIMETER_OVERLAY":"LOWER_THIRD",startSecond:0,durationSeconds:2,imageWidth:renderFixture?960:artwork?2:960,imageHeight:renderFixture?270:artwork?2:540});
  const body=JSON.stringify(m),digest=sha(body);
  const base="https://alpha-hf-factory-engine-staging.up.railway.app/internal/bliss/held-creative-jobs";
  async function send(path,readOnly){
@@ -86,7 +105,7 @@ async function heldAdmission(env,artwork=false){
   const reader=res.body.getReader(),chunks=[];let size=0;
   try{while(true){const {value,done}=await reader.read();if(done)break;size+=value.byteLength;if(size>4096)throw Error("ARTWORK_RESPONSE_LIMIT");chunks.push(Buffer.from(value));}}finally{await reader.cancel().catch(()=>{});}
   const v=JSON.parse(Buffer.concat(chunks).toString("utf8"));
-  if(v.schema!=="alpha.henry-ford.held-artwork-custody.v1"||v.placementId!==m.placementId||v.handoffId!==m.handoffId||v.manifestSha256!==digest||v.imageSha256!==sha(png)||v.imageWidth!==2||v.imageHeight!==2||v.status!=="HELD_ARTWORK_STORED"||v.release!=="HELD"||v.delivery!=="NOT_SENT"||v.renderAuthorized!==false||v.dispatchAuthorized!==false||v.paymentAuthorized!==false||!Number.isFinite(Date.parse(v.receivedAt)))throw Error("ARTWORK_RECEIPT_MISMATCH");
+  if(v.schema!=="alpha.henry-ford.held-artwork-custody.v1"||v.placementId!==m.placementId||v.handoffId!==m.handoffId||v.manifestSha256!==digest||v.imageSha256!==sha(png)||v.imageWidth!==m.imageWidth||v.imageHeight!==m.imageHeight||v.status!=="HELD_ARTWORK_STORED"||v.release!=="HELD"||v.delivery!=="NOT_SENT"||v.renderAuthorized!==false||v.dispatchAuthorized!==false||v.paymentAuthorized!==false||!Number.isFinite(Date.parse(v.receivedAt)))throw Error("ARTWORK_RECEIPT_MISMATCH");
   console.log(JSON.stringify({marker:"BLISS_FICTIONAL_ARTWORK_CUSTODY_PASS",placementId:m.placementId,imageSha256:sha(png),delivery:"NOT_SENT"}));
  }
  console.log(JSON.stringify({marker:"BLISS_HELD_ADMISSION_PASS",placementId:m.placementId,manifestSha256:digest,admission:"HELD_METADATA_ONLY",statusReadback:"PASS",delivery:"NOT_SENT"}));
