@@ -29,10 +29,12 @@ const png=Buffer.alloc(33);
 Buffer.from("89504e470d0a1a0a","hex").copy(png);
 png.writeUInt32BE(960,16);png.writeUInt32BE(540,20);
 const artworkSha256=digest(png),compositionSha256=digest("fictional-composition");
-const qa={schema:"alpha.henry-ford.held-multi-overlay-receipt.v1",compositionSha256,release:"HELD",delivery:"NOT_SENT",dispatchAuthorized:false,providerCalls:0,renderExecuted:true,previewSha256:artworkSha256,placements:[{}]};
+const qa={schema:"alpha.henry-ford.held-multi-overlay-receipt.v1",compositionSha256,release:"HELD",delivery:"NOT_SENT",dispatchAuthorized:false,providerCalls:0,renderExecuted:true,previewSha256:digest("fictional-video"),sourceRenderReceiptSha256:digest("original-render-receipt"),artworkFrame:{sha256:artworkSha256,sourcePreviewSha256:digest("fictional-video"),atSeconds:1.5,width:960,height:540},placements:[{}]};
 const resultFor=q=>{const receipt=Buffer.from(JSON.stringify(q));return {schema:"alpha.factory-fictional-creative-result/v1",jobId:JSON.parse(REQUEST).jobId,fictionalOnly:true,requestSha256:digest(REQUEST),compositionSha256,artworkSha256,receiptSha256:digest(receipt),technicalStatus:"TECHNICAL_CHECKS_PASS",release:"HELD",delivery:"NOT_SENT",dispatchAuthorized:false,paymentAuthorized:false,providerCalls:0,artworkBase64:png.toString("base64"),receiptBase64:receipt.toString("base64")};};
 assert.deepEqual(verifyResult(resultFor(qa)).artwork,png);
 assert.throws(()=>verifyResult(resultFor({...qa,previewSha256:digest("different-preview")})),/Held receipt mismatch/);
+assert.throws(()=>verifyResult(resultFor({...qa,artworkFrame:{...qa.artworkFrame,sha256:digest("different-frame")}})),/Held receipt mismatch/);
+assert.throws(()=>verifyResult(resultFor({...qa,artworkFrame:{...qa.artworkFrame,atSeconds:2}})),/Held receipt mismatch/);
 console.log("P0_FICTIONAL_ARTWORK_RECEIPT_BINDING_PASS");
 
 console.log("P0_FICTIONAL_ADVERTISER_OPERATOR_PROJECTION_PASS (offline fixture, no hosted intake)");
