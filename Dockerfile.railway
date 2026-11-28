@@ -26,8 +26,15 @@ COPY --from=build /app/publish .
 # Reuse the existing Node build-stage binary for the fixed operator-only
 # staging roundtrip client. No public route, npm dependencies or startup job.
 COPY --from=financial-ui /usr/local/bin/node /usr/local/bin/node
-COPY --chmod=644 scripts/alpha-p0-fictional-creative-roundtrip.mjs /app/ops/alpha-p0-fictional-creative-roundtrip.mjs
-RUN node --version && node --check /app/ops/alpha-p0-fictional-creative-roundtrip.mjs
+COPY scripts/alpha-p0-fictional-creative-roundtrip.mjs /tmp/bliss-fictional-client.mjs
+RUN install -d -m 0755 /usr/local/lib/bliss-ops \
+    && install -m 0644 /tmp/bliss-fictional-client.mjs /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs \
+    && rm /tmp/bliss-fictional-client.mjs \
+    && chmod 0755 /usr/local/bin/node \
+    && test -s /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs
+USER app
+RUN /usr/local/bin/node --version && /usr/local/bin/node --check /usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs
+USER root
 ARG SOURCE_REVISION=unknown
 LABEL org.opencontainers.image.revision=$SOURCE_REVISION
 ENV ASPNETCORE_ENVIRONMENT=Production

@@ -34,7 +34,7 @@ def main():
     def run(command, *, env=None):
         result = subprocess.run(command, capture_output=True, text=True, timeout=60, env=env or clean_env)
         if result.returncode:
-            raise RuntimeError('Isolated bootstrap command failed: ' + command[0])
+            raise RuntimeError('Isolated bootstrap command failed: ' + command[0] + '\n' + result.stderr[-2000:])
         return result.stdout.strip()
 
     metadata = json.loads(run(['docker', 'image', 'inspect', args.image]))[0]
@@ -45,6 +45,11 @@ def main():
     if config.get('Entrypoint') != ['/usr/local/bin/bliss-railway-entrypoint']:
         raise ValueError('Unexpected Railway entrypoint')
     uid = int(run(['docker', 'run', '--rm', '--network', 'none', '--entrypoint', 'id', image, '-u', 'app']))
+    # Validate the final image as the actual non-root runtime user, not merely
+    # a Docker build layer. No network, secrets or hosted creative request.
+    run(['docker', 'run', '--rm', '--network', 'none', '--user', str(uid),
+         '--entrypoint', '/usr/local/bin/node', args.image, '--check',
+         '/usr/local/lib/bliss-ops/alpha-p0-fictional-creative-roundtrip.mjs'])
     with tempfile.TemporaryDirectory(prefix='bliss-bootstrap-fixture-') as temporary:
         directory = Path(temporary)
         key, cert, pfx = (directory / name for name in ('fixture.key', 'fixture.crt', 'fixture.pfx'))
