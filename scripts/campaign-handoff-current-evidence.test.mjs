@@ -5,8 +5,9 @@ import vm from "node:vm";
 const js=readFileSync(new URL("../frontend/public/campaign-handoff.js",import.meta.url),"utf8");
 test("workspace change and failed refresh invalidate placement authority",async()=>{
  const nodes=new Map();
- const node=()=>({value:"",checked:false,disabled:false,hidden:false,textContent:"",dataset:{},children:[],handlers:{},
+ const node=(tag="")=>({tagName:tag.toUpperCase(),value:"",checked:false,disabled:false,hidden:false,textContent:"",dataset:{},children:[],handlers:{},
   get options(){return this.children;},replaceChildren(){this.children=[];this.value="";},append(n){this.children.push(n);if(!this.value&&n.value)this.value=n.value;},
+  querySelectorAll(selector){if(selector!=="button")throw Error("Unexpected selector: "+selector);return this.children.flatMap(child=>[...(child.tagName==="BUTTON"?[child]:[]),...child.querySelectorAll(selector)]);},
   addEventListener(k,v){this.handlers[k]=v;}});
  const get=id=>{if(!nodes.has(id))nodes.set(id,node());return nodes.get(id);};
  const ctx=vm.createContext({document:{querySelector:get,createElement:node},crypto:{randomUUID:()=>"fixture-key"},fetch:async()=>({ok:true,json:async()=>({accessAllowed:false})})});
