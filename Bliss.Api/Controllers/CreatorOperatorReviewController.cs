@@ -579,8 +579,10 @@ public sealed class CreatorOperatorReviewController(
             if(ControlledAiService.Hash(body)!=request.ManifestSha256)return Conflict(new {error="Current manifest changed. Review again."});
             await tx.CommitAsync(ct);
         }
-        var receipt=await CreatorFactorySubmission.Submit(body,request.HandoffId,ct);
-        return receipt is null?StatusCode(503,new {error="Factory admission not confirmed. Recheck the exact manifest before retrying."}):Ok(receipt.Value);
+        var receipt=await CreatorFactorySubmission.Submit(body,request.HandoffId,ct,readOnly:request.ReadOnlyAdmission);
+        return receipt is null?StatusCode(503,new {error=request.ReadOnlyAdmission
+            ? "Existing Factory admission not confirmed; no admission was requested."
+            : "Factory admission not confirmed. Recheck the exact manifest before retrying."}):Ok(receipt.Value);
     }
 
     [HttpPost("factory-artwork")]
@@ -791,7 +793,7 @@ public sealed record RecordCreatorPayableReview(Guid HistoryId,string Digest,dec
 public sealed record RecordCreatorSettlementException(Guid EvidenceId,string OriginalDigest,string DocumentSha256,string Reason,
     DateTimeOffset ObservedAt,bool OriginalTransferReviewed,bool ExceptionEvidenceReviewed,bool ConfirmHold);
 
-public sealed record SubmitCreatorFactoryPreparation(Guid HandoffId,Guid IllustrationId,string ManifestSha256,bool ConfirmHeldMetadataOnly);
+public sealed record SubmitCreatorFactoryPreparation(Guid HandoffId,Guid IllustrationId,string ManifestSha256,bool ConfirmHeldMetadataOnly,bool ReadOnlyAdmission=false);
 
 public sealed record RetrieveCreatorFactoryArtwork(Guid HandoffId,Guid IllustrationId,string ManifestSha256,bool ConfirmPrivateArtworkHandling,bool TransferToFactory=false);
 

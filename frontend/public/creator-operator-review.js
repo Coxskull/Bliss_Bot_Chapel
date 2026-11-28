@@ -537,8 +537,28 @@
       card.append(download);
       if(packet.factorySubmissionEnabled){
         const submit=node("button","Submit held job metadata to Factory");submit.type="button";
-        submit.addEventListener("click",async()=>{
+        const admission=node("button","Check existing Factory admission (read only)");admission.type="button";
+        const admissionStatus=node("p","");admissionStatus.setAttribute("role","status");
+        admission.addEventListener("click",async()=>{
           if(busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
+          busy=true;admission.disabled=true;submit.disabled=true;fulfillPreview.disabled=true;fulfillHandoff.disabled=true;fulfillIllustration.disabled=true;
+          admissionStatus.textContent="Checking existing held admission…";
+          try{
+            const s=await session();
+            const response=await fetch("/api/creators/operator-review/factory-submission",{method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error",
+              headers:{"Content-Type":"application/json","X-CSRF-TOKEN":s.csrfToken},
+              body:JSON.stringify({handoffId,illustrationId,manifestSha256:packet.manifestSha256,confirmHeldMetadataOnly:true,readOnlyAdmission:true})});
+            if(!response.ok)throw Error("Existing admission not confirmed.");
+            const a=await response.json();
+            if(a.schema!=="alpha.henry-ford.held-job-admission.v1"||a.handoffId!==handoffId||a.placementId!==m.placementId||
+              a.manifestSha256!==packet.manifestSha256||a.status!=="HELD_METADATA_ONLY"||a.release!=="HELD"||a.delivery!=="NOT_SENT"||
+              a.renderAuthorized!==false||a.dispatchAuthorized!==false||a.paymentAuthorized!==false||!Number.isFinite(Date.parse(a.admittedAt)))throw Error("Unexpected admission receipt.");
+            if(card.isConnected){admissionStatus.textContent="Existing exact held admission confirmed: "+new Date(a.admittedAt).toLocaleString()+". Continue private artwork handling. No render or delivery authorized.";submit.textContent="Held metadata already admitted";submit.disabled=true;}
+          }catch{if(card.isConnected)admissionStatus.textContent="Existing admission could not be confirmed. No new submission was requested. Review current manifest and Factory availability.";submit.disabled=false;}
+          finally{busy=false;admission.disabled=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
+        });
+        submit.addEventListener("click",async()=>{
+          if(submit.disabled||busy||!card.isConnected||fulfillHandoff.value.trim().toLowerCase()!==handoffId||fulfillIllustration.value.trim().toLowerCase()!==illustrationId)return;
           if(!window.confirm("Send only this exact preparation metadata to the existing staging Factory? No artwork, rendering, payment or delivery is authorized."))return;
           busy=true;submit.disabled=true;download.disabled=true;fulfillPreview.disabled=true;fulfillHandoff.disabled=true;fulfillIllustration.disabled=true;
           try{
@@ -554,7 +574,7 @@
           }catch{fulfillStatus.textContent="Factory admission not confirmed. Reload the exact manifest before retrying.";}
           finally{clearFulfill();busy=false;fulfillPreview.disabled=false;fulfillHandoff.disabled=false;fulfillIllustration.disabled=false;}
         });
-        card.append(submit);
+        card.append(admission,admissionStatus,submit);
       }
       if(packet.factoryArtworkEnabled){
         const artwork=node("button","Retrieve admitted private PNG");artwork.type="button";
